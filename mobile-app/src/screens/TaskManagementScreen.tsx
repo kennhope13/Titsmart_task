@@ -1,93 +1,102 @@
-﻿import React, { useMemo, useState } from 'react';
-import { ScrollView, View, StyleSheet, TextInput, Pressable, Alert } from 'react-native';
-import { ClipboardList, Search, CheckCircle2, Circle, UserRound } from 'lucide-react-native';
+import React, { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { CalendarDays, ClipboardList, Plus, Search, UserRound } from 'lucide-react-native';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { colors } from '../theme';
 import { AppText, Card, Screen, ScreenHeader, StatusBadge } from '../components/MobileUI';
-import { cleanText, constructionLabel, purchaseLabel } from '../utils/text';
+import { cleanText } from '../utils/text';
+import { Task } from '../types';
 
 const filters = [
-  { key: 'all', label: 'T\u1ea5t c\u1ea3' },
-  { key: 'pending', label: 'Ch\u01b0a xong' },
-  { key: 'done', label: 'Ho\u00e0n th\u00e0nh' },
-  { key: 'issue', label: 'V\u01b0\u1edbng' },
+  { key: 'all', label: 'Tất cả' },
+  { key: 'unassigned', label: 'Chờ giao' },
+  { key: 'doing', label: 'Đang làm' },
+  { key: 'review', label: 'Chờ duyệt' },
+  { key: 'done', label: 'Hoàn thành' },
 ];
 
+const statusInfo = (task: Task) => {
+  if (task.isDone || task.progress >= 1) return { label: 'Hoàn thành', tone: 'green' as const, key: 'done' };
+  if (task.issueStatus) return { label: 'Chờ duyệt', tone: 'amber' as const, key: 'review' };
+  if (task.issue) return { label: 'Cần xử lý', tone: 'red' as const, key: 'issue' };
+  if (!task.assignedEngineerName) return { label: 'Chờ giao', tone: 'slate' as const, key: 'unassigned' };
+  return { label: 'Đang làm', tone: 'blue' as const, key: 'doing' };
+};
+
 export const TaskManagementScreen = () => {
-  const { tasks, updateTaskProgress } = useRealtimeStore();
+  const navigation = useNavigation<any>();
+  const { tasks } = useRealtimeStore();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
-
   const pureTasks = tasks.filter((task) => !task.isSectionHeader);
-  const doneCount = pureTasks.filter((task) => task.isDone || task.progress >= 1).length;
 
   const displayTasks = useMemo(() => pureTasks.filter((task) => {
-    const text = `${cleanText(task.name)} ${cleanText(task.projectName)} ${cleanText(task.sectionName)} ${cleanText(task.issue)}`.toLowerCase();
-    const q = query.trim().toLowerCase();
-    const matchQuery = !q || text.includes(q);
-    const matchFilter = filter === 'all'
-      || (filter === 'pending' && !(task.isDone || task.progress >= 1))
-      || (filter === 'done' && (task.isDone || task.progress >= 1))
-      || (filter === 'issue' && !!task.issue);
-    return matchQuery && matchFilter;
-  }).slice(0, 80), [pureTasks, query, filter]);
-
-  const toggleDone = (id: string, isDone: boolean) => {
-    updateTaskProgress(id, isDone ? 0 : 1, !isDone);
-  };
+    const status = statusInfo(task);
+    const haystack = `${task.code} ${cleanText(task.name)} ${cleanText(task.projectName)} ${cleanText(task.assignedEngineerName)}`.toLowerCase();
+    return (!query.trim() || haystack.includes(query.trim().toLowerCase())) && (filter === 'all' || filter === status.key);
+  }).slice(0, 100), [pureTasks, query, filter]);
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <ScreenHeader
-          icon={<ClipboardList size={22} color={colors.primary} />}
-          title="Qu\u1ea3n l\u00fd Ti\u1ebfn \u0111\u1ed9 C\u00f4ng vi\u1ec7c"
-          subtitle="Danh s\u00e1ch h\u1ea1ng m\u1ee5c t\u1ed1i \u01b0u cho m\u00e0n h\u00ecnh \u0111i\u1ec7n tho\u1ea1i, c\u00f3 t\u00ecm ki\u1ebfm v\u00e0 c\u1eadp nh\u1eadt nhanh."
-          badge={`${doneCount}/${pureTasks.length} xong`}
-        />
-
-        <Card style={styles.searchCard}>
+      <ScreenHeader
+        icon={<ClipboardList size={21} color={colors.primary} />}
+        title="Công việc"
+        subtitle={`${displayTasks.length} công việc đang hiển thị`}
+        action={
+          <Pressable onPress={() => navigation.navigate('TaskForm')} style={styles.addButton}>
+            <Plus size={19} color={colors.white} />
+          </Pressable>
+        }
+      />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.toolbar}>
           <View style={styles.searchBox}>
             <Search size={18} color={colors.slate[400]} />
-            <TextInput value={query} onChangeText={setQuery} placeholder="T\u00ecm h\u1ea1ng m\u1ee5c, d\u1ef1 \u00e1n..." placeholderTextColor={colors.slate[400]} style={styles.input} />
+            <TextInput value={query} onChangeText={setQuery} placeholder="Tìm tên, mã hoặc người thực hiện" placeholderTextColor={colors.slate[400]} style={styles.input} />
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
             {filters.map((item) => (
-              <Pressable key={item.key} onPress={() => setFilter(item.key)} style={[styles.filterChip, filter === item.key && styles.filterChipActive]}>
+              <Pressable key={item.key} onPress={() => setFilter(item.key)} style={[styles.filterChip, filter === item.key ? styles.filterChipActive : undefined]}>
                 <AppText style={[styles.filterText, filter === item.key ? styles.filterTextActive : undefined]}>{item.label}</AppText>
               </Pressable>
             ))}
           </ScrollView>
-        </Card>
+        </View>
 
-        {displayTasks.map((task) => {
-          const done = task.isDone || task.progress >= 1;
-          const progress = Math.round((task.progress || 0) * 100);
-          return (
-            <Pressable key={task.id} onPress={() => Alert.alert('C\u1eadp nh\u1eadt', 'B\u1ea1n mu\u1ed1n \u0111\u1ed5i tr\u1ea1ng th\u00e1i h\u1ea1ng m\u1ee5c n\u00e0y?', [
-              { text: 'H\u1ee7y', style: 'cancel' },
-              { text: done ? 'Ch\u01b0a xong' : 'Ho\u00e0n th\u00e0nh', onPress: () => toggleDone(task.id, done) },
-            ])}>
-              <Card style={styles.taskCard}>
-                <View style={styles.rowTop}>
-                  {done ? <CheckCircle2 size={22} color={colors.accent} /> : <Circle size={22} color={colors.slate[300]} />}
-                  <View style={{ flex: 1 }}>
-                    <AppText style={styles.taskTitle} numberOfLines={2}>{task.name}</AppText>
-                    <AppText style={styles.projectText} numberOfLines={1}>{task.projectName}</AppText>
+        <View style={styles.list}>
+          {displayTasks.map((task) => {
+            const status = statusInfo(task);
+            const progress = Math.round(task.progress * 100);
+            return (
+              <Pressable key={task.id} onPress={() => navigation.navigate('TaskDetail', { taskId: task.id })}>
+                <Card style={styles.taskCard}>
+                  <View style={styles.cardTop}>
+                    <View style={styles.codePill}><AppText style={styles.codeText}>{task.code || task.stt}</AppText></View>
+                    <StatusBadge label={status.label} tone={status.tone} />
                   </View>
-                  <StatusBadge label={`${progress}%`} tone={done ? 'green' : progress > 0 ? 'blue' : 'slate'} />
-                </View>
-                <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${Math.max(3, progress)}%`, backgroundColor: done ? colors.accent : colors.primary }]} /></View>
-                <View style={styles.badgeRow}>
-                  <StatusBadge label={purchaseLabel(task.purchaseStatus)} tone="blue" />
-                  <StatusBadge label={constructionLabel(task.constrStatus)} tone={done ? 'green' : 'slate'} />
-                  {task.issue ? <StatusBadge label="V\u01b0\u1edbng" tone="red" /> : null}
-                </View>
-                <View style={styles.assignee}><UserRound size={13} color={colors.slate[400]} /><AppText style={styles.assigneeText}>{task.assignedEngineerName || 'Ch\u01b0a g\u00e1n'}</AppText></View>
-              </Card>
-            </Pressable>
-          );
-        })}
+                  <AppText style={styles.taskTitle} numberOfLines={2}>{task.name}</AppText>
+                  <AppText style={styles.project} numberOfLines={1}>{task.projectName}</AppText>
+                  <View style={styles.details}>
+                    <View style={styles.detailItem}>
+                      <UserRound size={14} color={colors.slate[400]} />
+                      <AppText style={styles.detailText} numberOfLines={1}>{task.assignedEngineerName || 'Chưa phân công'}</AppText>
+                    </View>
+                    <View style={styles.detailItem}>
+                      <CalendarDays size={14} color={colors.slate[400]} />
+                      <AppText style={styles.detailText}>{task.dueDate || 'Chưa có hạn'}</AppText>
+                    </View>
+                  </View>
+                  <View style={styles.progressHeader}>
+                    <AppText style={styles.progressLabel}>Tiến độ</AppText>
+                    <AppText style={styles.progressNumber}>{progress}%</AppText>
+                  </View>
+                  <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${Math.min(progress, 100)}%` }]} /></View>
+                </Card>
+              </Pressable>
+            );
+          })}
+        </View>
       </ScrollView>
     </Screen>
   );
@@ -95,21 +104,28 @@ export const TaskManagementScreen = () => {
 
 const styles = StyleSheet.create({
   content: { paddingBottom: 24 },
-  searchCard: { marginHorizontal: 12, marginBottom: 10, gap: 12 },
-  searchBox: { height: 42, borderRadius: 12, backgroundColor: colors.slate[50], borderWidth: 1, borderColor: colors.slate[200], paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  addButton: { width: 40, height: 40, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  toolbar: { backgroundColor: colors.white, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.slate[200] },
+  searchBox: { height: 44, borderRadius: 10, backgroundColor: colors.slate[50], borderWidth: 1, borderColor: colors.slate[200], paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 9 },
   input: { flex: 1, fontSize: 13, color: colors.slate[800], paddingVertical: 0 },
-  filterRow: { gap: 8 },
-  filterChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: colors.slate[100] },
+  filterRow: { gap: 8, paddingTop: 11 },
+  filterChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 9, backgroundColor: colors.slate[100] },
   filterChipActive: { backgroundColor: colors.primary },
-  filterText: { fontSize: 12, fontWeight: '800', color: colors.slate[600] },
+  filterText: { fontSize: 12, fontWeight: '700', color: colors.slate[600] },
   filterTextActive: { color: colors.white },
-  taskCard: { marginHorizontal: 12, marginBottom: 10, gap: 10 },
-  rowTop: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  taskTitle: { fontSize: 14, lineHeight: 19, fontWeight: '800', color: colors.slate[900] },
-  projectText: { marginTop: 3, fontSize: 12, color: colors.slate[500], fontWeight: '600' },
-  progressTrack: { height: 7, borderRadius: 999, backgroundColor: colors.slate[100], overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 999 },
-  badgeRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap' },
-  assignee: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  assigneeText: { fontSize: 11, color: colors.slate[500], fontWeight: '700' },
+  list: { padding: 16, gap: 10 },
+  taskCard: { gap: 8 },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  codePill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: colors.slate[100] },
+  codeText: { fontSize: 10, fontWeight: '800', color: colors.slate[600] },
+  taskTitle: { fontSize: 15, lineHeight: 20, fontWeight: '800', color: colors.slate[900] },
+  project: { fontSize: 12, color: colors.slate[500] },
+  details: { flexDirection: 'row', gap: 12, paddingTop: 2 },
+  detailItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  detailText: { flex: 1, fontSize: 11, color: colors.slate[600] },
+  progressHeader: { marginTop: 2, flexDirection: 'row', justifyContent: 'space-between' },
+  progressLabel: { fontSize: 11, color: colors.slate[500], fontWeight: '600' },
+  progressNumber: { fontSize: 11, color: colors.primary, fontWeight: '800' },
+  progressTrack: { height: 5, borderRadius: 3, backgroundColor: colors.slate[100], overflow: 'hidden' },
+  progressFill: { height: 5, borderRadius: 3, backgroundColor: colors.primary },
 });

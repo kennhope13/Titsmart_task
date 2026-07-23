@@ -458,7 +458,7 @@ export const TaskManagementPage: React.FC = () => {
       ? customSectionInput
       : sectionSelect !== 'default'
       ? sectionSelect
-      : uniqueSectionsForProj[0] || 'I. THIẾT BỊ CHO CHỮA CHÁY';
+      : uniqueSectionsForProj[0] || 'I. Hạng mục chung';
 
     addTask({
       stt: stt || (isSectionHeader ? 'I' : '1'),
@@ -563,6 +563,7 @@ export const TaskManagementPage: React.FC = () => {
       const matchesRomanSection = t.sectionName === selectedRomanSection;
 
       return (
+
         matchesProj &&
         matchesRomanSection &&
         matchesPurchase &&
@@ -574,8 +575,61 @@ export const TaskManagementPage: React.FC = () => {
     }
   });
 
-  const totalPureItems = displayTasks.filter((t) => !t.isSectionHeader).length;
-  const completedPureItems = displayTasks.filter((t) => !t.isSectionHeader && (t.isDone || t.progress >= 1)).length;
+  const groupedTasks = React.useMemo(() => {
+    const groups: { [key: string]: Task[] } = {};
+    const order: string[] = [];
+    displayTasks.forEach((t) => {
+      const sec = t.sectionName || 'Khác';
+      if (!groups[sec]) {
+        groups[sec] = [];
+        order.push(sec);
+      }
+      groups[sec].push(t);
+    });
+    
+    const flattened: Task[] = [];
+    order.forEach((sec) => {
+      groups[sec].sort((a, b) => {
+        if (a.isSectionHeader && !b.isSectionHeader) return -1;
+        if (!a.isSectionHeader && b.isSectionHeader) return 1;
+        return 0;
+      });
+      
+      const hasHeader = groups[sec].some(t => t.isSectionHeader);
+      if (!hasHeader && sec && sec !== 'Khác') {
+        // Automatically inject a header so the section is always properly labeled
+        // even if the original header was filtered out or never existed.
+        let guessedStt = '';
+        let guessedName = sec;
+        if (sec.includes('.')) {
+          guessedStt = sec.split('.')[0];
+          guessedName = sec.substring(sec.indexOf('.') + 1).trim();
+        }
+        
+        flattened.push({
+          id: `fake-header-${sec}-${Date.now()}`,
+          stt: guessedStt,
+          code: '',
+          name: guessedName,
+          projectCode: groups[sec][0]?.projectCode || '',
+          projectName: groups[sec][0]?.projectName || '',
+          volume: 0,
+          unit: '',
+          progress: 0,
+          status: 'Not Started',
+          isDone: false,
+          isSectionHeader: true,
+          sectionName: sec,
+        });
+      }
+      
+      flattened.push(...groups[sec]);
+    });
+    return flattened;
+  }, [displayTasks]);
+
+  const totalPureItems = groupedTasks.filter((t) => !t.isSectionHeader).length;
+  const completedPureItems = groupedTasks.filter((t) => !t.isSectionHeader && (t.isDone || t.progress >= 1)).length;
 
   return (
     <div className="px-0 pt-0 pb-4 space-y-0">
@@ -600,7 +654,6 @@ export const TaskManagementPage: React.FC = () => {
               <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-tight truncate">Quản lý Tiến độ Công việc</h2>
               <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-primary border border-blue-100 whitespace-nowrap">{totalPureItems} hạng mục</span>
             </div>
-            <p className="text-[11px] text-slate-500 mt-0.5">Theo dõi tiến độ, mua hàng, thi công và vướng mắc theo từng hạng mục.</p>
           </div>
         </div>
 
@@ -673,7 +726,12 @@ export const TaskManagementPage: React.FC = () => {
             )}
           </div>
           <button
-            onClick={() => setIsNewTaskModalOpen(true)}
+            onClick={() => {
+              if (selectedProjectCode !== 'all') {
+                setProjectCode(selectedProjectCode);
+              }
+              setIsNewTaskModalOpen(true);
+            }}
             className="flex items-center gap-1 bg-primary text-white px-3 py-1 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-2xs"
           >
             <span className="material-symbols-outlined text-sm">add</span>
@@ -957,14 +1015,14 @@ export const TaskManagementPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-              {displayTasks.length === 0 ? (
+              {groupedTasks.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="p-8 text-center text-slate-400 whitespace-nowrap">
                     Không có hạng mục nào phù hợp với bộ lọc đã chọn
                   </td>
                 </tr>
               ) : (
-                displayTasks.map((t, idx) => {
+                groupedTasks.map((t, idx) => {
                   if (t.isSectionHeader) {
                     return (
                       <tr

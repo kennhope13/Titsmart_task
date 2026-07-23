@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Project, Task, Material, Issue, Engineer, NotificationItem, ActivityLog, IssueStatus, TaskStatus } from '../types';
+import { Project, Task, Material, Issue, Engineer, NotificationItem, ActivityLog, IssueStatus, TaskStatus, InventoryTransaction } from '../types';
 import rawExcelData from './excelSeedData.json';
 
 // Utility to check if STT or row is a section header (I, II, III...)
@@ -186,6 +186,7 @@ interface RealtimeStoreState {
   engineers: Engineer[];
   notifications: NotificationItem[];
   activityLogs: ActivityLog[];
+  inventoryTransactions: InventoryTransaction[];
 
   // Actions
   addTask: (task: Omit<Task, 'id'>) => void;
@@ -200,6 +201,8 @@ interface RealtimeStoreState {
   updateMaterial: (id: string, updatedFields: Partial<Material>) => void;
   updateMaterialStatus: (id: string, status: string) => void;
   deleteMaterial: (id: string) => void;
+
+  addInventoryTransaction: (transaction: Omit<InventoryTransaction, 'id' | 'createdAt'>) => void;
 
   addIssue: (issue: Omit<Issue, 'id'>) => void;
   updateIssueStatus: (id: string, status: IssueStatus) => void;
@@ -246,6 +249,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       engineers: newState.engineers || current.engineers,
       notifications: newState.notifications || current.notifications,
       activityLogs: newState.activityLogs || current.activityLogs,
+      inventoryTransactions: newState.inventoryTransactions || current.inventoryTransactions,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -263,6 +267,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     engineers: savedState?.engineers || seedEngineers,
     notifications: savedState?.notifications || seedNotifications,
     activityLogs: savedState?.activityLogs || seedActivityLogs,
+    inventoryTransactions: savedState?.inventoryTransactions || [],
 
     addTask: (taskData) => {
       const newTask: Task = {
@@ -303,28 +308,72 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateTask: (id, updatedFields) => {
       set((state) => {
-        const nextTasks = state.tasks.map((t) =>
-          t.id === id ? { ...t, ...updatedFields } : t
-        );
-        persistAndNotify({ tasks: nextTasks });
-        return { tasks: nextTasks };
+        let modifiedProjectCode = '';
+        const nextTasks = state.tasks.map((t) => {
+          if (t.id === id) {
+            modifiedProjectCode = updatedFields.projectCode || t.projectCode;
+            return { ...t, ...updatedFields };
+          }
+          return t;
+        });
+
+        const nextProjects = state.projects.map(p => {
+          if (p.code === modifiedProjectCode) {
+            const projectTasks = nextTasks.filter(t => t.projectCode === p.code && !t.isSectionHeader);
+            if (projectTasks.length === 0) return p;
+            
+            const totalProgress = projectTasks.reduce((sum, t) => sum + (t.isDone ? 1 : (t.progress || 0)), 0);
+            const completedCount = projectTasks.filter(t => t.isDone || t.progress >= 1).length;
+            
+            return {
+              ...p,
+              completedTasks: completedCount,
+              progressPercent: Math.round((totalProgress / projectTasks.length) * 100)
+            };
+          }
+          return p;
+        });
+
+        persistAndNotify({ tasks: nextTasks, projects: nextProjects });
+        return { tasks: nextTasks, projects: nextProjects };
       });
     },
 
     updateTaskProgress: (id, progress, isDone) => {
       set((state) => {
-        const nextTasks = state.tasks.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                progress,
-                isDone,
-                status: (isDone ? 'Done' : progress > 0 ? 'In Progress' : 'Not Started') as TaskStatus,
-              }
-            : t
-        );
-        persistAndNotify({ tasks: nextTasks });
-        return { tasks: nextTasks };
+        let modifiedProjectCode = '';
+        const nextTasks = state.tasks.map((t) => {
+          if (t.id === id) {
+            modifiedProjectCode = t.projectCode;
+            return {
+              ...t,
+              progress,
+              isDone,
+              status: (isDone ? 'Done' : progress > 0 ? 'In Progress' : 'Not Started') as TaskStatus,
+            };
+          }
+          return t;
+        });
+
+        const nextProjects = state.projects.map(p => {
+          if (p.code === modifiedProjectCode) {
+            const projectTasks = nextTasks.filter(t => t.projectCode === p.code && !t.isSectionHeader);
+            if (projectTasks.length === 0) return p;
+            
+            const totalProgress = projectTasks.reduce((sum, t) => sum + (t.isDone ? 1 : (t.progress || 0)), 0);
+            const completedCount = projectTasks.filter(t => t.isDone || t.progress >= 1).length;
+            
+            return {
+              ...p,
+              completedTasks: completedCount,
+              progressPercent: Math.round((totalProgress / projectTasks.length) * 100)
+            };
+          }
+          return p;
+        });
+
+        persistAndNotify({ tasks: nextTasks, projects: nextProjects });
+        return { tasks: nextTasks, projects: nextProjects };
       });
     },
 
@@ -411,6 +460,41 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const nextMats = state.materials.filter((m) => m.id !== id);
         persistAndNotify({ materials: nextMats });
         return { materials: nextMats };
+      });
+    },
+
+    addInventoryTransaction: (transactionData) => {
+      const newTransaction: InventoryTransaction = {
+        ...transactionData,
+        id: 'inv-' + Date.now(),
+        createdAt: new Date().toISOString(),
+      };
+
+      set((state) => {
+        const nextTransactions = [newTransaction, ...state.inventoryTransactions];
+        
+        // Update corresponding material's stock
+        const nextMats = state.materials.map(m => {
+          if (m.id === transactionData.materialId) {
+            let currentStock = m.currentStock || m.initialStock || 0;
+            let totalImport = m.totalImport || 0;
+            let totalExport = m.totalExport || 0;
+
+            if (transactionData.type === 'IMPORT') {
+              currentStock += transactionData.quantity;
+              totalImport += transactionData.quantity;
+            } else if (transactionData.type === 'EXPORT') {
+              currentStock -= transactionData.quantity;
+              totalExport += transactionData.quantity;
+            }
+
+            return { ...m, currentStock, totalImport, totalExport };
+          }
+          return m;
+        });
+
+        persistAndNotify({ inventoryTransactions: nextTransactions, materials: nextMats });
+        return { inventoryTransactions: nextTransactions, materials: nextMats };
       });
     },
 

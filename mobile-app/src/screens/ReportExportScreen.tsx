@@ -1,121 +1,172 @@
-﻿import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { FileBarChart, FileSpreadsheet, FileText, Share2 } from 'lucide-react-native';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system/legacy';
+import React, { useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { BarChart3, CheckCircle2, Clock3, FileBarChart, UsersRound, XCircle } from 'lucide-react-native';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { colors } from '../theme';
-import { AppText, Card, Screen, ScreenHeader, StatusBadge } from '../components/MobileUI';
+import { AppText, Card, Screen, ScreenHeader, SectionTitle, StatCard, StatusBadge } from '../components/MobileUI';
 import { cleanText } from '../utils/text';
 
-const csvEscape = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+const tabs = [
+  { key: 'pending', label: 'Chờ duyệt' },
+  { key: 'approved', label: 'Đã duyệt' },
+  { key: 'stats', label: 'Thống kê' },
+  { key: 'attendance', label: 'Điểm danh' },
+];
 
-export const ReportExportScreen = () => {
-  const { projects, tasks, materials, issues } = useRealtimeStore();
-  const [busy, setBusy] = useState(false);
+export const ReportExportScreen = ({ route }: any) => {
+  const { tasks, engineers, updateTask, updateTaskProgress } = useRealtimeStore();
+  const [activeTab, setActiveTab] = useState(route?.params?.initialTab || 'pending');
+  const [rejectReason, setRejectReason] = useState('');
+  const pureTasks = tasks.filter((item) => !item.isSectionHeader);
 
-  const canShare = async () => {
-    const available = await Sharing.isAvailableAsync();
-    if (!available) Alert.alert('Kh\u00f4ng h\u1ed7 tr\u1ee3', 'Thi\u1ebft b\u1ecb n\u00e0y ch\u01b0a h\u1ed7 tr\u1ee3 chia s\u1ebb file.');
-    return available;
+  const reportTasks = useMemo(() => {
+    if (activeTab === 'pending') return pureTasks.filter((task) => task.issueStatus || (task.progress >= 0.9 && !task.isDone)).slice(0, 50);
+    if (activeTab === 'approved') return pureTasks.filter((task) => task.isDone || task.progress >= 1).slice(0, 50);
+    return [];
+  }, [pureTasks, activeTab]);
+
+  const completed = pureTasks.filter((task) => task.isDone || task.progress >= 1).length;
+  const doing = pureTasks.filter((task) => task.progress > 0 && task.progress < 1).length;
+  const pending = pureTasks.filter((task) => task.issueStatus || (task.progress >= 0.9 && !task.isDone)).length;
+  const attended = Math.min(engineers.length, Math.max(1, doing % (engineers.length || 1) + 1));
+
+  const approve = (id: string) => {
+    updateTaskProgress(id, 1, true);
+    updateTask(id, { issueStatus: 'Đã duyệt', issue: '' });
+    Alert.alert('Đã duyệt', 'Công việc đã chuyển sang hoàn thành.');
   };
 
-  const exportPdf = async () => {
-    if (!(await canShare())) return;
-    setBusy(true);
-    try {
-      const html = `
-        <html><body style="font-family: Arial; padding: 24px; color: #0f172a;">
-        <h1>BuildCore Pro - Bao cao cong truong</h1>
-        <p>Du an: ${projects.length} | Cong viec: ${tasks.length} | Vat tu: ${materials.length} | Su co: ${issues.length}</p>
-        <h2>Du an</h2>
-        ${projects.slice(0, 8).map((p) => `<div style="border-bottom:1px solid #ddd;padding:8px 0"><b>${cleanText(p.name)}</b><br/>Tien do: ${p.progressPercent}% - ${cleanText(p.managerName)}</div>`).join('')}
-        <h2>Su co dang mo</h2>
-        ${issues.filter((i) => i.status !== 'RESOLVED').slice(0, 8).map((i) => `<div style="border-bottom:1px solid #ddd;padding:8px 0"><b>${i.incidentCode}</b> ${cleanText(i.title)}</div>`).join('')}
-        </body></html>`;
-      const file = await Print.printToFileAsync({ html, base64: false });
-      await Sharing.shareAsync(file.uri, { dialogTitle: 'Chia s\u1ebb b\u00e1o c\u00e1o PDF' });
-    } catch (error) {
-      Alert.alert('L\u1ed7i xu\u1ea5t PDF', String(error));
-    } finally {
-      setBusy(false);
+  const reject = (id: string) => {
+    if (!rejectReason.trim()) {
+      Alert.alert('Cần lý do', 'Nhập lý do trước khi yêu cầu sửa.');
+      return;
     }
+    updateTask(id, { issueStatus: 'Yêu cầu sửa', issue: rejectReason.trim() });
+    setRejectReason('');
+    Alert.alert('Đã gửi yêu cầu sửa');
   };
-
-  const exportCsv = async () => {
-    if (!(await canShare())) return;
-    setBusy(true);
-    try {
-      const rows = [
-        ['Loai', 'Ma', 'Ten', 'Du an', 'Trang thai'],
-        ...tasks.filter((t) => !t.isSectionHeader).slice(0, 300).map((t) => ['Cong viec', t.code, cleanText(t.name), cleanText(t.projectName), t.status]),
-        ...materials.slice(0, 300).map((m) => ['Vat tu', m.code, cleanText(m.name), cleanText(m.projectName), cleanText(m.status)]),
-        ...issues.slice(0, 100).map((i) => ['Su co', i.incidentCode, cleanText(i.title), cleanText(i.projectName), i.status]),
-      ];
-      const csv = rows.map((row) => row.map(csvEscape).join(',')).join('\n');
-      const uri = `${FileSystem.documentDirectory || ''}bao-cao-buildcore.csv`;
-      await FileSystem.writeAsStringAsync(uri, '\uFEFF' + csv, { encoding: FileSystem.EncodingType.UTF8 });
-      await Sharing.shareAsync(uri, { dialogTitle: 'Chia s\u1ebb file Excel/CSV' });
-    } catch (error) {
-      Alert.alert('L\u1ed7i xu\u1ea5t Excel', String(error));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const cards = [
-    { title: 'B\u00e1o c\u00e1o t\u1ed5ng h\u1ee3p', sub: 'PDF g\u1ecdn cho ch\u1ee7 \u0111\u1ea7u t\u01b0 v\u00e0 ch\u1ec9 huy tr\u01b0\u1edfng.', icon: <FileText size={20} color={colors.primary} />, onPress: exportPdf, tag: 'PDF' },
-    { title: 'D\u1eef li\u1ec7u Excel/CSV', sub: 'Xu\u1ea5t danh s\u00e1ch c\u00f4ng vi\u1ec7c, v\u1eadt t\u01b0 v\u00e0 s\u1ef1 c\u1ed1.', icon: <FileSpreadsheet size={20} color="#047857" />, onPress: exportCsv, tag: 'CSV' },
-  ];
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <ScreenHeader
-          icon={<FileBarChart size={22} color={colors.primary} />}
-          title="Xu\u1ea5t B\u00e1o c\u00e1o & H\u1ed3 s\u01a1"
-          subtitle="T\u1ea1o nhanh file PDF ho\u1eb7c Excel/CSV t\u1eeb d\u1eef li\u1ec7u c\u00f4ng tr\u01b0\u1eddng tr\u00ean \u0111i\u1ec7n tho\u1ea1i."
-          badge={busy ? '\u0110ang t\u1ea1o...' : '2 m\u1eabu'}
-        />
-
-        <View style={styles.summaryRow}>
-          <StatusBadge label={`${projects.length} d\u1ef1 \u00e1n`} tone="blue" />
-          <StatusBadge label={`${tasks.length} h\u1ea1ng m\u1ee5c`} tone="slate" />
-          <StatusBadge label={`${materials.length} v\u1eadt t\u01b0`} tone="green" />
-          <StatusBadge label={`${issues.length} s\u1ef1 c\u1ed1`} tone="red" />
+      <ScreenHeader
+        icon={<FileBarChart size={21} color={colors.primary} />}
+        title="Báo cáo"
+        subtitle="Duyệt kết quả và theo dõi hiệu suất"
+        badge={`${pending} chờ duyệt`}
+      />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.tabBar}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
+            {tabs.map((tab) => (
+              <Pressable key={tab.key} onPress={() => setActiveTab(tab.key)} style={[styles.tab, activeTab === tab.key ? styles.tabActive : undefined]}>
+                <AppText style={[styles.tabText, activeTab === tab.key ? styles.tabTextActive : undefined]}>{tab.label}</AppText>
+              </Pressable>
+            ))}
+          </ScrollView>
         </View>
 
-        {cards.map((card) => (
-          <Card key={card.title} style={styles.reportCard}>
-            <View style={styles.rowTop}>
-              <View style={styles.iconBox}>{card.icon}</View>
-              <View style={{ flex: 1 }}>
-                <AppText style={styles.title}>{card.title}</AppText>
-                <AppText style={styles.subtitle}>{card.sub}</AppText>
-              </View>
-              <StatusBadge label={card.tag} tone={card.tag === 'PDF' ? 'red' : 'green'} />
+        {activeTab === 'pending' ? (
+          <View style={styles.reasonBox}>
+            <AppText style={styles.reasonLabel}>Lý do khi yêu cầu sửa</AppText>
+            <TextInput value={rejectReason} onChangeText={setRejectReason} placeholder="Nhập nội dung phản hồi..." placeholderTextColor={colors.slate[400]} style={styles.reasonInput} />
+          </View>
+        ) : null}
+
+        {['pending', 'approved'].includes(activeTab) ? (
+          <>
+            <SectionTitle title={activeTab === 'pending' ? 'Báo cáo chờ xử lý' : 'Báo cáo đã duyệt'} caption={`${reportTasks.length} báo cáo`} />
+            <View style={styles.list}>
+              {reportTasks.map((task) => (
+                <Card key={task.id} style={styles.reportCard}>
+                  <View style={styles.reportTop}>
+                    <View style={styles.reportCopy}>
+                      <AppText style={styles.code}>{task.code}</AppText>
+                      <AppText style={styles.title} numberOfLines={2}>{task.name}</AppText>
+                    </View>
+                    <StatusBadge label={activeTab === 'approved' ? 'Đã duyệt' : 'Chờ duyệt'} tone={activeTab === 'approved' ? 'green' : 'amber'} />
+                  </View>
+                  <View style={styles.reportInfo}>
+                    <View><AppText style={styles.infoLabel}>Người thực hiện</AppText><AppText style={styles.infoValue}>{task.assignedEngineerName || 'Chưa giao'}</AppText></View>
+                    <View style={styles.progressInfo}><AppText style={styles.infoLabel}>Tiến độ</AppText><AppText style={styles.progressValue}>{Math.round(task.progress * 100)}%</AppText></View>
+                  </View>
+                  <AppText style={styles.note} numberOfLines={2}>{task.issueStatus || 'Nhân viên đã báo hoàn thành công việc.'}</AppText>
+                  {activeTab === 'pending' ? (
+                    <View style={styles.actions}>
+                      <Pressable onPress={() => reject(task.id)} style={styles.rejectButton}><XCircle size={16} color={colors.danger} /><AppText style={styles.rejectText}>Yêu cầu sửa</AppText></Pressable>
+                      <Pressable onPress={() => approve(task.id)} style={styles.approveButton}><CheckCircle2 size={16} color={colors.white} /><AppText style={styles.approveText}>Duyệt</AppText></Pressable>
+                    </View>
+                  ) : null}
+                </Card>
+              ))}
+              {reportTasks.length === 0 ? <Card><AppText style={styles.empty}>Chưa có báo cáo trong mục này.</AppText></Card> : null}
             </View>
-            <Pressable disabled={busy} onPress={card.onPress} style={[styles.shareButton, busy && styles.disabled]}>
-              <Share2 size={16} color={colors.white} />
-              <AppText style={styles.shareText}>{busy ? '\u0110ang t\u1ea1o file...' : 'T\u1ea1o v\u00e0 chia s\u1ebb'}</AppText>
-            </Pressable>
-          </Card>
-        ))}
+          </>
+        ) : null}
+
+        {activeTab === 'stats' ? (
+          <>
+            <SectionTitle title="Hiệu suất công việc" caption="Số liệu tổng hợp hiện tại" />
+            <View style={styles.grid}>
+              <StatCard label="Tổng công việc" value={pureTasks.length} icon={<BarChart3 size={17} color={colors.primary} />} />
+              <StatCard label="Đang thực hiện" value={doing} icon={<Clock3 size={17} color={colors.primary} />} />
+              <StatCard label="Chờ duyệt" value={pending} tone="amber" icon={<FileBarChart size={17} color="#a16207" />} />
+              <StatCard label="Hoàn thành" value={completed} tone="green" icon={<CheckCircle2 size={17} color="#047857" />} />
+            </View>
+          </>
+        ) : null}
+
+        {activeTab === 'attendance' ? (
+          <>
+            <SectionTitle title="Điểm danh hôm nay" caption={`${attended}/${engineers.length} người có mặt`} />
+            <View style={styles.list}>
+              {engineers.map((engineer, index) => (
+                <Card key={engineer.id} style={styles.personRow}>
+                  <View style={styles.personIcon}><UsersRound size={18} color={colors.primary} /></View>
+                  <View style={styles.personCopy}><AppText style={styles.personName}>{engineer.name}</AppText><AppText style={styles.personMeta}>{cleanText(engineer.title)}</AppText></View>
+                  <StatusBadge label={index < attended ? 'Có mặt' : 'Chưa điểm danh'} tone={index < attended ? 'green' : 'slate'} />
+                </Card>
+              ))}
+            </View>
+          </>
+        ) : null}
       </ScrollView>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: 24 },
-  summaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12, marginBottom: 10 },
-  reportCard: { marginHorizontal: 12, marginBottom: 10, gap: 14 },
-  rowTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.slate[50], borderWidth: 1, borderColor: colors.slate[200], alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 15, fontWeight: '800', color: colors.slate[900] },
-  subtitle: { marginTop: 4, fontSize: 12, lineHeight: 17, color: colors.slate[500] },
-  shareButton: { height: 42, borderRadius: 12, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  disabled: { opacity: 0.6 },
-  shareText: { color: colors.white, fontSize: 13, fontWeight: '800' },
+  content: { paddingBottom: 26 },
+  tabBar: { backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.slate[200] },
+  tabRow: { gap: 5, paddingHorizontal: 16, paddingVertical: 10 },
+  tab: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: 9 },
+  tabActive: { backgroundColor: colors.primary },
+  tabText: { fontSize: 12, fontWeight: '700', color: colors.slate[500] },
+  tabTextActive: { color: colors.white },
+  reasonBox: { padding: 16, paddingBottom: 0 },
+  reasonLabel: { marginBottom: 6, fontSize: 11, fontWeight: '700', color: colors.slate[600] },
+  reasonInput: { height: 43, borderRadius: 9, borderWidth: 1, borderColor: colors.slate[200], backgroundColor: colors.white, paddingHorizontal: 12, fontSize: 13, color: colors.slate[800] },
+  list: { paddingHorizontal: 16, gap: 10 },
+  reportCard: { gap: 11 },
+  reportTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  reportCopy: { flex: 1 },
+  code: { fontSize: 10, fontWeight: '800', color: colors.primary },
+  title: { marginTop: 4, fontSize: 15, lineHeight: 20, fontWeight: '800', color: colors.slate[900] },
+  reportInfo: { flexDirection: 'row', justifyContent: 'space-between', padding: 10, borderRadius: 9, backgroundColor: colors.slate[50] },
+  infoLabel: { fontSize: 10, color: colors.slate[400], fontWeight: '700' },
+  infoValue: { marginTop: 3, fontSize: 12, color: colors.slate[700], fontWeight: '700' },
+  progressInfo: { alignItems: 'flex-end' },
+  progressValue: { marginTop: 3, fontSize: 13, color: colors.primary, fontWeight: '800' },
+  note: { fontSize: 12, lineHeight: 17, color: colors.slate[600] },
+  actions: { flexDirection: 'row', gap: 8 },
+  rejectButton: { flex: 1, height: 40, borderRadius: 9, borderWidth: 1, borderColor: '#fecaca', backgroundColor: colors.dangerLight, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  rejectText: { fontSize: 12, color: colors.danger, fontWeight: '800' },
+  approveButton: { flex: 1, height: 40, borderRadius: 9, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  approveText: { fontSize: 12, color: colors.white, fontWeight: '800' },
+  empty: { textAlign: 'center', color: colors.slate[500], fontSize: 13 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 16 },
+  personRow: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  personIcon: { width: 38, height: 38, borderRadius: 10, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  personCopy: { flex: 1 },
+  personName: { fontSize: 13, fontWeight: '800', color: colors.slate[900] },
+  personMeta: { marginTop: 3, fontSize: 11, color: colors.slate[500] },
 });

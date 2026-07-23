@@ -1,0 +1,40 @@
+Sheet names: ['TonKhoTongHop', 'NhapKho', 'XuatKho']
+
+--- Sheet: TonKhoTongHop ---
+   Unnamed: 0 Unnamed: 1 Unnamed: 2             Unnamed: 3  Unnamed: 4                    Unnamed: 5     Unnamed: 6   Unnamed: 7      Unnamed: 8        Unnamed: 9    Unnamed: 10      Unnamed: 11 Unnamed: 12
+0         NaN        NaN        NaN                    NaN         NaN                           NaN            NaN          NaN             NaN               NaN            NaN              NaN         NaN
+1         NaN        NaN        NaN                    NaN         NaN                           NaN            NaN          NaN             NaN               NaN            NaN              NaN         NaN
+2         NaN        STT   Danh mục  Tên Vật Tư / Thiết Bị  Mã Vật Tư   Thông Số Kỹ Thuật / Quy Cách  Nhóm Hệ Thống  Đơn Vị Tính  Tồn kho đầu kỳ  Tồn kho hiện tại  Tổng Nhập Kho  Tổng Xuất Dự Án     Ghi Chú
+3         NaN          1    Máy móc          Máy test mạng         NaN                           NaN            NaN          Cái               1                 1              0                0         NaN
+4         NaN          2    Máy móc         Máy test quang         NaN                           NaN            NaN          Cái               1                 1              0                0         NaN
+5         NaN          3    Máy móc            Máy in nhãn         NaN                           NaN            NaN          Cái               1                 1              0                0         NaN
+6         NaN          4    Máy móc           Giấy in nhãn         NaN                           NaN            NaN          Cái               3                 3              0                0         NaN
+7         NaN          5    Máy móc          Máy hàn quang         NaN                           NaN            NaN          Cái               1                 1              0                0         NaN
+8         NaN          6    Máy móc           Kìm bấm mạng         NaN                           NaN            NaN          Cái               1                 1              0                0         NaN
+9         NaN          7    Máy móc              Máy khoan         NaN                           NaN            NaN          Cái               1                 1              0                0         NaN
+
+--- Sheet: NhapKho ---
+   Unnamed: 0 NHẬP KHO VẬT TƯ Unnamed: 2 Unnamed: 3  Unnamed: 4  Unnamed: 5           Unnamed: 6 Unnamed: 7     Unnamed: 8             Unnamed: 9 Unnamed: 10
+0         NaN             NaN        NaN        NaN         NaN         NaN                  NaN        NaN            NaN                    NaN         NaN
+1         NaN             NaN        NaN        NaN         NaN         NaN                  NaN        NaN            NaN                    NaN         NaN
+2         NaN             STT  Ngày Nhập   Danh mục  Mã Vật Tư   Tên Vật Tư  Quy Cách / Thông Số        ĐVT  Số Lượng Nhập  Nguồn Nhập / Dự Án Dư     Ghi Chú
+3         NaN               1        NaN        NaN         NaN         NaN                  NaN        NaN            NaN                    NaN         NaN
+4         NaN               2        NaN        NaN         NaN         NaN                  NaN        NaN            NaN                    NaN         NaN
+5         NaN               3        NaN        NaN         NaN         NaN                  NaN        NaN            NaN                    NaN         NaN
+6         NaN               4        NaN        NaN         NaN         NaN                  NaN        NaN            NaN                    NaN         NaN
+7         NaN               5        NaN        NaN         NaN         NaN                  NaN        NaN            NaN                    NaN         NaN
+8         NaN               6        NaN        NaN         NaN         NaN                  NaN        NaN            NaN                    NaN         NaN
+9         NaN               7        NaN        NaN         NaN         NaN                  NaN        NaN            NaN                    NaN         NaN
+
+--- Sheet: XuatKho ---
+   Unnamed: 0                   Unnamed: 1           Unnamed: 2      Unnamed: 3     Unnamed: 4           Unnamed: 5 Unnamed: 6     Unnamed: 7                 Unnamed: 8         Unnamed: 9 Unnamed: 10
+0         NaN  NHẬT KÝ XUẤT KHO THEO DỰ ÁN                  NaN             NaN            NaN                  NaN        NaN            NaN                        NaN                NaN         NaN
+1         NaN                          NaN                  NaN             NaN            NaN                  NaN        NaN            NaN                        NaN                NaN         NaN
+2         NaN                          NaN                  NaN             NaN            NaN                  NaN        NaN            NaN                        NaN                NaN         NaN
+3         NaN                          STT            Ngày Xuất      Tên Vật Tư     Mã Vật Tư   Quy Cách / Thông Số        ĐVT  Số Lượng Xuất  Mã Dự Án / Tên Công Trình  Người Nhận Vật Tư     Ghi Chú
+4         NaN                            1  2026-07-08 00:00:00  Cầu dao 2P 20A       A9F74220                  NaN        Cái              3                  Phước Tân                NaN         NaN
+5         NaN                            2  2026-07-08 00:00:00  Cầu dao 2P 25A       A9F74225                  NaN        Cái              2                  Phước Tân                NaN         NaN
+6         NaN                            3  2026-07-08 00:00:00  Cầu dao 2P 10A       A9F74210                  NaN        Cái             11                  Phước Tân                NaN         NaN
+7         NaN                            4                  NaN             NaN  ST/UPC-LC/UPC                  15m        Sợi              2                  Phước Tân                NaN         NaN
+8         NaN                            5                  NaN             NaN            NaN                  NaN        NaN            NaN                        NaN                NaN         NaN
+9         NaN                            6                  NaN             NaN            NaN                  NaN        NaN            NaN                        NaN                NaN         NaN

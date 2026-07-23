@@ -56,8 +56,30 @@ export interface Material {
   status: string;
   constrStatus?: string;
   supplier?: string;
+  // Bổ sung cho Quản lý kho
+  initialStock?: number;
+  currentStock?: number;
+  totalImport?: number;
+  totalExport?: number;
+  category?: string;
+  specs?: string;
 }
 
+export interface InventoryTransaction {
+  id: string;
+  type: 'IMPORT' | 'EXPORT';
+  date: string;
+  materialId: string;
+  materialCode: string;
+  materialName: string;
+  specs?: string;
+  unit: string;
+  quantity: number;
+  sourceOrProject: string; // Nguồn Nhập hoặc Mã Dự Án xuất
+  receiverName?: string; // Người Nhận (đối với xuất kho)
+  notes?: string;
+  createdAt: string;
+}
 export type IssueStatus = 'OPEN' | 'PROCESSING' | 'RESOLVED';
 export type IssuePriority = 'CRITICAL' | 'WARNING' | 'STANDARD';
 
