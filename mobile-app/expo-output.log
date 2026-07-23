@@ -1,0 +1,14 @@
+Starting project at D:\HỆ THỐNG QUẢN LÝ CÔNG VIỆC-web-app-titsmart\mobile-app
+Starting Metro Bundler
+
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Waiting on http://localhost:8081
+
+2 packages may need updating. Run npx expo install --check for details.
+Logs for your project will appear below.
+ ERROR  Project is incompatible with this version of Expo Go
+
+This project requires a newer version of Expo Go.
+
+How to fix this error:
+Download the latest version of Expo Go from the Play Store.
