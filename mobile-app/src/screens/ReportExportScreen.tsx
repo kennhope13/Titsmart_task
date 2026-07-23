@@ -3,7 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { FileBarChart, FileSpreadsheet, FileText, Share2 } from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { colors } from '../theme';
 import { AppText, Card, Screen, ScreenHeader, StatusBadge } from '../components/MobileUI';
@@ -54,7 +54,7 @@ export const ReportExportScreen = () => {
         ...issues.slice(0, 100).map((i) => ['Su co', i.incidentCode, cleanText(i.title), cleanText(i.projectName), i.status]),
       ];
       const csv = rows.map((row) => row.map(csvEscape).join(',')).join('\n');
-      const uri = `${FileSystem.documentDirectory}bao-cao-buildcore.csv`;
+      const uri = `${FileSystem.documentDirectory || ''}bao-cao-buildcore.csv`;
       await FileSystem.writeAsStringAsync(uri, '\uFEFF' + csv, { encoding: FileSystem.EncodingType.UTF8 });
       await Sharing.shareAsync(uri, { dialogTitle: 'Chia s\u1ebb file Excel/CSV' });
     } catch (error) {

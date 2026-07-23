@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ViewStyle, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ViewStyle, TextStyle, StyleProp } from 'react-native';
 import { colors } from '../theme';
 import { cleanText } from '../utils/text';
 
-export const AppText = ({ children, style, numberOfLines }: { children: React.ReactNode; style?: TextStyle | TextStyle[]; numberOfLines?: number }) => (
+export const AppText = ({ children, style, numberOfLines }: { children: React.ReactNode; style?: StyleProp<TextStyle>; numberOfLines?: number }) => (
   <Text style={style} numberOfLines={numberOfLines}>{typeof children === 'string' || typeof children === 'number' ? cleanText(children) : children}</Text>
 );
 

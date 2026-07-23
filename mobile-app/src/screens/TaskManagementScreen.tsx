@@ -54,7 +54,7 @@ export const TaskManagementScreen = () => {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
             {filters.map((item) => (
               <Pressable key={item.key} onPress={() => setFilter(item.key)} style={[styles.filterChip, filter === item.key && styles.filterChipActive]}>
-                <AppText style={[styles.filterText, filter === item.key && styles.filterTextActive]}>{item.label}</AppText>
+                <AppText style={[styles.filterText, filter === item.key ? styles.filterTextActive : undefined]}>{item.label}</AppText>
               </Pressable>
             ))}
           </ScrollView>
