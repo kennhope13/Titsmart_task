@@ -15,14 +15,15 @@ export const TaskFormScreen = ({ route }: any) => {
   const mode = route?.params?.mode === 'assign' ? 'Giao công việc' : 'Tạo công việc';
   const defaultProject = projects[0];
   const defaultEngineer = engineers[0];
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [location, setLocation] = useState(defaultProject?.location || '');
-  const [dueDate, setDueDate] = useState('');
-  const [team, setTeam] = useState(defaultProject?.name || 'Đội thi công');
+  const ocrDraft = route?.params?.ocrDraft || {};
+  const [name, setName] = useState(ocrDraft.name || '');
+  const [description, setDescription] = useState(ocrDraft.description || '');
+  const [location, setLocation] = useState(ocrDraft.location || defaultProject?.location || '');
+  const [dueDate, setDueDate] = useState(ocrDraft.dueDate || '');
+  const [team, setTeam] = useState(ocrDraft.team || defaultProject?.name || 'Đội thi công');
   const [assigneeId, setAssigneeId] = useState(defaultEngineer?.id || '');
   const [priority, setPriority] = useState<typeof priorities[number]>('Medium');
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(ocrDraft.notes || '');
   const assignee = useMemo(() => engineers.find((item) => item.id === assigneeId) || defaultEngineer, [engineers, assigneeId]);
 
   const save = (draft: boolean) => {

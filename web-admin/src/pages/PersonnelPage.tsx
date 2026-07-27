@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { Toast } from '../components/common/Toast';
 
 const filters = [
   { key: 'all', label: 'Tất cả' },
@@ -12,6 +14,97 @@ const filters = [
 export const PersonnelPage: React.FC = () => {
   const { engineers, addEngineer } = useRealtimeStore();
   const [filter, setFilter] = useState('all');
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
+  const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+    setToastState({ show: true, message, type });
+    setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const handleExportExcel = () => {
+    const data = people.map(p => ({
+      'Mã nhân viên': p.code,
+      'Họ tên': p.name,
+      'Vai trò': p.role,
+      'Đội/Nhóm': p.team,
+      'Số điện thoại': p.phone || 'Chưa cập nhật',
+      'Trạng thái': p.locked ? 'Bị khóa' : 'Đang hoạt động'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'NhanSu');
+    XLSX.writeFile(wb, `Danh_Sach_Nhan_Su_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+
+        const sheetName = wb.SheetNames[0];
+        const sheet = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+        if (!rows || rows.length === 0) {
+          triggerToast('Sheet không có dữ liệu!', 'warning');
+          return;
+        }
+
+        let startRowIndex = -1;
+        let headerRow: any[] = [];
+        for (let i = 0; i < Math.min(rows.length, 10); i++) {
+          const r = rows[i];
+          if (r && (r.includes('STT') || r.includes('stt') || r.includes('Stt') || r.some((cell: any) => String(cell).toLowerCase().includes('họ tên') || String(cell).toLowerCase().includes('mã nv')))) {
+            startRowIndex = i + 1;
+            headerRow = r;
+            break;
+          }
+        }
+
+        if (startRowIndex === -1) {
+          triggerToast('Không tìm thấy dòng tiêu đề (Họ tên / Mã NV) trong file Excel!', 'warning');
+          return;
+        }
+
+        const headerString = headerRow.map(c => String(c || '').toLowerCase()).join('|');
+        const isPersonnel = headerString.includes('họ tên') || headerString.includes('tên') || headerString.includes('vai trò') || headerString.includes('sđt') || headerString.includes('điện thoại');
+        if (!isPersonnel) {
+          triggerToast('File không đúng cấu trúc danh sách Nhân sự (thiếu cột Họ tên/SĐT)!', 'warning');
+          return;
+        }
+
+        const dataRows = rows.slice(startRowIndex);
+        let importCount = 0;
+
+        dataRows.forEach((row) => {
+          const nameVal = row[1] || row[2];
+          if (!nameVal) return;
+
+          addEngineer({
+            name: String(nameVal).trim(),
+            title: String(row[3] || 'Nhân viên/Thợ'),
+            avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80',
+            phone: String(row[4] || ''),
+            email: ''
+          });
+          importCount++;
+        });
+
+        triggerToast(`Đã nhập thành công ${importCount} nhân sự từ file Excel!`, 'success');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      } catch (err: any) {
+        triggerToast('Lỗi phân tích file Excel: ' + err.message, 'warning');
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
   const [lockedIds, setLockedIds] = useState<string[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -57,7 +150,28 @@ export const PersonnelPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100">{engineers.length} nhân sự</span>
-          <button onClick={() => setIsFormOpen(true)} className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 flex items-center gap-1">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImportExcel} 
+            accept=".xlsx,.xls,.csv" 
+            className="hidden" 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()} 
+            className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+          >
+            <span className="material-symbols-outlined text-sm">file_upload</span>
+            Nhập Excel
+          </button>
+          <button 
+            onClick={handleExportExcel} 
+            className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+          >
+            <span className="material-symbols-outlined text-sm">file_download</span>
+            Xuất Excel
+          </button>
+          <button onClick={() => setIsFormOpen(true)} className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 flex items-center gap-1 shadow-xs">
             <span className="material-symbols-outlined text-sm align-[-2px]">add</span>Thêm nhân sự
           </button>
         </div>
@@ -112,6 +226,7 @@ export const PersonnelPage: React.FC = () => {
           </div>
         </div>
       )}
+      <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
     </div>
   );
 };

@@ -32,6 +32,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenNewProject }) => {
       title: 'Quản lý dự án',
       items: [
         { label: 'Công việc', path: '/tasks', icon: 'assignment' },
+        { label: 'Kế hoạch & Chi phí', path: '/cost-plan', icon: 'calculate' },
+        { label: 'Theo dõi Hồ sơ', path: '/document-tracking', icon: 'drafts' },
       ]
     },
     {
@@ -44,6 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenNewProject }) => {
       title: 'Hệ thống & Nội bộ',
       items: [
         { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
+        { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' },
         { label: 'Báo cáo', path: '/reports', icon: 'analytics' },
       ]
     },

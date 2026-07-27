@@ -1,6 +1,22 @@
 import { create } from 'zustand';
-import { Project, Task, Material, Issue, Engineer, NotificationItem, ActivityLog, IssueStatus, TaskStatus, InventoryTransaction } from '../types';
-import rawExcelData from './excelSeedData.json';
+import {
+  Project,
+  Task,
+  Material,
+  Issue,
+  Engineer,
+  NotificationItem,
+  ActivityLog,
+  IssueStatus,
+  TaskStatus,
+  InventoryTransaction,
+  ProjectMaterialPlan,
+  ProjectPurchasing,
+  ProjectExpense,
+  LaborPayroll,
+  DocumentTrack
+} from '../types';
+import { api } from './api';
 
 // Utility to check if STT or row is a section header (I, II, III...)
 const isRomanOrSection = (stt: string, volume: number, unit: string) => {
@@ -10,173 +26,82 @@ const isRomanOrSection = (stt: string, volume: number, unit: string) => {
   return romanRegex.test(clean) || (volume === 0 && (!unit || unit.trim() === ''));
 };
 
-// Seed Projects from Excel
-const seedProjects: Project[] = Object.keys(rawExcelData).map((key) => {
-  const sheet = (rawExcelData as any)[key];
-  const items: any[] = sheet.items || [];
-  const validSubItems = items.filter((i) => !isRomanOrSection(i.stt, i.volume || 0, i.unit));
-  const completedCount = validSubItems.filter((i) => i.isDone || i.progress >= 1).length;
-  const issueCount = items.filter((i) => i.issue && i.issue.trim().length > 0).length;
-  const avgProgress = validSubItems.length > 0
-    ? Math.round((validSubItems.reduce((acc, i) => acc + (i.progress || 0), 0) / validSubItems.length) * 100)
-    : 0;
+const normalizeStatusText = (value?: string) => (value || '')
+  .trim()
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/\u0111/g, 'd');
 
+const purchaseProgressScore = (status?: string) => {
+  const clean = normalizeStatusText(status);
+  if (!clean || clean === 'khong co hang' || clean === 'chua dat hang') return 0;
+  if (clean === 'dang dat hang') return 0.3;
+  if (clean === 'da dat hang') return 0.6;
+  if (clean === 'dang giao') return 0.85;
+  if (clean === 'da co hang' || clean === 'hang gia cong') return 1;
+  return 0;
+};
+
+const constructionProgressScore = (status?: string) => {
+  const clean = normalizeStatusText(status);
+  if (!clean || clean === 'chua thi cong' || clean === 'dang vuong mac') return 0;
+  if (clean === 'vuong mac') return 0.2;
+  if (clean === 'da keo day' || clean === 'da lap thiet bi vao tu') return 0.4;
+  if (clean === 'dang thi cong') return 0.5;
+  if (clean === 'da lap tb + keo day') return 0.6;
+  if (clean === 'dang ete') return 0.8;
+  if (clean === 'da thi cong') return 1;
+  return 0;
+};
+
+const calculateTaskProgressFromStatuses = (purchaseStatus?: string, constrStatus?: string) => {
+  const progress = purchaseProgressScore(purchaseStatus) * 0.5 + constructionProgressScore(constrStatus) * 0.5;
+  return Math.max(0, Math.min(1, Number(progress.toFixed(4))));
+};
+
+const taskStatusFromProgress = (task: Pick<Task, 'isSectionHeader' | 'issue' | 'issueStatus'>, progress: number): TaskStatus => {
+  if (task.isSectionHeader) return 'Not Started';
+  if (progress >= 1) return 'Done';
+  if (task.issue || task.issueStatus) return 'Review';
+  return progress > 0 ? 'In Progress' : 'Not Started';
+};
+
+const withAutoProgress = (task: Task): Task => {
+  if (task.isSectionHeader) {
+    return { ...task, progress: 0, isDone: false, status: 'Not Started' };
+  }
+
+  const progress = calculateTaskProgressFromStatuses(task.purchaseStatus, task.constrStatus);
   return {
-    id: `proj-${key.toLowerCase()}`,
-    code: key,
-    name: sheet.title || key,
-    location: key === 'DAKRLAP' ? 'Đắc Nông' : key === 'PHƯỚC TÂN' ? 'Đồng Nai' : 'Cà Mau',
-    progressPercent: avgProgress,
-    status: 'active',
-    activeTeams: 3,
-    totalTasks: validSubItems.length,
-    completedTasks: completedCount,
-    issueTasksCount: issueCount,
-    managerName: key === 'DAKRLAP' ? 'Kỹ sư Nam' : key === 'PHƯỚC TÂN' ? 'Kỹ sư Hùng' : 'Kỹ sư Lan',
-    startDate: '2023-01-01',
-    endDate: '2024-12-31',
+    ...task,
+    progress,
+    isDone: progress >= 1,
+    status: taskStatusFromProgress(task, progress),
   };
-});
+};
 
-// Seed Tasks from Excel with Section Heading Logic (I, II, III...)
-const seedTasks: Task[] = [];
-Object.keys(rawExcelData).forEach((key) => {
-  const sheet = (rawExcelData as any)[key];
-  const items: any[] = sheet.items || [];
-  let currentSection = 'Mục chung';
+const recalculateProjectsFromTasks = (projects: Project[], tasks: Task[], projectCodes?: string[]) => {
+  const targetCodes = projectCodes ? new Set(projectCodes.filter(Boolean)) : null;
+  return projects.map((project) => {
+    if (targetCodes && !targetCodes.has(project.code)) return project;
 
-  items.forEach((item, idx) => {
-    const isSection = isRomanOrSection(item.stt, item.volume || 0, item.unit);
-    if (isSection) {
-      currentSection = `${item.stt ? item.stt + '. ' : ''}${item.name}`;
+    const projectTasks = tasks.filter((task) => task.projectCode === project.code && !task.isSectionHeader);
+    if (projectTasks.length === 0) {
+      return { ...project, totalTasks: 0, completedTasks: 0, progressPercent: 0 };
     }
 
-    const isFinished = item.isDone || item.progress >= 1;
-    const taskStatus: TaskStatus = isFinished
-      ? 'Done'
-      : item.progress > 0
-      ? 'In Progress'
-      : item.issue
-      ? 'Review'
-      : 'Not Started';
+    const totalProgress = projectTasks.reduce((sum, task) => sum + (task.isDone ? 1 : task.progress || 0), 0);
+    const completedTasks = projectTasks.filter((task) => task.isDone || task.progress >= 1).length;
 
-    seedTasks.push({
-      id: `tsk-${key}-${idx + 1}`,
-      stt: item.stt || `${idx + 1}`,
-      code: `TSK-${key}-${idx + 1}`,
-      name: item.name,
-      projectCode: key,
-      projectName: sheet.title,
-      volume: item.volume || 0,
-      unit: item.unit || '',
-      progress: item.progress || 0,
-      status: taskStatus,
-      purchaseStatus: item.purchaseStatus || 'Chưa đặt hàng',
-      constrStatus: item.constrStatus || 'Chưa thi công',
-      issue: item.issue || '',
-      issueStatus: item.issueStatus || '',
-      isDone: isFinished,
-      isSectionHeader: isSection,
-      sectionName: currentSection,
-      notes: item.notes || '',
-      assignedEngineerId: idx % 3 === 0 ? 'eng-1' : idx % 3 === 1 ? 'eng-2' : 'eng-3',
-      assignedEngineerName: idx % 3 === 0 ? 'Kỹ sư Nam' : idx % 3 === 1 ? 'Kỹ sư Hùng' : 'Kỹ sư Lan',
-      dueDate: '2024-11-30',
-      priority: item.issue ? 'High' : item.progress === 0 ? 'Medium' : 'Low',
-      createdAt: '2023-10-01',
-    });
+    return {
+      ...project,
+      totalTasks: projectTasks.length,
+      completedTasks,
+      progressPercent: Math.round((totalProgress / projectTasks.length) * 100),
+    };
   });
-});
-
-// Seed Materials
-const seedMaterials: Material[] = seedTasks
-  .filter((t) => !t.isSectionHeader && (t.volume > 0 || t.purchaseStatus))
-  .slice(0, 40)
-  .map((t, idx) => ({
-    id: `mat-${idx + 1}`,
-    code: `MAT-${100 + idx}`,
-    name: t.name,
-    englishName: t.name,
-    projectName: t.projectName,
-    projectCode: t.projectCode,
-    volume: t.volume,
-    unit: t.unit || 'bộ',
-    unitPrice: 25.0,
-    status: t.purchaseStatus || 'Chưa đặt hàng',
-    constrStatus: t.constrStatus || 'Chưa thi công',
-    supplier: 'Nhà cung cấp VTTB Điện',
-  }));
-
-// Seed Issues
-const seedIssues: Issue[] = seedTasks
-  .filter((t) => !t.isSectionHeader && t.issue && t.issue.trim().length > 0)
-  .map((t, idx) => ({
-    id: `iss-${idx + 1}`,
-    incidentCode: `VM-${t.projectCode}-${idx + 1}`,
-    title: t.issue || 'Vướng mắc thi công',
-    projectName: t.projectName,
-    projectCode: t.projectCode,
-    location: `${t.projectName} - ${t.sectionName || t.stt}`,
-    reportedBy: 'Kỹ sư Giám sát Hiện trường',
-    reportedTime: 'Ghi nhận từ Excel Tiến độ',
-    description: `Hạng mục "${t.name}" thuộc ${t.sectionName} đang vướng mắc: ${t.issue}`,
-    photoUrl: idx % 2 === 0
-      ? 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80'
-      : 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
-    status: (t.issueStatus ? 'PROCESSING' : 'OPEN') as IssueStatus,
-    priority: 'CRITICAL',
-    assignedTo: t.assignedEngineerName || 'Ban Quản Lý Dự Án',
-    managerDirectives: t.issueStatus || 'Yêu cầu tập trung phối hợp tháo gỡ vướng mắc.',
-    timelineLogs: [
-      {
-        id: `tl-${idx}-1`,
-        time: 'Ghi nhận',
-        author: 'File Excel Tiến độ',
-        message: `Phát hiện vướng mắc/tồn đọng: ${t.issue}`,
-      },
-      ...(t.issueStatus
-        ? [
-            {
-              id: `tl-${idx}-2`,
-              time: 'Cập nhật',
-              author: 'Chỉ đạo Xử lý',
-              message: t.issueStatus,
-            },
-          ]
-        : []),
-    ],
-  }));
-
-const seedEngineers: Engineer[] = [
-  { id: 'eng-1', name: 'Kỹ sư Nam', title: "Giám sát 110kV Đắc R'Lấp", avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80', phone: '0903 123 456', email: 'nam.nguyen@buildcore.vn' },
-  { id: 'eng-2', name: 'Kỹ sư Hùng', title: 'Chỉ huy 110kV Phước Tân', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80', phone: '0912 987 654', email: 'hung.tran@buildcore.vn' },
-  { id: 'eng-3', name: 'Kỹ sư Lan', title: 'Quản lý 220kV Năm Căn', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80', phone: '0988 555 777', email: 'lan.pham@buildcore.vn' },
-];
-
-const seedNotifications: NotificationItem[] = [
-  {
-    id: 'notif-1',
-    title: 'Đã nạp file tiến độ công trình',
-    message: 'Đã phân nhóm Mục I, II, III... tự động từ file "bảng theo dõi tiến độ.xlsx".',
-    timestamp: 'Vừa xong',
-    read: false,
-    type: 'system',
-    icon: 'folder_open',
-  },
-];
-
-const seedActivityLogs: ActivityLog[] = [
-  {
-    id: 'act-1',
-    user: 'Hệ thống Excel Sync',
-    action: 'Đã nạp và phân nhóm mục tiến độ từ',
-    project: 'bảng theo dõi tiến độ.xlsx',
-    timestamp: 'Vừa xong',
-    icon: 'table_chart',
-    badgeBg: 'bg-blue-50',
-    iconColor: 'text-primary',
-  },
-];
+};
 
 interface RealtimeStoreState {
   projects: Project[];
@@ -187,6 +112,20 @@ interface RealtimeStoreState {
   notifications: NotificationItem[];
   activityLogs: ActivityLog[];
   inventoryTransactions: InventoryTransaction[];
+  materialPlans: ProjectMaterialPlan[];
+  purchasingPlans: ProjectPurchasing[];
+  expenses: ProjectExpense[];
+  laborPayrolls: LaborPayroll[];
+  documentTracks: DocumentTrack[];
+
+  // Fetch Actions
+  fetchProjects: () => Promise<void>;
+  fetchTasks: (projectId?: string) => Promise<void>;
+  fetchMaterials: (projectId?: string) => Promise<void>;
+  fetchIssues: (projectId?: string) => Promise<void>;
+  fetchEngineers: () => Promise<void>;
+  fetchActivityLogs: () => Promise<void>;
+  fetchAccounting: () => Promise<void>;
 
   // Actions
   addTask: (task: Omit<Task, 'id'>) => void;
@@ -211,21 +150,31 @@ interface RealtimeStoreState {
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
   addProject: (proj: Omit<Project, 'id'>) => void;
+
+  // New Actions
+  addMaterialPlan: (plan: Omit<ProjectMaterialPlan, 'id'>) => void;
+  updateMaterialPlan: (id: string, fields: Partial<ProjectMaterialPlan>) => void;
+  deleteMaterialPlan: (id: string) => void;
+
+  addPurchasingPlan: (plan: Omit<ProjectPurchasing, 'id'>) => void;
+  updatePurchasingPlan: (id: string, fields: Partial<ProjectPurchasing>) => void;
+  deletePurchasingPlan: (id: string) => void;
+
+  addExpense: (expense: Omit<ProjectExpense, 'id'>) => void;
+  updateExpense: (id: string, fields: Partial<ProjectExpense>) => void;
+  deleteExpense: (id: string) => void;
+
+  addLaborPayroll: (payroll: Omit<LaborPayroll, 'id'>) => void;
+  updateLaborPayroll: (id: string, fields: Partial<LaborPayroll>) => void;
+  deleteLaborPayroll: (id: string) => void;
+
+  addDocumentTrack: (track: Omit<DocumentTrack, 'id'>) => void;
+  updateDocumentTrack: (id: string, fields: Partial<DocumentTrack>) => void;
+  deleteDocumentTrack: (id: string) => void;
+  logActivity: (action: string, project: string, user?: string) => void;
 }
 
-const STORAGE_KEY = 'buildcore_pro_excel_db_v4';
-
-const loadSavedState = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error('Failed to load saved state', e);
-  }
-  return null;
-};
-
-const savedState = loadSavedState();
+const STORAGE_KEY = 'buildcore_pro_excel_db_v6';
 
 export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   let channel: BroadcastChannel | null = null;
@@ -233,8 +182,8 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     channel = new BroadcastChannel('buildcore_excel_events');
     channel.onmessage = (event) => {
       if (event.data?.type === 'SYNC_STATE') {
-        const fresh = loadSavedState();
-        if (fresh) set(fresh);
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) set(JSON.parse(raw));
       }
     };
   }
@@ -242,14 +191,19 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   const persistAndNotify = (newState: Partial<RealtimeStoreState>) => {
     const current = get();
     const updated = {
-      projects: newState.projects || current.projects,
-      tasks: newState.tasks || current.tasks,
-      materials: newState.materials || current.materials,
-      issues: newState.issues || current.issues,
-      engineers: newState.engineers || current.engineers,
-      notifications: newState.notifications || current.notifications,
-      activityLogs: newState.activityLogs || current.activityLogs,
-      inventoryTransactions: newState.inventoryTransactions || current.inventoryTransactions,
+      projects: newState.projects !== undefined ? newState.projects : current.projects,
+      tasks: newState.tasks !== undefined ? newState.tasks : current.tasks,
+      materials: newState.materials !== undefined ? newState.materials : current.materials,
+      issues: newState.issues !== undefined ? newState.issues : current.issues,
+      engineers: newState.engineers !== undefined ? newState.engineers : current.engineers,
+      notifications: newState.notifications !== undefined ? newState.notifications : current.notifications,
+      activityLogs: newState.activityLogs !== undefined ? newState.activityLogs : current.activityLogs,
+      inventoryTransactions: newState.inventoryTransactions !== undefined ? newState.inventoryTransactions : current.inventoryTransactions,
+      materialPlans: newState.materialPlans !== undefined ? newState.materialPlans : current.materialPlans,
+      purchasingPlans: newState.purchasingPlans !== undefined ? newState.purchasingPlans : current.purchasingPlans,
+      expenses: newState.expenses !== undefined ? newState.expenses : current.expenses,
+      laborPayrolls: newState.laborPayrolls !== undefined ? newState.laborPayrolls : current.laborPayrolls,
+      documentTracks: newState.documentTracks !== undefined ? newState.documentTracks : current.documentTracks,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -260,148 +214,199 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   };
 
   return {
-    projects: savedState?.projects || seedProjects,
-    tasks: savedState?.tasks || seedTasks,
-    materials: savedState?.materials || seedMaterials,
-    issues: savedState?.issues || seedIssues,
-    engineers: savedState?.engineers || seedEngineers,
-    notifications: savedState?.notifications || seedNotifications,
-    activityLogs: savedState?.activityLogs || seedActivityLogs,
-    inventoryTransactions: savedState?.inventoryTransactions || [],
+    projects: [],
+    tasks: [],
+    materials: [],
+    issues: [],
+    engineers: [],
+    notifications: [],
+    activityLogs: [],
+    inventoryTransactions: [],
+    materialPlans: [],
+    purchasingPlans: [],
+    expenses: [],
+    laborPayrolls: [],
+    documentTracks: [],
 
-    addTask: (taskData) => {
-      const newTask: Task = {
-        ...taskData,
-        id: 'tsk-new-' + Date.now(),
-      };
-      set((state) => {
-        const nextTasks = [newTask, ...state.tasks];
-        persistAndNotify({ tasks: nextTasks });
-        return { tasks: nextTasks };
-      });
+    fetchProjects: async () => {
+      try {
+        const projects = await api.projects.getAll();
+        set({ projects });
+      } catch (e) {
+        console.error('Failed to fetch projects', e);
+      }
     },
 
-    addTasksBatch: (batchData) => {
-      const newTasks: Task[] = batchData.map((t, idx) => ({
-        ...t,
-        id: `tsk-imp-${Date.now()}-${idx}`,
-      }));
+    fetchTasks: async (projectId) => {
+      try {
+        const tasks = await api.tasks.getAll(projectId);
+        set({ tasks });
+      } catch (e) {
+        console.error('Failed to fetch tasks', e);
+      }
+    },
 
-      set((state) => {
-        const nextTasks = [...newTasks, ...state.tasks];
-        const nextNotifs: NotificationItem[] = [
-          {
-            id: 'notif-' + Date.now(),
-            title: 'Import Excel thành công',
-            message: `Đã nạp ${newTasks.length} hạng mục từ file Excel mới.`,
+    fetchMaterials: async (projectId) => {
+      try {
+        const materials = await api.materials.getAll(projectId);
+        set({ materials });
+      } catch (e) {
+        console.error('Failed to fetch materials', e);
+      }
+    },
+
+    fetchIssues: async (projectId) => {
+      try {
+        const issues = await api.issues.getAll(projectId);
+        set({ issues });
+      } catch (e) {
+        console.error('Failed to fetch issues', e);
+      }
+    },
+
+    fetchEngineers: async () => {
+      try {
+        const engineers = await api.engineers.getAll();
+        set({ engineers });
+      } catch (e) {
+        console.error('Failed to fetch engineers', e);
+      }
+    },
+
+    fetchActivityLogs: async () => {
+      try {
+        const activityLogs = await api.activityLogs.getAll();
+        set({ activityLogs });
+      } catch (e) {
+        console.error('Failed to fetch activity logs', e);
+      }
+    },
+
+    fetchAccounting: async () => {
+      try {
+        const [materialPlans, purchasingPlans, expenses, laborPayrolls, documentTracks] = await Promise.all([
+          api.accounting.getMaterialPlans(),
+          api.accounting.getPurchasings(),
+          api.accounting.getExpenses(),
+          api.accounting.getPayrolls(),
+          api.accounting.getDocumentTracks()
+        ]);
+        
+        const nextState: any = {};
+        if (Array.isArray(materialPlans)) nextState.materialPlans = materialPlans;
+        if (Array.isArray(purchasingPlans)) nextState.purchasingPlans = purchasingPlans;
+        if (Array.isArray(expenses)) nextState.expenses = expenses;
+        if (Array.isArray(laborPayrolls)) nextState.laborPayrolls = laborPayrolls;
+        if (Array.isArray(documentTracks)) nextState.documentTracks = documentTracks;
+        
+        set(nextState);
+      } catch (e) {
+        console.error('Failed to fetch accounting', e);
+      }
+    },
+
+    addTask: async (taskData) => {
+      try {
+        const createdTask = await api.tasks.create(taskData);
+        set((state) => {
+          const nextTasks = [createdTask, ...state.tasks];
+          const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, [createdTask.projectCode]);
+          persistAndNotify({ tasks: nextTasks, projects: nextProjects });
+          return { tasks: nextTasks, projects: nextProjects };
+        });
+        get().logActivity('Đã tạo thủ công hạng mục công việc: ' + createdTask.name, createdTask.projectName || createdTask.projectCode);
+      } catch (e) {
+        console.error('Failed to add task', e);
+      }
+    },
+
+    addTasksBatch: async (batchData) => {
+      try {
+        const createdTasks = await Promise.all(batchData.map(t => api.tasks.create(t)));
+        set((state) => {
+          const nextTasks = [...createdTasks, ...state.tasks];
+          const changedProjectCodes = Array.from(new Set(createdTasks.map((task) => task.projectCode)));
+          const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, changedProjectCodes);
+          const nextNotifs: NotificationItem[] = [
+            {
+              id: 'notif-' + Date.now(),
+              title: 'Import Excel thành công',
+              message: `Đã nạp ${createdTasks.length} hạng mục từ tệp Excel.`,
+              timestamp: 'Vừa xong',
+              read: false,
+              type: 'system',
+              icon: 'file_upload',
+            },
+            ...state.notifications,
+          ];
+          persistAndNotify({ tasks: nextTasks, projects: nextProjects, notifications: nextNotifs });
+          return { tasks: nextTasks, projects: nextProjects, notifications: nextNotifs };
+        });
+        if (createdTasks.length > 0) {
+          get().logActivity(`Đã nhập khẩu ${createdTasks.length} hạng mục công việc từ file Excel`, createdTasks[0].projectName || 'Tiến độ', 'Excel Sync');
+        }
+      } catch (e) {
+        console.error('Failed to add tasks batch', e);
+      }
+    },
+
+    updateTask: async (id, updatedFields) => {
+      try {
+        const updatedTask = await api.tasks.update(id, updatedFields);
+        set((state) => {
+          const nextTasks = state.tasks.map((t) => (t.id === id ? updatedTask : t));
+          const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, [updatedTask.projectCode]);
+          persistAndNotify({ tasks: nextTasks, projects: nextProjects });
+          return { tasks: nextTasks, projects: nextProjects };
+        });
+        get().logActivity('Đã chỉnh sửa thông tin công việc: ' + updatedTask.name, updatedTask.projectName || updatedTask.projectCode);
+      } catch (e) {
+        console.error('Failed to update task', e);
+      }
+    },
+
+    updateTaskProgress: async (id, progress, isDone) => {
+      try {
+        const updatedTask = await api.tasks.update(id, {
+          progress,
+          isDone,
+          status: (isDone ? 'Done' : progress > 0 ? 'In Progress' : 'Not Started') as TaskStatus,
+        });
+        set((state) => {
+          const nextTasks = state.tasks.map((t) => (t.id === id ? updatedTask : t));
+          const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, [updatedTask.projectCode]);
+          persistAndNotify({ tasks: nextTasks, projects: nextProjects });
+          return { tasks: nextTasks, projects: nextProjects };
+        });
+        get().logActivity(`Đã cập nhật tiến độ thi công thành ${Math.round(progress * 100)}%`, updatedTask.projectName || updatedTask.projectCode);
+      } catch (e) {
+        console.error('Failed to update task progress', e);
+      }
+    },
+
+    assignEngineer: async (taskId, engineerId, engineerName) => {
+      try {
+        const updatedTask = await api.tasks.update(taskId, {
+          assignedEngineerId: engineerId,
+        });
+        set((state) => {
+          const nextTasks = state.tasks.map((t) => (t.id === taskId ? updatedTask : t));
+          const newNotif: NotificationItem = {
+            id: 'notif-assign-' + Date.now(),
+            title: 'Phân công nhân sự',
+            message: `Đã giao hạng mục "${updatedTask.name}" cho ${engineerName}.`,
             timestamp: 'Vừa xong',
             read: false,
-            type: 'system',
-            icon: 'file_upload',
-          },
-          ...state.notifications,
-        ];
-        persistAndNotify({ tasks: nextTasks, notifications: nextNotifs });
-        return { tasks: nextTasks, notifications: nextNotifs };
-      });
-    },
-
-    updateTask: (id, updatedFields) => {
-      set((state) => {
-        let modifiedProjectCode = '';
-        const nextTasks = state.tasks.map((t) => {
-          if (t.id === id) {
-            modifiedProjectCode = updatedFields.projectCode || t.projectCode;
-            return { ...t, ...updatedFields };
-          }
-          return t;
+            type: 'task_assigned',
+            icon: 'person_add',
+          };
+          const nextNotifs = [newNotif, ...state.notifications];
+          persistAndNotify({ tasks: nextTasks, notifications: nextNotifs });
+          return { tasks: nextTasks, notifications: nextNotifs };
         });
-
-        const nextProjects = state.projects.map(p => {
-          if (p.code === modifiedProjectCode) {
-            const projectTasks = nextTasks.filter(t => t.projectCode === p.code && !t.isSectionHeader);
-            if (projectTasks.length === 0) return p;
-            
-            const totalProgress = projectTasks.reduce((sum, t) => sum + (t.isDone ? 1 : (t.progress || 0)), 0);
-            const completedCount = projectTasks.filter(t => t.isDone || t.progress >= 1).length;
-            
-            return {
-              ...p,
-              completedTasks: completedCount,
-              progressPercent: Math.round((totalProgress / projectTasks.length) * 100)
-            };
-          }
-          return p;
-        });
-
-        persistAndNotify({ tasks: nextTasks, projects: nextProjects });
-        return { tasks: nextTasks, projects: nextProjects };
-      });
-    },
-
-    updateTaskProgress: (id, progress, isDone) => {
-      set((state) => {
-        let modifiedProjectCode = '';
-        const nextTasks = state.tasks.map((t) => {
-          if (t.id === id) {
-            modifiedProjectCode = t.projectCode;
-            return {
-              ...t,
-              progress,
-              isDone,
-              status: (isDone ? 'Done' : progress > 0 ? 'In Progress' : 'Not Started') as TaskStatus,
-            };
-          }
-          return t;
-        });
-
-        const nextProjects = state.projects.map(p => {
-          if (p.code === modifiedProjectCode) {
-            const projectTasks = nextTasks.filter(t => t.projectCode === p.code && !t.isSectionHeader);
-            if (projectTasks.length === 0) return p;
-            
-            const totalProgress = projectTasks.reduce((sum, t) => sum + (t.isDone ? 1 : (t.progress || 0)), 0);
-            const completedCount = projectTasks.filter(t => t.isDone || t.progress >= 1).length;
-            
-            return {
-              ...p,
-              completedTasks: completedCount,
-              progressPercent: Math.round((totalProgress / projectTasks.length) * 100)
-            };
-          }
-          return p;
-        });
-
-        persistAndNotify({ tasks: nextTasks, projects: nextProjects });
-        return { tasks: nextTasks, projects: nextProjects };
-      });
-    },
-
-    assignEngineer: (taskId, engineerId, engineerName) => {
-      set((state) => {
-        let taskName = '';
-        const nextTasks = state.tasks.map((t) => {
-          if (t.id === taskId) {
-            taskName = t.name;
-            return { ...t, assignedEngineerId: engineerId, assignedEngineerName: engineerName };
-          }
-          return t;
-        });
-
-        const newNotif: NotificationItem = {
-          id: 'notif-assign-' + Date.now(),
-          title: 'Phân công nhân sự',
-          message: `Đã giao hạng mục "${taskName}" cho ${engineerName}.`,
-          timestamp: 'Vừa xong',
-          read: false,
-          type: 'task_assigned',
-          icon: 'person_add',
-        };
-
-        const nextNotifs = [newNotif, ...state.notifications];
-        persistAndNotify({ tasks: nextTasks, notifications: nextNotifs });
-        return { tasks: nextTasks, notifications: nextNotifs };
-      });
+      } catch (e) {
+        console.error('Failed to assign engineer', e);
+      }
     },
 
     addEngineer: (engineerData) => {
@@ -409,22 +414,33 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         ...engineerData,
         id: 'eng-' + Date.now(),
       };
-
       set((state) => {
         const nextEngineers = [newEngineer, ...state.engineers];
         persistAndNotify({ engineers: nextEngineers });
         return { engineers: nextEngineers };
       });
-
       return newEngineer;
     },
 
-    deleteTask: (id) => {
-      set((state) => {
-        const nextTasks = state.tasks.filter((t) => t.id !== id);
-        persistAndNotify({ tasks: nextTasks });
-        return { tasks: nextTasks };
-      });
+    deleteTask: async (id) => {
+      try {
+        const taskToDelete = get().tasks.find(t => t.id === id);
+        await api.tasks.delete(id);
+        set((state) => {
+          const nextTasks = state.tasks.filter((t) => t.id !== id);
+          const projectCode = taskToDelete?.projectCode;
+          const nextProjects = projectCode
+            ? recalculateProjectsFromTasks(state.projects, nextTasks, [projectCode])
+            : state.projects;
+          persistAndNotify({ tasks: nextTasks, projects: nextProjects });
+          return { tasks: nextTasks, projects: nextProjects };
+        });
+        if (taskToDelete) {
+          get().logActivity('Đã xóa công việc: ' + taskToDelete.name, taskToDelete.projectName || taskToDelete.projectCode);
+        }
+      } catch (e) {
+        console.error('Failed to delete task', e);
+      }
     },
 
     addMaterial: (matData) => {
@@ -472,8 +488,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
       set((state) => {
         const nextTransactions = [newTransaction, ...state.inventoryTransactions];
-        
-        // Update corresponding material's stock
         const nextMats = state.materials.map(m => {
           if (m.id === transactionData.materialId) {
             let currentStock = m.currentStock || m.initialStock || 0;
@@ -559,16 +573,238 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       });
     },
 
-    addProject: (projData) => {
-      const newProj: Project = {
-        ...projData,
-        id: 'proj-' + Date.now(),
-        issueTasksCount: 0,
-      };
+    addProject: async (projData) => {
+      try {
+        const createdProj = await api.projects.create(projData);
+        set((state) => {
+          const nextProjs = [createdProj, ...state.projects];
+          persistAndNotify({ projects: nextProjs });
+          return { projects: nextProjs };
+        });
+      } catch (e) {
+        console.error('Failed to add project', e);
+      }
+    },
+
+    addMaterialPlan: async (planData) => {
+      try {
+        const created = await api.accounting.createMaterialPlan(planData);
+        set((state) => {
+          const nextPlans = [created, ...state.materialPlans];
+          persistAndNotify({ materialPlans: nextPlans });
+          return { materialPlans: nextPlans };
+        });
+      } catch (e) {
+        console.error('Failed to add material plan', e);
+      }
+    },
+
+    updateMaterialPlan: async (id, fields) => {
+      try {
+        const updated = await api.accounting.updateMaterialPlan(id, fields);
+        set((state) => {
+          const nextPlans = state.materialPlans.map((p) => (p.id === id ? updated : p));
+          persistAndNotify({ materialPlans: nextPlans });
+          return { materialPlans: nextPlans };
+        });
+      } catch (e) {
+        console.error('Failed to update material plan', e);
+      }
+    },
+
+    deleteMaterialPlan: async (id) => {
+      try {
+        await api.accounting.deleteMaterialPlan(id);
+        set((state) => {
+          const nextPlans = state.materialPlans.filter((p) => p.id !== id);
+          persistAndNotify({ materialPlans: nextPlans });
+          return { materialPlans: nextPlans };
+        });
+      } catch (e) {
+        console.error('Failed to delete material plan', e);
+      }
+    },
+
+    addPurchasingPlan: async (purData) => {
+      try {
+        const created = await api.accounting.createPurchasing(purData);
+        set((state) => {
+          const nextPurs = [created, ...state.purchasingPlans];
+          persistAndNotify({ purchasingPlans: nextPurs });
+          return { purchasingPlans: nextPurs };
+        });
+      } catch (e) {
+        console.error('Failed to add purchasing plan', e);
+      }
+    },
+
+    updatePurchasingPlan: async (id, fields) => {
+      try {
+        const updated = await api.accounting.updatePurchasing(id, fields);
+        set((state) => {
+          const nextPurs = state.purchasingPlans.map((p) => (p.id === id ? updated : p));
+          persistAndNotify({ purchasingPlans: nextPurs });
+          return { purchasingPlans: nextPurs };
+        });
+      } catch (e) {
+        console.error('Failed to update purchasing plan', e);
+      }
+    },
+
+    deletePurchasingPlan: async (id) => {
+      try {
+        await api.accounting.deletePurchasing(id);
+        set((state) => {
+          const nextPurs = state.purchasingPlans.filter((p) => p.id !== id);
+          persistAndNotify({ purchasingPlans: nextPurs });
+          return { purchasingPlans: nextPurs };
+        });
+      } catch (e) {
+        console.error('Failed to delete purchasing plan', e);
+      }
+    },
+
+    addExpense: async (expData) => {
+      try {
+        const created = await api.accounting.createExpense(expData);
+        set((state) => {
+          const nextExps = [created, ...state.expenses];
+          persistAndNotify({ expenses: nextExps });
+          return { expenses: nextExps };
+        });
+      } catch (e) {
+        console.error('Failed to add expense', e);
+      }
+    },
+
+    updateExpense: async (id, fields) => {
+      try {
+        const updated = await api.accounting.updateExpense(id, fields);
+        set((state) => {
+          const nextExps = state.expenses.map((e) => (e.id === id ? updated : e));
+          persistAndNotify({ expenses: nextExps });
+          return { expenses: nextExps };
+        });
+      } catch (e) {
+        console.error('Failed to update expense', e);
+      }
+    },
+
+    deleteExpense: async (id) => {
+      try {
+        await api.accounting.deleteExpense(id);
+        set((state) => {
+          const nextExps = state.expenses.filter((e) => e.id !== id);
+          persistAndNotify({ expenses: nextExps });
+          return { expenses: nextExps };
+        });
+      } catch (e) {
+        console.error('Failed to delete expense', e);
+      }
+    },
+
+    addLaborPayroll: async (payrollData) => {
+      try {
+        const created = await api.accounting.createPayroll(payrollData);
+        set((state) => {
+          const nextPayrolls = [created, ...state.laborPayrolls];
+          persistAndNotify({ laborPayrolls: nextPayrolls });
+          return { laborPayrolls: nextPayrolls };
+        });
+      } catch (e) {
+        console.error('Failed to add payroll', e);
+      }
+    },
+
+    updateLaborPayroll: async (id, fields) => {
+      try {
+        const updated = await api.accounting.updatePayroll(id, fields);
+        set((state) => {
+          const nextPayrolls = state.laborPayrolls.map((l) => (l.id === id ? updated : l));
+          persistAndNotify({ laborPayrolls: nextPayrolls });
+          return { laborPayrolls: nextPayrolls };
+        });
+      } catch (e) {
+        console.error('Failed to update payroll', e);
+      }
+    },
+
+    deleteLaborPayroll: async (id) => {
+      try {
+        await api.accounting.deletePayroll(id);
+        set((state) => {
+          const nextPayrolls = state.laborPayrolls.filter((l) => l.id !== id);
+          persistAndNotify({ laborPayrolls: nextPayrolls });
+          return { laborPayrolls: nextPayrolls };
+        });
+      } catch (e) {
+        console.error('Failed to delete payroll', e);
+      }
+    },
+
+    addDocumentTrack: async (trackData) => {
+      try {
+        const created = await api.accounting.createDocumentTrack(trackData);
+        set((state) => {
+          const nextTracks = [created, ...state.documentTracks];
+          persistAndNotify({ documentTracks: nextTracks });
+          return { documentTracks: nextTracks };
+        });
+      } catch (e) {
+        console.error('Failed to add document track', e);
+      }
+    },
+
+    updateDocumentTrack: async (id, fields) => {
+      try {
+        const updated = await api.accounting.updateDocumentTrack(id, fields);
+        set((state) => {
+          const nextTracks = state.documentTracks.map((d) => (d.id === id ? updated : d));
+          persistAndNotify({ documentTracks: nextTracks });
+          return { documentTracks: nextTracks };
+        });
+      } catch (e) {
+        console.error('Failed to update document track', e);
+      }
+    },
+
+    deleteDocumentTrack: async (id) => {
+      try {
+        await api.accounting.deleteDocumentTrack(id);
+        set((state) => {
+          const nextTracks = state.documentTracks.filter((d) => d.id !== id);
+          persistAndNotify({ documentTracks: nextTracks });
+          return { documentTracks: nextTracks };
+        });
+      } catch (e) {
+        console.error('Failed to delete document track', e);
+      }
+    },
+
+    logActivity: (action, project, user = 'Kỹ sư Nam') => {
       set((state) => {
-        const nextProjs = [newProj, ...state.projects];
-        persistAndNotify({ projects: nextProjs });
-        return { projects: nextProjs };
+        const newLog: ActivityLog = {
+          id: 'act-' + Date.now() + '-' + Math.floor(Math.random() * 100),
+          user,
+          action,
+          project,
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('vi-VN'),
+          icon: action.toLowerCase().includes('tiến độ') ? 'trending_up' :
+                action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'payments' :
+                action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'warehouse' :
+                action.toLowerCase().includes('hồ sơ') ? 'drafts' : 'history',
+          badgeBg: action.toLowerCase().includes('tiến độ') ? 'bg-blue-50' :
+                   action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'bg-emerald-50' :
+                   action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'bg-amber-50' :
+                   action.toLowerCase().includes('hồ sơ') ? 'bg-violet-50' : 'bg-slate-50',
+          iconColor: action.toLowerCase().includes('tiến độ') ? 'text-blue-500' :
+                     action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'text-emerald-500' :
+                     action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'text-amber-500' :
+                     action.toLowerCase().includes('hồ sơ') ? 'text-violet-500' : 'text-slate-500',
+        };
+        const nextLogs = [newLog, ...state.activityLogs].slice(0, 100);
+        persistAndNotify({ activityLogs: nextLogs });
+        return { activityLogs: nextLogs };
       });
     },
   };

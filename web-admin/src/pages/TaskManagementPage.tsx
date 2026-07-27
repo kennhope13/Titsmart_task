@@ -3,6 +3,9 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
+import { Toast } from '../components/common/Toast';
+import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
+import { WebOcrExtractedData } from '../services/webOcrService';
 import { Task } from '../types';
 
 // Convert integer to Roman numeral
@@ -76,6 +79,39 @@ const escapeHtml = (value: unknown) => String(value ?? '')
   .replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;');
 
+const normalizeStatusText = (value?: string) => (value || '')
+  .trim()
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/\u0111/g, 'd');
+
+const purchaseProgressScore = (status?: string) => {
+  const clean = normalizeStatusText(status);
+  if (!clean || clean === 'khong co hang' || clean === 'chua dat hang') return 0;
+  if (clean === 'dang dat hang') return 0.3;
+  if (clean === 'da dat hang') return 0.6;
+  if (clean === 'dang giao') return 0.85;
+  if (clean === 'da co hang' || clean === 'hang gia cong') return 1;
+  return 0;
+};
+
+const constructionProgressScore = (status?: string) => {
+  const clean = normalizeStatusText(status);
+  if (!clean || clean === 'chua thi cong' || clean === 'dang vuong mac') return 0;
+  if (clean === 'vuong mac') return 0.2;
+  if (clean === 'da keo day' || clean === 'da lap thiet bi vao tu') return 0.4;
+  if (clean === 'dang thi cong') return 0.5;
+  if (clean === 'da lap tb + keo day') return 0.6;
+  if (clean === 'dang ete') return 0.8;
+  if (clean === 'da thi cong') return 1;
+  return 0;
+};
+
+const calculateAutoProgressPercent = (purchaseStatus?: string, constrStatus?: string) =>
+  Math.round((purchaseProgressScore(purchaseStatus) * 0.5 + constructionProgressScore(constrStatus) * 0.5) * 100);
+
+
 // Helper function to truncate long text cleanly
 const truncateText = (text: string, maxLength: number = 40): string => {
   if (!text) return '';
@@ -84,7 +120,7 @@ const truncateText = (text: string, maxLength: number = 40): string => {
 };
 
 export const TaskManagementPage: React.FC = () => {
-  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, updateTaskProgress, deleteTask } = useRealtimeStore();
+  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask } = useRealtimeStore();
 
   const [selectedProjectCode, setSelectedProjectCode] = useState<string>('all');
   const [selectedRomanSection, setSelectedRomanSection] = useState<string>('all');
@@ -104,6 +140,12 @@ export const TaskManagementPage: React.FC = () => {
   const [isImportMenuOpen, setIsImportMenuOpen] = useState<boolean>(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState<boolean>(false);
   const [currentImportFormat, setCurrentImportFormat] = useState<ImportFileFormat>('xlsx');
+
+  const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
+  const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+    setToastState({ show: true, message, type });
+    setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
@@ -138,6 +180,7 @@ export const TaskManagementPage: React.FC = () => {
   const [constrStatus, setConstrStatus] = useState('Chưa thi công');
   const [engineerId, setEngineerId] = useState('eng-1');
   const [isSectionHeader, setIsSectionHeader] = useState(false);
+  const [ocrIssueDraft, setOcrIssueDraft] = useState('');
 
   // New project form state
   const [newProjName, setNewProjName] = useState('');
@@ -275,7 +318,7 @@ export const TaskManagementPage: React.FC = () => {
     if (!file) return;
 
     if (currentImportFormat === 'pdf' || currentImportFormat === 'docx') {
-      alert('Định dạng PDF/DOCX hiện dùng để xuất file. Để nhập dữ liệu tiến độ vào bảng, vui lòng dùng Excel hoặc CSV.');
+      triggerToast('Định dạng PDF/DOCX hiện dùng để xuất file. Để nhập dữ liệu tiến độ vào bảng, vui lòng dùng Excel hoặc CSV.', 'warning');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -285,6 +328,17 @@ export const TaskManagementPage: React.FC = () => {
       try {
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
+
+        // Reject if this is a Project Cost Plan / Material Plan / Doc tracking / Inventory workbook
+        const forbiddenKeywords = ['KẾ HOẠCH VẬT TƯ', 'KÉ HOẠCH VẬT TƯ', 'MUA SẮM HÀNG HÓA', 'CHI PHÍ CT', 'LƯƠNG CÔNG NHẬT', 'THEO DÕI HỒ SƠ', 'HOSO', 'TỒN', 'NHẬP KHO', 'XUẤT KHO', 'TONKHO', 'NHAPKHO', 'XUATKHO', 'NHÂN SỰ', 'NHANSU'];
+        const isForbiddenWorkbook = wb.SheetNames.some(name => 
+          forbiddenKeywords.some(keyword => name.toUpperCase().includes(keyword))
+        );
+        if (isForbiddenWorkbook) {
+          triggerToast('File này thuộc phân hệ khác (Chi phí/Kho/Nhân sự/Hồ sơ). Vui lòng không nhập vào tab Tiến độ Công việc!', 'warning');
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          return;
+        }
 
         const importedTasks: any[] = [];
         let createdProjectsCount = 0;
@@ -301,14 +355,14 @@ export const TaskManagementPage: React.FC = () => {
             addProject({
               code: codeUpper,
               name: sheetName,
-              location: 'Hiá»‡n trÆ°á»ng má»›i',
+              location: 'Hiện trường mới',
               progressPercent: 0,
               status: 'active',
               activeTeams: 1,
               totalTasks: 0,
               completedTasks: 0,
               issueTasksCount: 0,
-              managerName: 'Ká»¹ sÆ° Nam',
+              managerName: 'Kỹ sư Nam',
               startDate: todayStamp(),
               endDate: '2025-12-31',
             });
@@ -317,34 +371,82 @@ export const TaskManagementPage: React.FC = () => {
 
           const targetProjectCode = existingProj ? existingProj.code : codeUpper;
 
-          let startRow = 9;
+          let startRow = -1;
+          let headerRow: any[] = [];
           for (let rIdx = 0; rIdx < Math.min(rows.length, 15); rIdx++) {
             const r = rows[rIdx];
-            if (r && (r.includes('STT') || r.includes('Ná»˜I DUNG CÃ”NG VIá»†C') || r.includes('KHá»I LÆ¯á»¢NG'))) {
+            if (r && (r.includes('STT') || r.includes('stt') || r.includes('Stt') || r.some((cell: any) => String(cell).toLowerCase() === 'stt'))) {
               startRow = rIdx + 1;
+              headerRow = r;
               break;
             }
           }
 
-          let currentSection = 'Má»¥c chung';
+          if (startRow === -1) {
+            triggerToast('Không tìm thấy dòng tiêu đề (STT) trong sheet ' + sheetName, 'warning');
+            return;
+          }
+
+          const cleanText = (str: any) =>
+            String(str || '')
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/đ/g, 'd')
+              .trim();
+
+          const getColIdx = (headers: any[], keywords: string[], fallback: number) => {
+            const idx = headers.findIndex((h) => {
+              const cleaned = cleanText(h);
+              return keywords.some((kw) => cleaned.includes(kw));
+            });
+            return idx >= 0 ? idx : fallback;
+          };
+
+          const headerString = headerRow.map(c => String(c || '').toLowerCase()).join('|');
+          const isProgress = headerString.includes('nội dung công việc') || headerString.includes('mô tả') || headerString.includes('khối lượng') || headerString.includes('tiến độ') || headerString.includes('đơn vị');
+          if (!isProgress) {
+            triggerToast('File không đúng cấu trúc Tiến độ Công việc (thiếu cột Nội dung công việc/Khối lượng/Mô tả)!', 'warning');
+            return;
+          }
+
+          const sttCol = getColIdx(headerRow, ['stt'], 0);
+          const nameCol = getColIdx(headerRow, ['noi dung', 'mo ta', 'dien giai', 'hang muc'], 1);
+          const volCol = getColIdx(headerRow, ['khoi luong'], 2);
+          const unitCol = getColIdx(headerRow, ['don vi', 'dvt'], 3);
+          const progressCol = getColIdx(headerRow, ['tien do'], -1);
+          const purchaseCol = getColIdx(headerRow, ['mua hang', 'vat tu', 'cung cap'], -1);
+          const constrCol = getColIdx(headerRow, ['thi cong', 'xay lap'], -1);
+          const issueCol = getColIdx(headerRow, ['vuong mac', 'su co', 'ton dong'], -1);
+          const issueStatusCol = getColIdx(headerRow, ['trang thai xu ly', 'tt xu ly'], -1);
+          const isDoneCol = getColIdx(headerRow, ['hoan thanh', 'da xong'], -1);
+          const notesCol = getColIdx(headerRow, ['ghi chu'], -1);
+
+          let currentSection = 'Mục chung';
 
           for (let i = startRow; i < rows.length; i++) {
             const r = rows[i];
-            if (!r || (!r[1] && !r[0])) continue;
+            if (!r || (!r[nameCol] && !r[sttCol])) continue;
 
-            const itemName = r[1] || r[0];
+            const itemName = r[nameCol] || r[sttCol];
             if (!itemName || String(itemName).trim().length === 0) continue;
 
-            const sttVal = r[0] ? String(r[0]).trim() : '';
-            const volVal = typeof r[2] === 'number' ? r[2] : (parseFloat(r[2]) || 0);
-            const unitVal = r[3] ? String(r[3]).trim() : '';
+            const sttVal = r[sttCol] ? String(r[sttCol]).trim() : '';
+            const volVal = volCol >= 0 ? (typeof r[volCol] === 'number' ? r[volCol] : (parseFloat(r[volCol]) || 0)) : 0;
+            const unitVal = unitCol >= 0 ? String(r[unitCol] || '').trim() : '';
 
-            const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|Má»¤C\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
+            // Bỏ qua dòng tiêu đề phụ hoặc dòng rác
+            if (sttVal.toLowerCase() === 'stt' || String(itemName).toLowerCase().includes('mo ta cong viec moi thau')) continue;
+
+            const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
             const isSection = romanRegex.test(sttVal) || (volVal === 0 && (!unitVal || unitVal === ''));
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${itemName}`;
             }
+
+            const rawProgress = progressCol >= 0 ? (typeof r[progressCol] === 'number' ? r[progressCol] : (parseFloat(r[progressCol]) || 0)) : 0;
+            const finalProgress = rawProgress > 1 ? rawProgress / 100 : rawProgress;
 
             importedTasks.push({
               stt: sttVal || `${i - startRow + 1}`,
@@ -354,29 +456,29 @@ export const TaskManagementPage: React.FC = () => {
               projectName: sheetName,
               volume: volVal,
               unit: unitVal,
-              progress: typeof r[4] === 'number' ? r[4] : (parseFloat(r[4]) || 0),
-              status: (r[4] >= 1 ? 'Done' : r[4] > 0 ? 'In Progress' : 'Not Started'),
-              purchaseStatus: r[5] ? String(r[5]) : 'ChÆ°a Ä‘áº·t hÃ ng',
-              constrStatus: r[6] ? String(r[6]) : 'ChÆ°a thi cÃ´ng',
-              issue: r[7] ? String(r[7]) : '',
-              issueStatus: r[8] ? String(r[8]) : '',
-              isDone: r[9] === true || r[4] === 1,
+              progress: finalProgress,
+              status: (finalProgress >= 1 ? 'Done' : finalProgress > 0 ? 'In Progress' : 'Not Started'),
+              purchaseStatus: purchaseCol >= 0 && r[purchaseCol] ? String(r[purchaseCol]) : 'Chưa đặt hàng',
+              constrStatus: constrCol >= 0 && r[constrCol] ? String(r[constrCol]) : 'Chưa thi công',
+              issue: issueCol >= 0 && r[issueCol] ? String(r[issueCol]) : '',
+              issueStatus: issueStatusCol >= 0 && r[issueStatusCol] ? String(r[issueStatusCol]) : '',
+              isDone: isDoneCol >= 0 ? (r[isDoneCol] === true || String(r[isDoneCol]).toLowerCase() === 'da hoan thanh') : (finalProgress >= 1),
               isSectionHeader: isSection,
               sectionName: currentSection,
-              notes: r[10] ? String(r[10]) : '',
+              notes: notesCol >= 0 && r[notesCol] ? String(r[notesCol]) : '',
               assignedEngineerId: 'eng-1',
-              assignedEngineerName: 'Ká»¹ sÆ° Nam',
+              assignedEngineerName: 'Kỹ sư Nam',
             });
           }
         });
 
         if (importedTasks.length > 0) {
           addTasksBatch(importedTasks);
-          alert(`Đã nạp thành công ${importedTasks.length} hạng mục ${currentImportFormat.toUpperCase()}!`);
+          triggerToast(`Đã nạp thành công ${importedTasks.length} hạng mục từ file Excel!`, 'success');
         }
       } catch (err) {
         console.error('Lỗi đọc file:', err);
-        alert('Không đọc được file. Vui lòng kiểm tra lại định dạng và cấu trúc dữ liệu.');
+        triggerToast('Không đọc được file. Vui lòng kiểm tra lại định dạng và cấu trúc dữ liệu.', 'warning');
       }
     };
     reader.readAsBinaryString(file);
@@ -385,16 +487,16 @@ export const TaskManagementPage: React.FC = () => {
 
   const getTaskExportData = () => displayTasks.map((t) => ({
     'STT': t.stt,
-    'Má»¤C LA MÃƒ': t.isSectionHeader ? '[TIÃŠU Äá»€ Má»¤C]' : t.sectionName || '',
-    'Ná»˜I DUNG CÃ”NG VIá»†C': t.name,
-    'Dá»° ÃN': t.projectName,
-    'KHá»I LÆ¯á»¢NG': t.isSectionHeader ? '' : t.volume,
-    'ÄVT': t.unit || '',
-    'TIáº¾N Äá»˜': t.isSectionHeader ? '' : `${Math.round(t.progress * 100)}%`,
-    'TÃŒNH TRáº NG MUA HÃ€NG': t.purchaseStatus || '',
-    'TÃŒNH TRáº NG THI CÃ”NG': t.constrStatus || '',
-    'VÆ¯á»šNG Máº®C/ Tá»’N Äá»ŒNG': t.issue || '',
-    'TT Xá»¬ LÃ': t.issueStatus || '',
+    'MỤC LA MÃ': t.isSectionHeader ? '[TIÊU ĐỀ MỤC]' : t.sectionName || '',
+    'NỘI DUNG CÔNG VIỆC': t.name,
+    'DỰ ÁN': t.projectName,
+    'KHỐI LƯỢNG': t.isSectionHeader ? '' : t.volume,
+    'ĐVT': t.unit || '',
+    'TIẾN ĐỘ': t.isSectionHeader ? '' : `${Math.round(t.progress * 100)}%`,
+    'TÌNH TRẠNG MUA HÀNG': t.purchaseStatus || '',
+    'TÌNH TRẠNG THI CÔNG': t.constrStatus || '',
+    'VƯỚNG MẮC/ TỒN ĐỌNG': t.issue || '',
+    'TT XỬ LÝ': t.issueStatus || '',
     'HOÀN THÀNH': t.isDone ? 'Đã hoàn thành' : 'Chưa',
   }));
 
@@ -429,7 +531,7 @@ export const TaskManagementPage: React.FC = () => {
           pdf.addPage();
           y = 14;
         }
-        const line = `${index + 1}. ${row['STT']} | ${row['Ná»˜I DUNG CÃ”NG VIá»†C']} | ${row['Dá»° ÃN']} | ${row['TIáº¾N Äá»˜']} | ${row['HOÀN THÀNH']}`;
+        const line = `${index + 1}. ${row['STT']} | ${row['NỘI DUNG CÔNG VIỆC']} | ${row['DỰ ÁN']} | ${row['TIẾN ĐỘ']} | ${row['HOÀN THÀNH']}`;
         const wrapped = pdf.splitTextToSize(line, 270);
         pdf.text(wrapped, 12, y);
         y += Math.max(7, wrapped.length * 4);
@@ -444,6 +546,40 @@ export const TaskManagementPage: React.FC = () => {
     const headerHtml = Object.keys(exportData[0] || {}).map((key) => `<th>${escapeHtml(key)}</th>`).join('');
     const docHtml = `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #cbd5e1;padding:4px;text-align:left}th{background:#eff6ff}</style></head><body><h2>Tiến Độ Công Việc</h2><table><thead><tr>${headerHtml}</tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`;
     downloadBlob(docHtml, `${baseFileName}.docx`, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document;charset=utf-8;');
+  };
+  const applyOcrToNewTaskForm = (data: WebOcrExtractedData) => {
+    const matchedProject = data.projectName
+      ? projects.find((project) => {
+          const projectName = project.name.toLowerCase();
+          const ocrProjectName = data.projectName.toLowerCase();
+          return projectName.includes(ocrProjectName) || ocrProjectName.includes(projectName) || project.code.toLowerCase() === ocrProjectName;
+        })
+      : null;
+
+    const ocrName = data.taskName || data.materialName;
+    if (ocrName) setName(ocrName);
+    if (matchedProject) setProjectCode(matchedProject.code);
+    if (data.quantity) {
+      const normalizedQuantity = Number.parseFloat(data.quantity.replace(/\./g, '').replace(',', '.'));
+      if (Number.isFinite(normalizedQuantity) && normalizedQuantity > 0) setVolume(normalizedQuantity);
+    }
+    if (data.unit) setUnit(data.unit);
+
+    const isImage = data.sourceFileType?.startsWith('image/') || (!data.sourceFileType && !data.sourceFileName?.match(/\.(xlsx|xls|csv|txt|docx|pdf)$/i));
+    const labelHeader = isImage ? 'OCR gốc:' : 'Nội dung tệp gốc:';
+
+    const ocrNotes = [
+      data.materialCode ? `Mã vật tư: ${data.materialCode}` : '',
+      data.materialName ? `Vật tư: ${data.materialName}` : '',
+      data.location ? `Địa điểm: ${data.location}` : '',
+      data.dueDate ? `Hạn/Ngày: ${data.dueDate}` : '',
+      data.note ? `Ghi chú: ${data.note}` : '',
+      (isImage && data.rawText) ? `OCR gốc:\n${data.rawText}` : '',
+    ].filter(Boolean).join('\n');
+
+    setOcrIssueDraft(ocrNotes);
+    setIsSectionHeader(false);
+    triggerToast('Đã trích dữ liệu phụ lục vào form thêm hạng mục. Kiểm tra lại trước khi lưu.', 'success');
   };
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -460,8 +596,9 @@ export const TaskManagementPage: React.FC = () => {
       ? sectionSelect
       : uniqueSectionsForProj[0] || 'I. Hạng mục chung';
 
+    const nextStt = String(tasks.filter(t => t.projectCode === projectCode).length + 1);
     addTask({
-      stt: stt || (isSectionHeader ? 'I' : '1'),
+      stt: stt || (isSectionHeader ? 'I' : nextStt),
       code: `TSK-${Date.now()}`,
       name,
       projectCode,
@@ -482,6 +619,7 @@ export const TaskManagementPage: React.FC = () => {
     setIsNewTaskModalOpen(false);
     setName('');
     setStt('');
+    setOcrIssueDraft('');
   };
 
   const handleCreateProject = (e: React.FormEvent) => {
@@ -617,6 +755,8 @@ export const TaskManagementPage: React.FC = () => {
           unit: '',
           progress: 0,
           status: 'Not Started',
+          purchaseStatus: '',
+          constrStatus: '',
           isDone: false,
           isSectionHeader: true,
           sectionName: sec,
@@ -1098,33 +1238,22 @@ export const TaskManagementPage: React.FC = () => {
                         {t.volume ? t.volume.toLocaleString('vi-VN') : '-'}
                       </td>
                       <td className="py-2 px-2 text-center font-mono text-slate-500 whitespace-nowrap">{t.unit || '-'}</td>
-                      
-                      {/* INTERACTIVE PROGRESS PERCENTAGE INPUT CELL */}
-                      <td className="py-2 px-2.5 text-center whitespace-nowrap">
-                        <div className="inline-flex items-center justify-center gap-0.5">
-                          <input
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={pct}
-                            onChange={(e) => {
-                              let val = parseInt(e.target.value, 10);
-                              if (isNaN(val)) val = 0;
-                              if (val < 0) val = 0;
-                              if (val > 100) val = 100;
-                              const dec = val / 100;
-                              updateTaskProgress(t.id, dec, val === 100);
-                            }}
-                            className={`w-11 px-1 py-0.5 text-center font-mono font-bold text-xs rounded border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:ring-2 focus:ring-primary focus:outline-none transition-all ${
-                              isFinished
-                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                                : pct > 0
-                                ? 'border-blue-300 bg-blue-50 text-blue-700'
-                                : 'border-slate-200 bg-slate-50 text-slate-600'
-                            }`}
-                          />
-                          <span className="font-bold text-xs text-slate-400">%</span>
-                        </div>
+                      <td
+                        onClick={() => handleOpenEditModal(t)}
+                        className="py-2 px-2.5 text-center whitespace-nowrap cursor-pointer"
+                        title="Tiến độ tự tính từ tình trạng mua hàng và tình trạng thi công"
+                      >
+                        <span
+                          className={`inline-flex min-w-12 items-center justify-center px-2 py-0.5 font-mono font-bold text-xs rounded border ${
+                            isFinished
+                              ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                              : pct > 0
+                              ? 'border-blue-300 bg-blue-50 text-blue-700'
+                              : 'border-slate-200 bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          {pct}%
+                        </span>
                       </td>
 
                       {/* STRICT SINGLE LINE NO WRAP PURCHASE BADGE */}
@@ -1313,6 +1442,8 @@ export const TaskManagementPage: React.FC = () => {
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
                   >
                     <option value="Đã có hàng">Đã có hàng</option>
+                    <option value="Đã nhận đủ">Đã nhận đủ</option>
+                    <option value="Đang giao hàng">Đang giao hàng</option>
                     <option value="Đã đặt hàng">Đã đặt hàng</option>
                     <option value="Chưa đặt hàng">Chưa đặt hàng</option>
                   </select>
@@ -1325,6 +1456,8 @@ export const TaskManagementPage: React.FC = () => {
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
                   >
                     <option value="Đã thi công">Đã thi công</option>
+                    <option value="Đã hoàn thành">Đã hoàn thành</option>
+                    <option value="Đang thi công">Đang thi công</option>
                     <option value="Đã lắp TB + kéo dây">Đã lắp TB + kéo dây</option>
                     <option value="Chưa thi công">Chưa thi công</option>
                   </select>
@@ -1354,24 +1487,30 @@ export const TaskManagementPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Kỹ sư Phụ trách</label>
-                <select
-                  value={editEngineerId}
-                  onChange={(e) => setEditEngineerId(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
-                >
-                  {engineers.map((eng) => (
-                    <option key={eng.id} value={eng.id}>
-                      {eng.name} ({eng.title})
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Kỹ sư Phụ trách</label>
+                  <select
+                    value={editEngineerId}
+                    onChange={(e) => setEditEngineerId(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+                  >
+                    {engineers.map((eng) => (
+                      <option key={eng.id} value={eng.id}>
+                        {eng.name} ({eng.title})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tiến độ tự tính (%)</label>
+                  <div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">
+                    {calculateAutoProgressPercent(editPurchaseStatus, editConstrStatus)}%
+                  </div>
+                </div>
               </div>
             </>
-          )}
-
-          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
+          )}<div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setIsEditTaskModalOpen(false)}
@@ -1389,6 +1528,8 @@ export const TaskManagementPage: React.FC = () => {
       {/* SLEEK NEW TASK MODAL */}
       <Modal isOpen={isNewTaskModalOpen} onClose={() => setIsNewTaskModalOpen(false)} title="Thêm Hạng mục Công việc" size="xl">
         <form onSubmit={handleCreateTask} className="space-y-3.5 text-xs">
+          <OcrUploadPanel onExtracted={applyOcrToNewTaskForm} compact />
+
           {/* PROJECT & SECTION SELECTION */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -1496,6 +1637,8 @@ export const TaskManagementPage: React.FC = () => {
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
                   >
                     <option value="Đã có hàng">Đã có hàng</option>
+                    <option value="Đã nhận đủ">Đã nhận đủ</option>
+                    <option value="Đang giao hàng">Đang giao hàng</option>
                     <option value="Đã đặt hàng">Đã đặt hàng</option>
                     <option value="Chưa đặt hàng">Chưa đặt hàng</option>
                   </select>
@@ -1508,27 +1651,49 @@ export const TaskManagementPage: React.FC = () => {
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
                   >
                     <option value="Đã thi công">Đã thi công</option>
+                    <option value="Đã hoàn thành">Đã hoàn thành</option>
+                    <option value="Đang thi công">Đang thi công</option>
                     <option value="Đã lắp TB + kéo dây">Đã lắp TB + kéo dây</option>
                     <option value="Chưa thi công">Chưa thi công</option>
                   </select>
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Kỹ sư Phụ trách</label>
-                <select
-                  value={engineerId}
-                  onChange={(e) => setEngineerId(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
-                >
-                  {engineers.map((eng) => (
-                    <option key={eng.id} value={eng.id}>
-                      {eng.name} ({eng.title})
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Kỹ sư Phụ trách</label>
+                  <select
+                    value={engineerId}
+                    onChange={(e) => setEngineerId(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+                  >
+                    {engineers.map((eng) => (
+                      <option key={eng.id} value={eng.id}>
+                        {eng.name} ({eng.title})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tiến độ tự tính (%)</label>
+                  <div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">
+                    {calculateAutoProgressPercent(purchaseStatus, constrStatus)}%
+                  </div>
+                </div>
               </div>
           </>
+
+          {ocrIssueDraft && (
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Dữ liệu phụ lục / Ghi chú</label>
+              <textarea
+                value={ocrIssueDraft}
+                onChange={(e) => setOcrIssueDraft(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-slate-50 text-xs font-mono leading-5"
+              />
+            </div>
+          )}
 
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
             <button
@@ -1623,9 +1788,7 @@ export const TaskManagementPage: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
+          </div><div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setIsNewProjectModalOpen(false)}
@@ -1639,6 +1802,7 @@ export const TaskManagementPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+      <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
     </div>
   );
 };

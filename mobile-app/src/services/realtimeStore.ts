@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Project, Task, Material, Issue, Engineer, NotificationItem, ActivityLog, IssueStatus, TaskStatus } from '../types';
-import rawExcelData from './excelSeedData.json';
 
 const isRomanOrSection = (stt: string, volume: number, unit: string) => {
   if (!stt) return volume === 0 && !unit;
@@ -9,170 +8,6 @@ const isRomanOrSection = (stt: string, volume: number, unit: string) => {
   const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/;
   return romanRegex.test(clean) || (volume === 0 && (!unit || unit.trim() === ''));
 };
-
-const seedProjects: Project[] = Object.keys(rawExcelData).map((key) => {
-  const sheet = (rawExcelData as any)[key];
-  const items: any[] = sheet.items || [];
-  const validSubItems = items.filter((i) => !isRomanOrSection(i.stt, i.volume || 0, i.unit));
-  const completedCount = validSubItems.filter((i) => i.isDone || i.progress >= 1).length;
-  const issueCount = items.filter((i) => i.issue && i.issue.trim().length > 0).length;
-  const avgProgress = validSubItems.length > 0
-    ? Math.round((validSubItems.reduce((acc, i) => acc + (i.progress || 0), 0) / validSubItems.length) * 100)
-    : 0;
-
-  return {
-    id: `proj-${key.toLowerCase()}`,
-    code: key,
-    name: sheet.title || key,
-    location: key === 'DAKRLAP' ? 'Đắc Nông' : key === 'PHƯỚC TÂN' ? 'Đồng Nai' : 'Cà Mau',
-    progressPercent: avgProgress,
-    status: 'active',
-    activeTeams: 3,
-    totalTasks: validSubItems.length,
-    completedTasks: completedCount,
-    issueTasksCount: issueCount,
-    managerName: key === 'DAKRLAP' ? 'Kỹ sư Nam' : key === 'PHƯỚC TÂN' ? 'Kỹ sư Hùng' : 'Kỹ sư Lan',
-    startDate: '2023-01-01',
-    endDate: '2024-12-31',
-  };
-});
-
-const seedTasks: Task[] = [];
-Object.keys(rawExcelData).forEach((key) => {
-  const sheet = (rawExcelData as any)[key];
-  const items: any[] = sheet.items || [];
-  let currentSection = 'Mục chung';
-
-  items.forEach((item, idx) => {
-    const isSection = isRomanOrSection(item.stt, item.volume || 0, item.unit);
-    if (isSection) {
-      currentSection = `${item.stt ? item.stt + '. ' : ''}${item.name}`;
-    }
-
-    const isFinished = item.isDone || item.progress >= 1;
-    const taskStatus: TaskStatus = isFinished
-      ? 'Done'
-      : item.progress > 0
-      ? 'In Progress'
-      : item.issue
-      ? 'Review'
-      : 'Not Started';
-
-    seedTasks.push({
-      id: `tsk-${key}-${idx + 1}`,
-      stt: item.stt || `${idx + 1}`,
-      code: `TSK-${key}-${idx + 1}`,
-      name: item.name,
-      projectCode: key,
-      projectName: sheet.title,
-      volume: item.volume || 0,
-      unit: item.unit || '',
-      progress: item.progress || 0,
-      status: taskStatus,
-      purchaseStatus: item.purchaseStatus || 'Chưa đặt hàng',
-      constrStatus: item.constrStatus || 'Chưa thi công',
-      issue: item.issue || '',
-      issueStatus: item.issueStatus || '',
-      isDone: isFinished,
-      isSectionHeader: isSection,
-      sectionName: currentSection,
-      notes: item.notes || '',
-      assignedEngineerId: idx % 3 === 0 ? 'eng-1' : idx % 3 === 1 ? 'eng-2' : 'eng-3',
-      assignedEngineerName: idx % 3 === 0 ? 'Kỹ sư Nam' : idx % 3 === 1 ? 'Kỹ sư Hùng' : 'Kỹ sư Lan',
-      dueDate: '2024-11-30',
-      priority: item.issue ? 'High' : item.progress === 0 ? 'Medium' : 'Low',
-      createdAt: '2023-10-01',
-    });
-  });
-});
-
-const seedMaterials: Material[] = seedTasks
-  .filter((t) => !t.isSectionHeader && (t.volume > 0 || t.purchaseStatus))
-  .slice(0, 40)
-  .map((t, idx) => ({
-    id: `mat-${idx + 1}`,
-    code: `MAT-${100 + idx}`,
-    name: t.name,
-    englishName: t.name,
-    projectName: t.projectName,
-    projectCode: t.projectCode,
-    volume: t.volume,
-    unit: t.unit || 'bộ',
-    unitPrice: 25.0,
-    status: t.purchaseStatus || 'Chưa đặt hàng',
-    constrStatus: t.constrStatus || 'Chưa thi công',
-    supplier: 'Nhà cung cấp VTTB Điện',
-  }));
-
-const seedIssues: Issue[] = seedTasks
-  .filter((t) => !t.isSectionHeader && t.issue && t.issue.trim().length > 0)
-  .map((t, idx) => ({
-    id: `iss-${idx + 1}`,
-    incidentCode: `VM-${t.projectCode}-${idx + 1}`,
-    title: t.issue || 'Vướng mắc thi công',
-    projectName: t.projectName,
-    projectCode: t.projectCode,
-    location: `${t.projectName} - ${t.sectionName || t.stt}`,
-    reportedBy: 'Kỹ sư Giám sát Hiện trường',
-    reportedTime: 'Ghi nhận từ Excel Tiến độ',
-    description: `Hạng mục "${t.name}" thuộc ${t.sectionName} đang vướng mắc: ${t.issue}`,
-    photoUrl: idx % 2 === 0
-      ? 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80'
-      : 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
-    status: (t.issueStatus ? 'PROCESSING' : 'OPEN') as IssueStatus,
-    priority: 'CRITICAL',
-    assignedTo: t.assignedEngineerName || 'Ban Quản Lý Dự Án',
-    managerDirectives: t.issueStatus || 'Yêu cầu tập trung phối hợp tháo gỡ vướng mắc.',
-    timelineLogs: [
-      {
-        id: `tl-${idx}-1`,
-        time: 'Ghi nhận',
-        author: 'File Excel Tiến độ',
-        message: `Phát hiện vướng mắc/tồn đọng: ${t.issue}`,
-      },
-      ...(t.issueStatus
-        ? [
-            {
-              id: `tl-${idx}-2`,
-              time: 'Cập nhật',
-              author: 'Chỉ đạo Xử lý',
-              message: t.issueStatus,
-            },
-          ]
-        : []),
-    ],
-  }));
-
-const seedEngineers: Engineer[] = [
-  { id: 'eng-1', name: 'Kỹ sư Nam', title: "Giám sát 110kV Đắc R'Lấp", avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80', phone: '0903 123 456', email: 'nam.nguyen@buildcore.vn' },
-  { id: 'eng-2', name: 'Kỹ sư Hùng', title: 'Chỉ huy 110kV Phước Tân', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80', phone: '0912 987 654', email: 'hung.tran@buildcore.vn' },
-  { id: 'eng-3', name: 'Kỹ sư Lan', title: 'Quản lý 220kV Năm Căn', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80', phone: '0988 555 777', email: 'lan.pham@buildcore.vn' },
-];
-
-const seedNotifications: NotificationItem[] = [
-  {
-    id: 'notif-1',
-    title: 'Đã nạp file tiến độ công trình',
-    message: 'Hệ thống đã sẵn sàng hoạt động trên thiết bị di động.',
-    timestamp: 'Vừa xong',
-    read: false,
-    type: 'system',
-    icon: 'folder_open',
-  },
-];
-
-const seedActivityLogs: ActivityLog[] = [
-  {
-    id: 'act-1',
-    user: 'Hệ thống Khởi tạo',
-    action: 'Đã thiết lập ứng dụng di động thành công',
-    project: 'Mobile App',
-    timestamp: 'Vừa xong',
-    icon: 'smartphone',
-    badgeBg: 'bg-blue-50',
-    iconColor: 'text-primary',
-  },
-];
 
 interface RealtimeStoreState {
   projects: Project[];
@@ -186,6 +21,13 @@ interface RealtimeStoreState {
 
   // Actions
   loadState: () => Promise<void>;
+  fetchProjects: () => Promise<void>;
+  fetchTasks: (projectId?: string) => Promise<void>;
+  fetchMaterials: (projectId?: string) => Promise<void>;
+  fetchIssues: (projectId?: string) => Promise<void>;
+  fetchEngineers: () => Promise<void>;
+  fetchActivityLogs: () => Promise<void>;
+  fetchAccounting: () => Promise<void>;
   addTask: (task: Omit<Task, 'id'>) => void;
   addTasksBatch: (tasks: Omit<Task, 'id'>[]) => void;
   updateTask: (id: string, updatedFields: Partial<Task>) => void;
@@ -208,7 +50,7 @@ interface RealtimeStoreState {
   addProject: (proj: Omit<Project, 'id'>) => void;
 }
 
-const STORAGE_KEY = 'buildcore_pro_excel_db_v4';
+const STORAGE_KEY = 'buildcore_pro_excel_db_v5';
 
 export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   const saveState = async (updatedState: Partial<RealtimeStoreState>) => {
@@ -230,14 +72,122 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   };
 
   return {
-    projects: seedProjects,
-    tasks: seedTasks,
-    materials: seedMaterials,
-    issues: seedIssues,
-    engineers: seedEngineers,
-    notifications: seedNotifications,
-    activityLogs: seedActivityLogs,
+    projects: [],
+    tasks: [],
+    materials: [],
+    issues: [],
+    engineers: [],
+    notifications: [],
+    activityLogs: [],
     isLoaded: false,
+
+    fetchProjects: async () => {
+      try {
+        const { api } = await import('./api');
+        const projects = await api.projects.getAll();
+        if (Array.isArray(projects)) {
+          set({ projects });
+        } else {
+          console.error('Projects API returned non-array:', projects);
+        }
+      } catch (e) {
+        console.error('Failed to fetch projects', e);
+      }
+    },
+
+    fetchTasks: async (projectId?: string) => {
+      try {
+        const { api } = await import('./api');
+        const tasks = await api.tasks.getAll(projectId);
+        if (Array.isArray(tasks)) {
+          set({ tasks });
+        } else {
+          console.error('Tasks API returned non-array:', tasks);
+        }
+      } catch (e) {
+        console.error('Failed to fetch tasks', e);
+      }
+    },
+
+    fetchMaterials: async (projectId?: string) => {
+      try {
+        const { api } = await import('./api');
+        const materials = await api.materials.getAll(projectId);
+        if (Array.isArray(materials)) {
+          set({ materials });
+        } else {
+          console.error('Materials API returned non-array:', materials);
+        }
+      } catch (e) {
+        console.error('Failed to fetch materials', e);
+      }
+    },
+
+    fetchIssues: async (projectId?: string) => {
+      try {
+        const { api } = await import('./api');
+        const issues = await api.issues.getAll(projectId);
+        if (Array.isArray(issues)) {
+          set({ issues });
+        } else {
+          console.error('Issues API returned non-array:', issues);
+        }
+      } catch (e) {
+        console.error('Failed to fetch issues', e);
+      }
+    },
+
+    fetchEngineers: async () => {
+      try {
+        const { api } = await import('./api');
+        const engineers = await api.engineers.getAll();
+        if (Array.isArray(engineers)) {
+          set({ engineers });
+        } else {
+          console.error('Engineers API returned non-array:', engineers);
+        }
+      } catch (e) {
+        console.error('Failed to fetch engineers', e);
+      }
+    },
+
+    fetchActivityLogs: async () => {
+      try {
+        const { api } = await import('./api');
+        const activityLogs = await api.activityLogs.getAll();
+        if (Array.isArray(activityLogs)) {
+          set({ activityLogs });
+        } else {
+          console.error('ActivityLogs API returned non-array:', activityLogs);
+        }
+      } catch (e) {
+        console.error('Failed to fetch activity logs', e);
+      }
+    },
+
+    fetchAccounting: async () => {
+      try {
+        const { api } = await import('./api');
+        const [materialPlans, purchasingPlans, expenses, laborPayrolls, documentTracks] = await Promise.all([
+          api.accounting.getMaterialPlans(),
+          api.accounting.getPurchasings(),
+          api.accounting.getExpenses(),
+          api.accounting.getPayrolls(),
+          api.accounting.getDocumentTracks()
+        ]);
+        
+        const nextState: any = {};
+        if (Array.isArray(materialPlans)) nextState.materialPlans = materialPlans;
+        if (Array.isArray(purchasingPlans)) nextState.purchasingPlans = purchasingPlans;
+        if (Array.isArray(expenses)) nextState.expenses = expenses;
+        if (Array.isArray(laborPayrolls)) nextState.laborPayrolls = laborPayrolls;
+        if (Array.isArray(documentTracks)) nextState.documentTracks = documentTracks;
+        
+        set(nextState);
+      } catch (e) {
+        console.error('Failed to fetch accounting', e);
+      }
+    },
 
     loadState: async () => {
       try {
@@ -254,93 +204,100 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
-    addTask: (taskData) => {
-      const newTask: Task = {
-        ...taskData,
-        id: 'tsk-new-' + Date.now(),
-      };
-      set((state) => {
-        const nextTasks = [newTask, ...state.tasks];
-        saveState({ tasks: nextTasks });
-        return { tasks: nextTasks };
-      });
+    addTask: async (taskData) => {
+      try {
+        const { api } = await import('./api');
+        const createdTask = await api.tasks.create(taskData);
+        set((state) => {
+          const nextTasks = [createdTask, ...state.tasks];
+          saveState({ tasks: nextTasks });
+          return { tasks: nextTasks };
+        });
+      } catch (e) {
+        console.error('Failed to add task', e);
+      }
     },
 
-    addTasksBatch: (batchData) => {
-      const newTasks: Task[] = batchData.map((t, idx) => ({
-        ...t,
-        id: `tsk-imp-${Date.now()}-${idx}`,
-      }));
+    addTasksBatch: async (batchData) => {
+      try {
+        const { api } = await import('./api');
+        const createdTasks = await Promise.all(batchData.map(t => api.tasks.create(t)));
+        set((state) => {
+          const nextTasks = [...createdTasks, ...state.tasks];
+          const nextNotifs: NotificationItem[] = [
+            {
+              id: 'notif-' + Date.now(),
+              title: 'Import Excel thành công',
+              message: `Đã nạp ${createdTasks.length} hạng mục từ tệp Excel.`,
+              timestamp: 'Vừa xong',
+              read: false,
+              type: 'system',
+            },
+            ...state.notifications,
+          ];
+          saveState({ tasks: nextTasks, notifications: nextNotifs });
+          return { tasks: nextTasks, notifications: nextNotifs };
+        });
+      } catch (e) {
+        console.error('Failed to add tasks batch', e);
+      }
+    },
 
-      set((state) => {
-        const nextTasks = [...newTasks, ...state.tasks];
-        const nextNotifs: NotificationItem[] = [
-          {
-            id: 'notif-' + Date.now(),
-            title: 'Import Excel thành công',
-            message: `Đã nạp ${newTasks.length} hạng mục từ file Excel mới.`,
+    updateTask: async (id, updatedFields) => {
+      try {
+        const { api } = await import('./api');
+        const updatedTask = await api.tasks.update(id, updatedFields);
+        set((state) => {
+          const nextTasks = state.tasks.map((t) => (t.id === id ? updatedTask : t));
+          saveState({ tasks: nextTasks });
+          return { tasks: nextTasks };
+        });
+      } catch (e) {
+        console.error('Failed to update task', e);
+      }
+    },
+
+    updateTaskProgress: async (id, progress, isDone) => {
+      try {
+        const { api } = await import('./api');
+        const updatedTask = await api.tasks.update(id, {
+          progress,
+          isDone,
+          status: (isDone ? 'Done' : progress > 0 ? 'In Progress' : 'Not Started') as TaskStatus,
+        });
+        set((state) => {
+          const nextTasks = state.tasks.map((t) => (t.id === id ? updatedTask : t));
+          saveState({ tasks: nextTasks });
+          return { tasks: nextTasks };
+        });
+      } catch (e) {
+        console.error('Failed to update task progress', e);
+      }
+    },
+
+    assignEngineer: async (taskId, engineerId, engineerName) => {
+      try {
+        const { api } = await import('./api');
+        const updatedTask = await api.tasks.update(taskId, {
+          assignedEngineerId: engineerId,
+        });
+        set((state) => {
+          const nextTasks = state.tasks.map((t) => (t.id === taskId ? updatedTask : t));
+          const newNotif: NotificationItem = {
+            id: 'notif-assign-' + Date.now(),
+            title: 'Phân công nhân sự',
+            message: `Đã giao hạng mục "${updatedTask.name}" cho ${engineerName}.`,
             timestamp: 'Vừa xong',
             read: false,
-            type: 'system',
-          },
-          ...state.notifications,
-        ];
-        saveState({ tasks: nextTasks, notifications: nextNotifs });
-        return { tasks: nextTasks, notifications: nextNotifs };
-      });
-    },
-
-    updateTask: (id, updatedFields) => {
-      set((state) => {
-        const nextTasks = state.tasks.map((t) =>
-          t.id === id ? { ...t, ...updatedFields } : t
-        );
-        saveState({ tasks: nextTasks });
-        return { tasks: nextTasks };
-      });
-    },
-
-    updateTaskProgress: (id, progress, isDone) => {
-      set((state) => {
-        const nextTasks = state.tasks.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                progress,
-                isDone,
-                status: (isDone ? 'Done' : progress > 0 ? 'In Progress' : 'Not Started') as TaskStatus,
-              }
-            : t
-        );
-        saveState({ tasks: nextTasks });
-        return { tasks: nextTasks };
-      });
-    },
-
-    assignEngineer: (taskId, engineerId, engineerName) => {
-      set((state) => {
-        let taskName = '';
-        const nextTasks = state.tasks.map((t) => {
-          if (t.id === taskId) {
-            taskName = t.name;
-            return { ...t, assignedEngineerId: engineerId, assignedEngineerName: engineerName };
-          }
-          return t;
+            type: 'task_assigned',
+          };
+          const nextNotifs = [newNotif, ...state.notifications];
+          saveState({ tasks: nextTasks, notifications: nextNotifs });
+          return { tasks: nextTasks, notifications: nextNotifs };
         });
-
-        const newNotif: NotificationItem = {
-          id: 'notif-assign-' + Date.now(),
-          title: 'Phân công nhân sự',
-          message: `Đã giao hạng mục "${taskName}" cho ${engineerName}.`,
-          timestamp: 'Vừa xong',
-          read: false,
-          type: 'task_assigned',
-        };
-
-        const nextNotifs = [newNotif, ...state.notifications];
-        saveState({ tasks: nextTasks, notifications: nextNotifs });
-        return { tasks: nextTasks, notifications: nextNotifs };
-      });
+      } catch (e) {
+        console.error('Failed to assign engineer', e);
+      }
     },
 
     addEngineer: (engineerData) => {
@@ -348,22 +305,26 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         ...engineerData,
         id: 'eng-' + Date.now(),
       };
-
       set((state) => {
         const nextEngineers = [newEngineer, ...state.engineers];
         saveState({ engineers: nextEngineers });
         return { engineers: nextEngineers };
       });
-
       return newEngineer;
     },
 
-    deleteTask: (id) => {
-      set((state) => {
-        const nextTasks = state.tasks.filter((t) => t.id !== id);
-        saveState({ tasks: nextTasks });
-        return { tasks: nextTasks };
-      });
+    deleteTask: async (id) => {
+      try {
+        const { api } = await import('./api');
+        await api.tasks.delete(id);
+        set((state) => {
+          const nextTasks = state.tasks.filter((t) => t.id !== id);
+          saveState({ tasks: nextTasks });
+          return { tasks: nextTasks };
+        });
+      } catch (e) {
+        console.error('Failed to delete task', e);
+      }
     },
 
     addMaterial: (matData) => {
@@ -463,17 +424,18 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       });
     },
 
-    addProject: (projData) => {
-      const newProj: Project = {
-        ...projData,
-        id: 'proj-' + Date.now(),
-        issueTasksCount: 0,
-      };
-      set((state) => {
-        const nextProjs = [newProj, ...state.projects];
-        saveState({ projects: nextProjs });
-        return { projects: nextProjs };
-      });
+    addProject: async (projData) => {
+      try {
+        const { api } = await import('./api');
+        const createdProj = await api.projects.create(projData);
+        set((state) => {
+          const nextProjs = [createdProj, ...state.projects];
+          saveState({ projects: nextProjs });
+          return { projects: nextProjs };
+        });
+      } catch (e) {
+        console.error('Failed to add project', e);
+      }
     },
   };
 });

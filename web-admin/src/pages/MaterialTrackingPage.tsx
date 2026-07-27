@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
+import { Toast } from '../components/common/Toast';
 import { Material, InventoryTransaction } from '../types';
 
 const PURCHASE_STATUSES = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã có hàng', 'Hàng gia công'];
@@ -41,6 +42,166 @@ const constructionBadgeClass = (status: string) => {
 
 export const MaterialTrackingPage: React.FC = () => {
   const { materials, projects, inventoryTransactions, updateMaterial, deleteMaterial, addMaterial, addInventoryTransaction } = useRealtimeStore();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
+  const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+    setToastState({ show: true, message, type });
+    setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+
+        // Ensure this is an Inventory workbook
+        const inventoryKeywords = ['TỒN', 'NHẬP', 'XUẤT', 'TON', 'NHAP', 'XUAT'];
+        const hasInventorySheets = wb.SheetNames.some(name => 
+          inventoryKeywords.some(keyword => name.toUpperCase().includes(keyword))
+        );
+        if (!hasInventorySheets) {
+          triggerToast('File này không phải là file Quản lý Kho (thiếu các sheet Tồn/Nhập/Xuất)!', 'warning');
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          return;
+        }
+
+        const parseExcelDate = (dateVal: any) => {
+          if (!dateVal) return '';
+          if (typeof dateVal === 'string') return dateVal;
+          try {
+            const date = new Date((dateVal - 25569) * 86400 * 1000);
+            return date.toISOString().split('T')[0];
+          } catch (e) {
+            return String(dateVal);
+          }
+        };
+
+        const numVal = (val: any) => {
+          if (val === null || val === undefined) return 0;
+          if (typeof val === 'number') return val;
+          const cleaned = String(val).replace(/[^0-9.-]/g, '');
+          const parsed = parseFloat(cleaned);
+          return isNaN(parsed) ? 0 : parsed;
+        };
+
+        let targetSheetName = '';
+        if (activeTab === 'OVERVIEW') {
+          targetSheetName = wb.SheetNames.find(s => s.includes('TỒN') || s.includes('TonKho') || s.includes('Overview')) || wb.SheetNames[0];
+        } else if (activeTab === 'IMPORT') {
+          targetSheetName = wb.SheetNames.find(s => s.includes('NHẬP') || s.includes('NhapKho') || s.includes('Import')) || wb.SheetNames[0];
+        } else if (activeTab === 'EXPORT') {
+          targetSheetName = wb.SheetNames.find(s => s.includes('XUẤT') || s.includes('XuatKho') || s.includes('Export')) || wb.SheetNames[0];
+        }
+
+        if (!targetSheetName) {
+          triggerToast('Không tìm thấy sheet phù hợp trong file Excel!', 'warning');
+          return;
+        }
+
+        const sheet = wb.Sheets[targetSheetName];
+        const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+        if (!rows || rows.length === 0) {
+          triggerToast('Sheet Excel không có dữ liệu!', 'warning');
+          return;
+        }
+
+        let startRowIndex = -1;
+        let headerRow: any[] = [];
+        for (let i = 0; i < Math.min(rows.length, 15); i++) {
+          const r = rows[i];
+          if (r && (r.includes('STT') || r.includes('stt') || r.includes('Stt') || r.some((cell: any) => String(cell).toLowerCase() === 'stt'))) {
+            startRowIndex = i + 1;
+            headerRow = r;
+            break;
+          }
+        }
+
+        if (startRowIndex === -1) {
+          triggerToast('Không tìm thấy dòng tiêu đề (STT) trong file Excel!', 'warning');
+          return;
+        }
+
+        const headerString = headerRow.map(c => String(c || '').toLowerCase()).join('|');
+        const dataRows = rows.slice(startRowIndex);
+        let importCount = 0;
+
+        if (activeTab === 'OVERVIEW') {
+          const hasKeyword = headerString.includes('mã') || headerString.includes('tên vật tư') || headerString.includes('phân loại') || headerString.includes('tồn');
+          if (!hasKeyword) {
+            triggerToast('File không đúng cấu trúc Tồn kho (thiếu cột Mã vật tư/Tên vật tư/Tồn kho)!', 'warning');
+            return;
+          }
+
+          dataRows.forEach((row) => {
+            const name = row[2] || row[1];
+            if (!name) return;
+            addMaterial({
+              code: String(row[1] || `MAT-${Math.floor(100 + Math.random() * 900)}`),
+              name: String(name),
+              englishName: String(row[3] || ''),
+              projectCode: 'COMPANY',
+              projectName: 'Kho Công Ty',
+              volume: numVal(row[6] || row[5] || 0),
+              initialStock: numVal(row[5] || 0),
+              currentStock: numVal(row[6] || 0),
+              totalImport: numVal(row[7] || 0),
+              totalExport: numVal(row[8] || 0),
+              unit: String(row[4] || 'cái'),
+              category: String(row[9] || 'Vật tư xây dựng'),
+              specs: String(row[3] || ''),
+              supplier: String(row[10] || ''),
+              status: 'Đã có hàng',
+            });
+            importCount++;
+          });
+        } else {
+          const isImport = activeTab === 'IMPORT';
+          const hasKeyword = headerString.includes('mã') || headerString.includes('số lượng') || headerString.includes('ngày') || (isImport ? headerString.includes('nguồn') : headerString.includes('người nhận') || headerString.includes('dự án'));
+          if (!hasKeyword) {
+            triggerToast(`File không đúng cấu trúc Nhật ký ${isImport ? 'Nhập' : 'Xuất'} kho!`, 'warning');
+            return;
+          }
+
+          dataRows.forEach((row) => {
+            const matCode = String(row[2] || '');
+            if (!matCode) return;
+
+            const mat = materials.find(m => m.code.toUpperCase() === matCode.toUpperCase());
+            const matId = mat ? mat.id : `mat-temp-${Date.now()}-${importCount}`;
+            const matName = mat ? mat.name : String(row[3] || 'Vật tư chưa đăng ký');
+
+            addInventoryTransaction({
+              type: isImport ? 'IMPORT' : 'EXPORT',
+              date: parseExcelDate(row[1]),
+              materialId: matId,
+              materialCode: matCode,
+              materialName: matName,
+              specs: String(row[4] || ''),
+              unit: String(row[5] || 'cái'),
+              quantity: numVal(row[6]),
+              sourceOrProject: String(row[7] || ''),
+              receiverName: isImport ? '' : String(row[8] || ''),
+              notes: String(row[9] || '')
+            });
+            importCount++;
+          });
+        }
+
+        triggerToast(`Đã nhập thành công ${importCount} dòng dữ liệu vào Nhật ký ${activeTab === 'OVERVIEW' ? 'Tồn Kho' : activeTab === 'IMPORT' ? 'Nhập Kho' : 'Xuất Kho'}!`, 'success');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      } catch (err: any) {
+        triggerToast('Lỗi phân tích Excel: ' + err.message, 'warning');
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
 
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'IMPORT' | 'EXPORT'>('OVERVIEW');
 
@@ -301,6 +462,20 @@ export const MaterialTrackingPage: React.FC = () => {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImportExcel} 
+              accept=".xlsx,.xls,.csv" 
+              className="hidden" 
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()} 
+              className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+            >
+              <span className="material-symbols-outlined text-base">file_upload</span>
+              Nhập Excel
+            </button>
             <button onClick={handleExportExcel} className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
               <span className="material-symbols-outlined text-base">file_download</span>
               Xuất Excel
@@ -557,6 +732,7 @@ export const MaterialTrackingPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+      <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
     </div>
   );
 };
