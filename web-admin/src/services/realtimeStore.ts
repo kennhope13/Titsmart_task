@@ -14,7 +14,8 @@ import {
   ProjectPurchasing,
   ProjectExpense,
   LaborPayroll,
-  DocumentTrack
+  DocumentTrack,
+  FieldLog
 } from '../types';
 import { api } from './api';
 
@@ -22,7 +23,7 @@ import { api } from './api';
 const isRomanOrSection = (stt: string, volume: number, unit: string) => {
   if (!stt) return volume === 0 && !unit;
   const clean = stt.trim().toUpperCase();
-  const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/;
+  const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|Má»¤C\s+[A-Z0-9]+|[A-Z]{1,2})$/;
   return romanRegex.test(clean) || (volume === 0 && (!unit || unit.trim() === ''));
 };
 
@@ -60,16 +61,18 @@ const calculateTaskProgressFromStatuses = (purchaseStatus?: string, constrStatus
   return Math.max(0, Math.min(1, Number(progress.toFixed(4))));
 };
 
-const taskStatusFromProgress = (task: Pick<Task, 'isSectionHeader' | 'issue' | 'issueStatus'>, progress: number): TaskStatus => {
-  if (task.isSectionHeader) return 'Not Started';
-  if (progress >= 1) return 'Done';
-  if (task.issue || task.issueStatus) return 'Review';
-  return progress > 0 ? 'In Progress' : 'Not Started';
+const taskStatusFromProgress = (t: Pick<Task, 'isSectionHeader' | 'issue' | 'issueStatus' | 'status' | 'progress'>, progress: number): TaskStatus => {
+  if (t.isSectionHeader) return 'Chưa làm';
+  const isComplete = progress >= 1;
+  if (isComplete || t.status === 'Hoàn thành') return 'Hoàn thành';
+  if (t.issueStatus === 'OPEN' || t.issueStatus === 'PROCESSING') return 'Chờ nghiệm thu';
+  return t.progress > 0 ? 'Đang làm' : 'Chưa làm';
 };
 
 const withAutoProgress = (task: Task): Task => {
   if (task.isSectionHeader) {
-    return { ...task, progress: 0, isDone: false, status: 'Not Started' };
+    const isComplete = task.progress >= 1;
+    return { ...task, isDone: isComplete, status: isComplete ? 'Hoàn thành' : 'Chưa làm' };
   }
 
   const progress = calculateTaskProgressFromStatuses(task.purchaseStatus, task.constrStatus);
@@ -117,6 +120,7 @@ interface RealtimeStoreState {
   expenses: ProjectExpense[];
   laborPayrolls: LaborPayroll[];
   documentTracks: DocumentTrack[];
+  fieldLogs: FieldLog[];
 
   // Fetch Actions
   fetchProjects: () => Promise<void>;
@@ -126,10 +130,11 @@ interface RealtimeStoreState {
   fetchEngineers: () => Promise<void>;
   fetchActivityLogs: () => Promise<void>;
   fetchAccounting: () => Promise<void>;
+  fetchFieldLogs: () => Promise<void>;
 
   // Actions
   addTask: (task: Omit<Task, 'id'>) => void;
-  addTasksBatch: (tasks: Omit<Task, 'id'>[]) => void;
+  addTasksBatch: (tasks: Omit<Task, 'id'>[]) => Promise<void>;
   updateTask: (id: string, updatedFields: Partial<Task>) => void;
   updateTaskProgress: (id: string, progress: number, isDone: boolean) => void;
   assignEngineer: (taskId: string, engineerId: string, engineerName: string) => void;
@@ -149,7 +154,8 @@ interface RealtimeStoreState {
 
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
-  addProject: (proj: Omit<Project, 'id'>) => void;
+  addProject: (proj: Omit<Project, 'id'>) => Promise<Project | undefined>;
+  deleteProject: (id: string) => void;
 
   // New Actions
   addMaterialPlan: (plan: Omit<ProjectMaterialPlan, 'id'>) => void;
@@ -171,10 +177,12 @@ interface RealtimeStoreState {
   addDocumentTrack: (track: Omit<DocumentTrack, 'id'>) => void;
   updateDocumentTrack: (id: string, fields: Partial<DocumentTrack>) => void;
   deleteDocumentTrack: (id: string) => void;
+  
+  addFieldLog: (log: Omit<FieldLog, 'id'>) => void;
   logActivity: (action: string, project: string, user?: string) => void;
 }
 
-const STORAGE_KEY = 'buildcore_pro_excel_db_v6';
+const STORAGE_KEY = 'buildcore_pro_excel_db_v7';
 
 export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   let channel: BroadcastChannel | null = null;
@@ -204,6 +212,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       expenses: newState.expenses !== undefined ? newState.expenses : current.expenses,
       laborPayrolls: newState.laborPayrolls !== undefined ? newState.laborPayrolls : current.laborPayrolls,
       documentTracks: newState.documentTracks !== undefined ? newState.documentTracks : current.documentTracks,
+      fieldLogs: newState.fieldLogs !== undefined ? newState.fieldLogs : current.fieldLogs,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -227,6 +236,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     expenses: [],
     laborPayrolls: [],
     documentTracks: [],
+    fieldLogs: [],
 
     fetchProjects: async () => {
       try {
@@ -282,6 +292,15 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
+    fetchFieldLogs: async () => {
+      try {
+        const fieldLogs = await api.fieldLogs.getAll();
+        set({ fieldLogs });
+      } catch (e) {
+        console.error('Failed to fetch field logs', e);
+      }
+    },
+
     fetchAccounting: async () => {
       try {
         const [materialPlans, purchasingPlans, expenses, laborPayrolls, documentTracks] = await Promise.all([
@@ -314,7 +333,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity('Đã tạo thủ công hạng mục công việc: ' + createdTask.name, createdTask.projectName || createdTask.projectCode);
+        get().logActivity('ÄÃ£ táº¡o thá»§ cÃ´ng háº¡ng má»¥c cÃ´ng viá»‡c: ' + createdTask.name, createdTask.projectName || createdTask.projectCode);
       } catch (e) {
         console.error('Failed to add task', e);
       }
@@ -330,9 +349,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const nextNotifs: NotificationItem[] = [
             {
               id: 'notif-' + Date.now(),
-              title: 'Import Excel thành công',
-              message: `Đã nạp ${createdTasks.length} hạng mục từ tệp Excel.`,
-              timestamp: 'Vừa xong',
+              title: 'Import Excel thÃ nh cÃ´ng',
+              message: `ÄÃ£ náº¡p ${createdTasks.length} háº¡ng má»¥c tá»« tá»‡p Excel.`,
+              timestamp: 'Vá»«a xong',
               read: false,
               type: 'system',
               icon: 'file_upload',
@@ -343,7 +362,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { tasks: nextTasks, projects: nextProjects, notifications: nextNotifs };
         });
         if (createdTasks.length > 0) {
-          get().logActivity(`Đã nhập khẩu ${createdTasks.length} hạng mục công việc từ file Excel`, createdTasks[0].projectName || 'Tiến độ', 'Excel Sync');
+          get().logActivity(`ÄÃ£ nháº­p kháº©u ${createdTasks.length} háº¡ng má»¥c cÃ´ng viá»‡c tá»« file Excel`, createdTasks[0].projectName || 'Tiáº¿n Ä‘á»™', 'Excel Sync');
         }
       } catch (e) {
         console.error('Failed to add tasks batch', e);
@@ -359,7 +378,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity('Đã chỉnh sửa thông tin công việc: ' + updatedTask.name, updatedTask.projectName || updatedTask.projectCode);
+        get().logActivity('ÄÃ£ chá»‰nh sá»­a thÃ´ng tin cÃ´ng viá»‡c: ' + updatedTask.name, updatedTask.projectName || updatedTask.projectCode);
       } catch (e) {
         console.error('Failed to update task', e);
       }
@@ -378,7 +397,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity(`Đã cập nhật tiến độ thi công thành ${Math.round(progress * 100)}%`, updatedTask.projectName || updatedTask.projectCode);
+        get().logActivity(`ÄÃ£ cáº­p nháº­t tiáº¿n Ä‘á»™ thi cÃ´ng thÃ nh ${Math.round(progress * 100)}%`, updatedTask.projectName || updatedTask.projectCode);
       } catch (e) {
         console.error('Failed to update task progress', e);
       }
@@ -393,9 +412,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const nextTasks = state.tasks.map((t) => (t.id === taskId ? updatedTask : t));
           const newNotif: NotificationItem = {
             id: 'notif-assign-' + Date.now(),
-            title: 'Phân công nhân sự',
-            message: `Đã giao hạng mục "${updatedTask.name}" cho ${engineerName}.`,
-            timestamp: 'Vừa xong',
+            title: 'PhÃ¢n cÃ´ng nhÃ¢n sá»±',
+            message: `ÄÃ£ giao háº¡ng má»¥c "${updatedTask.name}" cho ${engineerName}.`,
+            timestamp: 'Vá»«a xong',
             read: false,
             type: 'task_assigned',
             icon: 'person_add',
@@ -436,7 +455,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { tasks: nextTasks, projects: nextProjects };
         });
         if (taskToDelete) {
-          get().logActivity('Đã xóa công việc: ' + taskToDelete.name, taskToDelete.projectName || taskToDelete.projectCode);
+          get().logActivity('ÄÃ£ xÃ³a cÃ´ng viá»‡c: ' + taskToDelete.name, taskToDelete.projectName || taskToDelete.projectCode);
         }
       } catch (e) {
         console.error('Failed to delete task', e);
@@ -544,7 +563,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
                 {
                   id: 'tl-' + Date.now(),
                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                  author: 'Ban Quản Lý Dự Án',
+                  author: 'Ban Quáº£n LÃ½ Dá»± Ãn',
                   message: directive,
                 },
                 ...i.timelineLogs,
@@ -581,8 +600,62 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ projects: nextProjs });
           return { projects: nextProjs };
         });
+        return createdProj;
       } catch (e) {
         console.error('Failed to add project', e);
+      }
+    },
+
+    deleteProject: async (id) => {
+      try {
+        const projectToDelete = get().projects.find((p) => p.id === id);
+        if (!projectToDelete) return;
+
+        await api.projects.delete(id);
+
+        set((state) => {
+          const projectCode = projectToDelete.code;
+          const nextProjects = state.projects.filter((p) => p.id !== id);
+          const nextTasks = state.tasks.filter((t) => t.projectCode !== projectCode);
+          const nextMaterials = state.materials.filter((m) => m.projectCode !== projectCode);
+          const nextIssues = state.issues.filter((i) => i.projectCode !== projectCode);
+          const nextMaterialPlans = state.materialPlans.filter((p) => p.projectCode !== projectCode);
+          const nextPurchasingPlans = state.purchasingPlans.filter((p) => p.projectCode !== projectCode);
+          const nextExpenses = state.expenses.filter((e) => e.projectCode !== projectCode);
+          const nextLaborPayrolls = state.laborPayrolls.filter((p) => p.projectCode !== projectCode);
+          const nextDocumentTracks = state.documentTracks.filter((d) => d.projectCode !== projectCode);
+          const nextFieldLogs = state.fieldLogs.filter((l) => l.projectCode !== projectCode);
+
+          persistAndNotify({
+            projects: nextProjects,
+            tasks: nextTasks,
+            materials: nextMaterials,
+            issues: nextIssues,
+            materialPlans: nextMaterialPlans,
+            purchasingPlans: nextPurchasingPlans,
+            expenses: nextExpenses,
+            laborPayrolls: nextLaborPayrolls,
+            documentTracks: nextDocumentTracks,
+            fieldLogs: nextFieldLogs,
+          });
+
+          return {
+            projects: nextProjects,
+            tasks: nextTasks,
+            materials: nextMaterials,
+            issues: nextIssues,
+            materialPlans: nextMaterialPlans,
+            purchasingPlans: nextPurchasingPlans,
+            expenses: nextExpenses,
+            laborPayrolls: nextLaborPayrolls,
+            documentTracks: nextDocumentTracks,
+            fieldLogs: nextFieldLogs,
+          };
+        });
+
+        get().logActivity('Đã xóa dự án: ' + projectToDelete.name, projectToDelete.name);
+      } catch (e) {
+        console.error('Failed to delete project', e);
       }
     },
 
@@ -780,8 +853,21 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         console.error('Failed to delete document track', e);
       }
     },
+    
+    addFieldLog: async (logData) => {
+      try {
+        const created = await api.fieldLogs.create(logData);
+        set((state) => {
+          const nextLogs = [created, ...state.fieldLogs];
+          persistAndNotify({ fieldLogs: nextLogs });
+          return { fieldLogs: nextLogs };
+        });
+      } catch (e) {
+        console.error('Failed to add field log', e);
+      }
+    },
 
-    logActivity: (action, project, user = 'Kỹ sư Nam') => {
+    logActivity: (action, project, user = 'Ká»¹ sÆ° Nam') => {
       set((state) => {
         const newLog: ActivityLog = {
           id: 'act-' + Date.now() + '-' + Math.floor(Math.random() * 100),
@@ -789,18 +875,18 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           action,
           project,
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('vi-VN'),
-          icon: action.toLowerCase().includes('tiến độ') ? 'trending_up' :
-                action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'payments' :
-                action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'warehouse' :
-                action.toLowerCase().includes('hồ sơ') ? 'drafts' : 'history',
-          badgeBg: action.toLowerCase().includes('tiến độ') ? 'bg-blue-50' :
-                   action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'bg-emerald-50' :
-                   action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'bg-amber-50' :
-                   action.toLowerCase().includes('hồ sơ') ? 'bg-violet-50' : 'bg-slate-50',
-          iconColor: action.toLowerCase().includes('tiến độ') ? 'text-blue-500' :
-                     action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'text-emerald-500' :
-                     action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'text-amber-500' :
-                     action.toLowerCase().includes('hồ sơ') ? 'text-violet-500' : 'text-slate-500',
+          icon: action.toLowerCase().includes('tiáº¿n Ä‘á»™') ? 'trending_up' :
+                action.toLowerCase().includes('chi') || action.toLowerCase().includes('lÆ°Æ¡ng') || action.toLowerCase().includes('há»£p Ä‘á»“ng') ? 'payments' :
+                action.toLowerCase().includes('kho') || action.toLowerCase().includes('váº­t tÆ°') ? 'warehouse' :
+                action.toLowerCase().includes('há»“ sÆ¡') ? 'drafts' : 'history',
+          badgeBg: action.toLowerCase().includes('tiáº¿n Ä‘á»™') ? 'bg-blue-50' :
+                   action.toLowerCase().includes('chi') || action.toLowerCase().includes('lÆ°Æ¡ng') || action.toLowerCase().includes('há»£p Ä‘á»“ng') ? 'bg-emerald-50' :
+                   action.toLowerCase().includes('kho') || action.toLowerCase().includes('váº­t tÆ°') ? 'bg-amber-50' :
+                   action.toLowerCase().includes('há»“ sÆ¡') ? 'bg-violet-50' : 'bg-slate-50',
+          iconColor: action.toLowerCase().includes('tiáº¿n Ä‘á»™') ? 'text-blue-500' :
+                     action.toLowerCase().includes('chi') || action.toLowerCase().includes('lÆ°Æ¡ng') || action.toLowerCase().includes('há»£p Ä‘á»“ng') ? 'text-emerald-500' :
+                     action.toLowerCase().includes('kho') || action.toLowerCase().includes('váº­t tÆ°') ? 'text-amber-500' :
+                     action.toLowerCase().includes('há»“ sÆ¡') ? 'text-violet-500' : 'text-slate-500',
         };
         const nextLogs = [newLog, ...state.activityLogs].slice(0, 100);
         persistAndNotify({ activityLogs: nextLogs });

@@ -13,6 +13,8 @@ export const ProjectCostPlanPage: React.FC = () => {
     purchasingPlans,
     expenses,
     laborPayrolls,
+    tasks,
+    addTask,
     addMaterialPlan,
     updateMaterialPlan,
     deleteMaterialPlan,
@@ -29,6 +31,10 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Pending tasks waiting for user confirmation before being created
+  const [pendingTaskItems, setPendingTaskItems] = useState<Array<any>>([]);
+  const [showCreateTaskConfirm, setShowCreateTaskConfirm] = useState(false);
+
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
     setToastState({ show: true, message, type });
@@ -38,6 +44,13 @@ export const ProjectCostPlanPage: React.FC = () => {
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Check if it's not an excel or csv file
+    if (file.name.endsWith('.pdf') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+      triggerToast('Tính năng bóc tách tự động bằng AI OCR cho file PDF/Word đang được triển khai. Vui lòng sử dụng file Excel hoặc CSV để hệ thống phân tích tốc độ cao!', 'info');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (evt) => {
@@ -59,28 +72,57 @@ export const ProjectCostPlanPage: React.FC = () => {
           })
           .join(' ');
         const normalizedWorkbookPreview = normalizeImportText(workbookPreviewText);
-        const isAppendixWorkbook = normalizedWorkbookPreview.includes('phu luc 01')
-          || normalizedWorkbookPreview.includes('bang chi tiet gia tri hop dong')
-          || normalizeImportText(file.name).includes('pl01');
-        
-        // Ensure this is indeed a Cost Plan / Material Plan workbook
-        const costKeywords = ['KẾ HOẠCH', 'KÉ HOẠCH', 'MUA SẮM', 'CHI PHÍ', 'CÔNG NHẬT', 'LƯƠNG'];
-        const hasCostSheets = wb.SheetNames.some(name => 
-          costKeywords.some(keyword => name.toUpperCase().includes(keyword))
+        // ------------------------------------------------------------------
+        // Smart validation: nhận diện file hợp lệ theo nhiều tiêu chí
+        // ------------------------------------------------------------------
+        const normalizeSheetName = (n: string) => normalizeImportText(n);
+
+        // 1. Kiểm tra tên file hoặc nội dung có dấu hiệu là phụ lục hợp đồng
+        const isAppendixWorkbook =
+          normalizedWorkbookPreview.includes('phu luc 01') ||
+          normalizedWorkbookPreview.includes('phu luc hop dong') ||
+          normalizedWorkbookPreview.includes('bang chi tiet gia tri hop dong') ||
+          normalizeImportText(file.name).includes('pl01') ||
+          normalizeImportText(file.name).includes('hopdong') ||
+          normalizeImportText(file.name).includes('hop dong') ||
+          normalizeImportText(file.name).includes('phu luc') ||
+          file.name.toLowerCase().endsWith('.csv') ||
+          // Sheet tên có PL01 hoặc phụ lục
+          wb.SheetNames.some(n => normalizeSheetName(n).includes('pl01') || normalizeSheetName(n).includes('phu luc')) ||
+          // Nội dung có cột STT + nội dung/hạng mục/công việc/thiết bị
+          (normalizedWorkbookPreview.includes('stt') && (
+            normalizedWorkbookPreview.includes('noi dung') ||
+            normalizedWorkbookPreview.includes('hang muc') ||
+            normalizedWorkbookPreview.includes('cong viec') ||
+            normalizedWorkbookPreview.includes('thiet bi') ||
+            normalizedWorkbookPreview.includes('mo ta')
+          ));
+
+        // 2. Sheet tên có từ khoá kế hoạch / chi phí
+        const costKeywords = ['KẾ HOẠCH', 'KE HOACH', 'MUA SẮM', 'MUA SAM', 'CHI PHÍ', 'CHI PHI',
+          'CÔNG NHẬT', 'CONG NHAT', 'LƯƠNG', 'LUONG', 'SHEET1', 'PL', 'PHU LUC'];
+        const hasCostSheets = wb.SheetNames.some(name =>
+          costKeywords.some(keyword => name.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(keyword))
         );
-        const forbiddenKeywords = ['TỒN KHO', 'NHẬP KHO', 'XUẤT KHO', 'TONKHO', 'NHAPKHO', 'XUATKHO', 'NHÂN SỰ', 'NHANSU', 'HỒ SƠ GỬI', 'HOSO'];
-        const hasForbiddenSheets = wb.SheetNames.some(name => 
-          forbiddenKeywords.some(keyword => name.toUpperCase().includes(keyword))
+
+        // 3. Từ khoá bị cấm (file nhân sự, kho)
+        const forbiddenKeywords = ['TỒN KHO', 'NHẬP KHO', 'XUẤT KHO', 'TON KHO', 'NHAP KHO', 'XUAT KHO', 'NHÂN SỰ', 'NHAN SU', 'HỒ SƠ GỬI'];
+        const hasForbiddenSheets = wb.SheetNames.some(name =>
+          forbiddenKeywords.some(keyword => name.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(
+            keyword.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          ))
         );
-        const hasAppendixBaseline = materialPlans.some((plan) => plan.projectCode === selectedProject)
-          || purchasingPlans.some((plan) => plan.projectCode === selectedProject);
-        if (hasCostSheets && !isAppendixWorkbook && !hasAppendixBaseline) {
-          triggerToast('Vui l\u00f2ng nh\u1eadp ph\u1ee5 l\u1ee5c PL01 tr\u01b0\u1edbc, sau \u0111\u00f3 m\u1edbi nh\u1eadp/c\u1eadp nh\u1eadt c\u00e1c ph\u00e1t sinh.', 'warning');
+
+        // 4. Chặn file cấm tuyệt đối
+        if (hasForbiddenSheets) {
+          triggerToast('File này chứa dữ liệu Nhân sự/Kho — không phù hợp để nhập vào Kế hoạch Chi phí!', 'warning');
           if (fileInputRef.current) fileInputRef.current.value = '';
           return;
         }
-        if ((!hasCostSheets && !isAppendixWorkbook) || hasForbiddenSheets) {
-          triggerToast('File này không phải là file Quản lý Chi phí/Kế hoạch phù hợp. Vui lòng chọn đúng file dự án!', 'warning');
+
+        // 5. Nếu không nhận ra cấu trúc nào hết → từ chối
+        if (!isAppendixWorkbook && !hasCostSheets) {
+          triggerToast('Không nhận diện được cấu trúc file. Vui lòng dùng file Excel/CSV có cột STT, Nội dung, Khối lượng, Đơn giá!', 'warning');
           if (fileInputRef.current) fileInputRef.current.value = '';
           return;
         }
@@ -119,6 +161,12 @@ export const ProjectCostPlanPage: React.FC = () => {
             .map((plan) => [baselineKey(plan.stt || '', plan.content || ''), plan])
         );
 
+        const taskBaselineMap = new Map(
+          tasks
+            .filter((t) => t.projectCode === selectedProject)
+            .map((t) => [baselineKey(t.stt || '', t.name || ''), t])
+        );
+
         const importAppendixWorkbook = () => {
           let appendixMaterialCount = 0;
           let appendixPurchasingCount = 0;
@@ -140,6 +188,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             return found >= 0 ? found : fallback;
           };
 
+          const pendingTasks: any[] = [];
           wb.SheetNames.forEach((sheetName) => {
             const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets[sheetName], { header: 1, defval: '' });
             const headerRowIndex = findAppendixHeaderRow(rows);
@@ -248,21 +297,47 @@ export const ProjectCostPlanPage: React.FC = () => {
                 }
                 appendixPurchasingCount++;
               }
+
+              const existingTask = taskBaselineMap.get(rowKey);
+              if (!existingTask) {
+                const projName = projects.find(p => p.code === selectedProject)?.name || selectedProject;
+                // Collect task to be confirmed by user later
+                pendingTasks.push({
+                  stt,
+                  code: '',
+                  name: content,
+                  projectCode: selectedProject,
+                  projectName: projName,
+                  volume: volumeContract,
+                  unit: String(row[unitCol] || ''),
+                  progress: 0,
+                  status: 'Chưa làm',
+                  purchaseStatus: 'Chưa đặt hàng',
+                  constrStatus: 'Chưa thi công',
+                  isDone: false,
+                  notes: baseNote
+                });
+                taskBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt, name: content } as any);
+              }
             });
           });
 
-          return { appendixMaterialCount, appendixPurchasingCount };
+          return { appendixMaterialCount, appendixPurchasingCount, pendingTasks };
         };
 
         if (isAppendixWorkbook) {
-          const { appendixMaterialCount, appendixPurchasingCount } = importAppendixWorkbook();
+          const { appendixMaterialCount, appendixPurchasingCount, pendingTasks } = importAppendixWorkbook();
           if (appendixMaterialCount === 0 && appendixPurchasingCount === 0) {
-            triggerToast('Kh\u00f4ng t\u00ecm th\u1ea5y b\u1ea3ng ph\u1ee5 l\u1ee5c PL01 h\u1ee3p l\u1ec7 trong file Excel n\u00e0y.', 'warning');
+            triggerToast('Không tìm thấy bảng phụ lục PL01 hợp lệ trong file Excel này.', 'warning');
           } else {
             triggerToast(
-              `\u0110\u00e3 nh\u1eadp ph\u1ee5 l\u1ee5c PL01 cho d\u1ef1 \u00e1n ${selectedProject}: ${appendixMaterialCount} d\u00f2ng h\u1ea1ng m\u1ee5c, ${appendixPurchasingCount} d\u00f2ng gi\u00e1 tr\u1ecb h\u1ee3p \u0111\u1ed3ng.`,
+              `Đã nhập phụ lục PL01 cho dự án ${selectedProject}: ${appendixMaterialCount} dòng hạng mục, ${appendixPurchasingCount} dòng giá trị hợp đồng.`,
               'success'
             );
+            if (pendingTasks.length > 0) {
+              setPendingTaskItems(pendingTasks);
+              setShowCreateTaskConfirm(true);
+            }
           }
           if (fileInputRef.current) fileInputRef.current.value = '';
           return;
@@ -689,9 +764,31 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Project Selector */}
-        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200">
-          <span className="text-xs font-bold text-slate-500 uppercase px-2">Dự án:</span>
+        {/* Project Selector & Actions */}
+        <div className="flex items-center gap-3">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImportExcel} 
+            accept=".xlsx,.xls,.csv,.pdf,.doc,.docx" 
+            className="hidden" 
+          />
+          <button 
+            onClick={() => {
+              if (!selectedProject) {
+                triggerToast('Vui lòng khởi tạo dự án trước khi nhập dữ liệu!', 'warning');
+                return;
+              }
+              fileInputRef.current?.click();
+            }} 
+            className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-2 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 shadow-xs text-blue-600 border-blue-100"
+          >
+            <span className="material-symbols-outlined text-base">file_upload</span>
+            Nhập File
+          </button>
+
+          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200">
+            <span className="text-xs font-bold text-slate-500 uppercase px-2">Dự án:</span>
           <select 
             value={selectedProject} 
             onChange={(e) => setSelectedProject(e.target.value)} 
@@ -706,6 +803,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               })
             )}
           </select>
+          </div>
         </div>
       </section>
 
@@ -1839,6 +1937,59 @@ export const ProjectCostPlanPage: React.FC = () => {
         )}
       </Modal>
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
+
+      {/* Confirm dialog: tạo Công việc từ hạng mục PL01 */}
+      {showCreateTaskConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-surface rounded-xl shadow-2xl border border-outline-variant w-full max-w-md overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
+              <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                <span className="material-symbols-outlined">add_task</span>
+                Tạo Công việc từ hạng mục vừa nhập?
+              </h3>
+              <button
+                onClick={() => { setShowCreateTaskConfirm(false); setPendingTaskItems([]); }}
+                className="p-1 text-outline hover:text-on-surface hover:bg-surface-container-high rounded transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto flex-1">
+              <p className="text-body-md text-on-surface-variant leading-relaxed">
+                Hệ thống vừa nhập <strong className="text-primary font-semibold">{pendingTaskItems.length} hạng mục</strong> từ phụ lục PL01 vào Kế hoạch Vật tư & Mua sắm.
+              </p>
+              <p className="text-body-md text-on-surface-variant leading-relaxed mt-2">
+                Bạn có muốn tự động đồng bộ tạo <strong className="text-primary font-semibold">{pendingTaskItems.length} Công việc</strong> tương ứng trong tab <strong className="text-on-surface font-semibold">Quản lý Công việc</strong> không?
+              </p>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3">
+              <button
+                onClick={() => { setShowCreateTaskConfirm(false); setPendingTaskItems([]); }}
+                className="px-4 py-2 border border-outline text-outline hover:text-on-surface hover:bg-surface-container-high rounded transition-colors font-medium text-sm"
+              >
+                Không, bỏ qua
+              </button>
+              <button
+                onClick={() => {
+                  pendingTaskItems.forEach(t => addTask(t));
+                  setShowCreateTaskConfirm(false);
+                  setPendingTaskItems([]);
+                  triggerToast(`Đã tạo ${pendingTaskItems.length} Công việc từ phụ lục PL01!`, 'success');
+                }}
+                className="px-4 py-2 bg-secondary-container text-white hover:opacity-90 rounded transition-opacity font-bold text-sm shadow-md flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-sm">done</span>
+                Có, tạo Công việc
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { useRealtimeStore } from '../services/realtimeStore';
@@ -111,6 +112,25 @@ const constructionProgressScore = (status?: string) => {
 const calculateAutoProgressPercent = (purchaseStatus?: string, constrStatus?: string) =>
   Math.round((purchaseProgressScore(purchaseStatus) * 0.5 + constructionProgressScore(constrStatus) * 0.5) * 100);
 
+const sttSortParts = (value?: string) => {
+  const text = String(value || '').trim();
+  if (!text) return [Number.POSITIVE_INFINITY];
+  const parts = text.match(/\d+/g)?.map((part) => Number.parseInt(part, 10)) || [];
+  return parts.length ? parts : [Number.POSITIVE_INFINITY];
+};
+
+const compareTaskStt = (a?: string, b?: string) => {
+  const left = sttSortParts(a);
+  const right = sttSortParts(b);
+  const max = Math.max(left.length, right.length);
+  for (let index = 0; index < max; index += 1) {
+    const leftValue = left[index] ?? 0;
+    const rightValue = right[index] ?? 0;
+    if (leftValue !== rightValue) return leftValue - rightValue;
+  }
+  return String(a || '').localeCompare(String(b || ''), 'vi', { numeric: true, sensitivity: 'base' });
+};
+
 
 // Helper function to truncate long text cleanly
 const truncateText = (text: string, maxLength: number = 40): string => {
@@ -120,17 +140,23 @@ const truncateText = (text: string, maxLength: number = 40): string => {
 };
 
 export const TaskManagementPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const selectedProjectFromUrl = searchParams.get('project') || '';
   const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask } = useRealtimeStore();
 
   const [selectedProjectCode, setSelectedProjectCode] = useState<string>('all');
   const [selectedRomanSection, setSelectedRomanSection] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Column Filters
+  const [filterSection, setFilterSection] = useState<string>('all');
+  const [filterUnit, setFilterUnit] = useState<string>('all');
+  const [filterProgress, setFilterProgress] = useState<string>('all');
+
   // Detailed Attribute Filters
   const [filterPurchase, setFilterPurchase] = useState<string>('all');
   const [filterConstr, setFilterConstr] = useState<string>('all');
-  const [filterIssue, setFilterIssue] = useState<string>('all');
-  const [filterEngineer, setFilterEngineer] = useState<string>('all');
 
   // Custom Section Menu Popover state
   const [isSectionMenuOpen, setIsSectionMenuOpen] = useState<boolean>(false);
@@ -164,7 +190,7 @@ export const TaskManagementPage: React.FC = () => {
   const [editConstrStatus, setEditConstrStatus] = useState('Chưa thi công');
   const [editIssue, setEditIssue] = useState('');
   const [editIssueStatus, setEditIssueStatus] = useState('');
-  const [editEngineerId, setEditEngineerId] = useState('eng-1');
+  const [editEngineerId, setEditEngineerId] = useState(engineers[0]?.id || '');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -178,7 +204,7 @@ export const TaskManagementPage: React.FC = () => {
   const [unit, setUnit] = useState('cái');
   const [purchaseStatus, setPurchaseStatus] = useState('Chưa đặt hàng');
   const [constrStatus, setConstrStatus] = useState('Chưa thi công');
-  const [engineerId, setEngineerId] = useState('eng-1');
+  const [engineerId, setEngineerId] = useState(engineers[0]?.id || '');
   const [isSectionHeader, setIsSectionHeader] = useState(false);
   const [ocrIssueDraft, setOcrIssueDraft] = useState('');
 
@@ -186,9 +212,15 @@ export const TaskManagementPage: React.FC = () => {
   const [newProjName, setNewProjName] = useState('');
   const [newProjCode, setNewProjCode] = useState('');
   const [newProjLocation, setNewProjLocation] = useState('');
-  const [newProjManagerId, setNewProjManagerId] = useState(engineers[0]?.id || 'eng-1');
+  const [newProjManagerId, setNewProjManagerId] = useState(engineers[0]?.id || '');
   const [newManagerName, setNewManagerName] = useState('');
   const [newManagerTitle, setNewManagerTitle] = useState('Chỉ huy trưởng công trình');
+
+  useEffect(() => {
+    if (!selectedProjectFromUrl) return;
+    setSelectedProjectCode(selectedProjectFromUrl);
+    setProjectCode(selectedProjectFromUrl);
+  }, [selectedProjectFromUrl]);
 
   // Extract Unique Roman Numeral Sections for Filter & Dropdowns
   const activeTasksForProj = tasks.filter((t) => selectedProjectCode === 'all' || t.projectCode === selectedProjectCode);
@@ -199,6 +231,12 @@ export const TaskManagementPage: React.FC = () => {
     .filter((secName): secName is string => !!secName && secName.trim().length > 0);
 
   const uniqueSectionsForProj = Array.from(new Set(rawSectionsList));
+  const currentProject = projects.find((project) => project.code === projectCode);
+  const activeSectionName = sectionSelect === '__CUSTOM__'
+    ? customSectionInput
+    : sectionSelect !== 'default'
+    ? sectionSelect
+    : uniqueSectionsForProj[0] || '';
 
   const getNextRomanSectionPrefix = () => {
     const maxRomanNumber = uniqueSectionsForProj.reduce((max, sectionName) => {
@@ -251,7 +289,7 @@ export const TaskManagementPage: React.FC = () => {
     setEditConstrStatus(t.constrStatus || 'Chưa thi công');
     setEditIssue(t.issue || '');
     setEditIssueStatus(t.issueStatus || '');
-    setEditEngineerId(t.assignedEngineerId || 'eng-1');
+    setEditEngineerId(t.assignedEngineerId || engineers[0]?.id || '');
     setIsEditTaskModalOpen(true);
   };
 
@@ -281,30 +319,12 @@ export const TaskManagementPage: React.FC = () => {
     setEditingTask(null);
   };
 
-  // Reset all active filters
-  const resetAllFilters = () => {
-    setSelectedProjectCode('all');
-    setSelectedRomanSection('all');
-    setSearchTerm('');
-    setFilterPurchase('all');
-    setFilterConstr('all');
-    setFilterIssue('all');
-    setFilterEngineer('all');
-  };
 
   const handleStartCustomSection = () => {
     setSectionSelect('__CUSTOM__');
     setCustomSectionInput(getNextRomanSectionPrefix());
   };
 
-  const isAnyFilterActive =
-    selectedProjectCode !== 'all' ||
-    selectedRomanSection !== 'all' ||
-    searchTerm !== '' ||
-    filterPurchase !== 'all' ||
-    filterConstr !== 'all' ||
-    filterIssue !== 'all' ||
-    filterEngineer !== 'all';
 
   const openImportPicker = (format: ImportFileFormat) => {
     setCurrentImportFormat(format);
@@ -457,7 +477,7 @@ export const TaskManagementPage: React.FC = () => {
               volume: volVal,
               unit: unitVal,
               progress: finalProgress,
-              status: (finalProgress >= 1 ? 'Done' : finalProgress > 0 ? 'In Progress' : 'Not Started'),
+              status: (finalProgress >= 1 ? 'Hoàn thành' : finalProgress > 0 ? 'Đang làm' : 'Chưa làm'),
               purchaseStatus: purchaseCol >= 0 && r[purchaseCol] ? String(r[purchaseCol]) : 'Chưa đặt hàng',
               constrStatus: constrCol >= 0 && r[constrCol] ? String(r[constrCol]) : 'Chưa thi công',
               issue: issueCol >= 0 && r[issueCol] ? String(r[issueCol]) : '',
@@ -466,8 +486,8 @@ export const TaskManagementPage: React.FC = () => {
               isSectionHeader: isSection,
               sectionName: currentSection,
               notes: notesCol >= 0 && r[notesCol] ? String(r[notesCol]) : '',
-              assignedEngineerId: 'eng-1',
-              assignedEngineerName: 'Kỹ sư Nam',
+              assignedEngineerId: engineers[0]?.id || '',
+              assignedEngineerName: engineers[0]?.name || '',
             });
           }
         });
@@ -487,7 +507,7 @@ export const TaskManagementPage: React.FC = () => {
 
   const getTaskExportData = () => displayTasks.map((t) => ({
     'STT': t.stt,
-    'MỤC LA MÃ': t.isSectionHeader ? '[TIÊU ĐỀ MỤC]' : t.sectionName || '',
+    'ĐẦU MỤC CHA': t.isSectionHeader ? '[TIÊU ĐỀ MỤC]' : t.sectionName || '',
     'NỘI DUNG CÔNG VIỆC': t.name,
     'DỰ ÁN': t.projectName,
     'KHỐI LƯỢNG': t.isSectionHeader ? '' : t.volume,
@@ -588,17 +608,11 @@ export const TaskManagementPage: React.FC = () => {
     const proj = projects.find((p) => p.code === projectCode);
     const eng = engineers.find((e) => e.id === engineerId);
 
-    const finalSectionName = isSectionHeader
-      ? name
-      : sectionSelect === '__CUSTOM__'
-      ? customSectionInput
-      : sectionSelect !== 'default'
-      ? sectionSelect
-      : uniqueSectionsForProj[0] || 'I. Hạng mục chung';
+    const finalSectionName = isSectionHeader ? name : activeSectionName;
 
     const nextStt = String(tasks.filter(t => t.projectCode === projectCode).length + 1);
     addTask({
-      stt: stt || (isSectionHeader ? 'I' : nextStt),
+      stt: isSectionHeader ? '' : (stt || nextStt),
       code: `TSK-${Date.now()}`,
       name,
       projectCode,
@@ -606,14 +620,14 @@ export const TaskManagementPage: React.FC = () => {
       volume: isSectionHeader ? 0 : volume,
       unit: isSectionHeader ? '' : unit,
       progress: 0,
-      status: 'Not Started',
+      status: 'Chưa làm',
       purchaseStatus: isSectionHeader ? '' : purchaseStatus,
       constrStatus: isSectionHeader ? '' : constrStatus,
       isDone: false,
       isSectionHeader,
       sectionName: finalSectionName,
       assignedEngineerId: engineerId,
-      assignedEngineerName: eng ? eng.name : 'Kỹ sư Nam',
+      assignedEngineerName: eng?.name || '',
     });
 
     setIsNewTaskModalOpen(false);
@@ -661,56 +675,50 @@ export const TaskManagementPage: React.FC = () => {
     setNewProjName('');
     setNewProjCode('');
     setNewProjLocation('');
-    setNewProjManagerId(createdManager?.id || engineers[0]?.id || 'eng-1');
+    setNewProjManagerId(createdManager?.id || engineers[0]?.id || '');
     setNewManagerName('');
     setNewManagerTitle('Chỉ huy trưởng công trình');
   };
 
-  // Filter Tasks by Project, Roman Section, Purchase, Construction, Issue, Engineer & Search Term
+  const tasksForColumnFilters = tasks.filter((t) => selectedProjectCode === 'all' || t.projectCode === selectedProjectCode);
+  const columnSections = Array.from(new Set(tasksForColumnFilters.map((t) => t.sectionName).filter((value): value is string => !!value && value.trim().length > 0))).sort((a, b) => a.localeCompare(b, 'vi'));
+  const columnUnits = Array.from(new Set(tasksForColumnFilters.map((t) => t.unit).filter((value): value is string => !!value && value.trim().length > 0))).sort((a, b) => a.localeCompare(b, 'vi'));
+  const columnPurchaseStatuses = Array.from(new Set(tasksForColumnFilters.map((t) => t.purchaseStatus).filter((value): value is string => !!value && value.trim().length > 0))).sort((a, b) => a.localeCompare(b, 'vi'));
+  const columnConstrStatuses = Array.from(new Set(tasksForColumnFilters.map((t) => t.constrStatus).filter((value): value is string => !!value && value.trim().length > 0))).sort((a, b) => a.localeCompare(b, 'vi'));
+
+  // Filter Tasks by Project and visible table columns
   const displayTasks = tasks.filter((t) => {
     const matchesProj = selectedProjectCode === 'all' || t.projectCode === selectedProjectCode;
 
-    // Attribute Filters
+    // Column Filters
+    const pct = Math.round((t.progress || 0) * 100);
+    const matchesSection = filterSection === 'all' || t.sectionName === filterSection;
+    const matchesUnit = filterUnit === 'all' || t.unit === filterUnit;
+    const matchesProgress =
+      filterProgress === 'all'
+        ? true
+        : filterProgress === '0'
+        ? pct === 0
+        : filterProgress === '1-49'
+        ? pct >= 1 && pct <= 49
+        : filterProgress === '50-99'
+        ? pct >= 50 && pct <= 99
+        : pct >= 100;
     const matchesPurchase = filterPurchase === 'all' || t.purchaseStatus === filterPurchase;
     const matchesConstr = filterConstr === 'all' || t.constrStatus === filterConstr;
-    const matchesIssue =
-      filterIssue === 'all'
-        ? true
-        : filterIssue === 'has_issue'
-        ? !!t.issue
-        : !t.issue;
-    const matchesEngineer = filterEngineer === 'all' || t.assignedEngineerId === filterEngineer;
-
     const matchesSearch =
       t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (t.issue && t.issue.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (t.sectionName && t.sectionName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      t.assignedEngineerName?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    if (selectedRomanSection === 'all') {
-      return (
-        matchesProj &&
-        matchesPurchase &&
-        matchesConstr &&
-        matchesIssue &&
-        matchesEngineer &&
-        matchesSearch
-      );
-    } else {
-      if (t.isSectionHeader) return false;
-      const matchesRomanSection = t.sectionName === selectedRomanSection;
-
-      return (
-
-        matchesProj &&
-        matchesRomanSection &&
-        matchesPurchase &&
-        matchesConstr &&
-        matchesIssue &&
-        matchesEngineer &&
-        matchesSearch
-      );
-    }
+      (t.sectionName && t.sectionName.toLowerCase().includes(searchTerm.toLowerCase()));
+    return (
+      matchesProj &&
+      matchesSection &&
+      matchesUnit &&
+      matchesProgress &&
+      matchesPurchase &&
+      matchesConstr &&
+      matchesSearch
+    );
   });
 
   const groupedTasks = React.useMemo(() => {
@@ -724,45 +732,22 @@ export const TaskManagementPage: React.FC = () => {
       }
       groups[sec].push(t);
     });
-    
+
+    order.sort((a, b) => {
+      const leftHeader = groups[a].find((task) => task.isSectionHeader) || groups[a][0];
+      const rightHeader = groups[b].find((task) => task.isSectionHeader) || groups[b][0];
+      return compareTaskStt(leftHeader?.stt, rightHeader?.stt);
+    });
+
     const flattened: Task[] = [];
     order.forEach((sec) => {
       groups[sec].sort((a, b) => {
+        const sttCompare = compareTaskStt(a.stt, b.stt);
+        if (sttCompare !== 0) return sttCompare;
         if (a.isSectionHeader && !b.isSectionHeader) return -1;
         if (!a.isSectionHeader && b.isSectionHeader) return 1;
-        return 0;
+        return a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' });
       });
-      
-      const hasHeader = groups[sec].some(t => t.isSectionHeader);
-      if (!hasHeader && sec && sec !== 'Khác') {
-        // Automatically inject a header so the section is always properly labeled
-        // even if the original header was filtered out or never existed.
-        let guessedStt = '';
-        let guessedName = sec;
-        if (sec.includes('.')) {
-          guessedStt = sec.split('.')[0];
-          guessedName = sec.substring(sec.indexOf('.') + 1).trim();
-        }
-        
-        flattened.push({
-          id: `fake-header-${sec}-${Date.now()}`,
-          stt: guessedStt,
-          code: '',
-          name: guessedName,
-          projectCode: groups[sec][0]?.projectCode || '',
-          projectName: groups[sec][0]?.projectName || '',
-          volume: 0,
-          unit: '',
-          progress: 0,
-          status: 'Not Started',
-          purchaseStatus: '',
-          constrStatus: '',
-          isDone: false,
-          isSectionHeader: true,
-          sectionName: sec,
-        });
-      }
-      
       flattened.push(...groups[sec]);
     });
     return flattened;
@@ -785,86 +770,29 @@ export const TaskManagementPage: React.FC = () => {
       <section className="task-management-screen bg-white border-y border-r border-slate-200 shadow-xs overflow-hidden">
       {/* Page Header */}
       <div className="px-5 py-3 flex flex-col lg:flex-row justify-between lg:items-center gap-4 border-b border-slate-100">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
-            <span className="material-symbols-outlined text-xl">assignment</span>
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-tight truncate">Quản lý Tiến độ Công việc</h2>
-              <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-primary border border-blue-100 whitespace-nowrap">{totalPureItems} hạng mục</span>
-            </div>
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          {selectedProjectFromUrl && (
+            <button
+              type="button"
+              onClick={() => navigate('/projects')}
+              className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-2xs transition-all hover:bg-slate-50"
+              title="Quay l?i t?t c? d? ?n"
+              aria-label="Quay l?i t?t c? d? ?n"
+            >
+              <span className="material-symbols-outlined text-lg">arrow_back</span>
+            </button>
+          )}
+          <div className="min-w-0 flex-1 space-y-1">
+            <h2 className="truncate text-xl font-extrabold leading-tight tracking-tight text-slate-900">Qu&#7843;n l&#253; Ti&#7871;n &#273;&#7897; C&#244;ng vi&#7879;c</h2>
+            {selectedProjectFromUrl && (
+              <div className="inline-flex max-w-full items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                <span className="truncate">D&#7921; &#225;n: {currentProject?.name || selectedProjectFromUrl}</span>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2 lg:justify-end">
-          <div className="relative">
-            <button
-              onClick={() => {
-                setIsImportMenuOpen(!isImportMenuOpen);
-                setIsExportMenuOpen(false);
-              }}
-              className="flex items-center gap-1.5 border border-blue-200 bg-blue-50 text-primary px-3.5 py-2 rounded-lg text-xs font-bold hover:bg-blue-100 transition-all shadow-xs"
-            >
-              <span className="material-symbols-outlined text-base">upload_file</span>
-              <span>Nhập file</span>
-              <span className="material-symbols-outlined text-sm">expand_more</span>
-            </button>
-
-            {isImportMenuOpen && (
-              <div className="absolute right-0 mt-1 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1 space-y-0.5">
-                {([
-                  ['xlsx', 'Excel (.xlsx)', 'table_view'],
-                  ['csv', 'CSV (.csv)', 'csv'],
-                  ['pdf', 'PDF (.pdf)', 'picture_as_pdf'],
-                  ['docx', 'Word (.docx)', 'description'],
-                ] as Array<[ImportFileFormat, string, string]>).map(([format, label, icon]) => (
-                  <button
-                    key={format}
-                    onClick={() => openImportPicker(format)}
-                    className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-sm text-blue-600">{icon}</span>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="relative">
-            <button
-              onClick={() => {
-                setIsExportMenuOpen(!isExportMenuOpen);
-                setIsImportMenuOpen(false);
-              }}
-              className="flex items-center gap-1.5 border border-emerald-200 bg-emerald-50 text-emerald-800 px-3.5 py-2 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-all shadow-xs"
-            >
-              <span className="material-symbols-outlined text-base text-emerald-700">download</span>
-              <span>Xuất file</span>
-              <span className="material-symbols-outlined text-sm">expand_more</span>
-            </button>
-
-            {isExportMenuOpen && (
-              <div className="absolute right-0 mt-1 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1 space-y-0.5">
-                {([
-                  ['xlsx', 'Excel (.xlsx)', 'table_view'],
-                  ['csv', 'CSV (.csv)', 'csv'],
-                  ['pdf', 'PDF (.pdf)', 'picture_as_pdf'],
-                  ['docx', 'Word (.docx)', 'description'],
-                ] as Array<[ExportFileFormat, string, string]>).map(([format, label, icon]) => (
-                  <button
-                    key={format}
-                    onClick={() => handleExportFile(format)}
-                    className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-sm text-emerald-600">{icon}</span>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
           <button
             onClick={() => {
               if (selectedProjectCode !== 'all') {
@@ -882,260 +810,120 @@ export const TaskManagementPage: React.FC = () => {
 
       {/* TOOLBAR BỘ LỌC */}
       <div className="px-3 py-3 space-y-3">
-        {/* Row 1: Primary Filters (Project & Custom Ultra-Sleek Section Dropdown) + Quick Search */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-2">
-          {/* Left: Project Selector & Section Filter */}
-          <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-            {/* Project Selector */}
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <span className="text-xs font-bold text-slate-400">Dự án:</span>
-              <select
-                value={selectedProjectCode}
-                onChange={(e) => {
-                  if (e.target.value === '__CREATE_NEW__') {
-                    setIsNewProjectModalOpen(true);
-                  } else {
-                    setSelectedProjectCode(e.target.value);
-                    setSelectedRomanSection('all');
-                  }
-                }}
-                className="bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 py-1.5 px-2.5 focus:ring-2 focus:ring-primary focus:outline-none"
-              >
-                <option value="all">Tất cả Dự án ({projects.length})</option>
-                {projects.map((p) => (
-                  <option key={p.code} value={p.code}>
-                    {p.name}
-                  </option>
-                ))}
-                <option value="__CREATE_NEW__" className="font-bold text-primary">+ Tạo Dự án Mới...</option>
-              </select>
-            </div>
-
-            {/* ULTRA-SLEEK MODERN ROMAN SECTION DROPDOWN POPOVER */}
-            {selectedProjectCode !== 'all' && (
-              <>
-                <span className="text-slate-300">|</span>
-                <div className="relative">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsSectionMenuOpen(!isSectionMenuOpen);
-                    }}
-                    className={`border rounded-lg text-xs font-bold py-1.5 px-3 flex items-center gap-1.5 transition-all shadow-2xs ${
-                      selectedRomanSection !== 'all'
-                        ? 'bg-primary text-white border-primary'
-                        : 'bg-blue-50/80 border-blue-200 text-primary hover:bg-blue-100'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-sm">filter_alt</span>
-                    <span className="truncate max-w-[220px]">
-                      {selectedRomanSection === 'all' ? 'Tất cả Mục La Mã' : selectedRomanSection}
-                    </span>
-                    <span className="material-symbols-outlined text-sm flex-shrink-0">expand_more</span>
-                  </button>
-
-                  {/* ULTRA-SLEEK MODERN DROPDOWN PANEL */}
-                  {isSectionMenuOpen && (
-                    <>
-                      {/* Backdrop overlay to close on outside click */}
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setIsSectionMenuOpen(false)}
-                      />
-
-                      <div className="absolute left-0 mt-1.5 w-80 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-2 space-y-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
-                        {/* Header */}
-                        <div className="flex justify-between items-center px-2 py-1 border-b border-slate-100 font-bold text-slate-700">
-                          <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-sm text-primary">filter_alt</span>
-                            Chọn Mục La Mã
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">({globalUniqueSections.length} mục)</span>
-                        </div>
-
-                        {/* Search inside section list */}
-                        <div className="relative px-1">
-                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
-                            search
-                          </span>
-                          <input
-                            type="text"
-                            placeholder="Tìm Mục La Mã..."
-                            value={sectionSearchQuery}
-                            onChange={(e) => setSectionSearchQuery(e.target.value)}
-                            className="w-full pl-7 pr-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none"
-                          />
-                        </div>
-
-                        {/* Scrollable List of Clean Truncated Items */}
-                        <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5 px-0.5">
-                          <div
-                            onClick={() => {
-                              setSelectedRomanSection('all');
-                              setIsSectionMenuOpen(false);
-                            }}
-                            className={`px-2.5 py-1.5 rounded-lg font-semibold cursor-pointer flex justify-between items-center transition-colors ${
-                              selectedRomanSection === 'all'
-                                ? 'bg-primary text-white font-bold'
-                                : 'hover:bg-slate-100 text-slate-700'
-                            }`}
-                          >
-                            <span>-- Tất cả Mục La Mã --</span>
-                            <span className="text-[10px] font-mono opacity-80">
-                              {activeTasksForProj.filter((t) => !t.isSectionHeader).length} việc
-                            </span>
-                          </div>
-
-                          {globalUniqueSections
-                            .filter((sec) => sec.toLowerCase().includes(sectionSearchQuery.toLowerCase()))
-                            .map((secName) => {
-                              const isSelected = selectedRomanSection === secName;
-                              const count = activeTasksForProj.filter(
-                                (t) => !t.isSectionHeader && t.sectionName === secName
-                              ).length;
-
-                              return (
-                                <div
-                                  key={secName}
-                                  onClick={() => {
-                                    setSelectedRomanSection(secName);
-                                    setIsSectionMenuOpen(false);
-                                  }}
-                                  className={`px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-colors ${
-                                    isSelected
-                                      ? 'bg-primary text-white font-bold'
-                                      : 'hover:bg-blue-50 text-slate-800'
-                                  }`}
-                                >
-                                  <span className="truncate text-[11px] font-semibold" title={secName}>
-                                    {secName}
-                                  </span>
-                                  <span
-                                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                                      isSelected
-                                        ? 'bg-white/20 text-white'
-                                        : 'bg-slate-100 text-slate-500'
-                                    }`}
-                                  >
-                                    {count}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Right: Quick Search Box */}
-          <div className="relative w-full md:w-56">
-            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-              search
-            </span>
-            <input
-              type="text"
-              placeholder="Tìm nhanh công việc..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Row 2: DETAILED ATTRIBUTE FILTERS */}
+        {/* Row 1: DETAILED ATTRIBUTE FILTERS */}
         <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-bold text-slate-400 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">filter_list</span>
               Lọc chi tiết:
             </span>
 
-            {/* Filter Mua hàng */}
+
+
+            <select
+              value={filterSection}
+              onChange={(e) => setFilterSection(e.target.value)}
+              className="h-8 w-44 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="all">Dau muc cha: Tat ca</option>
+              {columnSections.map((value) => (
+                <option key={value} value={value}>{truncateText(value, 42)}</option>
+              ))}
+            </select>
+
+            <select
+              value={filterUnit}
+              onChange={(e) => setFilterUnit(e.target.value)}
+              className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="all">DVT: Tat ca</option>
+              {columnUnits.map((value) => (
+                <option key={value} value={value}>{value}</option>
+              ))}
+            </select>
+
+            <select
+              value={filterProgress}
+              onChange={(e) => setFilterProgress(e.target.value)}
+              className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="all">Tien do: Tat ca</option>
+              <option value="0">0%</option>
+              <option value="1-49">1% - 49%</option>
+              <option value="50-99">50% - 99%</option>
+              <option value="100">100%</option>
+            </select>
+
             <select
               value={filterPurchase}
               onChange={(e) => setFilterPurchase(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-md py-1 px-2.5 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none"
+              className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
             >
-              <option value="all">Mua hàng: Tất cả</option>
-              <option value="Đã có hàng">Đã có hàng</option>
-              <option value="Đã đặt hàng">Đã đặt hàng</option>
-              <option value="Chưa đặt hàng">Chưa đặt hàng</option>
+              <option value="all">Mua hang: Tat ca</option>
+              {columnPurchaseStatuses.map((value) => (
+                <option key={value} value={value}>{value}</option>
+              ))}
             </select>
 
-            {/* Filter Thi công */}
             <select
               value={filterConstr}
               onChange={(e) => setFilterConstr(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-md py-1 px-2.5 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none"
+              className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
             >
-              <option value="all">Thi công: Tất cả</option>
-              <option value="Đã thi công">Đã thi công</option>
-              <option value="Đã lắp TB + kéo dây">Đã lắp TB + kéo dây</option>
-              <option value="Chưa thi công">Chưa thi công</option>
-            </select>
-
-            {/* Filter Vướng mắc */}
-            <select
-              value={filterIssue}
-              onChange={(e) => setFilterIssue(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-md py-1 px-2.5 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none"
-            >
-              <option value="all">Vướng mắc: Tất cả</option>
-              <option value="has_issue">Có vướng mắc / tồn đọng</option>
-              <option value="no_issue">Không có vướng mắc</option>
-            </select>
-
-            {/* Filter Kỹ sư */}
-            <select
-              value={filterEngineer}
-              onChange={(e) => setFilterEngineer(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-md py-1 px-2.5 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none"
-            >
-              <option value="all">Kỹ sư: Tất cả</option>
-              {engineers.map((eng) => (
-                <option key={eng.id} value={eng.id}>
-                  {eng.name}
-                </option>
+              <option value="all">Thi cong: Tat ca</option>
+              {columnConstrStatuses.map((value) => (
+                <option key={value} value={value}>{value}</option>
               ))}
             </select>
           </div>
+          <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
 
-          {/* Reset All Filters Button */}
-          {isAnyFilterActive && (
-            <button
-              onClick={resetAllFilters}
-              className="text-xs text-red-600 font-bold hover:underline flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-sm">restart_alt</span>
-              Xóa bộ lọc
-            </button>
-          )}
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                className="flex items-center gap-1.5 border border-emerald-200 bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-all shadow-xs whitespace-nowrap"
+              >
+                <span className="material-symbols-outlined text-base text-emerald-700">download</span>
+                <span>Xuất file</span>
+                <span className="material-symbols-outlined text-sm">expand_more</span>
+              </button>
+
+              {isExportMenuOpen && (
+                <div className="absolute right-0 mt-1 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1 space-y-0.5">
+                  {([
+                    ['xlsx', 'Excel (.xlsx)', 'table_view'],
+                    ['csv', 'CSV (.csv)', 'csv'],
+                    ['pdf', 'PDF (.pdf)', 'picture_as_pdf'],
+                    ['docx', 'Word (.docx)', 'description'],
+                  ] as Array<[ExportFileFormat, string, string]>).map(([format, label, icon]) => (
+                    <button
+                      key={format}
+                      onClick={() => handleExportFile(format)}
+                      className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-sm text-emerald-600">{icon}</span>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Search */}
+            <div className="relative w-full md:w-56">
+              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Tìm nhanh công việc..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none"
+              />
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* BANNER HIỂN THỊ MỤC ĐANG LỌC */}
-      {selectedRomanSection !== 'all' && (
-        <div className="border-t border-blue-100 bg-blue-50 text-primary px-3 py-1.5 text-xs flex justify-between items-center">
-          <div className="flex items-center gap-2 truncate">
-            <span className="material-symbols-outlined text-base">folder_open</span>
-            <span className="font-bold">Đang xem riêng Mục:</span>
-            <span className="font-bold text-slate-800 truncate" title={selectedRomanSection}>
-              {selectedRomanSection}
-            </span>
-          </div>
-          <button
-            onClick={() => setSelectedRomanSection('all')}
-            className="text-xs text-primary font-bold hover:underline flex items-center gap-0.5 flex-shrink-0 ml-2"
-          >
-            <span className="material-symbols-outlined text-sm">close</span> Xem tất cả Mục La Mã
-          </button>
-        </div>
-      )}
-
       {/* Main Data Table */}
       <div className="border-t border-slate-200 flex flex-col">
         <div className="w-full overflow-x-auto custom-scrollbar">
@@ -1150,14 +938,13 @@ export const TaskManagementPage: React.FC = () => {
                 <th className="py-2.5 px-2.5 w-[12%] text-center border-b border-slate-200 whitespace-nowrap">MUA HÀNG</th>
                 <th className="py-2.5 px-2.5 w-[11%] text-center border-b border-slate-200 whitespace-nowrap">THI CÔNG</th>
                 <th className="py-2.5 px-2.5 w-[12%] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
-                <th className="py-2.5 px-2.5 w-[9%] border-b border-slate-200 whitespace-nowrap">KỸ SƯ</th>
                 <th className="py-2.5 px-2 w-[40px] text-center border-b border-slate-200 whitespace-nowrap">XOÁ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {groupedTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-slate-400 whitespace-nowrap">
+                  <td colSpan={9} className="p-8 text-center text-slate-400 whitespace-nowrap">
                     Không có hạng mục nào phù hợp với bộ lọc đã chọn
                   </td>
                 </tr>
@@ -1177,7 +964,7 @@ export const TaskManagementPage: React.FC = () => {
                           {t.stt}
                         </td>
                         <td
-                          colSpan={8}
+                          colSpan={7}
                           onClick={() => handleOpenEditModal(t)}
                           className="py-2 px-3 uppercase tracking-tight font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap"
                           title="Nhấn để chỉnh sửa Tiêu đề Mục này"
@@ -1185,7 +972,6 @@ export const TaskManagementPage: React.FC = () => {
                           <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
                             <span className="material-symbols-outlined text-base flex-shrink-0">folder_open</span>
                             <span className="truncate">{t.name}</span>
-                            <span className="text-[10px] font-normal text-slate-500 lowercase flex-shrink-0">({t.projectName})</span>
                           </div>
                         </td>
                         
@@ -1256,23 +1042,32 @@ export const TaskManagementPage: React.FC = () => {
                         </span>
                       </td>
 
-                      {/* STRICT SINGLE LINE NO WRAP PURCHASE BADGE */}
                       <td className="py-2 px-2.5 text-center whitespace-nowrap">
-                        <span
-                          className={`inline-block whitespace-nowrap px-2.5 py-0.5 rounded text-[11px] font-bold ${
-                            t.purchaseStatus === 'Đã có hàng'
-                              ? 'bg-emerald-50 text-emerald-700'
-                              : t.purchaseStatus === 'Đã đặt hàng'
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'bg-slate-100 text-slate-600'
-                          }`}
+                        <select
+                          value={t.purchaseStatus || 'Chưa đặt hàng'}
+                          onChange={(e) => updateTask(t.id, { purchaseStatus: e.target.value })}
+                          className="w-full min-w-0 rounded border border-slate-200 bg-white px-1 py-1 text-[11px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none"
                         >
-                          {t.purchaseStatus || 'Chưa đặt'}
-                        </span>
+                          <option value="Chưa đặt hàng">Chưa đặt hàng</option>
+                          <option value="Đang đặt hàng">Đang đặt hàng</option>
+                          <option value="Đã đặt hàng">Đã đặt hàng</option>
+                          <option value="Đang giao">Đang giao</option>
+                          <option value="Đã nhận đủ">Đã nhận đủ</option>
+                        </select>
                       </td>
 
-                      <td className="py-2 px-2.5 text-center text-slate-600 text-[11px] whitespace-nowrap">
-                        {t.constrStatus || 'Chưa làm'}
+                      <td className="py-2 px-2.5 text-center whitespace-nowrap">
+                        <select
+                          value={t.constrStatus || 'Chưa thi công'}
+                          onChange={(e) => updateTask(t.id, { constrStatus: e.target.value })}
+                          className="w-full min-w-0 rounded border border-slate-200 bg-white px-1 py-1 text-[11px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none"
+                        >
+                          <option value="Chưa thi công">Chưa thi công</option>
+                          <option value="Đang thi công">Đang thi công</option>
+                          <option value="Đã thi công">Đã thi công</option>
+                          <option value="Đang ETE">Đang ETE</option>
+                          <option value="Vướng mắc">Vướng mắc</option>
+                        </select>
                       </td>
                       
                       <td
@@ -1288,23 +1083,6 @@ export const TaskManagementPage: React.FC = () => {
                         ) : (
                           <span className="text-slate-300">-</span>
                         )}
-                      </td>
-
-                      <td className="py-2 px-2.5 whitespace-nowrap">
-                        <select
-                          value={t.assignedEngineerId || 'eng-1'}
-                          onChange={(e) => {
-                            const eng = engineers.find((x) => x.id === e.target.value);
-                            if (eng) assignEngineer(t.id, eng.id, eng.name);
-                          }}
-                          className="bg-transparent border border-transparent hover:border-slate-200 rounded px-1 py-0.5 text-xs font-medium text-slate-800 cursor-pointer whitespace-nowrap"
-                        >
-                          {engineers.map((e) => (
-                            <option key={e.id} value={e.id}>
-                              {e.name}
-                            </option>
-                          ))}
-                        </select>
                       </td>
                       
                       {/* CLEAN SINGLE DELETE BUTTON */}
@@ -1330,11 +1108,11 @@ export const TaskManagementPage: React.FC = () => {
           <div className="flex items-center gap-1 truncate">
             <span>Đang xem:</span>
             <strong className="text-slate-800 font-bold truncate">
-              {selectedRomanSection === 'all' ? 'Tất cả các Mục La Mã' : selectedRomanSection}
+              {selectedRomanSection === 'all' ? 'Tất cả các Đầu mục cha' : selectedRomanSection}
             </strong>
           </div>
           <span className="font-mono font-bold text-slate-700 flex-shrink-0">
-            Hoàn thành: {completedPureItems} / {totalPureItems} hạng mục
+              {totalPureItems} h&#7841;ng m&#7909;c
           </span>
         </div>
       </div>
@@ -1346,7 +1124,7 @@ export const TaskManagementPage: React.FC = () => {
       <Modal
         isOpen={isEditTaskModalOpen}
         onClose={() => setIsEditTaskModalOpen(false)}
-        title={editingTask?.isSectionHeader ? 'Chỉnh sửa Tiêu đề Mục La Mã' : 'Chỉnh sửa Hạng mục Thi công'}
+        title={editingTask?.isSectionHeader ? 'Chỉnh sửa Tiêu đề Đầu mục cha' : 'Chỉnh sửa Hạng mục Thi công'}
       >
         <form onSubmit={handleSaveEditTask} className="space-y-3 text-xs">
           <div className="grid grid-cols-3 gap-3">
@@ -1372,7 +1150,7 @@ export const TaskManagementPage: React.FC = () => {
 
           {!editingTask?.isSectionHeader && (
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Thuộc Mục La Mã</label>
+              <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
               <select
                 value={editSectionName}
                 onChange={(e) => setEditSectionName(e.target.value)}
@@ -1383,7 +1161,7 @@ export const TaskManagementPage: React.FC = () => {
                     {truncateText(sec, 45)}
                   </option>
                 ))}
-                <option value="__CUSTOM__">+ Nhập Mục La Mã mới...</option>
+                <option value="__CUSTOM__">+ Nhập Đầu mục cha mới...</option>
               </select>
 
               {editSectionName === '__CUSTOM__' && (
@@ -1528,38 +1306,23 @@ export const TaskManagementPage: React.FC = () => {
       {/* SLEEK NEW TASK MODAL */}
       <Modal isOpen={isNewTaskModalOpen} onClose={() => setIsNewTaskModalOpen(false)} title="Thêm Hạng mục Công việc" size="xl">
         <form onSubmit={handleCreateTask} className="space-y-3.5 text-xs">
-          <OcrUploadPanel onExtracted={applyOcrToNewTaskForm} compact />
-
-          {/* PROJECT & SECTION SELECTION */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* PROJECT & SECTION INFO */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Thuộc Dự án *</label>
-              <select
-                value={projectCode}
-                onChange={(e) => {
-                  setProjectCode(e.target.value);
-                  setSectionSelect('default');
-                  setCustomSectionInput('');
-                }}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold"
-              >
-                {projects.map((p) => (
-                  <option key={p.code} value={p.code}>
-                    {p.name} ({p.code})
-                  </option>
-                ))}
-              </select>
+              <label className="block font-bold text-slate-700 mb-1">Thuộc Dự án</label>
+              <div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-bold text-slate-700 truncate" title={currentProject?.name || projectCode}>
+                {currentProject?.name || projectCode}
+              </div>
             </div>
-
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Thuộc Mục La Mã *</label>
+              <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
               <div className="flex items-center gap-1.5">
                 <select
                   value={sectionSelect}
                   onChange={(e) => setSectionSelect(e.target.value)}
                   className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
                 >
-                  <option value="default">-- Chọn Mục La Mã --</option>
+                  <option value="default">-- Chọn Đầu mục cha --</option>
                   {uniqueSectionsForProj.map((sec) => (
                     <option key={sec} value={sec} title={sec}>
                       {truncateText(sec, 40)}
@@ -1569,20 +1332,18 @@ export const TaskManagementPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleStartCustomSection}
-                  className="flex-shrink-0 w-7 h-7 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
-                  title="Thêm mục La Mã mới"
+                  className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
+                  title="Thêm đầu mục cha mới"
                 >
                   +
                 </button>
               </div>
-
-              {/* Inline input for new section name */}
               {sectionSelect === '__CUSTOM__' && (
                 <input
                   type="text"
                   required
                   autoFocus
-                  placeholder="VD: XIII. HỆ THỐNG ĐIỆN CHIẾU SÁNG"
+                  placeholder="VD: Hệ thống chiếu sáng"
                   value={customSectionInput}
                   onChange={(e) => setCustomSectionInput(e.target.value)}
                   className="w-full mt-2 px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold text-xs"

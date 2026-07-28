@@ -8,7 +8,7 @@ export const DashboardPage: React.FC = () => {
   const pureTasks = tasks.filter((task) => !task.isSectionHeader);
   const completed = pureTasks.filter((task) => task.isDone || task.progress >= 1).length;
   const doing = pureTasks.filter((task) => task.progress > 0 && task.progress < 1).length;
-  const waitingReview = pureTasks.filter((task) => task.status === 'Review' || !!task.issueStatus).length;
+  const waitingReview = pureTasks.filter((task) => task.status === 'Chờ nghiệm thu' || !!task.issueStatus).length;
   const late = pureTasks.filter((task) => !!task.issue && !(task.isDone || task.progress >= 1)).length;
   
   // Custom Treemap Content

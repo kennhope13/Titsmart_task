@@ -2,11 +2,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useRealtimeStore } from '../../services/realtimeStore';
 
-interface SidebarProps {
-  onOpenNewProject: () => void;
-}
-
-export const Sidebar: React.FC<SidebarProps> = ({ onOpenNewProject }) => {
+export const Sidebar: React.FC = () => {
   const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
   const [showNotifPopover, setShowNotifPopover] = useState(false);
   const unreadCount = notifications.filter((item) => !item.read).length;
@@ -31,8 +27,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenNewProject }) => {
     {
       title: 'Quản lý dự án',
       items: [
-        { label: 'Công việc', path: '/tasks', icon: 'assignment' },
+        { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
         { label: 'Kế hoạch & Chi phí', path: '/cost-plan', icon: 'calculate' },
+        { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
         { label: 'Theo dõi Hồ sơ', path: '/document-tracking', icon: 'drafts' },
       ]
     },
@@ -113,16 +110,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenNewProject }) => {
             </div>
           )}
         </div>
-      </div>
-
-      <div className="px-4 mt-4">
-        <button
-          onClick={onOpenNewProject}
-          className="w-full bg-primary text-white py-2 px-3 rounded-lg font-semibold text-xs flex items-center justify-center gap-1.5 hover:opacity-90 active:scale-95 transition-all shadow-xs"
-        >
-          <span className="material-symbols-outlined text-base">add</span>
-          Tạo Dự án Mới
-        </button>
       </div>
 
       <nav className="flex-1 px-3 mt-5 pb-4 space-y-6 overflow-y-auto custom-scrollbar">

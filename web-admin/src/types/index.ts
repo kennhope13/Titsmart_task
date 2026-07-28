@@ -1,4 +1,4 @@
-export type TaskStatus = 'Not Started' | 'In Progress' | 'Review' | 'Done';
+export type TaskStatus = 'Chưa làm' | 'Đang làm' | 'Chờ vật tư' | 'Chờ khách hàng' | 'Chờ nghiệm thu' | 'Hoàn thành' | 'Tạm dừng';
 export type TaskPriority = 'Low' | 'Medium' | 'High';
 
 export interface Task {
@@ -20,8 +20,12 @@ export interface Task {
   isSectionHeader?: boolean; // Cờ đánh dấu dòng Tiêu đề Mục (I, II, III...)
   sectionName?: string; // Tên phân mục cha
   notes?: string;
+  assignerId?: string;
+  assignerName?: string;
   assignedEngineerId?: string;
   assignedEngineerName?: string;
+  reviewerId?: string;
+  reviewerName?: string;
   dueDate?: string;
   priority?: TaskPriority;
   createdAt?: string;
@@ -31,7 +35,9 @@ export interface Project {
   id: string;
   code: string;
   name: string;
+  client?: string; // Chủ đầu tư
   location: string;
+  contractValue?: number; // Giá trị
   progressPercent: number;
   status: 'active' | 'completed' | 'on_hold';
   activeTeams?: number;
@@ -39,6 +45,7 @@ export interface Project {
   completedTasks: number;
   issueTasksCount: number;
   managerName: string;
+  members?: string[]; // Danh sách thành viên (ID)
   startDate?: string;
   endDate?: string;
 }
@@ -241,3 +248,14 @@ export interface DocumentTrack {
   notes?: string;
 }
 
+export interface FieldLog {
+  id: string;
+  projectCode: string;
+  taskId: string;
+  engineerId: string;
+  timestamp: string; // Giờ báo cáo
+  note: string;
+  images: string[]; // Base64 hoặc URL
+  gpsLocation?: { lat: number; lng: number; text?: string }; // Tọa độ
+  statusUpdate: 'Đang làm' | 'Hoàn thành' | 'Vướng mắc';
+}

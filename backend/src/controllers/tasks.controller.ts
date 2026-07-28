@@ -67,6 +67,38 @@ export const getTaskById = async (req: Request, res: Response) => {
   }
 };
 
+// Map Vietnamese/frontend status strings → Prisma enum
+const mapStatus = (s: string | undefined): 'not_started' | 'in_progress' | 'review' | 'done' => {
+  if (!s) return 'not_started';
+  const v = s.toLowerCase().trim();
+  if (v === 'in_progress' || v === 'đang làm' || v === 'dang lam' || v === 'đang thực hiện') return 'in_progress';
+  if (v === 'review' || v === 'chờ duyệt' || v === 'cho duyet' || v === 'đang kiểm tra') return 'review';
+  if (v === 'done' || v === 'hoàn thành' || v === 'hoan thanh' || v === 'xong') return 'done';
+  return 'not_started'; // default: "Chưa làm" / unknown
+};
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const cleanUuid = (value: unknown) => (typeof value === 'string' && UUID_RE.test(value) ? value : null);
+
+const truncateText = (value: unknown, max: number) => {
+  if (value === undefined || value === null) return '';
+  return String(value).trim().slice(0, max);
+};
+
+const optionalTruncateText = (value: unknown, max: number) => {
+  const text = truncateText(value, max);
+  return text || null;
+};
+
+const mapPriority = (p: string | undefined): 'low' | 'medium' | 'high' | undefined => {
+  if (!p) return undefined;
+  const v = p.toLowerCase().trim();
+  if (v === 'high' || v === 'cao') return 'high';
+  if (v === 'medium' || v === 'trung bình' || v === 'trung binh') return 'medium';
+  if (v === 'low' || v === 'thấp' || v === 'thap') return 'low';
+  return undefined;
+};
+
 export const createTask = async (req: Request, res: Response) => {
   try {
     const { projectCode, projectName, purchaseStatus, constrStatus, issue, issueStatus, assignedEngineerName, isDone, isSectionHeader, sectionName, ...data } = req.body;
@@ -83,23 +115,23 @@ export const createTask = async (req: Request, res: Response) => {
 
     const task = await prisma.task.create({
       data: {
-        stt: data.stt,
-        code: data.code || `TSK-${projectCode}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        stt: optionalTruncateText(data.stt, 50),
+        code: truncateText(data.code || `TSK-${projectCode}-${Date.now()}-${Math.floor(Math.random() * 1000)}`, 100),
         name: data.name,
         volume: data.volume,
-        unit: data.unit,
+        unit: truncateText(data.unit, 50),
         progress: data.progress,
-        status: data.status,
-        priority: data.priority,
-        purchase_status: purchaseStatus || '',
-        construction_status: constrStatus || '',
+        status: mapStatus(data.status),
+        priority: mapPriority(data.priority),
+        purchase_status: truncateText(purchaseStatus, 255),
+        construction_status: truncateText(constrStatus, 255),
         issue_summary: issue || '',
-        issue_status_text: issueStatus || '',
+        issue_status_text: optionalTruncateText(issueStatus, 255),
         is_done: isDone || false,
         is_section_header: isSectionHeader || false,
         section_name: sectionName || '',
         notes: data.notes || '',
-        assigned_engineer_id: data.assignedEngineerId || null,
+        assigned_engineer_id: cleanUuid(data.assignedEngineerId ?? data.assigned_engineer_id),
         due_date: data.dueDate ? new Date(data.dueDate) : null,
         project_id: projectId,
       },
@@ -120,17 +152,39 @@ export const updateTask = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { projectCode, projectName, purchaseStatus, constrStatus, issue, issueStatus, assignedEngineerName, isDone, isSectionHeader, sectionName, ...data } = req.body;
     
-    const updateData: any = {
-      ...data
-    };
-    if (purchaseStatus !== undefined) updateData.purchase_status = purchaseStatus;
-    if (constrStatus !== undefined) updateData.construction_status = constrStatus;
-    if (issue !== undefined) updateData.issue_summary = issue;
-    if (issueStatus !== undefined) updateData.issue_status_text = issueStatus;
+    // Build updateData using ONLY known Prisma task fields (whitelist approach)
+    const updateData: any = {};
+
+    // Scalar fields that map 1-to-1 with Prisma schema
+    const allowed = ['stt', 'code', 'name', 'volume', 'unit', 'progress', 'notes'];
+    allowed.forEach(field => {
+      if (data[field] === undefined) return;
+      if (field === 'stt') updateData[field] = optionalTruncateText(data[field], 50);
+      else if (field === 'code') updateData[field] = truncateText(data[field], 100);
+      else if (field === 'unit') updateData[field] = truncateText(data[field], 50);
+      else updateData[field] = data[field];
+    });
+
+    // Enum fields – convert Vietnamese strings → Prisma enum values
+    if (data.status !== undefined) updateData.status = mapStatus(data.status);
+    if (data.priority !== undefined) updateData.priority = mapPriority(data.priority);
+
+    // Boolean fields
     if (isDone !== undefined) updateData.is_done = isDone;
     if (isSectionHeader !== undefined) updateData.is_section_header = isSectionHeader;
+
+    // String fields from destructured vars
     if (sectionName !== undefined) updateData.section_name = sectionName;
-    if (data.assignedEngineerId !== undefined) updateData.assigned_engineer_id = data.assignedEngineerId;
+    if (purchaseStatus !== undefined) updateData.purchase_status = truncateText(purchaseStatus, 255);
+    if (constrStatus !== undefined) updateData.construction_status = truncateText(constrStatus, 255);
+    if (issue !== undefined) updateData.issue_summary = issue;
+    if (issueStatus !== undefined) updateData.issue_status_text = optionalTruncateText(issueStatus, 255);
+
+    // Relation: assigned engineer (frontend may send assignedEngineerId or assigned_engineer_id)
+    const engId = cleanUuid(data.assignedEngineerId ?? data.assigned_engineer_id);
+    if (data.assignedEngineerId !== undefined || data.assigned_engineer_id !== undefined) updateData.assigned_engineer_id = engId;
+
+    // Date
     if (data.dueDate !== undefined) updateData.due_date = data.dueDate ? new Date(data.dueDate) : null;
 
     const task = await prisma.task.update({
