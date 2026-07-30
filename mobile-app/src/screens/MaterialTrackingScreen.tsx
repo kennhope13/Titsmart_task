@@ -1,16 +1,17 @@
-﻿import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+﻿import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Package, Search, Trash2, Truck } from 'lucide-react-native';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { colors } from '../theme';
 import { AppText, Card, Screen, ScreenHeader, StatusBadge } from '../components/MobileUI';
 import { cleanText, constructionLabel, purchaseLabel } from '../utils/text';
+import { Material } from '../types';
 
 const filterItems = [
-  { key: 'all', label: 'T\u1ea5t c\u1ea3' },
-  { key: 'pending', label: 'Ch\u01b0a \u0111\u1eb7t' },
-  { key: 'ordered', label: '\u0110\u00e3 \u0111\u1eb7t' },
-  { key: 'ready', label: 'C\u00f3 h\u00e0ng' },
+  { key: 'all', label: 'Tat ca' },
+  { key: 'pending', label: 'Chua dat' },
+  { key: 'ordered', label: 'Da dat' },
+  { key: 'ready', label: 'Co hang' },
 ];
 
 export const MaterialTrackingScreen = () => {
@@ -18,76 +19,68 @@ export const MaterialTrackingScreen = () => {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
 
-  const filtered = useMemo(() => materials.filter((item) => {
-    const purchase = purchaseLabel(item.status);
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const text = `${cleanText(item.name)} ${cleanText(item.projectName)} ${cleanText(item.supplier)}`.toLowerCase();
-    const matchQuery = !q || text.includes(q);
-    const matchFilter = filter === 'all'
-      || (filter === 'pending' && purchase.includes('Ch\u01b0a'))
-      || (filter === 'ordered' && purchase.includes('\u0110\u00e3 \u0111\u1eb7t'))
-      || (filter === 'ready' && purchase.includes('c\u00f3 h\u00e0ng'));
-    return matchQuery && matchFilter;
-  }).slice(0, 80), [materials, query, filter]);
+    return materials.filter((item) => {
+      const purchase = purchaseLabel(item.status);
+      const text = `${cleanText(item.name)} ${cleanText(item.projectName)} ${cleanText(item.supplier)}`.toLowerCase();
+      const matchQuery = !q || text.includes(q);
+      const matchFilter = filter === 'all'
+        || (filter === 'pending' && purchase.includes('Chua'))
+        || (filter === 'ordered' && purchase.includes('Da dat'))
+        || (filter === 'ready' && purchase.includes('co hang'));
+      return matchQuery && matchFilter;
+    }).slice(0, 120);
+  }, [materials, query, filter]);
 
-  const markReady = (id: string) => updateMaterial(id, { status: '\u0110\u00e3 c\u00f3 h\u00e0ng', constrStatus: '\u0110ang thi c\u00f4ng' });
+  const markReady = useCallback((id: string) => updateMaterial(id, { status: 'Da co hang', constrStatus: 'Dang thi cong' }), [updateMaterial]);
+
+  const renderMaterial = useCallback(({ item }: { item: Material }) => {
+    const purchase = purchaseLabel(item.status);
+    const constr = constructionLabel(item.constrStatus);
+    return (
+      <Card style={styles.materialCard}>
+        <View style={styles.rowTop}>
+          <View style={styles.itemIcon}><Truck size={18} color={colors.primary} /></View>
+          <View style={{ flex: 1 }}><AppText style={styles.itemTitle} numberOfLines={2}>{item.name}</AppText><AppText style={styles.metaText} numberOfLines={1}>{item.projectName}</AppText></View>
+          <Pressable onPress={() => Alert.alert('Xoa vat tu', 'Ban chac chan muon xoa?', [{ text: 'Huy', style: 'cancel' }, { text: 'Xoa', style: 'destructive', onPress: () => deleteMaterial(item.id) }])} style={styles.deleteButton}><Trash2 size={16} color={colors.danger} /></Pressable>
+        </View>
+        <View style={styles.badgeRow}>
+          <StatusBadge label={purchase} tone={purchase.includes('co') ? 'green' : purchase.includes('Da dat') ? 'blue' : 'red'} />
+          <StatusBadge label={constr} tone={constr.includes('Vuong') ? 'red' : constr.includes('Da') ? 'green' : 'slate'} />
+        </View>
+        <View style={styles.rowBetween}><AppText style={styles.qty}>{`${item.volume} ${cleanText(item.unit)}`}</AppText><AppText style={styles.supplier} numberOfLines={1}>{item.supplier || 'Chua co nha cung cap'}</AppText></View>
+        {!purchase.includes('co') ? <Pressable onPress={() => markReady(item.id)} style={styles.readyButton}><AppText style={styles.readyText}>Danh dau da co hang</AppText></Pressable> : null}
+      </Card>
+    );
+  }, [deleteMaterial, markReady]);
+
+  const header = (
+    <>
+      <ScreenHeader icon={<Package size={22} color={colors.primary} />} title="Quan ly Vat tu & Thiet bi" subtitle="Theo doi dat hang, hang ve va thi cong." badge={`${materials.length} vat tu`} />
+      <Card style={styles.searchCard}>
+        <View style={styles.searchBox}><Search size={18} color={colors.slate[400]} /><TextInput value={query} onChangeText={setQuery} placeholder="Tim vat tu, du an..." placeholderTextColor={colors.slate[400]} style={styles.input} /></View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>{filterItems.map((item) => <Pressable key={item.key} onPress={() => setFilter(item.key)} style={[styles.filterChip, filter === item.key && styles.filterChipActive]}><AppText style={[styles.filterText, filter === item.key ? styles.filterTextActive : undefined]}>{item.label}</AppText></Pressable>)}</ScrollView>
+      </Card>
+    </>
+  );
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <ScreenHeader
-          icon={<Package size={22} color={colors.primary} />}
-          title="Qu\u1ea3n l\u00fd V\u1eadt t\u01b0 & Thi\u1ebft b\u1ecb"
-          subtitle="Theo d\u00f5i t\u00ecnh tr\u1ea1ng \u0111\u1eb7t h\u00e0ng, h\u00e0ng v\u1ec1 v\u00e0 thi c\u00f4ng ngay tr\u00ean \u0111i\u1ec7n tho\u1ea1i."
-          badge={`${materials.length} v\u1eadt t\u01b0`}
-        />
-
-        <Card style={styles.searchCard}>
-          <View style={styles.searchBox}>
-            <Search size={18} color={colors.slate[400]} />
-            <TextInput value={query} onChangeText={setQuery} placeholder="T\u00ecm v\u1eadt t\u01b0, d\u1ef1 \u00e1n..." placeholderTextColor={colors.slate[400]} style={styles.input} />
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-            {filterItems.map((item) => (
-              <Pressable key={item.key} onPress={() => setFilter(item.key)} style={[styles.filterChip, filter === item.key && styles.filterChipActive]}>
-                <AppText style={[styles.filterText, filter === item.key ? styles.filterTextActive : undefined]}>{item.label}</AppText>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </Card>
-
-        {filtered.map((item) => {
-          const purchase = purchaseLabel(item.status);
-          const constr = constructionLabel(item.constrStatus);
-          return (
-            <Card key={item.id} style={styles.materialCard}>
-              <View style={styles.rowTop}>
-                <View style={styles.itemIcon}><Truck size={18} color={colors.primary} /></View>
-                <View style={{ flex: 1 }}>
-                  <AppText style={styles.itemTitle} numberOfLines={2}>{item.name}</AppText>
-                  <AppText style={styles.metaText} numberOfLines={1}>{item.projectName}</AppText>
-                </View>
-                <Pressable onPress={() => Alert.alert('X\u00f3a v\u1eadt t\u01b0', 'B\u1ea1n ch\u1eafc ch\u1eafn mu\u1ed1n x\u00f3a?', [{ text: 'H\u1ee7y', style: 'cancel' }, { text: 'X\u00f3a', style: 'destructive', onPress: () => deleteMaterial(item.id) }])} style={styles.deleteButton}>
-                  <Trash2 size={16} color={colors.danger} />
-                </Pressable>
-              </View>
-              <View style={styles.badgeRow}>
-                <StatusBadge label={purchase} tone={purchase.includes('c\u00f3') ? 'green' : purchase.includes('\u0110\u00e3 \u0111\u1eb7t') ? 'blue' : 'red'} />
-                <StatusBadge label={constr} tone={constr.includes('V\u01b0\u1edbng') ? 'red' : constr.includes('\u0110\u00e3') ? 'green' : 'slate'} />
-              </View>
-              <View style={styles.rowBetween}>
-                <AppText style={styles.qty}>{`${item.volume} ${cleanText(item.unit)}`}</AppText>
-                <AppText style={styles.supplier} numberOfLines={1}>{item.supplier || 'Ch\u01b0a c\u00f3 nh\u00e0 cung c\u1ea5p'}</AppText>
-              </View>
-              {!purchase.includes('c\u00f3') ? (
-                <Pressable onPress={() => markReady(item.id)} style={styles.readyButton}>
-                  <AppText style={styles.readyText}>\u0110\u00e1nh d\u1ea5u \u0111\u00e3 c\u00f3 h\u00e0ng</AppText>
-                </Pressable>
-              ) : null}
-            </Card>
-          );
-        })}
-      </ScrollView>
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        renderItem={renderMaterial}
+        ListHeaderComponent={header}
+        ListEmptyComponent={<View style={styles.emptyWrap}><Card><AppText style={styles.empty}>Khong co vat tu phu hop.</AppText></Card></View>}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews
+      />
     </Screen>
   );
 };
@@ -114,4 +107,6 @@ const styles = StyleSheet.create({
   supplier: { flex: 1, textAlign: 'right', fontSize: 11, color: colors.slate[500], fontWeight: '600' },
   readyButton: { paddingVertical: 10, borderRadius: 12, backgroundColor: colors.primaryLight, alignItems: 'center' },
   readyText: { fontSize: 12, color: colors.primary, fontWeight: '800' },
+  emptyWrap: { paddingHorizontal: 12 },
+  empty: { textAlign: 'center', color: colors.slate[500], fontSize: 13 },
 });

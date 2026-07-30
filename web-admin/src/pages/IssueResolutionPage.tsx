@@ -78,10 +78,8 @@ export const IssueResolutionPage: React.FC = () => {
         </div>
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-extrabold text-slate-900">Xử lý Sự cố Hiện trường</h2>
-            <span className="px-3 py-1 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100">{issues.length} sự cố</span>
+            <h2 className="text-2xl font-extrabold text-slate-900">Xử lý sự cố</h2>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Theo dõi, chỉ đạo và cập nhật trạng thái xử lý các sự cố báo về từ công trường.</p>
         </div>
       </section>
 

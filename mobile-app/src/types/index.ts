@@ -1,4 +1,4 @@
-export type TaskStatus = 'Not Started' | 'In Progress' | 'Review' | 'Done';
+﻿export type TaskStatus = 'Not Started' | 'In Progress' | 'Review' | 'Done';
 export type TaskPriority = 'Low' | 'Medium' | 'High';
 
 export interface Task {
@@ -31,7 +31,9 @@ export interface Project {
   id: string;
   code: string;
   name: string;
+  client?: string;
   location: string;
+  contractValue?: number;
   progressPercent: number;
   status: 'active' | 'completed' | 'on_hold';
   activeTeams?: number;
@@ -39,6 +41,7 @@ export interface Project {
   completedTasks: number;
   issueTasksCount: number;
   managerName: string;
+  members?: string[];
   startDate?: string;
   endDate?: string;
 }
@@ -113,3 +116,111 @@ export interface ActivityLog {
   badgeBg: string;
   iconColor: string;
 }
+
+export interface ProjectMaterialPlan {
+  id: string;
+  stt: string;
+  projectCode: string;
+  jobContent: string;
+  unit: string;
+  contractVolume: number;
+  techSpecModel?: string;
+  progressStatus?: string;
+  orderedVolume?: number;
+  orderedStatus?: string;
+  expectedDate?: string;
+  issueContent?: string;
+  issueStatus?: string;
+  docCo?: boolean;
+  docCq?: boolean;
+  dispatchToSite?: boolean;
+  notes?: string;
+}
+
+export interface ProjectPurchasing {
+  id: string;
+  stt: string;
+  projectCode: string;
+  content: string;
+  unit: string;
+  volumeContract: number;
+  volumeOrder: number;
+  unitPrice: number;
+  vatRate: number;
+  totalAmount: number;
+  remainingAmount: number;
+  orderStatus: string;
+  contractStatus: string;
+  paymentDate?: string;
+  invoiceStatus?: string;
+  notes?: string;
+}
+
+export interface ProjectExpense {
+  id: string;
+  stt: string;
+  projectCode: string;
+  date: string;
+  content: string;
+  description: string;
+  unit: string;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+  incomeAmount?: number;
+  balanceFund?: number;
+  notes?: string;
+}
+
+export interface LaborPayroll {
+  id: string;
+  stt: string;
+  projectCode: string;
+  date: string;
+  content: string;
+  description: string;
+  workerName?: string;
+  unit: string;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+  bankAccount: string;
+  bankInfo?: string;
+  paymentStatus: string;
+  notes?: string;
+}
+
+export interface DocumentTrack {
+  id: string;
+  stt: string;
+  contractNo: string;
+  contractName: string;
+  projectCode: string;
+  company: string;
+  receiverName: string;
+  phone: string;
+  address: string;
+  sendDate: string;
+  receiveDate?: string;
+  docStatus: string;
+  side?: string;
+  contractValue: number;
+  prepayPercent: number;
+  prepayAmount: number;
+  paymentStatus: string;
+  isCompleted: boolean;
+  notes?: string;
+}
+
+export interface FieldLog {
+  id: string;
+  projectCode: string;
+  taskId: string;
+  engineerId: string;
+  timestamp: string;
+  note: string;
+  images: string[];
+  gpsLocation?: { lat: number; lng: number; text?: string };
+  statusUpdate: string;
+}
+

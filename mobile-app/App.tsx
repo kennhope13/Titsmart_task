@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
@@ -9,10 +9,26 @@ import { colors } from './src/theme';
 
 export default function App() {
   const loadState = useRealtimeStore((state) => state.loadState);
+  const fetchProjects = useRealtimeStore((state) => state.fetchProjects);
+  const fetchTasks = useRealtimeStore((state) => state.fetchTasks);
+  const fetchMaterials = useRealtimeStore((state) => state.fetchMaterials);
+  const fetchIssues = useRealtimeStore((state) => state.fetchIssues);
+  const fetchEngineers = useRealtimeStore((state) => state.fetchEngineers);
+  const fetchActivityLogs = useRealtimeStore((state) => state.fetchActivityLogs);
+  const fetchAccounting = useRealtimeStore((state) => state.fetchAccounting);
+  const fetchFieldLogs = useRealtimeStore((state) => state.fetchFieldLogs);
   const isLoaded = useRealtimeStore((state) => state.isLoaded);
 
   useEffect(() => {
     loadState();
+    fetchProjects();
+    fetchTasks();
+    fetchMaterials();
+    fetchIssues();
+    fetchEngineers();
+    fetchActivityLogs();
+    fetchAccounting();
+    fetchFieldLogs();
   }, []);
 
   if (!isLoaded) {
@@ -27,8 +43,9 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <AppNavigator />
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
       </NavigationContainer>
     </SafeAreaProvider>
   );
 }
+

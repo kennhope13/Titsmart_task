@@ -1,0 +1,506 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum user_role {
+  admin
+  manager
+  procurement
+  engineer
+  viewer
+}
+
+enum account_status {
+  active
+  locked
+  inactive
+}
+
+enum project_status {
+  active
+  completed
+  on_hold
+}
+
+enum task_status {
+  not_started
+  in_progress
+  review
+  done
+}
+
+enum task_priority {
+  low
+  medium
+  high
+}
+
+enum issue_status {
+  open
+  processing
+  resolved
+}
+
+enum issue_priority {
+  standard
+  warning
+  critical
+}
+
+enum notification_type {
+  task_assigned
+  issue_alert
+  material_update
+  system
+}
+
+enum inventory_transaction_type {
+  import
+  export
+}
+
+enum attachment_owner_type {
+  task
+  issue
+  progress_update
+  material
+  document_track
+  expense
+  labor_payroll
+}
+
+model User {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code          String?   @unique @db.VarChar(50)
+  full_name     String    @db.VarChar(255)
+  email         String    @unique @db.VarChar(255)
+  phone         String?   @db.VarChar(50)
+  password_hash String?
+  role          user_role @default(engineer)
+  title         String?   @db.VarChar(255)
+  avatar_url    String?
+  status        account_status @default(active)
+  last_login_at DateTime? @db.Timestamptz
+  created_at    DateTime  @default(now()) @db.Timestamptz
+  updated_at    DateTime  @default(now()) @db.Timestamptz
+
+  projects_managed Project[] @relation("ProjectManager")
+  tasks_assigned   Task[]    @relation("TaskAssignedEngineer")
+  task_assignments TaskAssignment[] @relation("TaskAssignedUser")
+  tasks_assigned_by TaskAssignment[] @relation("TaskAssignedBy")
+  inventory_transactions InventoryTransaction[] @relation("TransactionCreatedBy")
+  progress_updates ProgressUpdate[] @relation("ProgressUpdateUser")
+  issues_reported  Issue[] @relation("IssueReportedBy")
+  issues_assigned  Issue[] @relation("IssueAssignedTo")
+  issue_comments   IssueComment[] @relation("CommentAuthor")
+  attachments      Attachment[] @relation("AttachmentUploader")
+  notifications    Notification[]
+  activity_logs    ActivityLog[]
+
+  @@map("users")
+}
+
+model Project {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code              String    @unique @db.VarChar(80)
+  name              String    @db.VarChar(255)
+  location          String    @default("") @db.VarChar(255)
+  status            project_status @default(active)
+  manager_id        String?   @db.Uuid
+  manager_name      String?   @db.VarChar(255)
+  start_date        DateTime? @db.Date
+  end_date          DateTime? @db.Date
+  active_teams      Int       @default(0)
+  progress_percent  Decimal   @default(0) @db.Decimal(5, 2)
+  total_tasks       Int       @default(0)
+  completed_tasks   Int       @default(0)
+  issue_tasks_count Int       @default(0)
+  notes             String?
+  created_at        DateTime  @default(now()) @db.Timestamptz
+  updated_at        DateTime  @default(now()) @db.Timestamptz
+
+  manager           User?     @relation("ProjectManager", fields: [manager_id], references: [id], onDelete: SetNull)
+  tasks             Task[]
+  materials         Material[]
+  inventory_transactions InventoryTransaction[]
+  issues            Issue[]
+  activity_logs     ActivityLog[]
+  material_plans    ProjectMaterialPlan[]
+  purchasings       ProjectPurchasing[]
+  expenses          ProjectExpense[]
+  labor_payrolls    LaborPayroll[]
+  document_tracks   DocumentTrack[]
+
+  @@index([status])
+  @@map("projects")
+}
+
+model Task {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id           String    @db.Uuid
+  stt                  String?   @db.VarChar(50)
+  code                 String    @unique @db.VarChar(100)
+  name                 String
+  volume               Decimal   @default(0) @db.Decimal(18, 4)
+  unit                 String    @default("") @db.VarChar(50)
+  progress             Decimal   @default(0) @db.Decimal(7, 4)
+  status               task_status @default(not_started)
+  priority             task_priority @default(medium)
+  purchase_status      String    @default("") @db.VarChar(255)
+  construction_status  String    @default("") @db.VarChar(255)
+  issue_summary        String?
+  issue_status_text    String?   @db.VarChar(255)
+  is_done              Boolean   @default(false)
+  is_section_header    Boolean   @default(false)
+  section_name         String?
+  notes                String?
+  assigned_engineer_id String?   @db.Uuid
+  due_date             DateTime? @db.Date
+  source_row           Json      @default("{}")
+  created_at           DateTime  @default(now()) @db.Timestamptz
+  updated_at           DateTime  @default(now()) @db.Timestamptz
+
+  project              Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  assigned_engineer    User?     @relation("TaskAssignedEngineer", fields: [assigned_engineer_id], references: [id], onDelete: SetNull)
+  task_assignments     TaskAssignment[]
+  materials            Material[]
+  progress_updates     ProgressUpdate[]
+  issues               Issue[]
+
+  @@index([project_id])
+  @@index([status])
+  @@index([assigned_engineer_id])
+  @@map("tasks")
+}
+
+model TaskAssignment {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  task_id     String   @db.Uuid
+  user_id     String   @db.Uuid
+  assigned_by String?  @db.Uuid
+  assigned_at DateTime @default(now()) @db.Timestamptz
+  notes       String?
+
+  task        Task     @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user        User     @relation("TaskAssignedUser", fields: [user_id], references: [id], onDelete: Cascade)
+  assigner    User?    @relation("TaskAssignedBy", fields: [assigned_by], references: [id], onDelete: SetNull)
+
+  @@unique([task_id, user_id])
+  @@map("task_assignments")
+}
+
+model Material {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id          String    @db.Uuid
+  task_id             String?   @db.Uuid
+  code                String    @unique @db.VarChar(100)
+  name                String
+  english_name        String?
+  volume              Decimal   @default(0) @db.Decimal(18, 4)
+  unit                String    @default("") @db.VarChar(50)
+  unit_price          Decimal   @default(0) @db.Decimal(18, 2)
+  status              String    @default("") @db.VarChar(255)
+  construction_status String?   @db.VarChar(255)
+  supplier            String?   @db.VarChar(255)
+  initial_stock       Decimal   @default(0) @db.Decimal(18, 4)
+  current_stock       Decimal   @default(0) @db.Decimal(18, 4)
+  total_import        Decimal   @default(0) @db.Decimal(18, 4)
+  total_export        Decimal   @default(0) @db.Decimal(18, 4)
+  category            String?   @db.VarChar(255)
+  specs               String?
+  notes               String?
+  created_at          DateTime  @default(now()) @db.Timestamptz
+  updated_at          DateTime  @default(now()) @db.Timestamptz
+
+  project             Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  task                Task?     @relation(fields: [task_id], references: [id], onDelete: SetNull)
+  inventory_transactions InventoryTransaction[]
+
+  @@index([project_id])
+  @@index([task_id])
+  @@map("materials")
+}
+
+model InventoryTransaction {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  material_id       String    @db.Uuid
+  project_id        String?   @db.Uuid
+  type              inventory_transaction_type
+  transaction_date  DateTime  @db.Date
+  quantity          Decimal   @db.Decimal(18, 4)
+  source_or_project String    @default("") @db.VarChar(255)
+  receiver_name     String?   @db.VarChar(255)
+  notes             String?
+  created_by        String?   @db.Uuid
+  created_at        DateTime  @default(now()) @db.Timestamptz
+
+  material          Material  @relation(fields: [material_id], references: [id], onDelete: Cascade)
+  project           Project?  @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  creator           User?     @relation("TransactionCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+
+  @@index([material_id])
+  @@index([project_id])
+  @@map("inventory_transactions")
+}
+
+model ProgressUpdate {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  task_id     String    @db.Uuid
+  user_id     String?   @db.Uuid
+  progress    Decimal   @db.Decimal(7, 4)
+  status      task_status
+  note        String?
+  recorded_at DateTime  @default(now()) @db.Timestamptz
+  created_at  DateTime  @default(now()) @db.Timestamptz
+
+  task        Task      @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user        User?     @relation("ProgressUpdateUser", fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([task_id])
+  @@map("progress_updates")
+}
+
+model Issue {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id         String    @db.Uuid
+  task_id            String?   @db.Uuid
+  incident_code      String    @unique @db.VarChar(100)
+  title              String
+  location           String    @default("")
+  reported_by_id     String?   @db.Uuid
+  reported_by_name   String?   @db.VarChar(255)
+  reported_at        DateTime  @default(now()) @db.Timestamptz
+  description        String    @default("")
+  photo_url          String?
+  status             issue_status @default(open)
+  priority           issue_priority @default(standard)
+  assigned_to_id     String?   @db.Uuid
+  assigned_to_name   String?   @db.VarChar(255)
+  manager_directives String?
+  resolved_at        DateTime? @db.Timestamptz
+  created_at         DateTime  @default(now()) @db.Timestamptz
+  updated_at         DateTime  @default(now()) @db.Timestamptz
+
+  project            Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  task               Task?     @relation(fields: [task_id], references: [id], onDelete: SetNull)
+  reported_by        User?     @relation("IssueReportedBy", fields: [reported_by_id], references: [id], onDelete: SetNull)
+  assigned_to        User?     @relation("IssueAssignedTo", fields: [assigned_to_id], references: [id], onDelete: SetNull)
+  comments           IssueComment[]
+
+  @@index([project_id])
+  @@index([task_id])
+  @@index([status])
+  @@map("issues")
+}
+
+model IssueComment {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  issue_id    String   @db.Uuid
+  author_id   String?  @db.Uuid
+  author_name String?  @db.VarChar(255)
+  message     String
+  created_at  DateTime @default(now()) @db.Timestamptz
+
+  issue       Issue    @relation(fields: [issue_id], references: [id], onDelete: Cascade)
+  author      User?    @relation("CommentAuthor", fields: [author_id], references: [id], onDelete: SetNull)
+
+  @@index([issue_id])
+  @@map("issue_comments")
+}
+
+model Attachment {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_type      attachment_owner_type
+  owner_id        String   @db.Uuid
+  file_name       String   @db.VarChar(255)
+  file_url        String
+  mime_type       String?  @db.VarChar(120)
+  file_size_bytes BigInt?
+  uploaded_by     String?  @db.Uuid
+  uploaded_at     DateTime @default(now()) @db.Timestamptz
+
+  uploader        User?    @relation("AttachmentUploader", fields: [uploaded_by], references: [id], onDelete: SetNull)
+
+  @@index([owner_type, owner_id])
+  @@map("attachments")
+}
+
+model Notification {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String?  @db.Uuid
+  title      String   @db.VarChar(255)
+  message    String
+  type       notification_type @default(system)
+  icon       String?  @db.VarChar(80)
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  user       User?    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([is_read])
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String?  @db.Uuid
+  user_name    String   @db.VarChar(255)
+  action       String
+  project_id   String?  @db.Uuid
+  project_name String?  @db.VarChar(255)
+  icon         String?  @db.VarChar(80)
+  badge_bg     String?  @db.VarChar(80)
+  icon_color   String?  @db.VarChar(80)
+  created_at   DateTime @default(now()) @db.Timestamptz
+
+  user         User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  project      Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
+
+  @@index([project_id])
+  @@map("activity_logs")
+}
+
+model ProjectMaterialPlan {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id          String   @db.Uuid
+  stt                 String?  @db.VarChar(50)
+  job_content         String
+  unit                String   @default("") @db.VarChar(50)
+  contract_volume     Decimal  @default(0) @db.Decimal(18, 4)
+  tech_spec_model     String?
+  tech_spec_origin    String?
+  progress_status     String?  @db.VarChar(255)
+  ordered_volume      Decimal  @default(0) @db.Decimal(18, 4)
+  ordered_status      String?  @db.VarChar(255)
+  expected_date       DateTime? @db.Date
+  issue_content       String?
+  issue_status        String?
+  doc_co              Boolean  @default(false)
+  doc_cq              Boolean  @default(false)
+  doc_fire_inspection Boolean  @default(false)
+  dispatch_to_site    Boolean  @default(false)
+  dispatch_date       DateTime? @db.Date
+  notes               String?
+  created_at          DateTime @default(now()) @db.Timestamptz
+  updated_at          DateTime @default(now()) @db.Timestamptz
+
+  project             Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@map("project_material_plans")
+}
+
+model ProjectPurchasing {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id       String   @db.Uuid
+  stt              String?  @db.VarChar(50)
+  content          String
+  unit             String   @default("") @db.VarChar(50)
+  volume_contract  Decimal  @default(0) @db.Decimal(18, 4)
+  volume_order     Decimal  @default(0) @db.Decimal(18, 4)
+  unit_price       Decimal  @default(0) @db.Decimal(18, 2)
+  vat_rate         Decimal  @default(0) @db.Decimal(5, 2)
+  vat_amount       Decimal  @default(0) @db.Decimal(18, 2)
+  total_amount     Decimal  @default(0) @db.Decimal(18, 2)
+  prepay_percent   Decimal  @default(0) @db.Decimal(5, 2)
+  prepay_amount    Decimal  @default(0) @db.Decimal(18, 2)
+  remaining_amount Decimal  @default(0) @db.Decimal(18, 2)
+  order_status     String   @default("") @db.VarChar(255)
+  contract_status  String   @default("") @db.VarChar(255)
+  payment_date     DateTime? @db.Date
+  invoice_status   String?  @db.VarChar(255)
+  notes            String?
+  created_at       DateTime @default(now()) @db.Timestamptz
+  updated_at       DateTime @default(now()) @db.Timestamptz
+
+  project          Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@map("project_purchasing")
+}
+
+model ProjectExpense {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id    String   @db.Uuid
+  stt           String?  @db.VarChar(50)
+  expense_date  DateTime @db.Date
+  content       String
+  description   String   @default("")
+  unit          String   @default("") @db.VarChar(50)
+  quantity      Decimal  @default(0) @db.Decimal(18, 4)
+  unit_price    Decimal  @default(0) @db.Decimal(18, 2)
+  tax_amount    Decimal  @default(0) @db.Decimal(18, 2)
+  total_amount  Decimal  @default(0) @db.Decimal(18, 2)
+  income_amount Decimal  @default(0) @db.Decimal(18, 2)
+  balance_fund  Decimal  @default(0) @db.Decimal(18, 2)
+  notes         String?
+  invoice_url   String?
+  created_at    DateTime @default(now()) @db.Timestamptz
+  updated_at    DateTime @default(now()) @db.Timestamptz
+
+  project       Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@map("project_expenses")
+}
+
+model LaborPayroll {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id        String   @db.Uuid
+  stt               String?  @db.VarChar(50)
+  payroll_date      DateTime @db.Date
+  content           String
+  description       String   @default("")
+  worker_name       String?  @db.VarChar(255)
+  unit              String   @default("") @db.VarChar(50)
+  quantity          Decimal  @default(0) @db.Decimal(18, 4)
+  unit_price        Decimal  @default(0) @db.Decimal(18, 2)
+  total_amount      Decimal  @default(0) @db.Decimal(18, 2)
+  bank_account      String   @default("") @db.VarChar(255)
+  bank_info         String?
+  id_card_front_url String?
+  id_card_back_url  String?
+  payment_status    String   @default("") @db.VarChar(255)
+  notes             String?
+  created_at        DateTime @default(now()) @db.Timestamptz
+  updated_at        DateTime @default(now()) @db.Timestamptz
+
+  project           Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@map("labor_payrolls")
+}
+
+model DocumentTrack {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id     String   @db.Uuid
+  stt            String?  @db.VarChar(50)
+  contract_no    String   @db.VarChar(120)
+  contract_name  String
+  company        String   @default("") @db.VarChar(255)
+  receiver_name  String   @default("") @db.VarChar(255)
+  phone          String   @default("") @db.VarChar(50)
+  address        String   @default("")
+  send_date      DateTime @db.Date
+  receive_date   DateTime? @db.Date
+  doc_status     String   @default("") @db.VarChar(255)
+  side           String?  @db.VarChar(255)
+  contract_value Decimal  @default(0) @db.Decimal(18, 2)
+  prepay_percent Decimal  @default(0) @db.Decimal(5, 2)
+  prepay_amount  Decimal  @default(0) @db.Decimal(18, 2)
+  payment_status String   @default("") @db.VarChar(255)
+  is_completed   Boolean  @default(false)
+  notes          String?
+  created_at     DateTime @default(now()) @db.Timestamptz
+  updated_at     DateTime @default(now()) @db.Timestamptz
+
+  project        Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@map("document_tracks")
+}

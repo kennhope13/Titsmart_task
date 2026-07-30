@@ -1,64 +1,99 @@
-import React from 'react';
+﻿import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { LayoutDashboard, ClipboardList, Package, TriangleAlert, FileBarChart } from 'lucide-react-native';
-import { DashboardScreen } from '../screens/DashboardScreen';
-import { TaskManagementScreen } from '../screens/TaskManagementScreen';
-import { MaterialTrackingScreen } from '../screens/MaterialTrackingScreen';
-import { IssueResolutionScreen } from '../screens/IssueResolutionScreen';
-import { ReportExportScreen } from '../screens/ReportExportScreen';
+import { BriefcaseBusiness, LayoutDashboard, MoreHorizontal, Package, ScanText } from 'lucide-react-native';
 import { colors } from '../theme';
 
 export type RootTabParamList = {
-  Dashboard: undefined;
-  Tasks: undefined;
-  Materials: undefined;
-  Issues: undefined;
-  Reports: undefined;
+  DashboardTab: undefined;
+  ProjectsTab: undefined;
+  MaterialsTab: undefined;
+  Ocr: undefined;
+  More: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const Stack = createNativeStackNavigator();
 
+type ScreenModule = Record<string, React.ComponentType<any>>;
+
+const lazyScreen = (loader: () => ScreenModule, exportName: string) => {
+  const LazyComponent = (props: any) => {
+    const Component = React.useMemo(() => loader()[exportName], []);
+    return <Component {...props} />;
+  };
+
+  return LazyComponent;
+};
+
+const DashboardScreen = lazyScreen(() => require('../screens/DashboardScreen'), 'DashboardScreen');
+const TaskManagementScreen = lazyScreen(() => require('../screens/TaskManagementScreen'), 'TaskManagementScreen');
+const MaterialTrackingScreen = lazyScreen(() => require('../screens/MaterialTrackingScreen'), 'MaterialTrackingScreen');
+const IssueResolutionScreen = lazyScreen(() => require('../screens/IssueResolutionScreen'), 'IssueResolutionScreen');
+const PersonnelScreen = lazyScreen(() => require('../screens/PersonnelScreen'), 'PersonnelScreen');
+const ReportExportScreen = lazyScreen(() => require('../screens/ReportExportScreen'), 'ReportExportScreen');
+const OcrScannerScreen = lazyScreen(() => require('../screens/OcrScannerScreen'), 'OcrScannerScreen');
+const AccountScreen = lazyScreen(() => require('../screens/AccountScreen'), 'AccountScreen');
+const TaskFormScreen = lazyScreen(() => require('../screens/TaskFormScreen'), 'TaskFormScreen');
+const TaskDetailScreen = lazyScreen(() => require('../screens/TaskDetailScreen'), 'TaskDetailScreen');
+const MoreScreen = lazyScreen(() => require('../screens/MoreScreen'), 'MoreScreen');
+const ProjectManagementScreen = lazyScreen(() => require('../screens/ProjectManagementScreen'), 'ProjectManagementScreen');
+const ProjectDetailScreen = lazyScreen(() => require('../screens/ProjectDetailScreen'), 'ProjectDetailScreen');
+const ProjectCostPlanScreen = lazyScreen(() => require('../screens/ProjectCostPlanScreen'), 'ProjectCostPlanScreen');
+const DocumentTrackingScreen = lazyScreen(() => require('../screens/DocumentTrackingScreen'), 'DocumentTrackingScreen');
+const FieldLogsScreen = lazyScreen(() => require('../screens/FieldLogsScreen'), 'FieldLogsScreen');
+const ActivityLogScreen = lazyScreen(() => require('../screens/ActivityLogScreen'), 'ActivityLogScreen');
+
 const iconFor = (routeName: keyof RootTabParamList, color: string, size: number) => {
-  const props = { color, size, strokeWidth: 2.4 };
-  if (routeName === 'Dashboard') return <LayoutDashboard {...props} />;
-  if (routeName === 'Tasks') return <ClipboardList {...props} />;
-  if (routeName === 'Materials') return <Package {...props} />;
-  if (routeName === 'Issues') return <TriangleAlert {...props} />;
-  return <FileBarChart {...props} />;
+  const props = { color, size, strokeWidth: 2.3 };
+  if (routeName === 'DashboardTab') return <LayoutDashboard {...props} />;
+  if (routeName === 'ProjectsTab') return <BriefcaseBusiness {...props} />;
+  if (routeName === 'MaterialsTab') return <Package {...props} />;
+  if (routeName === 'Ocr') return <ScanText {...props} />;
+  return <MoreHorizontal {...props} />;
 };
 
 export const TabNavigator = () => (
   <Tab.Navigator
+    initialRouteName="DashboardTab"
     screenOptions={({ route }) => ({
+      headerShown: false,
+      lazy: true,
       tabBarIcon: ({ color, size }) => iconFor(route.name, color, size),
       tabBarActiveTintColor: colors.primary,
       tabBarInactiveTintColor: colors.slate[400],
-      tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
-      tabBarStyle: {
-        borderTopWidth: 1,
-        borderTopColor: colors.slate[200],
-        backgroundColor: colors.white,
-        height: 66,
-        paddingBottom: 9,
-        paddingTop: 8,
-      },
-      headerStyle: { backgroundColor: colors.primary },
-      headerTintColor: colors.white,
-      headerTitleStyle: { fontWeight: '800', fontSize: 16 },
+      tabBarLabelStyle: { fontSize: 9, fontWeight: '800', marginTop: 2 },
+      tabBarItemStyle: { paddingVertical: 4 },
+      tabBarStyle: { borderTopWidth: 1, borderTopColor: colors.slate[200], backgroundColor: colors.white, height: 64, paddingBottom: 7, paddingTop: 5 },
     })}
   >
-    <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'T\u1ed5ng quan' }} />
-    <Tab.Screen name="Tasks" component={TaskManagementScreen} options={{ title: 'C\u00f4ng vi\u1ec7c' }} />
-    <Tab.Screen name="Materials" component={MaterialTrackingScreen} options={{ title: 'V\u1eadt t\u01b0' }} />
-    <Tab.Screen name="Issues" component={IssueResolutionScreen} options={{ title: 'S\u1ef1 c\u1ed1' }} />
-    <Tab.Screen name="Reports" component={ReportExportScreen} options={{ title: 'B\u00e1o c\u00e1o' }} />
+    <Tab.Screen name="DashboardTab" component={DashboardScreen} options={{ title: 'Tong quan' }} />
+    <Tab.Screen name="ProjectsTab" component={ProjectManagementScreen} options={{ title: 'Du an' }} />
+    <Tab.Screen name="MaterialsTab" component={MaterialTrackingScreen} options={{ title: 'Vat tu' }} />
+    <Tab.Screen name="Ocr" component={OcrScannerScreen} options={{ title: 'OCR' }} />
+    <Tab.Screen name="More" component={MoreScreen} options={{ title: 'Them' }} />
   </Tab.Navigator>
 );
 
 export const AppNavigator = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="MainTabs" component={TabNavigator} />
+    <Stack.Screen name="Dashboard" component={DashboardScreen} />
+    <Stack.Screen name="Projects" component={ProjectManagementScreen} />
+    <Stack.Screen name="ProjectDetail" component={ProjectDetailScreen} />
+    <Stack.Screen name="Materials" component={MaterialTrackingScreen} />
+    <Stack.Screen name="Tasks" component={TaskManagementScreen} />
+    <Stack.Screen name="TaskForm" component={TaskFormScreen} />
+    <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
+    <Stack.Screen name="CostPlan" component={ProjectCostPlanScreen} />
+    <Stack.Screen name="Documents" component={DocumentTrackingScreen} />
+    <Stack.Screen name="FieldLogs" component={FieldLogsScreen} />
+    <Stack.Screen name="Issues" component={IssueResolutionScreen} />
+    <Stack.Screen name="Reports" component={ReportExportScreen} />
+    <Stack.Screen name="Personnel" component={PersonnelScreen} />
+    <Stack.Screen name="ActivityLog" component={ActivityLogScreen} />
+    <Stack.Screen name="Account" component={AccountScreen} />
   </Stack.Navigator>
 );
+
+
