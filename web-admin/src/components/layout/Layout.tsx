@@ -10,7 +10,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
       <Sidebar />
       <div className="ml-60 flex flex-col min-h-screen flex-1">
-        <main className="flex-1 bg-slate-50">{children}</main>
+        <main className="flex-1 bg-slate-50 flex flex-col">{children}</main>
       </div>
     </div>
   );

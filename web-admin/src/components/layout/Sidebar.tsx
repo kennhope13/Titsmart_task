@@ -27,10 +27,10 @@ export const Sidebar: React.FC = () => {
     {
       title: 'Quản lý dự án',
       items: [
-        { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
-        { label: 'Kế hoạch & Chi phí', path: '/cost-plan', icon: 'calculate' },
-        { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
-        { label: 'Theo dõi Hồ sơ', path: '/document-tracking', icon: 'drafts' },
+        { label: 'Danh s\u00e1ch D\u1ef1 \u00e1n', path: '/projects', icon: 'domain' },
+        { label: 'K\u1ebf ho\u1ea1ch & Chi ph\u00ed', path: '/cost-plan', icon: 'request_quote' },
+        { label: 'Nh\u1eadt k\u00fd Hi\u1ec7n tr\u01b0\u1eddng', path: '/field-logs', icon: 'photo_camera' },
+        { label: 'Theo d\u00f5i H\u1ed3 s\u01a1', path: '/document-tracking', icon: 'drafts' },
       ]
     },
     {
@@ -112,7 +112,7 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      <nav className="flex-1 px-3 mt-5 pb-4 space-y-6 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 px-3 mt-5 pb-4 space-y-6 overflow-y-auto scrollbar-hide">
         {navGroups.map((group) => (
           <div key={group.title} className="space-y-1">
             <div 

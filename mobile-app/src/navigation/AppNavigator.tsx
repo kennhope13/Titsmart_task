@@ -1,18 +1,15 @@
-import React from 'react';
+﻿import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ClipboardList, FileBarChart, LayoutDashboard, Package, ScanText, TriangleAlert, UserCircle2, UsersRound } from 'lucide-react-native';
+import { BriefcaseBusiness, LayoutDashboard, MoreHorizontal, Package, ScanText } from 'lucide-react-native';
 import { colors } from '../theme';
 
 export type RootTabParamList = {
-  Dashboard: undefined;
-  Tasks: undefined;
-  Materials: undefined;
-  Issues: undefined;
-  Personnel: undefined;
-  Reports: { initialTab?: string } | undefined;
+  DashboardTab: undefined;
+  ProjectsTab: undefined;
+  MaterialsTab: undefined;
   Ocr: undefined;
-  Account: undefined;
+  More: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -39,47 +36,64 @@ const OcrScannerScreen = lazyScreen(() => require('../screens/OcrScannerScreen')
 const AccountScreen = lazyScreen(() => require('../screens/AccountScreen'), 'AccountScreen');
 const TaskFormScreen = lazyScreen(() => require('../screens/TaskFormScreen'), 'TaskFormScreen');
 const TaskDetailScreen = lazyScreen(() => require('../screens/TaskDetailScreen'), 'TaskDetailScreen');
+const MoreScreen = lazyScreen(() => require('../screens/MoreScreen'), 'MoreScreen');
+const ProjectManagementScreen = lazyScreen(() => require('../screens/ProjectManagementScreen'), 'ProjectManagementScreen');
+const ProjectDetailScreen = lazyScreen(() => require('../screens/ProjectDetailScreen'), 'ProjectDetailScreen');
+const ProjectCostPlanScreen = lazyScreen(() => require('../screens/ProjectCostPlanScreen'), 'ProjectCostPlanScreen');
+const DocumentTrackingScreen = lazyScreen(() => require('../screens/DocumentTrackingScreen'), 'DocumentTrackingScreen');
+const FieldLogsScreen = lazyScreen(() => require('../screens/FieldLogsScreen'), 'FieldLogsScreen');
+const ActivityLogScreen = lazyScreen(() => require('../screens/ActivityLogScreen'), 'ActivityLogScreen');
 
 const iconFor = (routeName: keyof RootTabParamList, color: string, size: number) => {
   const props = { color, size, strokeWidth: 2.3 };
-  if (routeName === 'Dashboard') return <LayoutDashboard {...props} />;
-  if (routeName === 'Tasks') return <ClipboardList {...props} />;
-  if (routeName === 'Materials') return <Package {...props} />;
-  if (routeName === 'Issues') return <TriangleAlert {...props} />;
-  if (routeName === 'Personnel') return <UsersRound {...props} />;
-  if (routeName === 'Reports') return <FileBarChart {...props} />;
+  if (routeName === 'DashboardTab') return <LayoutDashboard {...props} />;
+  if (routeName === 'ProjectsTab') return <BriefcaseBusiness {...props} />;
+  if (routeName === 'MaterialsTab') return <Package {...props} />;
   if (routeName === 'Ocr') return <ScanText {...props} />;
-  return <UserCircle2 {...props} />;
+  return <MoreHorizontal {...props} />;
 };
 
 export const TabNavigator = () => (
   <Tab.Navigator
+    initialRouteName="DashboardTab"
     screenOptions={({ route }) => ({
       headerShown: false,
       lazy: true,
       tabBarIcon: ({ color, size }) => iconFor(route.name, color, size),
       tabBarActiveTintColor: colors.primary,
       tabBarInactiveTintColor: colors.slate[400],
-      tabBarLabelStyle: { fontSize: 9, fontWeight: '700', marginTop: 2 },
+      tabBarLabelStyle: { fontSize: 9, fontWeight: '800', marginTop: 2 },
       tabBarItemStyle: { paddingVertical: 4 },
       tabBarStyle: { borderTopWidth: 1, borderTopColor: colors.slate[200], backgroundColor: colors.white, height: 64, paddingBottom: 7, paddingTop: 5 },
     })}
   >
-    <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Tổng quan' }} />
-    <Tab.Screen name="Tasks" component={TaskManagementScreen} options={{ title: 'Công việc' }} />
-    <Tab.Screen name="Materials" component={MaterialTrackingScreen} options={{ title: 'Vật tư' }} />
-    <Tab.Screen name="Issues" component={IssueResolutionScreen} options={{ title: 'Sự cố' }} />
-    <Tab.Screen name="Personnel" component={PersonnelScreen} options={{ title: 'Nhân sự' }} />
-    <Tab.Screen name="Reports" component={ReportExportScreen} options={{ title: 'Báo cáo' }} />
+    <Tab.Screen name="DashboardTab" component={DashboardScreen} options={{ title: 'Tong quan' }} />
+    <Tab.Screen name="ProjectsTab" component={ProjectManagementScreen} options={{ title: 'Du an' }} />
+    <Tab.Screen name="MaterialsTab" component={MaterialTrackingScreen} options={{ title: 'Vat tu' }} />
     <Tab.Screen name="Ocr" component={OcrScannerScreen} options={{ title: 'OCR' }} />
-    <Tab.Screen name="Account" component={AccountScreen} options={{ title: 'Tài khoản' }} />
+    <Tab.Screen name="More" component={MoreScreen} options={{ title: 'Them' }} />
   </Tab.Navigator>
 );
 
 export const AppNavigator = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="MainTabs" component={TabNavigator} />
+    <Stack.Screen name="Dashboard" component={DashboardScreen} />
+    <Stack.Screen name="Projects" component={ProjectManagementScreen} />
+    <Stack.Screen name="ProjectDetail" component={ProjectDetailScreen} />
+    <Stack.Screen name="Materials" component={MaterialTrackingScreen} />
+    <Stack.Screen name="Tasks" component={TaskManagementScreen} />
     <Stack.Screen name="TaskForm" component={TaskFormScreen} />
     <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
+    <Stack.Screen name="CostPlan" component={ProjectCostPlanScreen} />
+    <Stack.Screen name="Documents" component={DocumentTrackingScreen} />
+    <Stack.Screen name="FieldLogs" component={FieldLogsScreen} />
+    <Stack.Screen name="Issues" component={IssueResolutionScreen} />
+    <Stack.Screen name="Reports" component={ReportExportScreen} />
+    <Stack.Screen name="Personnel" component={PersonnelScreen} />
+    <Stack.Screen name="ActivityLog" component={ActivityLogScreen} />
+    <Stack.Screen name="Account" component={AccountScreen} />
   </Stack.Navigator>
 );
+
+

@@ -11,6 +11,12 @@ export type WebOcrTableTask = {
   notes?: string;
   isSectionHeader: boolean;
   sectionName: string;
+  supplyScope?: 'contractor' | 'owner' | 'unknown';
+  unitPrice?: number;
+  vatRate?: number;
+  vatAmount?: number;
+  totalBeforeVat?: number;
+  totalAmount?: number;
 };
 
 export type WebOcrExtractedData = {
@@ -102,15 +108,15 @@ const cleanCSVArtifacts = (val: string) => {
 
 
 const parseNumberValue = (value: unknown) => {
-  const raw = String(value ?? '').trim().replace(/s+/g, '');
+  const raw = String(value ?? '').trim().replace(/\s+/g, '');
   if (!raw) return 0;
   const numeric = raw.replace(/[^0-9,.-]/g, '');
   if (!numeric) return 0;
 
   let normalized = numeric;
-  if (/^-?d{1,3}(.d{3})+(,d+)?$/.test(numeric)) {
-    normalized = numeric.replace(/./g, '').replace(',', '.');
-  } else if (/^-?d{1,3}(,d{3})+(.d+)?$/.test(numeric)) {
+  if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(numeric)) {
+    normalized = numeric.replace(/\./g, '').replace(',', '.');
+  } else if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(numeric)) {
     normalized = numeric.replace(/,/g, '');
   } else if (numeric.includes(',') && !numeric.includes('.')) {
     normalized = numeric.replace(',', '.');
@@ -178,6 +184,33 @@ const isTotalOrNoiseRow = (name: string) => {
 const stripSectionPrefix = (value: string) =>
   cleanCSVArtifacts(String(value || '').replace(/^\s*(?:[IVXLCDM]+|MUC\s+[A-Z0-9]+)\s*[.)\-:]?\s*/i, ''));
 
+type SupplyScope = 'contractor' | 'owner' | 'unknown';
+
+const hasContractorSupplySignal = (text: string) =>
+  text.includes('nha thau') ||
+  text.includes('ben b') ||
+  text.includes('nt cung cap') ||
+  text.includes('nha thau cung cap') ||
+  text.includes('don vi thi cong cung cap');
+
+const hasOwnerSupplySignal = (text: string) =>
+  text.includes('chu dau tu') ||
+  text.includes('cdt') ||
+  text.includes('ben a') ||
+  text.includes('c/dt') ||
+  text.includes('chu dau tu cap') ||
+  text.includes('chu dau tu cung cap');
+
+const detectSupplyScope = (value: unknown): SupplyScope => {
+  const text = normalizeLookupText(String(value || ''));
+  if (!text) return 'unknown';
+  const owner = hasOwnerSupplySignal(text);
+  const contractor = hasContractorSupplySignal(text);
+  if (owner && !contractor) return 'owner';
+  if (contractor && !owner) return 'contractor';
+  return 'unknown';
+};
+
 const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
   const rows = lines.map(splitTableLine);
   const headerIndex = rows.findIndex((cells, index) => index < 80 && isLikelyTableHeader(cells));
@@ -188,14 +221,28 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
   const nameCol = getTableColumnIndex(header, ['noi dung', 'hang muc', 'dien giai', 'mo ta'], 1);
   const volumeCol = getTableColumnIndex(header, ['khoi luong', 'so luong'], 2);
   const unitCol = getTableColumnIndex(header, ['don vi tinh', 'don vi', 'dvt'], 3);
+  const unitPriceCol = getTableColumnIndex(header, ['don gia'], 4);
+  const preTaxCol = getTableColumnIndex(header, ['thanh tien truoc thue', 'thanh tien'], unitPriceCol + 1);
+  const vatRateCol = getTableColumnIndex(header, ['thue vat', 'vat'], preTaxCol + 1);
+  const vatAmountCol = vatRateCol + 1;
+  const totalCol = getTableColumnIndex(header, ['tong tien', 'thanh tien sau thue'], vatAmountCol + 1);
   const notesCol = getTableColumnIndex(header, ['ghi chu'], -1);
+  const supplyCol = getTableColumnIndex(header, ['nguon cung cap', 'ben cung cap', 'don vi cung cap', 'cung cap', 'phan cung cap', 'nha thau', 'chu dau tu'], -1);
+  const fullTableText = normalizeLookupText(lines.join(' '));
+  const workbookHasSupplySplit = hasOwnerSupplySignal(fullTableText) && hasContractorSupplySignal(fullTableText);
   const parsedTasks: WebOcrTableTask[] = [];
   let currentSection = '';
+  let currentSupplyScope: SupplyScope = 'unknown';
 
   for (let index = headerIndex + 1; index < rows.length; index += 1) {
     const cells = rows[index];
     if (!cells.length) continue;
 
+    const firstCell = String(cells[0] || '').trim();
+    if (parsedTasks.length > 0 && normalizeLookupText(firstCell).startsWith('sheet:')) break;
+    if (parsedTasks.length > 0 && isLikelyTableHeader(cells)) break;
+
+    const rowText = cells.map((cell) => String(cell || '')).join(' ');
     const stt = String(cells[sttCol] || '').trim();
     const name = String(cells[nameCol] || cells.find((cell, cellIndex) => cellIndex !== sttCol && normalizeLookupText(cell) !== 'stt') || '').trim();
     if (!name || isTotalOrNoiseRow(name)) continue;
@@ -203,6 +250,11 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
 
     const volume = volumeCol >= 0 ? parseNumberValue(cells[volumeCol] || '') : 0;
     const unit = unitCol >= 0 ? String(cells[unitCol] || '').trim() : '';
+    const unitPrice = unitPriceCol >= 0 ? parseNumberValue(cells[unitPriceCol] || '') : 0;
+    const totalBeforeVat = preTaxCol >= 0 ? parseNumberValue(cells[preTaxCol] || '') : 0;
+    const vatRate = vatRateCol >= 0 ? parseNumberValue(cells[vatRateCol] || '') : 0;
+    const vatAmount = vatAmountCol >= 0 ? parseNumberValue(cells[vatAmountCol] || '') : 0;
+    const totalAmount = totalCol >= 0 ? parseNumberValue(cells[totalCol] || '') : 0;
     const sttLookup = normalizeLookupText(stt).toUpperCase();
     const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
     const numericParentRegex = /^\d+$/;
@@ -210,19 +262,38 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const hasValidStt = romanRegex.test(sttLookup) || numericParentRegex.test(sttLookup) || decimalItemRegex.test(sttLookup);
     if (!hasValidStt) continue;
     const isSectionHeader = romanRegex.test(sttLookup) || (numericParentRegex.test(sttLookup) && volume === 0 && !unit);
+    const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
+    const headerSupplyScope = isSectionHeader ? detectSupplyScope(rowText) : 'unknown';
+    if (explicitSupplyScope !== 'unknown') currentSupplyScope = explicitSupplyScope;
+    else if (headerSupplyScope !== 'unknown') currentSupplyScope = headerSupplyScope;
+    const supplyScope = explicitSupplyScope !== 'unknown' ? explicitSupplyScope : currentSupplyScope;
     const cleanSectionName = stripSectionPrefix(name);
     const sectionName = isSectionHeader ? cleanSectionName : currentSection;
 
     if (isSectionHeader) currentSection = sectionName;
 
+    const effectiveSupplyScope = supplyScope === 'unknown' && !workbookHasSupplySplit ? 'contractor' : supplyScope;
+    const supplyNote = effectiveSupplyScope === 'owner'
+      ? 'Ch\u1ee7 \u0111\u1ea7u t\u01b0 cung c\u1ea5p'
+      : effectiveSupplyScope === 'contractor'
+        ? 'Nh\u00e0 th\u1ea7u cung c\u1ea5p'
+        : '';
+    const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
+
     parsedTasks.push({
-      stt: isSectionHeader ? (numericParentRegex.test(sttLookup) ? stt : '') : (stt || String(parsedTasks.length + 1)),
+      stt: isSectionHeader ? stt : (stt || String(parsedTasks.length + 1)),
       name,
       volume: isSectionHeader ? 0 : volume,
       unit: isSectionHeader ? '' : unit,
-      notes: notesCol >= 0 ? String(cells[notesCol] || '').trim() : '',
+      notes: [rawNotes, supplyNote].filter(Boolean).join(' | '),
       isSectionHeader,
       sectionName,
+      supplyScope: effectiveSupplyScope,
+      unitPrice: isSectionHeader ? 0 : unitPrice,
+      vatRate: isSectionHeader ? 0 : vatRate,
+      vatAmount: isSectionHeader ? 0 : vatAmount,
+      totalBeforeVat: isSectionHeader ? 0 : totalBeforeVat,
+      totalAmount: isSectionHeader ? 0 : totalAmount,
     });
   }
 

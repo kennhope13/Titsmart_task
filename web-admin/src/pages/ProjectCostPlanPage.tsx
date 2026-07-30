@@ -5,6 +5,49 @@ import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { ProjectMaterialPlan, ProjectPurchasing, ProjectExpense, LaborPayroll } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { MaterialPlanTab } from './cost-plan/MaterialPlanTab';
+import { PurchasingTab } from './cost-plan/PurchasingTab';
+import { DocumentCertificateTab } from './cost-plan/DocumentCertificateTab';
+
+const romanToNumber = (value?: string) => {
+  const romanMap: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+  const normalized = String(value || '').trim().toUpperCase();
+  if (!/^[IVXLCDM]+$/.test(normalized)) return null;
+  let total = 0;
+  for (let index = 0; index < normalized.length; index += 1) {
+    const current = romanMap[normalized[index]] || 0;
+    const next = romanMap[normalized[index + 1]] || 0;
+    total += current < next ? -current : current;
+  }
+  return total;
+};
+
+const sttSortValue = (value?: string) => {
+  const raw = String(value || '').trim();
+  const numeric = Number(raw.replace(',', '.'));
+  if (Number.isFinite(numeric)) return numeric;
+  const roman = romanToNumber(raw);
+  if (roman !== null) return roman;
+  const firstNumber = raw.match(/\d+/)?.[0];
+  return firstNumber ? Number(firstNumber) : Number.MAX_SAFE_INTEGER;
+};
+
+const normalizePlanKey = (stt?: string, content?: string) =>
+  `${String(stt || '').trim()}|${String(content || '').trim().toLowerCase()}`;
+
+const isSectionMarker = (stt?: string, notes?: string) =>
+  String(notes || '').toLowerCase().includes('[section]') || romanToNumber(stt) !== null;
+
+const isAutoSyncedMaterialPlan = (plan?: ProjectMaterialPlan) => {
+  const notes = String(plan?.notes || '').toLowerCase();
+  return notes.includes('[section]') || notes.includes('đồng bộ') || notes.includes('dong bo');
+};
+
+const isContractorMaterialPlan = (plan: ProjectMaterialPlan) => {
+  const notes = String(plan.notes || '').toLowerCase();
+  const content = String(plan.jobContent || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return plan.supplyScope === 'contractor' || notes.includes('[contractor]') || notes.includes('nha thau') || content.includes('nha thau cung cap');
+};
 
 export const ProjectCostPlanPage: React.FC = () => {
   const {
@@ -223,8 +266,10 @@ export const ProjectCostPlanPage: React.FC = () => {
               const isSummaryRow = normalizedContent.includes('tong cong') || (!stt && normalizedContent === 'cong');
               if (isSummaryRow) return;
 
+              const isSectionRow = romanToNumber(stt) !== null;
+              const supplyScope = normalizeImportText(content).includes('nha thau cung cap') ? 'contractor' : normalizeImportText(content).includes('chu dau tu cung cap') ? 'owner' : 'unknown';
               const rowKey = baselineKey(stt, content);
-              const baseNote = [String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
+              const baseNote = [isSectionRow ? '[section]' : '', supplyScope === 'contractor' ? '[contractor]' : '', supplyScope === 'owner' ? '[owner]' : '', String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
               const existingMaterial = materialBaselineMap.get(rowKey);
               if (existingMaterial) {
                 updateMaterialPlan(existingMaterial.id, {
@@ -234,6 +279,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   contractVolume: volumeContract,
                   techSpecModel: modelCol >= 0 ? String(row[modelCol] || '') : '',
                   techSpecOrigin: originCol >= 0 ? String(row[originCol] || '') : '',
+                  supplyScope,
                   notes: existingMaterial.notes || baseNote,
                 });
               } else {
@@ -249,13 +295,14 @@ export const ProjectCostPlanPage: React.FC = () => {
                   orderedVolume: 0,
                   orderedStatus: 'Ch\u01b0a \u0111\u1eb7t h\u00e0ng',
                   issueContent: '',
+                  supplyScope,
                   notes: baseNote,
                 });
                 materialBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt, jobContent: content, unit: String(row[unitCol] || ''), contractVolume: volumeContract } as ProjectMaterialPlan);
               }
               appendixMaterialCount++;
 
-              if (volumeContract > 0 || unitPrice > 0 || totalAmount > 0) {
+              if (!isSectionRow && supplyScope === 'contractor' && (volumeContract > 0 || unitPrice > 0 || totalAmount > 0)) {
                 const computedVatAmount = vatAmount || (vatRate ? totalBeforeVat * vatRate / 100 : 0);
                 const totalWithVat = totalAmount || totalBeforeVat + computedVatAmount;
 
@@ -301,20 +348,22 @@ export const ProjectCostPlanPage: React.FC = () => {
               const existingTask = taskBaselineMap.get(rowKey);
               if (!existingTask) {
                 const projName = projects.find(p => p.code === selectedProject)?.name || selectedProject;
-                // Collect task to be confirmed by user later
+                const currentSectionName = isSectionRow ? content : (pendingTasks.slice().reverse().find((task) => task.isSectionHeader)?.name || 'Kh?c');
                 pendingTasks.push({
                   stt,
                   code: '',
                   name: content,
                   projectCode: selectedProject,
                   projectName: projName,
-                  volume: volumeContract,
-                  unit: String(row[unitCol] || ''),
+                  volume: isSectionRow ? 0 : volumeContract,
+                  unit: isSectionRow ? '' : String(row[unitCol] || ''),
                   progress: 0,
-                  status: 'Chưa làm',
-                  purchaseStatus: 'Chưa đặt hàng',
-                  constrStatus: 'Chưa thi công',
+                  status: 'Ch?a l?m',
+                  purchaseStatus: isSectionRow ? '' : 'Ch?a ??t h?ng',
+                  constrStatus: isSectionRow ? '' : 'Ch?a thi c?ng',
                   isDone: false,
+                  isSectionHeader: isSectionRow,
+                  sectionName: currentSectionName,
                   notes: baseNote
                 });
                 taskBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt, name: content } as any);
@@ -563,7 +612,14 @@ export const ProjectCostPlanPage: React.FC = () => {
     }
   }, [projectOptions, selectedProject]);
 
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('OVERVIEW');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  useEffect(() => {
+    setSearchQuery('');
+    setStatusFilter('ALL');
+  }, [activeTab]);
 
   // Modals state
   const [editingPlan, setEditingPlan] = useState<ProjectMaterialPlan | null>(null);
@@ -578,16 +634,130 @@ export const ProjectCostPlanPage: React.FC = () => {
   // ----------------------------------------------------
   // FILTER DATA BY SELECTED PROJECT
   // ----------------------------------------------------
-  const currentProjMaterialPlans = useMemo(() => 
-    materialPlans.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
-    [materialPlans, selectedProject]
-  );
+  const currentProjMaterialPlans = useMemo(() => {
+    const projectTasks = tasks.filter((task) => task.projectCode === selectedProject && task.name?.trim());
+    const projectImportedPlans = materialPlans.filter((plan) => plan.projectCode === selectedProject && plan.jobContent?.trim());
 
-  const currentProjPurchasing = useMemo(() => 
-    purchasingPlans.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
-    [purchasingPlans, selectedProject]
-  );
+    if (projectTasks.length === 0) {
+      return projectImportedPlans;
+    }
 
+    const materialByKey = new Map(
+      projectImportedPlans.map((plan) => [normalizePlanKey(plan.stt, plan.jobContent), plan])
+    );
+
+    let runningSection = 'Khac';
+    const progressRows = projectTasks.map((task) => {
+      const isHeaderTask = task.isSectionHeader || romanToNumber(task.stt) !== null;
+      if (isHeaderTask) runningSection = task.name;
+      return {
+        ...task,
+        materialSectionName: task.sectionName || runningSection,
+        materialIsHeader: isHeaderTask,
+      };
+    });
+
+    const groups: Record<string, typeof progressRows> = {};
+    const sectionOrder: string[] = [];
+
+    progressRows.forEach((task) => {
+      const section = task.materialSectionName || 'Khac';
+      if (!groups[section]) {
+        groups[section] = [];
+        sectionOrder.push(section);
+      }
+      groups[section].push(task);
+    });
+
+    sectionOrder.sort((a, b) => {
+      const leftHeader = groups[a].find((task) => task.materialIsHeader) || groups[a][0];
+      const rightHeader = groups[b].find((task) => task.materialIsHeader) || groups[b][0];
+      return sttSortValue(leftHeader?.stt) - sttSortValue(rightHeader?.stt) || String(leftHeader?.stt || '').localeCompare(String(rightHeader?.stt || ''), 'vi', { numeric: true, sensitivity: 'base' });
+    });
+
+    return sectionOrder.flatMap((section) => {
+      return groups[section].sort((a, b) => {
+        if (a.materialIsHeader && !b.materialIsHeader) return -1;
+        if (!a.materialIsHeader && b.materialIsHeader) return 1;
+        return sttSortValue(a.stt) - sttSortValue(b.stt) || String(a.stt || '').localeCompare(String(b.stt || ''), 'vi', { numeric: true, sensitivity: 'base' });
+      });
+    }).map((task, index): ProjectMaterialPlan => {
+      const existing = materialByKey.get(normalizePlanKey(task.stt || String(index + 1), task.name));
+      const useExistingColumns = Boolean(existing && !isAutoSyncedMaterialPlan(existing));
+      return {
+        id: existing?.id || 'task-material-' + task.id,
+        projectCode: selectedProject,
+        stt: task.stt || String(index + 1),
+        jobContent: task.name,
+        unit: useExistingColumns ? (existing?.unit || '') : (task.unit || ''),
+        contractVolume: useExistingColumns ? Number(existing?.contractVolume || 0) : Number(task.volume || 0),
+        techSpecModel: useExistingColumns ? (existing?.techSpecModel || '') : '',
+        techSpecOrigin: useExistingColumns ? (existing?.techSpecOrigin || '') : '',
+        progressStatus: useExistingColumns ? (existing?.progressStatus || '') : '',
+        orderedVolume: useExistingColumns ? Number(existing?.orderedVolume || 0) : 0,
+        orderedStatus: useExistingColumns ? (existing?.orderedStatus || '') : '',
+        expectedDate: useExistingColumns ? (existing?.expectedDate || '') : '',
+        issueContent: useExistingColumns ? (existing?.issueContent || '') : '',
+        issueStatus: useExistingColumns ? (existing?.issueStatus || '') : '',
+        docCo: useExistingColumns ? Boolean(existing?.docCo) : false,
+        docCq: useExistingColumns ? Boolean(existing?.docCq) : false,
+        docFireInspection: useExistingColumns ? Boolean(existing?.docFireInspection) : false,
+        dispatchToSite: useExistingColumns ? Boolean(existing?.dispatchToSite) : false,
+        dispatchDate: useExistingColumns ? (existing?.dispatchDate || '') : '',
+        supplyScope: existing?.supplyScope || 'unknown',
+        notes: [task.materialIsHeader ? '[section]' : '', useExistingColumns ? (existing?.notes || '') : ''].filter(Boolean).join(' | '),
+      };
+    });
+  }, [materialPlans, selectedProject, tasks]);
+
+  const currentProjPurchasing = useMemo(() => {
+    const purchasingByKey = new Map(
+      purchasingPlans
+        .filter((plan) => plan.projectCode === selectedProject)
+        .map((plan) => [normalizePlanKey(plan.stt, plan.content), plan])
+    );
+
+    const rows: ProjectPurchasing[] = [];
+    let pendingSection: ProjectPurchasing | null = null;
+    let sectionRows: ProjectPurchasing[] = [];
+
+    const flushSection = () => {
+      if (pendingSection && sectionRows.length > 0) rows.push(pendingSection, ...sectionRows);
+      if (!pendingSection && sectionRows.length > 0) rows.push(...sectionRows);
+      pendingSection = null;
+      sectionRows = [];
+    };
+
+    currentProjMaterialPlans.forEach((plan) => {
+      const section = isSectionMarker(plan.stt, plan.notes);
+      if (section) {
+        flushSection();
+        pendingSection = {
+          id: `purchase-section-${plan.id}`,
+          projectCode: selectedProject,
+          stt: plan.stt,
+          content: plan.jobContent,
+          unit: '', volumeContract: 0, volumeOrder: 0, unitPrice: 0, vatRate: 0, vatAmount: 0,
+          totalAmount: 0, prepayPercent: 0, prepayAmount: 0, remainingAmount: 0,
+          orderStatus: '', contractStatus: '', paymentDate: '', invoiceStatus: '', notes: '[section]',
+        };
+        return;
+      }
+      if (!isContractorMaterialPlan(plan)) return;
+      const existing = purchasingByKey.get(normalizePlanKey(plan.stt, plan.jobContent));
+      sectionRows.push(existing || {
+        id: `material-purchase-${plan.id}`,
+        projectCode: selectedProject,
+        stt: plan.stt,
+        content: plan.jobContent,
+        unit: '', volumeContract: 0, volumeOrder: 0, unitPrice: 0, vatRate: 0, vatAmount: 0,
+        totalAmount: 0, prepayPercent: 0, prepayAmount: 0, remainingAmount: 0,
+        orderStatus: '', contractStatus: '', paymentDate: '', invoiceStatus: '', notes: '',
+      });
+    });
+    flushSection();
+    return rows;
+  }, [currentProjMaterialPlans, purchasingPlans, selectedProject]);
   const currentProjExpenses = useMemo(() => 
     expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
     [expenses, selectedProject]
@@ -602,35 +772,52 @@ export const ProjectCostPlanPage: React.FC = () => {
   // COMPUTED METRICS
   // ----------------------------------------------------
   const projectMetrics = useMemo(() => {
-    // Total cost of materials purchased
-    const totalPurchasing = currentProjPurchasing.reduce((sum, p) => sum + p.totalAmount, 0);
-    // Total spent (Expenses + Labor)
-    const totalExp = currentProjExpenses.reduce((sum, e) => sum + e.totalAmount, 0);
-    const totalLab = currentProjLabor.reduce((sum, l) => sum + l.totalAmount, 0);
+    const materialRows = currentProjMaterialPlans.filter((p) => !isSectionMarker(p.stt, p.notes));
+    const purchasingRows = currentProjPurchasing.filter((p) => !isSectionMarker(p.stt, p.notes));
+    const normalizeStatusText = (value?: string) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+    const calcPurchasingTotal = (p: ProjectPurchasing) => {
+      const vatAmount = Number(p.vatAmount || 0) || (Number(p.volumeOrder || 0) * Number(p.unitPrice || 0) * Number(p.vatRate || 0)) / 100;
+      return Number(p.totalAmount || 0) || (Number(p.volumeOrder || 0) * Number(p.unitPrice || 0)) + vatAmount;
+    };
+    const totalPurchasing = purchasingRows.reduce((sum, p) => sum + calcPurchasingTotal(p), 0);
+    const paidPurchasing = purchasingRows.reduce((sum, p) => sum + Number(p.prepayAmount || 0), 0);
+    const orderedCount = materialRows.filter((p) => normalizeStatusText(p.orderedStatus).includes('da co hang') || normalizeStatusText(p.orderedStatus).includes('da nhan')).length;
+    const totalExp = currentProjExpenses.reduce((sum, e) => sum + Number(e.totalAmount || 0), 0);
+    const totalLab = currentProjLabor.reduce((sum, l) => sum + Number(l.totalAmount || 0), 0);
     const totalSpent = totalExp + totalLab;
-
-    // Project Fund (sum of incomeAmount from the Expense transactions)
-    const fund = currentProjExpenses.reduce((sum, e) => sum + (e.incomeAmount || 0), 0);
-
-    // Missing certificates (CO/CQ)
-    const totalMaterials = currentProjMaterialPlans.length;
-    const missingCo = currentProjMaterialPlans.filter(p => !p.docCo).length;
-    const missingCq = currentProjMaterialPlans.filter(p => !p.docCq).length;
-
-    // General Material Plan Progress
-    const completedTasks = currentProjMaterialPlans.filter(p => p.progressStatus === 'Đã hoàn thành' || p.orderedStatus === 'Đã nhận đủ').length;
-    const progressPercent = totalMaterials > 0 ? Math.round((completedTasks / totalMaterials) * 100) : 0;
+    const fund = currentProjExpenses.reduce((sum, e) => sum + Number(e.incomeAmount || 0), 0);
+    const balance = currentProjExpenses.length > 0 && currentProjExpenses.some((e) => Number(e.balanceFund || 0) !== 0)
+      ? Number(currentProjExpenses[currentProjExpenses.length - 1].balanceFund || 0)
+      : fund - totalSpent;
+    const missingCo = materialRows.filter(p => !p.docCo).length;
+    const missingCq = materialRows.filter(p => !p.docCq).length;
+    const missingFireInspection = materialRows.filter(p => !p.docFireInspection).length;
+    const progressValues = materialRows.map((p) => {
+      const orderStatus = normalizeStatusText(p.orderedStatus);
+      let progress = 0;
+      if (orderStatus.includes('da dat')) progress = Math.max(progress, 50);
+      if (orderStatus.includes('dang giao')) progress = Math.max(progress, 70);
+      if (orderStatus.includes('da co hang') || orderStatus.includes('da nhan')) progress = Math.max(progress, 80);
+      if (p.docCo || p.docCq || p.docFireInspection) progress += 10;
+      if (p.dispatchToSite) progress += 10;
+      return Math.min(progress, 100);
+    });
+    const progressPercent = progressValues.length > 0 ? Math.round(progressValues.reduce((sum, value) => sum + value, 0) / progressValues.length) : 0;
 
     return {
       totalPurchasing,
+      paidPurchasing,
       totalSpent,
       totalExp,
       totalLab,
       fund,
-      balance: fund - totalSpent,
+      balance,
       missingCo,
       missingCq,
-      progressPercent
+      missingFireInspection,
+      orderedCount,
+      progressPercent,
+      totalProjectCost: totalPurchasing + totalExp,
     };
   }, [selectedProject, currentProjMaterialPlans, currentProjPurchasing, currentProjExpenses, currentProjLabor]);
 
@@ -658,16 +845,19 @@ export const ProjectCostPlanPage: React.FC = () => {
         'Nội dung công việc': p.jobContent,
         'ĐVT': p.unit,
         'Khối lượng HĐ': p.contractVolume,
-        'Mã hiệu': p.techSpecModel || '',
-        'Nguồn sản xuất': p.techSpecOrigin || '',
+        'Chào hàng': p.techSpecModel || '',
+        'Đáp ứng kỹ thuật': p.techSpecOrigin || '',
         'Tình trạng': p.progressStatus || '',
         'KL Đặt hàng': p.orderedVolume || 0,
         'TT Đặt hàng': p.orderedStatus || '',
         'Ngày có hàng (dự kiến)': p.expectedDate || '',
-        'Vướng mắc': p.issueContent || '',
-        'Chứng từ CO': p.docCo ? 'Đã có' : 'Chưa có',
-        'Chứng từ CQ': p.docCq ? 'Đã có' : 'Chưa có',
-        'Đã gửi tới CT': p.dispatchToSite ? 'Đã gửi' : 'Chưa gửi',
+        'Vướng mắc/Tồn đọng - Nội dung': p.issueContent || '',
+        'Vướng mắc/Tồn đọng - TT xử lý': p.issueStatus || '',
+        'Chứng từ CO': p.docCo ? 'Có' : 'Chưa có',
+        'Chứng từ CQ': p.docCq ? 'Có' : 'Chưa có',
+        'Kiểm định PCCC': p.docFireInspection ? 'Có' : 'Chưa có',
+        'Đã gửi tới CT': p.dispatchToSite ? 'Có' : 'Chưa gửi',
+        'Ngày luân chuyển': p.dispatchDate || '',
         'Ghi chú': p.notes || ''
       }));
       sheetName = 'KeHoachVatTu';
@@ -683,8 +873,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         'Tiền thuế': p.vatAmount,
         'Thành tiền': p.totalAmount,
         'Tạm ứng (%)': p.prepayPercent * 100,
-        'Tạm ứng (Tiền)': p.prepayAmount,
-        'Thanh toán còn lại': p.remainingAmount,
+        'Thanh toán': p.prepayAmount,
         'TT Đặt hàng': p.orderStatus,
         'TT Hợp đồng': p.contractStatus,
         'Ngày thanh toán': p.paymentDate || '',
@@ -726,6 +915,17 @@ export const ProjectCostPlanPage: React.FC = () => {
         'Ghi chú': l.notes || ''
       }));
       sheetName = 'LuongCongNhat';
+    } else if (activeTab === 'DOCUMENTS') {
+      data = currentProjMaterialPlans.filter(p => !isSectionMarker(p.stt, p.notes)).map(p => ({
+        'TT': p.stt,
+        'Danh mục hàng hóa': p.jobContent,
+        'ĐV': p.unit,
+        'SL': p.contractVolume,
+        'Model/xuất xứ': [p.techSpecModel, p.techSpecOrigin].filter(Boolean).join(' / '),
+        'Chứng từ': ['CO: ' + (p.docCo ? 'Có' : 'Chưa có'), 'CQ: ' + (p.docCq ? 'Có' : 'Chưa có'), 'Kiểm định PCCC: ' + (p.docFireInspection ? 'Có' : 'Chưa có')].join('; '),
+        'Ghi chú': p.notes || ''
+      }));
+      sheetName = 'TheoDoiChungTu';
     } else {
       return; // No export for Overview
     }
@@ -857,9 +1057,10 @@ export const ProjectCostPlanPage: React.FC = () => {
           {[
             { id: 'OVERVIEW', label: 'Tổng Quan & Biểu Đồ', icon: 'monitoring' },
             { id: 'MATERIAL_PLAN', label: 'Kế Hoạch Vật Tư', icon: 'list_alt' },
-            { id: 'PURCHASING', label: 'Mua Sắm Hàng Hóa', icon: 'shopping_bag' },
+            { id: 'PURCHASING', label: 'Mua hàng (nhà thầu)', icon: 'shopping_bag' },
             { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long' },
-            { id: 'LABOR', label: 'Lương Công Nhật', icon: 'engineering' }
+            { id: 'LABOR', label: 'Lương Công Nhật', icon: 'engineering' },
+            { id: 'DOCUMENTS', label: 'Theo dõi chứng từ', icon: 'description' }
           ].map(tab => (
             <button 
               key={tab.id}
@@ -993,169 +1194,37 @@ export const ProjectCostPlanPage: React.FC = () => {
 
         {/* MATERIAL PLAN TAB */}
         {activeTab === 'MATERIAL_PLAN' && (
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left border-collapse table-fixed">
-              <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                <tr>
-                  <th className="p-3 w-[4%] text-center">STT</th>
-                  <th className="p-3 w-[32%]">Nội dung công việc / Thiết bị</th>
-                  <th className="p-3 w-[5%] text-center">ĐVT</th>
-                  <th className="p-3 w-[8%] text-right">Khối lượng HĐ</th>
-                  <th className="p-3 w-[15%]">Tiêu chuẩn kỹ thuật (Hiệu/Nguồn)</th>
-                  <th className="p-3 w-[8%] text-center">Tiến độ</th>
-                  <th className="p-3 w-[6%] text-right">KL Đặt</th>
-                  <th className="p-3 w-[8%] text-center">Trạng thái đặt</th>
-                  <th className="p-3 w-[8%] text-center">Ngày cấp hàng</th>
-                  <th className="p-3 w-[4%] text-center">CO/CQ</th>
-                  <th className="p-3 w-[4%] text-center">Gửi CT</th>
-                  <th className="p-3 w-[4%] text-center">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {currentProjMaterialPlans.map((plan) => (
-                  <tr key={plan.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingPlan(plan)}>
-                    <td className="p-3 text-center font-bold text-slate-400">{plan.stt || '-'}</td>
-                    <td className="p-3">
-                      <div className="font-bold text-slate-900 leading-snug">{plan.jobContent}</div>
-                      {plan.notes && <div className="text-[10px] text-slate-400 font-normal mt-0.5">{plan.notes}</div>}
-                    </td>
-                    <td className="p-3 text-center">{plan.unit}</td>
-                    <td className="p-3 text-right font-bold">{plan.contractVolume}</td>
-                    <td className="p-3">
-                      <div className="font-semibold text-slate-800">{plan.techSpecModel || '-'}</div>
-                      <div className="text-[10px] text-slate-400">{plan.techSpecOrigin || '-'}</div>
-                    </td>
-                    <td className="p-3 text-center">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        plan.progressStatus === 'Đã hoàn thành' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                        plan.progressStatus === 'Đang thi công' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {plan.progressStatus || 'Chưa thi công'}
-                      </span>
-                    </td>
-                    <td className="p-3 text-right font-bold">{plan.orderedVolume || 0}</td>
-                    <td className="p-3 text-center">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        plan.orderedStatus === 'Đã nhận đủ' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                        plan.orderedStatus === 'Đã đặt hàng' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
-                      }`}>
-                        {plan.orderedStatus || 'Chưa đặt'}
-                      </span>
-                    </td>
-                    <td className="p-3 text-center font-mono font-semibold text-slate-600 whitespace-nowrap">
-                      {(() => {
-                        if (!plan.expectedDate) return '-';
-                        const parts = plan.expectedDate.split('-');
-                        if (parts.length === 3) {
-                          return `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
-                        }
-                        return plan.expectedDate;
-                      })()}
-                    </td>
-                    <td className="p-3 text-center">
-                      <div className="flex gap-1 justify-center">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${plan.docCo ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'}`}>CO</span>
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${plan.docCq ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'}`}>CQ</span>
-                      </div>
-                    </td>
-                    <td className="p-3 text-center">
-                      {plan.dispatchToSite ? (
-                        <div className="text-emerald-600 font-bold flex flex-col items-center">
-                          <span className="material-symbols-outlined text-sm">check_circle</span>
-                          <span className="text-[9px]">{plan.dispatchDate || 'Đã gửi'}</span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-300 material-symbols-outlined text-sm">block</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        onClick={() => { if(window.confirm('Xóa hạng mục kế hoạch vật tư này?')) deleteMaterialPlan(plan.id) }} 
-                        className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-base">delete</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {currentProjMaterialPlans.length === 0 && (
-                  <tr><td colSpan={12} className="p-8 text-center text-slate-400">Không có dữ liệu kế hoạch vật tư.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <MaterialPlanTab
+            data={currentProjMaterialPlans}
+            onEdit={setEditingPlan}
+            onDelete={deleteMaterialPlan}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+          />
         )}
 
         {/* PURCHASING TAB */}
         {activeTab === 'PURCHASING' && (
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                <tr>
-                  <th className="p-3 w-12 text-center">STT</th>
-                  <th className="p-3 min-w-72">Nội dung</th>
-                  <th className="p-3 w-16 text-left">ĐVT</th>
-                  <th className="p-3 text-right">Khối lượng HĐ</th>
-                  <th className="p-3 text-right">Khối lượng ĐH</th>
-                  <th className="p-3 text-right">Đơn giá (đ)</th>
-                  <th className="p-3 text-right">Thành tiền (đ)</th>
-                  <th className="p-3 text-right">Tạm ứng (đ)</th>
-                  <th className="p-3 text-right">Còn lại (đ)</th>
-                  <th className="p-3 text-center">TT Đặt hàng</th>
-                  <th className="p-3 text-center">Hóa đơn</th>
-                  <th className="p-3">Ghi chú</th>
-                  <th className="p-3 text-center w-24">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {currentProjPurchasing.map((pur) => (
-                  <tr key={pur.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingPurchasing(pur)}>
-                    <td className="p-3 text-center font-bold text-slate-400">{pur.stt || '-'}</td>
-                    <td className="p-3 font-bold text-slate-900">{pur.content}</td>
-                    <td className="p-3 text-left">{pur.unit}</td>
-                    <td className="p-3 text-right font-bold">{pur.volumeContract}</td>
-                    <td className="p-3 text-right font-semibold text-slate-600">{pur.volumeOrder}</td>
-                    <td className="p-3 text-right">{pur.unitPrice.toLocaleString('vi-VN')}</td>
-                    <td className="p-3 text-right font-bold text-primary">{pur.totalAmount.toLocaleString('vi-VN')}</td>
-                    <td className="p-3 text-right text-rose-600">
-                      {pur.prepayAmount.toLocaleString('vi-VN')}
-                      <div className="text-[9px] text-slate-400">({pur.prepayPercent * 100}%)</div>
-                    </td>
-                    <td className="p-3 text-right font-bold text-slate-800">{pur.remainingAmount.toLocaleString('vi-VN')}</td>
-                    <td className="p-3 text-center">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        pur.orderStatus === 'Đã nhận hàng' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                        pur.orderStatus === 'Đang giao hàng' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
-                      }`}>
-                        {pur.orderStatus}
-                      </span>
-                    </td>
-                    <td className="p-3 text-center">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${
-                        pur.invoiceStatus?.includes('Đã') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {pur.invoiceStatus || 'Chưa'}
-                      </span>
-                    </td>
-                    <td className="p-3 text-slate-500 max-w-[120px] truncate" title={pur.notes || ''}>
-                      {pur.notes || '-'}
-                    </td>
-                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        onClick={() => { if(window.confirm('Xóa hạng mục mua sắm này?')) deletePurchasingPlan(pur.id) }} 
-                        className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-base">delete</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {currentProjPurchasing.length === 0 && (
-                  <tr><td colSpan={13} className="p-8 text-center text-slate-400">Không có dữ liệu mua sắm hàng hóa.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <PurchasingTab
+            data={currentProjPurchasing}
+            onEdit={setEditingPurchasing}
+            onDelete={deletePurchasingPlan}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+          />
+        )}
+
+        {/* DOCUMENTS TAB */}
+        {activeTab === 'DOCUMENTS' && (
+          <DocumentCertificateTab
+            data={currentProjMaterialPlans}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
         )}
 
         {/* EXPENSE TAB */}
@@ -1993,3 +2062,11 @@ export const ProjectCostPlanPage: React.FC = () => {
     </div>
   );
 };
+
+
+
+
+
+
+
+

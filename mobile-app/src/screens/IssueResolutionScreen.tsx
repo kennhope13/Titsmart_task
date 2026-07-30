@@ -1,73 +1,76 @@
-﻿import React, { useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+﻿import React, { useCallback, useState } from 'react';
+import { Alert, FlatList, Image, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { TriangleAlert, Send, CheckCircle2, ImageOff } from 'lucide-react-native';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { colors } from '../theme';
 import { AppText, Card, Screen, ScreenHeader, StatusBadge } from '../components/MobileUI';
-import { cleanText, statusLabel } from '../utils/text';
+import { statusLabel } from '../utils/text';
+import { Issue } from '../types';
 
 export const IssueResolutionScreen = () => {
   const { issues, updateIssueStatus, addDirective } = useRealtimeStore();
   const [directive, setDirective] = useState('');
   const openIssues = issues.filter((i) => i.status !== 'RESOLVED').length;
+  const data = issues.slice(0, 80);
 
-  const sendDirective = (id: string) => {
+  const sendDirective = useCallback((id: string) => {
     if (!directive.trim()) {
-      Alert.alert('Thi\u1ebfu n\u1ed9i dung', 'Nh\u1eadp ch\u1ec9 \u0111\u1ea1o tr\u01b0\u1edbc khi g\u1eedi.');
+      Alert.alert('Thieu noi dung', 'Nhap chi dao truoc khi gui.');
       return;
     }
     addDirective(id, directive.trim());
     setDirective('');
-    Alert.alert('Th\u00e0nh c\u00f4ng', '\u0110\u00e3 g\u1eedi ch\u1ec9 \u0111\u1ea1o x\u1eed l\u00fd.');
-  };
+    Alert.alert('Thanh cong', 'Da gui chi dao xu ly.');
+  }, [addDirective, directive]);
+
+  const renderIssue = useCallback(({ item: issue }: { item: Issue }) => {
+    const done = issue.status === 'RESOLVED';
+    const processing = issue.status === 'PROCESSING';
+    return (
+      <Card style={styles.issueCard}>
+        <View style={styles.rowTop}>
+          {issue.photoUrl ? <Image source={{ uri: issue.photoUrl }} style={styles.photo} resizeMode="cover" /> : <View style={styles.photoFallback}><ImageOff size={20} color={colors.slate[400]} /></View>}
+          <View style={{ flex: 1 }}>
+            <View style={styles.rowBetween}><StatusBadge label={issue.incidentCode} tone={done ? 'green' : processing ? 'amber' : 'red'} /><StatusBadge label={statusLabel(issue.status)} tone={done ? 'green' : processing ? 'amber' : 'red'} /></View>
+            <AppText style={styles.title} numberOfLines={2}>{issue.title}</AppText>
+            <AppText style={styles.meta} numberOfLines={1}>{issue.location}</AppText>
+          </View>
+        </View>
+        <AppText style={styles.description} numberOfLines={3}>{issue.description}</AppText>
+        <View style={styles.actions}>
+          <Pressable onPress={() => sendDirective(issue.id)} style={styles.actionButton}><Send size={15} color={colors.primary} /><AppText style={styles.actionText}>Gui chi dao</AppText></Pressable>
+          {!done ? <Pressable onPress={() => updateIssueStatus(issue.id, 'RESOLVED')} style={styles.doneButton}><CheckCircle2 size={15} color="#047857" /><AppText style={styles.doneText}>Hoan thanh</AppText></Pressable> : null}
+        </View>
+      </Card>
+    );
+  }, [sendDirective, updateIssueStatus]);
+
+  const header = (
+    <>
+      <ScreenHeader icon={<TriangleAlert size={22} color={colors.primary} />} title="Xu ly Su co Hien truong" subtitle="Nhan su co, gui chi dao va danh dau hoan thanh." badge={`${openIssues} dang mo`} />
+      <Card style={styles.directiveBox}>
+        <AppText style={styles.directiveLabel}>Chi dao nhanh</AppText>
+        <TextInput value={directive} onChangeText={setDirective} placeholder="VD: Kiem tra lai ban ve, bao cao truoc 17h..." placeholderTextColor={colors.slate[400]} multiline style={styles.directiveInput} />
+      </Card>
+    </>
+  );
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <ScreenHeader
-          icon={<TriangleAlert size={22} color={colors.primary} />}
-          title="X\u1eed l\u00fd S\u1ef1 c\u1ed1 Hi\u1ec7n tr\u01b0\u1eddng"
-          subtitle="Nh\u1eadn s\u1ef1 c\u1ed1, g\u1eedi ch\u1ec9 \u0111\u1ea1o v\u00e0 \u0111\u00e1nh d\u1ea5u ho\u00e0n th\u00e0nh ngay t\u1ea1i c\u00f4ng tr\u01b0\u1eddng."
-          badge={`${openIssues} \u0111ang m\u1edf`}
-        />
-
-        <Card style={styles.directiveBox}>
-          <AppText style={styles.directiveLabel}>Ch\u1ec9 \u0111\u1ea1o nhanh</AppText>
-          <TextInput
-            value={directive}
-            onChangeText={setDirective}
-            placeholder="VD: Ki\u1ec3m tra l\u1ea1i b\u1ea3n v\u1ebd, b\u00e1o c\u00e1o tr\u01b0\u1edbc 17h..."
-            placeholderTextColor={colors.slate[400]}
-            multiline
-            style={styles.directiveInput}
-          />
-        </Card>
-
-        {issues.slice(0, 50).map((issue) => {
-          const done = issue.status === 'RESOLVED';
-          const processing = issue.status === 'PROCESSING';
-          return (
-            <Card key={issue.id} style={styles.issueCard}>
-              <View style={styles.rowTop}>
-                {issue.photoUrl ? <Image source={{ uri: issue.photoUrl }} style={styles.photo} /> : <View style={styles.photoFallback}><ImageOff size={20} color={colors.slate[400]} /></View>}
-                <View style={{ flex: 1 }}>
-                  <View style={styles.rowBetween}>
-                    <StatusBadge label={issue.incidentCode} tone={done ? 'green' : processing ? 'amber' : 'red'} />
-                    <StatusBadge label={statusLabel(issue.status)} tone={done ? 'green' : processing ? 'amber' : 'red'} />
-                  </View>
-                  <AppText style={styles.title} numberOfLines={2}>{issue.title}</AppText>
-                  <AppText style={styles.meta} numberOfLines={1}>{issue.location}</AppText>
-                </View>
-              </View>
-              <AppText style={styles.description} numberOfLines={3}>{issue.description}</AppText>
-              <View style={styles.actions}>
-                <Pressable onPress={() => sendDirective(issue.id)} style={styles.actionButton}><Send size={15} color={colors.primary} /><AppText style={styles.actionText}>G\u1eedi ch\u1ec9 \u0111\u1ea1o</AppText></Pressable>
-                {!done ? <Pressable onPress={() => updateIssueStatus(issue.id, 'RESOLVED')} style={styles.doneButton}><CheckCircle2 size={15} color="#047857" /><AppText style={styles.doneText}>Ho\u00e0n th\u00e0nh</AppText></Pressable> : null}
-              </View>
-            </Card>
-          );
-        })}
-      </ScrollView>
+      <FlatList
+        data={data}
+        keyExtractor={(item) => item.id}
+        renderItem={renderIssue}
+        ListHeaderComponent={header}
+        ListEmptyComponent={<View style={styles.emptyWrap}><Card><AppText style={styles.empty}>Chua co su co.</AppText></Card></View>}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={6}
+        windowSize={5}
+        removeClippedSubviews
+      />
     </Screen>
   );
 };
@@ -90,4 +93,6 @@ const styles = StyleSheet.create({
   actionText: { color: colors.primary, fontSize: 12, fontWeight: '800' },
   doneButton: { flex: 1, height: 40, borderRadius: 12, backgroundColor: colors.accentLight, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   doneText: { color: '#047857', fontSize: 12, fontWeight: '800' },
+  emptyWrap: { paddingHorizontal: 12 },
+  empty: { textAlign: 'center', color: colors.slate[500], fontSize: 13 },
 });

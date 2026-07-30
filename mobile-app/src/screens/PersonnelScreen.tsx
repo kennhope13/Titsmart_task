@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+﻿import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Lock, MoreVertical, Plus, Search, Unlock, UsersRound } from 'lucide-react-native';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { colors } from '../theme';
@@ -32,7 +32,7 @@ export const PersonnelScreen = () => {
     const matchesQuery = !query.trim() || `${cleanText(item.name)} ${item.code} ${item.phone}`.toLowerCase().includes(query.toLowerCase());
     const matchesFilter = filter === 'all' || filter === item.role.toLowerCase().replace('nhân viên', 'worker').replace('quản lý', 'manager') || (filter === 'locked' && item.locked);
     return matchesQuery && matchesFilter;
-  }), [engineers, filter, lockedIds, query]);
+  }).slice(0, 120), [engineers, filter, lockedIds, query]);
 
   const addPerson = () => {
     if (!name.trim()) {
@@ -53,73 +53,73 @@ export const PersonnelScreen = () => {
 
   const toggleLock = (id: string) => setLockedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
 
-  return (
-    <Screen>
+  const renderPerson = useCallback(({ item: person }: { item: any }) => (
+    <Card style={styles.personCard}>
+      <View style={styles.personTop}>
+        <Image source={{ uri: person.avatar }} style={styles.avatar} />
+        <View style={styles.personCopy}>
+          <AppText style={styles.name}>{person.name}</AppText>
+          <AppText style={styles.meta}>{person.code} | {person.role}</AppText>
+        </View>
+        <Pressable style={styles.moreButton}><MoreVertical size={19} color={colors.slate[500]} /></Pressable>
+      </View>
+      <View style={styles.infoStrip}>
+        <View style={styles.infoCell}><AppText style={styles.infoLabel}>Doi/Nhom</AppText><AppText style={styles.infoValue}>{person.team}</AppText></View>
+        <View style={styles.infoCell}><AppText style={styles.infoLabel}>Dien thoai</AppText><AppText style={styles.infoValue}>{person.phone || 'Chua cap nhat'}</AppText></View>
+      </View>
+      <View style={styles.bottomRow}>
+        <StatusBadge label={person.locked ? 'Da khoa' : 'Dang hoat dong'} tone={person.locked ? 'red' : 'green'} />
+        <Pressable onPress={() => toggleLock(person.id)} style={styles.lockButton}>
+          {person.locked ? <Unlock size={14} color={colors.primary} /> : <Lock size={14} color={colors.primary} />}
+          <AppText style={styles.lockText}>{person.locked ? 'Mo khoa' : 'Khoa tai khoan'}</AppText>
+        </Pressable>
+      </View>
+    </Card>
+  ), [lockedIds]);
+
+  const header = (
+    <>
       <ScreenHeader
         icon={<UsersRound size={21} color={colors.primary} />}
-        title="Nhân sự"
-        subtitle={`${engineers.length} người trong hệ thống`}
-        action={
-          <Pressable onPress={() => setShowForm((value) => !value)} style={styles.addButton}>
-            <Plus size={19} color={colors.white} />
-          </Pressable>
-        }
+        title="Nhan su"
+        subtitle={`${engineers.length} nguoi trong he thong`}
+        action={<Pressable onPress={() => setShowForm((value) => !value)} style={styles.addButton}><Plus size={19} color={colors.white} /></Pressable>}
       />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {showForm ? (
-          <Card style={styles.formCard}>
-            <AppText style={styles.formTitle}>Thêm nhân sự mới</AppText>
-            <TextInput value={name} onChangeText={setName} placeholder="Họ và tên" placeholderTextColor={colors.slate[400]} style={styles.input} />
-            <TextInput value={phone} onChangeText={setPhone} placeholder="Số điện thoại" placeholderTextColor={colors.slate[400]} keyboardType="phone-pad" style={styles.input} />
-            <Pressable onPress={addPerson} style={styles.saveButton}><AppText style={styles.saveText}>Thêm vào danh sách</AppText></Pressable>
-          </Card>
-        ) : null}
+      {showForm ? (
+        <Card style={styles.formCard}>
+          <AppText style={styles.formTitle}>Them nhan su moi</AppText>
+          <TextInput value={name} onChangeText={setName} placeholder="Ho va ten" placeholderTextColor={colors.slate[400]} style={styles.input} />
+          <TextInput value={phone} onChangeText={setPhone} placeholder="So dien thoai" placeholderTextColor={colors.slate[400]} keyboardType="phone-pad" style={styles.input} />
+          <Pressable onPress={addPerson} style={styles.saveButton}><AppText style={styles.saveText}>Them vao danh sach</AppText></Pressable>
+        </Card>
+      ) : null}
+      <View style={styles.toolbar}>
+        <View style={styles.searchBox}><Search size={18} color={colors.slate[400]} /><TextInput value={query} onChangeText={setQuery} placeholder="Tim nhan su" placeholderTextColor={colors.slate[400]} style={styles.searchInput} /></View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>{filters.map((item) => <Pressable key={item.key} onPress={() => setFilter(item.key)} style={[styles.filterChip, filter === item.key ? styles.filterChipActive : undefined]}><AppText style={[styles.filterText, filter === item.key ? styles.filterTextActive : undefined]}>{item.label}</AppText></Pressable>)}</ScrollView>
+      </View>
+      <SectionTitle title="Danh sach nhan su" caption={`${people.length} ket qua`} />
+    </>
+  );
 
-        <View style={styles.toolbar}>
-          <View style={styles.searchBox}>
-            <Search size={18} color={colors.slate[400]} />
-            <TextInput value={query} onChangeText={setQuery} placeholder="Tìm nhân sự" placeholderTextColor={colors.slate[400]} style={styles.searchInput} />
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-            {filters.map((item) => (
-              <Pressable key={item.key} onPress={() => setFilter(item.key)} style={[styles.filterChip, filter === item.key ? styles.filterChipActive : undefined]}>
-                <AppText style={[styles.filterText, filter === item.key ? styles.filterTextActive : undefined]}>{item.label}</AppText>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-
-        <SectionTitle title="Danh sách nhân sự" caption={`${people.length} kết quả`} />
-        <View style={styles.list}>
-          {people.map((person) => (
-            <Card key={person.id} style={styles.personCard}>
-              <View style={styles.personTop}>
-                <Image source={{ uri: person.avatar }} style={styles.avatar} />
-                <View style={styles.personCopy}>
-                  <AppText style={styles.name}>{person.name}</AppText>
-                  <AppText style={styles.meta}>{person.code} · {person.role}</AppText>
-                </View>
-                <Pressable style={styles.moreButton}><MoreVertical size={19} color={colors.slate[500]} /></Pressable>
-              </View>
-              <View style={styles.infoStrip}>
-                <View style={styles.infoCell}><AppText style={styles.infoLabel}>Đội/Nhóm</AppText><AppText style={styles.infoValue}>{person.team}</AppText></View>
-                <View style={styles.infoCell}><AppText style={styles.infoLabel}>Điện thoại</AppText><AppText style={styles.infoValue}>{person.phone || 'Chưa cập nhật'}</AppText></View>
-              </View>
-              <View style={styles.bottomRow}>
-                <StatusBadge label={person.locked ? 'Đã khóa' : 'Đang hoạt động'} tone={person.locked ? 'red' : 'green'} />
-                <Pressable onPress={() => toggleLock(person.id)} style={styles.lockButton}>
-                  {person.locked ? <Unlock size={14} color={colors.primary} /> : <Lock size={14} color={colors.primary} />}
-                  <AppText style={styles.lockText}>{person.locked ? 'Mở khóa' : 'Khóa tài khoản'}</AppText>
-                </Pressable>
-              </View>
-            </Card>
-          ))}
-        </View>
-      </ScrollView>
+  return (
+    <Screen>
+      <FlatList
+        data={people}
+        keyExtractor={(item) => item.id}
+        renderItem={renderPerson}
+        ListHeaderComponent={header}
+        ListEmptyComponent={<View style={styles.emptyWrap}><Card><AppText style={styles.empty}>Khong co nhan su phu hop.</AppText></Card></View>}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews
+      />
     </Screen>
   );
 };
-
 const styles = StyleSheet.create({
   content: { paddingBottom: 24 },
   addButton: { width: 40, height: 40, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
@@ -136,8 +136,9 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: colors.primary },
   filterText: { fontSize: 12, fontWeight: '700', color: colors.slate[600] },
   filterTextActive: { color: colors.white },
-  list: { paddingHorizontal: 16, gap: 10 },
-  personCard: { gap: 12 },
+  emptyWrap: { paddingHorizontal: 16 },
+  empty: { textAlign: 'center', color: colors.slate[500], fontSize: 13 },
+  personCard: { marginHorizontal: 16, marginBottom: 10, gap: 12 },
   personTop: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   avatar: { width: 48, height: 48, borderRadius: 12, backgroundColor: colors.slate[100] },
   personCopy: { flex: 1 },
@@ -152,3 +153,4 @@ const styles = StyleSheet.create({
   lockButton: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   lockText: { fontSize: 11, color: colors.primary, fontWeight: '800' },
 });
+

@@ -448,54 +448,55 @@ export const MaterialTrackingPage: React.FC = () => {
   };
 
   return (
-    <div className="px-0 pt-0 pb-4 space-y-3">
-      <section className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
-        <div className="px-5 py-4 flex flex-col xl:flex-row justify-between xl:items-center gap-3 border-b border-slate-100">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
-              <span className="material-symbols-outlined text-xl">warehouse</span>
-            </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-extrabold text-slate-900">Quản lý Kho & Vật tư</h2>
-              </div>
-            </div>
+    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
+      <section className="border-b border-slate-200 bg-white px-6 py-4 flex flex-col xl:flex-row justify-between xl:items-center gap-3">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-xl">warehouse</span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleImportExcel} 
-              accept=".xlsx,.xls,.csv" 
-              className="hidden" 
-            />
-            <button 
-              onClick={() => fileInputRef.current?.click()} 
-              className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
-            >
-              <span className="material-symbols-outlined text-base">file_upload</span>
-              Nhập Excel
-            </button>
-            <button onClick={handleExportExcel} className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
-              <span className="material-symbols-outlined text-base">file_download</span>
-              Xuất Excel
-            </button>
-            <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-1 bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
-              <span className="material-symbols-outlined text-base">arrow_downward</span>
-              Nhập Kho
-            </button>
-            <button onClick={() => handleOpenTransaction('EXPORT')} className="flex items-center gap-1 bg-amber-500 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-xs">
-              <span className="material-symbols-outlined text-base">arrow_upward</span>
-              Xuất Kho
-            </button>
-            <button onClick={() => setIsPlaceOrderModalOpen(true)} className="flex items-center gap-1 bg-primary text-white px-3 py-2 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs">
-              <span className="material-symbols-outlined text-base">add</span>
-              Tạo Vật Tư Mới
-            </button>
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-extrabold text-slate-900">Quản lý Kho & Vật tư</h2>
+            </div>
           </div>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImportExcel} 
+            accept=".xlsx,.xls,.csv" 
+            className="hidden" 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()} 
+            className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+          >
+            <span className="material-symbols-outlined text-base">file_upload</span>
+            Nhập Excel
+          </button>
+          <button onClick={handleExportExcel} className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
+            <span className="material-symbols-outlined text-base">file_download</span>
+            Xuất Excel
+          </button>
+          <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-1 bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
+            <span className="material-symbols-outlined text-base">arrow_downward</span>
+            Nhập Kho
+          </button>
+          <button onClick={() => handleOpenTransaction('EXPORT')} className="flex items-center gap-1 bg-amber-500 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-xs">
+            <span className="material-symbols-outlined text-base">arrow_upward</span>
+            Xuất Kho
+          </button>
+          <button onClick={() => setIsPlaceOrderModalOpen(true)} className="flex items-center gap-1 bg-primary text-white px-3 py-2 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs">
+            <span className="material-symbols-outlined text-base">add</span>
+            Tạo Vật Tư Mới
+          </button>
+        </div>
+      </section>
 
-        <div className="p-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 border-b border-slate-100">
+      <div className="p-6 space-y-4">
+        <section className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+          <div className="p-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 border-b border-slate-100">
           {summaryCards.map((card) => (
             <div key={card.label} className="border border-slate-200 rounded-lg p-3 bg-slate-50/40">
               <div className="flex items-center justify-between gap-2">
@@ -659,6 +660,7 @@ export const MaterialTrackingPage: React.FC = () => {
           </div>
         )}
       </section>
+      </div>
 
       {/* MODAL CẬP NHẬT VẬT TƯ */}
       <Modal isOpen={!!editingMaterial} onClose={() => setEditingMaterial(null)} title="Cập nhật Thông tin Vật tư">

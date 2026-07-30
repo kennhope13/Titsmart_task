@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react-native';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { colors } from '../theme';
-import { AppText, Card, Screen, ScreenHeader, SectionTitle, StatCard, StatusBadge } from '../components/MobileUI';
+import { AppText, Card, Screen, ScreenHeader, SectionTitle, StatusBadge } from '../components/MobileUI';
 
 export const DashboardScreen = () => {
   const navigation = useNavigation<any>();
@@ -61,17 +61,17 @@ export const DashboardScreen = () => {
           </View>
         </View>
 
-        <View style={styles.grid}>
-          <StatCard label="Đang thực hiện" value={inProgress} icon={<Clock3 size={17} color={colors.primary} />} />
-          <StatCard label="Chờ duyệt" value={waitingReview} tone="amber" icon={<FileCheck2 size={17} color="#a16207" />} />
-          <StatCard label="Hoàn thành" value={completed} tone="green" icon={<CheckCircle2 size={17} color="#047857" />} />
-          <StatCard label="Trễ hạn/Vướng" value={late} tone="slate" icon={<UsersRound size={17} color={colors.slate[600]} />} />
+        <View style={styles.compactStats}>
+          <View style={styles.compactStat}><Clock3 size={15} color={colors.primary} /><AppText style={styles.compactValue}>{inProgress}</AppText><AppText style={styles.compactLabel}>Dang lam</AppText></View>
+          <View style={styles.compactStat}><FileCheck2 size={15} color="#a16207" /><AppText style={styles.compactValue}>{waitingReview}</AppText><AppText style={styles.compactLabel}>Cho duyet</AppText></View>
+          <View style={styles.compactStat}><CheckCircle2 size={15} color="#047857" /><AppText style={styles.compactValue}>{completed}</AppText><AppText style={styles.compactLabel}>Hoan thanh</AppText></View>
+          <View style={styles.compactStat}><UsersRound size={15} color={colors.slate[600]} /><AppText style={styles.compactValue}>{late}</AppText><AppText style={styles.compactLabel}>Tre/Vuong</AppText></View>
         </View>
 
-        {/* THÊM BIỂU ĐỒ VÀO ĐÂY */}
+        {/* Biểu đồ */}
         <SectionTitle title="Biểu đồ phân bổ" />
         
-        {/* 1. Biểu đồ thanh ngang (Stacked Bar) cho Trạng thái công việc */}
+        {/* 1. Biá»ƒu Ä‘á»“ thanh ngang (Stacked Bar) cho Trạng thái công việc */}
         <Card style={styles.chartCard}>
           <AppText style={styles.chartTitle}>Tỉ lệ trạng thái công việc</AppText>
           <View style={styles.stackedBarContainer}>
@@ -90,7 +90,7 @@ export const DashboardScreen = () => {
           </View>
         </Card>
 
-        {/* 2. Biểu đồ cột đứng (Vertical Bar) cho Tiến độ Dự án */}
+        {/* 2. Biá»ƒu Ä‘á»“ cá»™t Ä‘á»©ng (Vertical Bar) cho Tiến độ Dự án */}
         <Card style={styles.chartCard}>
           <AppText style={styles.chartTitle}>Tiến độ theo Dự án</AppText>
           <View style={styles.barChartContainer}>
@@ -152,7 +152,10 @@ const styles = StyleSheet.create({
   welcomeText: { marginTop: 4, fontSize: 12, color: '#dbeafe' },
   progressCircle: { width: 70, height: 70, borderRadius: 35, borderWidth: 7, borderColor: '#60a5fa', backgroundColor: '#172554', alignItems: 'center', justifyContent: 'center' },
   progressValue: { color: colors.white, fontSize: 16, fontWeight: '800' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 16 },
+  compactStats: { marginHorizontal: 16, marginBottom: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.slate[200], backgroundColor: colors.white, flexDirection: 'row', flexWrap: 'wrap', overflow: 'hidden' },
+  compactStat: { width: '50%', minHeight: 48, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 7, borderRightWidth: 1, borderBottomWidth: 1, borderColor: colors.slate[100] },
+  compactValue: { minWidth: 24, fontSize: 17, lineHeight: 21, fontWeight: '800', color: colors.slate[900] },
+  compactLabel: { flex: 1, fontSize: 11, lineHeight: 15, fontWeight: '700', color: colors.slate[500] },
   
   /* Chart Styles */
   chartCard: { marginHorizontal: 16, marginBottom: 12, padding: 16 },
@@ -184,4 +187,5 @@ const styles = StyleSheet.create({
   taskMeta: { marginTop: 5, flexDirection: 'row', alignItems: 'center', gap: 7 },
   taskMetaText: { flex: 1, fontSize: 11, color: colors.slate[500] },
 });
+
 

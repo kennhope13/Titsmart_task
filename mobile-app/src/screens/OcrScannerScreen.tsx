@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AlertCircle, Camera, ClipboardPlus, FileText, ScanText, Share2, Sparkles } from 'lucide-react-native';
@@ -221,3 +221,4 @@ const styles = StyleSheet.create({
   blockIndexText: { fontSize: 11, fontWeight: '800', color: colors.primary },
   blockText: { fontSize: 13, lineHeight: 19, color: colors.slate[700] },
 });
+

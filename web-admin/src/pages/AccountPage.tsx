@@ -5,12 +5,13 @@ export const AccountPage: React.FC = () => {
   const engineer = useRealtimeStore((state) => state.engineers[0]);
 
   return (
-    <div className="px-0 pt-0 pb-4 space-y-4">
-      <section className="bg-white border border-slate-200 rounded-xl shadow-xs px-5 py-4 flex items-center gap-4">
+    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
+      <section className="border-b border-slate-200 bg-white px-6 py-4 flex items-center gap-4">
         <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center"><span className="material-symbols-outlined text-xl">account_circle</span></div>
         <div><h2 className="text-2xl font-extrabold text-slate-900">Tài khoản</h2></div>
       </section>
 
+      <div className="p-6 space-y-4">
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 flex flex-col items-center text-center">
           <div className="w-20 h-20 rounded-2xl bg-primary text-white flex items-center justify-center text-2xl font-extrabold">{(engineer?.name || 'QL').slice(0, 2).toUpperCase()}</div>
@@ -33,6 +34,7 @@ export const AccountPage: React.FC = () => {
           </div>
         </div>
       </section>
+      </div>
     </div>
   );
 };

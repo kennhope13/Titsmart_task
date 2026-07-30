@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
@@ -16,6 +16,7 @@ export default function App() {
   const fetchEngineers = useRealtimeStore((state) => state.fetchEngineers);
   const fetchActivityLogs = useRealtimeStore((state) => state.fetchActivityLogs);
   const fetchAccounting = useRealtimeStore((state) => state.fetchAccounting);
+  const fetchFieldLogs = useRealtimeStore((state) => state.fetchFieldLogs);
   const isLoaded = useRealtimeStore((state) => state.isLoaded);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function App() {
     fetchEngineers();
     fetchActivityLogs();
     fetchAccounting();
+    fetchFieldLogs();
   }, []);
 
   if (!isLoaded) {
@@ -46,3 +48,4 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+

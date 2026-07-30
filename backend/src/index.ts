@@ -5,6 +5,7 @@ import projectRoutes from './routes/projects.routes';
 import taskRoutes from './routes/tasks.routes';
 import materialsRoutes from './routes/materials.routes';
 import issuesRoutes from './routes/issues.routes';
+import prisma from './prismaClient';
 
 dotenv.config();
 
@@ -34,6 +35,14 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Backend is running' });
 });
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Server is running on port ${port}`);
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('Database connection is OK');
+  } catch (error) {
+    console.error('Database connection failed');
+    console.error(error);
+  }
 });

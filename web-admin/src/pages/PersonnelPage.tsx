@@ -142,8 +142,8 @@ export const PersonnelPage: React.FC = () => {
   const toggleLock = (id: string) => setLockedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
 
   return (
-    <div className="px-0 pt-0 pb-4 space-y-4">
-      <section className="bg-white border border-slate-200 rounded-xl shadow-xs px-5 py-4 flex items-center justify-between gap-4">
+    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
+      <section className="border-b border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center"><span className="material-symbols-outlined text-xl">groups</span></div>
           <div><h2 className="text-2xl font-extrabold text-slate-900">Nhân sự</h2></div>
@@ -177,6 +177,7 @@ export const PersonnelPage: React.FC = () => {
         </div>
       </section>
 
+      <div className="p-6 space-y-4">
       <section className="grid grid-cols-1 gap-4">
         <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="p-4 border-b border-slate-100 flex flex-wrap gap-2">
@@ -201,6 +202,7 @@ export const PersonnelPage: React.FC = () => {
           </div>
         </div>
       </section>
+      </div>
 
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">

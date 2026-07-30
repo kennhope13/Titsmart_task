@@ -163,6 +163,7 @@ export interface ProjectMaterialPlan {
   docFireInspection?: boolean;
   dispatchToSite?: boolean;
   dispatchDate?: string;
+  supplyScope?: 'contractor' | 'owner' | 'unknown';
   notes?: string;
 }
 

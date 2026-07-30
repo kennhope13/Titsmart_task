@@ -1,0 +1,12 @@
+﻿const fs = require('fs');
+const p = 'src/pages/TaskManagementPage.tsx';
+let s = fs.readFileSync(p, 'utf8');
+s = s.replace("  const [filterEngineer, setFilterEngineer] = useState<string>('all');\n", '');
+s = s.replace("    setFilterEngineer('all');\n", '');
+s = s.replace("    filterIssue !== 'all' ||\n    filterEngineer !== 'all';", "    filterIssue !== 'all';");
+s = s.replace("  // Filter Tasks by Project, Roman Section, Purchase, Construction, Issue, Engineer & Search Term", "  // Filter Tasks by Project, Section, Purchase, Construction, Issue & Search Term");
+s = s.replace("    const matchesEngineer = filterEngineer === 'all' || t.assignedEngineerId === filterEngineer;\n\n", '');
+s = s.replace(" ||\n      t.assignedEngineerName?.toLowerCase().includes(searchTerm.toLowerCase())", '');
+s = s.replace(/\s*matchesIssue &&\n\s*matchesEngineer &&/g, '\n        matchesIssue &&');
+s = s.replace(/\n\s*\{\/\* Filter Kỹ sư \*\/\}\s*<select[\s\S]*?<\/select>/, '');
+fs.writeFileSync(p, s, 'utf8');

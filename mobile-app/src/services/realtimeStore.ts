@@ -1,6 +1,29 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Project, Task, Material, Issue, Engineer, NotificationItem, ActivityLog, IssueStatus, TaskStatus } from '../types';
+import { Project, Task, Material, Issue, Engineer, NotificationItem, ActivityLog, IssueStatus, TaskStatus, ProjectMaterialPlan, ProjectPurchasing, ProjectExpense, LaborPayroll, DocumentTrack, FieldLog } from '../types';
+let memoryStorageValue: string | null = null;
+let asyncStorageUnavailable = false;
+
+const safeStorage = {
+  getItem: async (key: string) => {
+    if (asyncStorageUnavailable) return memoryStorageValue;
+    try {
+      return await AsyncStorage.getItem(key);
+    } catch (error) {
+      asyncStorageUnavailable = true;
+      return memoryStorageValue;
+    }
+  },
+  setItem: async (key: string, value: string) => {
+    memoryStorageValue = value;
+    if (asyncStorageUnavailable) return;
+    try {
+      await AsyncStorage.setItem(key, value);
+    } catch (error) {
+      asyncStorageUnavailable = true;
+    }
+  },
+};
 
 const isRomanOrSection = (stt: string, volume: number, unit: string) => {
   if (!stt) return volume === 0 && !unit;
@@ -17,6 +40,12 @@ interface RealtimeStoreState {
   engineers: Engineer[];
   notifications: NotificationItem[];
   activityLogs: ActivityLog[];
+  materialPlans: ProjectMaterialPlan[];
+  purchasingPlans: ProjectPurchasing[];
+  expenses: ProjectExpense[];
+  laborPayrolls: LaborPayroll[];
+  documentTracks: DocumentTrack[];
+  fieldLogs: FieldLog[];
   isLoaded: boolean;
 
   // Actions
@@ -28,6 +57,7 @@ interface RealtimeStoreState {
   fetchEngineers: () => Promise<void>;
   fetchActivityLogs: () => Promise<void>;
   fetchAccounting: () => Promise<void>;
+  fetchFieldLogs: () => Promise<void>;
   addTask: (task: Omit<Task, 'id'>) => void;
   addTasksBatch: (tasks: Omit<Task, 'id'>[]) => void;
   updateTask: (id: string, updatedFields: Partial<Task>) => void;
@@ -48,6 +78,7 @@ interface RealtimeStoreState {
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
   addProject: (proj: Omit<Project, 'id'>) => void;
+  addFieldLog: (log: Omit<FieldLog, 'id'>) => void;
 }
 
 const STORAGE_KEY = 'buildcore_pro_excel_db_v5';
@@ -63,11 +94,17 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       engineers: updatedState.engineers || current.engineers,
       notifications: updatedState.notifications || current.notifications,
       activityLogs: updatedState.activityLogs || current.activityLogs,
+      materialPlans: updatedState.materialPlans || current.materialPlans,
+      purchasingPlans: updatedState.purchasingPlans || current.purchasingPlans,
+      expenses: updatedState.expenses || current.expenses,
+      laborPayrolls: updatedState.laborPayrolls || current.laborPayrolls,
+      documentTracks: updatedState.documentTracks || current.documentTracks,
+      fieldLogs: updatedState.fieldLogs || current.fieldLogs,
     };
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      await safeStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     } catch (e) {
-      console.error('Failed to save state to AsyncStorage', e);
+      // Native storage can be unavailable in some dev builds; safeStorage keeps the app running.
     }
   };
 
@@ -79,6 +116,12 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     engineers: [],
     notifications: [],
     activityLogs: [],
+    materialPlans: [],
+    purchasingPlans: [],
+    expenses: [],
+    laborPayrolls: [],
+    documentTracks: [],
+    fieldLogs: [],
     isLoaded: false,
 
     fetchProjects: async () => {
@@ -165,6 +208,16 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
+    fetchFieldLogs: async () => {
+      try {
+        const { api } = await import('./api');
+        const fieldLogs = await api.fieldLogs.getAll();
+        if (Array.isArray(fieldLogs)) set({ fieldLogs });
+      } catch (e) {
+        console.error('Failed to fetch field logs', e);
+      }
+    },
+
     fetchAccounting: async () => {
       try {
         const { api } = await import('./api');
@@ -191,7 +244,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     loadState: async () => {
       try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        const raw = await safeStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
           set({ ...parsed, isLoaded: true });
@@ -395,7 +448,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
                 {
                   id: 'tl-' + Date.now(),
                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                  author: 'Ban Quản Lý Dự Án',
+                  author: 'Ban Quản lý Dự án',
                   message: directive,
                 },
                 ...i.timelineLogs,
@@ -437,5 +490,23 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         console.error('Failed to add project', e);
       }
     },
+
+    addFieldLog: async (logData) => {
+      try {
+        const { api } = await import('./api');
+        const createdLog = await api.fieldLogs.create(logData);
+        const nextLog = { ...logData, ...createdLog, id: createdLog?.id || 'fl-' + Date.now() } as FieldLog;
+        set((state) => {
+          const nextLogs = [nextLog, ...state.fieldLogs];
+          saveState({ fieldLogs: nextLogs });
+          return { fieldLogs: nextLogs };
+        });
+      } catch (e) {
+        console.error('Failed to add field log', e);
+      }
+    },
   };
 });
+
+
+

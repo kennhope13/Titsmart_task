@@ -242,12 +242,12 @@ export const DocumentTrackingPage: React.FC = () => {
   };
 
   return (
-    <div className="px-5 py-4 space-y-4">
+    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
       
       {/* HEADER SECTION */}
-      <section className="bg-white border border-slate-200 rounded-xl shadow-xs p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <section className="border-b border-slate-200 bg-white px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">drafts</span>
           </div>
           <div>
@@ -288,6 +288,7 @@ export const DocumentTrackingPage: React.FC = () => {
         </div>
       </section>
 
+      <div className="p-6 space-y-4">
       {/* METRICS ROW */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
@@ -469,6 +470,7 @@ export const DocumentTrackingPage: React.FC = () => {
           </table>
         </div>
       </section>
+      </div>
 
       {/* MODALS */}
       {/* Add New Doc Modal */}

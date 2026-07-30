@@ -10,10 +10,10 @@ import { IssueResolutionPage } from './pages/IssueResolutionPage';
 import { ReportExportPage } from './pages/ReportExportPage';
 import { PersonnelPage } from './pages/PersonnelPage';
 import { AccountPage } from './pages/AccountPage';
-import { ProjectCostPlanPage } from './pages/ProjectCostPlanPage';
 import { DocumentTrackingPage } from './pages/DocumentTrackingPage';
 import { ActivityLogPage } from './pages/ActivityLogPage';
 import { FieldLogsPage } from './pages/FieldLogsPage';
+import { ProjectCostPlanPage } from './pages/ProjectCostPlanPage';
 
 export const App: React.FC = () => {
   const { fetchProjects, fetchTasks, fetchMaterials, fetchIssues, fetchEngineers, fetchActivityLogs, fetchAccounting, fetchFieldLogs } = useRealtimeStore();
@@ -35,10 +35,10 @@ export const App: React.FC = () => {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/projects" element={<ProjectManagementPage />} />
         <Route path="/tasks" element={<TaskManagementPage />} />
-        <Route path="/cost-plan" element={<ProjectCostPlanPage />} />
         <Route path="/document-tracking" element={<DocumentTrackingPage />} />
         <Route path="/field-logs" element={<FieldLogsPage />} />
         <Route path="/materials" element={<MaterialTrackingPage />} />
+        <Route path="/cost-plan" element={<ProjectCostPlanPage />} />
         <Route path="/issues" element={<IssueResolutionPage />} />
         <Route path="/reports" element={<ReportExportPage />} />
         <Route path="/personnel" element={<PersonnelPage />} />

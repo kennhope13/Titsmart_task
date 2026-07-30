@@ -184,6 +184,69 @@ interface RealtimeStoreState {
 
 const STORAGE_KEY = 'buildcore_pro_excel_db_v7';
 
+
+const normalizeVietnamese = (value: string) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\u0111\u0110]/g, 'd')
+    .toLowerCase();
+
+const deriveSupplyScope = (plan: any): 'contractor' | 'owner' | 'unknown' => {
+  const explicit = plan.supplyScope ?? plan.supply_scope;
+  if (explicit === 'contractor' || explicit === 'owner') return explicit;
+  const text = normalizeVietnamese([plan.notes, plan.jobContent, plan.job_content, plan.content].filter(Boolean).join(' '));
+  if (text.includes('chu dau tu cung cap') || text.includes('chu dau tu cap') || text.includes('[owner]')) return 'owner';
+  if (text.includes('nha thau cung cap') || text.includes('do nha thau cung cap') || text.includes('[contractor]')) return 'contractor';
+  return 'unknown';
+};
+
+const normalizeMaterialPlan = (plan: any): ProjectMaterialPlan => ({
+  id: plan.id,
+  projectCode: plan.projectCode || plan.project?.code || '',
+  stt: plan.stt || '',
+  jobContent: plan.jobContent ?? plan.job_content ?? '',
+  unit: plan.unit || '',
+  contractVolume: Number(plan.contractVolume ?? plan.contract_volume ?? 0),
+  techSpecModel: plan.techSpecModel ?? plan.tech_spec_model ?? '',
+  techSpecOrigin: plan.techSpecOrigin ?? plan.tech_spec_origin ?? '',
+  progressStatus: plan.progressStatus ?? plan.progress_status ?? '',
+  orderedVolume: Number(plan.orderedVolume ?? plan.ordered_volume ?? 0),
+  orderedStatus: plan.orderedStatus ?? plan.ordered_status ?? '',
+  expectedDate: plan.expectedDate ?? plan.expected_date ?? '',
+  issueContent: plan.issueContent ?? plan.issue_content ?? '',
+  issueStatus: plan.issueStatus ?? plan.issue_status ?? '',
+  docCo: Boolean(plan.docCo ?? plan.docCO ?? plan.doc_co ?? false),
+  docCq: Boolean(plan.docCq ?? plan.docCQ ?? plan.doc_cq ?? false),
+  docFireInspection: Boolean(plan.docFireInspection ?? plan.doc_fire_inspection ?? false),
+  dispatchToSite: Boolean(plan.dispatchToSite ?? plan.dispatch_to_site ?? false),
+  dispatchDate: plan.dispatchDate ?? plan.dispatch_date ?? '',
+  supplyScope: deriveSupplyScope(plan),
+  notes: plan.notes || '',
+});
+
+const normalizePurchasingPlan = (plan: any): ProjectPurchasing => ({
+  id: plan.id,
+  projectCode: plan.projectCode || plan.project?.code || '',
+  stt: plan.stt || '',
+  content: plan.content || '',
+  unit: plan.unit || '',
+  volumeContract: Number(plan.volumeContract ?? plan.volume_contract ?? 0),
+  volumeOrder: Number(plan.volumeOrder ?? plan.volume_order ?? 0),
+  unitPrice: Number(plan.unitPrice ?? plan.unit_price ?? 0),
+  vatRate: Number(plan.vatRate ?? plan.vat_rate ?? 0),
+  vatAmount: Number(plan.vatAmount ?? plan.vat_amount ?? 0),
+  totalAmount: Number(plan.totalAmount ?? plan.total_amount ?? 0),
+  prepayPercent: Number(plan.prepayPercent ?? plan.prepay_percent ?? 0),
+  prepayAmount: Number(plan.prepayAmount ?? plan.prepay_amount ?? 0),
+  remainingAmount: Number(plan.remainingAmount ?? plan.remaining_amount ?? 0),
+  orderStatus: plan.orderStatus ?? plan.order_status ?? '',
+  contractStatus: plan.contractStatus ?? plan.contract_status ?? '',
+  paymentDate: plan.paymentDate ?? plan.payment_date ?? '',
+  invoiceStatus: plan.invoiceStatus ?? plan.invoice_status ?? '',
+  notes: plan.notes || '',
+});
+
 export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   let channel: BroadcastChannel | null = null;
   if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -312,8 +375,8 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         ]);
         
         const nextState: any = {};
-        if (Array.isArray(materialPlans)) nextState.materialPlans = materialPlans;
-        if (Array.isArray(purchasingPlans)) nextState.purchasingPlans = purchasingPlans;
+        if (Array.isArray(materialPlans)) nextState.materialPlans = materialPlans.map(normalizeMaterialPlan);
+        if (Array.isArray(purchasingPlans)) nextState.purchasingPlans = purchasingPlans.map(normalizePurchasingPlan);
         if (Array.isArray(expenses)) nextState.expenses = expenses;
         if (Array.isArray(laborPayrolls)) nextState.laborPayrolls = laborPayrolls;
         if (Array.isArray(documentTracks)) nextState.documentTracks = documentTracks;
@@ -661,7 +724,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     addMaterialPlan: async (planData) => {
       try {
-        const created = await api.accounting.createMaterialPlan(planData);
+        const created = normalizeMaterialPlan(await api.accounting.createMaterialPlan(planData));
         set((state) => {
           const nextPlans = [created, ...state.materialPlans];
           persistAndNotify({ materialPlans: nextPlans });
@@ -674,7 +737,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateMaterialPlan: async (id, fields) => {
       try {
-        const updated = await api.accounting.updateMaterialPlan(id, fields);
+        const updated = normalizeMaterialPlan(await api.accounting.updateMaterialPlan(id, fields));
         set((state) => {
           const nextPlans = state.materialPlans.map((p) => (p.id === id ? updated : p));
           persistAndNotify({ materialPlans: nextPlans });
@@ -700,7 +763,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     addPurchasingPlan: async (purData) => {
       try {
-        const created = await api.accounting.createPurchasing(purData);
+        const created = normalizePurchasingPlan(await api.accounting.createPurchasing(purData));
         set((state) => {
           const nextPurs = [created, ...state.purchasingPlans];
           persistAndNotify({ purchasingPlans: nextPurs });
@@ -713,7 +776,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updatePurchasingPlan: async (id, fields) => {
       try {
-        const updated = await api.accounting.updatePurchasing(id, fields);
+        const updated = normalizePurchasingPlan(await api.accounting.updatePurchasing(id, fields));
         set((state) => {
           const nextPurs = state.purchasingPlans.map((p) => (p.id === id ? updated : p));
           persistAndNotify({ purchasingPlans: nextPurs });

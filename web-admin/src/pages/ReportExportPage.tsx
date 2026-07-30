@@ -43,8 +43,8 @@ export const ReportExportPage: React.FC = () => {
   };
 
   return (
-    <div className="px-0 pt-0 pb-4 space-y-4">
-      <section className="bg-white border border-slate-200 rounded-xl shadow-xs px-5 py-4 flex items-center justify-between gap-4">
+    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
+      <section className="border-b border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center"><span className="material-symbols-outlined text-xl">analytics</span></div>
           <div><h2 className="text-2xl font-extrabold text-slate-900">Báo cáo</h2></div>
@@ -52,6 +52,7 @@ export const ReportExportPage: React.FC = () => {
         <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold border border-amber-100 whitespace-nowrap">{pending} chờ duyệt</span>
       </section>
 
+      <div className="p-6 space-y-4">
       <section className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex flex-wrap gap-2">
           {tabs.map((tab) => <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`px-3 py-1.5 rounded-full text-xs font-bold ${activeTab === tab.key ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{tab.label}</button>)}
@@ -102,6 +103,7 @@ export const ReportExportPage: React.FC = () => {
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 };

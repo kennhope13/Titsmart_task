@@ -27,9 +27,9 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="px-0 pt-0 pb-4 space-y-4">
+    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
       {/* Header */}
-      <section className="bg-white border border-slate-200 rounded-xl shadow-xs px-5 py-4 flex items-center justify-between gap-4">
+      <section className="border-b border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4 min-w-0">
           <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-xl">dashboard</span>
@@ -41,6 +41,7 @@ export const DashboardPage: React.FC = () => {
         <span className="px-3 py-1 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100 whitespace-nowrap">Quản lý</span>
       </section>
 
+      <div className="p-6 space-y-4">
       {/* Biểu đồ phân tích (Layout mới: Trái 2/3, Phải 1/3) */}
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         
@@ -153,6 +154,7 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </section>
+      </div>
     </div>
   );
 };

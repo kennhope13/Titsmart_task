@@ -8,6 +8,55 @@ const resolveProjectId = async (projectCode?: string) => {
   return project ? project.id : null;
 };
 
+const formatMaterialPlan = (p: any) => ({
+  id: p.id,
+  projectId: p.project_id,
+  projectCode: p.project?.code || '',
+  projectName: p.project?.name || '',
+  stt: p.stt,
+  jobContent: p.job_content,
+  unit: p.unit,
+  contractVolume: Number(p.contract_volume),
+  techSpecModel: p.tech_spec_model,
+  techSpecOrigin: p.tech_spec_origin,
+  progressStatus: p.progress_status,
+  orderedVolume: Number(p.ordered_volume),
+  orderedStatus: p.ordered_status,
+  expectedDate: p.expected_date,
+  issueContent: p.issue_content,
+  issueStatus: p.issue_status,
+  docCo: p.doc_co,
+  docCq: p.doc_cq,
+  docFireInspection: p.doc_fire_inspection,
+  dispatchToSite: p.dispatch_to_site,
+  dispatchDate: p.dispatch_date,
+  notes: p.notes,
+});
+
+const formatPurchasing = (p: any) => ({
+  id: p.id,
+  projectId: p.project_id,
+  projectCode: p.project?.code || '',
+  projectName: p.project?.name || '',
+  stt: p.stt,
+  content: p.content,
+  unit: p.unit,
+  volumeContract: Number(p.volume_contract),
+  volumeOrder: Number(p.volume_order),
+  unitPrice: Number(p.unit_price),
+  vatRate: Number(p.vat_rate),
+  vatAmount: Number(p.vat_amount),
+  totalAmount: Number(p.total_amount),
+  prepayPercent: Number(p.prepay_percent),
+  prepayAmount: Number(p.prepay_amount),
+  remainingAmount: Number(p.remaining_amount),
+  orderStatus: p.order_status,
+  contractStatus: p.contract_status,
+  paymentDate: p.payment_date,
+  invoiceStatus: p.invoice_status,
+  notes: p.notes,
+});
+
 // --- MATERIAL PLANS ---
 export const getMaterialPlans = async (req: Request, res: Response) => {
   try {
@@ -15,30 +64,7 @@ export const getMaterialPlans = async (req: Request, res: Response) => {
       include: { project: true },
       orderBy: { created_at: 'desc' }
     });
-    const formatted = plans.map(p => ({
-      id: p.id,
-      projectId: p.project_id,
-      projectCode: p.project?.code || '',
-      projectName: p.project?.name || '',
-      stt: p.stt,
-      jobContent: p.job_content,
-      unit: p.unit,
-      contractVolume: Number(p.contract_volume),
-      techSpecModel: p.tech_spec_model,
-      techSpecOrigin: p.tech_spec_origin,
-      progressStatus: p.progress_status,
-      orderedVolume: Number(p.ordered_volume),
-      orderedStatus: p.ordered_status,
-      expectedDate: p.expected_date,
-      issueContent: p.issue_content,
-      issueStatus: p.issue_status,
-      docCO: p.doc_co,
-      docCQ: p.doc_cq,
-      docFireInspection: p.doc_fire_inspection,
-      dispatchToSite: p.dispatch_to_site,
-      dispatchDate: p.dispatch_date,
-      notes: p.notes
-    }));
+    const formatted = plans.map(formatMaterialPlan);
     res.json(formatted);
   } catch (error) { res.status(500).json({ error: 'Failed to fetch material plans' }); }
 };
@@ -73,7 +99,7 @@ export const createMaterialPlan = async (req: Request, res: Response) => {
       },
       include: { project: true }
     });
-    res.status(201).json(plan);
+    res.status(201).json(formatMaterialPlan(plan));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to create material plan' });
@@ -110,7 +136,7 @@ export const updateMaterialPlan = async (req: Request, res: Response) => {
       data: updateData,
       include: { project: true }
     });
-    res.json(plan);
+    res.json(formatMaterialPlan(plan));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to update material plan' });
@@ -133,29 +159,7 @@ export const getPurchasings = async (req: Request, res: Response) => {
       include: { project: true },
       orderBy: { created_at: 'desc' }
     });
-    const formatted = data.map(p => ({
-      id: p.id,
-      projectId: p.project_id,
-      projectCode: p.project?.code || '',
-      projectName: p.project?.name || '',
-      stt: p.stt,
-      content: p.content,
-      unit: p.unit,
-      volumeContract: Number(p.volume_contract),
-      volumeOrder: Number(p.volume_order),
-      unitPrice: Number(p.unit_price),
-      vatRate: Number(p.vat_rate),
-      vatAmount: Number(p.vat_amount),
-      totalAmount: Number(p.total_amount),
-      prepayPercent: Number(p.prepay_percent),
-      prepayAmount: Number(p.prepay_amount),
-      remainingAmount: Number(p.remaining_amount),
-      orderStatus: p.order_status,
-      contractStatus: p.contract_status,
-      paymentDate: p.payment_date,
-      invoiceStatus: p.invoice_status,
-      notes: p.notes
-    }));
+    const formatted = data.map(formatPurchasing);
     res.json(formatted);
   } catch (error) { res.status(500).json({ error: 'Failed to fetch purchasings' }); }
 };
@@ -189,7 +193,7 @@ export const createPurchasing = async (req: Request, res: Response) => {
       },
       include: { project: true }
     });
-    res.status(201).json(p);
+    res.status(201).json(formatPurchasing(p));
   } catch (error) { res.status(500).json({ error: 'Failed to create purchasing' }); }
 };
 
@@ -222,7 +226,7 @@ export const updatePurchasing = async (req: Request, res: Response) => {
       data: updateData,
       include: { project: true }
     });
-    res.json(p);
+    res.json(formatPurchasing(p));
   } catch (error) { res.status(500).json({ error: 'Failed to update purchasing' }); }
 };
 
