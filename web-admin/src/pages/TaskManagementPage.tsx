@@ -186,6 +186,21 @@ export const TaskManagementPage: React.FC = () => {
   const [filterPurchase, setFilterPurchase] = useState<string>('all');
   const [filterConstr, setFilterConstr] = useState<string>('all');
 
+  // Collapsed sections state: Set of sectionName strings that are collapsed
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+
+  const toggleSection = (sectionKey: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionKey)) {
+        next.delete(sectionKey);
+      } else {
+        next.add(sectionKey);
+      }
+      return next;
+    });
+  };
+
   // Custom Section Menu Popover state
   const [isSectionMenuOpen, setIsSectionMenuOpen] = useState<boolean>(false);
   const [sectionSearchQuery, setSectionSearchQuery] = useState<string>('');
@@ -887,7 +902,7 @@ export const TaskManagementPage: React.FC = () => {
         }
       });
       
-      const flattenTree = (nodes: any[], depth: number = 0, prefix: string = '') => {
+      const flattenTree = (nodes: any[], depth: number = 0, prefix: string = '', sectionKey: string = '') => {
         nodes.sort((a, b) => {
           const sttCompare = compareTaskStt(a.stt, b.stt);
           if (sttCompare !== 0) return sttCompare;
@@ -896,21 +911,70 @@ export const TaskManagementPage: React.FC = () => {
         nodes.forEach((node, idx) => {
           const currentNum = (idx + 1).toString();
           const computedStt = depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum);
-          flattened.push({ ...node, depth, computedStt });
-          flattenTree(node.children, depth + 1, computedStt);
+          flattened.push({ ...node, depth, computedStt, _sectionKey: sectionKey });
+          flattenTree(node.children, depth + 1, computedStt, sectionKey);
         });
       };
       
       if (sectionHeader) {
-        flattened.push({ ...sectionHeader, depth: 0, computedStt: toRoman(groupIndex + 1) });
+        flattened.push({ ...sectionHeader, depth: 0, computedStt: toRoman(groupIndex + 1), _sectionKey: sec });
       }
-      flattenTree(roots, sectionHeader ? 1 : 0);
+      flattenTree(roots, sectionHeader ? 1 : 0, '', sec);
     });
     return flattened;
   }, [displayTasks]);
 
   const totalPureItems = groupedTasks.filter((t) => !t.isSectionHeader).length;
   const completedPureItems = groupedTasks.filter((t) => !t.isSectionHeader && (t.isDone || t.progress >= 1)).length;
+
+  const NotificationButton: React.FC = () => {
+    const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
+    const [showNotifPopover, setShowNotifPopover] = React.useState(false);
+    const unreadCount = notifications.filter((item) => !item.read).length;
+    return (
+      <div className="relative flex-shrink-0">
+        <button
+          onClick={() => setShowNotifPopover(!showNotifPopover)}
+          className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-primary transition-colors relative border border-slate-200"
+        >
+          <span className="material-symbols-outlined text-[20px]">notifications</span>
+          {unreadCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
+          )}
+        </button>
+        {showNotifPopover && (
+          <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50">
+            <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
+              <button onClick={clearNotifications} className="text-[11px] text-primary font-bold hover:underline">Xóa tất cả</button>
+            </div>
+            <div className="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-100">
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-slate-500 text-xs">Không có thông báo nào</div>
+              ) : (
+                notifications.map(notification => (
+                  <div
+                    key={notification.id}
+                    onClick={() => markNotificationRead(notification.id)}
+                    className={`p-3 text-xs hover:bg-slate-50 cursor-pointer flex gap-3 ${!notification.read ? 'bg-blue-50/50 font-medium' : 'opacity-70'}`}
+                  >
+                    <span className="material-symbols-outlined text-primary text-base flex-shrink-0">{notification.icon || 'info'}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start gap-2 mb-0.5">
+                        <span className="font-bold text-slate-800 truncate">{notification.title}</span>
+                        <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">{notification.timestamp}</span>
+                      </div>
+                      <p className="text-slate-600 leading-tight">{notification.message}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="px-0 pt-0 pb-0 space-y-0 flex flex-col flex-1 overflow-hidden">
@@ -948,16 +1012,6 @@ export const TaskManagementPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 lg:justify-end">
-          <button
-            type="button"
-            onClick={openNewTaskModal}
-            className="flex items-center gap-1 bg-primary text-white px-3 py-1 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-2xs"
-          >
-            <span className="material-symbols-outlined text-sm">add</span>
-            {'Th\u00eam H\u1ea1ng m\u1ee5c nh\u1ecf'}
-          </button>
-        </div>
       </div>
 
       {/* TOOLBAR BỘ LỌC */}
@@ -1098,8 +1152,33 @@ export const TaskManagementPage: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {groupedTasks.length === 0 ? (<tr><td colSpan={12} className="p-8 text-center text-slate-400 whitespace-nowrap">Không có hạng mục nào phù hợp với bộ lọc đã chọn</td></tr>) : (
-                groupedTasks.map((t, idx) => {
-                  if (t.isSectionHeader) return (<tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary"><td onClick={() => handleOpenEditModal(t)} className="sticky left-0 z-10 py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{t.computedStt || t.stt}</td><td colSpan={10} onClick={() => handleOpenEditModal(t)} className="sticky left-[42px] z-10 py-2 px-2 bg-blue-50/90 border-r border-blue-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap"><div className="flex items-center gap-2 whitespace-nowrap overflow-hidden"><span className="material-symbols-outlined text-base flex-shrink-0">folder_open</span><span className="truncate">{t.name}</span><button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="ml-1 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[16px]">add_circle</span></button></div></td><td className="sticky right-0 z-10 py-2 px-1 bg-blue-50/90 border-l border-blue-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-center whitespace-nowrap"><button onClick={() => deleteTask(t.id)} className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-slate-100 transition-colors inline-flex items-center"><span className="material-symbols-outlined text-base">delete</span></button></td></tr>);
+                groupedTasks.filter((t) => {
+                  if (t.isSectionHeader) return true;
+                  return !collapsedSections.has(t._sectionKey || '');
+                }).map((t, idx) => {
+                  if (t.isSectionHeader) {
+                    const isCollapsed = collapsedSections.has(t._sectionKey || '');
+                    return (
+                      <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
+                        <td onClick={() => handleOpenEditModal(t)} className="sticky left-0 z-10 py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{t.computedStt || t.stt}</td>
+                        <td colSpan={10} className="sticky left-[42px] z-10 py-2 px-2 bg-blue-50/90 border-r border-blue-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap">
+                          <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}
+                              className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
+                              title={isCollapsed ? 'Mở rộng đầu mục' : 'Thu gọn đầu mục'}
+                            >
+                              <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
+                            </button>
+                            <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
+                            <span onClick={() => handleOpenEditModal(t)} className="truncate cursor-pointer hover:underline">{t.name}</span>
+                            <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="ml-1 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[16px]">add_circle</span></button>
+                          </div>
+                        </td>
+                        <td className="sticky right-0 z-10 py-2 px-1 bg-blue-50/90 border-l border-blue-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-center whitespace-nowrap"><button onClick={() => deleteTask(t.id)} className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-slate-100 transition-colors inline-flex items-center"><span className="material-symbols-outlined text-base">delete</span></button></td>
+                      </tr>
+                    );
+                  }
                   const pct = Math.round((t.progress || 0) * 100);
                   const isFinished = t.isDone || pct >= 100;
                   const depth = (t as any).depth || 0;
