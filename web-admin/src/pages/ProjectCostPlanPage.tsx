@@ -736,10 +736,12 @@ export const ProjectCostPlanPage: React.FC = () => {
   // Modals state
   const [editingPlan, setEditingPlan] = useState<ProjectMaterialPlan | null>(null);
   const [isNewPlanOpen, setIsNewPlanOpen] = useState(false);
+  const [sectionPlanIdForNew, setSectionPlanIdForNew] = useState<string | null>(null);
   const [parentPlanIdForNew, setParentPlanIdForNew] = useState<string | null>(null);
   const [isCreatingSectionHeader, setIsCreatingSectionHeader] = useState(false);
   const [editingPurchasing, setEditingPurchasing] = useState<ProjectPurchasing | null>(null);
   const [isNewPurchasingOpen, setIsNewPurchasingOpen] = useState(false);
+  const [sectionPurchasingIdForNew, setSectionPurchasingIdForNew] = useState<string | null>(null);
   const [parentPurchasingIdForNew, setParentPurchasingIdForNew] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<ProjectExpense | null>(null);
   const [isNewExpenseOpen, setIsNewExpenseOpen] = useState(false);
@@ -753,62 +755,50 @@ export const ProjectCostPlanPage: React.FC = () => {
   const currentProjMaterialPlans = useMemo(() => {
     const filtered = materialPlans.filter((plan) => plan.projectCode === selectedProject && plan.jobContent?.trim());
     
-    // Group items by their Roman section based on sequential appearance
-    const sections: Array<{ section: ProjectMaterialPlan; items: ProjectMaterialPlan[] }> = [];
-    const orphanItems: ProjectMaterialPlan[] = [];
-    
+    // Fallback logic for legacy data (Excel imports) without parentId
     let currentSection: ProjectMaterialPlan | null = null;
-    let currentItems: ProjectMaterialPlan[] = [];
-    
-    const flushSection = () => {
-      if (currentSection) {
-        sections.push({ section: currentSection, items: [...currentItems] });
+    const itemsWithParents = filtered.map(plan => {
+      if (isSectionMarker(plan.stt, plan.notes)) {
+        currentSection = plan;
+        return { ...plan };
+      } else if (!plan.parentId && currentSection) {
+        // Assign temporary parentId for sorting purposes
+        return { ...plan, parentId: currentSection.id };
       }
-      currentItems = [];
-      currentSection = null;
+      return { ...plan };
+    });
+
+    const map = new Map<string, any>();
+    const roots: any[] = [];
+    
+    itemsWithParents.forEach(p => map.set(p.id, { ...p, children: [] }));
+    
+    itemsWithParents.forEach(p => {
+      if (p.parentId && map.has(p.parentId)) {
+        map.get(p.parentId)!.children.push(map.get(p.id));
+      } else {
+        roots.push(map.get(p.id));
+      }
+    });
+
+    const flattened: ProjectMaterialPlan[] = [];
+    
+    const flattenTree = (nodes: any[]) => {
+      nodes.sort((a, b) => {
+        const sttCompare = compareTaskStt(a.stt, b.stt);
+        if (sttCompare !== 0) return sttCompare;
+        return String(a.jobContent || '').localeCompare(String(b.jobContent || ''), 'vi', { numeric: true, sensitivity: 'base' });
+      });
+      
+      nodes.forEach(node => {
+        const { children, ...plan } = node;
+        flattened.push(plan);
+        flattenTree(children);
+      });
     };
     
-    // Process in original order from database
-    filtered.forEach(plan => {
-      if (isRomanNumeral(plan.stt)) {
-        // New Roman section found, flush previous section
-        flushSection();
-        currentSection = plan;
-      } else if (currentSection) {
-        // Item belongs to current section
-        currentItems.push(plan);
-      } else {
-        // Item without section - add to orphans
-        orphanItems.push(plan);
-      }
-    });
-    
-    // Flush last section
-    flushSection();
-    
-    // Sort Roman sections by their value (I, II, III, IV...)
-    sections.sort((a, b) => {
-      const aVal = romanToInt(a.section.stt) || 0;
-      const bVal = romanToInt(b.section.stt) || 0;
-      return aVal - bVal;
-    });
-    
-    // Sort items within each section by STT (1, 1-1, 1-1-1, 2, 2-1...)
-    sections.forEach(group => {
-      group.items.sort((a, b) => compareTaskStt(a.stt, b.stt));
-    });
-    
-    // Sort orphan items
-    orphanItems.sort((a, b) => compareTaskStt(a.stt, b.stt));
-    
-    // Combine: orphans first, then sections
-    const result: ProjectMaterialPlan[] = [...orphanItems];
-    sections.forEach(group => {
-      result.push(group.section);
-      result.push(...group.items);
-    });
-    
-    return result;
+    flattenTree(roots);
+    return flattened;
   }, [materialPlans, selectedProject]);
 
   const currentProjPurchasing = useMemo(() => {
@@ -1054,7 +1044,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   });
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col flex-1 overflow-y-auto">
       {/* HEADER SECTION */}
       <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
@@ -1400,10 +1390,10 @@ export const ProjectCostPlanPage: React.FC = () => {
       </Modal>
 
       {/* 1. Modal Kế Hoạch Vật Tư */}
-      <Modal isOpen={isNewPlanOpen} onClose={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setIsCreatingSectionHeader(false); }} title={isCreatingSectionHeader ? 'Thêm Đầu mục lớn — Kế hoạch Vật tư' : 'Thêm Hạng mục — Kế hoạch Vật tư'} size="xl">
+      <Modal isOpen={isNewPlanOpen} onClose={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setSectionPlanIdForNew(null); setIsCreatingSectionHeader(false); }} title={isCreatingSectionHeader ? 'Thêm Đầu mục lớn — Kế hoạch Vật tư' : 'Thêm Hạng mục — Kế hoạch Vật tư'} size="xl">
         <form onSubmit={(e) => {
           e.preventDefault();
-          const parentId = isCreatingSectionHeader ? null : parentPlanIdForNew;
+          const parentId = isCreatingSectionHeader ? null : (parentPlanIdForNew || sectionPlanIdForNew || null);
           
           // Auto STT: La Mã cho đầu mục lớn, số thứ tự cho hạng mục nhỏ
           const autoStt = (() => {
@@ -1413,8 +1403,10 @@ export const ProjectCostPlanPage: React.FC = () => {
               return toRoman(sectionCount + 1);
             }
             if (parentId) {
+              const parentObj = currentProjMaterialPlans.find(p => p.id === parentId);
               const siblings = currentProjMaterialPlans.filter(p => p.parentId === parentId);
-              return String(siblings.length + 1);
+              const nextIndex = siblings.length + 1;
+              return parentObj?.stt ? `${parentObj.stt}.${nextIndex}` : String(nextIndex);
             }
             return String(currentProjMaterialPlans.filter(p => !p.parentId).length + 1);
           })();
@@ -1452,6 +1444,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
           setIsNewPlanOpen(false);
           setParentPlanIdForNew(null);
+          setSectionPlanIdForNew(null);
           setIsCreatingSectionHeader(false);
           triggerToast('Đã thêm Hạng mục thành công!', 'success');
         }} className="space-y-3.5 text-xs">
@@ -1478,30 +1471,53 @@ export const ProjectCostPlanPage: React.FC = () => {
           ) : null}
 
           {!isCreatingSectionHeader && (
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục / Hạng mục cha</label>
-              <div className="flex items-center gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
+                <div className="flex items-center gap-1.5">
+                  <select
+                    value={sectionPlanIdForNew || ''}
+                    onChange={(e) => {
+                      setSectionPlanIdForNew(e.target.value || null);
+                      setParentPlanIdForNew(null);
+                    }}
+                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
+                  >
+                    <option value="">-- Chọn Đầu mục cha --</option>
+                    {currentProjMaterialPlans.filter(p => isSectionMarker(p.stt, p.notes)).map(sec => (
+                      <option key={sec.id} value={sec.id} title={sec.jobContent}>
+                        {sec.stt ? `${sec.stt}. ` : ''}{sec.jobContent}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => { setIsCreatingSectionHeader(true); setSectionPlanIdForNew(null); setParentPlanIdForNew(null); }}
+                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
+                    title="Tạo Đầu mục lớn mới"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Thuộc Hạng mục cha (tuỳ chọn)</label>
                 <select
                   value={parentPlanIdForNew || ''}
                   onChange={(e) => setParentPlanIdForNew(e.target.value || null)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/50 font-bold text-primary"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold truncate"
+                  disabled={!sectionPlanIdForNew}
                 >
-                  <option value="">— Mục ngoài cùng (không có cha) —</option>
-                  {currentProjMaterialPlans.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {isSectionMarker(p.stt, p.notes) ? '📁 ' : '  ↳ '}
-                      {p.stt ? `${p.stt}. ` : ''}{p.jobContent}
-                    </option>
-                  ))}
+                  <option value="">-- Không có --</option>
+                  {sectionPlanIdForNew && currentProjMaterialPlans
+                    .filter(p => p.parentId === sectionPlanIdForNew)
+                    .map(t => (
+                      <option key={t.id} value={t.id} title={t.jobContent}>
+                        {t.stt ? `${t.stt}. ` : ''}{t.jobContent}
+                      </option>
+                    ))}
                 </select>
-                <button
-                  type="button"
-                  onClick={() => { setIsCreatingSectionHeader(true); setParentPlanIdForNew(null); }}
-                  className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
-                  title="Tạo Đầu mục lớn mới"
-                >
-                  +
-                </button>
               </div>
             </div>
           )}
@@ -1618,10 +1634,10 @@ export const ProjectCostPlanPage: React.FC = () => {
       </Modal>
 
       {/* 2. Modal Mua Sắm Hàng Hóa */}
-      <Modal isOpen={isNewPurchasingOpen} onClose={() => { setIsNewPurchasingOpen(false); setParentPurchasingIdForNew(null); setIsCreatingSectionHeader(false); }} title={isCreatingSectionHeader ? 'Thêm Đầu mục lớn — Mua sắm Hàng hóa' : 'Thêm Hạng mục — Mua sắm Hàng hóa'} size="xl">
+      <Modal isOpen={isNewPurchasingOpen} onClose={() => { setIsNewPurchasingOpen(false); setParentPurchasingIdForNew(null); setSectionPurchasingIdForNew(null); setIsCreatingSectionHeader(false); }} title={isCreatingSectionHeader ? 'Thêm Đầu mục lớn — Mua sắm Hàng hóa' : 'Thêm Hạng mục — Mua sắm Hàng hóa'} size="xl">
         <form onSubmit={(e) => {
           e.preventDefault();
-          const parentId = isCreatingSectionHeader ? null : parentPurchasingIdForNew;
+          const parentId = isCreatingSectionHeader ? null : (parentPurchasingIdForNew || sectionPurchasingIdForNew || null);
           const contractVol = Number(newPurchasingData.volumeContract || 1);
           const orderVol = Number(newPurchasingData.volumeOrder || 0);
           const unitPrice = Number(newPurchasingData.unitPrice || 0);
@@ -1642,8 +1658,10 @@ export const ProjectCostPlanPage: React.FC = () => {
               return toRoman(sectionCount + 1);
             }
             if (parentId) {
+              const parentObj = currentProjPurchasing.find(p => p.id === parentId);
               const siblings = currentProjPurchasing.filter(p => p.parentId === parentId);
-              return String(siblings.length + 1);
+              const nextIndex = siblings.length + 1;
+              return parentObj?.stt ? `${parentObj.stt}.${nextIndex}` : String(nextIndex);
             }
             return String(currentProjPurchasing.filter(p => !p.parentId).length + 1);
           })();
@@ -1682,6 +1700,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
           setIsNewPurchasingOpen(false);
           setParentPurchasingIdForNew(null);
+          setSectionPurchasingIdForNew(null);
           setIsCreatingSectionHeader(false);
           triggerToast('Đã thêm Hạng mục thành công!', 'success');
         }} className="space-y-3.5 text-xs">
@@ -1708,30 +1727,53 @@ export const ProjectCostPlanPage: React.FC = () => {
           ) : null}
 
           {!isCreatingSectionHeader && (
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục / Hạng mục cha</label>
-              <div className="flex items-center gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
+                <div className="flex items-center gap-1.5">
+                  <select
+                    value={sectionPurchasingIdForNew || ''}
+                    onChange={(e) => {
+                      setSectionPurchasingIdForNew(e.target.value || null);
+                      setParentPurchasingIdForNew(null);
+                    }}
+                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
+                  >
+                    <option value="">-- Chọn Đầu mục cha --</option>
+                    {currentProjPurchasing.filter(p => isSectionMarker(p.stt, p.notes)).map(sec => (
+                      <option key={sec.id} value={sec.id} title={sec.content}>
+                        {sec.stt ? `${sec.stt}. ` : ''}{sec.content}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => { setIsCreatingSectionHeader(true); setSectionPurchasingIdForNew(null); setParentPurchasingIdForNew(null); }}
+                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
+                    title="Tạo Đầu mục lớn mới"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Thuộc Hạng mục cha (tuỳ chọn)</label>
                 <select
                   value={parentPurchasingIdForNew || ''}
                   onChange={(e) => setParentPurchasingIdForNew(e.target.value || null)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/50 font-bold text-primary"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold truncate"
+                  disabled={!sectionPurchasingIdForNew}
                 >
-                  <option value="">— Mục ngoài cùng (không có cha) —</option>
-                  {currentProjPurchasing.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {isSectionMarker(p.stt, p.notes) ? '📁 ' : '  ↳ '}
-                      {p.stt ? `${p.stt}. ` : ''}{p.content}
-                    </option>
-                  ))}
+                  <option value="">-- Không có --</option>
+                  {sectionPurchasingIdForNew && currentProjPurchasing
+                    .filter(p => p.parentId === sectionPurchasingIdForNew)
+                    .map(t => (
+                      <option key={t.id} value={t.id} title={t.content}>
+                        {t.stt ? `${t.stt}. ` : ''}{t.content}
+                      </option>
+                    ))}
                 </select>
-                <button
-                  type="button"
-                  onClick={() => { setIsCreatingSectionHeader(true); setParentPurchasingIdForNew(null); }}
-                  className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
-                  title="Tạo Đầu mục lớn mới"
-                >
-                  +
-                </button>
               </div>
             </div>
           )}

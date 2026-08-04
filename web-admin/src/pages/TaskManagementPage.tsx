@@ -136,6 +136,10 @@ const calculateAutoProgressPercent = (purchaseStatus?: string, constrStatus?: st
 const calculateAutoProgressRatio = (purchaseStatus?: string, constrStatus?: string) =>
   calculateAutoProgressPercent(purchaseStatus, constrStatus) / 100;
 
+const taskStatusFromProgress = (progress: number): Task['status'] => (
+  progress >= 1 ? 'Ho\u00e0n th\u00e0nh' : progress > 0 ? '\u0110ang l\u00e0m' : 'Ch\u01b0a l\u00e0m'
+) as Task['status'];
+
 const sttSortParts = (value?: string) => {
   const text = String(value || '').trim();
   if (!text) return [Number.POSITIVE_INFINITY];
@@ -216,6 +220,7 @@ export const TaskManagementPage: React.FC = () => {
   const [editIssueStatus, setEditIssueStatus] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [editEngineerId, setEditEngineerId] = useState(engineers[0]?.id || '');
+  const [editParentId, setEditParentId] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -232,6 +237,7 @@ export const TaskManagementPage: React.FC = () => {
   const [engineerId, setEngineerId] = useState(engineers[0]?.id || '');
   const [isSectionHeader, setIsSectionHeader] = useState(false);
   const [ocrIssueDraft, setOcrIssueDraft] = useState('');
+  const [parentIdSelect, setParentIdSelect] = useState<string>('default');
 
   // New project form state
   const [newProjName, setNewProjName] = useState('');
@@ -296,10 +302,38 @@ export const TaskManagementPage: React.FC = () => {
         ? sectionSelect
         : uniqueSectionsForProj[0];
 
-      const secItems = projTasks.filter((t) => !t.isSectionHeader && t.sectionName === targetSec);
+      if (parentIdSelect && parentIdSelect !== 'default') {
+        const parentTask = projTasks.find(t => t.id === parentIdSelect);
+        if (parentTask) {
+          const children = projTasks.filter(t => t.parentId === parentTask.id);
+          const nextIndex = children.length + 1;
+          setStt(parentTask.stt ? `${parentTask.stt}.${nextIndex}` : String(nextIndex));
+          return;
+        }
+      }
+
+      const secItems = projTasks.filter((t) => !t.isSectionHeader && t.sectionName === targetSec && (!t.parentId || t.parentId === 'default'));
       setStt(String(secItems.length + 1));
     }
-  }, [isNewTaskModalOpen, isSectionHeader, projectCode, sectionSelect, tasks]);
+  }, [isNewTaskModalOpen, isSectionHeader, projectCode, sectionSelect, parentIdSelect, tasks]);
+
+  const handleAddSubtask = (parentTask: Task) => {
+    if (selectedProjectCode !== 'all' && selectedProjectCode !== parentTask.projectCode) {
+      setProjectCode(parentTask.projectCode);
+    }
+    setIsSectionHeader(false);
+    setSectionSelect(parentTask.sectionName || 'default');
+    setParentIdSelect(parentTask.id);
+    setName('');
+    
+    const children = tasks.filter(t => t.parentId === parentTask.id);
+    const nextIndex = children.length + 1;
+    const autoStt = parentTask.stt ? `${parentTask.stt}.${nextIndex}` : String(nextIndex);
+    setStt(autoStt);
+    
+    setOcrIssueDraft('');
+    setIsNewTaskModalOpen(true);
+  };
 
   // Open Edit Task Modal
   const handleOpenEditModal = (t: Task) => {
@@ -316,6 +350,7 @@ export const TaskManagementPage: React.FC = () => {
     setEditIssueStatus(t.issueStatus || '');
     setEditNotes(t.notes || '');
     setEditEngineerId(t.assignedEngineerId || engineers[0]?.id || '');
+    setEditParentId(t.parentId || '');
     setIsEditTaskModalOpen(true);
   };
 
@@ -338,12 +373,13 @@ export const TaskManagementPage: React.FC = () => {
       constrStatus: editConstrStatus,
       progress: nextProgress,
       isDone: !editingTask.isSectionHeader && nextProgress >= 1,
-      status: !editingTask.isSectionHeader && nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm',
+      status: taskStatusFromProgress(!editingTask.isSectionHeader ? nextProgress : 0),
       issue: editIssue,
       issueStatus: editIssueStatus,
       notes: editNotes,
       assignedEngineerId: editEngineerId,
       assignedEngineerName: eng ? eng.name : editingTask.assignedEngineerName,
+      parentId: editParentId || undefined,
     });
 
     setIsEditTaskModalOpen(false);
@@ -352,8 +388,36 @@ export const TaskManagementPage: React.FC = () => {
 
 
   const handleStartCustomSection = () => {
-    setSectionSelect('__CUSTOM__');
-    setCustomSectionInput(getNextRomanSectionPrefix());
+    setIsSectionHeader(true);
+    setSectionSelect('default');
+    setCustomSectionInput('');
+    setName('');
+    setStt('');
+  };
+
+  const openNewSectionModal = () => {
+    if (selectedProjectCode !== 'all') {
+      setProjectCode(selectedProjectCode);
+    }
+    setIsSectionHeader(true);
+    setSectionSelect('default');
+    setCustomSectionInput('');
+    setName('');
+    setStt('');
+    setOcrIssueDraft('');
+    setIsNewTaskModalOpen(true);
+  };
+
+  const openNewTaskModal = () => {
+    if (selectedProjectCode !== 'all') {
+      setProjectCode(selectedProjectCode);
+    }
+    setIsSectionHeader(false);
+    setName('');
+    setStt('');
+    setOcrIssueDraft('');
+    setParentIdSelect('default');
+    setIsNewTaskModalOpen(true);
   };
 
 
@@ -643,12 +707,17 @@ export const TaskManagementPage: React.FC = () => {
     const proj = projects.find((p) => p.code === projectCode);
     const eng = engineers.find((e) => e.id === engineerId);
 
-    const finalSectionName = isSectionHeader ? name : activeSectionName;
+    const finalSectionName = isSectionHeader ? name.trim() : activeSectionName.trim();
+    if (!isSectionHeader && !finalSectionName) {
+      triggerToast('Vui l\u00f2ng t\u1ea1o ho\u1eb7c ch\u1ecdn \u0110\u1ea7u m\u1ee5c cha tr\u01b0\u1edbc khi th\u00eam H\u1ea1ng m\u1ee5c nh\u1ecf.', 'warning');
+      return;
+    }
 
     const nextStt = String(tasks.filter(t => t.projectCode === projectCode).length + 1);
     const nextProgress = isSectionHeader ? 0 : calculateAutoProgressRatio(purchaseStatus, constrStatus);
+    const createdSectionName = finalSectionName;
     addTask({
-      stt: isSectionHeader ? '' : (stt || nextStt),
+      stt: isSectionHeader ? (stt || toRoman(tasks.filter(t => t.projectCode === projectCode && t.isSectionHeader).length + 1)) : (stt || nextStt),
       code: `TSK-${Date.now()}`,
       name,
       projectCode,
@@ -656,20 +725,32 @@ export const TaskManagementPage: React.FC = () => {
       volume: isSectionHeader ? 0 : volume,
       unit: isSectionHeader ? '' : unit,
       progress: nextProgress,
-      status: isSectionHeader ? 'Chưa làm' : nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm',
+      status: taskStatusFromProgress(isSectionHeader ? 0 : nextProgress),
       purchaseStatus: isSectionHeader ? '' : purchaseStatus,
       constrStatus: isSectionHeader ? '' : constrStatus,
       isDone: !isSectionHeader && nextProgress >= 1,
       isSectionHeader,
       sectionName: finalSectionName,
+      parentId: parentIdSelect !== 'default' ? parentIdSelect : undefined,
       assignedEngineerId: engineerId,
       assignedEngineerName: eng?.name || '',
     });
 
-    setIsNewTaskModalOpen(false);
     setName('');
     setStt('');
     setOcrIssueDraft('');
+    setCustomSectionInput('');
+
+    if (isSectionHeader) {
+      setIsSectionHeader(false);
+      setSectionSelect(createdSectionName);
+      triggerToast('\u0110\u00e3 t\u1ea1o \u0110\u1ea7u m\u1ee5c l\u1edbn. B\u1ea1n c\u00f3 th\u1ec3 th\u00eam H\u1ea1ng m\u1ee5c nh\u1ecf trong \u0111\u1ea7u m\u1ee5c n\u00e0y.', 'success');
+      return;
+    }
+
+    setIsNewTaskModalOpen(false);
+    setIsSectionHeader(false);
+    setSectionSelect('default');
   };
 
   const handleCreateProject = (e: React.FormEvent) => {
@@ -757,6 +838,21 @@ export const TaskManagementPage: React.FC = () => {
     );
   });
 
+  const toRoman = (num: number): string => {
+    const roman: Record<string, number> = {
+      M: 1000, CM: 900, D: 500, CD: 400,
+      C: 100, XC: 90, L: 50, XL: 40,
+      X: 10, IX: 9, V: 5, IV: 4, I: 1
+    };
+    let str = '';
+    for (let i of Object.keys(roman)) {
+      let q = Math.floor(num / roman[i]);
+      num -= q * roman[i];
+      str += i.repeat(q);
+    }
+    return str;
+  };
+
   const groupedTasks = React.useMemo(() => {
     const groups: { [key: string]: Task[] } = {};
     const order: string[] = [];
@@ -775,16 +871,40 @@ export const TaskManagementPage: React.FC = () => {
       return compareTaskStt(leftHeader?.stt, rightHeader?.stt);
     });
 
-    const flattened: Task[] = [];
-    order.forEach((sec) => {
-      groups[sec].sort((a, b) => {
-        if (a.isSectionHeader && !b.isSectionHeader) return -1;
-        if (!a.isSectionHeader && b.isSectionHeader) return 1;
-        const sttCompare = compareTaskStt(a.stt, b.stt);
-        if (sttCompare !== 0) return sttCompare;
-        return a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' });
+    const flattened: any[] = [];
+    order.forEach((sec, groupIndex) => {
+      const sectionHeader = groups[sec].find(t => t.isSectionHeader);
+      const items = groups[sec].filter(t => !t.isSectionHeader);
+      
+      const map = new Map<string, any>();
+      const roots: any[] = [];
+      items.forEach(t => map.set(t.id, { ...t, children: [] }));
+      items.forEach(t => {
+        if (t.parentId && map.has(t.parentId)) {
+          map.get(t.parentId)!.children.push(map.get(t.id));
+        } else {
+          roots.push(map.get(t.id));
+        }
       });
-      flattened.push(...groups[sec]);
+      
+      const flattenTree = (nodes: any[], depth: number = 0, prefix: string = '') => {
+        nodes.sort((a, b) => {
+          const sttCompare = compareTaskStt(a.stt, b.stt);
+          if (sttCompare !== 0) return sttCompare;
+          return a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' });
+        });
+        nodes.forEach((node, idx) => {
+          const currentNum = (idx + 1).toString();
+          const computedStt = depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum);
+          flattened.push({ ...node, depth, computedStt });
+          flattenTree(node.children, depth + 1, computedStt);
+        });
+      };
+      
+      if (sectionHeader) {
+        flattened.push({ ...sectionHeader, depth: 0, computedStt: toRoman(groupIndex + 1) });
+      }
+      flattenTree(roots, sectionHeader ? 1 : 0);
     });
     return flattened;
   }, [displayTasks]);
@@ -793,7 +913,7 @@ export const TaskManagementPage: React.FC = () => {
   const completedPureItems = groupedTasks.filter((t) => !t.isSectionHeader && (t.isDone || t.progress >= 1)).length;
 
   return (
-    <div className="px-0 pt-0 pb-4 space-y-0">
+    <div className="px-0 pt-0 pb-0 space-y-0 flex flex-col flex-1 overflow-hidden">
       {/* Hidden file input */}
       <input
         type="file"
@@ -803,7 +923,7 @@ export const TaskManagementPage: React.FC = () => {
         className="hidden"
       />
 
-      <section className="task-management-screen bg-white border-y border-r border-slate-200 shadow-xs overflow-hidden">
+      <section className="task-management-screen bg-white border-y border-r border-slate-200 shadow-xs flex flex-col flex-1 overflow-hidden">
       {/* Page Header */}
       <div className="px-5 py-3 flex flex-col lg:flex-row justify-between lg:items-center gap-4 border-b border-slate-100">
         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -830,16 +950,12 @@ export const TaskManagementPage: React.FC = () => {
 
         <div className="flex flex-wrap gap-2 lg:justify-end">
           <button
-            onClick={() => {
-              if (selectedProjectCode !== 'all') {
-                setProjectCode(selectedProjectCode);
-              }
-              setIsNewTaskModalOpen(true);
-            }}
+            type="button"
+            onClick={openNewTaskModal}
             className="flex items-center gap-1 bg-primary text-white px-3 py-1 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-2xs"
           >
             <span className="material-symbols-outlined text-sm">add</span>
-            Thm Hạng mục
+            {'Th\u00eam H\u1ea1ng m\u1ee5c nh\u1ecf'}
           </button>
         </div>
       </div>
@@ -961,32 +1077,63 @@ export const TaskManagementPage: React.FC = () => {
         </div>
       </div>
       {/* Main Data Table */}
-      <div className="border-t border-slate-200 flex flex-col">
-        <div className="w-full overflow-x-auto custom-scrollbar">
+      <div className="border-t border-slate-200 flex flex-col flex-1 overflow-hidden">
+        <div className="w-full overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
           <table className="min-w-[1060px] w-full text-left border-collapse text-[11px] table-fixed">
-            <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
+            <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
               <tr>
-                <th className="py-2 px-1 w-[42px] text-center border-b border-slate-200 whitespace-nowrap">STT</th>
-                <th className="py-2 px-2 w-[245px] border-b border-slate-200 whitespace-nowrap">NỘI DUNG</th>
-                <th className="py-2 px-1 w-[62px] text-right border-b border-slate-200 whitespace-nowrap">KL</th>
-                <th className="py-2 px-1 w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
-                <th className="py-2 px-1 w-[56px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
+                <th className="sticky left-0 z-20 py-2 px-1 w-[42px] bg-slate-50 bg-clip-padding text-center border-b border-r border-slate-200 whitespace-nowrap">STT</th>
+                <th className="sticky left-[42px] z-20 py-2 px-2 w-[400px] min-w-[400px] bg-slate-50 bg-clip-padding border-b border-r border-slate-200 whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">NỘI DUNG</th>
+                <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-right border-b border-slate-200 whitespace-nowrap">KL</th>
+                <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
+                <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
                 <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">MUA HÀNG</th>
                 <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">THI CÔNG</th>
                 <th className="py-2 px-1 w-[115px] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
                 <th className="py-2 px-1 w-[82px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
                 <th className="py-2 px-1 w-[58px] text-center border-b border-slate-200 whitespace-nowrap">XONG</th>
-                <th className="py-2 px-1 w-[90px] border-b border-slate-200 whitespace-nowrap">GHI CHÚ</th>
-                <th className="py-2 px-1 w-[40px] text-center border-b border-slate-200 whitespace-nowrap">XOÁ</th>
+                <th className="py-2 px-1 w-full min-w-[120px] border-b border-slate-200 whitespace-nowrap">GHI CHÚ</th>
+                <th className="sticky right-0 z-20 py-2 px-1 w-[40px] min-w-[40px] max-w-[40px] bg-slate-50 text-center border-b border-l border-slate-200 whitespace-nowrap shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {groupedTasks.length === 0 ? (<tr><td colSpan={12} className="p-8 text-center text-slate-400 whitespace-nowrap">Không có hạng mục nào phù hợp với bộ lọc đã chọn</td></tr>) : (
                 groupedTasks.map((t, idx) => {
-                  if (t.isSectionHeader) return (<tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary"><td onClick={() => handleOpenEditModal(t)} className="py-2 px-1 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{t.stt}</td><td colSpan={10} onClick={() => handleOpenEditModal(t)} className="py-2 px-2 uppercase tracking-tight font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap"><div className="flex items-center gap-2 whitespace-nowrap overflow-hidden"><span className="material-symbols-outlined text-base flex-shrink-0">folder_open</span><span className="truncate">{t.name}</span></div></td><td className="py-2 px-1 text-center whitespace-nowrap"><button onClick={() => deleteTask(t.id)} className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-slate-100 transition-colors inline-flex items-center"><span className="material-symbols-outlined text-base">delete</span></button></td></tr>);
+                  if (t.isSectionHeader) return (<tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary"><td onClick={() => handleOpenEditModal(t)} className="sticky left-0 z-10 py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{t.computedStt || t.stt}</td><td colSpan={10} onClick={() => handleOpenEditModal(t)} className="sticky left-[42px] z-10 py-2 px-2 bg-blue-50/90 border-r border-blue-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap"><div className="flex items-center gap-2 whitespace-nowrap overflow-hidden"><span className="material-symbols-outlined text-base flex-shrink-0">folder_open</span><span className="truncate">{t.name}</span><button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="ml-1 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[16px]">add_circle</span></button></div></td><td className="sticky right-0 z-10 py-2 px-1 bg-blue-50/90 border-l border-blue-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-center whitespace-nowrap"><button onClick={() => deleteTask(t.id)} className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-slate-100 transition-colors inline-flex items-center"><span className="material-symbols-outlined text-base">delete</span></button></td></tr>);
                   const pct = Math.round((t.progress || 0) * 100);
                   const isFinished = t.isDone || pct >= 100;
-                  return (<tr key={t.id} className={'hover:bg-slate-50 transition-colors ' + (t.issue ? 'bg-amber-50/30' : isFinished ? 'bg-emerald-50/20' : '')}><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 font-mono text-slate-400 text-center cursor-pointer hover:text-blue-600 whitespace-nowrap font-bold">{t.stt || idx + 1}</td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-2 font-bold text-slate-900 leading-tight cursor-pointer hover:text-blue-600 hover:underline transition-colors truncate" title={t.name}>{t.name}</td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-right font-mono font-semibold text-slate-900 cursor-pointer hover:text-blue-600 whitespace-nowrap">{t.volume ? t.volume.toLocaleString('vi-VN') : '-'}</td><td className="py-1.5 px-1 text-center font-mono text-slate-500 whitespace-nowrap">{t.unit || '-'}</td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-center whitespace-nowrap cursor-pointer"><span className={'inline-flex min-w-10 items-center justify-center px-1.5 py-0.5 font-mono font-bold text-[10px] rounded border ' + (isFinished ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : pct > 0 ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600')}>{pct}%</span></td><td className="py-1.5 px-1 text-center whitespace-nowrap"><select value={t.purchaseStatus || 'Chưa đặt hàng'} onChange={(e) => { const nextPurchaseStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(nextPurchaseStatus, t.constrStatus); updateTask(t.id, { purchaseStatus: nextPurchaseStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-white px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></td><td className="py-1.5 px-1 text-center whitespace-nowrap"><select value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); updateTask(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-white px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 font-semibold text-red-600 cursor-pointer hover:underline truncate" title={t.issue || ''}>{t.issue ? (<span className="inline-flex items-center gap-1 whitespace-nowrap truncate"><span className="material-symbols-outlined text-red-500 text-xs flex-shrink-0">warning</span><span className="truncate">{t.issue}</span></span>) : (<span className="text-slate-300">-</span>)}</td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-slate-600 cursor-pointer hover:underline truncate" title={t.issueStatus || ''}>{t.issueStatus || <span className="text-slate-300">-</span>}</td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-center cursor-pointer"><span className={'material-symbols-outlined text-sm ' + (isFinished ? 'text-emerald-600' : 'text-slate-300')}>{isFinished ? 'check_circle' : 'radio_button_unchecked'}</span></td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-slate-500 cursor-pointer hover:underline truncate" title={t.notes || ''}>{t.notes || <span className="text-slate-300">-</span>}</td><td className="py-1.5 px-1 text-center whitespace-nowrap"><button onClick={() => deleteTask(t.id)} className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-slate-100 transition-colors inline-flex items-center"><span className="material-symbols-outlined text-base">delete</span></button></td></tr>);
+                  const depth = (t as any).depth || 0;
+                  const paddingLeft = depth > 1 ? `${(depth - 1) * 1.5}rem` : '0';
+                  
+                  let rowBg = 'bg-white';
+                  let stickyBg = 'bg-white';
+                  let fontStyle = 'font-bold text-slate-900';
+                  let sttStyle = 'font-bold text-slate-400';
+                  
+                  if (depth === 1) {
+                    rowBg = 'bg-slate-50';
+                    stickyBg = 'bg-slate-50';
+                    fontStyle = 'font-bold text-slate-900';
+                    sttStyle = 'font-bold text-slate-600';
+                  } else if (depth === 2) {
+                    fontStyle = 'font-semibold text-slate-700';
+                    sttStyle = 'font-semibold text-slate-400';
+                  } else if (depth >= 3) {
+                    fontStyle = 'font-medium text-slate-600 text-[10.5px]';
+                    sttStyle = 'font-medium text-slate-400 text-[10.5px]';
+                  }
+                  
+                  if (t.issue) {
+                    rowBg = 'bg-amber-50/50';
+                    stickyBg = 'bg-[#fffbeb]';
+                  } else if (isFinished) {
+                    rowBg = 'bg-emerald-50/40';
+                    stickyBg = 'bg-[#ecfdf5]';
+                  }
+                  
+                  const rowClass = `hover:bg-slate-100 transition-colors border-b border-slate-50 ${rowBg}`;
+
+                  return (<tr key={t.id} className={rowClass}><td onClick={() => handleOpenEditModal(t)} className={`sticky left-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 font-mono text-center cursor-pointer hover:text-blue-600 whitespace-nowrap ${sttStyle}`}>{t.computedStt || t.stt || idx + 1}</td><td onClick={() => handleOpenEditModal(t)} className={`sticky left-[42px] z-10 py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] leading-tight cursor-pointer hover:text-blue-600 hover:underline transition-colors truncate ${fontStyle}`} title={t.name}><div style={{ paddingLeft }} className="flex items-center gap-1">{depth > 1 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}<span className="truncate">{t.name}</span><button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button></div></td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-right font-mono font-semibold text-slate-900 cursor-pointer hover:text-blue-600 whitespace-nowrap">{t.volume ? t.volume.toLocaleString('vi-VN') : '-'}</td><td className="py-1.5 px-1 text-center font-mono text-slate-500 whitespace-nowrap">{t.unit || '-'}</td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-center whitespace-nowrap cursor-pointer"><span className={'inline-flex min-w-10 items-center justify-center px-1.5 py-0.5 font-mono font-bold text-[10px] rounded border ' + (isFinished ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : pct > 0 ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600')}>{pct}%</span></td><td className="py-1.5 px-1 text-center whitespace-nowrap"><select value={t.purchaseStatus || 'Chưa đặt hàng'} onChange={(e) => { const nextPurchaseStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(nextPurchaseStatus, t.constrStatus); updateTask(t.id, { purchaseStatus: nextPurchaseStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-transparent px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></td><td className="py-1.5 px-1 text-center whitespace-nowrap"><select value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); updateTask(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-transparent px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 font-semibold text-red-600 cursor-pointer hover:underline truncate" title={t.issue || ''}>{t.issue ? (<span className="inline-flex items-center gap-1 whitespace-nowrap truncate"><span className="material-symbols-outlined text-red-500 text-xs flex-shrink-0">warning</span><span className="truncate">{t.issue}</span></span>) : (<span className="text-slate-300">-</span>)}</td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-slate-600 cursor-pointer hover:underline truncate" title={t.issueStatus || ''}>{t.issueStatus || <span className="text-slate-300">-</span>}</td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-center cursor-pointer"><span className={'material-symbols-outlined text-sm ' + (isFinished ? 'text-emerald-600' : 'text-slate-300')}>{isFinished ? 'check_circle' : 'radio_button_unchecked'}</span></td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-slate-500 cursor-pointer hover:underline truncate" title={t.notes || ''}>{t.notes || <span className="text-slate-300">-</span>}</td><td className={`sticky right-0 z-10 py-1.5 px-1 text-center whitespace-nowrap border-l border-slate-100 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] ${stickyBg} group-hover:bg-slate-100`}><button onClick={(e) => { e.stopPropagation(); deleteTask(t.id); }} className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-slate-200 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-base">delete</span></button></td></tr>);
                 })
               )}
             </tbody>
@@ -1021,9 +1168,14 @@ export const TaskManagementPage: React.FC = () => {
             <div><label className="block font-bold text-slate-700 mb-1">STT / Mã</label><input type="text" value={editStt} onChange={(e) => setEditStt(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono font-bold" /></div>
             <div className="col-span-2"><label className="block font-bold text-slate-700 mb-1">Dự án</label><input type="text" disabled value={editingTask?.projectName || ''} className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-100 font-bold text-slate-500 cursor-not-allowed" /></div>
           </div>
-          {!editingTask?.isSectionHeader && (<div><label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label><select value={editSectionName} onChange={(e) => setEditSectionName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/50 font-bold text-primary">{uniqueSectionsForProj.map((sec) => (<option key={sec} value={sec}>{truncateText(sec, 55)}</option>))}<option value="__CUSTOM__">+ Nhập Đầu mục cha mới...</option></select>{editSectionName === '__CUSTOM__' && (<input type="text" required placeholder="VD: XIII. HỆ THỐNG ĐIỆN CHIẾU SÁNG" value={editCustomSection} onChange={(e) => setEditCustomSection(e.target.value)} className="w-full mt-2 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" />)}</div>)}
+          {editingTask && !editingTask.isSectionHeader && (
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label><select value={editSectionName} onChange={(e) => setEditSectionName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/50 font-bold text-primary">{uniqueSectionsForProj.map((sec) => (<option key={sec} value={sec}>{truncateText(sec, 55)}</option>))}<option value="__CUSTOM__">+ Nhập Đầu mục cha mới...</option></select>{editSectionName === '__CUSTOM__' && (<input type="text" required placeholder="VD: XIII. HỆ THỐNG ĐIỆN CHIẾU SÁNG" value={editCustomSection} onChange={(e) => setEditCustomSection(e.target.value)} className="w-full mt-2 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" />)}</div>
+              <div><label className="block font-bold text-slate-700 mb-1">Thuộc Hạng mục cha (tuỳ chọn)</label><select value={editParentId} onChange={(e) => setEditParentId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold"><option value="">-- Không có --</option>{tasks.filter(t => t.projectCode === editingTask.projectCode && !t.isSectionHeader && t.sectionName === editSectionName && t.id !== editingTask.id).map(t => (<option key={t.id} value={t.id}>{truncateText(t.name, 40)}</option>))}</select></div>
+            </div>
+          )}
           <div><label className="block font-bold text-slate-700 mb-1">Nội dung Công việc *</label><textarea required rows={2} value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
-          {!editingTask?.isSectionHeader && (<>
+          {editingTask && !editingTask.isSectionHeader && (<>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Khối lượng</label><input type="number" value={editVolume} onChange={(e) => setEditVolume(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị tính (ĐVT)</label><input type="text" value={editUnit} onChange={(e) => setEditUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tình trạng mua hàng</label><select value={editPurchaseStatus} onChange={(e) => setEditPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></div><div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><select value={editConstrStatus} onChange={(e) => setEditConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-red-600 mb-1">Vướng mắc / Tồn đọng</label><input type="text" placeholder="VD: Thiếu vật tư cáp..." value={editIssue} onChange={(e) => setEditIssue(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none bg-red-50/30 text-red-700 font-medium" /></div><div><label className="block font-bold text-slate-700 mb-1">Trạng thái xử lý</label><input type="text" placeholder="VD: Yêu cầu cấp bổ sung..." value={editIssueStatus} onChange={(e) => setEditIssueStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div></div>
@@ -1035,149 +1187,126 @@ export const TaskManagementPage: React.FC = () => {
       </Modal>
 
       {/* SLEEK NEW TASK MODAL */}
-      <Modal isOpen={isNewTaskModalOpen} onClose={() => setIsNewTaskModalOpen(false)} title="Thm Hạng mục Cng việc" size="xl">
+      <Modal isOpen={isNewTaskModalOpen} onClose={() => setIsNewTaskModalOpen(false)} title={isSectionHeader ? 'Th\u00eam \u0110\u1ea7u m\u1ee5c l\u1edbn' : 'Th\u00eam H\u1ea1ng m\u1ee5c nh\u1ecf'} size="xl">
         <form onSubmit={handleCreateTask} className="space-y-3.5 text-xs">
-          {/* PROJECT & SECTION INFO */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Thuộc Dự n</label>
+              <label className="block font-bold text-slate-700 mb-1">{'Thu\u1ed9c D\u1ef1 \u00e1n'}</label>
               <div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-bold text-slate-700 truncate" title={currentProject?.name || projectCode}>
                 {currentProject?.name || projectCode}
               </div>
             </div>
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
-              <div className="flex items-center gap-1.5">
-                <select
-                  value={sectionSelect}
-                  onChange={(e) => setSectionSelect(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
-                >
-                  <option value="default">-- Chọn Đầu mục cha --</option>
-                  {uniqueSectionsForProj.map((sec) => (
-                    <option key={sec} value={sec} title={sec}>
-                      {truncateText(sec, 40)}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleStartCustomSection}
-                  className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
-                  title="Thm đầu mục cha mới"
-                >
-                  +
-                </button>
+            {!isSectionHeader && (
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">{'Thu\u1ed9c \u0110\u1ea7u m\u1ee5c cha'}</label>
+                <div className="flex items-center gap-1.5">
+                  <select
+                    value={sectionSelect}
+                    onChange={(e) => setSectionSelect(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
+                  >
+                    <option value="default">-- Chon Dau muc cha --</option>
+                    {uniqueSectionsForProj.map((sec) => (
+                      <option key={sec} value={sec} title={sec}>
+                        {truncateText(sec, 40)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleStartCustomSection}
+                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
+                    title="Tao Dau muc lon moi"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
-              {sectionSelect === '__CUSTOM__' && (
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  placeholder="VD: Hệ thống chiếu sng"
-                  value={customSectionInput}
-                  onChange={(e) => setCustomSectionInput(e.target.value)}
-                  className="w-full mt-2 px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold text-xs"
-                />
-              )}
-            </div>
+            )}
           </div>
 
-          {/* ITEM NAME */}
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Tn Hạng mục / Thiết bị *</label>
+          {!isSectionHeader && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">{'Thuộc Hạng mục cha (tuỳ chọn)'}</label>
+                <select
+                  value={parentIdSelect}
+                  onChange={(e) => setParentIdSelect(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold truncate"
+                >
+                  <option value="default">-- Không có --</option>
+                  {activeTasksForProj
+                    .filter((t) => !t.isSectionHeader && t.sectionName === sectionSelect)
+                    .map((t) => (
+                      <option key={t.id} value={t.id} title={t.name}>
+                        {truncateText(t.name, 60)}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          <div className={!isSectionHeader ? "mt-3" : ""}>
+            <label className="block font-bold text-slate-700 mb-1">{isSectionHeader ? 'T\u00ean \u0110\u1ea7u m\u1ee5c cha *' : 'T\u00ean H\u1ea1ng m\u1ee5c / Thi\u1ebft b\u1ecb *'}</label>
             <input
               type="text"
               required
-              placeholder="VD: My bơm điện Q=54m3/h; H=30mH2O"
+              placeholder={isSectionHeader ? 'VD: H\u1ec6 TH\u1ed0NG \u0110I\u1ec6N CHI\u1ebeU S\u00c1NG' : 'VD: May bom dien Q=54m3/h; H=30mH2O'}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold"
             />
           </div>
 
-          {/* DETAIL FIELDS */}
-          <>
+          {!isSectionHeader && (
+            <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Khối lượng</label>
-                  <input
-                    type="number"
-                    value={volume}
-                    onChange={(e) => setVolume(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono"
-                  />
+                  <label className="block font-bold text-slate-700 mb-1">{'Kh\u1ed1i l\u01b0\u1ee3ng'}</label>
+                  <input type="number" value={volume} onChange={(e) => setVolume(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Đơn vị tnh (ĐVT)</label>
-                  <input
-                    type="text"
-                    placeholder="VD: ci, bộ, m, m..."
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono"
-                  />
+                  <label className="block font-bold text-slate-700 mb-1">{'\u0110\u01a1n v\u1ecb t\u00ednh (\u0110VT)'}</label>
+                  <input type="text" placeholder="VD: cai, bo, m..." value={unit} onChange={(e) => setUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Tnh trạng mua hng</label>
-                  <select
-                    value={purchaseStatus}
-                    onChange={(e) => setPurchaseStatus(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
-                  >
-                    <option value="Đ c hng">Đ c hng</option>
-                    <option value="Đ nhận đủ">Đ nhận đủ</option>
-                    <option value="Đang giao hng">Đang giao hng</option>
-                    <option value="Đ đặt hng">Đ đặt hng</option>
-                    <option value="Chưa đặt hng">Chưa đặt hng</option>
+                  <label className="block font-bold text-slate-700 mb-1">{'T\u00ecnh tr\u1ea1ng mua h\u00e0ng'}</label>
+                  <select value={purchaseStatus} onChange={(e) => setPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                    {PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Tnh trạng thi cng</label>
-                  <select
-                    value={constrStatus}
-                    onChange={(e) => setConstrStatus(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
-                  >
-                    <option value="Đ thi cng">Đ thi cng</option>
-                    <option value="Đ hon thnh">Đ hon thnh</option>
-                    <option value="Đang thi cng">Đang thi cng</option>
-                    <option value="Đ lắp TB + ko dy">Đ lắp TB + ko dy</option>
-                    <option value="Chưa thi cng">Chưa thi cng</option>
+                  <label className="block font-bold text-slate-700 mb-1">{'T\u00ecnh tr\u1ea1ng thi c\u00f4ng'}</label>
+                  <select value={constrStatus} onChange={(e) => setConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                    {CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Kỹ sư Phụ trch</label>
-                  <select
-                    value={engineerId}
-                    onChange={(e) => setEngineerId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
-                  >
-                    {engineers.map((eng) => (
-                      <option key={eng.id} value={eng.id}>
-                        {eng.name} ({eng.title})
-                      </option>
-                    ))}
+                  <label className="block font-bold text-slate-700 mb-1">{'K\u1ef9 s\u01b0 Ph\u1ee5 tr\u00e1ch'}</label>
+                  <select value={engineerId} onChange={(e) => setEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                    {engineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Tiến độ tự tnh (%)</label>
+                  <label className="block font-bold text-slate-700 mb-1">{'Ti\u1ebfn \u0111\u1ed9 t\u1ef1 t\u00ednh (%)'}</label>
                   <div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">
                     {calculateAutoProgressPercent(purchaseStatus, constrStatus)}%
                   </div>
                 </div>
               </div>
-          </>
+            </>
+          )}
 
           {ocrIssueDraft && (
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Dữ liệu phụ lục / Ghi ch</label>
+              <label className="block font-bold text-slate-700 mb-1">{'D\u1eef li\u1ec7u ph\u1ee5 l\u1ee5c / Ghi ch\u00fa'}</label>
               <textarea
                 value={ocrIssueDraft}
                 onChange={(e) => setOcrIssueDraft(e.target.value)}
@@ -1188,15 +1317,11 @@ export const TaskManagementPage: React.FC = () => {
           )}
 
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setIsNewTaskModalOpen(false)}
-              className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100"
-            >
-              Hủy
+            <button type="button" onClick={() => setIsNewTaskModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">
+              Huy
             </button>
             <button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">
-              Lưu Hạng Mục
+              {isSectionHeader ? 'L\u01b0u \u0110\u1ea7u m\u1ee5c l\u1edbn' : 'L\u01b0u H\u1ea1ng m\u1ee5c nh\u1ecf'}
             </button>
           </div>
         </form>

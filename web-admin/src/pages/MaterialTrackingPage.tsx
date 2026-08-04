@@ -207,6 +207,12 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+  const updateColumnFilter = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }));
+  };
+  const clearColumnFilters = () => setColumnFilters({});
   
   const [isPlaceOrderModalOpen, setIsPlaceOrderModalOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
@@ -272,11 +278,53 @@ export const MaterialTrackingPage: React.FC = () => {
       normalizeText(material.englishName).includes(query) ||
       normalizeText(material.supplier).includes(query);
 
-    return matchStatus && matchSearch;
+    const cf = columnFilters;
+    const matchColumn =
+      (!cf.name || normalizeText(material.name).includes(normalizeText(cf.name))) &&
+      (!cf.code || normalizeText(material.code).includes(normalizeText(cf.code))) &&
+      (!cf.englishName || normalizeText(material.englishName).includes(normalizeText(cf.englishName))) &&
+      (!cf.supplier || normalizeText(material.supplier).includes(normalizeText(cf.supplier))) &&
+      (!cf.unit || normalizeText(material.unit).includes(normalizeText(cf.unit)));
+
+    return matchStatus && matchSearch && matchColumn;
   });
 
-  const imports = inventoryTransactions.filter(tx => tx.type === 'IMPORT');
-  const exports = inventoryTransactions.filter(tx => tx.type === 'EXPORT');
+  const imports = inventoryTransactions.filter(tx => tx.type === 'IMPORT').filter(tx => {
+    const cf = columnFilters;
+    const q = (searchTerm || '').trim().toLowerCase();
+    const matchSearch = !q ||
+      normalizeText(tx.materialCode).includes(q) ||
+      normalizeText(tx.materialName).includes(q) ||
+      normalizeText(tx.sourceOrProject).includes(q) ||
+      normalizeText(tx.notes || '').includes(q);
+    const matchColumn =
+      (!cf.materialCode || normalizeText(tx.materialCode).includes(normalizeText(cf.materialCode))) &&
+      (!cf.materialName || normalizeText(tx.materialName).includes(normalizeText(cf.materialName))) &&
+      (!cf.specs || normalizeText(tx.specs || '').includes(normalizeText(cf.specs))) &&
+      (!cf.sourceOrProject || normalizeText(tx.sourceOrProject).includes(normalizeText(cf.sourceOrProject))) &&
+      (!cf.notes || normalizeText(tx.notes || '').includes(normalizeText(cf.notes))) &&
+      (!cf.txDate || tx.date.includes(cf.txDate));
+    return matchSearch && matchColumn;
+  });
+
+  const exports = inventoryTransactions.filter(tx => tx.type === 'EXPORT').filter(tx => {
+    const cf = columnFilters;
+    const q = (searchTerm || '').trim().toLowerCase();
+    const matchSearch = !q ||
+      normalizeText(tx.materialCode).includes(q) ||
+      normalizeText(tx.materialName).includes(q) ||
+      normalizeText(tx.sourceOrProject).includes(q) ||
+      normalizeText(tx.notes || '').includes(q);
+    const matchColumn =
+      (!cf.materialCode || normalizeText(tx.materialCode).includes(normalizeText(cf.materialCode))) &&
+      (!cf.materialName || normalizeText(tx.materialName).includes(normalizeText(cf.materialName))) &&
+      (!cf.specs || normalizeText(tx.specs || '').includes(normalizeText(cf.specs))) &&
+      (!cf.sourceOrProject || normalizeText(tx.sourceOrProject).includes(normalizeText(cf.sourceOrProject))) &&
+      (!cf.receiverName || normalizeText(tx.receiverName || '').includes(normalizeText(cf.receiverName))) &&
+      (!cf.notes || normalizeText(tx.notes || '').includes(normalizeText(cf.notes))) &&
+      (!cf.txDate || tx.date.includes(cf.txDate));
+    return matchSearch && matchColumn;
+  });
 
   const summaryCards = [
     { label: 'Tổng vật tư', value: filteredMaterials.length, icon: 'inventory_2', tone: 'text-slate-700 bg-slate-100' },
@@ -454,7 +502,7 @@ export const MaterialTrackingPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
+    <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
       <section className="border-b border-slate-200 bg-white px-6 py-4 flex flex-col xl:flex-row justify-between xl:items-center gap-3">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
@@ -493,10 +541,6 @@ export const MaterialTrackingPage: React.FC = () => {
             <span className="material-symbols-outlined text-base">arrow_upward</span>
             Xuất Kho
           </button>
-          <button onClick={() => setIsPlaceOrderModalOpen(true)} className="flex items-center gap-1 bg-primary text-white px-3 py-2 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs">
-            <span className="material-symbols-outlined text-base">add</span>
-            Tạo Vật Tư Mới
-          </button>
         </div>
       </section>
 
@@ -530,6 +574,9 @@ export const MaterialTrackingPage: React.FC = () => {
             <div className="p-4 flex flex-col xl:flex-row justify-between gap-3 border-b border-slate-100">
               <div className="flex flex-wrap items-center gap-3">
                 <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Tìm vật tư, nhà cung cấp..." className="w-80 max-w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
+                {(searchTerm || Object.values(columnFilters).some(v => v)) && (
+                  <button type="button" onClick={() => { setSearchTerm(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
+                )}
               </div>
 
               <div className="flex flex-wrap bg-slate-100 p-0.5 rounded-lg text-xs font-semibold">
@@ -556,8 +603,22 @@ export const MaterialTrackingPage: React.FC = () => {
                     <th className="p-3.5 text-center">ĐVT</th>
                     <th className="p-3.5 text-center min-w-20">Thao tác</th>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
+               </thead>
+               <tfoot className="bg-slate-50/80 border-t border-slate-200">
+                 <tr>
+                   <td className="p-1"></td>
+                   <td className="p-1"><input value={columnFilters.name || ''} onChange={e => updateColumnFilter('name', e.target.value)} placeholder="Tên VT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="p-1"><input value={columnFilters.code || ''} onChange={e => updateColumnFilter('code', e.target.value)} placeholder="Mã VT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="p-1"><input value={columnFilters.englishName || ''} onChange={e => updateColumnFilter('englishName', e.target.value)} placeholder="Quy cách..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="p-1"></td>
+                   <td className="p-1"></td>
+                   <td className="p-1"></td>
+                   <td className="p-1"></td>
+                   <td className="p-1"></td>
+                   <td className="p-1"></td>
+                 </tr>
+               </tfoot>
+               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                   {filteredMaterials.map((material, index) => {
                     const purchase = normalizePurchaseStatus(material.status);
                     return (
@@ -606,6 +667,19 @@ export const MaterialTrackingPage: React.FC = () => {
                   <th className="p-3.5 min-w-40">Ghi chú</th>
                 </tr>
               </thead>
+              <tfoot className="bg-slate-50/80 border-t border-slate-200">
+                <tr>
+                  <td className="p-1"></td>
+                  <td className="p-1"><input value={columnFilters.txDate || ''} onChange={e => updateColumnFilter('txDate', e.target.value)} placeholder="Ngày..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"><input value={columnFilters.materialCode || ''} onChange={e => updateColumnFilter('materialCode', e.target.value)} placeholder="Mã VT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"><input value={columnFilters.materialName || ''} onChange={e => updateColumnFilter('materialName', e.target.value)} placeholder="Tên VT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"><input value={columnFilters.specs || ''} onChange={e => updateColumnFilter('specs', e.target.value)} placeholder="Quy cách..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"></td>
+                  <td className="p-1"></td>
+                  <td className="p-1"><input value={columnFilters.sourceOrProject || ''} onChange={e => updateColumnFilter('sourceOrProject', e.target.value)} placeholder="Nguồn..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                </tr>
+              </tfoot>
               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                 {imports.map((tx, index) => (
                   <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
@@ -643,6 +717,20 @@ export const MaterialTrackingPage: React.FC = () => {
                   <th className="p-3.5 min-w-40">Ghi chú</th>
                 </tr>
               </thead>
+              <tfoot className="bg-slate-50/80 border-t border-slate-200">
+                <tr>
+                  <td className="p-1"></td>
+                  <td className="p-1"><input value={columnFilters.txDate || ''} onChange={e => updateColumnFilter('txDate', e.target.value)} placeholder="Ngày..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"><input value={columnFilters.materialCode || ''} onChange={e => updateColumnFilter('materialCode', e.target.value)} placeholder="Mã VT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"><input value={columnFilters.materialName || ''} onChange={e => updateColumnFilter('materialName', e.target.value)} placeholder="Tên VT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"><input value={columnFilters.specs || ''} onChange={e => updateColumnFilter('specs', e.target.value)} placeholder="Quy cách..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"></td>
+                  <td className="p-1"></td>
+                  <td className="p-1"><input value={columnFilters.sourceOrProject || ''} onChange={e => updateColumnFilter('sourceOrProject', e.target.value)} placeholder="Dự án..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"><input value={columnFilters.receiverName || ''} onChange={e => updateColumnFilter('receiverName', e.target.value)} placeholder="Người nhận..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                </tr>
+              </tfoot>
               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                 {exports.map((tx, index) => (
                   <tr key={tx.id} className="hover:bg-slate-50 transition-colors">

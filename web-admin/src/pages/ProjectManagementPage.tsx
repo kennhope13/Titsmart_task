@@ -1,10 +1,11 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Project, Task } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { WebOcrExtractedData } from '../services/webOcrService';
 
 const todayStamp = () => new Date().toISOString().split('T')[0];
@@ -58,10 +59,14 @@ const getImportedFieldValue = (data: WebOcrExtractedData, labels: string[]) => {
 
 const deriveProjectsFromTasks = (tasks: Task[]): Project[] => {
   const projectMap = new Map<string, Project>();
+  const progressMap = new Map<string, number>();
+
   tasks.forEach((task) => {
     if (!task.projectCode) return;
     const current = projectMap.get(task.projectCode);
     const isDone = task.isDone || task.progress >= 1;
+    const taskProg = isDone ? 1 : (task.progress || 0);
+    
     if (!current) {
       projectMap.set(task.projectCode, {
         id: 'derived-' + task.projectCode,
@@ -76,16 +81,18 @@ const deriveProjectsFromTasks = (tasks: Task[]): Project[] => {
         managerName: TEXT.unassigned,
         activeTeams: 0,
       });
+      progressMap.set(task.projectCode, task.isSectionHeader ? 0 : taskProg);
       return;
     }
     if (task.isSectionHeader) return;
     current.totalTasks += 1;
     current.completedTasks += isDone ? 1 : 0;
     current.issueTasksCount += task.issue ? 1 : 0;
+    progressMap.set(task.projectCode, (progressMap.get(task.projectCode) || 0) + taskProg);
   });
   return Array.from(projectMap.values()).map((project) => ({
     ...project,
-    progressPercent: project.totalTasks > 0 ? Math.round((project.completedTasks / project.totalTasks) * 100) : 0,
+    progressPercent: project.totalTasks > 0 ? Math.round(((progressMap.get(project.code) || 0) / project.totalTasks) * 100) : 0,
   }));
 };
 
@@ -108,7 +115,8 @@ export const ProjectManagementPage: React.FC = () => {
     laborPayrolls,
   } = useRealtimeStore();
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
@@ -121,6 +129,8 @@ export const ProjectManagementPage: React.FC = () => {
   const [newManagerName, setNewManagerName] = useState('');
   const [newManagerTitle, setNewManagerTitle] = useState('Ch\u1ec9 huy tr\u01b0\u1edfng c\u00f4ng tr\u00ecnh');
   const [pendingProjectTasks, setPendingProjectTasks] = useState<NonNullable<WebOcrExtractedData['tableTasks']>>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => setToastState({ show: true, message, type });
 
@@ -136,7 +146,12 @@ export const ProjectManagementPage: React.FC = () => {
       const projectTasks = tasks.filter((task) => task.projectCode === project.code && !task.isSectionHeader);
       const totalTasks = projectTasks.length || project.totalTasks;
       const completedTasks = projectTasks.filter((task) => task.isDone || task.progress >= 1).length || project.completedTasks;
-      const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : project.progressPercent;
+      
+      let progress = project.progressPercent;
+      if (projectTasks.length > 0) {
+        const totalProgress = projectTasks.reduce((sum, task) => sum + (task.isDone ? 1 : (task.progress || 0)), 0);
+        progress = Math.round((totalProgress / projectTasks.length) * 100);
+      }
       
       const projMaterialPlans = materialPlans.filter((plan) => plan.projectCode === project.code);
       const totalMaterials = projMaterialPlans.length;
@@ -155,6 +170,7 @@ export const ProjectManagementPage: React.FC = () => {
 
       return {
         ...project,
+        status: progress >= 100 ? 'completed' : project.status,
         totalTasks,
         completedTasks,
         progress,
@@ -192,6 +208,9 @@ export const ProjectManagementPage: React.FC = () => {
     event.preventDefault();
     if (!newProjName.trim()) return;
 
+    setLoading(true);
+    setLoadingMessage('Đang tạo dự án...');
+    try {
     const selectedManager = engineers.find((eng) => eng.id === newProjManagerId);
     const createdManager = newProjManagerId === '__NEW__' && newManagerName.trim()
       ? addEngineer({ name: newManagerName.trim(), title: newManagerTitle.trim() || 'Ch\u1ec9 huy tr\u01b0\u1edfng c\u00f4ng tr\u00ecnh', avatar: '', phone: '', email: '' })
@@ -299,9 +318,7 @@ export const ProjectManagementPage: React.FC = () => {
         const key = `${String(item.stt || '').trim()}|${String(item.name || '').trim().toLowerCase()}`;
         if (existingPurchasingKeys.has(key)) continue;
         existingPurchasingKeys.add(key);
-        const totalBeforeVat = item.totalBeforeVat || ((item.volume || 0) * (item.unitPrice || 0));
-        const computedVatAmount = item.vatAmount || (item.vatRate ? totalBeforeVat * item.vatRate / 100 : 0);
-        const totalAmount = item.totalAmount || totalBeforeVat + computedVatAmount;
+        // Không import đơn giá, tiền thuế, thành tiền khi tạo dự án mới từ phụ lục (vẫn lấy % thuế VAT)
         await addPurchasingPlan({
           projectCode: code,
           stt: item.stt || String(index + 1),
@@ -309,13 +326,13 @@ export const ProjectManagementPage: React.FC = () => {
           unit: item.unit || '',
           volumeContract: item.volume || 0,
           volumeOrder: 0,
-          unitPrice: item.unitPrice || 0,
+          unitPrice: 0,
           vatRate: item.vatRate || 0,
-          vatAmount: computedVatAmount,
-          totalAmount,
+          vatAmount: 0,
+          totalAmount: 0,
           prepayPercent: 0,
           prepayAmount: 0,
-          remainingAmount: totalAmount,
+          remainingAmount: 0,
           orderStatus: TEXT.purchaseStatus,
           contractStatus: '\u0110\u00e3 c\u00f3 ph\u1ee5 l\u1ee5c',
           invoiceStatus: 'Ch\u01b0a xu\u1ea5t',
@@ -336,30 +353,44 @@ export const ProjectManagementPage: React.FC = () => {
     setNewManagerName('');
     setNewManagerTitle('Ch\u1ec9 huy tr\u01b0\u1edfng c\u00f4ng tr\u00ecnh');
     setPendingProjectTasks([]);
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+    }
   };
 
-  const handleDeleteProject = () => {
+  const handleDeleteProject = async () => {
     if (!projectToDelete) return;
-    deleteProject(projectToDelete.id);
-    setProjectToDelete(null);
-    triggerToast(TEXT.deleted, 'success');
+    setLoading(true);
+    setLoadingMessage('Đang xóa dự án...');
+    try {
+      await deleteProject(projectToDelete.id);
+      setProjectToDelete(null);
+      triggerToast(TEXT.deleted, 'success');
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+    }
   };
 
   const statusLabel: Record<Project['status'], string> = { active: TEXT.active, completed: TEXT.completed, on_hold: TEXT.onHold };
+  const statusTone: Record<Project['status'], string> = {
+    active: 'project-status project-status--active',
+    completed: 'project-status project-status--completed',
+    on_hold: 'project-status project-status--hold',
+  };
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
+    <div className="project-management-page flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
+      <LoadingSpinner loading={loading} message={loadingMessage} />
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
 
-      <section className="border-b border-slate-200 bg-white px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">domain</span>
           </div>
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">{TEXT.projectManagement}</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">{TEXT.projectSubtitle}</p>
-          </div>
+          <h1 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4">{TEXT.projectManagement}</h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
@@ -373,7 +404,7 @@ export const ProjectManagementPage: React.FC = () => {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder={TEXT.searchProject}
-              className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-slate-50/50"
+              className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
             />
           </div>
           <button
@@ -387,21 +418,96 @@ export const ProjectManagementPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="p-6 space-y-6">
+      <div className="p-6">
         {enhancedProjects.length === 0 ? (
           <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl">
             <span className="material-symbols-outlined text-5xl text-slate-300">folder_open</span>
             <h3 className="mt-3 font-bold text-slate-700">{searchQuery ? TEXT.noProjectFound : TEXT.noProject}</h3>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {enhancedProjects.map((project) => (
-              <article key={project.id} onClick={() => openProjectTasks(project)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') openProjectTasks(project); }} className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="font-bold text-slate-900 truncate">{project.name}</h2><p className="text-xs text-slate-500 mt-1">Ma: {project.code}</p></div><button type="button" onClick={(event) => { event.stopPropagation(); setProjectToDelete(project); }} className="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 flex items-center justify-center" title={TEXT.deleteProject} aria-label={TEXT.deleteProject}><span className="material-symbols-outlined text-[18px]">delete</span></button></div>
-                <div className="mt-4 space-y-2 text-sm"><div className="flex justify-between gap-3"><span className="text-slate-500">Client</span><span className="font-semibold text-slate-700 text-right">{project.client || '-'}</span></div><div className="flex justify-between gap-3"><span className="text-slate-500">Location</span><span className="font-semibold text-slate-700 text-right">{project.location || '-'}</span></div><div className="flex justify-between gap-3"><span className="text-slate-500">PM</span><span className="font-semibold text-slate-700 text-right">{project.managerName || '-'}</span></div><div className="flex justify-between gap-3"><span className="text-slate-500">Status</span><span className="font-semibold text-slate-700 text-right">{statusLabel[project.status]}</span></div></div>
-                <div className="mt-4"><div className="flex items-center justify-between text-xs font-bold text-slate-600"><span>Progress</span><span>{project.progress}%</span></div><div className="h-2 rounded-full bg-slate-100 overflow-hidden mt-2"><div className="h-full bg-primary" style={{ width: project.progress + '%' }} /></div><div className="flex justify-between text-xs text-slate-500 mt-2"><span>Done: {project.completedTasks}</span><span>Remain: {Math.max(0, project.totalTasks - project.completedTasks)}</span></div></div>
-              </article>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+            {enhancedProjects.map((project, idx) => {
+              const barColor = project.progress >= 100 ? 'bg-emerald-500'
+                : project.progress >= 60 ? 'bg-blue-500'
+                : project.progress >= 30 ? 'bg-amber-400' : 'bg-slate-300';
+              const statusCfg = project.status === 'completed'
+                ? { dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' }
+                : project.status === 'on_hold'
+                  ? { dot: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' }
+                  : { dot: 'bg-blue-500', text: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' };
+              return (
+                <div
+                  key={project.id}
+                  onClick={() => openProjectTasks(project)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter') openProjectTasks(project); }}
+                  className="group relative flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs hover:shadow-md hover:border-blue-300 cursor-pointer transition-all duration-200 overflow-hidden"
+                >
+                  {/* Top accent bar */}
+                  <div className={`h-1 w-full ${barColor}`} />
+
+                  <div className="flex flex-col gap-3 p-4 flex-1">
+                    {/* Header: số + tên */}
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-500 font-extrabold text-xs mt-0.5">
+                        {String(idx + 1).padStart(2, '0')}
+                      </div>
+                      <div className="flex-1 bg-blue-50 rounded-lg px-3 py-2">
+                        <p className="font-bold text-primary text-sm leading-snug line-clamp-2" title={project.name}>
+                          {project.name}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Badge trạng thái */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                        {statusLabel[project.status]}
+                      </span>
+                      {project.location && (
+                        <span className="text-[11px] text-slate-400 truncate">{project.location}</span>
+                      )}
+                    </div>
+
+                    {/* Chủ đầu tư */}
+                    {(project as any).client && (
+                      <p className="text-[11px] text-slate-500 truncate">
+                        <span className="font-semibold text-slate-400">CĐT: </span>
+                        {(project as any).client}
+                      </p>
+                    )}
+
+                    {/* Tiến độ */}
+                    <div className="mt-auto pt-1">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] text-slate-400">Tiến độ</span>
+                        <span className={`text-xs font-extrabold ${
+                          project.progress >= 100 ? 'text-emerald-600'
+                          : project.progress >= 60 ? 'text-blue-600'
+                          : project.progress > 0 ? 'text-amber-600' : 'text-slate-400'
+                        }`}>{project.progress}%</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-700 ${barColor}`}
+                          style={{ width: `${project.progress}%` }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nút xóa — hiện khi hover */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
+                    title={TEXT.deleteProject}
+                    className="absolute top-3 right-3 rounded-lg p-1 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition opacity-0 group-hover:opacity-100"
+                  >
+                    <span className="material-symbols-outlined text-base">delete</span>
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

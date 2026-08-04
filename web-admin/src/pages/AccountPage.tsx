@@ -5,10 +5,10 @@ export const AccountPage: React.FC = () => {
   const engineer = useRealtimeStore((state) => state.engineers[0]);
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
+    <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
       <section className="border-b border-slate-200 bg-white px-6 py-4 flex items-center gap-4">
         <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center"><span className="material-symbols-outlined text-xl">account_circle</span></div>
-        <div><h2 className="text-2xl font-extrabold text-slate-900">Tài khoản</h2></div>
+        <div><h2 className="page-title text-2xl font-extrabold text-slate-900">Tài khoản</h2></div>
       </section>
 
       <div className="p-6 space-y-4">

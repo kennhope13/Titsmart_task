@@ -118,7 +118,6 @@ export const DocumentTrackingPage: React.FC = () => {
             stt: String(row[0] || ''),
             contractNo: String(row[1] || ''),
             contractName: String(contractName),
-            projectCode: projectCode,
             company: String(row[4] || ''),
             receiverName: String(row[5] || ''),
             phone: String(row[6] || ''),
@@ -146,10 +145,20 @@ export const DocumentTrackingPage: React.FC = () => {
     reader.readAsBinaryString(file);
   };
 
-  const [activeFilterProj, setActiveFilterProj] = useState('all');
   const [activeFilterStatus, setActiveFilterStatus] = useState('all');
   const [activeFilterPayment, setActiveFilterPayment] = useState('all');
+  const [activeTab, setActiveTab] = useState<'overview' | 'delivery' | 'finance' | 'completion'>('overview');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+
+  const updateColumnFilter = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const clearColumnFilters = () => {
+    setColumnFilters({});
+  };
 
   // Modals state
   const [isNewDocOpen, setIsNewDocOpen] = useState(false);
@@ -160,15 +169,6 @@ export const DocumentTrackingPage: React.FC = () => {
     stt: '', contractNo: '', contractName: '', projectCode: 'NĂM CĂN', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: ''
   });
 
-  // Extract project options from data
-  const projectOptions = useMemo(() => {
-    const projs = new Set<string>();
-    documentTracks.forEach(d => {
-      if (d.projectCode) projs.add(d.projectCode);
-    });
-    return Array.from(projs);
-  }, [documentTracks]);
-
   // Extract status options from data
   const docStatusOptions = useMemo(() => {
     const statuses = new Set<string>();
@@ -178,23 +178,42 @@ export const DocumentTrackingPage: React.FC = () => {
     return Array.from(statuses);
   }, [documentTracks]);
 
+  const getSttNumber = (stt?: string) => {
+    const parsed = Number(String(stt || '').replace(/\D/g, ''));
+    return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+  };
+
   // Filtered tracks
   const filteredTracks = useMemo(() => {
     return documentTracks.filter(track => {
-      const matchProj = activeFilterProj === 'all' || track.projectCode === activeFilterProj;
       const matchStatus = activeFilterStatus === 'all' || track.docStatus === activeFilterStatus;
       const matchPayment = activeFilterPayment === 'all' || track.paymentStatus === activeFilterPayment;
-      
-      const query = searchTerm.trim().toLowerCase();
-      const matchSearch = !query || 
-        track.contractNo.toLowerCase().includes(query) ||
-        track.contractName.toLowerCase().includes(query) ||
-        track.company.toLowerCase().includes(query) ||
-        track.receiverName.toLowerCase().includes(query);
 
-      return matchProj && matchStatus && matchPayment && matchSearch;
+      const query = searchTerm.trim().toLowerCase();
+      const matchSearch = !query ||
+        (track.contractNo || '').toLowerCase().includes(query) ||
+        (track.contractName || '').toLowerCase().includes(query) ||
+        (track.company || '').toLowerCase().includes(query) ||
+        (track.receiverName || '').toLowerCase().includes(query);
+
+      const cf = columnFilters;
+      const matchColumn =
+        (!cf.contractNo || (track.contractNo || '').toLowerCase().includes((cf.contractNo || '').toLowerCase())) &&
+        (!cf.contractName || (track.contractName || '').toLowerCase().includes((cf.contractName || '').toLowerCase())) &&
+        (!cf.company || (track.company || '').toLowerCase().includes((cf.company || '').toLowerCase())) &&
+        (!cf.receiverName || (track.receiverName || '').toLowerCase().includes((cf.receiverName || '').toLowerCase())) &&
+        (!cf.phone || (track.phone || '').toLowerCase().includes((cf.phone || '').toLowerCase())) &&
+        (!cf.address || (track.address || '').toLowerCase().includes((cf.address || '').toLowerCase())) &&
+        (!cf.side || (track.side || '').toLowerCase().includes((cf.side || '').toLowerCase())) &&
+        (!cf.notes || (track.notes || '').toLowerCase().includes((cf.notes || '').toLowerCase()));
+
+      return matchStatus && matchPayment && matchSearch && matchColumn;
+    }).sort((a, b) => {
+      const sttDiff = getSttNumber(a.stt) - getSttNumber(b.stt);
+      if (sttDiff !== 0) return sttDiff;
+      return String(a.contractNo || '').localeCompare(String(b.contractNo || ''), 'vi');
     });
-  }, [documentTracks, activeFilterProj, activeFilterStatus, activeFilterPayment, searchTerm]);
+  }, [documentTracks, activeFilterStatus, activeFilterPayment, searchTerm, columnFilters]);
 
   // Computed summary metrics
   const summary = useMemo(() => {
@@ -218,7 +237,6 @@ export const DocumentTrackingPage: React.FC = () => {
       'STT': t.stt,
       'Số hợp đồng': t.contractNo,
       'Tên hợp đồng': t.contractName,
-      'Dự án': t.projectCode,
       'Công ty': t.company,
       'Người nhận': t.receiverName,
       'Số điện thoại': t.phone,
@@ -242,18 +260,15 @@ export const DocumentTrackingPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
+    <div className="doc-tracking-page flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
       
       {/* HEADER SECTION */}
-      <section className="border-b border-slate-200 bg-white px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 text-primary flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">drafts</span>
           </div>
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">Theo dõi Hồ sơ gửi đi</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">Quản lý giao nhận công văn, hợp đồng, chứng từ thanh toán tạm ứng và theo dõi công nợ</p>
-          </div>
+          <h1 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4">Theo dõi Hồ sơ gửi đi</h1>
         </div>
 
         <div className="flex gap-2">
@@ -283,72 +298,24 @@ export const DocumentTrackingPage: React.FC = () => {
             className="flex items-center gap-1 bg-primary text-white px-3 py-2 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
           >
             <span className="material-symbols-outlined text-sm">add</span>
-            Gửi Hồ Sơ Mới
+            Thêm hồ sơ mới
           </button>
         </div>
       </section>
 
-      <div className="p-6 space-y-4">
-      {/* METRICS ROW */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Tổng lượt gửi đi</span>
-            <span className="material-symbols-outlined text-lg text-blue-500 bg-blue-50 p-1.5 rounded-md">send</span>
-          </div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-2">{summary.totalCount} <span className="text-xs font-semibold text-slate-500">hồ sơ</span></div>
-          <div className="text-[10px] text-slate-500 mt-1">Lượt gửi hồ sơ đi các dự án</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Đã ký / Đã nhận đủ</span>
-            <span className="material-symbols-outlined text-lg text-emerald-500 bg-emerald-50 p-1.5 rounded-md">verified</span>
-          </div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-2">{summary.completedDocs} <span className="text-xs font-semibold text-slate-500">hồ sơ</span></div>
-          <div className="text-[10px] text-slate-500 mt-1">Đã ký kết hoặc chủ đầu tư nhận đủ</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Tổng giá trị HĐ</span>
-            <span className="material-symbols-outlined text-lg text-rose-500 bg-rose-50 p-1.5 rounded-md">currency_exchange</span>
-          </div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-2">{summary.totalContractVal.toLocaleString('vi-VN')} <span className="text-xs font-semibold text-slate-500">đ</span></div>
-          <div className="text-[10px] text-slate-500 mt-1">Tổng tiền của các hợp đồng đang theo dõi</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Tổng Tạm ứng</span>
-            <span className="material-symbols-outlined text-lg text-amber-500 bg-amber-50 p-1.5 rounded-md">account_balance</span>
-          </div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-2">{summary.totalPrepayVal.toLocaleString('vi-VN')} <span className="text-xs font-semibold text-slate-500">đ</span></div>
-          <div className="text-[10px] text-slate-500 mt-1">Số tiền tạm ứng theo DNTU</div>
-        </div>
-      </section>
-
+      <div className="p-0 space-y-0">
       {/* FILTER & SEARCH */}
-      <section className="bg-white border border-slate-200 rounded-xl shadow-xs p-4 flex flex-col xl:flex-row justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
+      <section className="bg-white border-y border-slate-200 rounded-none shadow-none px-2 py-2 flex flex-col xl:flex-row justify-between gapx-2 py-2">
+        <div className="flex flex-wrap items-center gapx-2 py-2">
           <input 
             value={searchTerm} 
             onChange={(e) => setSearchTerm(e.target.value)} 
             placeholder="Tìm theo số HĐ, tên HĐ, đối tác..." 
             className="w-80 max-w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white" 
           />
-
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase">Dự án:</span>
-            <select 
-              value={activeFilterProj} 
-              onChange={(e) => setActiveFilterProj(e.target.value)} 
-              className="border border-slate-200 px-2 py-1.5 rounded-md text-xs font-bold text-slate-700 focus:outline-none bg-white"
-            >
-              <option value="all">Tất cả dự án</option>
-              {projectOptions.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
+          {(searchTerm || Object.values(columnFilters).some(v => v)) && (
+            <button type="button" onClick={() => { setSearchTerm(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
+          )}
 
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-bold text-slate-400 uppercase">Tình trạng HĐ:</span>
@@ -377,97 +344,257 @@ export const DocumentTrackingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* TABLE */}
-      <section className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              <tr>
-                <th className="p-3.5 w-12 text-center">STT</th>
-                <th className="p-3.5 min-w-44">Hợp đồng</th>
-                <th className="p-3.5">Dự án</th>
-                <th className="p-3.5 min-w-44">Đối tác nhận</th>
-                <th className="p-3.5 text-center">Ngày gửi</th>
-                <th className="p-3.5 text-center">Ngày nhận</th>
-                <th className="p-3.5 text-center">Hồ sơ</th>
-                <th className="p-3.5 text-right">Giá trị HĐ (đ)</th>
-                <th className="p-3.5 text-right">Tạm ứng (đ)</th>
-                <th className="p-3.5 text-center">Thanh toán</th>
-                <th className="p-3.5 text-center">Hoàn tất</th>
-                <th className="p-3.5 text-center w-24">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-              {filteredTracks.map((track) => (
-                <tr 
-                  key={track.id} 
-                  className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer"
-                  onClick={() => setEditingDoc(track)}
+      {/* TABS & TABLE */}
+      <section className="bg-white border-y border-slate-200 rounded-none shadow-none overflow-hidden">
+          <div className="w-full flex items-center justify-between border-b border-slate-200 bg-white rounded-t-xl px-4 pt-1 shadow-xs border-x sticky top-0 z-10">
+            <div className="flex items-center gap-4">
+              {[
+              { id: 'overview', label: 'Tổng quan', icon: 'dashboard', count: filteredTracks.length },
+              { id: 'delivery', label: 'Giao nhận', icon: 'local_shipping', count: filteredTracks.filter(t => !t.receiveDate).length },
+              { id: 'finance', label: 'Tạm ứng - thanh toán', icon: 'payments', count: filteredTracks.filter(t => !t.paymentStatus?.includes('Đã')).length },
+              { id: 'completion', label: 'Hoàn tất - ghi chú', icon: 'task_alt', count: filteredTracks.filter(t => t.isCompleted).length },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                  className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${
+                    activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+                  }`}
                 >
-                  <td className="p-3.5 text-center font-bold text-slate-400">{track.stt || '-'}</td>
-                  <td className="p-3.5">
-                    <div className="font-extrabold text-slate-900 leading-snug">{track.contractName}</div>
-                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">{track.contractNo || 'Không số'}</div>
-                  </td>
-                  <td className="p-3.5 font-bold text-slate-700">{track.projectCode}</td>
-                  <td className="p-3.5">
-                    <div className="font-bold text-slate-800">{track.company}</div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">{track.receiverName} - {track.phone}</div>
-                    {track.address && <div className="text-[10px] text-slate-400 truncate max-w-xs">{track.address}</div>}
-                  </td>
-                  <td className="p-3.5 text-center">{track.sendDate}</td>
-                  <td className="p-3.5 text-center">{track.receiveDate || <span className="text-slate-300">Chưa nhận</span>}</td>
-                  <td className="p-3.5 text-center">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') 
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                    }`}>
-                      {track.docStatus || 'Chưa rõ'}
-                    </span>
-                  </td>
-                  <td className="p-3.5 text-right font-bold text-slate-950">{(track.contractValue || 0).toLocaleString('vi-VN')}</td>
-                  <td className="p-3.5 text-right text-rose-600">
-                    {(track.prepayAmount || 0).toLocaleString('vi-VN')}
-                    <div className="text-[9px] text-slate-400">({(track.prepayPercent || 0) * 100}%)</div>
-                  </td>
-                  <td className="p-3.5 text-center">
-                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                      track.paymentStatus?.includes('Đã') 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                        : 'bg-rose-50 text-rose-700 border-rose-200'
-                    }`}>
-                      {track.paymentStatus || 'Chưa thanh toán'}
-                    </span>
-                  </td>
-                  <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
-                    <button 
-                      onClick={() => updateDocumentTrack(track.id, { isCompleted: !track.isCompleted })}
-                      className={`inline-flex items-center justify-center w-6 h-6 rounded-lg ${
-                        track.isCompleted 
-                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' 
-                          : 'bg-slate-50 text-slate-300 border border-slate-200 hover:text-slate-500'
-                      }`}
-                      title={track.isCompleted ? 'Đánh dấu chưa hoàn tất' : 'Đánh dấu đã hoàn tất'}
-                    >
-                      <span className="material-symbols-outlined text-base">task_alt</span>
-                    </button>
-                  </td>
-                  <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
-                    <button 
-                      onClick={() => { if(window.confirm('Xóa thông tin theo dõi hồ sơ này?')) deleteDocumentTrack(track.id) }} 
-                      className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-base">delete</span>
-                    </button>
-                  </td>
-                </tr>
+                  <span className="material-symbols-outlined text-base leading-none">{tab.icon}</span>
+                  {tab.label}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${activeTab === tab.id ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-500'}`}>{tab.count}</span>
+                </button>
               ))}
-              {filteredTracks.length === 0 && (
-                <tr><td colSpan={12} className="p-8 text-center text-slate-400">Không có hồ sơ nào phù hợp bộ lọc tìm kiếm.</td></tr>
-              )}
-            </tbody>
-          </table>
+            </div>
+            <div className="text-[11px] font-bold text-slate-500 flex flex-wrap gap-2 py-2">
+              <span>{filteredTracks.length} hồ sơ</span>
+              <span>{summary.paidCount} đã thanh toán</span>
+              <span>{summary.totalPrepayVal.toLocaleString('vi-VN')} đ tạm ứng</span>
+            </div>
+          </div>
+
+        <div className="overflow-hidden custom-scrollbar">
+          {activeTab === 'overview' && (
+            <table className="doc-fit-table w-full table-fixed text-left border-collapse">
+              <colgroup>
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '28%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '11%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '7%' }} />
+                <col style={{ width: '5%' }} />
+              </colgroup>
+               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                 <tr>
+                   <th className="px-2 py-2 text-center">STT</th>
+                   <th className="px-2 py-2">Số hợp đồng</th>
+                   <th className="px-2 py-2">Tên hợp đồng</th>
+                   <th className="px-2 py-2">Công ty</th>
+                   <th className="px-2 py-2 text-center">Hồ sơ</th>
+                   <th className="px-2 py-2 text-center">Thanh toán</th>
+                   <th className="px-2 py-2 text-center">Hoàn tất</th>
+                   <th className="px-2 py-2 text-center">Xóa</th>
+                 </tr>
+               </thead>
+               <tfoot className="bg-slate-50/80 border-t border-slate-200">
+                 <tr>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"><input value={columnFilters.contractNo || ''} onChange={e => updateColumnFilter('contractNo', e.target.value)} placeholder="Số HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"><input value={columnFilters.contractName || ''} onChange={e => updateColumnFilter('contractName', e.target.value)} placeholder="Tên HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"><input value={columnFilters.company || ''} onChange={e => updateColumnFilter('company', e.target.value)} placeholder="Công ty..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"></td>
+                 </tr>
+               </tfoot>
+               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                {filteredTracks.map(track => (
+                  <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
+                    <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
+                    <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
+                    <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
+                    <td className="px-2 py-2 font-bold text-slate-800">{track.company || '-'}</td>
+                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
+                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.paymentStatus?.includes('Đã') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
+                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}><button onClick={() => updateDocumentTrack(track.id, { isCompleted: !track.isCompleted })} className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${track.isCompleted ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-300 border border-slate-200 hover:text-slate-500'}`}><span className="material-symbols-outlined text-base">task_alt</span></button></td>
+                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}><button onClick={() => { if(window.confirm('Xóa thông tin theo dõi hồ sơ này?')) deleteDocumentTrack(track.id) }} className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg"><span className="material-symbols-outlined text-base">delete</span></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {activeTab === 'delivery' && (
+            <table className="doc-fit-table w-full table-fixed text-left border-collapse">
+              <colgroup>
+                <col style={{ width: '4%' }} />
+                <col style={{ width: '11%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '9%' }} />
+                <col style={{ width: '8%' }} />
+              </colgroup>
+               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                 <tr>
+                   <th className="px-2 py-2 text-center">STT</th>
+                   <th className="px-2 py-2">Số hợp đồng</th>
+                   <th className="px-2 py-2">Công ty</th>
+                   <th className="px-2 py-2">Người nhận</th>
+                   <th className="px-2 py-2">SĐT</th>
+                   <th className="px-2 py-2">Địa chỉ</th>
+                   <th className="px-2 py-2 text-center">Ngày gửi</th>
+                   <th className="px-2 py-2 text-center">Ngày nhận</th>
+                   <th className="px-2 py-2 text-center">Trạng thái</th>
+                   <th className="px-2 py-2">Ghi chú</th>
+                 </tr>
+               </thead>
+               <tfoot className="bg-slate-50/80 border-t border-slate-200">
+                 <tr>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"><input value={columnFilters.contractNo || ''} onChange={e => updateColumnFilter('contractNo', e.target.value)} placeholder="Số HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"><input value={columnFilters.company || ''} onChange={e => updateColumnFilter('company', e.target.value)} placeholder="Công ty..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"><input value={columnFilters.receiverName || ''} onChange={e => updateColumnFilter('receiverName', e.target.value)} placeholder="Người nhận..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"><input value={columnFilters.phone || ''} onChange={e => updateColumnFilter('phone', e.target.value)} placeholder="SĐT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"><input value={columnFilters.address || ''} onChange={e => updateColumnFilter('address', e.target.value)} placeholder="Địa chỉ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                 </tr>
+               </tfoot>
+               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                {filteredTracks.map(track => (
+                  <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
+                    <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
+                    <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
+                    <td className="px-2 py-2 font-bold text-slate-800">{track.company || '-'}</td>
+                    <td className="px-2 py-2">{track.receiverName || '-'}</td>
+                    <td className="px-2 py-2 font-mono">{track.phone || '-'}</td>
+                    <td className="px-2 py-2 text-[11px] text-slate-500">{track.address || '-'}</td>
+                    <td className="px-2 py-2 text-center">{track.sendDate || '-'}</td>
+                    <td className="px-2 py-2 text-center">{track.receiveDate || <span className="text-slate-300">Chưa nhận</span>}</td>
+                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
+                    <td className="px-2 py-2 text-[11px] text-slate-500">{track.notes || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {activeTab === 'finance' && (
+            <table className="doc-fit-table w-full table-fixed text-left border-collapse">
+              <colgroup>
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '28%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '9%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '8%' }} />
+              </colgroup>
+               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                 <tr>
+                   <th className="px-2 py-2 text-center">STT</th>
+                   <th className="px-2 py-2">Số hợp đồng</th>
+                   <th className="px-2 py-2">Tên hợp đồng</th>
+                   <th className="px-2 py-2">Bên</th>
+                   <th className="px-2 py-2 text-right">Giá trị HĐ</th>
+                   <th className="px-2 py-2 text-right">% tạm ứng</th>
+                   <th className="px-2 py-2 text-right">Số tiền tạm ứng</th>
+                   <th className="px-2 py-2 text-center">Thanh toán</th>
+                 </tr>
+               </thead>
+               <tfoot className="bg-slate-50/80 border-t border-slate-200">
+                 <tr>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"><input value={columnFilters.contractNo || ''} onChange={e => updateColumnFilter('contractNo', e.target.value)} placeholder="Số HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"><input value={columnFilters.contractName || ''} onChange={e => updateColumnFilter('contractName', e.target.value)} placeholder="Tên HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"><input value={columnFilters.side || ''} onChange={e => updateColumnFilter('side', e.target.value)} placeholder="Bên..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"></td>
+                 </tr>
+               </tfoot>
+               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                {filteredTracks.map(track => (
+                  <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
+                    <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
+                    <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
+                    <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
+                    <td className="px-2 py-2">{track.side || '-'}</td>
+                    <td className="px-2 py-2 text-right font-bold text-slate-950">{(track.contractValue || 0).toLocaleString('vi-VN')}</td>
+                    <td className="px-2 py-2 text-right">{((track.prepayPercent || 0) * 100).toLocaleString('vi-VN')}%</td>
+                    <td className="px-2 py-2 text-right font-bold text-rose-600">{(track.prepayAmount || 0).toLocaleString('vi-VN')}</td>
+                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.paymentStatus?.includes('Đã') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {activeTab === 'completion' && (
+            <table className="doc-fit-table w-full table-fixed text-left border-collapse">
+              <colgroup>
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '27%' }} />
+                <col style={{ width: '11%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '23%' }} />
+              </colgroup>
+               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                 <tr>
+                   <th className="px-2 py-2 text-center">STT</th>
+                   <th className="px-2 py-2">Số hợp đồng</th>
+                   <th className="px-2 py-2">Tên hợp đồng</th>
+                   <th className="px-2 py-2 text-center">Hồ sơ</th>
+                   <th className="px-2 py-2 text-center">Thanh toán</th>
+                   <th className="px-2 py-2 text-center">Hoàn tất</th>
+                   <th className="px-2 py-2">Ghi chú</th>
+                 </tr>
+               </thead>
+               <tfoot className="bg-slate-50/80 border-t border-slate-200">
+                 <tr>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"><input value={columnFilters.contractNo || ''} onChange={e => updateColumnFilter('contractNo', e.target.value)} placeholder="Số HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"><input value={columnFilters.contractName || ''} onChange={e => updateColumnFilter('contractName', e.target.value)} placeholder="Tên HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"></td>
+                   <td className="px-1 py-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                 </tr>
+               </tfoot>
+               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                {filteredTracks.map(track => (
+                  <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
+                    <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
+                    <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
+                    <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
+                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
+                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.paymentStatus?.includes('Đã') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
+                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}><button onClick={() => updateDocumentTrack(track.id, { isCompleted: !track.isCompleted })} className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${track.isCompleted ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-300 border border-slate-200 hover:text-slate-500'}`}><span className="material-symbols-outlined text-base">task_alt</span></button></td>
+                    <td className="px-2 py-2 text-[11px] text-slate-500">{track.notes || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {filteredTracks.length === 0 && (
+            <div className="p-8 text-center text-xs text-slate-400">Không có hồ sơ nào phù hợp bộ lọc tìm kiếm.</div>
+          )}
         </div>
       </section>
       </div>
@@ -485,7 +612,6 @@ export const DocumentTrackingPage: React.FC = () => {
             stt: newDoc.stt || String(documentTracks.length + 1),
             contractNo: newDoc.contractNo || '',
             contractName: newDoc.contractName || '',
-            projectCode: newDoc.projectCode || 'KHÁC',
             company: newDoc.company || '',
             receiverName: newDoc.receiverName || '',
             phone: newDoc.phone || '',
@@ -504,34 +630,22 @@ export const DocumentTrackingPage: React.FC = () => {
           setIsNewDocOpen(false);
           setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: 'NĂM CĂN', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: ''});
         }} className="space-y-3 text-xs">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gapx-2 py-2">
             <div><label className="block font-bold mb-1">Mã/Số Hợp đồng</label><input type="text" value={newDoc.contractNo} onChange={(e) => setNewDoc({...newDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={newDoc.contractName} onChange={(e) => setNewDoc({...newDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block font-bold mb-1">Thuộc Dự án *</label>
-              <select value={newDoc.projectCode} onChange={(e) => setNewDoc({...newDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
-                <option value="NĂM CĂN">NĂM CĂN</option>
-                <option value="PHƯỚC LÝ">PHƯỚC LÝ</option>
-                <option value="PHƯỚC TÂN">PHƯỚC TÂN</option>
-                <option value="DAKRLAP">ĐẮK R'LẤP</option>
-                <option value="KHÁC">KHÁC</option>
-              </select>
-            </div>
             <div><label className="block font-bold mb-1">Công ty / Đối tác nhận *</label><input type="text" required value={newDoc.company} onChange={(e) => setNewDoc({...newDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gapx-2 py-2">
             <div><label className="block font-bold mb-1">Người nhận trực tiếp</label><input type="text" value={newDoc.receiverName} onChange={(e) => setNewDoc({...newDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">SĐT người nhận</label><input type="text" value={newDoc.phone} onChange={(e) => setNewDoc({...newDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Bên (Ví dụ: Bên trả)</label><input type="text" value={newDoc.side} onChange={(e) => setNewDoc({...newDoc, side: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           </div>
           <div><label className="block font-bold mb-1">Địa chỉ nhận hồ sơ</label><input type="text" value={newDoc.address} onChange={(e) => setNewDoc({...newDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gapx-2 py-2">
             <div><label className="block font-bold mb-1">Ngày gửi đi *</label><input type="date" required value={newDoc.sendDate} onChange={(e) => setNewDoc({...newDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Ngày đối tác nhận</label><input type="date" value={newDoc.receiveDate} onChange={(e) => setNewDoc({...newDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           </div>
-          <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
+          <div className="grid grid-cols-3 gapx-2 py-2 bg-slate-50 p-2 rounded-lg border">
             <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" value={newDoc.contractValue} onChange={(e) => setNewDoc({...newDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
             <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.05" min="0" max="1" value={newDoc.prepayPercent} onChange={(e) => setNewDoc({...newDoc, prepayPercent: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
@@ -542,7 +656,7 @@ export const DocumentTrackingPage: React.FC = () => {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gapx-2 py-2">
             <div>
               <label className="block font-bold mb-1">Trạng thái hồ sơ</label>
               <select value={newDoc.docStatus} onChange={(e) => setNewDoc({...newDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
@@ -555,7 +669,7 @@ export const DocumentTrackingPage: React.FC = () => {
             <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={newDoc.isCompleted} onChange={(e) => setNewDoc({...newDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
           </div>
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newDoc.notes} onChange={(e) => setNewDoc({...newDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewDocOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Gửi hồ sơ</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewDocOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Thêm hồ sơ mới</button></div>
         </form>
       </Modal>
 
@@ -574,34 +688,22 @@ export const DocumentTrackingPage: React.FC = () => {
             });
             setEditingDoc(null);
           }} className="space-y-3 text-xs">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gapx-2 py-2">
               <div><label className="block font-bold mb-1">Số HĐ</label><input type="text" value={editingDoc.contractNo} onChange={(e) => setEditingDoc({...editingDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={editingDoc.contractName} onChange={(e) => setEditingDoc({...editingDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block font-bold mb-1">Thuộc Dự án *</label>
-                <select value={editingDoc.projectCode} onChange={(e) => setEditingDoc({...editingDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
-                  <option value="NĂM CĂN">NĂM CĂN</option>
-                  <option value="PHƯỚC LÝ">PHƯỚC LÝ</option>
-                  <option value="PHƯỚC TÂN">PHƯỚC TÂN</option>
-                  <option value="DAKRLAP">ĐẮK R'LẤP</option>
-                  <option value="KHÁC">KHÁC</option>
-                </select>
-              </div>
               <div><label className="block font-bold mb-1">Công ty nhận *</label><input type="text" required value={editingDoc.company} onChange={(e) => setEditingDoc({...editingDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gapx-2 py-2">
               <div><label className="block font-bold mb-1">Người nhận</label><input type="text" value={editingDoc.receiverName} onChange={(e) => setEditingDoc({...editingDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">SĐT nhận</label><input type="text" value={editingDoc.phone} onChange={(e) => setEditingDoc({...editingDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Bên</label><input type="text" value={editingDoc.side} onChange={(e) => setEditingDoc({...editingDoc, side: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             </div>
             <div><label className="block font-bold mb-1">Địa chỉ</label><input type="text" value={editingDoc.address} onChange={(e) => setEditingDoc({...editingDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gapx-2 py-2">
               <div><label className="block font-bold mb-1">Ngày gửi *</label><input type="date" required value={editingDoc.sendDate} onChange={(e) => setEditingDoc({...editingDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Ngày nhận</label><input type="date" value={editingDoc.receiveDate || ''} onChange={(e) => setEditingDoc({...editingDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             </div>
-            <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
+            <div className="grid grid-cols-3 gapx-2 py-2 bg-slate-50 p-2 rounded-lg border">
               <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" value={editingDoc.contractValue} onChange={(e) => setEditingDoc({...editingDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
               <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.05" min="0" max="1" value={editingDoc.prepayPercent} onChange={(e) => setEditingDoc({...editingDoc, prepayPercent: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div>
@@ -612,7 +714,7 @@ export const DocumentTrackingPage: React.FC = () => {
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gapx-2 py-2">
               <div>
                 <label className="block font-bold mb-1">Trạng thái hồ sơ</label>
                 <select value={editingDoc.docStatus} onChange={(e) => setEditingDoc({...editingDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">

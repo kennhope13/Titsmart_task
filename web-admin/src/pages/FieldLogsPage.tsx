@@ -93,9 +93,9 @@ export const FieldLogsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-slate-100 min-h-screen relative max-w-2xl mx-auto border-x border-slate-200">
+    <div className="flex-1 bg-slate-100 min-h-full relative max-w-2xl mx-auto border-x border-slate-200 overflow-y-auto">
       <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-        <h1 className="text-lg font-bold text-slate-800">Nhật ký Công trình</h1>
+        <h1 className="page-title text-2xl font-extrabold text-slate-900">Nhật ký Công trình</h1>
       </header>
 
       <div className="p-4 pb-24 space-y-6">

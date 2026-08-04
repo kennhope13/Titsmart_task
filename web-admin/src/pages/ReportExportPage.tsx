@@ -13,6 +13,13 @@ export const ReportExportPage: React.FC = () => {
   const { tasks, engineers, updateTask, updateTaskProgress } = useRealtimeStore();
   const [activeTab, setActiveTab] = useState('pending');
   const [rejectReason, setRejectReason] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+  const updateColumnFilter = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }));
+  };
+  const clearColumnFilters = () => setColumnFilters({});
+
   const pureTasks = tasks.filter((task) => !task.isSectionHeader);
 
   const reportTasks = useMemo(() => {
@@ -27,6 +34,20 @@ export const ReportExportPage: React.FC = () => {
   const pending = pureTasks.filter((task) => task.issueStatus || (task.progress >= 0.9 && !task.isDone)).length;
   const late = pureTasks.filter((task) => task.issue && !(task.isDone || task.progress >= 1)).length;
   const attended = Math.min(engineers.length, Math.max(1, doing % (engineers.length || 1) + 1));
+
+  const filteredEngineers = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return engineers.map((engineer, index) => ({ ...engineer, code: `NV-${String(index + 1).padStart(3, '0')}` })).filter((eng) => {
+      const matchSearch = !q ||
+        (eng.name || '').toLowerCase().includes(q) ||
+        (eng.title || '').toLowerCase().includes(q);
+      const cf = columnFilters;
+      const matchColumn =
+        (!cf.name || (eng.name || '').toLowerCase().includes((cf.name || '').toLowerCase())) &&
+        (!cf.title || (eng.title || '').toLowerCase().includes((cf.title || '').toLowerCase()));
+      return matchSearch && matchColumn;
+    });
+  }, [engineers, searchTerm, columnFilters]);
 
   const approve = (id: string) => {
     updateTaskProgress(id, 1, true);
@@ -43,19 +64,19 @@ export const ReportExportPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
+    <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
       <section className="border-b border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center"><span className="material-symbols-outlined text-xl">analytics</span></div>
-          <div><h2 className="text-2xl font-extrabold text-slate-900">Báo cáo</h2></div>
+          <div><h2 className="page-title text-2xl font-extrabold text-slate-900">Báo cáo</h2></div>
         </div>
         <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold border border-amber-100 whitespace-nowrap">{pending} chờ duyệt</span>
       </section>
 
-      <div className="p-6 space-y-4">
-      <section className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-wrap gap-2">
-          {tabs.map((tab) => <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`px-3 py-1.5 rounded-full text-xs font-bold ${activeTab === tab.key ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{tab.label}</button>)}
+      <div className="px-0 pt-0 pb-4 space-y-0 w-full max-w-full overflow-hidden">
+      <section className="bg-white border-b border-r border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex flex-wrap gap-2 sticky top-0 z-10 bg-white">
+          {tabs.map((tab) => <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${activeTab === tab.key ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}>{tab.label}</button>)}
         </div>
 
         {['pending', 'approved', 'rejected'].includes(activeTab) && (
@@ -94,10 +115,24 @@ export const ReportExportPage: React.FC = () => {
 
         {activeTab === 'attendance' && (
           <div className="overflow-x-auto">
+            <div className="flex items-center gap-2 p-4 border-b border-slate-100 bg-white">
+              <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Tìm nhân viên..." className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
+              {(searchTerm || Object.values(columnFilters).some(v => v)) && (
+                <button type="button" onClick={() => { setSearchTerm(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
+              )}
+            </div>
             <table className="w-full text-xs">
               <thead className="bg-slate-50 text-slate-500 uppercase text-[11px]"><tr><th className="text-left p-3">Nhân viên</th><th className="text-left p-3">Mã NV</th><th className="text-left p-3">Vai trò</th><th className="text-left p-3">Điểm danh</th></tr></thead>
+              <tfoot className="bg-slate-50/80 border-t border-slate-200">
+                <tr>
+                  <td className="p-1"><input value={columnFilters.name || ''} onChange={e => updateColumnFilter('name', e.target.value)} placeholder="Nhân viên..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"></td>
+                  <td className="p-1"><input value={columnFilters.title || ''} onChange={e => updateColumnFilter('title', e.target.value)} placeholder="Vai trò..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                  <td className="p-1"></td>
+                </tr>
+              </tfoot>
               <tbody className="divide-y divide-slate-100">
-                {engineers.map((engineer, index) => <tr key={engineer.id} className="hover:bg-slate-50"><td className="p-3 font-extrabold text-slate-900">{engineer.name}</td><td className="p-3 font-mono font-bold text-primary">NV-{String(index + 1).padStart(3, '0')}</td><td className="p-3 text-slate-600 font-semibold">{engineer.title}</td><td className="p-3"><span className={`px-2 py-1 rounded-full text-[11px] font-bold ${index < attended ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{index < attended ? 'Đã điểm danh' : 'Chưa điểm danh'}</span></td></tr>)}
+                {filteredEngineers.map((engineer, index) => <tr key={engineer.id} className="hover:bg-slate-50"><td className="p-3 font-extrabold text-slate-900">{engineer.name}</td><td className="p-3 font-mono font-bold text-primary">{engineer.code}</td><td className="p-3 text-slate-600 font-semibold">{engineer.title}</td><td className="p-3"><span className={`px-2 py-1 rounded-full text-[11px] font-bold ${index < attended ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{index < attended ? 'Đã điểm danh' : 'Chưa điểm danh'}</span></td></tr>)}
               </tbody>
             </table>
           </div>

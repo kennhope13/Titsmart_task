@@ -17,17 +17,14 @@ export const ActivityLogPage: React.FC = () => {
   }, [activityLogs, searchTerm]);
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
+    <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
       {/* HEADER SECTION */}
-      <section className="border-b border-slate-200 bg-white px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 text-slate-700 flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">history</span>
           </div>
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">Nhật ký Hoạt động</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">Lịch sử ghi nhận thao tác chi tiết của các kỹ sư và hành động trên hệ thống theo thời gian thực</p>
-          </div>
+          <h1 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4">Nhật ký Hoạt động</h1>
         </div>
 
         {/* Search Input */}
@@ -38,7 +35,7 @@ export const ActivityLogPage: React.FC = () => {
             placeholder="Tìm kiếm hành động, dự án, người dùng..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-slate-50/50"
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white"
           />
         </div>
       </section>
