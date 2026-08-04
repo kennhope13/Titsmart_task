@@ -6,7 +6,7 @@ export const Sidebar: React.FC = () => {
   const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
   const [showNotifPopover, setShowNotifPopover] = useState(false);
   const unreadCount = notifications.filter((item) => !item.read).length;
-  
+
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   const toggleGroup = (title: string) => {
@@ -27,10 +27,10 @@ export const Sidebar: React.FC = () => {
     {
       title: 'Quản lý dự án',
       items: [
-        { label: 'Danh s\u00e1ch D\u1ef1 \u00e1n', path: '/projects', icon: 'domain' },
-        { label: 'K\u1ebf ho\u1ea1ch & Chi ph\u00ed', path: '/cost-plan', icon: 'request_quote' },
-        { label: 'Nh\u1eadt k\u00fd Hi\u1ec7n tr\u01b0\u1eddng', path: '/field-logs', icon: 'photo_camera' },
-        { label: 'Theo d\u00f5i H\u1ed3 s\u01a1', path: '/document-tracking', icon: 'drafts' },
+        { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
+        { label: 'Kế hoạch & Chi phí', path: '/cost-plan', icon: 'request_quote' },
+        { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
+        { label: 'Theo dõi Hồ sơ', path: '/document-tracking', icon: 'drafts' },
       ]
     },
     {
@@ -47,12 +47,7 @@ export const Sidebar: React.FC = () => {
         { label: 'Báo cáo', path: '/reports', icon: 'analytics' },
       ]
     },
-    {
-      title: 'Cá nhân',
-      items: [
-        { label: 'Tài khoản', path: '/account', icon: 'account_circle' },
-      ]
-    }
+
   ];
 
   return (
@@ -67,7 +62,7 @@ export const Sidebar: React.FC = () => {
             <p className="text-[10px] text-slate-500 font-medium">Project Manager</p>
           </div>
         </div>
-        
+
         <div className="relative">
           <button
             onClick={() => setShowNotifPopover(!showNotifPopover)}
@@ -78,7 +73,7 @@ export const Sidebar: React.FC = () => {
               <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
             )}
           </button>
-          
+
           {showNotifPopover && (
             <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50">
               <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -90,7 +85,7 @@ export const Sidebar: React.FC = () => {
                   <div className="p-6 text-center text-slate-500 text-xs">Không có thông báo nào</div>
                 ) : (
                   notifications.map(notification => (
-                    <div 
+                    <div
                       key={notification.id}
                       onClick={() => markNotificationRead(notification.id)}
                       className={`p-3 text-xs hover:bg-slate-50 cursor-pointer flex gap-3 ${!notification.read ? 'bg-blue-50/50 font-medium' : 'opacity-70'}`}
@@ -115,7 +110,7 @@ export const Sidebar: React.FC = () => {
       <nav className="flex-1 px-3 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">
         {navGroups.map((group) => (
           <div key={group.title} className="space-y-1">
-            <div 
+            <div
               className={`flex items-center justify-between px-3 mb-2 select-none ${group.collapsible !== false ? 'cursor-pointer group' : ''}`}
               onClick={() => group.collapsible !== false && toggleGroup(group.title)}
             >
@@ -126,7 +121,7 @@ export const Sidebar: React.FC = () => {
                 </span>
               )}
             </div>
-            
+
             <div className={`space-y-1 overflow-hidden transition-all duration-200 ${group.collapsible !== false && collapsedGroups[group.title] ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'}`}>
               {group.items.map((item) => (
                 <NavLink
@@ -150,27 +145,28 @@ export const Sidebar: React.FC = () => {
         ))}
       </nav>
 
-      <div className="p-3 border-t border-slate-100 space-y-2">
-        <a
-          href="#settings"
-          onClick={(event) => event.preventDefault()}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-colors"
+      <div className="p-3 border-t border-slate-100">
+        <NavLink
+          to="/account"
+          className={({ isActive }) =>
+            `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all ${
+              isActive
+                ? 'bg-blue-50 ring-1 ring-blue-100'
+                : 'hover:bg-slate-50'
+            }`
+          }
         >
-          <span className="material-symbols-outlined text-base">settings</span>
-          <span>Cài đặt</span>
-        </a>
-
-        <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-slate-50 border border-slate-100">
           <img
             src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80"
             alt="Avatar quản lý"
-            className="w-8 h-8 rounded-full object-cover border border-slate-200"
+            className="w-8 h-8 rounded-full object-cover border border-slate-200 flex-shrink-0"
           />
-          <div className="min-w-0 leading-tight">
+          <div className="min-w-0 leading-tight flex-1">
             <span className="block font-bold text-xs text-slate-800 truncate">Admin</span>
             <span className="block text-[10px] text-slate-500 truncate">Quản trị viên</span>
           </div>
-        </div>
+          <span className="material-symbols-outlined text-base text-slate-400 flex-shrink-0">settings</span>
+        </NavLink>
       </div>
     </aside>
   );

@@ -1,14 +1,14 @@
-﻿import React from 'react';
+import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { BriefcaseBusiness, LayoutDashboard, MoreHorizontal, Package, ScanText } from 'lucide-react-native';
+import { ClipboardList, LayoutDashboard, MoreHorizontal, Package, ScanText, BriefcaseBusiness } from 'lucide-react-native';
 import { colors } from '../theme';
 
 export type RootTabParamList = {
   DashboardTab: undefined;
   ProjectsTab: undefined;
+  TasksTab: undefined;
   MaterialsTab: undefined;
-  Ocr: undefined;
   More: undefined;
 };
 
@@ -48,8 +48,8 @@ const iconFor = (routeName: keyof RootTabParamList, color: string, size: number)
   const props = { color, size, strokeWidth: 2.3 };
   if (routeName === 'DashboardTab') return <LayoutDashboard {...props} />;
   if (routeName === 'ProjectsTab') return <BriefcaseBusiness {...props} />;
+  if (routeName === 'TasksTab') return <ClipboardList {...props} />;
   if (routeName === 'MaterialsTab') return <Package {...props} />;
-  if (routeName === 'Ocr') return <ScanText {...props} />;
   return <MoreHorizontal {...props} />;
 };
 
@@ -67,11 +67,11 @@ export const TabNavigator = () => (
       tabBarStyle: { borderTopWidth: 1, borderTopColor: colors.slate[200], backgroundColor: colors.white, height: 64, paddingBottom: 7, paddingTop: 5 },
     })}
   >
-    <Tab.Screen name="DashboardTab" component={DashboardScreen} options={{ title: 'Tong quan' }} />
-    <Tab.Screen name="ProjectsTab" component={ProjectManagementScreen} options={{ title: 'Du an' }} />
-    <Tab.Screen name="MaterialsTab" component={MaterialTrackingScreen} options={{ title: 'Vat tu' }} />
-    <Tab.Screen name="Ocr" component={OcrScannerScreen} options={{ title: 'OCR' }} />
-    <Tab.Screen name="More" component={MoreScreen} options={{ title: 'Them' }} />
+    <Tab.Screen name="DashboardTab" component={DashboardScreen} options={{ title: 'Tổng quan' }} />
+    <Tab.Screen name="ProjectsTab" component={ProjectManagementScreen} options={{ title: 'Dự án' }} />
+    <Tab.Screen name="TasksTab" component={TaskManagementScreen} options={{ title: 'Công việc' }} />
+    <Tab.Screen name="MaterialsTab" component={MaterialTrackingScreen} options={{ title: 'Vật tư' }} />
+    <Tab.Screen name="More" component={MoreScreen} options={{ title: 'Thêm' }} />
   </Tab.Navigator>
 );
 

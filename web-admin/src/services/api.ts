@@ -9,6 +9,8 @@ const sanitizeTaskPayload = (data: any) => {
   const payload = { ...data };
   if ('assignedEngineerId' in payload) payload.assignedEngineerId = cleanUuid(payload.assignedEngineerId);
   if ('assigned_engineer_id' in payload) payload.assigned_engineer_id = cleanUuid(payload.assigned_engineer_id);
+  if ('parentId' in payload) payload.parentId = cleanUuid(payload.parentId);
+  if ('parent_id' in payload) payload.parent_id = cleanUuid(payload.parent_id);
   return payload;
 };
 
@@ -41,6 +43,12 @@ export const api = {
       const url = projectId ? `${API_URL}/materials?projectId=${projectId}` : `${API_URL}/materials`;
       return (await axios.get(url)).data;
     },
+    getTransactions: async () => {
+      return (await axios.get(`${API_URL}/materials/transactions`)).data;
+    },
+    createTransaction: async (data: any) => {
+      return (await axios.post(`${API_URL}/materials/transactions`, data)).data;
+    },
   },
   issues: {
     getAll: async (projectId?: string) => {
@@ -53,6 +61,8 @@ export const api = {
   },
   activityLogs: {
     getAll: async () => (await axios.get(`${API_URL}/activity-logs`)).data,
+    create: async (data: { user?: string; action: string; project?: string; icon?: string; badgeBg?: string; iconColor?: string }) =>
+      (await axios.post(`${API_URL}/activity-logs`, data)).data,
   },
   fieldLogs: {
     getAll: async () => {

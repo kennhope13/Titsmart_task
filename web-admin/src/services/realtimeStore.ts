@@ -48,7 +48,7 @@ const mergeMaterialsWithSeed = (materials: Material[], projectId?: string) => {
 const isRomanOrSection = (stt: string, volume: number, unit: string) => {
   if (!stt) return volume === 0 && !unit;
   const clean = stt.trim().toUpperCase();
-  const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|Má»¤C\s+[A-Z0-9]+|[A-Z]{1,2})$/;
+  const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/;
   return romanRegex.test(clean) || (volume === 0 && (!unit || unit.trim() === ''));
 };
 
@@ -293,7 +293,7 @@ const mergeInventoryTransactionIntoState = (
     materialName: txMaterial.name,
     category: txMaterial.category || newTransaction.category || '',
     specs: txMaterial.specs || txMaterial.englishName || newTransaction.specs || '',
-    unit: txMaterial.unit || newTransaction.unit || 'C?i',
+    unit: txMaterial.unit || newTransaction.unit || 'Cái',
   } : newTransaction;
 
   return {
@@ -519,7 +519,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity('ÄÃ£ táº¡o thá»§ cÃ´ng háº¡ng má»¥c cÃ´ng viá»‡c: ' + createdTask.name, createdTask.projectName || createdTask.projectCode);
+        get().logActivity('Đã tạo thủ công hạng mục công việc: ' + createdTask.name, createdTask.projectName || createdTask.projectCode);
       } catch (e) {
         console.error('Failed to add task', e);
       }
@@ -535,9 +535,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const nextNotifs: NotificationItem[] = [
             {
               id: 'notif-' + Date.now(),
-              title: 'Import Excel thÃ nh cÃ´ng',
-              message: `ÄÃ£ náº¡p ${createdTasks.length} háº¡ng má»¥c tá»« tá»‡p Excel.`,
-              timestamp: 'Vá»«a xong',
+              title: 'Import Excel thành công',
+              message: `Đã nạp ${createdTasks.length} hạng mục từ tập Excel.`,
+              timestamp: 'Vừa xong',
               read: false,
               type: 'system',
               icon: 'file_upload',
@@ -548,7 +548,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { tasks: nextTasks, projects: nextProjects, notifications: nextNotifs };
         });
         if (createdTasks.length > 0) {
-          get().logActivity(`ÄÃ£ nháº­p kháº©u ${createdTasks.length} háº¡ng má»¥c cÃ´ng viá»‡c tá»« file Excel`, createdTasks[0].projectName || 'Tiáº¿n Ä‘á»™', 'Excel Sync');
+          get().logActivity(`Đã nhập khẩu ${createdTasks.length} hạng mục công việc từ file Excel`, createdTasks[0].projectName || 'Tiến độ', 'Excel Sync');
         }
       } catch (e) {
         console.error('Failed to add tasks batch', e);
@@ -564,7 +564,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity('ÄÃ£ chá»‰nh sá»­a thÃ´ng tin cÃ´ng viá»‡c: ' + updatedTask.name, updatedTask.projectName || updatedTask.projectCode);
+        get().logActivity('Đã chỉnh sửa thông tin công việc: ' + updatedTask.name, updatedTask.projectName || updatedTask.projectCode);
       } catch (e) {
         console.error('Failed to update task', e);
       }
@@ -583,7 +583,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity(`ÄÃ£ cáº­p nháº­t tiáº¿n Ä‘á»™ thi cÃ´ng thÃ nh ${Math.round(progress * 100)}%`, updatedTask.projectName || updatedTask.projectCode);
+        get().logActivity(`Đã cập nhật tiến độ thi công thành ${Math.round(progress * 100)}%`, updatedTask.projectName || updatedTask.projectCode);
       } catch (e) {
         console.error('Failed to update task progress', e);
       }
@@ -598,9 +598,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const nextTasks = state.tasks.map((t) => (t.id === taskId ? updatedTask : t));
           const newNotif: NotificationItem = {
             id: 'notif-assign-' + Date.now(),
-            title: 'PhÃ¢n cÃ´ng nhÃ¢n sá»±',
-            message: `ÄÃ£ giao háº¡ng má»¥c "${updatedTask.name}" cho ${engineerName}.`,
-            timestamp: 'Vá»«a xong',
+              title: 'Phân công nhân sự',
+              message: `Đã giao hạng mục "${updatedTask.name}" cho ${engineerName}.`,
+              timestamp: 'Vừa xong',
             read: false,
             type: 'task_assigned',
             icon: 'person_add',
@@ -641,7 +641,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { tasks: nextTasks, projects: nextProjects };
         });
         if (taskToDelete) {
-          get().logActivity('ÄÃ£ xÃ³a cÃ´ng viá»‡c: ' + taskToDelete.name, taskToDelete.projectName || taskToDelete.projectCode);
+          get().logActivity('Đã xóa công việc: ' + taskToDelete.name, taskToDelete.projectName || taskToDelete.projectCode);
         }
       } catch (e) {
         console.error('Failed to delete task', e);
@@ -795,7 +795,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
                 {
                   id: 'tl-' + Date.now(),
                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                  author: 'Ban Quáº£n LÃ½ Dá»± Ãn',
+                  author: 'Ban Quản Lý Dự Án',
                   message: directive,
                 },
                 ...i.timelineLogs,
@@ -1096,31 +1096,51 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
-    logActivity: (action, project, user = 'Ká»¹ sÆ° Nam') => {
+    logActivity: (action, project, user = 'Kỹ sư Nam') => {
+      const icon = action.toLowerCase().includes('tiến độ') ? 'trending_up' :
+            action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'payments' :
+            action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'warehouse' :
+            action.toLowerCase().includes('hồ sơ') ? 'drafts' : 'history';
+      const badgeBg = action.toLowerCase().includes('tiến độ') ? 'bg-blue-50' :
+                 action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'bg-emerald-50' :
+                 action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'bg-amber-50' :
+                 action.toLowerCase().includes('hồ sơ') ? 'bg-violet-50' : 'bg-slate-50';
+      const iconColor = action.toLowerCase().includes('tiến độ') ? 'text-blue-500' :
+                   action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'text-emerald-500' :
+                   action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'text-amber-500' :
+                   action.toLowerCase().includes('hồ sơ') ? 'text-violet-500' : 'text-slate-500';
+
+      // Optimistic update local state ngay lập tức
       set((state) => {
-        const newLog: ActivityLog = {
+        const optimisticLog: ActivityLog = {
           id: 'act-' + Date.now() + '-' + Math.floor(Math.random() * 100),
           user,
           action,
           project,
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('vi-VN'),
-          icon: action.toLowerCase().includes('tiáº¿n Ä‘á»™') ? 'trending_up' :
-                action.toLowerCase().includes('chi') || action.toLowerCase().includes('lÆ°Æ¡ng') || action.toLowerCase().includes('há»£p Ä‘á»“ng') ? 'payments' :
-                action.toLowerCase().includes('kho') || action.toLowerCase().includes('váº­t tÆ°') ? 'warehouse' :
-                action.toLowerCase().includes('há»“ sÆ¡') ? 'drafts' : 'history',
-          badgeBg: action.toLowerCase().includes('tiáº¿n Ä‘á»™') ? 'bg-blue-50' :
-                   action.toLowerCase().includes('chi') || action.toLowerCase().includes('lÆ°Æ¡ng') || action.toLowerCase().includes('há»£p Ä‘á»“ng') ? 'bg-emerald-50' :
-                   action.toLowerCase().includes('kho') || action.toLowerCase().includes('váº­t tÆ°') ? 'bg-amber-50' :
-                   action.toLowerCase().includes('há»“ sÆ¡') ? 'bg-violet-50' : 'bg-slate-50',
-          iconColor: action.toLowerCase().includes('tiáº¿n Ä‘á»™') ? 'text-blue-500' :
-                     action.toLowerCase().includes('chi') || action.toLowerCase().includes('lÆ°Æ¡ng') || action.toLowerCase().includes('há»£p Ä‘á»“ng') ? 'text-emerald-500' :
-                     action.toLowerCase().includes('kho') || action.toLowerCase().includes('váº­t tÆ°') ? 'text-amber-500' :
-                     action.toLowerCase().includes('há»“ sÆ¡') ? 'text-violet-500' : 'text-slate-500',
+          icon,
+          badgeBg,
+          iconColor,
         };
-        const nextLogs = [newLog, ...state.activityLogs].slice(0, 100);
+        const nextLogs = [optimisticLog, ...state.activityLogs].slice(0, 100);
         persistAndNotify({ activityLogs: nextLogs });
         return { activityLogs: nextLogs };
       });
+
+      // Lưu vào DB không đồng bộ (fire-and-forget)
+      api.activityLogs.create({ user, action, project, icon, badgeBg, iconColor })
+        .then((saved) => {
+          // Thay thế bản optimistic bằng bản từ DB (có ID thật)
+          set((state) => {
+            const nextLogs = state.activityLogs.map((l) =>
+              l.action === action && l.user === user && l.id.startsWith('act-')
+                ? { ...l, id: saved.id, timestamp: saved.timestamp }
+                : l
+            );
+            return { activityLogs: nextLogs };
+          });
+        })
+        .catch((e) => console.warn('logActivity: failed to persist to DB', e));
     },
   };
 });

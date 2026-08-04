@@ -16,6 +16,7 @@ export const TaskFormScreen = ({ route }: any) => {
   const defaultProject = projects[0];
   const defaultEngineer = engineers[0];
   const ocrDraft = route?.params?.ocrDraft || {};
+  
   const [name, setName] = useState(ocrDraft.name || '');
   const [description, setDescription] = useState(ocrDraft.description || '');
   const [location, setLocation] = useState(ocrDraft.location || defaultProject?.location || '');
@@ -24,6 +25,7 @@ export const TaskFormScreen = ({ route }: any) => {
   const [assigneeId, setAssigneeId] = useState(defaultEngineer?.id || '');
   const [priority, setPriority] = useState<typeof priorities[number]>('Medium');
   const [notes, setNotes] = useState(ocrDraft.notes || '');
+  
   const assignee = useMemo(() => engineers.find((item) => item.id === assigneeId) || defaultEngineer, [engineers, assigneeId]);
 
   const save = (draft: boolean) => {
@@ -55,45 +57,77 @@ export const TaskFormScreen = ({ route }: any) => {
       priority,
       createdAt: new Date().toISOString(),
     });
-    Alert.alert(draft ? 'Đã lưu nháp' : 'Đã giao việc', draft ? 'Công việc được lưu để hoàn thiện sau.' : `Đã giao cho ${assignee?.name || 'nhân viên'}.`, [{ text: 'OK', onPress: () => navigation.goBack() }]);
+    Alert.alert(
+      draft ? 'Đã lưu nháp' : 'Đã giao việc',
+      draft ? 'Công việc được lưu để hoàn thiện sau.' : `Đã giao cho ${assignee?.name || 'nhân viên'}.`,
+      [{ text: 'OK', onPress: () => navigation.goBack() }]
+    );
   };
 
   return (
     <Screen>
       <ScreenHeader
-        icon={<ClipboardPlus size={21} color={colors.primary} />}
+        icon={<ClipboardPlusIcon size={21} color={colors.primary} />}
         title={mode}
         subtitle="Nhập các thông tin cần thiết"
-        action={<Pressable onPress={() => navigation.goBack()} style={styles.backButton}><ArrowLeft size={20} color={colors.slate[700]} /></Pressable>}
+        action={
+          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+            <ArrowLeft size={20} color={colors.slate[700]} />
+          </Pressable>
+        }
       />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <SectionTitle title="Thông tin công việc" />
         <Card style={styles.formCard}>
-          <Field label="Tên công việc *" value={name} onChangeText={setName} placeholder="Ví dụ: Kiểm tra khối lượng thi công" />
-          <Field label="Mô tả" value={description} onChangeText={setDescription} placeholder="Yêu cầu và phạm vi thực hiện" multiline />
-          <Field label="Địa điểm" value={location} onChangeText={setLocation} placeholder="Khu vực thi công" />
+          <Field label="Tên công việc *" value={name} onChangeText={setName} placeholder="Ví dụ: Kiểm tra cốt thép móng" />
+          <Field label="Mô tả" value={description} onChangeText={setDescription} placeholder="Nhập chi tiết yêu cầu công việc..." multiline />
+          <Field label="Địa điểm" value={location} onChangeText={setLocation} placeholder="Nhập khu vực, tầng, phân khu..." />
           <View style={styles.twoColumns}>
             <View style={{ flex: 1 }}><Field label="Hạn hoàn thành" value={dueDate} onChangeText={setDueDate} placeholder="DD/MM/YYYY" /></View>
-            <View style={{ flex: 1 }}><Field label="Đội/Nhóm" value={team} onChangeText={setTeam} placeholder="Đội thi công" /></View>
+            <View style={{ flex: 1 }}><Field label="Đội / Nhóm" value={team} onChangeText={setTeam} placeholder="Đội thi công" /></View>
           </View>
         </Card>
 
-        <SectionTitle title="Phân công" />
+        <SectionTitle title="Phân công thực hiện" />
         <Card style={styles.formCard}>
-          <AppText style={styles.label}>Người thực hiện</AppText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choiceRow}>
-            {engineers.map((item) => <Choice key={item.id} label={item.name} active={assigneeId === item.id} onPress={() => setAssigneeId(item.id)} />)}
+          <AppText style={styles.label}>Người thực hiện *</AppText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choiceRow} keyboardShouldPersistTaps="handled">
+            {engineers.map((item) => (
+              <Choice key={item.id} label={item.name} active={assigneeId === item.id} onPress={() => setAssigneeId(item.id)} />
+            ))}
           </ScrollView>
+          
           <AppText style={styles.label}>Mức độ ưu tiên</AppText>
           <View style={styles.priorityRow}>
-            {priorities.map((item) => <Choice key={item} label={priorityLabels[item]} active={priority === item} onPress={() => setPriority(item)} grow />)}
+            {priorities.map((item) => (
+              <Choice key={item} label={priorityLabels[item]} active={priority === item} onPress={() => setPriority(item)} grow />
+            ))}
           </View>
-          <Field label="Ghi chú thêm" value={notes} onChangeText={setNotes} placeholder="Thông tin bổ sung cho người thực hiện" multiline />
+          
+          <Field label="Ghi chú thêm" value={notes} onChangeText={setNotes} placeholder="Tài liệu đính kèm hoặc lưu ý đặc biệt..." multiline />
         </Card>
 
         <View style={styles.actions}>
-          <Pressable onPress={() => save(true)} style={styles.draftButton}><Save size={16} color={colors.slate[700]} /><AppText style={styles.draftText}>Lưu nháp</AppText></Pressable>
-          <Pressable onPress={() => save(false)} style={styles.submitButton}><Send size={16} color={colors.white} /><AppText style={styles.submitText}>Giao việc</AppText></Pressable>
+          <Pressable
+            onPress={() => save(true)}
+            style={({ pressed }) => [
+              styles.draftButton,
+              pressed && { transform: [{ scale: 0.98 }], opacity: 0.9 }
+            ]}
+          >
+            <Save size={16} color={colors.slate[700]} />
+            <AppText style={styles.draftText}>Lưu nháp</AppText>
+          </Pressable>
+          <Pressable
+            onPress={() => save(false)}
+            style={({ pressed }) => [
+              styles.submitButton,
+              pressed && { transform: [{ scale: 0.98 }], opacity: 0.9 }
+            ]}
+          >
+            <Send size={16} color={colors.white} />
+            <AppText style={styles.submitText}>Giao việc</AppText>
+          </Pressable>
         </View>
       </ScrollView>
     </Screen>
@@ -103,30 +137,53 @@ export const TaskFormScreen = ({ route }: any) => {
 const Field = ({ label, value, onChangeText, placeholder, multiline }: any) => (
   <View style={styles.field}>
     <AppText style={styles.label}>{label}</AppText>
-    <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={colors.slate[400]} multiline={multiline} style={[styles.input, multiline ? styles.multiline : undefined]} />
+    <TextInput
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor={colors.slate[400]}
+      multiline={multiline}
+      style={[styles.input, multiline ? styles.multiline : undefined]}
+    />
   </View>
 );
 
 const Choice = ({ label, active, onPress, grow }: { label: string; active: boolean; onPress: () => void; grow?: boolean }) => (
-  <Pressable onPress={onPress} style={[styles.choice, grow ? styles.choiceGrow : undefined, active ? styles.choiceActive : undefined]}>
-    <AppText style={[styles.choiceText, active ? styles.choiceTextActive : undefined]} numberOfLines={1}>{label}</AppText>
+  <Pressable
+    onPress={onPress}
+    style={({ pressed }) => [
+      styles.choice,
+      grow ? styles.choiceGrow : undefined,
+      active ? styles.choiceActive : undefined,
+      pressed && { opacity: 0.95 }
+    ]}
+  >
+    <AppText style={[styles.choiceText, active ? styles.choiceTextActive : undefined]} numberOfLines={1}>
+      {label}
+    </AppText>
   </Pressable>
+);
+
+const ClipboardPlusIcon = ({ size, color }: { size: number; color: string }) => (
+  <View style={{ transform: [{ scale: 1 }] }}>
+    <ClipboardPlus size={size} color={color} />
+  </View>
 );
 
 const styles = StyleSheet.create({
   content: { paddingBottom: 28 },
   backButton: { width: 40, height: 40, borderRadius: 10, borderWidth: 1, borderColor: colors.slate[200], alignItems: 'center', justifyContent: 'center' },
-  formCard: { marginHorizontal: 16, gap: 13 },
+  formCard: { marginHorizontal: 16, gap: 14, backgroundColor: colors.white },
   field: { gap: 6 },
-  label: { fontSize: 12, fontWeight: '700', color: colors.slate[700] },
-  input: { minHeight: 43, borderRadius: 9, borderWidth: 1, borderColor: colors.slate[200], backgroundColor: colors.slate[50], paddingHorizontal: 12, color: colors.slate[800], fontSize: 13 },
+  label: { fontSize: 12, fontWeight: '800', color: colors.slate[700] },
+  input: { minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: colors.slate[200], backgroundColor: colors.slate[50], paddingHorizontal: 12, color: colors.slate[800], fontSize: 13, fontWeight: '500' },
   multiline: { minHeight: 78, paddingTop: 11, textAlignVertical: 'top' },
   twoColumns: { flexDirection: 'row', gap: 10 },
-  choiceRow: { gap: 8 },
+  choiceRow: { gap: 8, paddingVertical: 2 },
   priorityRow: { flexDirection: 'row', gap: 8 },
-  choice: { maxWidth: 180, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 9, backgroundColor: colors.slate[100] },
-  choiceGrow: { flex: 1, alignItems: 'center' },
-  choiceActive: { backgroundColor: colors.primary },
+  choice: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.slate[100], borderWidth: 1, borderColor: colors.slate[200], minWidth: 70, alignItems: 'center' },
+  choiceGrow: { flex: 1 },
+  choiceActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   choiceText: { fontSize: 12, fontWeight: '700', color: colors.slate[600] },
   choiceTextActive: { color: colors.white },
   actions: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 18 },

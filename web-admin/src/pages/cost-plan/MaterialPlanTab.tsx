@@ -45,21 +45,7 @@ const showProgress = (value?: string) => {
   return value;
 };
 
-const compareStt = (a?: string, b?: string) => {
-  if (!a && !b) return 0;
-  if (!a) return 1;
-  if (!b) return -1;
-  const aStr = a.toString().trim();
-  const bStr = b.toString().trim();
-  const aParts = aStr.split('.').map(p => parseInt(p, 10));
-  const bParts = bStr.split('.').map(p => parseInt(p, 10));
-  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-    const aVal = aParts[i] ?? -1;
-    const bVal = bParts[i] ?? -1;
-    if (aVal !== bVal) return aVal - bVal;
-  }
-  return aStr.localeCompare(bStr, 'vi', { numeric: true, sensitivity: 'base' });
-};
+
 
 const yesNo = (value?: boolean) => value ? 'Có' : '';
 
@@ -73,22 +59,91 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
   const updateColumnFilter = (key: string, value: string) => setColumnFilters(prev => ({ ...prev, [key]: value }));
   const clearColumnFilters = () => setColumnFilters({});
 
-  const filteredData = useMemo(() => {
-    return data.filter((plan) => {
-      const q = (searchQuery || '').trim().toLowerCase();
-      const matchSearch = !q ||
-        (plan.jobContent || '').toLowerCase().includes(q) ||
-        (plan.techSpecModel || '').toLowerCase().includes(q) ||
-        (plan.notes || '').toLowerCase().includes(q);
-      const cf = columnFilters;
-      const matchColumn =
-        (!cf.jobContent || (plan.jobContent || '').toLowerCase().includes((cf.jobContent || '').toLowerCase())) &&
-        (!cf.techSpecModel || (plan.techSpecModel || '').toLowerCase().includes((cf.techSpecModel || '').toLowerCase())) &&
-        (!cf.unit || (plan.unit || '').toLowerCase().includes((cf.unit || '').toLowerCase())) &&
-        (!cf.progressStatus || String(plan.progressStatus || '').includes(cf.progressStatus)) &&
-        (!cf.orderedStatus || String(plan.orderedStatus || '').includes(cf.orderedStatus));
-      return matchSearch && matchColumn;
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const toggleSection = (sectionKey: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionKey)) { next.delete(sectionKey); } else { next.add(sectionKey); }
+      return next;
     });
+  };
+
+  const filteredData = useMemo(() => {
+    const romanToInt = (s: string): number => {
+      const map: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+      const upper = s.toUpperCase();
+      let total = 0;
+      for (let i = 0; i < upper.length; i++) {
+        const cur = map[upper[i]] ?? 0;
+        const nxt = map[upper[i + 1]] ?? 0;
+        total += cur < nxt ? -cur : cur;
+      }
+      return total;
+    };
+    const numericSttParts = (stt?: string): number[] => {
+      const text = String(stt || '').trim();
+      if (!text) return [Infinity];
+      return text.split(/[.\-]/).map(p => { const n = parseInt(p, 10); return isNaN(n) ? Infinity : n; });
+    };
+
+    // Sort sections among themselves by Roman value, then assign items to their section
+    // based on the nearest section header BEFORE them in the original data array.
+    const sectionOrder = new Map<string, number>();
+    [...data]
+      .filter(r => isParentRow(r))
+      .sort((a, b) => romanToInt(String(a.stt || '').trim()) - romanToInt(String(b.stt || '').trim()))
+      .forEach((r, i) => sectionOrder.set(r.id, i));
+
+    const originalOrderMap = new Map<string, number>(data.map((r, i) => [r.id, i]));
+
+    const getSectionIndexForItem = (plan: ProjectMaterialPlan): number => {
+      if (isParentRow(plan)) return sectionOrder.get(plan.id) ?? Infinity;
+      const myPos = originalOrderMap.get(plan.id) ?? Infinity;
+      let bestSecIdx = -1;
+      let bestSecPos = -1;
+      data.forEach(r => {
+        if (isParentRow(r)) {
+          const secPos = originalOrderMap.get(r.id) ?? Infinity;
+          if (secPos < myPos && secPos > bestSecPos) {
+            bestSecPos = secPos;
+            bestSecIdx = sectionOrder.get(r.id) ?? -1;
+          }
+        }
+      });
+      return bestSecIdx === -1 ? -1 : bestSecIdx;
+    };
+
+    return data
+      .filter((plan) => {
+        const q = (searchQuery || '').trim().toLowerCase();
+        const matchSearch = !q ||
+          (plan.jobContent || '').toLowerCase().includes(q) ||
+          (plan.techSpecModel || '').toLowerCase().includes(q) ||
+          (plan.notes || '').toLowerCase().includes(q);
+        const cf = columnFilters;
+        const matchColumn =
+          (!cf.jobContent || (plan.jobContent || '').toLowerCase().includes((cf.jobContent || '').toLowerCase())) &&
+          (!cf.techSpecModel || (plan.techSpecModel || '').toLowerCase().includes((cf.techSpecModel || '').toLowerCase())) &&
+          (!cf.unit || (plan.unit || '').toLowerCase().includes((cf.unit || '').toLowerCase())) &&
+          (!cf.progressStatus || String(plan.progressStatus || '').includes(cf.progressStatus)) &&
+          (!cf.orderedStatus || String(plan.orderedStatus || '').includes(cf.orderedStatus));
+        return matchSearch && matchColumn;
+      })
+      .sort((a, b) => {
+        const secA = getSectionIndexForItem(a);
+        const secB = getSectionIndexForItem(b);
+        if (secA !== secB) return secA - secB;
+        // Within same section: header first, then items by numeric stt
+        const aIsSec = isParentRow(a) ? 0 : 1;
+        const bIsSec = isParentRow(b) ? 0 : 1;
+        if (aIsSec !== bIsSec) return aIsSec - bIsSec;
+        const ap = numericSttParts(a.stt), bp = numericSttParts(b.stt);
+        for (let i = 0; i < Math.max(ap.length, bp.length); i++) {
+          const diff = (ap[i] ?? Infinity) - (bp[i] ?? Infinity);
+          if (diff !== 0) return diff;
+        }
+        return 0;
+      });
   }, [data, searchQuery, columnFilters]);
 
   const startEditing = (id: string, field: keyof ProjectMaterialPlan, value: any) => {
@@ -265,86 +320,134 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
           </tfoot>
           <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
             {(() => {
-              const map = new Map<string, any>();
-              const roots: any[] = [];
-              const source = filteredData;
-              source.forEach(t => map.set(t.id, { ...t, children: [] }));
-              source.forEach(t => {
-                if (t.parentId && map.has(t.parentId)) {
-                  map.get(t.parentId)!.children.push(map.get(t.id));
+              // Group items by section — same approach as TaskManagementPage
+              const groups: { [key: string]: any[] } = {};
+              const order: string[] = [];
+              let currentSectionKey = '__default__';
+
+              // First pass: group by section
+              filteredData.forEach(t => {
+                if (isParentRow(t)) {
+                  currentSectionKey = t.id;
+                  if (!groups[currentSectionKey]) {
+                    groups[currentSectionKey] = [];
+                    order.push(currentSectionKey);
+                  }
+                  groups[currentSectionKey].unshift({ ...t, _isHeader: true });
                 } else {
-                  roots.push(map.get(t.id));
+                  // Use parentId if available, otherwise use current section
+                  const targetSection = (t.parentId && groups[t.parentId]) ? t.parentId : currentSectionKey;
+                  if (!groups[targetSection]) {
+                    groups[targetSection] = [];
+                    order.push(targetSection);
+                  }
+                  groups[targetSection].push({ ...t, _isHeader: false });
                 }
               });
 
               const flattened: any[] = [];
-              const flattenTree = (nodes: any[], depth: number = 0, prefix: string = '') => {
-                nodes.sort((a, b) => {
-                  const sttCompare = compareStt(a.stt, b.stt);
-                  if (sttCompare !== 0) return sttCompare;
-                  return (a.jobContent || '').localeCompare((b.jobContent || ''), 'vi', { numeric: true, sensitivity: 'base' });
-                });
-                nodes.forEach((node, idx) => {
-                  let computedStt = node.stt;
-                  let isSec = isParentRow(node);
-                  if (depth > 0) {
-                      const currentNum = (idx + 1).toString();
-                      computedStt = depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum);
-                      isSec = false;
+              order.forEach((secKey) => {
+                const sectionHeader = groups[secKey].find((t: any) => t._isHeader);
+                const items = groups[secKey].filter((t: any) => !t._isHeader);
+
+                // Build tree within this section (for sub-items with parentId)
+                const map = new Map<string, any>();
+                const roots: any[] = [];
+                items.forEach((t: any) => map.set(t.id, { ...t, children: [] }));
+                items.forEach((t: any) => {
+                  if (t.parentId && t.parentId !== secKey && map.has(t.parentId)) {
+                    map.get(t.parentId)!.children.push(map.get(t.id));
+                  } else {
+                    roots.push(map.get(t.id));
                   }
-                  flattened.push({ ...node, depth, computedStt, isSec });
-                  flattenTree(node.children, depth + 1, computedStt || '');
                 });
-              };
-              flattenTree(roots, 0);
+
+                const flattenTree = (nodes: any[], depth: number, prefix: string = '', sectionKey: string = '') => {
+                  nodes.forEach((node: any, idx: number) => {
+                    const currentNum = (idx + 1).toString();
+                    const computedStt = depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum);
+                    flattened.push({ ...node, depth, computedStt, isSec: false, _sectionKey: sectionKey });
+                    flattenTree(node.children, depth + 1, computedStt, sectionKey);
+                  });
+                };
+
+                if (sectionHeader) {
+                  flattened.push({ ...sectionHeader, depth: 0, computedStt: sectionHeader.stt, isSec: true, _sectionKey: secKey });
+                }
+                flattenTree(roots, sectionHeader ? 1 : 0, '', secKey);
+              });
 
               if (flattened.length === 0) {
                 return <tr><td colSpan={subTab === 'TECH' ? 9 : 10} className="p-8 text-center text-slate-400 whitespace-nowrap">{TEXT.empty}</td></tr>;
               }
 
-              return flattened.map((plan, index) => {
+              const colSpanCount = subTab === 'TECH' ? 8 : 9;
+
+              return flattened
+                .filter(plan => plan.isSec || !collapsedSections.has(plan._sectionKey || ''))
+                .map((plan, index) => {
                 const parent = plan.isSec;
                 const depth = plan.depth || 0;
-                const paddingLeft = depth > 0 ? `${depth * 1.5}rem` : '0';
                 
                 if (parent) {
-                return (
-                  <tr key={plan.id} className="border-y border-blue-200 bg-blue-50/90 font-bold text-primary">
-                    <td
-                      onClick={() => onEdit(plan)}
-                      className="sticky left-0 z-10 bg-blue-50/95 cursor-pointer px-1 py-2 text-center font-mono text-xs font-extrabold text-primary hover:underline whitespace-nowrap border-r border-blue-200"
-                    >
-                      {plan.stt || index + 1}
-                    </td>
-                    <td
-                      colSpan={subTab === 'TECH' ? 8 : 9}
-                      onClick={() => onEdit(plan)}
-                      className="sticky left-[32px] z-10 bg-blue-50/95 cursor-pointer px-3 py-2 text-xs font-extrabold uppercase tracking-tight text-primary hover:underline whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
-                      title={plan.jobContent}
-                    >
-                      <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
-                        <span className="material-symbols-outlined flex-shrink-0 text-base">folder_open</span>
-                        <span className="truncate">{plan.jobContent}</span>
-                        {onAddSubtask && (
-                          <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan); }} className="ml-1 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center flex-shrink-0" title="Thêm mục con">
-                            <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                  const isCollapsed = collapsedSections.has(plan._sectionKey || '');
+                  return (
+                    <tr key={plan.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
+                      <td className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
+                        {plan.stt}
+                      </td>
+                      <td colSpan={colSpanCount} className="sticky left-[32px] z-10 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" title={plan.jobContent}>
+                        <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
+                            className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
+                            title={isCollapsed ? 'Mở rộng đầu mục' : 'Thu gọn đầu mục'}
+                          >
+                            <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                           </button>
-                        )}
-                        {onDelete && (
-                          <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="ml-1 p-0.5 rounded text-blue-300 hover:text-rose-600 hover:bg-rose-100 transition-colors inline-flex items-center flex-shrink-0" title="Xóa">
-                            <span className="material-symbols-outlined text-[16px]">delete</span>
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
+                          <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
+                          <span className="truncate flex-1">{plan.jobContent}</span>
+                          {onAddSubtask && (
+                            <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
+                              <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                            </button>
+                          )}
+                          {onDelete && (
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-200 transition-colors inline-flex items-center" title="Xóa">
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+
+              let rowBg = 'bg-white';
+              let stickyBg = 'bg-white';
+              let fontStyle = 'font-bold text-slate-900';
+              let sttStyle = 'font-bold text-slate-400';
+              
+              if (depth === 1) {
+                rowBg = 'bg-slate-50';
+                stickyBg = 'bg-slate-50';
+                fontStyle = 'font-bold text-slate-900';
+                sttStyle = 'font-bold text-slate-600';
+              } else if (depth === 2) {
+                fontStyle = 'font-semibold text-slate-700';
+                sttStyle = 'font-semibold text-slate-400';
+              } else if (depth >= 3) {
+                fontStyle = 'font-medium text-slate-600 text-[10.5px]';
+                sttStyle = 'font-medium text-slate-400 text-[10.5px]';
               }
+              
+              const rowClass = `group transition-colors border-b border-slate-50 ${rowBg} hover:bg-slate-100`;
+              const paddingLeft = `${depth * 1.5}rem`;
 
               return (
-                <tr key={plan.id} onDoubleClick={() => onEdit(plan)} className="group transition-colors hover:bg-slate-50">
+                <tr key={plan.id} onDoubleClick={() => onEdit(plan)} className={rowClass}>
                   {/* STT */}
-                  <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-100 px-1 py-2 text-center font-mono font-bold text-slate-400 whitespace-nowrap overflow-hidden">
+                  <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 px-1 py-2 text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
                     {editingCell?.id === plan.id && editingCell?.field === 'stt' ? (
                       <input
                         type="text"
@@ -356,11 +459,11 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-xs"
                       />
                     ) : (
-                      <span onClick={() => startEditing(plan.id, 'stt', plan.computedStt || plan.stt)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{plan.computedStt || plan.stt || index + 1}</span>
+                      <span onClick={() => startEditing(plan.id, 'stt', plan.computedStt || plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block w-full">{plan.computedStt || plan.stt || index + 1}</span>
                     )}
                   </td>
                   {/* NỘI DUNG */}
-                  <td className="sticky left-[32px] z-10 bg-white group-hover:bg-slate-50 border-r border-slate-100 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-left font-bold text-slate-900 overflow-hidden">
+                  <td className={`sticky left-[32px] z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-left overflow-hidden ${fontStyle}`}>
                     {editingCell?.id === plan.id && editingCell?.field === 'jobContent' ? (
                       <input
                         type="text"
@@ -372,11 +475,15 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-xs"
                       />
                     ) : (
-                      <div style={{ paddingLeft }} className="flex items-center gap-1 overflow-hidden whitespace-nowrap group-hover:bg-slate-100">
-                        {depth > 0 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}
-                        <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-200 px-1 py-0.5 rounded block truncate flex-1">{plan.jobContent}</span>
+                      <div style={{ paddingLeft }} className={`flex items-center gap-1 overflow-hidden whitespace-nowrap group-hover:bg-slate-100 ${stickyBg}`}>
+                        {depth >= 1 && (
+                          <span className="material-symbols-outlined flex-shrink-0 text-slate-300 text-lg mr-1 translate-y-[2px]">
+                            subdirectory_arrow_right
+                          </span>
+                        )}
+                        <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block truncate flex-1">{plan.jobContent}</span>
                         {onAddSubtask && (
-                          <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="Thêm mục con">
+                          <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
                             <span className="material-symbols-outlined text-[14px]">add_circle</span>
                           </button>
                         )}
@@ -673,7 +780,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   )}
 
                   {/* GHI CHÚ */}
-                  <td className="overflow-hidden truncate px-1.5 py-1.5 text-slate-500">
+                  <td className="sticky right-0 z-10 bg-white group-hover:bg-slate-50 border-l border-slate-100 overflow-hidden truncate px-1.5 py-1.5 text-slate-500">
                     {editingCell?.id === plan.id && editingCell?.field === 'notes' ? (
                       <input
                         type="text"

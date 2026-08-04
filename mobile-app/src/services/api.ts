@@ -7,6 +7,7 @@ const normalizeApiUrl = (url: string) => url.replace(/\/+$/, '');
 const API_URLS = [
   configuredApiUrl,
   'http://10.0.2.2:3001/api',
+  'http://192.168.0.117:3001/api',
   'http://192.168.0.173:3001/api',
   'http://127.0.0.1:3001/api',
 ].filter((url): url is string => Boolean(url?.trim())).map(normalizeApiUrl);

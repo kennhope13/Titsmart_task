@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { LaborPayroll } from '../../types';
 
 interface LaborTabProps {
@@ -14,8 +14,32 @@ interface LaborTabProps {
 export const LaborTab: React.FC<LaborTabProps> = ({ 
   data, onEdit, onDelete, searchQuery, setSearchQuery, statusFilter, setStatusFilter 
 }) => {
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+  const updateColumnFilter = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }));
+  };
+  const clearColumnFilters = () => setColumnFilters({});
+
+  const filteredData = useMemo(() => {
+    return data.filter((lab) => {
+      const q = (searchQuery || '').trim().toLowerCase();
+      const matchSearch = !q ||
+        (lab.workerName || '').toLowerCase().includes(q) ||
+        (lab.content || '').toLowerCase().includes(q) ||
+        (lab.description || '').toLowerCase().includes(q) ||
+        (lab.bankInfo || '').toLowerCase().includes(q);
+      const cf = columnFilters;
+      const matchColumn =
+        (!cf.workerName || (lab.workerName || '').toLowerCase().includes((cf.workerName || '').toLowerCase())) &&
+        (!cf.content || (lab.content || '').toLowerCase().includes((cf.content || '').toLowerCase())) &&
+        (!cf.unit || (lab.unit || '').toLowerCase().includes((cf.unit || '').toLowerCase())) &&
+        (!cf.date || (lab.date || '').includes(cf.date)) &&
+        (!cf.bankAccount || (lab.bankAccount || '').toLowerCase().includes((cf.bankAccount || '').toLowerCase()));
+      return matchSearch && matchColumn;
+    });
+  }, [data, searchQuery, columnFilters]);
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col w-full max-w-full h-full overflow-hidden">
       {/* Toolbar */}
       <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex-1 w-full relative">
@@ -28,6 +52,9 @@ export const LaborTab: React.FC<LaborTabProps> = ({
             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
           />
         </div>
+        {(searchQuery || Object.values(columnFilters).some(v => v)) && (
+          <button type="button" onClick={() => { setSearchQuery(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
+        )}
         <div className="flex items-center gap-2 w-full md:w-auto">
           <span className="text-xs font-bold text-slate-500 whitespace-nowrap">Lọc thanh toán:</span>
           <select 
@@ -42,42 +69,60 @@ export const LaborTab: React.FC<LaborTabProps> = ({
         </div>
       </div>
 
-      <div className="overflow-x-auto custom-scrollbar flex-1">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-slate-100 border-b border-slate-200 text-[10px] font-extrabold text-slate-600 uppercase tracking-wider sticky top-0 z-10">
+      <div className="w-full max-w-full overflow-x-auto custom-scrollbar flex-1">
+        <table className="w-max text-left border-collapse">
+          <thead className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
             <tr>
-              <th className="p-3 w-12 text-center">STT</th>
-              <th className="p-3 w-28">Ngày làm</th>
-              <th className="p-3 min-w-[150px]">Họ tên</th>
-              <th className="p-3 min-w-[200px]">Nội dung / Diễn giải</th>
-              <th className="p-3 w-16 text-center">ĐVT</th>
-              <th className="p-3 text-right">Số lượng</th>
-              <th className="p-3 text-right">Đơn giá (đ)</th>
-              <th className="p-3 text-right">Thành tiền (đ)</th>
-              <th className="p-3 min-w-[180px]">Tài khoản & Người nhận</th>
-              <th className="p-3 text-center">CCCD</th>
-              <th className="p-3 text-center">Tình trạng</th>
-              <th className="p-3 text-center w-24">Thao tác</th>
+              <th className="sticky left-0 z-20 w-[36px] bg-slate-50 border-r border-slate-200/70 px-1 py-1.5 text-center">STT</th>
+              <th className="w-[85px] px-1.5 py-1.5 text-center">Ngày làm</th>
+              <th className="sticky left-[36px] z-20 w-[160px] bg-slate-50 border-r border-slate-200/70 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Họ tên</th>
+              <th className="w-[160px] px-1.5 py-1">Nội dung / Diễn giải</th>
+              <th className="w-[45px] px-1 py-1.5 text-center">ĐVT</th>
+              <th className="w-[65px] px-1.5 py-1.5 text-right">Số lượng</th>
+              <th className="w-[85px] px-1.5 py-1.5 text-right">Đơn giá (đ)</th>
+              <th className="w-[95px] px-1.5 py-1.5 text-right">Thành tiền (đ)</th>
+              <th className="w-[180px] px-1.5 py-1.5">Tài khoản & Người nhận</th>
+              <th className="w-[95px] px-1.5 py-1.5 text-center">CCCD</th>
+              <th className="w-[85px] px-1.5 py-1.5 text-center">Tình trạng</th>
+              <th className="w-[60px] px-1.5 py-1.5 text-center">Thao tác</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-xs text-slate-700 bg-white">
-            {data.map((lab) => (
-              <tr key={lab.id} className="hover:bg-blue-50/30 transition-colors align-middle group">
-                <td className="p-3 text-center font-bold text-slate-400">{lab.stt || '-'}</td>
-                <td className="p-3 font-semibold text-slate-900 whitespace-nowrap">{lab.date}</td>
-                <td className="p-3 font-extrabold text-slate-900">{lab.workerName || '-'}</td>
-                <td className="p-3">
-                  <div className="font-bold text-slate-800">{lab.content}</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">{lab.description}</div>
-                  {lab.notes && <div className="text-[10px] font-medium text-amber-700 mt-1 bg-amber-50 inline-block px-2 py-0.5 rounded border border-amber-100">Ghi chú: {lab.notes}</div>}
+          <tfoot className="bg-slate-50/80 border-t border-slate-200">
+            <tr>
+              <td className="px-1 py-1"></td>
+              <td className="px-1 py-1"><input value={columnFilters.date || ''} onChange={e => updateColumnFilter('date', e.target.value)} placeholder="Ngày..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+              <td className="px-1 py-1"><input value={columnFilters.workerName || ''} onChange={e => updateColumnFilter('workerName', e.target.value)} placeholder="Họ tên..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+              <td className="px-1 py-1"><input value={columnFilters.content || ''} onChange={e => updateColumnFilter('content', e.target.value)} placeholder="Nội dung..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+              <td className="px-1 py-1"><input value={columnFilters.unit || ''} onChange={e => updateColumnFilter('unit', e.target.value)} placeholder="ĐVT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+              <td className="px-1 py-1"></td>
+              <td className="px-1 py-1"></td>
+              <td className="px-1 py-1"></td>
+              <td className="px-1 py-1"><input value={columnFilters.bankAccount || ''} onChange={e => updateColumnFilter('bankAccount', e.target.value)} placeholder="TK..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+              <td className="px-1 py-1"></td>
+              <td className="px-1 py-1"></td>
+              <td className="px-1 py-1"></td>
+            </tr>
+          </tfoot>
+          <tbody className="divide-y divide-slate-100 bg-white text-xs text-slate-700">
+            {filteredData.map((lab) => (
+              <tr key={lab.id} className="group align-middle transition-colors hover:bg-blue-50/30">
+                <td className="sticky left-0 z-10 w-[36px] bg-white group-hover:bg-blue-50/30 border-r border-slate-100 px-1 py-1 text-center font-bold text-slate-400">{lab.stt || '-'}</td>
+                <td className="w-[85px] px-1.5 py-1 text-center font-semibold text-slate-900 whitespace-nowrap">{lab.date}</td>
+                <td className="sticky left-[36px] z-20 w-[160px] bg-white group-hover:bg-blue-50/30 border-r border-slate-100 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                  <div className="w-[145px] truncate font-extrabold text-slate-900">{lab.workerName || '-'}</div>
                 </td>
-                <td className="p-3 text-center font-medium">{lab.unit}</td>
-                <td className="p-3 text-right font-semibold">{lab.quantity}</td>
-                <td className="p-3 text-right">{lab.unitPrice.toLocaleString('vi-VN')}</td>
-                <td className="p-3 text-right font-extrabold text-primary bg-primary/5">{lab.totalAmount.toLocaleString('vi-VN')}</td>
-                <td className="p-3">
+                <td className="w-[160px] px-1.5 py-1">
+                  <div className="w-[145px] truncate font-bold text-slate-800">{lab.content}</div>
+                  <div className="w-[145px] truncate mt-0.5 text-[11px] text-slate-500">{lab.description}</div>
+                  {lab.notes && <div className="mt-1 inline-block rounded border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Ghi chú: {lab.notes}</div>}
+                </td>
+                <td className="w-[45px] px-1 py-1 text-center font-medium">{lab.unit}</td>
+                <td className="w-[65px] px-1.5 py-1 text-right font-semibold">{lab.quantity}</td>
+                <td className="px-1.5 py-1.5 text-right">{lab.unitPrice.toLocaleString('vi-VN')}</td>
+                <td className="bg-primary/5 px-1.5 py-1.5 text-right font-extrabold text-primary">{lab.totalAmount.toLocaleString('vi-VN')}</td>
+                <td className="px-1.5 py-1.5">
                   <div className="font-extrabold text-slate-800">{lab.bankInfo}</div>
-                  <div className="font-mono text-[11px] font-bold text-blue-600 mt-0.5">{lab.bankAccount}</div>
+                  <div className="mt-0.5 font-mono text-[11px] font-bold text-blue-600">{lab.bankAccount}</div>
                 </td>
                 <td className="p-3 text-center">
                   <div className="flex flex-col gap-1 items-center">
@@ -101,13 +146,13 @@ export const LaborTab: React.FC<LaborTabProps> = ({
                     <span className="material-symbols-outlined text-[12px]">{lab.paymentStatus === 'Đã thanh toán' ? 'check_circle' : 'pending'}</span>
                     {lab.paymentStatus}
                   </span>
-                </td>
-                <td className="p-3 text-center">
-                  <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                 </td>
+                 <td className="sticky right-0 z-10 bg-white group-hover:bg-blue-50/30 border-l border-slate-100 p-3 text-center">
+                   <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => onEdit(lab)} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition-colors" title="Chỉnh sửa">
                       <span className="material-symbols-outlined text-sm">edit</span>
                     </button>
-                    <button onClick={() => { if(window.confirm('Xóa thông tin lương công nhật này?')) onDelete(lab.id) }} className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 rounded-lg transition-colors" title="Xóa">
+                    <button onClick={() => onDelete(lab.id)} className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 rounded-lg transition-colors" title="Xóa">
                       <span className="material-symbols-outlined text-sm">delete</span>
                     </button>
                   </div>

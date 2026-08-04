@@ -157,6 +157,7 @@ model Task {
   is_done              Boolean   @default(false)
   is_section_header    Boolean   @default(false)
   section_name         String?
+  parent_id            String?   @db.Uuid
   notes                String?
   assigned_engineer_id String?   @db.Uuid
   due_date             DateTime? @db.Date
@@ -165,6 +166,8 @@ model Task {
   updated_at           DateTime  @default(now()) @db.Timestamptz
 
   project              Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent               Task?     @relation("TaskToTask", fields: [parent_id], references: [id], onDelete: Cascade)
+  sub_tasks            Task[]    @relation("TaskToTask")
   assigned_engineer    User?     @relation("TaskAssignedEngineer", fields: [assigned_engineer_id], references: [id], onDelete: SetNull)
   task_assignments     TaskAssignment[]
   materials            Material[]
@@ -386,10 +389,13 @@ model ProjectMaterialPlan {
   dispatch_to_site    Boolean  @default(false)
   dispatch_date       DateTime? @db.Date
   notes               String?
+  parent_id           String?  @db.Uuid
   created_at          DateTime @default(now()) @db.Timestamptz
   updated_at          DateTime @default(now()) @db.Timestamptz
 
   project             Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent              ProjectMaterialPlan?  @relation("MaterialPlanHierarchy", fields: [parent_id], references: [id])
+  children            ProjectMaterialPlan[] @relation("MaterialPlanHierarchy")
 
   @@index([project_id])
   @@map("project_material_plans")
@@ -415,10 +421,13 @@ model ProjectPurchasing {
   payment_date     DateTime? @db.Date
   invoice_status   String?  @db.VarChar(255)
   notes            String?
+  parent_id        String?  @db.Uuid
   created_at       DateTime @default(now()) @db.Timestamptz
   updated_at       DateTime @default(now()) @db.Timestamptz
 
   project          Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent           ProjectPurchasing?  @relation("PurchasingHierarchy", fields: [parent_id], references: [id])
+  children         ProjectPurchasing[] @relation("PurchasingHierarchy")
 
   @@index([project_id])
   @@map("project_purchasing")
@@ -478,7 +487,7 @@ model LaborPayroll {
 
 model DocumentTrack {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  project_id     String   @db.Uuid
+  project_id     String?  @db.Uuid
   stt            String?  @db.VarChar(50)
   contract_no    String   @db.VarChar(120)
   contract_name  String
@@ -499,7 +508,7 @@ model DocumentTrack {
   created_at     DateTime @default(now()) @db.Timestamptz
   updated_at     DateTime @default(now()) @db.Timestamptz
 
-  project        Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project        Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
 
   @@index([project_id])
   @@map("document_tracks")

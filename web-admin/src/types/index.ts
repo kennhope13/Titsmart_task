@@ -19,6 +19,7 @@ export interface Task {
   isDone: boolean;
   isSectionHeader?: boolean; // Cờ đánh dấu dòng Tiêu đề Mục (I, II, III...)
   sectionName?: string; // Tên phân mục cha
+  parentId?: string; // ID của mục cha (nếu là mục con)
   notes?: string;
   assignerId?: string;
   assignerName?: string;
@@ -70,6 +71,7 @@ export interface Material {
   totalExport?: number;
   category?: string;
   specs?: string;
+  notes?: string;
 }
 
 export interface InventoryTransaction {
@@ -80,6 +82,7 @@ export interface InventoryTransaction {
   materialCode: string;
   materialName: string;
   specs?: string;
+  category?: string;
   unit: string;
   quantity: number;
   sourceOrProject: string; // Nguồn Nhập hoặc Mã Dự Án xuất
@@ -145,6 +148,7 @@ export interface ActivityLog {
 
 export interface ProjectMaterialPlan {
   id: string;
+  parentId?: string;
   stt: string;
   projectCode: string;
   jobContent: string;
@@ -152,6 +156,7 @@ export interface ProjectMaterialPlan {
   contractVolume: number;
   techSpecModel?: string;
   techSpecOrigin?: string;
+  techSpecStatus?: string;
   progressStatus?: string;
   orderedVolume?: number;
   orderedStatus?: string;
@@ -169,6 +174,7 @@ export interface ProjectMaterialPlan {
 
 export interface ProjectPurchasing {
   id: string;
+  parentId?: string;
   stt: string;
   projectCode: string;
   content: string;
@@ -232,7 +238,7 @@ export interface DocumentTrack {
   stt: string;
   contractNo: string;
   contractName: string;
-  projectCode: string;
+  projectCode?: string;
   company: string;
   receiverName: string;
   phone: string;

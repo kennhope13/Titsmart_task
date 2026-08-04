@@ -22,9 +22,9 @@ const formatTask = (t: any) => ({
   isSectionHeader: t.is_section_header,
   sectionName: t.section_name || '',
   notes: t.notes || '',
-  assignedEngineerId: t.assigned_engineer_id,
   assignedEngineerName: t.assigned_engineer?.full_name || '',
   dueDate: t.due_date,
+  parentId: t.parent_id,
 });
 
 export const getTasks = async (req: Request, res: Response) => {
@@ -37,7 +37,7 @@ export const getTasks = async (req: Request, res: Response) => {
         project: true,
         assigned_engineer: true,
       },
-      orderBy: { created_at: 'desc' },
+      orderBy: { created_at: 'asc' },
     });
     res.json(tasks.map(formatTask));
   } catch (error) {
@@ -101,7 +101,7 @@ const mapPriority = (p: string | undefined): 'low' | 'medium' | 'high' | undefin
 
 export const createTask = async (req: Request, res: Response) => {
   try {
-    const { projectCode, projectName, purchaseStatus, constrStatus, issue, issueStatus, assignedEngineerName, isDone, isSectionHeader, sectionName, ...data } = req.body;
+    const { projectCode, projectName, purchaseStatus, constrStatus, issue, issueStatus, assignedEngineerName, isDone, isSectionHeader, sectionName, parentId, parent_id, ...data } = req.body;
     
     let projectId = data.project_id;
     if (!projectId && projectCode) {
@@ -134,6 +134,7 @@ export const createTask = async (req: Request, res: Response) => {
         assigned_engineer_id: cleanUuid(data.assignedEngineerId ?? data.assigned_engineer_id),
         due_date: data.dueDate ? new Date(data.dueDate) : null,
         project_id: projectId,
+        parent_id: cleanUuid(parentId ?? parent_id),
       },
       include: {
         project: true,
@@ -150,7 +151,7 @@ export const createTask = async (req: Request, res: Response) => {
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { projectCode, projectName, purchaseStatus, constrStatus, issue, issueStatus, assignedEngineerName, isDone, isSectionHeader, sectionName, ...data } = req.body;
+    const { projectCode, projectName, purchaseStatus, constrStatus, issue, issueStatus, assignedEngineerName, isDone, isSectionHeader, sectionName, parentId, parent_id, ...data } = req.body;
     
     // Build updateData using ONLY known Prisma task fields (whitelist approach)
     const updateData: any = {};
@@ -186,6 +187,10 @@ export const updateTask = async (req: Request, res: Response) => {
 
     // Date
     if (data.dueDate !== undefined) updateData.due_date = data.dueDate ? new Date(data.dueDate) : null;
+
+    // Parent Id
+    const pId = cleanUuid(parentId ?? parent_id);
+    if (parentId !== undefined || parent_id !== undefined) updateData.parent_id = pId;
 
     const task = await prisma.task.update({
       where: { id },

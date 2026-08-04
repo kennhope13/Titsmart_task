@@ -1,18 +1,18 @@
-﻿import React from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Share, StyleSheet, View, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { AlertCircle, Camera, ClipboardPlus, FileText, ScanText, Share2, Sparkles } from 'lucide-react-native';
+import { AlertCircle, Camera, ClipboardPlus, FileText, ScanText, Share2, Sparkles, Image as ImageIcon, HelpCircle } from 'lucide-react-native';
 import { AppText, Card, Screen, ScreenHeader, SectionTitle } from '../components/MobileUI';
 import { colors } from '../theme';
 import { captureVietnameseText, OcrExtractedField, OcrResult } from '../services/ocrService';
 
 const labels = {
-  title: 'OCR tiếng Việt',
-  subtitle: 'Chụp giấy tờ, phiếu vật tư hoặc nội dung công việc để lấy dữ liệu nhanh',
+  title: 'OCR Scanner',
+  subtitle: 'Nhận dạng văn bản phiếu giao nhận, ghi chú hiện trường',
   captureTitle: 'Quét dữ liệu từ ảnh',
-  captureText: 'Chụp thẳng khung, đủ sáng. App sẽ nhận dạng chữ và tự tách các trường có thể dùng ngay.',
-  scanning: 'Đang quét',
-  capture: 'Chụp ảnh',
+  captureText: 'Chụp thẳng khung, đủ sáng. App sẽ tự nhận dạng và bóc tách các trường dữ liệu.',
+  scanning: 'Đang quét...',
+  capture: 'Chụp tài liệu',
   noText: 'Không tìm thấy ký tự trong ảnh. Hãy chụp rõ hơn, đủ sáng và giữ giấy thẳng khung hình.',
   scanFailed: 'Không thể nhận dạng văn bản tiếng Việt từ ảnh đã chụp.',
   imageTitle: 'Ảnh đã chụp',
@@ -29,7 +29,7 @@ const labels = {
   blocksTitle: 'Vùng văn bản',
   blocksCaption: 'Các khối OCR tách được từ ảnh',
   createTask: 'Tạo công việc',
-  shareText: 'Chia sẻ text',
+  shareText: 'Chia sẻ văn bản',
   shareFailed: 'Không thể mở chức năng chia sẻ trên thiết bị này.',
 };
 
@@ -44,10 +44,31 @@ export const OcrScannerScreen = () => {
   const [isScanning, setIsScanning] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  // Animated value for scanning line
+  const scanAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanAnim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scanAnim, {
+          toValue: 0,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        })
+      ])
+    ).start();
+  }, [scanAnim]);
+
   const scanImage = async () => {
     setIsScanning(true);
     setError(null);
-
     try {
       const nextResult = await captureVietnameseText();
       setResult(nextResult);
@@ -63,6 +84,7 @@ export const OcrScannerScreen = () => {
   const extracted = result?.extracted;
   const extractedFields = extracted?.fields || [];
   const hasText = !!displayText.trim();
+  
   const resultCaption = hasText
     ? `${result?.lines?.length || 0} ${labels.line}, ${result?.blocks?.length || 0} ${labels.block} - ${labels.vietnamese}`
     : labels.emptyCaption;
@@ -71,7 +93,7 @@ export const OcrScannerScreen = () => {
     try {
       await Share.share({ message: formatExtractedForShare(extractedFields, displayText) });
     } catch (_error) {
-      Alert.alert(labels.scanFailed, labels.shareFailed);
+      Alert.alert('Lỗi', labels.shareFailed);
     }
   };
 
@@ -90,27 +112,80 @@ export const OcrScannerScreen = () => {
     });
   };
 
-  return (
-    <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <ScreenHeader
-          icon={<ScanText size={21} color={colors.primary} />}
-          title={labels.title}
-          subtitle={labels.subtitle}
-          badge="VI"
-        />
+  const translateY = scanAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 140], // height of viewfinder box minus line height
+  });
 
-        <View style={styles.capturePanel}>
-          <View style={styles.captureIcon}>
-            {isScanning ? <ActivityIndicator color={colors.primary} /> : <Camera size={28} color={colors.primary} />}
+  return (
+    <Screen style={styles.container}>
+      <ScreenHeader
+        icon={<ScanText size={21} color={colors.primary} />}
+        title={labels.title}
+        subtitle={labels.subtitle}
+        badge="AI"
+      />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        {/* Viewfinder Area */}
+        <View style={styles.viewfinderCard}>
+          <View style={styles.viewfinder}>
+            {/* Simulated background invoice / blueprint document */}
+            <Image
+              source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBZIDLoAeXW5_-GITRSXoozvEjICXwoyCo3qDts371DxJ4jdxHCy8DBL65qo-6Bs3Vvn4VvwiwsGLod9mBUFrkMoMCT8QS6F1cjenqhrnPFv77C9MLwZTXpSAjG36Lh-yveBJIuf_zoi-GLduwkwJn8gV6XJvjvzGtbVDVVppQLBPWkRkgWwzoHOaJ1VaUJiK4bDN8eZ5AahNA6jU9Lm-S0ZOv8J1aMbENCHabl3Om4SDxbvDKw5lfgyw' }}
+              style={styles.simulatedFeed}
+              resizeMode="cover"
+            />
+            {/* Viewfinder brackets */}
+            <View style={styles.viewfinderFrame}>
+              <View style={[styles.corner, { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 }]} />
+              <View style={[styles.corner, { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 }]} />
+              <View style={[styles.corner, { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 }]} />
+              <View style={[styles.corner, { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 }]} />
+              
+              {/* Scanning Laser Line */}
+              <Animated.View style={[styles.laserLine, { transform: [{ translateY }] }]} />
+            </View>
+            
+            {/* Auto Enhance tag */}
+            <View style={styles.enhanceTag}>
+              <Sparkles size={11} color={colors.accent} />
+              <AppText style={styles.enhanceText}>Auto-Enhance Active</AppText>
+            </View>
+
+            <View style={styles.guideTextContainer}>
+              <AppText style={styles.guideText}>Căn chỉnh tài liệu thẳng khung hình</AppText>
+            </View>
           </View>
-          <View style={styles.captureCopy}>
-            <AppText style={styles.captureTitle}>{labels.captureTitle}</AppText>
-            <AppText style={styles.captureText}>{labels.captureText}</AppText>
-          </View>
-          <Pressable style={[styles.captureButton, isScanning ? styles.captureButtonDisabled : undefined]} onPress={scanImage} disabled={isScanning}>
-            <Camera size={18} color={colors.white} />
-            <AppText style={styles.captureButtonText}>{isScanning ? labels.scanning : labels.capture}</AppText>
+        </View>
+
+        {/* Action Controls */}
+        <View style={styles.actionsRow}>
+          <Pressable
+            onPress={scanImage}
+            disabled={isScanning}
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              isScanning && styles.btnDisabled,
+              pressed && !isScanning && { transform: [{ scale: 0.98 }] }
+            ]}
+          >
+            {isScanning ? (
+              <ActivityIndicator color={colors.white} size="small" />
+            ) : (
+              <Camera size={16} color={colors.white} strokeWidth={2.5} />
+            )}
+            <AppText style={styles.primaryBtnText}>{isScanning ? labels.scanning : labels.capture}</AppText>
+          </Pressable>
+          
+          <Pressable
+            onPress={() => Alert.alert('Chọn ảnh', 'Mở thư viện để tải tài liệu')}
+            style={({ pressed }) => [
+              styles.secondaryBtn,
+              pressed && { backgroundColor: colors.slate[100] }
+            ]}
+          >
+            <ImageIcon size={16} color={colors.primary} />
+            <AppText style={styles.secondaryBtnText}>Tải ảnh lên</AppText>
           </Pressable>
         </View>
 
@@ -124,10 +199,11 @@ export const OcrScannerScreen = () => {
         {result?.imageUri ? (
           <>
             <SectionTitle title={labels.imageTitle} caption={labels.imageCaption} />
-            <Image source={{ uri: result.imageUri }} style={styles.previewImage} resizeMode="cover" />
+            <Image source={{ uri: result.imageUri }} style={styles.previewImage} resizeMode="contain" />
           </>
         ) : null}
 
+        {/* Extracted Fields */}
         {extractedFields.length ? (
           <>
             <SectionTitle title={labels.extractedTitle} caption={labels.extractedCaption} />
@@ -139,19 +215,20 @@ export const OcrScannerScreen = () => {
                 </View>
               ))}
               <View style={styles.quickActions}>
-                <Pressable onPress={createTaskFromOcr} style={styles.primaryAction}>
-                  <ClipboardPlus size={16} color={colors.white} />
-                  <AppText style={styles.primaryActionText}>{labels.createTask}</AppText>
+                <Pressable onPress={createTaskFromOcr} style={styles.cardPrimaryAction}>
+                  <ClipboardPlus size={15} color={colors.white} />
+                  <AppText style={styles.cardPrimaryActionText}>{labels.createTask}</AppText>
                 </Pressable>
-                <Pressable onPress={shareOcrText} style={styles.secondaryAction}>
-                  <Share2 size={16} color={colors.slate[700]} />
-                  <AppText style={styles.secondaryActionText}>{labels.shareText}</AppText>
+                <Pressable onPress={shareOcrText} style={styles.cardSecondaryAction}>
+                  <Share2 size={15} color={colors.slate[700]} />
+                  <AppText style={styles.cardSecondaryActionText}>{labels.shareText}</AppText>
                 </Pressable>
               </View>
             </Card>
           </>
         ) : null}
 
+        {/* Raw Text Results */}
         <SectionTitle title={labels.resultTitle} caption={resultCaption} />
         <Card style={styles.resultCard}>
           {hasText ? (
@@ -166,59 +243,52 @@ export const OcrScannerScreen = () => {
             </View>
           )}
         </Card>
-
-        {result?.blocks?.length ? (
-          <>
-            <SectionTitle title={labels.blocksTitle} caption={labels.blocksCaption} />
-            <View style={styles.blockList}>
-              {result.blocks.map((block, index) => (
-                <Card key={`${index}-${block.text.slice(0, 12)}`} style={styles.blockCard}>
-                  <View style={styles.blockIndex}>
-                    <Sparkles size={14} color={colors.primary} />
-                    <AppText style={styles.blockIndexText}>#{index + 1}</AppText>
-                  </View>
-                  <AppText style={styles.blockText}>{block.text}</AppText>
-                </Card>
-              ))}
-            </View>
-          </>
-        ) : null}
       </ScrollView>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.slate[50] },
   content: { paddingBottom: 28 },
-  capturePanel: { margin: 16, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.slate[200], backgroundColor: colors.white, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  captureIcon: { width: 48, height: 48, borderRadius: 11, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  captureCopy: { flex: 1 },
-  captureTitle: { fontSize: 15, lineHeight: 20, fontWeight: '800', color: colors.slate[900] },
-  captureText: { marginTop: 3, fontSize: 12, lineHeight: 17, color: colors.slate[500] },
-  captureButton: { minHeight: 42, borderRadius: 10, paddingHorizontal: 12, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  captureButtonDisabled: { opacity: 0.65 },
-  captureButtonText: { color: colors.white, fontSize: 12, fontWeight: '800' },
-  errorCard: { marginHorizontal: 16, marginBottom: 2, flexDirection: 'row', alignItems: 'flex-start', gap: 9, backgroundColor: colors.dangerLight, borderColor: '#fecaca' },
+  
+  viewfinderCard: { margin: 16, overflow: 'hidden', borderRadius: 16, borderWidth: 1, borderColor: colors.slate[200], backgroundColor: '#0f172a' },
+  viewfinder: { position: 'relative', width: '100%', height: 230, justifyContent: 'center', alignItems: 'center' },
+  simulatedFeed: { position: 'absolute', top: 0, left: 0, bottom: 0, right: 0, opacity: 0.65 },
+  
+  viewfinderFrame: { width: '80%', height: 160, position: 'relative', borderWidth: 1, borderColor: 'rgba(111,251,190,0.2)' },
+  corner: { position: 'absolute', width: 20, height: 20, borderColor: colors.accent },
+  laserLine: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: colors.accent, shadowColor: colors.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 5 },
+  
+  enhanceTag: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(15,23,42,0.75)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  enhanceText: { fontSize: 9, color: colors.accent, fontWeight: '800' },
+  
+  guideTextContainer: { position: 'absolute', bottom: 12, alignSelf: 'center', backgroundColor: 'rgba(15,23,42,0.75)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
+  guideText: { fontSize: 10, color: colors.white, fontWeight: '700' },
+  
+  actionsRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, marginTop: 4 },
+  primaryBtn: { flex: 1.2, height: 46, borderRadius: 10, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  btnDisabled: { opacity: 0.65 },
+  primaryBtnText: { color: colors.white, fontSize: 13, fontWeight: '800' },
+  secondaryBtn: { flex: 1, height: 46, borderRadius: 10, borderWidth: 1, borderColor: colors.slate[300], backgroundColor: colors.white, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  secondaryBtnText: { color: colors.slate[700], fontSize: 13, fontWeight: '800' },
+  
+  errorCard: { marginHorizontal: 16, marginTop: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 9, backgroundColor: colors.dangerLight, borderColor: '#fecaca' },
   errorText: { flex: 1, fontSize: 12, lineHeight: 17, color: '#b91c1c', fontWeight: '700' },
   previewImage: { marginHorizontal: 16, width: undefined, height: 230, borderRadius: 12, backgroundColor: colors.slate[100] },
-  extractedCard: { marginHorizontal: 16, gap: 0, padding: 0, overflow: 'hidden' },
-  fieldRow: { paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: colors.slate[100], gap: 4 },
-  fieldLabel: { fontSize: 11, lineHeight: 14, fontWeight: '800', color: colors.slate[500] },
-  fieldValue: { fontSize: 14, lineHeight: 19, fontWeight: '700', color: colors.slate[900] },
-  quickActions: { flexDirection: 'row', gap: 10, padding: 14, backgroundColor: colors.slate[50] },
-  primaryAction: { flex: 1, minHeight: 43, borderRadius: 10, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 10 },
-  primaryActionText: { color: colors.white, fontSize: 12, fontWeight: '800' },
-  secondaryAction: { flex: 1, minHeight: 43, borderRadius: 10, borderWidth: 1, borderColor: colors.slate[300], backgroundColor: colors.white, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 10 },
-  secondaryActionText: { color: colors.slate[700], fontSize: 12, fontWeight: '800' },
-  resultCard: { marginHorizontal: 16, minHeight: 170, padding: 12 },
-  resultText: { minWidth: 310, fontFamily: 'monospace', fontSize: 13, lineHeight: 20, color: colors.slate[900], fontWeight: '500' },
-  emptyState: { minHeight: 126, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
-  emptyTitle: { marginTop: 9, fontSize: 14, fontWeight: '800', color: colors.slate[700] },
-  emptyText: { marginTop: 4, textAlign: 'center', fontSize: 12, lineHeight: 17, color: colors.slate[500] },
-  blockList: { paddingHorizontal: 16, gap: 10 },
-  blockCard: { gap: 8 },
-  blockIndex: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  blockIndexText: { fontSize: 11, fontWeight: '800', color: colors.primary },
-  blockText: { fontSize: 13, lineHeight: 19, color: colors.slate[700] },
+  extractedCard: { marginHorizontal: 16, padding: 0, overflow: 'hidden', backgroundColor: colors.white },
+  fieldRow: { paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: colors.slate[100] },
+  fieldLabel: { fontSize: 10, fontWeight: '800', color: colors.slate[400], textTransform: 'uppercase' },
+  fieldValue: { fontSize: 14, fontWeight: '700', color: colors.slate[800], marginTop: 2 },
+  quickActions: { flexDirection: 'row', gap: 10, padding: 12, backgroundColor: colors.slate[50] },
+  cardPrimaryAction: { flex: 1.2, height: 38, borderRadius: 8, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  cardPrimaryActionText: { color: colors.white, fontSize: 12, fontWeight: '800' },
+  cardSecondaryAction: { flex: 1, height: 38, borderRadius: 8, borderWidth: 1, borderColor: colors.slate[300], backgroundColor: colors.white, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  cardSecondaryActionText: { color: colors.slate[700], fontSize: 12, fontWeight: '800' },
+  
+  resultCard: { marginHorizontal: 16, minHeight: 120, padding: 12, backgroundColor: colors.white },
+  resultText: { minWidth: 310, fontFamily: 'monospace', fontSize: 12, lineHeight: 18, color: colors.slate[900], fontWeight: '500' },
+  emptyState: { minHeight: 100, alignItems: 'center', justifyContent: 'center', gap: 6 },
+  emptyTitle: { fontSize: 13, fontWeight: '800', color: colors.slate[600] },
+  emptyText: { textAlign: 'center', fontSize: 11, color: colors.slate[400] },
 });
-

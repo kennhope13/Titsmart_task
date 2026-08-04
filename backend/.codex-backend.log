@@ -1,0 +1,7 @@
+
+> backend@1.0.0 dev
+> tsx src/index.ts
+
+◇ injected env (1) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+Server is running on port 3001

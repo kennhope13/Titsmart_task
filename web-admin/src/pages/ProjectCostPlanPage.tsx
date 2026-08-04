@@ -762,7 +762,6 @@ export const ProjectCostPlanPage: React.FC = () => {
         currentSection = plan;
         return { ...plan };
       } else if (!plan.parentId && currentSection) {
-        // Assign temporary parentId for sorting purposes
         return { ...plan, parentId: currentSection.id };
       }
       return { ...plan };

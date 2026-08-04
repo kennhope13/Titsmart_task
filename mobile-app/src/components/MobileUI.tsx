@@ -86,7 +86,14 @@ export const ActionButton = ({ label, onPress, icon, tone = 'primary' }: {
   icon?: React.ReactNode;
   tone?: 'primary' | 'light' | 'danger';
 }) => (
-  <Pressable onPress={onPress} style={[styles.button, tone === 'light' ? styles.buttonLight : tone === 'danger' ? styles.buttonDanger : styles.buttonPrimary]}>
+  <Pressable
+    onPress={onPress}
+    style={({ pressed }) => [
+      styles.button,
+      tone === 'light' ? styles.buttonLight : tone === 'danger' ? styles.buttonDanger : styles.buttonPrimary,
+      pressed && { transform: [{ scale: 0.98 }], opacity: 0.9 }
+    ]}
+  >
     {icon}
     <AppText style={[styles.buttonText, tone === 'light' ? styles.buttonLightText : undefined]}>{label}</AppText>
   </Pressable>
@@ -94,20 +101,45 @@ export const ActionButton = ({ label, onPress, icon, tone = 'primary' }: {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.slate[50] },
-  header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.slate[200], flexDirection: 'row', alignItems: 'center', gap: 11 },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.slate[200],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+  },
   headerIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   headerCopy: { flex: 1 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  headerTitle: { fontSize: 21, lineHeight: 26, fontWeight: '800', color: colors.slate[900] },
+  headerTitle: { fontSize: 20, lineHeight: 25, fontWeight: '800', color: colors.slate[900] },
   headerSubtitle: { marginTop: 2, fontSize: 12, lineHeight: 17, color: colors.slate[500] },
   headerBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: colors.primaryLight, color: colors.primary, fontSize: 11, fontWeight: '800', overflow: 'hidden' },
   sectionHeading: { marginHorizontal: 16, marginTop: 18, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   sectionTitle: { fontSize: 16, lineHeight: 21, fontWeight: '800', color: colors.slate[900] },
   sectionCaption: { marginTop: 2, fontSize: 12, color: colors.slate[500] },
-  card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.slate[200], borderRadius: 12, padding: 14 },
+  card: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.slate[100],
+    borderRadius: 12,
+    padding: 14,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
   statCard: { flex: 1, minWidth: '47%', minHeight: 114 },
   statIcon: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  statValue: { marginTop: 11, fontSize: 25, lineHeight: 29, fontWeight: '800', color: colors.slate[900] },
+  statValue: { marginTop: 11, fontSize: 24, lineHeight: 28, fontWeight: '800', color: colors.slate[900] },
   statLabel: { marginTop: 2, fontSize: 12, color: colors.slate[500], fontWeight: '600' },
   primaryTone: { backgroundColor: colors.primaryLight },
   greenTone: { backgroundColor: colors.accentLight },
