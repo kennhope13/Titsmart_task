@@ -112,7 +112,7 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      <nav className="flex-1 px-3 mt-5 pb-4 space-y-6 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 px-3 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">
         {navGroups.map((group) => (
           <div key={group.title} className="space-y-1">
             <div 

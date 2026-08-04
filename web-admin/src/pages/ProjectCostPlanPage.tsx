@@ -22,6 +22,91 @@ const romanToNumber = (value?: string) => {
   return total;
 };
 
+const toRoman = (num: number): string => {
+  if (num <= 0) return 'I';
+  const lookup: [string, number][] = [
+    ['M', 1000], ['CM', 900], ['D', 500], ['CD', 400],
+    ['C', 100], ['XC', 90], ['L', 50], ['XL', 40],
+    ['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]
+  ];
+  let roman = '';
+  let n = num;
+  for (const [letter, value] of lookup) {
+    while (n >= value) {
+      roman += letter;
+      n -= value;
+    }
+  }
+  return roman;
+};
+
+// Convert Roman numeral to number
+const romanToInt = (roman: string): number | null => {
+  const values: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+  const upper = roman.toUpperCase();
+  let total = 0;
+  for (let i = 0; i < upper.length; i++) {
+    const current = values[upper[i]] || 0;
+    const next = values[upper[i + 1]] || 0;
+    if (current < next) {
+      total -= current;
+    } else {
+      total += current;
+    }
+  }
+  return total > 0 ? total : null;
+};
+
+// Check if a string is a valid Roman numeral
+const isRomanNumeral = (text: string): boolean => {
+  const cleaned = text.trim().toUpperCase();
+  return /^[IVXLCDM]+$/.test(cleaned) && romanToInt(cleaned) !== null;
+};
+
+const sttSortParts = (value?: string) => {
+  const text = String(value || '').trim();
+  if (!text) return [Number.POSITIVE_INFINITY];
+  
+  // Check if it's a Roman numeral (section header like I, II, III)
+  if (isRomanNumeral(text)) {
+    const romanValue = romanToInt(text);
+    return romanValue !== null ? [romanValue] : [Number.POSITIVE_INFINITY];
+  }
+  
+  // Parse as numbers separated by dots or hyphens (1, 1.1, 1-1, 1.1.1, 1-1-1, etc.)
+  const parts = text.split(/[.\-]/).map((part) => {
+    const num = Number.parseInt(part.trim(), 10);
+    return isNaN(num) ? Number.POSITIVE_INFINITY : num;
+  });
+  
+  return parts.length ? parts : [Number.POSITIVE_INFINITY];
+};
+
+const compareTaskStt = (a?: string, b?: string) => {
+  const aText = String(a || '').trim();
+  const bText = String(b || '').trim();
+  
+  const aIsRoman = isRomanNumeral(aText);
+  const bIsRoman = isRomanNumeral(bText);
+  
+  // Roman numerals always come first (sections)
+  if (aIsRoman && !bIsRoman) return -1;
+  if (!aIsRoman && bIsRoman) return 1;
+  
+  // Both are same type, compare using parts
+  const left = sttSortParts(a);
+  const right = sttSortParts(b);
+  const max = Math.max(left.length, right.length);
+  
+  for (let index = 0; index < max; index += 1) {
+    const leftValue = left[index] ?? 0;
+    const rightValue = right[index] ?? 0;
+    if (leftValue !== rightValue) return leftValue - rightValue;
+  }
+  
+  return String(a || '').localeCompare(String(b || ''), 'vi', { numeric: true, sensitivity: 'base' });
+};
+
 const sttSortValue = (value?: string) => {
   const raw = String(value || '').trim();
   const numeric = Number(raw.replace(',', '.'));
@@ -32,8 +117,8 @@ const sttSortValue = (value?: string) => {
   return firstNumber ? Number(firstNumber) : Number.MAX_SAFE_INTEGER;
 };
 
-const normalizePlanKey = (stt?: string, content?: string) =>
-  `${String(stt || '').trim()}|${String(content || '').trim().toLowerCase()}`;
+const normalizePlanKey = (stt?: string, content?: string, parentId?: string) =>
+  `${String(stt || '').trim()}|${String(content || '').trim().toLowerCase()}|${parentId || ''}`;
 
 const isSectionMarker = (stt?: string, notes?: string) =>
   String(notes || '').toLowerCase().includes('[section]') || romanToNumber(stt) !== null;
@@ -77,6 +162,33 @@ export const ProjectCostPlanPage: React.FC = () => {
   // Pending tasks waiting for user confirmation before being created
   const [pendingTaskItems, setPendingTaskItems] = useState<Array<any>>([]);
   const [showCreateTaskConfirm, setShowCreateTaskConfirm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    id: string;
+    type: 'material' | 'purchasing' | 'expense' | 'labor';
+    title: string;
+    itemName: string;
+  } | null>(null);
+
+  const confirmDeleteAction = () => {
+    if (!deleteConfirm) return;
+    const { id, type } = deleteConfirm;
+    
+    if (type === 'material') {
+      deleteMaterialPlan(id);
+      triggerToast('Đã xóa Kế hoạch vật tư thành công!', 'success');
+    } else if (type === 'purchasing') {
+      deletePurchasingPlan(id);
+      triggerToast('Đã xóa Mua sắm hàng hóa thành công!', 'success');
+    } else if (type === 'expense') {
+      deleteExpense(id);
+      triggerToast('Đã xóa Chi phí dự án thành công!', 'success');
+    } else if (type === 'labor') {
+      deleteLaborPayroll(id);
+      triggerToast('Đã xóa Lương công nhật thành công!', 'success');
+    }
+    setDeleteConfirm(null);
+  };
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -612,7 +724,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     }
   }, [projectOptions, selectedProject]);
 
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('MATERIAL_PLAN');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
@@ -624,97 +736,86 @@ export const ProjectCostPlanPage: React.FC = () => {
   // Modals state
   const [editingPlan, setEditingPlan] = useState<ProjectMaterialPlan | null>(null);
   const [isNewPlanOpen, setIsNewPlanOpen] = useState(false);
+  const [parentPlanIdForNew, setParentPlanIdForNew] = useState<string | null>(null);
+  const [isCreatingSectionHeader, setIsCreatingSectionHeader] = useState(false);
   const [editingPurchasing, setEditingPurchasing] = useState<ProjectPurchasing | null>(null);
   const [isNewPurchasingOpen, setIsNewPurchasingOpen] = useState(false);
+  const [parentPurchasingIdForNew, setParentPurchasingIdForNew] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<ProjectExpense | null>(null);
   const [isNewExpenseOpen, setIsNewExpenseOpen] = useState(false);
   const [editingLabor, setEditingLabor] = useState<LaborPayroll | null>(null);
   const [isNewLaborOpen, setIsNewLaborOpen] = useState(false);
+  const [triggerAddDoc, setTriggerAddDoc] = useState(false);
 
   // ----------------------------------------------------
   // FILTER DATA BY SELECTED PROJECT
   // ----------------------------------------------------
   const currentProjMaterialPlans = useMemo(() => {
-    const projectTasks = tasks.filter((task) => task.projectCode === selectedProject && task.name?.trim());
-    const projectImportedPlans = materialPlans.filter((plan) => plan.projectCode === selectedProject && plan.jobContent?.trim());
-
-    if (projectTasks.length === 0) {
-      return projectImportedPlans;
-    }
-
-    const materialByKey = new Map(
-      projectImportedPlans.map((plan) => [normalizePlanKey(plan.stt, plan.jobContent), plan])
-    );
-
-    let runningSection = 'Khac';
-    const progressRows = projectTasks.map((task) => {
-      const isHeaderTask = task.isSectionHeader || romanToNumber(task.stt) !== null;
-      if (isHeaderTask) runningSection = task.name;
-      return {
-        ...task,
-        materialSectionName: task.sectionName || runningSection,
-        materialIsHeader: isHeaderTask,
-      };
-    });
-
-    const groups: Record<string, typeof progressRows> = {};
-    const sectionOrder: string[] = [];
-
-    progressRows.forEach((task) => {
-      const section = task.materialSectionName || 'Khac';
-      if (!groups[section]) {
-        groups[section] = [];
-        sectionOrder.push(section);
+    const filtered = materialPlans.filter((plan) => plan.projectCode === selectedProject && plan.jobContent?.trim());
+    
+    // Group items by their Roman section based on sequential appearance
+    const sections: Array<{ section: ProjectMaterialPlan; items: ProjectMaterialPlan[] }> = [];
+    const orphanItems: ProjectMaterialPlan[] = [];
+    
+    let currentSection: ProjectMaterialPlan | null = null;
+    let currentItems: ProjectMaterialPlan[] = [];
+    
+    const flushSection = () => {
+      if (currentSection) {
+        sections.push({ section: currentSection, items: [...currentItems] });
       }
-      groups[section].push(task);
+      currentItems = [];
+      currentSection = null;
+    };
+    
+    // Process in original order from database
+    filtered.forEach(plan => {
+      if (isRomanNumeral(plan.stt)) {
+        // New Roman section found, flush previous section
+        flushSection();
+        currentSection = plan;
+      } else if (currentSection) {
+        // Item belongs to current section
+        currentItems.push(plan);
+      } else {
+        // Item without section - add to orphans
+        orphanItems.push(plan);
+      }
     });
-
-    sectionOrder.sort((a, b) => {
-      const leftHeader = groups[a].find((task) => task.materialIsHeader) || groups[a][0];
-      const rightHeader = groups[b].find((task) => task.materialIsHeader) || groups[b][0];
-      return sttSortValue(leftHeader?.stt) - sttSortValue(rightHeader?.stt) || String(leftHeader?.stt || '').localeCompare(String(rightHeader?.stt || ''), 'vi', { numeric: true, sensitivity: 'base' });
+    
+    // Flush last section
+    flushSection();
+    
+    // Sort Roman sections by their value (I, II, III, IV...)
+    sections.sort((a, b) => {
+      const aVal = romanToInt(a.section.stt) || 0;
+      const bVal = romanToInt(b.section.stt) || 0;
+      return aVal - bVal;
     });
-
-    return sectionOrder.flatMap((section) => {
-      return groups[section].sort((a, b) => {
-        if (a.materialIsHeader && !b.materialIsHeader) return -1;
-        if (!a.materialIsHeader && b.materialIsHeader) return 1;
-        return sttSortValue(a.stt) - sttSortValue(b.stt) || String(a.stt || '').localeCompare(String(b.stt || ''), 'vi', { numeric: true, sensitivity: 'base' });
-      });
-    }).map((task, index): ProjectMaterialPlan => {
-      const existing = materialByKey.get(normalizePlanKey(task.stt || String(index + 1), task.name));
-      const useExistingColumns = Boolean(existing && !isAutoSyncedMaterialPlan(existing));
-      return {
-        id: existing?.id || 'task-material-' + task.id,
-        projectCode: selectedProject,
-        stt: task.stt || String(index + 1),
-        jobContent: task.name,
-        unit: useExistingColumns ? (existing?.unit || '') : (task.unit || ''),
-        contractVolume: useExistingColumns ? Number(existing?.contractVolume || 0) : Number(task.volume || 0),
-        techSpecModel: useExistingColumns ? (existing?.techSpecModel || '') : '',
-        techSpecOrigin: useExistingColumns ? (existing?.techSpecOrigin || '') : '',
-        progressStatus: useExistingColumns ? (existing?.progressStatus || '') : '',
-        orderedVolume: useExistingColumns ? Number(existing?.orderedVolume || 0) : 0,
-        orderedStatus: useExistingColumns ? (existing?.orderedStatus || '') : '',
-        expectedDate: useExistingColumns ? (existing?.expectedDate || '') : '',
-        issueContent: useExistingColumns ? (existing?.issueContent || '') : '',
-        issueStatus: useExistingColumns ? (existing?.issueStatus || '') : '',
-        docCo: useExistingColumns ? Boolean(existing?.docCo) : false,
-        docCq: useExistingColumns ? Boolean(existing?.docCq) : false,
-        docFireInspection: useExistingColumns ? Boolean(existing?.docFireInspection) : false,
-        dispatchToSite: useExistingColumns ? Boolean(existing?.dispatchToSite) : false,
-        dispatchDate: useExistingColumns ? (existing?.dispatchDate || '') : '',
-        supplyScope: existing?.supplyScope || 'unknown',
-        notes: [task.materialIsHeader ? '[section]' : '', useExistingColumns ? (existing?.notes || '') : ''].filter(Boolean).join(' | '),
-      };
+    
+    // Sort items within each section by STT (1, 1-1, 1-1-1, 2, 2-1...)
+    sections.forEach(group => {
+      group.items.sort((a, b) => compareTaskStt(a.stt, b.stt));
     });
-  }, [materialPlans, selectedProject, tasks]);
+    
+    // Sort orphan items
+    orphanItems.sort((a, b) => compareTaskStt(a.stt, b.stt));
+    
+    // Combine: orphans first, then sections
+    const result: ProjectMaterialPlan[] = [...orphanItems];
+    sections.forEach(group => {
+      result.push(group.section);
+      result.push(...group.items);
+    });
+    
+    return result;
+  }, [materialPlans, selectedProject]);
 
   const currentProjPurchasing = useMemo(() => {
     const purchasingByKey = new Map(
       purchasingPlans
         .filter((plan) => plan.projectCode === selectedProject)
-        .map((plan) => [normalizePlanKey(plan.stt, plan.content), plan])
+        .map((plan) => [normalizePlanKey(plan.stt, plan.content, plan.parentId), plan])
     );
 
     const rows: ProjectPurchasing[] = [];
@@ -733,7 +834,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       if (section) {
         flushSection();
         pendingSection = {
-          id: `purchase-section-${plan.id}`,
+          id: plan.id,
           projectCode: selectedProject,
           stt: plan.stt,
           content: plan.jobContent,
@@ -744,9 +845,11 @@ export const ProjectCostPlanPage: React.FC = () => {
         return;
       }
       if (!isContractorMaterialPlan(plan)) return;
-      const existing = purchasingByKey.get(normalizePlanKey(plan.stt, plan.jobContent));
+      const key = normalizePlanKey(plan.stt, plan.jobContent);
+      const existing = purchasingByKey.get(key);
+      if (existing) purchasingByKey.delete(key);
       sectionRows.push(existing || {
-        id: `material-purchase-${plan.id}`,
+        id: plan.id,
         projectCode: selectedProject,
         stt: plan.stt,
         content: plan.jobContent,
@@ -756,7 +859,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       });
     });
     flushSection();
-    return rows;
+    return [...rows, ...Array.from(purchasingByKey.values())];
   }, [currentProjMaterialPlans, purchasingPlans, selectedProject]);
   const currentProjExpenses = useMemo(() => 
     expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
@@ -951,17 +1054,14 @@ export const ProjectCostPlanPage: React.FC = () => {
   });
 
   return (
-    <div className="px-5 py-4 space-y-4">
+    <div className="flex flex-col">
       {/* HEADER SECTION */}
-      <section className="bg-white border border-slate-200 rounded-xl shadow-xs p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">calculate</span>
           </div>
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">Kế hoạch & Chi phí Dự án</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">Quản lý tổng hợp ngân sách, vật tư kế hoạch, mua sắm vật tư và chi phí chi tiết theo công trình</p>
-          </div>
+          <h1 className="text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">KẾ HOẠCH & CHI PHÍ DỰ ÁN</h1>
         </div>
 
         {/* Project Selector & Actions */}
@@ -973,19 +1073,6 @@ export const ProjectCostPlanPage: React.FC = () => {
             accept=".xlsx,.xls,.csv,.pdf,.doc,.docx" 
             className="hidden" 
           />
-          <button 
-            onClick={() => {
-              if (!selectedProject) {
-                triggerToast('Vui lòng khởi tạo dự án trước khi nhập dữ liệu!', 'warning');
-                return;
-              }
-              fileInputRef.current?.click();
-            }} 
-            className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-2 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 shadow-xs text-blue-600 border-blue-100"
-          >
-            <span className="material-symbols-outlined text-base">file_upload</span>
-            Nhập File
-          </button>
 
           <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200">
             <span className="text-xs font-bold text-slate-500 uppercase px-2">Dự án:</span>
@@ -1007,55 +1094,10 @@ export const ProjectCostPlanPage: React.FC = () => {
         </div>
       </section>
 
-      {/* METRICS ROW */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Quỹ Công trình</span>
-            <span className="material-symbols-outlined text-lg text-blue-500 bg-blue-50 p-1.5 rounded-md">account_balance_wallet</span>
-          </div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-2">{projectMetrics.fund.toLocaleString('vi-VN')} <span className="text-xs font-semibold text-slate-500">đ</span></div>
-          <div className="text-[10px] text-slate-500 mt-1">Dự trù ngân sách của công trường</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Tổng chi thực tế</span>
-            <span className="material-symbols-outlined text-lg text-rose-500 bg-rose-50 p-1.5 rounded-md">payments</span>
-          </div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-2">{projectMetrics.totalSpent.toLocaleString('vi-VN')} <span className="text-xs font-semibold text-slate-500">đ</span></div>
-          <div className="text-[10px] text-slate-500 mt-1">Chi công trình ({projectMetrics.totalExp.toLocaleString('vi-VN')}đ) + Lương ({projectMetrics.totalLab.toLocaleString('vi-VN')}đ)</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Tồn quỹ cuối kỳ</span>
-            <span className="material-symbols-outlined text-lg text-emerald-500 bg-emerald-50 p-1.5 rounded-md">savings</span>
-          </div>
-          <div className={`text-2xl font-extrabold mt-2 ${projectMetrics.balance < 0 ? 'text-red-600' : 'text-slate-900'}`}>{projectMetrics.balance.toLocaleString('vi-VN')} <span className="text-xs font-semibold text-slate-500">đ</span></div>
-          <div className="text-[10px] text-slate-500 mt-1">Ngân quỹ còn lại của dự án</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Tiến độ Vật tư</span>
-            <span className="material-symbols-outlined text-lg text-amber-500 bg-amber-50 p-1.5 rounded-md">inventory</span>
-          </div>
-          <div className="flex items-center gap-2 mt-2">
-            <div className="text-2xl font-extrabold text-slate-900">{projectMetrics.progressPercent}%</div>
-            <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
-              <div className="bg-amber-500 h-full rounded-full" style={{ width: `${projectMetrics.progressPercent}%` }}></div>
-            </div>
-          </div>
-          <div className="text-[10px] text-slate-500 mt-1">Tỷ lệ vật tư đã hoàn tất cung cấp</div>
-        </div>
-      </section>
-
       {/* TABS SELECTOR */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white rounded-t-xl px-4 pt-1 shadow-xs border-x">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1 shadow-xs border-x">
         <div className="flex items-center gap-4">
           {[
-            { id: 'OVERVIEW', label: 'Tổng Quan & Biểu Đồ', icon: 'monitoring' },
             { id: 'MATERIAL_PLAN', label: 'Kế Hoạch Vật Tư', icon: 'list_alt' },
             { id: 'PURCHASING', label: 'Mua hàng (nhà thầu)', icon: 'shopping_bag' },
             { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long' },
@@ -1077,7 +1119,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           ))}
         </div>
 
-        {activeTab !== 'OVERVIEW' && (
+        {true && (
           <div className="flex gap-2 pb-1.5">
             <input 
               type="file" 
@@ -1118,10 +1160,12 @@ export const ProjectCostPlanPage: React.FC = () => {
                   triggerToast('Vui lòng khởi tạo dự án trước khi thêm dữ liệu!', 'warning');
                   return;
                 }
+                setIsCreatingSectionHeader(false);
                 if (activeTab === 'MATERIAL_PLAN') setIsNewPlanOpen(true);
                 else if (activeTab === 'PURCHASING') setIsNewPurchasingOpen(true);
                 else if (activeTab === 'EXPENSE') setIsNewExpenseOpen(true);
                 else if (activeTab === 'LABOR') setIsNewLaborOpen(true);
+                else if (activeTab === 'DOCUMENTS') setTriggerAddDoc(true);
               }} 
               className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
             >
@@ -1133,71 +1177,23 @@ export const ProjectCostPlanPage: React.FC = () => {
       </div>
 
       {/* TAB CONTENTS */}
-      <div className="bg-white border-x border-b border-slate-200 rounded-b-xl shadow-xs overflow-hidden">
+      <div className="bg-white border-x border-b border-slate-200 shadow-xs overflow-hidden flex-1">
         
-        {/* OVERVIEW TAB */}
-        {activeTab === 'OVERVIEW' && (
-          <div className="p-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Chart Area */}
-            <div className="border border-slate-200 rounded-xl p-4 lg:col-span-2">
-              <h3 className="text-sm font-bold text-slate-900 mb-4">Cơ cấu Chi phí & Mua sắm hàng hóa</h3>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                    <YAxis tickFormatter={(v) => `${(v/1000000).toFixed(1)}M`} tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(v) => `${Number(v).toLocaleString('vi-VN')} đ`} />
-                    <Legend />
-                    <Bar dataKey="value" fill="#0284c7" name="Chi phí thực tế (đ)">
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Side summary panel */}
-            <div className="border border-slate-200 rounded-xl p-4 space-y-4">
-              <h3 className="text-sm font-bold text-slate-900">Chi tiết Báo cáo Tài chính</h3>
-              <div className="divide-y divide-slate-100 text-xs">
-                <div className="flex justify-between py-2.5">
-                  <span className="text-slate-500 font-medium">Chi mua sắm vật tư (Hợp đồng)</span>
-                  <span className="font-bold text-slate-800">{projectMetrics.totalPurchasing.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between py-2.5">
-                  <span className="text-slate-500 font-medium">Chi công trình hiện trường</span>
-                  <span className="font-bold text-slate-800">{projectMetrics.totalExp.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between py-2.5">
-                  <span className="text-slate-500 font-medium">Chi tiền lương công nhật</span>
-                  <span className="font-bold text-slate-800">{projectMetrics.totalLab.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between py-2.5">
-                  <span className="text-slate-500 font-medium">Chứng từ thiếu (CO)</span>
-                  <span className="font-bold text-rose-600">{projectMetrics.missingCo} vật tư</span>
-                </div>
-                <div className="flex justify-between py-2.5">
-                  <span className="text-slate-500 font-medium">Chứng từ thiếu (CQ)</span>
-                  <span className="font-bold text-rose-600">{projectMetrics.missingCq} vật tư</span>
-                </div>
-                <div className="flex justify-between py-2.5 bg-slate-50 p-2 rounded-lg font-bold mt-2">
-                  <span className="text-slate-700">Tổng quỹ chi tiêu</span>
-                  <span className="text-primary">{projectMetrics.fund.toLocaleString('vi-VN')} đ</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* MATERIAL PLAN TAB */}
         {activeTab === 'MATERIAL_PLAN' && (
           <MaterialPlanTab
             data={currentProjMaterialPlans}
+            onUpdate={updateMaterialPlan}
             onEdit={setEditingPlan}
-            onDelete={deleteMaterialPlan}
+            onDelete={(id) => {
+              const item = currentProjMaterialPlans.find(p => p.id === id);
+              setDeleteConfirm({ isOpen: true, id, type: 'material', title: 'Xóa kế hoạch vật tư', itemName: `hạng mục "${item?.jobContent}"` });
+            }}
+            onAddSubtask={(plan) => {
+              setParentPlanIdForNew(plan.id);
+              setIsCreatingSectionHeader(false);
+              setIsNewPlanOpen(true);
+            }}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             statusFilter={statusFilter}
@@ -1209,8 +1205,17 @@ export const ProjectCostPlanPage: React.FC = () => {
         {activeTab === 'PURCHASING' && (
           <PurchasingTab
             data={currentProjPurchasing}
+            onUpdate={updatePurchasingPlan}
             onEdit={setEditingPurchasing}
-            onDelete={deletePurchasingPlan}
+            onDelete={(id) => {
+              const item = currentProjPurchasing.find(p => p.id === id);
+              setDeleteConfirm({ isOpen: true, id, type: 'purchasing', title: 'Xóa mua sắm hàng hóa', itemName: `mục "${item?.content}"` });
+            }}
+            onAddSubtask={(plan) => {
+              setParentPurchasingIdForNew(plan.id);
+              setIsCreatingSectionHeader(false);
+              setIsNewPurchasingOpen(true);
+            }}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             statusFilter={statusFilter}
@@ -1222,8 +1227,17 @@ export const ProjectCostPlanPage: React.FC = () => {
         {activeTab === 'DOCUMENTS' && (
           <DocumentCertificateTab
             data={currentProjMaterialPlans}
+            selectedProject={selectedProject}
+            onAdd={addMaterialPlan}
+            onUpdate={updateMaterialPlan}
+            onDelete={(id) => {
+              const item = currentProjMaterialPlans.find(p => p.id === id);
+              setDeleteConfirm({ isOpen: true, id, type: 'material', title: 'Xóa chứng từ', itemName: `chứng từ của "${item?.jobContent}"` });
+            }}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+            triggerAdd={triggerAddDoc}
+            onTriggerHandled={() => setTriggerAddDoc(false)}
           />
         )}
 
@@ -1277,7 +1291,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                     </td>
                     <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <button 
-                        onClick={() => { if(window.confirm('Xóa phiếu chi này?')) deleteExpense(exp.id) }} 
+                        onClick={() => {
+                          setDeleteConfirm({ isOpen: true, id: exp.id, type: 'expense', title: 'Xóa phiếu chi', itemName: `phiếu chi "${exp.content}"` });
+                        }} 
                         className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">delete</span>
@@ -1351,7 +1367,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                     </td>
                     <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <button 
-                        onClick={() => { if(window.confirm('Xóa dòng thanh toán lương công nhật này?')) deleteLaborPayroll(lab.id) }} 
+                        onClick={() => {
+                          setDeleteConfirm({ isOpen: true, id: lab.id, type: 'labor', title: 'Xóa lương công nhật', itemName: `lương của "${lab.workerName || lab.description}"` });
+                        }} 
                         className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">delete</span>
@@ -1370,13 +1388,40 @@ export const ProjectCostPlanPage: React.FC = () => {
       </div>
 
       {/* MODALS */}
+      {/* Confirm dialog: Xóa hạng mục */}
+      <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title={deleteConfirm?.title || 'Xác nhận xóa'}>
+        <div className="py-4">
+          <p className="mb-8 text-sm font-medium text-slate-700">Bạn chắc chắn muốn xóa {deleteConfirm?.itemName}?</p>
+          <div className="flex justify-end gap-3 border-t pt-4">
+            <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border border-slate-300 text-slate-700 bg-white rounded hover:bg-slate-50 transition-colors font-medium">Hủy</button>
+            <button onClick={confirmDeleteAction} className="px-4 py-2 bg-[#e53935] text-white rounded hover:bg-red-700 transition-colors font-bold shadow-md">Xóa</button>
+          </div>
+        </div>
+      </Modal>
+
       {/* 1. Modal Kế Hoạch Vật Tư */}
-      <Modal isOpen={isNewPlanOpen} onClose={() => setIsNewPlanOpen(false)} title="Thêm hạng mục Kế hoạch Vật tư mới">
+      <Modal isOpen={isNewPlanOpen} onClose={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setIsCreatingSectionHeader(false); }} title={isCreatingSectionHeader ? 'Thêm Đầu mục lớn — Kế hoạch Vật tư' : 'Thêm Hạng mục — Kế hoạch Vật tư'} size="xl">
         <form onSubmit={(e) => {
           e.preventDefault();
+          const parentId = isCreatingSectionHeader ? null : parentPlanIdForNew;
+          
+          // Auto STT: La Mã cho đầu mục lớn, số thứ tự cho hạng mục nhỏ
+          const autoStt = (() => {
+            if (newPlanData.stt) return newPlanData.stt;
+            if (isCreatingSectionHeader) {
+              const sectionCount = currentProjMaterialPlans.filter(p => isSectionMarker(p.stt, p.notes)).length;
+              return toRoman(sectionCount + 1);
+            }
+            if (parentId) {
+              const siblings = currentProjMaterialPlans.filter(p => p.parentId === parentId);
+              return String(siblings.length + 1);
+            }
+            return String(currentProjMaterialPlans.filter(p => !p.parentId).length + 1);
+          })();
+
           addMaterialPlan({
             projectCode: selectedProject,
-            stt: newPlanData.stt || String(currentProjMaterialPlans.length + 1),
+            stt: autoStt,
             jobContent: newPlanData.jobContent || '',
             unit: newPlanData.unit || 'bộ',
             contractVolume: Number(newPlanData.contractVolume || 1),
@@ -1391,52 +1436,130 @@ export const ProjectCostPlanPage: React.FC = () => {
             docCq: !!newPlanData.docCq,
             docFireInspection: !!newPlanData.docFireInspection,
             dispatchToSite: !!newPlanData.dispatchToSite,
-            notes: newPlanData.notes || ''
+            notes: isCreatingSectionHeader && !parentId ? '[section]' : (newPlanData.notes || ''),
+            parentId: parentId || undefined
           });
-          setIsNewPlanOpen(false);
+          
+          // Reset form
           setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: ''});
-        }} className="space-y-3 text-xs">
-          <div>
-            <label className="block font-bold mb-1">Tên vật tư / hạng mục *</label>
-            <input type="text" required value={newPlanData.jobContent} onChange={(e) => setNewPlanData({...newPlanData, jobContent: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="block font-bold mb-1">Đơn vị tính</label><input type="text" value={newPlanData.unit} onChange={(e) => setNewPlanData({...newPlanData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" value={newPlanData.contractVolume} onChange={(e) => setNewPlanData({...newPlanData, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="block font-bold mb-1">Mã hiệu / Quy cách</label><input type="text" value={newPlanData.techSpecModel} onChange={(e) => setNewPlanData({...newPlanData, techSpecModel: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Nguồn sản xuất / Xuất xứ</label><input type="text" value={newPlanData.techSpecOrigin} onChange={(e) => setNewPlanData({...newPlanData, techSpecOrigin: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block font-bold mb-1">Tiến độ thi công</label>
-              <select value={newPlanData.progressStatus} onChange={(e) => setNewPlanData({...newPlanData, progressStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                <option value="Chưa thi công">Chưa thi công</option>
-                <option value="Đang thi công">Đang thi công</option>
-                <option value="Đã hoàn thành">Đã hoàn thành</option>
-              </select>
+
+          if (isCreatingSectionHeader) {
+            // Giống TaskManagementPage: sau khi tạo đầu mục lớn, KHÔNG đóng modal, chuyển sang mode thêm hạng mục nhỏ
+            setIsCreatingSectionHeader(false);
+            triggerToast('Đã tạo Đầu mục lớn. Bạn có thể thêm Hạng mục nhỏ vào đây.', 'success');
+            return;
+          }
+
+          setIsNewPlanOpen(false);
+          setParentPlanIdForNew(null);
+          setIsCreatingSectionHeader(false);
+          triggerToast('Đã thêm Hạng mục thành công!', 'success');
+        }} className="space-y-3.5 text-xs">
+
+          {/* Banner chế độ hiện tại */}
+          {isCreatingSectionHeader ? (
+            <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
+              <span className="material-symbols-outlined text-base text-primary">folder_open</span>
+              <span className="font-bold text-primary">Chế độ: Thêm Đầu mục lớn (nhóm cha)</span>
             </div>
-            <div>
-              <label className="block font-bold mb-1">Trạng thái đặt hàng</label>
-              <select value={newPlanData.orderedStatus} onChange={(e) => setNewPlanData({...newPlanData, orderedStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                <option value="Chưa đặt hàng">Chưa đặt hàng</option>
-                <option value="Đã đặt hàng">Đã đặt hàng</option>
-                <option value="Đã nhận đủ">Đã nhận đủ</option>
-              </select>
+          ) : parentPlanIdForNew ? (
+            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
+              <span className="material-symbols-outlined text-base text-emerald-600">subdirectory_arrow_right</span>
+              <span className="font-bold text-emerald-700">
+                Đang thêm mục con của:{' '}
+                <span className="text-slate-800">
+                  {(() => {
+                    const p = currentProjMaterialPlans.find(x => x.id === parentPlanIdForNew);
+                    return p ? `${p.stt ? p.stt + '. ' : ''}${p.jobContent}` : '—';
+                  })()}
+                </span>
+              </span>
             </div>
-          </div>
+          ) : null}
+
+          {!isCreatingSectionHeader && (
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục / Hạng mục cha</label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={parentPlanIdForNew || ''}
+                  onChange={(e) => setParentPlanIdForNew(e.target.value || null)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/50 font-bold text-primary"
+                >
+                  <option value="">— Mục ngoài cùng (không có cha) —</option>
+                  {currentProjMaterialPlans.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {isSectionMarker(p.stt, p.notes) ? '📁 ' : '  ↳ '}
+                      {p.stt ? `${p.stt}. ` : ''}{p.jobContent}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => { setIsCreatingSectionHeader(true); setParentPlanIdForNew(null); }}
+                  className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
+                  title="Tạo Đầu mục lớn mới"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          )}
+
           <div>
-            <label className="block font-bold mb-1">Ngày cấp hàng dự kiến</label>
-            <input type="date" value={newPlanData.expectedDate || ''} onChange={(e) => setNewPlanData({...newPlanData, expectedDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
+            <label className="block font-bold text-slate-700 mb-1">
+              {isCreatingSectionHeader ? 'Tên Đầu mục lớn *' : 'Tên vật tư / hạng mục *'}
+            </label>
+            <input
+              type="text"
+              required
+              placeholder={isCreatingSectionHeader ? 'VD: HỆ THỐNG ĐIỆN CHIẾU SÁNG' : 'VD: Máy bơm điện Q=54m3/h; H=30mH2O'}
+              value={newPlanData.jobContent}
+              onChange={(e) => setNewPlanData({...newPlanData, jobContent: e.target.value})}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+            />
           </div>
-          <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
-            <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.docCo} onChange={(e) => setNewPlanData({...newPlanData, docCo: e.target.checked})} /> <span className="font-bold">Chứng từ CO</span></div>
-            <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.docCq} onChange={(e) => setNewPlanData({...newPlanData, docCq: e.target.checked})} /> <span className="font-bold">Chứng từ CQ</span></div>
-            <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.dispatchToSite} onChange={(e) => setNewPlanData({...newPlanData, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi tới CT</span></div>
-          </div>
+          {!isCreatingSectionHeader && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block font-bold mb-1">Đơn vị tính</label><input type="text" value={newPlanData.unit} onChange={(e) => setNewPlanData({...newPlanData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" value={newPlanData.contractVolume} onChange={(e) => setNewPlanData({...newPlanData, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block font-bold mb-1">Mã hiệu / Quy cách</label><input type="text" value={newPlanData.techSpecModel} onChange={(e) => setNewPlanData({...newPlanData, techSpecModel: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Nguồn sản xuất / Xuất xứ</label><input type="text" value={newPlanData.techSpecOrigin} onChange={(e) => setNewPlanData({...newPlanData, techSpecOrigin: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold mb-1">Tiến độ thi công</label>
+                  <select value={newPlanData.progressStatus} onChange={(e) => setNewPlanData({...newPlanData, progressStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="Chưa thi công">Chưa thi công</option>
+                    <option value="Đang thi công">Đang thi công</option>
+                    <option value="Đã hoàn thành">Đã hoàn thành</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold mb-1">Trạng thái đặt hàng</label>
+                  <select value={newPlanData.orderedStatus} onChange={(e) => setNewPlanData({...newPlanData, orderedStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="Chưa đặt hàng">Chưa đặt hàng</option>
+                    <option value="Đã đặt hàng">Đã đặt hàng</option>
+                    <option value="Đã nhận đủ">Đã nhận đủ</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block font-bold mb-1">Ngày cấp hàng dự kiến</label>
+                <input type="date" value={newPlanData.expectedDate || ''} onChange={(e) => setNewPlanData({...newPlanData, expectedDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
+              </div>
+              <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
+                <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.docCo} onChange={(e) => setNewPlanData({...newPlanData, docCo: e.target.checked})} /> <span className="font-bold">Chứng từ CO</span></div>
+                <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.docCq} onChange={(e) => setNewPlanData({...newPlanData, docCq: e.target.checked})} /> <span className="font-bold">Chứng từ CQ</span></div>
+                <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.dispatchToSite} onChange={(e) => setNewPlanData({...newPlanData, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi tới CT</span></div>
+              </div>
+            </>
+          )}
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newPlanData.notes} onChange={(e) => setNewPlanData({...newPlanData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewPlanOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu mới</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setIsCreatingSectionHeader(false); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">{isCreatingSectionHeader ? 'Lưu Đầu Mục' : 'Thêm Hạng Mục'}</button></div>
         </form>
       </Modal>
 
@@ -1447,6 +1570,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             e.preventDefault();
             updateMaterialPlan(editingPlan.id, editingPlan);
             setEditingPlan(null);
+            triggerToast('Đã cập nhật Kế hoạch Vật tư thành công!', 'success');
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">STT</label><input type="text" value={editingPlan.stt} onChange={(e) => setEditingPlan({...editingPlan, stt: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -1494,9 +1618,10 @@ export const ProjectCostPlanPage: React.FC = () => {
       </Modal>
 
       {/* 2. Modal Mua Sắm Hàng Hóa */}
-      <Modal isOpen={isNewPurchasingOpen} onClose={() => setIsNewPurchasingOpen(false)} title="Thêm Hợp đồng Mua sắm mới">
+      <Modal isOpen={isNewPurchasingOpen} onClose={() => { setIsNewPurchasingOpen(false); setParentPurchasingIdForNew(null); setIsCreatingSectionHeader(false); }} title={isCreatingSectionHeader ? 'Thêm Đầu mục lớn — Mua sắm Hàng hóa' : 'Thêm Hạng mục — Mua sắm Hàng hóa'} size="xl">
         <form onSubmit={(e) => {
           e.preventDefault();
+          const parentId = isCreatingSectionHeader ? null : parentPurchasingIdForNew;
           const contractVol = Number(newPurchasingData.volumeContract || 1);
           const orderVol = Number(newPurchasingData.volumeOrder || 0);
           const unitPrice = Number(newPurchasingData.unitPrice || 0);
@@ -1509,9 +1634,23 @@ export const ProjectCostPlanPage: React.FC = () => {
           const prepayAmt = totalAmt * prepayPct;
           const remainingAmt = totalAmt - prepayAmt;
 
+          // Auto STT: La Mã cho đầu mục lớn, số thứ tự cho hạng mục nhỏ
+          const autoStt = (() => {
+            if (newPurchasingData.stt) return newPurchasingData.stt;
+            if (isCreatingSectionHeader) {
+              const sectionCount = currentProjPurchasing.filter(p => isSectionMarker(p.stt, p.notes)).length;
+              return toRoman(sectionCount + 1);
+            }
+            if (parentId) {
+              const siblings = currentProjPurchasing.filter(p => p.parentId === parentId);
+              return String(siblings.length + 1);
+            }
+            return String(currentProjPurchasing.filter(p => !p.parentId).length + 1);
+          })();
+
           addPurchasingPlan({
             projectCode: selectedProject,
-            stt: newPurchasingData.stt || String(currentProjPurchasing.length + 1),
+            stt: autoStt,
             content: newPurchasingData.content || '',
             unit: newPurchasingData.unit || 'bộ',
             volumeContract: contractVol,
@@ -1527,98 +1666,176 @@ export const ProjectCostPlanPage: React.FC = () => {
             contractStatus: newPurchasingData.contractStatus || 'Chưa ký',
             paymentDate: newPurchasingData.paymentDate || '',
             invoiceStatus: newPurchasingData.invoiceStatus || 'Chưa xuất',
-            notes: newPurchasingData.notes || ''
+            notes: isCreatingSectionHeader && !parentId ? '[section]' : (newPurchasingData.notes || ''),
+            parentId: parentId || undefined
           });
-          setIsNewPurchasingOpen(false);
+
+          // Reset form
           setNewPurchasingData({stt: '', content: '', unit: 'bộ', volumeContract: 1, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''});
-        }} className="space-y-3 text-xs">
-          <div>
-            <label className="block font-bold mb-1">Tên Hàng hóa / Hợp đồng *</label>
-            <input type="text" required value={newPurchasingData.content} onChange={(e) => setNewPurchasingData({...newPurchasingData, content: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" />
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newPurchasingData.unit} onChange={(e) => setNewPurchasingData({...newPurchasingData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" value={String(newPurchasingData.volumeContract)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeContract: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" value={String(newPurchasingData.volumeOrder)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeOrder: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" value={String(newPurchasingData.unitPrice)} onChange={(e) => setNewPurchasingData({...newPurchasingData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
-            <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" value={String(newPurchasingData.vatRate)} onChange={(e) => setNewPurchasingData({...newPurchasingData, vatRate: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" min="0" max="100" value={String(Math.round((newPurchasingData.prepayPercent || 0) * 100))} onChange={(e) => setNewPurchasingData({...newPurchasingData, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          </div>
-          <div>
-            <label className="block font-bold mb-1">Ngày dự kiến có hàng</label>
-            <input type="date" value={newPurchasingData.paymentDate || ''} onChange={(e) => setNewPurchasingData({...newPurchasingData, paymentDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
-          </div>
-          {(() => {
-            const liveContractVol = Number(newPurchasingData.volumeContract || 0);
-            const liveUnitPrice = Number(newPurchasingData.unitPrice || 0);
-            const liveVatRate = Number(newPurchasingData.vatRate || 0);
-            const livePrepayPercent = Number(newPurchasingData.prepayPercent || 0);
 
-            const liveRawTotal = liveContractVol * liveUnitPrice;
-            const liveVatAmount = liveRawTotal * (liveVatRate / 100);
-            const liveTotalAmount = liveRawTotal + liveVatAmount;
-            const livePrepayAmount = liveTotalAmount * livePrepayPercent;
-            const liveRemainingAmount = liveTotalAmount - livePrepayAmount;
+          if (isCreatingSectionHeader) {
+            // Giống TaskManagementPage: sau khi tạo đầu mục lớn, KHÔNG đóng modal, chuyển sang mode thêm hạng mục nhỏ
+            setIsCreatingSectionHeader(false);
+            triggerToast('Đã tạo Đầu mục lớn. Bạn có thể thêm Hạng mục nhỏ vào đây.', 'success');
+            return;
+          }
 
-            return (
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5 text-[11px] font-mono text-slate-600 mt-2">
-                <div className="flex justify-between">
-                  <span>Thành tiền (chưa VAT):</span>
-                  <span className="font-bold text-slate-800">{liveRawTotal.toLocaleString('vi-VN')} đ</span>
+          setIsNewPurchasingOpen(false);
+          setParentPurchasingIdForNew(null);
+          setIsCreatingSectionHeader(false);
+          triggerToast('Đã thêm Hạng mục thành công!', 'success');
+        }} className="space-y-3.5 text-xs">
+
+          {/* Banner chế độ hiện tại */}
+          {isCreatingSectionHeader ? (
+            <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
+              <span className="material-symbols-outlined text-base text-primary">folder_open</span>
+              <span className="font-bold text-primary">Chế độ: Thêm Đầu mục lớn (nhóm cha)</span>
+            </div>
+          ) : parentPurchasingIdForNew ? (
+            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
+              <span className="material-symbols-outlined text-base text-emerald-600">subdirectory_arrow_right</span>
+              <span className="font-bold text-emerald-700">
+                Đang thêm mục con của:{' '}
+                <span className="text-slate-800">
+                  {(() => {
+                    const p = currentProjPurchasing.find(x => x.id === parentPurchasingIdForNew);
+                    return p ? `${p.stt ? p.stt + '. ' : ''}${p.content}` : '—';
+                  })()}
+                </span>
+              </span>
+            </div>
+          ) : null}
+
+          {!isCreatingSectionHeader && (
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục / Hạng mục cha</label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={parentPurchasingIdForNew || ''}
+                  onChange={(e) => setParentPurchasingIdForNew(e.target.value || null)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/50 font-bold text-primary"
+                >
+                  <option value="">— Mục ngoài cùng (không có cha) —</option>
+                  {currentProjPurchasing.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {isSectionMarker(p.stt, p.notes) ? '📁 ' : '  ↳ '}
+                      {p.stt ? `${p.stt}. ` : ''}{p.content}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => { setIsCreatingSectionHeader(true); setParentPurchasingIdForNew(null); }}
+                  className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
+                  title="Tạo Đầu mục lớn mới"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              {isCreatingSectionHeader ? 'Tên Đầu mục lớn *' : 'Tên Hàng hóa / Hợp đồng *'}
+            </label>
+            <input
+              type="text"
+              required
+              placeholder={isCreatingSectionHeader ? 'VD: HỆ THỐNG ĐIỆN CHIẾU SÁNG' : 'VD: Cáp điện 3x185mm2, hãng LS'}
+              value={newPurchasingData.content}
+              onChange={(e) => setNewPurchasingData({...newPurchasingData, content: e.target.value})}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+            />
+          </div>
+          {!isCreatingSectionHeader && (
+            <>
+              <div className="grid grid-cols-4 gap-3">
+                <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newPurchasingData.unit} onChange={(e) => setNewPurchasingData({...newPurchasingData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" value={String(newPurchasingData.volumeContract)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeContract: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" value={String(newPurchasingData.volumeOrder)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeOrder: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" value={String(newPurchasingData.unitPrice)} onChange={(e) => setNewPurchasingData({...newPurchasingData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
+                <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" value={String(newPurchasingData.vatRate)} onChange={(e) => setNewPurchasingData({...newPurchasingData, vatRate: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" min="0" max="100" value={String(Math.round((newPurchasingData.prepayPercent || 0) * 100))} onChange={(e) => setNewPurchasingData({...newPurchasingData, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              </div>
+              <div>
+                <label className="block font-bold mb-1">Ngày dự kiến có hàng</label>
+                <input type="date" value={newPurchasingData.paymentDate || ''} onChange={(e) => setNewPurchasingData({...newPurchasingData, paymentDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
+              </div>
+              {(() => {
+                const liveContractVol = Number(newPurchasingData.volumeContract || 0);
+                const liveUnitPrice = Number(newPurchasingData.unitPrice || 0);
+                const liveVatRate = Number(newPurchasingData.vatRate || 0);
+                const livePrepayPercent = Number(newPurchasingData.prepayPercent || 0);
+
+                const liveRawTotal = liveContractVol * liveUnitPrice;
+                const liveVatAmount = liveRawTotal * (liveVatRate / 100);
+                const liveTotalAmount = liveRawTotal + liveVatAmount;
+                const livePrepayAmount = liveTotalAmount * livePrepayPercent;
+                const liveRemainingAmount = liveTotalAmount - livePrepayAmount;
+
+                return (
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5 text-[11px] font-mono text-slate-600 mt-2">
+                    <div className="flex justify-between">
+                      <span>Thành tiền (chưa VAT):</span>
+                      <span className="font-bold text-slate-800">{liveRawTotal.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Thuế VAT ({liveVatRate}%):</span>
+                      <span className="font-bold text-slate-800">{liveVatAmount.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
+                      <span>Tổng tiền (có VAT):</span>
+                      <span className="text-primary">{liveTotalAmount.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tiền Tạm ứng ({Math.round(livePrepayPercent * 100)}%):</span>
+                      <span className="font-bold text-rose-600">{livePrepayAmount.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
+                      <span>Còn lại phải trả:</span>
+                      <span className="text-emerald-600">{liveRemainingAmount.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                  </div>
+                );
+              })()}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-bold mb-1">TT Đặt hàng</label>
+                  <select value={newPurchasingData.orderStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, orderStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="Chưa đặt hàng">Chưa đặt hàng</option>
+                    <option value="Đã đặt hàng">Đã đặt hàng</option>
+                    <option value="Đang giao hàng">Đang giao hàng</option>
+                    <option value="Đã nhận hàng">Đã nhận hàng</option>
+                  </select>
                 </div>
-                <div className="flex justify-between">
-                  <span>Thuế VAT ({liveVatRate}%):</span>
-                  <span className="font-bold text-slate-800">{liveVatAmount.toLocaleString('vi-VN')} đ</span>
+                <div>
+                  <label className="block font-bold mb-1">Hợp đồng</label>
+                  <select value={newPurchasingData.contractStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, contractStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="Chưa ký">Chưa ký</option>
+                    <option value="Đang trình duyệt">Đang trình duyệt</option>
+                    <option value="Đã ký">Đã ký</option>
+                  </select>
                 </div>
-                <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
-                  <span>Tổng tiền (có VAT):</span>
-                  <span className="text-primary">{liveTotalAmount.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tiền Tạm ứng ({Math.round(livePrepayPercent * 100)}%):</span>
-                  <span className="font-bold text-rose-600">{livePrepayAmount.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
-                  <span>Còn lại phải trả:</span>
-                  <span className="text-emerald-600">{liveRemainingAmount.toLocaleString('vi-VN')} đ</span>
+                <div>
+                  <label className="block font-bold mb-1">Hóa đơn</label>
+                  <select value={newPurchasingData.invoiceStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, invoiceStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="Chưa xuất">Chưa xuất</option>
+                    <option value="Đang kiểm tra">Đang kiểm tra</option>
+                    <option value="Đã xuất">Đã xuất</option>
+                  </select>
                 </div>
               </div>
-            );
-          })()}
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block font-bold mb-1">TT Đặt hàng</label>
-              <select value={newPurchasingData.orderStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, orderStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                <option value="Chưa đặt hàng">Chưa đặt hàng</option>
-                <option value="Đã đặt hàng">Đã đặt hàng</option>
-                <option value="Đang giao hàng">Đang giao hàng</option>
-                <option value="Đã nhận hàng">Đã nhận hàng</option>
-              </select>
-            </div>
-            <div>
-              <label className="block font-bold mb-1">Hợp đồng</label>
-              <select value={newPurchasingData.contractStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, contractStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                <option value="Chưa ký">Chưa ký</option>
-                <option value="Đang trình duyệt">Đang trình duyệt</option>
-                <option value="Đã ký">Đã ký</option>
-              </select>
-            </div>
-            <div>
-              <label className="block font-bold mb-1">Hóa đơn</label>
-              <select value={newPurchasingData.invoiceStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, invoiceStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                <option value="Chưa xuất">Chưa xuất</option>
-                <option value="Đang kiểm tra">Đang kiểm tra</option>
-                <option value="Đã xuất">Đã xuất</option>
-              </select>
-            </div>
-          </div>
+            </>
+          )}
           <div>
             <label className="block font-bold mb-1">Ghi chú</label>
             <input type="text" placeholder="Nhập ghi chú (nếu có)" value={newPurchasingData.notes} onChange={(e) => setNewPurchasingData({...newPurchasingData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs" />
           </div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewPurchasingOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu mới</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewPurchasingOpen(false); setParentPurchasingIdForNew(null); setIsCreatingSectionHeader(false); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">{isCreatingSectionHeader ? 'Lưu Đầu Mục' : 'Thêm Hạng Mục'}</button></div>
         </form>
       </Modal>
 
@@ -1646,6 +1863,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               remainingAmount: remainingAmt
             });
             setEditingPurchasing(null);
+            triggerToast('Đã cập nhật Mua sắm thành công!', 'success');
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">STT</label><input type="text" value={editingPurchasing.stt} onChange={(e) => setEditingPurchasing({...editingPurchasing, stt: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -1765,6 +1983,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           });
           setIsNewExpenseOpen(false);
           setNewExpenseData({stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''});
+          triggerToast('Đã thêm Chi phí thành công!', 'success');
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={newExpenseData.date} onChange={(e) => setNewExpenseData({...newExpenseData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -1838,6 +2057,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               totalAmount: total
             });
             setEditingExpense(null);
+            triggerToast('Đã cập nhật Chi phí thành công!', 'success');
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={editingExpense.date} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -1925,6 +2145,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           });
           setIsNewLaborOpen(false);
           setNewLaborData({stt: '', date: '', content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''});
+          triggerToast('Đã thêm Lương công nhật thành công!', 'success');
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block font-bold mb-1">Ngày chấm công *</label><input type="text" placeholder="VD: 16,17,18 hoặc 2026-07-27" required value={newLaborData.date} onChange={(e) => setNewLaborData({...newLaborData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>

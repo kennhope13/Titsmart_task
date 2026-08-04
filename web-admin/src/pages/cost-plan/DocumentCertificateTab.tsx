@@ -1,103 +1,584 @@
-﻿import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProjectMaterialPlan } from '../../types';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface DocumentCertificateTabProps {
   data: ProjectMaterialPlan[];
   searchQuery: string;
   setSearchQuery: (value: string) => void;
+  selectedProject: string;
+  onAdd: (plan: Omit<ProjectMaterialPlan, 'id'>) => void;
+  onUpdate: (id: string, fields: Partial<ProjectMaterialPlan>) => void;
+  onDelete: (id: string) => void;
+  /** Page truyền true để kích hoạt mở modal thêm mới */
+  triggerAdd?: boolean;
+  /** Tab gọi callback này sau khi đã xử lý triggerAdd */
+  onTriggerHandled?: () => void;
 }
 
-const TEXT = {
-  search: 'Tìm hàng hóa, model, xuất xứ, chứng từ...',
-  title: 'Theo dõi chứng từ hàng hóa',
-  item: 'Danh mục hàng hóa',
-  unit: 'ĐV',
-  qty: 'SL',
-  modelOrigin: 'Model/xuất xứ',
-  docs: 'Chứng từ',
-  note: 'Ghi chú',
-  available: 'Có',
-  missing: 'Chưa có',
-  empty: 'Chưa có dữ liệu chứng từ.',
+// Một dòng chứng từ do người dùng tự đặt tên
+interface DocItem {
+  label: string; // VD: "C/O số", "Kiểm định PCCC", "Packing list"...
+  value: string; // VD: "E267049658120001 cấp ngày 22/02/2025"
+}
+
+// Mỗi model/xuất xứ có danh sách chứng từ động
+interface ModelEntry {
+  model: string;
+  manufacturer: string;
+  origin: string;
+  docs: DocItem[];
+}
+
+interface FormState {
+  jobContent: string;
+  unit: string;
+  contractVolume: number;
+  models: ModelEntry[];
+  notes: string;
+}
+
+const EMPTY_DOC: DocItem = { label: '', value: '' };
+
+const EMPTY_MODEL: ModelEntry = {
+  model: '', manufacturer: '', origin: '',
+  docs: [{ ...EMPTY_DOC }],
 };
 
-const docBadge = (label: string, ok?: boolean) => (
-  <span className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-extrabold ${ok ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
-    {label}: {ok ? TEXT.available : TEXT.missing}
-  </span>
+const EMPTY_FORM: FormState = {
+  jobContent: '', unit: 'Cái', contractVolume: 1,
+  models: [{ ...EMPTY_MODEL, docs: [{ ...EMPTY_DOC }] }],
+  notes: '',
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const DOC_TRACK_TAG = '[doc-track]';
+
+const isDocTrack = (item: ProjectMaterialPlan) =>
+  String(item.notes || '').includes(DOC_TRACK_TAG);
+
+const cleanNotes = (value?: string) =>
+  String(value || '').replace(/\s*\[doc-track\]\s*/gi, '').trim();
+
+const encodeModels = (models: ModelEntry[]): string => {
+  const nonEmpty = models.filter(m =>
+    m.model || m.manufacturer || m.origin || m.docs.some(d => d.label || d.value)
+  );
+  return nonEmpty.length ? JSON.stringify(nonEmpty) : '';
+};
+
+const decodeModels = (issueContent?: string): ModelEntry[] => {
+  if (!issueContent) return [{ ...EMPTY_MODEL, docs: [{ ...EMPTY_DOC }] }];
+  try {
+    const parsed = JSON.parse(issueContent);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Migration: nếu entry cũ dùng field cứng, convert sang docs array
+      return (parsed as any[]).map(m => {
+        if (Array.isArray(m.docs)) return m as ModelEntry;
+        const legacyDocs: DocItem[] = [];
+        if (m.co)         legacyDocs.push({ label: 'C/O số', value: m.co });
+        if (m.cq)         legacyDocs.push({ label: 'C/Q số', value: m.cq });
+        if (m.fire)       legacyDocs.push({ label: 'Kiểm định PCCC số', value: m.fire });
+        if (m.xuatXuong)  legacyDocs.push({ label: 'Giấy CN xuất xưởng', value: m.xuatXuong });
+        if (m.packing)    legacyDocs.push({ label: 'Packing list số', value: m.packing });
+        if (m.cl)         legacyDocs.push({ label: 'Chứng nhận chất lượng', value: m.cl });
+        if (m.other)      legacyDocs.push({ label: 'Chứng từ khác', value: m.other });
+        return { model: m.model || '', manufacturer: m.manufacturer || '', origin: m.origin || '',
+          docs: legacyDocs.length ? legacyDocs : [{ ...EMPTY_DOC }] } as ModelEntry;
+      });
+    }
+  } catch { /* ignore */ }
+  return [{ ...EMPTY_MODEL, docs: [{ ...EMPTY_DOC }] }];
+};
+
+const firstModel = (models: ModelEntry[]): ModelEntry =>
+  models[0] ?? { ...EMPTY_MODEL, docs: [] };
+
+const hasAnyDoc = (m: ModelEntry) =>
+  m.docs.some(d => d.label.trim() || d.value.trim());
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+const inp = 'rounded-lg border border-slate-200 px-3 py-1.5 text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20';
+
+const DocLine = ({ label, value }: { label: string; value: string }) => {
+  if (!label.trim() && !value.trim()) return null;
+  return (
+    <div className="flex items-start gap-1.5 text-[11px] leading-snug">
+      <span className="mt-0.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
+      <span>
+        {label.trim() && <span className="font-bold text-slate-700">{label}: </span>}
+        <span className="text-slate-600">{value}</span>
+      </span>
+    </div>
+  );
+};
+
+interface ModelBlockProps {
+  index: number;
+  entry: ModelEntry;
+  total: number;
+  onChange: (mIdx: number, field: keyof Omit<ModelEntry, 'docs'>, value: string) => void;
+  onRemoveModel: (mIdx: number) => void;
+  onDocChange: (mIdx: number, dIdx: number, field: keyof DocItem, value: string) => void;
+  onAddDoc: (mIdx: number) => void;
+  onRemoveDoc: (mIdx: number, dIdx: number) => void;
+}
+
+const ModelBlock: React.FC<ModelBlockProps> = ({
+  index, entry, total, onChange, onRemoveModel, onDocChange, onAddDoc, onRemoveDoc,
+}) => (
+  <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
+    {/* Block header */}
+    <div className="flex items-center justify-between">
+      <span className="text-[11px] font-extrabold uppercase tracking-wider text-primary">
+        Model #{index + 1}
+      </span>
+      {total > 1 && (
+        <button type="button" onClick={() => onRemoveModel(index)}
+          className="rounded p-0.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition">
+          <span className="material-symbols-outlined text-base">delete</span>
+        </button>
+      )}
+    </div>
+
+    {/* Model / Hãng SX / Xuất xứ */}
+    <div className="grid grid-cols-3 gap-2">
+      {([ ['model', 'Model / Chủng loại', 'VD: KPR50-250/22'],
+          ['manufacturer', 'Hãng sản xuất', 'VD: Windy, Hochiki...'],
+          ['origin', 'Xuất xứ', 'VD: Việt Nam, Nhật...'],
+      ] as [keyof Omit<ModelEntry,'docs'>, string, string][]).map(([field, label, ph]) => (
+        <div key={field}>
+          <label className="block text-[10px] font-bold text-slate-500 mb-1">{label}</label>
+          <input type="text" className={`w-full ${inp}`} value={entry[field]}
+            onChange={e => onChange(index, field, e.target.value)} placeholder={ph} />
+        </div>
+      ))}
+    </div>
+
+    {/* Chứng từ động */}
+    <div className="space-y-1.5 pt-2 border-t border-slate-200">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Chứng từ đi kèm</p>
+        <button type="button" onClick={() => onAddDoc(index)}
+          className="flex items-center gap-0.5 text-[11px] font-bold text-primary hover:underline">
+          <span className="material-symbols-outlined text-sm">add</span>
+          Thêm dòng
+        </button>
+      </div>
+
+      {entry.docs.map((doc, dIdx) => (
+        <div key={dIdx} className="flex items-center gap-2">
+          {/* Tên chứng từ */}
+          <input type="text" className={`w-40 flex-shrink-0 ${inp}`}
+            value={doc.label}
+            onChange={e => onDocChange(index, dIdx, 'label', e.target.value)}
+            placeholder="VD: C/O số, Kiểm định..." />
+          {/* Nội dung / số */}
+          <input type="text" className={`flex-1 ${inp}`}
+            value={doc.value}
+            onChange={e => onDocChange(index, dIdx, 'value', e.target.value)}
+            placeholder="Số và ngày cấp chứng từ..." />
+          {/* Xóa dòng */}
+          {entry.docs.length > 1 && (
+            <button type="button" onClick={() => onRemoveDoc(index, dIdx)}
+              className="flex-shrink-0 rounded p-0.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
 );
 
-const isSection = (item: ProjectMaterialPlan) => {
-  const stt = String(item.stt || '').trim();
-  const notes = String(item.notes || '').toLowerCase();
-  return notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
-};
-const cleanNotes = (value?: string) => String(value || '').replace(/\s*\|?\s*\[(section|owner|contractor)\]\s*/gi, '').trim();
+// ── Modal ─────────────────────────────────────────────────────────────────────
 
-export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({ data, searchQuery, setSearchQuery }) => {
-  const rows = data.filter((item) => {
-    if (isSection(item)) return false;
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return true;
-    return [item.stt, item.jobContent, item.unit, item.techSpecModel, item.techSpecOrigin, item.notes]
-      .join(' ')
-      .toLowerCase()
-      .includes(query);
+interface DocFormModalProps {
+  title: string;
+  initial: FormState;
+  onClose: () => void;
+  onSubmit: (data: FormState) => void;
+}
+
+const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onClose, onSubmit }) => {
+  const [form, setForm] = useState<FormState>({
+    ...initial,
+    models: initial.models.map(m => ({ ...m, docs: m.docs.map(d => ({ ...d })) })),
   });
 
+  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) =>
+    setForm(prev => ({ ...prev, [field]: value }));
+
+  const updateModel = (mIdx: number, field: keyof Omit<ModelEntry, 'docs'>, value: string) =>
+    setForm(prev => ({
+      ...prev,
+      models: prev.models.map((m, i) => i === mIdx ? { ...m, [field]: value } : m),
+    }));
+
+  const addModel = () =>
+    setForm(prev => ({
+      ...prev,
+      models: [...prev.models, { ...EMPTY_MODEL, docs: [{ ...EMPTY_DOC }] }],
+    }));
+
+  const removeModel = (mIdx: number) =>
+    setForm(prev => ({ ...prev, models: prev.models.filter((_, i) => i !== mIdx) }));
+
+  const updateDoc = (mIdx: number, dIdx: number, field: keyof DocItem, value: string) =>
+    setForm(prev => ({
+      ...prev,
+      models: prev.models.map((m, i) =>
+        i !== mIdx ? m : {
+          ...m,
+          docs: m.docs.map((d, j) => j === dIdx ? { ...d, [field]: value } : d),
+        }
+      ),
+    }));
+
+  const addDoc = (mIdx: number) =>
+    setForm(prev => ({
+      ...prev,
+      models: prev.models.map((m, i) =>
+        i !== mIdx ? m : { ...m, docs: [...m.docs, { ...EMPTY_DOC }] }
+      ),
+    }));
+
+  const removeDoc = (mIdx: number, dIdx: number) =>
+    setForm(prev => ({
+      ...prev,
+      models: prev.models.map((m, i) =>
+        i !== mIdx ? m : { ...m, docs: m.docs.filter((_, j) => j !== dIdx) }
+      ),
+    }));
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.jobContent.trim()) return;
+    onSubmit(form);
+  };
+
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative flex max-h-[94vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 overflow-hidden">
+
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
+          <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-800">
+            <span className="material-symbols-outlined text-base text-primary">description</span>
+            {title}
+          </h3>
+          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
+            <span className="material-symbols-outlined text-lg">close</span>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden flex-1">
+          <div className="overflow-y-auto flex-1 p-5 space-y-5">
+
+            {/* 1. Tên thiết bị */}
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-primary mb-2">
+                Tên thiết bị / Hàng hóa <span className="text-rose-500 normal-case font-normal">*</span>
+              </label>
+              <input type="text" required value={form.jobContent}
+                onChange={e => setField('jobContent', e.target.value)}
+                placeholder="VD: Máy bơm diesel, Bình CO2 loại 24kg..."
+                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-semibold focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+
+            {/* 2. Đơn vị + SL */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Đơn vị tính</label>
+                <input type="text" value={form.unit} onChange={e => setField('unit', e.target.value)}
+                  className={`w-full ${inp}`} placeholder="Cái, Bộ, Mét..." />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Số lượng</label>
+                <input type="number" min={0} step="any" value={form.contractVolume}
+                  onChange={e => setField('contractVolume', Number(e.target.value))}
+                  className={`w-full ${inp}`} />
+              </div>
+            </div>
+
+            {/* 3. Danh sách model */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-wider text-primary">Model / Xuất xứ & Chứng từ</p>
+                <button type="button" onClick={addModel}
+                  className="flex items-center gap-1 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/10 transition">
+                  <span className="material-symbols-outlined text-sm">add</span>Thêm model
+                </button>
+              </div>
+              <div className="space-y-3">
+                {form.models.map((entry, i) => (
+                  <ModelBlock key={i} index={i} entry={entry} total={form.models.length}
+                    onChange={updateModel} onRemoveModel={removeModel}
+                    onDocChange={updateDoc} onAddDoc={addDoc} onRemoveDoc={removeDoc} />
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Ghi chú */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">Ghi chú</label>
+              <textarea rows={2} value={form.notes} onChange={e => setField('notes', e.target.value)}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+            </div>
+          </div>
+
+          <div className="flex flex-shrink-0 justify-end gap-2 border-t border-slate-100 px-5 py-4">
+            <button type="button" onClick={onClose}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
+            <button type="submit"
+              className="rounded-lg bg-primary px-5 py-2 text-xs font-bold text-white hover:opacity-90 active:scale-95 shadow-sm">Lưu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
+  data, searchQuery, setSearchQuery, selectedProject, onAdd, onUpdate, onDelete,
+  triggerAdd, onTriggerHandled,
+}) => {
+  const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
+  const [editingItem, setEditingItem] = useState<ProjectMaterialPlan | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+
+  // Khi page bấm nút "Thêm Mới" ở tab DOCUMENTS, triggerAdd = true → mở modal
+  useEffect(() => {
+    if (triggerAdd) {
+      setModalMode('add');
+      setEditingItem(null);
+      onTriggerHandled?.();
+    }
+  }, [triggerAdd]);
+  const updateColumnFilter = (key: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [key]: value }));
+  };
+  const clearColumnFilters = () => setColumnFilters({});
+
+  const rows = data.filter(item => {
+    if (!isDocTrack(item)) return false;
+    const q = searchQuery.trim().toLowerCase();
+    const matchSearch = !q ||
+      (item.jobContent || '').toLowerCase().includes(q) ||
+      (item.unit || '').toLowerCase().includes(q) ||
+      (item.techSpecModel || '').toLowerCase().includes(q) ||
+      (item.notes || '').toLowerCase().includes(q);
+
+    const cf = columnFilters;
+    const matchColumn =
+      (!cf.jobContent || (item.jobContent || '').toLowerCase().includes((cf.jobContent || '').toLowerCase())) &&
+      (!cf.unit || (item.unit || '').toLowerCase().includes((cf.unit || '').toLowerCase())) &&
+      (!cf.techSpecModel || (item.techSpecModel || '').toLowerCase().includes((cf.techSpecModel || '').toLowerCase())) &&
+      (!cf.notes || (item.notes || '').toLowerCase().includes((cf.notes || '').toLowerCase()));
+
+    return matchSearch && matchColumn;
+  });
+
+  const nextStt = String(rows.length + 1);
+  const openAdd  = () => { setEditingItem(null);  setModalMode('add');  };
+  const openEdit = (item: ProjectMaterialPlan) => { setEditingItem(item); setModalMode('edit'); };
+  const closeModal = () => { setModalMode(null); setEditingItem(null); };
+
+  const buildPayload = (formData: FormState, stt: string) => {
+    const fm = firstModel(formData.models);
+    return {
+      stt,
+      jobContent: formData.jobContent,
+      unit: formData.unit,
+      contractVolume: formData.contractVolume,
+      techSpecModel: fm.model,
+      techSpecOrigin: [fm.manufacturer, fm.origin].filter(Boolean).join(' - '),
+      issueContent: encodeModels(formData.models),
+      docCo: formData.models.some(m => m.docs.some(d => d.label.toLowerCase().includes('c/o') && d.value.trim())),
+      docCq: formData.models.some(m => m.docs.some(d => d.label.toLowerCase().includes('c/q') && d.value.trim())),
+      docFireInspection: formData.models.some(m => m.docs.some(d => d.label.toLowerCase().includes('pccc') && d.value.trim())),
+      notes: formData.notes ? `${formData.notes} ${DOC_TRACK_TAG}` : DOC_TRACK_TAG,
+    };
+  };
+
+  const handleSubmit = (formData: FormState) => {
+    if (modalMode === 'add') {
+      onAdd({ projectCode: selectedProject, progressStatus: 'Chưa thi công',
+        orderedStatus: 'Chưa đặt hàng', ...buildPayload(formData, nextStt) });
+    } else if (modalMode === 'edit' && editingItem) {
+      onUpdate(editingItem.id, buildPayload(formData, editingItem.stt || ''));
+    }
+    closeModal();
+  };
+
+  const toFormState = (item: ProjectMaterialPlan): FormState => ({
+    jobContent: item.jobContent || '',
+    unit: item.unit || 'Cái',
+    contractVolume: item.contractVolume ?? 1,
+    models: decodeModels(item.issueContent),
+    notes: cleanNotes(item.notes),
+  });
+
+  const renderModelCell = (item: ProjectMaterialPlan) => {
+    const models = decodeModels(item.issueContent);
+    return (
+      <div className="space-y-1">
+        {models.map((m, i) => (
+          (m.model || m.manufacturer || m.origin) ? (
+            <div key={i} className={i > 0 ? 'pt-1 border-t border-slate-100' : ''}>
+              {m.model && <div className="font-semibold text-slate-800 break-words text-xs">{m.model}</div>}
+              {(m.manufacturer || m.origin) && (
+                <div className="text-[11px] text-slate-500 break-words">
+                  {[m.manufacturer, m.origin].filter(Boolean).join(' · ')}
+                </div>
+              )}
+            </div>
+          ) : null
+        ))}
+      </div>
+    );
+  };
+
+  const renderDocsCell = (item: ProjectMaterialPlan) => {
+    const models = decodeModels(item.issueContent);
+    const allEmpty = models.every(m => !hasAnyDoc(m));
+    if (allEmpty) return <span className="text-[11px] text-slate-400 italic">Chưa có</span>;
+    return (
+      <div className="space-y-2">
+        {models.map((m, i) => !hasAnyDoc(m) ? null : (
+          <div key={i} className={i > 0 ? 'pt-2 border-t border-slate-100' : ''}>
+            {models.length > 1 && m.model && (
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase mb-0.5">{m.model}</p>
+            )}
+            <div className="space-y-0.5">
+              {m.docs.map((d, j) => <DocLine key={j} label={d.label} value={d.value} />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex w-full max-w-full h-full min-h-0 flex-col bg-white overflow-hidden">
       <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/70 p-3">
         <div className="relative w-full max-w-lg">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400">search</span>
-          <input
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder={TEXT.search}
-            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
+          <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Tìm hàng hóa, model, số chứng từ..."
+            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
-        <div className="hidden text-xs font-extrabold text-slate-500 sm:block">{TEXT.title}</div>
+        {(searchQuery || Object.values(columnFilters).some(v => v)) && (
+          <button type="button" onClick={() => { setSearchQuery(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
+        )}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="hidden text-xs font-extrabold text-slate-500 sm:block">Theo dõi chứng từ hàng hóa</div>
+        </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto custom-scrollbar">
-        <table className="w-full min-w-[980px] border-collapse text-left">
-          <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
+      <div className="w-full overflow-x-auto custom-scrollbar flex-1 min-h-0">
+        <table className="w-max min-w-full border-collapse text-left">
+          <colgroup>
+            <col className="w-10" /><col className="w-[180px]" /><col className="w-12" />
+            <col className="w-12" /><col className="w-[200px]" /><col className="w-[280px]" />
+            <col className="w-[140px]" /><col className="w-20" />
+          </colgroup>
+          <thead className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr>
-              <th className="w-14 px-2 py-3 text-center whitespace-nowrap">TT</th>
-              <th className="min-w-[320px] px-2 py-3 whitespace-nowrap">{TEXT.item}</th>
-              <th className="w-16 px-2 py-3 text-center whitespace-nowrap">{TEXT.unit}</th>
-              <th className="w-20 px-2 py-3 text-right whitespace-nowrap">{TEXT.qty}</th>
-              <th className="min-w-[220px] px-2 py-3 whitespace-nowrap">{TEXT.modelOrigin}</th>
-              <th className="min-w-[260px] px-2 py-3 whitespace-nowrap">{TEXT.docs}</th>
-              <th className="min-w-[180px] px-2 py-3 whitespace-nowrap">{TEXT.note}</th>
+              <th className="sticky left-0 z-20 w-10 min-w-[40px] bg-slate-50 bg-clip-padding px-2 py-3 text-center border-r border-slate-200/70">TT</th>
+              <th className="sticky left-[40px] z-20 bg-slate-50 bg-clip-padding px-2 py-3 border-r border-slate-200/70 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Tên thiết bị / Hàng hóa</th>
+              <th className="px-2 py-3 text-center">ĐV</th>
+              <th className="px-2 py-3 text-right">SL</th>
+              <th className="px-2 py-3">Model / Xuất xứ</th>
+              <th className="px-2 py-3">Chứng từ</th>
+              <th className="px-2 py-3">Ghi chú</th>
+              <th className="px-2 py-3 text-center">Thao tác</th>
             </tr>
           </thead>
+          <tfoot className="bg-slate-50/80 border-t border-slate-200">
+            <tr>
+              <td className="w-10 min-w-[40px] px-2 py-1"></td>
+              <td className="w-[180px] px-2 py-1"><input value={columnFilters.jobContent || ''} onChange={e => updateColumnFilter('jobContent', e.target.value)} placeholder="Tên HHTB..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+              <td className="w-12 px-2 py-1"><input value={columnFilters.unit || ''} onChange={e => updateColumnFilter('unit', e.target.value)} placeholder="ĐV..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+              <td className="w-12 px-2 py-1"></td>
+              <td className="w-[200px] px-2 py-1"><input value={columnFilters.techSpecModel || ''} onChange={e => updateColumnFilter('techSpecModel', e.target.value)} placeholder="Model..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+              <td className="w-[280px] px-2 py-1"></td>
+              <td className="w-[140px] px-2 py-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+              <td className="w-20 px-2 py-1"></td>
+            </tr>
+          </tfoot>
           <tbody className="divide-y divide-slate-100 bg-white text-xs text-slate-700">
-            {rows.map((item) => (
-              <tr key={item.id} className="align-top hover:bg-slate-50">
-                <td className="px-2 py-2 text-center font-mono font-bold text-slate-400 whitespace-nowrap">{item.stt || '-'}</td>
-                <td className="px-2 py-2 font-bold text-slate-900">{item.jobContent}</td>
-                <td className="px-2 py-2 text-center font-mono text-slate-500 whitespace-nowrap">{item.unit || '-'}</td>
-                <td className="px-2 py-2 text-right font-mono font-semibold text-slate-900 whitespace-nowrap">{Number(item.contractVolume || 0).toLocaleString('vi-VN')}</td>
-                <td className="px-2 py-2">
-                  <div className="font-semibold text-slate-800">{item.techSpecModel || '-'}</div>
-                  <div className="mt-1 text-[11px] text-slate-500">{item.techSpecOrigin || '-'}</div>
+            {rows.map((item, index) => (
+              <tr key={item.id} className="group align-top hover:bg-slate-50/60">
+                <td className="sticky left-0 z-10 w-10 min-w-[40px] bg-white group-hover:bg-slate-50/60 border-r border-slate-100 px-2 py-2.5 text-center font-mono font-bold text-slate-400">{index + 1}</td>
+                <td className="sticky left-[40px] z-10 bg-white group-hover:bg-slate-50/60 border-r border-slate-100 px-2 py-2.5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] font-bold text-slate-900">
+                  <div className="w-[165px] line-clamp-3 break-words leading-snug" title={item.jobContent}>{item.jobContent}</div>
                 </td>
-                <td className="px-2 py-2">
-                  <div className="flex flex-wrap gap-1.5">
-                    {docBadge('CO', item.docCo)}
-                    {docBadge('CQ', item.docCq)}
-                    {docBadge('Kiểm định PCCC', item.docFireInspection)}
+                <td className="px-2 py-2.5 text-center font-mono text-slate-500 whitespace-nowrap">{item.unit || '-'}</td>
+                <td className="px-2 py-2.5 text-right font-mono font-semibold text-slate-900 whitespace-nowrap">
+                  {item.contractVolume ? Number(item.contractVolume).toLocaleString('vi-VN') : '-'}
+                </td>
+                <td className="px-2 py-2.5">{renderModelCell(item)}</td>
+                <td className="px-2 py-2.5">{renderDocsCell(item)}</td>
+                <td className="px-2 py-2.5 text-[11px] text-slate-500 break-words">{cleanNotes(item.notes) || '-'}</td>
+                <td className="px-2 py-2.5 text-center whitespace-nowrap">
+                  <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => openEdit(item)} title="Sửa"
+                      className="rounded p-1 text-slate-400 hover:bg-blue-50 hover:text-primary transition">
+                      <span className="material-symbols-outlined text-base">edit</span>
+                    </button>
+                    <button onClick={() => setDeletingId(item.id)} title="Xóa"
+                      className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition">
+                      <span className="material-symbols-outlined text-base">delete</span>
+                    </button>
                   </div>
                 </td>
-                <td className="px-2 py-2 text-slate-500">{cleanNotes(item.notes) || '-'}</td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={7} className="p-12 text-center font-medium text-slate-400">{TEXT.empty}</td></tr>}
+            {rows.length === 0 && (
+              <tr><td colSpan={8} className="p-14 text-center">
+                <div className="flex flex-col items-center gap-3 text-slate-400">
+                  <span className="material-symbols-outlined text-4xl">description</span>
+                  <p className="text-sm font-medium">Chưa có dữ liệu chứng từ</p>
+                  <p className="text-xs">Nhấn <strong className="text-primary">+ Thêm mới</strong> để bắt đầu</p>
+                </div>
+              </td></tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      {(modalMode === 'add' || modalMode === 'edit') && (
+        <DocFormModal
+          title={modalMode === 'add' ? 'Thêm hàng hóa mới' : 'Chỉnh sửa hàng hóa'}
+          initial={modalMode === 'edit' && editingItem
+            ? toFormState(editingItem)
+            : { ...EMPTY_FORM, models: [{ ...EMPTY_MODEL, docs: [{ ...EMPTY_DOC }] }] }}
+          onClose={closeModal} onSubmit={handleSubmit} />
+      )}
+
+      {deletingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeletingId(null)} />
+          <div className="relative rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 p-6 w-full max-w-sm text-center space-y-4">
+            <span className="material-symbols-outlined text-4xl text-rose-500">delete_forever</span>
+            <p className="text-sm font-bold text-slate-800">Xác nhận xóa hàng hóa này?</p>
+            <p className="text-xs text-slate-500">Hành động này không thể hoàn tác.</p>
+            <div className="flex justify-center gap-3 pt-1">
+              <button onClick={() => setDeletingId(null)}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
+              <button onClick={() => { onDelete(deletingId); setDeletingId(null); }}
+                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 active:scale-95">Xóa</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
