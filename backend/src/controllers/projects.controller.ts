@@ -50,6 +50,10 @@ const mapToFrontend = (project: any) => {
 export const getProjects = async (req: Request, res: Response) => {
   try {
     const projects = await prisma.project.findMany({
+      where: {
+        // Loại bỏ project nội bộ dùng cho kho công ty
+        NOT: { code: 'COMPANY' },
+      },
       orderBy: { created_at: 'desc' },
     });
     res.json(projects.map(mapToFrontend));

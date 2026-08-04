@@ -18,6 +18,31 @@ import {
   FieldLog
 } from '../types';
 import { api } from './api';
+import inventorySeedData from './inventorySeedData.json';
+
+const inventorySeed = inventorySeedData as {
+  materials: Material[];
+  inventoryTransactions: InventoryTransaction[];
+};
+
+const seedMaterialsForProject = (projectId?: string) => (
+  projectId
+    ? inventorySeed.materials.filter((material) => material.projectCode === projectId)
+    : inventorySeed.materials
+);
+
+const mergeMaterialsWithSeed = (materials: Material[], projectId?: string) => {
+  const seen = new Set(materials.flatMap((material) => [
+    material.id,
+    material.code?.toLowerCase(),
+  ].filter(Boolean)));
+
+  const seed = seedMaterialsForProject(projectId).filter((material) => (
+    !seen.has(material.id) && !seen.has(material.code.toLowerCase())
+  ));
+
+  return [...materials, ...seed];
+};
 
 // Utility to check if STT or row is a section header (I, II, III...)
 const isRomanOrSection = (stt: string, volume: number, unit: string) => {
@@ -145,8 +170,10 @@ interface RealtimeStoreState {
   updateMaterial: (id: string, updatedFields: Partial<Material>) => void;
   updateMaterialStatus: (id: string, status: string) => void;
   deleteMaterial: (id: string) => void;
+  setMaterials: (materials: Material[]) => void;
 
-  addInventoryTransaction: (transaction: Omit<InventoryTransaction, 'id' | 'createdAt'>) => void;
+  addInventoryTransaction: (transaction: Omit<InventoryTransaction, 'id' | 'createdAt'>) => Promise<void>;
+  addInventoryTransactionsBatch: (transactions: Omit<InventoryTransaction, 'id' | 'createdAt'>[]) => Promise<void>;
 
   addIssue: (issue: Omit<Issue, 'id'>) => void;
   updateIssueStatus: (id: string, status: IssueStatus) => void;
@@ -192,6 +219,89 @@ const normalizeVietnamese = (value: string) =>
     .replace(/[\u0111\u0110]/g, 'd')
     .toLowerCase();
 
+const isTempMaterialRef = (value?: string) => {
+  const text = String(value || '').toLowerCase();
+  return !text || text.startsWith('mat-temp-');
+};
+
+const findMaterialIndexForTransaction = (materials: Material[], txData: Partial<InventoryTransaction>) => (
+  materials.findIndex((m) => {
+    if (txData.materialId && !isTempMaterialRef(txData.materialId) && m.id === txData.materialId) return true;
+    if (txData.materialCode && !isTempMaterialRef(txData.materialCode) && m.code.toLowerCase() === txData.materialCode.toLowerCase()) return true;
+
+    const normName = normalizeVietnamese(m.name);
+    const normSpecs = normalizeVietnamese(m.specs || m.englishName || '');
+    const normTxName = normalizeVietnamese(txData.materialName || '');
+    const normTxSpecs = normalizeVietnamese(txData.specs || '');
+    return Boolean(normTxName) && normName === normTxName && normSpecs === normTxSpecs;
+  })
+);
+
+const mergeInventoryTransactionIntoState = (
+  materials: Material[],
+  inventoryTransactions: InventoryTransaction[],
+  txData: Omit<InventoryTransaction, 'id' | 'createdAt'>,
+  persisted?: { material?: Material; transaction?: InventoryTransaction }
+) => {
+  const newTransaction: InventoryTransaction = persisted?.transaction || {
+    ...txData,
+    id: 'inv-' + Date.now(),
+    createdAt: new Date().toISOString(),
+  };
+
+  let nextMats = [...materials];
+
+  // Tìm vật tư trong local state theo thông tin từ DB (sau khi API trả về)
+  let materialIndex = findMaterialIndexForTransaction(nextMats, persisted?.material ? {
+    materialId: persisted.material.id,
+    materialCode: persisted.material.code,
+    materialName: persisted.material.name,
+    specs: persisted.material.specs || persisted.material.englishName || '',
+  } : txData);
+
+  // Fallback: nếu không tìm thấy theo thông tin DB, thử tìm bằng ID gốc từ request
+  // (tránh trường hợp vật tư seed có id='mat-xxx' không khớp UUID từ DB)
+  if (materialIndex < 0 && persisted?.material && txData.materialId) {
+    materialIndex = nextMats.findIndex((m) => m.id === txData.materialId);
+  }
+
+  if (persisted?.material) {
+    nextMats = materialIndex >= 0
+      // Cập nhật bản ghi hiện có (kể cả khi ID local khác UUID từ DB) với data mới nhất từ server
+      ? nextMats.map((m, index) => index === materialIndex ? { ...m, ...persisted.material } : m)
+      // Vật tư hoàn toàn mới (chưa có trong local state) — thêm vào đầu
+      : [persisted.material, ...nextMats];
+  } else if (materialIndex >= 0) {
+    const matchedMat = nextMats[materialIndex];
+    const totalImport = (matchedMat.totalImport || 0) + (txData.type === 'IMPORT' ? txData.quantity : 0);
+    const totalExport = (matchedMat.totalExport || 0) + (txData.type === 'EXPORT' ? txData.quantity : 0);
+    const currentStock = (matchedMat.initialStock || 0) + totalImport - totalExport;
+
+    nextMats = nextMats.map((m, index) => index === materialIndex ? {
+      ...m,
+      totalImport,
+      totalExport,
+      currentStock,
+    } : m);
+  }
+
+  const txMaterial = persisted?.material || nextMats[materialIndex];
+  const finalTx: InventoryTransaction = txMaterial ? {
+    ...newTransaction,
+    materialId: txMaterial.id,
+    materialCode: txMaterial.code,
+    materialName: txMaterial.name,
+    category: txMaterial.category || newTransaction.category || '',
+    specs: txMaterial.specs || txMaterial.englishName || newTransaction.specs || '',
+    unit: txMaterial.unit || newTransaction.unit || 'C?i',
+  } : newTransaction;
+
+  return {
+    materials: nextMats,
+    inventoryTransactions: [finalTx, ...inventoryTransactions],
+  };
+};
+
 const deriveSupplyScope = (plan: any): 'contractor' | 'owner' | 'unknown' => {
   const explicit = plan.supplyScope ?? plan.supply_scope;
   if (explicit === 'contractor' || explicit === 'owner') return explicit;
@@ -223,6 +333,7 @@ const normalizeMaterialPlan = (plan: any): ProjectMaterialPlan => ({
   dispatchDate: plan.dispatchDate ?? plan.dispatch_date ?? '',
   supplyScope: deriveSupplyScope(plan),
   notes: plan.notes || '',
+  parentId: plan.parentId ?? plan.parent_id ?? undefined,
 });
 
 const normalizePurchasingPlan = (plan: any): ProjectPurchasing => ({
@@ -245,6 +356,7 @@ const normalizePurchasingPlan = (plan: any): ProjectPurchasing => ({
   paymentDate: plan.paymentDate ?? plan.payment_date ?? '',
   invoiceStatus: plan.invoiceStatus ?? plan.invoice_status ?? '',
   notes: plan.notes || '',
+  parentId: plan.parentId ?? plan.parent_id ?? undefined,
 });
 
 export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
@@ -288,12 +400,12 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   return {
     projects: [],
     tasks: [],
-    materials: [],
+    materials: inventorySeed.materials,
     issues: [],
     engineers: [],
     notifications: [],
     activityLogs: [],
-    inventoryTransactions: [],
+    inventoryTransactions: inventorySeed.inventoryTransactions,
     materialPlans: [],
     purchasingPlans: [],
     expenses: [],
@@ -304,7 +416,11 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     fetchProjects: async () => {
       try {
         const projects = await api.projects.getAll();
-        set({ projects });
+        // Lọc bỏ project nội bộ "Kho Công Ty" khỏi danh sách dự án
+        const filtered = Array.isArray(projects)
+          ? projects.filter((p: any) => p.code !== 'COMPANY')
+          : projects;
+        set({ projects: filtered });
       } catch (e) {
         console.error('Failed to fetch projects', e);
       }
@@ -321,10 +437,17 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     fetchMaterials: async (projectId) => {
       try {
-        const materials = await api.materials.getAll(projectId);
-        set({ materials });
+        const [materials, inventoryTransactions] = await Promise.all([
+          api.materials.getAll(projectId),
+          api.materials.getTransactions(),
+        ]);
+        set({
+          materials: mergeMaterialsWithSeed(Array.isArray(materials) ? materials : [], projectId),
+          inventoryTransactions: Array.isArray(inventoryTransactions) ? inventoryTransactions : get().inventoryTransactions,
+        });
       } catch (e) {
         console.error('Failed to fetch materials', e);
+        set({ materials: seedMaterialsForProject(projectId) });
       }
     },
 
@@ -561,36 +684,82 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       });
     },
 
-    addInventoryTransaction: (transactionData) => {
-      const newTransaction: InventoryTransaction = {
-        ...transactionData,
-        id: 'inv-' + Date.now(),
-        createdAt: new Date().toISOString(),
-      };
+    setMaterials: (materialsList) => {
+      set({ materials: materialsList });
+      persistAndNotify({ materials: materialsList });
+    },
+
+    addInventoryTransaction: async (transactionData) => {
+      try {
+        const persisted = await api.materials.createTransaction(transactionData);
+        set((state) => {
+          const nextState = mergeInventoryTransactionIntoState(
+            state.materials,
+            state.inventoryTransactions,
+            transactionData,
+            persisted
+          );
+          persistAndNotify(nextState);
+          return nextState;
+        });
+        // Đồng bộ lại toàn bộ dữ liệu kho từ DB để đảm bảo số tồn luôn chính xác
+        try {
+          const [freshMaterials, freshTransactions] = await Promise.all([
+            api.materials.getAll(undefined),
+            api.materials.getTransactions(),
+          ]);
+          if (Array.isArray(freshMaterials) && Array.isArray(freshTransactions)) {
+            set({
+              materials: mergeMaterialsWithSeed(freshMaterials),
+              inventoryTransactions: freshTransactions,
+            });
+          }
+        } catch (syncErr) {
+          console.warn('Post-transaction sync failed, local state already updated', syncErr);
+        }
+      } catch (e) {
+        console.error('Failed to persist inventory transaction, applying local fallback', e);
+        set((state) => {
+          const nextState = mergeInventoryTransactionIntoState(
+            state.materials,
+            state.inventoryTransactions,
+            transactionData
+          );
+          persistAndNotify(nextState);
+          return nextState;
+        });
+      }
+    },
+
+    addInventoryTransactionsBatch: async (batchData) => {
+      const persistedResults: Array<{ material?: Material; transaction?: InventoryTransaction } | undefined> = [];
+      for (const txData of batchData) {
+        try {
+          persistedResults.push(await api.materials.createTransaction(txData));
+        } catch (e) {
+          console.error('Failed to persist inventory transaction in batch, applying local fallback for row', e);
+          persistedResults.push(undefined);
+        }
+      }
 
       set((state) => {
-        const nextTransactions = [newTransaction, ...state.inventoryTransactions];
-        const nextMats = state.materials.map(m => {
-          if (m.id === transactionData.materialId) {
-            let currentStock = m.currentStock || m.initialStock || 0;
-            let totalImport = m.totalImport || 0;
-            let totalExport = m.totalExport || 0;
+        let nextMaterials = state.materials;
+        let nextTransactions = state.inventoryTransactions;
 
-            if (transactionData.type === 'IMPORT') {
-              currentStock += transactionData.quantity;
-              totalImport += transactionData.quantity;
-            } else if (transactionData.type === 'EXPORT') {
-              currentStock -= transactionData.quantity;
-              totalExport += transactionData.quantity;
-            }
-
-            return { ...m, currentStock, totalImport, totalExport };
-          }
-          return m;
+        batchData.forEach((txData, index) => {
+          const nextState = mergeInventoryTransactionIntoState(
+            nextMaterials,
+            nextTransactions,
+            txData,
+            persistedResults[index]
+          );
+          nextMaterials = nextState.materials;
+          nextTransactions = nextState.inventoryTransactions;
         });
 
-        persistAndNotify({ inventoryTransactions: nextTransactions, materials: nextMats });
-        return { inventoryTransactions: nextTransactions, materials: nextMats };
+        const nextState = { materials: nextMaterials, inventoryTransactions: nextTransactions };
+        persistAndNotify(nextState);
+        return nextState;
       });
     },
 
@@ -686,7 +855,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const nextPurchasingPlans = state.purchasingPlans.filter((p) => p.projectCode !== projectCode);
           const nextExpenses = state.expenses.filter((e) => e.projectCode !== projectCode);
           const nextLaborPayrolls = state.laborPayrolls.filter((p) => p.projectCode !== projectCode);
-          const nextDocumentTracks = state.documentTracks.filter((d) => d.projectCode !== projectCode);
           const nextFieldLogs = state.fieldLogs.filter((l) => l.projectCode !== projectCode);
 
           persistAndNotify({
@@ -698,7 +866,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
             purchasingPlans: nextPurchasingPlans,
             expenses: nextExpenses,
             laborPayrolls: nextLaborPayrolls,
-            documentTracks: nextDocumentTracks,
             fieldLogs: nextFieldLogs,
           });
 
@@ -711,7 +878,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
             purchasingPlans: nextPurchasingPlans,
             expenses: nextExpenses,
             laborPayrolls: nextLaborPayrolls,
-            documentTracks: nextDocumentTracks,
             fieldLogs: nextFieldLogs,
           };
         });
