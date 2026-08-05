@@ -58,6 +58,8 @@ export const api = {
   },
   engineers: {
     getAll: async () => (await axios.get(`${API_URL}/users/engineers`)).data,
+    create: async (data: { fullName: string; phone?: string; email?: string; title?: string; projectCodes?: string[] }) =>
+      (await axios.post(`${API_URL}/users`, data)).data,
   },
   activityLogs: {
     getAll: async () => (await axios.get(`${API_URL}/activity-logs`)).data,
@@ -65,20 +67,18 @@ export const api = {
       (await axios.post(`${API_URL}/activity-logs`, data)).data,
   },
   fieldLogs: {
-    getAll: async () => {
-      try {
-        return (await axios.get(`${API_URL}/field-logs`)).data;
-      } catch (e) {
-        return []; // Fallback empty array if endpoint not ready
-      }
+    getAll: async (projectCode?: string) => {
+      const url = projectCode ? `${API_URL}/field-logs?projectCode=${encodeURIComponent(projectCode)}` : `${API_URL}/field-logs`;
+      return (await axios.get(url)).data;
     },
-    create: async (data: any) => {
-      try {
-        return (await axios.post(`${API_URL}/field-logs`, data)).data;
-      } catch (e) {
-        return data; // Return mock if fail
-      }
+    create: async (data: { projectCode: string; note?: string; images: File[] }) => {
+      const form = new FormData();
+      form.append('projectCode', data.projectCode);
+      if (data.note) form.append('note', data.note);
+      data.images.forEach(f => form.append('images', f));
+      return (await axios.post(`${API_URL}/field-logs`, form)).data;
     },
+    delete: async (id: string) => (await axios.delete(`${API_URL}/field-logs/${id}`)).data,
   },
   accounting: {
     getMaterialPlans: async () => (await axios.get(`${API_URL}/accounting/material-plans`)).data,

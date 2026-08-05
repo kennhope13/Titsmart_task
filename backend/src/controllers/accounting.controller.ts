@@ -64,8 +64,16 @@ export const getMaterialPlans = async (req: Request, res: Response) => {
   try {
     const plans = await prisma.projectMaterialPlan.findMany({
       include: { project: true },
-      orderBy: { created_at: 'asc' }
+      orderBy: [
+        { project_id: 'asc' },
+        { parent_id: 'asc' },
+        { created_at: 'asc' }
+      ]
     });
+    // NOTE: do NOT sort in-memory here. The DB order (created_at asc) preserves the
+    // original Excel layout where each section header is followed by its own items;
+    // re-sorting (sections first, then items by numeric stt) breaks that hierarchy
+    // and makes the UI group every item under the last section.
     const formatted = plans.map(formatMaterialPlan);
     res.json(formatted);
   } catch (error) { res.status(500).json({ error: 'Failed to fetch material plans' }); }

@@ -164,6 +164,7 @@ interface RealtimeStoreState {
   updateTaskProgress: (id: string, progress: number, isDone: boolean) => void;
   assignEngineer: (taskId: string, engineerId: string, engineerName: string) => void;
   addEngineer: (engineer: Omit<Engineer, 'id'>) => Engineer;
+  createEngineer: (input: { name: string; phone?: string; email?: string; title?: string; projectCodes?: string[] }) => Promise<Engineer>;
   deleteTask: (id: string) => void;
 
   addMaterial: (mat: Omit<Material, 'id'>) => void;
@@ -185,11 +186,11 @@ interface RealtimeStoreState {
   deleteProject: (id: string) => void;
 
   // New Actions
-  addMaterialPlan: (plan: Omit<ProjectMaterialPlan, 'id'>) => void;
+  addMaterialPlan: (plan: Omit<ProjectMaterialPlan, 'id'>) => Promise<void>;
   updateMaterialPlan: (id: string, fields: Partial<ProjectMaterialPlan>) => void;
   deleteMaterialPlan: (id: string) => void;
 
-  addPurchasingPlan: (plan: Omit<ProjectPurchasing, 'id'>) => void;
+  addPurchasingPlan: (plan: Omit<ProjectPurchasing, 'id'>) => Promise<void>;
   updatePurchasingPlan: (id: string, fields: Partial<ProjectPurchasing>) => void;
   deletePurchasingPlan: (id: string) => void;
 
@@ -205,7 +206,8 @@ interface RealtimeStoreState {
   updateDocumentTrack: (id: string, fields: Partial<DocumentTrack>) => void;
   deleteDocumentTrack: (id: string) => void;
   
-  addFieldLog: (log: Omit<FieldLog, 'id'>) => void;
+  addFieldLog: (input: { projectCode: string; note?: string; images: File[] }) => Promise<void>;
+  deleteFieldLog: (id: string) => Promise<void>;
   logActivity: (action: string, project: string, user?: string) => void;
 }
 
@@ -359,6 +361,66 @@ const normalizePurchasingPlan = (plan: any): ProjectPurchasing => ({
   parentId: plan.parentId ?? plan.parent_id ?? undefined,
 });
 
+const normalizeExpense = (exp: any): ProjectExpense => ({
+  id: exp.id,
+  projectCode: exp.projectCode || exp.project?.code || '',
+  stt: exp.stt || '',
+  date: exp.date ?? exp.expenseDate ?? exp.expense_date ?? '',
+  content: exp.content || '',
+  description: exp.description || '',
+  unit: exp.unit || '',
+  quantity: Number(exp.quantity || 0),
+  unitPrice: Number(exp.unitPrice ?? exp.unit_price ?? 0),
+  taxAmount: Number(exp.taxAmount ?? exp.tax_amount ?? 0),
+  totalAmount: Number(exp.totalAmount ?? exp.total_amount ?? 0),
+  incomeAmount: Number(exp.incomeAmount ?? exp.income_amount ?? 0),
+  balanceFund: Number(exp.balanceFund ?? exp.balance_fund ?? 0),
+  notes: exp.notes || '',
+  invoiceUrl: exp.invoiceUrl ?? exp.invoice_url ?? '',
+});
+
+const normalizeLaborPayroll = (lab: any): LaborPayroll => ({
+  id: lab.id,
+  projectCode: lab.projectCode || lab.project?.code || '',
+  stt: lab.stt || '',
+  date: lab.date ?? lab.payrollDate ?? lab.payroll_date ?? '',
+  workerName: lab.workerName ?? lab.worker_name ?? '',
+  content: lab.content || '',
+  description: lab.description || '',
+  unit: lab.unit || '',
+  quantity: Number(lab.quantity || 0),
+  unitPrice: Number(lab.unitPrice ?? lab.unit_price ?? 0),
+  totalAmount: Number(lab.totalAmount ?? lab.total_amount ?? 0),
+  bankAccount: lab.bankAccount ?? lab.bank_account ?? '',
+  bankInfo: lab.bankInfo ?? lab.bank_info ?? '',
+  idCardFrontUrl: lab.idCardFrontUrl ?? lab.id_card_front_url ?? '',
+  idCardBackUrl: lab.idCardBackUrl ?? lab.id_card_back_url ?? '',
+  paymentStatus: lab.paymentStatus ?? lab.payment_status ?? '',
+  notes: lab.notes || '',
+});
+
+const normalizeDocumentTrack = (doc: any): DocumentTrack => ({
+  id: doc.id,
+  projectCode: doc.projectCode || doc.project?.code || '',
+  stt: doc.stt || '',
+  contractNo: doc.contractNo ?? doc.contract_no ?? '',
+  contractName: doc.contractName ?? doc.contract_name ?? '',
+  company: doc.company || '',
+  receiverName: doc.receiverName ?? doc.receiver_name ?? '',
+  phone: doc.phone || '',
+  address: doc.address || '',
+  sendDate: doc.sendDate ?? doc.send_date ?? '',
+  receiveDate: doc.receiveDate ?? doc.receive_date ?? '',
+  docStatus: doc.docStatus ?? doc.doc_status ?? '',
+  side: doc.side || '',
+  contractValue: Number(doc.contractValue ?? doc.contract_value ?? 0),
+  prepayPercent: Number(doc.prepayPercent ?? doc.prepay_percent ?? 0),
+  prepayAmount: Number(doc.prepayAmount ?? doc.prepay_amount ?? 0),
+  paymentStatus: doc.paymentStatus ?? doc.payment_status ?? '',
+  isCompleted: Boolean(doc.isCompleted ?? doc.is_completed ?? false),
+  notes: doc.notes || '',
+});
+
 export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   let channel: BroadcastChannel | null = null;
   if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -505,6 +567,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         if (Array.isArray(documentTracks)) nextState.documentTracks = documentTracks;
         
         set(nextState);
+        persistAndNotify(nextState);
       } catch (e) {
         console.error('Failed to fetch accounting', e);
       }
@@ -625,6 +688,24 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         return { engineers: nextEngineers };
       });
       return newEngineer;
+    },
+
+    createEngineer: async (input) => {
+      const created = await api.engineers.create({
+        fullName: input.name,
+        phone: input.phone,
+        email: input.email,
+        title: input.title,
+        projectCodes: input.projectCodes,
+      });
+      // Nạp lại danh sách để đồng bộ managedProjects và id thật từ DB
+      const engineers = await api.engineers.getAll();
+      set(() => {
+        persistAndNotify({ engineers });
+        return { engineers };
+      });
+      get().logActivity('Đã thêm nhân sự: ' + input.name, input.name);
+      return created;
     },
 
     deleteTask: async (id) => {
@@ -968,7 +1049,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     addExpense: async (expData) => {
       try {
-        const created = await api.accounting.createExpense(expData);
+        const created = normalizeExpense(await api.accounting.createExpense(expData));
         set((state) => {
           const nextExps = [created, ...state.expenses];
           persistAndNotify({ expenses: nextExps });
@@ -981,7 +1062,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateExpense: async (id, fields) => {
       try {
-        const updated = await api.accounting.updateExpense(id, fields);
+        const updated = normalizeExpense(await api.accounting.updateExpense(id, fields));
         set((state) => {
           const nextExps = state.expenses.map((e) => (e.id === id ? updated : e));
           persistAndNotify({ expenses: nextExps });
@@ -1007,7 +1088,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     addLaborPayroll: async (payrollData) => {
       try {
-        const created = await api.accounting.createPayroll(payrollData);
+        const created = normalizeLaborPayroll(await api.accounting.createPayroll(payrollData));
         set((state) => {
           const nextPayrolls = [created, ...state.laborPayrolls];
           persistAndNotify({ laborPayrolls: nextPayrolls });
@@ -1020,7 +1101,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateLaborPayroll: async (id, fields) => {
       try {
-        const updated = await api.accounting.updatePayroll(id, fields);
+        const updated = normalizeLaborPayroll(await api.accounting.updatePayroll(id, fields));
         set((state) => {
           const nextPayrolls = state.laborPayrolls.map((l) => (l.id === id ? updated : l));
           persistAndNotify({ laborPayrolls: nextPayrolls });
@@ -1046,7 +1127,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     addDocumentTrack: async (trackData) => {
       try {
-        const created = await api.accounting.createDocumentTrack(trackData);
+        const created = normalizeDocumentTrack(await api.accounting.createDocumentTrack(trackData));
         set((state) => {
           const nextTracks = [created, ...state.documentTracks];
           persistAndNotify({ documentTracks: nextTracks });
@@ -1059,7 +1140,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateDocumentTrack: async (id, fields) => {
       try {
-        const updated = await api.accounting.updateDocumentTrack(id, fields);
+        const updated = normalizeDocumentTrack(await api.accounting.updateDocumentTrack(id, fields));
         set((state) => {
           const nextTracks = state.documentTracks.map((d) => (d.id === id ? updated : d));
           persistAndNotify({ documentTracks: nextTracks });
@@ -1083,9 +1164,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
     
-    addFieldLog: async (logData) => {
+    addFieldLog: async (input) => {
       try {
-        const created = await api.fieldLogs.create(logData);
+        const created = await api.fieldLogs.create(input);
         set((state) => {
           const nextLogs = [created, ...state.fieldLogs];
           persistAndNotify({ fieldLogs: nextLogs });
@@ -1093,6 +1174,21 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         });
       } catch (e) {
         console.error('Failed to add field log', e);
+        throw e;
+      }
+    },
+
+    deleteFieldLog: async (id) => {
+      try {
+        await api.fieldLogs.delete(id);
+        set((state) => {
+          const nextLogs = state.fieldLogs.filter((l) => l.id !== id);
+          persistAndNotify({ fieldLogs: nextLogs });
+          return { fieldLogs: nextLogs };
+        });
+      } catch (e) {
+        console.error('Failed to delete field log', e);
+        throw e;
       }
     },
 

@@ -134,6 +134,7 @@ model Project {
   expenses          ProjectExpense[]
   labor_payrolls    LaborPayroll[]
   document_tracks   DocumentTrack[]
+  field_logs        FieldLog[]
 
   @@index([status])
   @@map("projects")
@@ -512,4 +513,17 @@ model DocumentTrack {
 
   @@index([project_id])
   @@map("document_tracks")
+}
+
+model FieldLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id String   @db.Uuid
+  note       String?
+  images     Json     @default("[]")
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  project    Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@map("field_logs")
 }

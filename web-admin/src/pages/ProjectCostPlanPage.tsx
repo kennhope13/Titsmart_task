@@ -40,73 +40,6 @@ const toRoman = (num: number): string => {
   return roman;
 };
 
-// Convert Roman numeral to number
-const romanToInt = (roman: string): number | null => {
-  const values: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
-  const upper = roman.toUpperCase();
-  let total = 0;
-  for (let i = 0; i < upper.length; i++) {
-    const current = values[upper[i]] || 0;
-    const next = values[upper[i + 1]] || 0;
-    if (current < next) {
-      total -= current;
-    } else {
-      total += current;
-    }
-  }
-  return total > 0 ? total : null;
-};
-
-// Check if a string is a valid Roman numeral
-const isRomanNumeral = (text: string): boolean => {
-  const cleaned = text.trim().toUpperCase();
-  return /^[IVXLCDM]+$/.test(cleaned) && romanToInt(cleaned) !== null;
-};
-
-const sttSortParts = (value?: string) => {
-  const text = String(value || '').trim();
-  if (!text) return [Number.POSITIVE_INFINITY];
-  
-  // Check if it's a Roman numeral (section header like I, II, III)
-  if (isRomanNumeral(text)) {
-    const romanValue = romanToInt(text);
-    return romanValue !== null ? [romanValue] : [Number.POSITIVE_INFINITY];
-  }
-  
-  // Parse as numbers separated by dots or hyphens (1, 1.1, 1-1, 1.1.1, 1-1-1, etc.)
-  const parts = text.split(/[.\-]/).map((part) => {
-    const num = Number.parseInt(part.trim(), 10);
-    return isNaN(num) ? Number.POSITIVE_INFINITY : num;
-  });
-  
-  return parts.length ? parts : [Number.POSITIVE_INFINITY];
-};
-
-const compareTaskStt = (a?: string, b?: string) => {
-  const aText = String(a || '').trim();
-  const bText = String(b || '').trim();
-  
-  const aIsRoman = isRomanNumeral(aText);
-  const bIsRoman = isRomanNumeral(bText);
-  
-  // Roman numerals always come first (sections)
-  if (aIsRoman && !bIsRoman) return -1;
-  if (!aIsRoman && bIsRoman) return 1;
-  
-  // Both are same type, compare using parts
-  const left = sttSortParts(a);
-  const right = sttSortParts(b);
-  const max = Math.max(left.length, right.length);
-  
-  for (let index = 0; index < max; index += 1) {
-    const leftValue = left[index] ?? 0;
-    const rightValue = right[index] ?? 0;
-    if (leftValue !== rightValue) return leftValue - rightValue;
-  }
-  
-  return String(a || '').localeCompare(String(b || ''), 'vi', { numeric: true, sensitivity: 'base' });
-};
-
 const sttSortValue = (value?: string) => {
   const raw = String(value || '').trim();
   const numeric = Number(raw.replace(',', '.'));
@@ -219,7 +152,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     }
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
@@ -339,6 +272,8 @@ export const ProjectCostPlanPage: React.FC = () => {
         const importAppendixWorkbook = () => {
           let appendixMaterialCount = 0;
           let appendixPurchasingCount = 0;
+          const purchasingPromises: Promise<void>[] = [];
+          const materialPromises: Promise<void>[] = [];
 
           const findAppendixHeaderRow = (rows: any[][]) => {
             for (let i = 0; i < Math.min(rows.length, 30); i++) {
@@ -416,7 +351,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   notes: existingMaterial.notes || baseNote,
                 });
               } else {
-                addMaterialPlan({
+                materialPromises.push(addMaterialPlan({
                   projectCode: selectedProject,
                   stt: effectiveStt,
                   jobContent: content,
@@ -430,12 +365,12 @@ export const ProjectCostPlanPage: React.FC = () => {
                   issueContent: '',
                   supplyScope,
                   notes: baseNote,
-                });
+                }));
                 materialBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, jobContent: content, unit: String(row[unitCol] || ''), contractVolume: volumeContract } as ProjectMaterialPlan);
               }
               appendixMaterialCount++;
 
-              if (!isSectionRow && supplyScope === 'contractor' && (volumeContract > 0 || unitPrice > 0 || totalAmount > 0)) {
+              if (isSectionRow || (supplyScope === 'contractor' && (volumeContract > 0 || unitPrice > 0 || totalAmount > 0))) {
                 const computedVatAmount = vatAmount || (vatRate ? totalBeforeVat * vatRate / 100 : 0);
                 const totalWithVat = totalAmount || totalBeforeVat + computedVatAmount;
 
@@ -454,7 +389,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     notes: existingPurchasing.notes || baseNote,
                   });
                 } else {
-                  addPurchasingPlan({
+                  purchasingPromises.push(addPurchasingPlan({
                     projectCode: selectedProject,
                     stt: effectiveStt,
                     content,
@@ -472,7 +407,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     contractStatus: 'Đã có phụ lục',
                     invoiceStatus: 'Chưa xuất',
                     notes: baseNote,
-                  });
+                  }));
                   purchasingBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, content, unit: String(row[unitCol] || ''), volumeContract, volumeOrder: 0, unitPrice, vatRate, vatAmount: computedVatAmount, totalAmount: totalWithVat, prepayPercent: 0, prepayAmount: 0, remainingAmount: totalWithVat, orderStatus: '', contractStatus: '', invoiceStatus: '' } as ProjectPurchasing);
                 }
                 appendixPurchasingCount++;
@@ -504,11 +439,12 @@ export const ProjectCostPlanPage: React.FC = () => {
             });
           });
 
-          return { appendixMaterialCount, appendixPurchasingCount, pendingTasks };
+          return { appendixMaterialCount, appendixPurchasingCount, pendingTasks, purchasingPromises, materialPromises };
         };
 
         if (isAppendixWorkbook) {
-          const { appendixMaterialCount, appendixPurchasingCount, pendingTasks } = importAppendixWorkbook();
+          const { appendixMaterialCount, appendixPurchasingCount, pendingTasks, purchasingPromises, materialPromises } = importAppendixWorkbook();
+          await Promise.all([...purchasingPromises, ...materialPromises]);
           if (appendixMaterialCount === 0 && appendixPurchasingCount === 0) {
             triggerToast('Không tìm thấy bảng phụ lục PL01 hợp lệ trong file Excel này.', 'warning');
           } else {
@@ -778,130 +714,20 @@ export const ProjectCostPlanPage: React.FC = () => {
   // ----------------------------------------------------
   // FILTER DATA BY SELECTED PROJECT
   // ----------------------------------------------------
-  const currentProjMaterialPlans = useMemo(() => {
-    const filtered = materialPlans.filter((plan) => plan.projectCode === selectedProject && plan.jobContent?.trim());
-    
-    // Trích order tag từ notes: [order:00042] → 42
-    const getOrderIndex = (notes?: string): number => {
-      const match = String(notes || '').match(/\[order:(\d+)\]/);
-      return match ? parseInt(match[1], 10) : 99999;
-    };
+  // NOTE: both datasets are passed to the tabs AS-IS (project filter only). The
+  // backend already returns them in Excel order (sections interleaved with their
+  // items); re-sorting here (sections first, then items) or rebuilding the
+  // purchasing rows from material plans breaks the hierarchy and duplicates
+  // section rows. MaterialPlanTab / PurchasingTab handle grouping themselves.
+  const currentProjMaterialPlans = useMemo(() =>
+    materialPlans.filter((plan) => plan.projectCode === selectedProject && plan.jobContent?.trim()),
+    [materialPlans, selectedProject]
+  );
 
-    // Sort theo order tag nếu có, fallback về created_at order (DB order)
-    const sorted = [...filtered].sort((a, b) => {
-      const oa = getOrderIndex(a.notes);
-      const ob = getOrderIndex(b.notes);
-      // Nếu cả hai đều có order tag → sort theo order tag
-      if (oa !== 99999 && ob !== 99999) return oa - ob;
-      // Nếu chỉ một trong hai có → có order tag đứng trước
-      if (oa !== 99999) return -1;
-      if (ob !== 99999) return 1;
-      // Cả hai không có order tag → fallback về STT
-      return compareTaskStt(a.stt, b.stt);
-    });
-
-    // Fallback: gán parentId theo thứ tự sequential (section → items tiếp theo)
-    let currentSection: ProjectMaterialPlan | null = null;
-    const itemsWithParents = sorted.map(plan => {
-      if (isSectionMarker(plan.stt, plan.notes)) {
-        currentSection = plan;
-        return { ...plan };
-      }
-      if (!plan.parentId && currentSection) {
-        return { ...plan, parentId: currentSection.id };
-      }
-      return { ...plan };
-    });
-
-    const map = new Map<string, any>();
-    const roots: any[] = [];
-    
-    itemsWithParents.forEach(p => map.set(p.id, { ...p, children: [] }));
-    
-    itemsWithParents.forEach(p => {
-      if (p.parentId && map.has(p.parentId)) {
-        map.get(p.parentId)!.children.push(map.get(p.id));
-      } else {
-        roots.push(map.get(p.id));
-      }
-    });
-
-    const flattened: ProjectMaterialPlan[] = [];
-    
-    const flattenTree = (nodes: any[]) => {
-      // Sections sort theo Roman value, items sort theo order tag rồi STT
-      nodes.sort((a, b) => {
-        const aIsSection = isSectionMarker(a.stt, a.notes);
-        const bIsSection = isSectionMarker(b.stt, b.notes);
-        if (aIsSection && bIsSection) {
-          return (romanToNumber(a.stt) ?? 9999) - (romanToNumber(b.stt) ?? 9999);
-        }
-        const oa = getOrderIndex(a.notes), ob = getOrderIndex(b.notes);
-        if (oa !== 99999 && ob !== 99999) return oa - ob;
-        return compareTaskStt(a.stt, b.stt);
-      });
-      
-      nodes.forEach(node => {
-        const { children, ...plan } = node;
-        flattened.push(plan);
-        flattenTree(children);
-      });
-    };
-    
-    flattenTree(roots);
-    return flattened;
-  }, [materialPlans, selectedProject]);
-
-  const currentProjPurchasing = useMemo(() => {
-    const purchasingByKey = new Map(
-      purchasingPlans
-        .filter((plan) => plan.projectCode === selectedProject)
-        .map((plan) => [normalizePlanKey(plan.stt, plan.content, plan.parentId), plan])
-    );
-
-    const rows: ProjectPurchasing[] = [];
-    let pendingSection: ProjectPurchasing | null = null;
-    let sectionRows: ProjectPurchasing[] = [];
-
-    const flushSection = () => {
-      if (pendingSection && sectionRows.length > 0) rows.push(pendingSection, ...sectionRows);
-      if (!pendingSection && sectionRows.length > 0) rows.push(...sectionRows);
-      pendingSection = null;
-      sectionRows = [];
-    };
-
-    currentProjMaterialPlans.forEach((plan) => {
-      const section = isSectionMarker(plan.stt, plan.notes);
-      if (section) {
-        flushSection();
-        pendingSection = {
-          id: plan.id,
-          projectCode: selectedProject,
-          stt: plan.stt,
-          content: plan.jobContent,
-          unit: '', volumeContract: 0, volumeOrder: 0, unitPrice: 0, vatRate: 0, vatAmount: 0,
-          totalAmount: 0, prepayPercent: 0, prepayAmount: 0, remainingAmount: 0,
-          orderStatus: '', contractStatus: '', paymentDate: '', invoiceStatus: '', notes: '[section]',
-        };
-        return;
-      }
-      if (!isContractorMaterialPlan(plan)) return;
-      const key = normalizePlanKey(plan.stt, plan.jobContent);
-      const existing = purchasingByKey.get(key);
-      if (existing) purchasingByKey.delete(key);
-      sectionRows.push(existing || {
-        id: plan.id,
-        projectCode: selectedProject,
-        stt: plan.stt,
-        content: plan.jobContent,
-        unit: '', volumeContract: 0, volumeOrder: 0, unitPrice: 0, vatRate: 0, vatAmount: 0,
-        totalAmount: 0, prepayPercent: 0, prepayAmount: 0, remainingAmount: 0,
-        orderStatus: '', contractStatus: '', paymentDate: '', invoiceStatus: '', notes: '',
-      });
-    });
-    flushSection();
-    return [...rows, ...Array.from(purchasingByKey.values())];
-  }, [currentProjMaterialPlans, purchasingPlans, selectedProject]);
+  const currentProjPurchasing = useMemo(() =>
+    purchasingPlans.filter((plan) => plan.projectCode === selectedProject),
+    [purchasingPlans, selectedProject]
+  );
   const currentProjExpenses = useMemo(() => 
     expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
     [expenses, selectedProject]

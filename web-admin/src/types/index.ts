@@ -123,6 +123,7 @@ export interface Engineer {
   avatar: string;
   phone: string;
   email: string;
+  managedProjects?: { code: string; name: string }[];
 }
 
 export interface NotificationItem {
@@ -258,11 +259,7 @@ export interface DocumentTrack {
 export interface FieldLog {
   id: string;
   projectCode: string;
-  taskId: string;
-  engineerId: string;
-  timestamp: string; // Giờ báo cáo
   note: string;
-  images: string[]; // Base64 hoặc URL
-  gpsLocation?: { lat: number; lng: number; text?: string }; // Tọa độ
-  statusUpdate: 'Đang làm' | 'Hoàn thành' | 'Vướng mắc';
+  images: string[]; // URL ảnh (đường dẫn /uploads/...)
+  timestamp: string; // Thời điểm tạo báo cáo
 }

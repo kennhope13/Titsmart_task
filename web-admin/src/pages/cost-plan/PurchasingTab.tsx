@@ -103,30 +103,52 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
     return text.split(/[.\-]/).map(p => { const n = parseInt(p, 10); return isNaN(n) ? Infinity : n; });
   };
 
-  // Sort sections among themselves by Roman value, items within a section by numeric stt.
-  // Strategy: assign each record a composite key (sectionRoman, numericParts).
-  // Pass 1: sort all Roman-header rows by Roman value → get section order.
+  // Sort sections by their stt: Roman sections by Roman value, numeric sections
+  // by numeric parts (e.g. '33' < '34' < '105'). Strategy: assign each record a
+  // composite key (sectionIndex, numericParts) via a single pass over the data.
+  const sectionSortKey = (r: ProjectPurchasing): number[] => {
+    const stt = String(r.stt || '').trim();
+    if (/^[IVXLCDM]+$/i.test(stt)) return [0, romanToInt(stt)];
+    return [1, ...numericSttParts(stt)];
+  };
   const sectionOrder = new Map<string, number>();
   [...data]
     .filter(r => isSectionRow(r))
-    .sort((a, b) => romanToInt(String(a.stt || '').trim()) - romanToInt(String(b.stt || '').trim()))
+    .sort((a, b) => {
+      const ka = sectionSortKey(a), kb = sectionSortKey(b);
+      for (let i = 0; i < Math.max(ka.length, kb.length); i++) {
+        const diff = (ka[i] ?? Infinity) - (kb[i] ?? Infinity);
+        if (diff !== 0) return diff;
+      }
+      return 0;
+    })
     .forEach((r, i) => sectionOrder.set(r.id, i));
 
   // Pass 2: for each non-section item, find its owning section by matching stt range.
   // We assign items to the largest Roman-section-stt that is still ≤ the item position
-  // in the ORIGINAL data array (preserving the original creator intent).
-  const originalOrderMap = new Map<string, number>(data.map((r, i) => [r.id, i]));
+  // Position = Excel [order:NNN] tag when present (true file order regardless
+  // of array order: imports PREPEND records, API returns created_at order);
+  // fall back to the array index for records created outside the import flow.
+  const orderTagValue = (notes?: string): number | null => {
+    const m = String(notes || '').match(/\[order:([\d.]+)\]/);
+    return m ? parseFloat(m[1]) : null;
+  };
+  const originalOrderMap = new Map<string, number>(data.map((r, i) => [r.id, orderTagValue(r.notes) ?? i]));
 
   const getSectionIndexForItem = (pur: ProjectPurchasing): number => {
     if (isSectionRow(pur)) return sectionOrder.get(pur.id) ?? Infinity;
-    // Find the nearest section header that appears BEFORE this item in original data
+    // User-added subtasks carry a real parentId — group them under that section
+    // even when the item sits before its section in the data array.
+    if (pur.parentId && sectionOrder.has(pur.parentId)) return sectionOrder.get(pur.parentId)!;
+    // Find the nearest section whose Excel position is before this item's
+    // position (sections always precede their items in the Excel order).
     const myPos = originalOrderMap.get(pur.id) ?? Infinity;
     let bestSecIdx = -1;
     let bestSecPos = -1;
     data.forEach(r => {
       if (isSectionRow(r)) {
         const secPos = originalOrderMap.get(r.id) ?? Infinity;
-        if (secPos < myPos && secPos > bestSecPos) {
+        if (secPos <= myPos && secPos > bestSecPos) {
           bestSecPos = secPos;
           bestSecIdx = sectionOrder.get(r.id) ?? -1;
         }

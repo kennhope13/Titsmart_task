@@ -19,8 +19,7 @@ interface DocumentCertificateTabProps {
 
 // Một dòng chứng từ do người dùng tự đặt tên
 interface DocItem {
-  label: string; // VD: "C/O số", "Kiểm định PCCC", "Packing list"...
-  value: string; // VD: "E267049658120001 cấp ngày 22/02/2025"
+  text: string; // VD: "C/O số: E267049658120001 cấp ngày 22/02/2025"
 }
 
 // Mỗi model/xuất xứ có danh sách chứng từ động
@@ -39,7 +38,7 @@ interface FormState {
   notes: string;
 }
 
-const EMPTY_DOC: DocItem = { label: '', value: '' };
+const EMPTY_DOC: DocItem = { text: '' };
 
 const EMPTY_MODEL: ModelEntry = {
   model: '', manufacturer: '', origin: '',
@@ -64,7 +63,7 @@ const cleanNotes = (value?: string) =>
 
 const encodeModels = (models: ModelEntry[]): string => {
   const nonEmpty = models.filter(m =>
-    m.model || m.manufacturer || m.origin || m.docs.some(d => d.label || d.value)
+    m.model || m.manufacturer || m.origin || m.docs.some(d => d.text.trim())
   );
   return nonEmpty.length ? JSON.stringify(nonEmpty) : '';
 };
@@ -78,13 +77,13 @@ const decodeModels = (issueContent?: string): ModelEntry[] => {
       return (parsed as any[]).map(m => {
         if (Array.isArray(m.docs)) return m as ModelEntry;
         const legacyDocs: DocItem[] = [];
-        if (m.co)         legacyDocs.push({ label: 'C/O số', value: m.co });
-        if (m.cq)         legacyDocs.push({ label: 'C/Q số', value: m.cq });
-        if (m.fire)       legacyDocs.push({ label: 'Kiểm định PCCC số', value: m.fire });
-        if (m.xuatXuong)  legacyDocs.push({ label: 'Giấy CN xuất xưởng', value: m.xuatXuong });
-        if (m.packing)    legacyDocs.push({ label: 'Packing list số', value: m.packing });
-        if (m.cl)         legacyDocs.push({ label: 'Chứng nhận chất lượng', value: m.cl });
-        if (m.other)      legacyDocs.push({ label: 'Chứng từ khác', value: m.other });
+        if (m.co)         legacyDocs.push({ text: `C/O số: ${m.co}` });
+        if (m.cq)         legacyDocs.push({ text: `C/Q số: ${m.cq}` });
+        if (m.fire)       legacyDocs.push({ text: `Kiểm định PCCC số: ${m.fire}` });
+        if (m.xuatXuống)  legacyDocs.push({ text: `Giấy CN xuất xưởng: ${m.xuatXuống}` });
+        if (m.packing)    legacyDocs.push({ text: `Packing list số: ${m.packing}` });
+        if (m.cl)         legacyDocs.push({ text: `Chứng nhận chất lượng: ${m.cl}` });
+        if (m.other)      legacyDocs.push({ text: `Chứng từ khác: ${m.other}` });
         return { model: m.model || '', manufacturer: m.manufacturer || '', origin: m.origin || '',
           docs: legacyDocs.length ? legacyDocs : [{ ...EMPTY_DOC }] } as ModelEntry;
       });
@@ -97,21 +96,18 @@ const firstModel = (models: ModelEntry[]): ModelEntry =>
   models[0] ?? { ...EMPTY_MODEL, docs: [] };
 
 const hasAnyDoc = (m: ModelEntry) =>
-  m.docs.some(d => d.label.trim() || d.value.trim());
+  m.docs.some(d => d.text.trim());
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 const inp = 'rounded-lg border border-slate-200 px-3 py-1.5 text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20';
 
-const DocLine = ({ label, value }: { label: string; value: string }) => {
-  if (!label.trim() && !value.trim()) return null;
+const DocLine = ({ text }: { text: string }) => {
+  if (!text.trim()) return null;
   return (
     <div className="flex items-start gap-1.5 text-[11px] leading-snug">
       <span className="mt-0.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
-      <span>
-        {label.trim() && <span className="font-bold text-slate-700">{label}: </span>}
-        <span className="text-slate-600">{value}</span>
-      </span>
+      <span className="text-slate-600">{text}</span>
     </div>
   );
 };
@@ -122,7 +118,7 @@ interface ModelBlockProps {
   total: number;
   onChange: (mIdx: number, field: keyof Omit<ModelEntry, 'docs'>, value: string) => void;
   onRemoveModel: (mIdx: number) => void;
-  onDocChange: (mIdx: number, dIdx: number, field: keyof DocItem, value: string) => void;
+  onDocChange: (mIdx: number, dIdx: number, value: string) => void;
   onAddDoc: (mIdx: number) => void;
   onRemoveDoc: (mIdx: number, dIdx: number) => void;
 }
@@ -171,16 +167,11 @@ const ModelBlock: React.FC<ModelBlockProps> = ({
 
       {entry.docs.map((doc, dIdx) => (
         <div key={dIdx} className="flex items-center gap-2">
-          {/* Tên chứng từ */}
-          <input type="text" className={`w-40 flex-shrink-0 ${inp}`}
-            value={doc.label}
-            onChange={e => onDocChange(index, dIdx, 'label', e.target.value)}
-            placeholder="VD: C/O số, Kiểm định..." />
-          {/* Nội dung / số */}
+          {/* Chứng từ */}
           <input type="text" className={`flex-1 ${inp}`}
-            value={doc.value}
-            onChange={e => onDocChange(index, dIdx, 'value', e.target.value)}
-            placeholder="Số và ngày cấp chứng từ..." />
+            value={doc.text}
+            onChange={e => onDocChange(index, dIdx, e.target.value)}
+            placeholder="VD: C/O số E267049658120001 cấp ngày 22/02/2025" />
           {/* Xóa dòng */}
           {entry.docs.length > 1 && (
             <button type="button" onClick={() => onRemoveDoc(index, dIdx)}
@@ -227,13 +218,13 @@ const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onClose, on
   const removeModel = (mIdx: number) =>
     setForm(prev => ({ ...prev, models: prev.models.filter((_, i) => i !== mIdx) }));
 
-  const updateDoc = (mIdx: number, dIdx: number, field: keyof DocItem, value: string) =>
+  const updateDoc = (mIdx: number, dIdx: number, value: string) =>
     setForm(prev => ({
       ...prev,
       models: prev.models.map((m, i) =>
         i !== mIdx ? m : {
           ...m,
-          docs: m.docs.map((d, j) => j === dIdx ? { ...d, [field]: value } : d),
+          docs: m.docs.map((d, j) => j === dIdx ? { ...d, text: value } : d),
         }
       ),
     }));
@@ -351,7 +342,6 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
   const [editingItem, setEditingItem] = useState<ProjectMaterialPlan | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
   // Khi page bấm nút "Thêm Mới" ở tab DOCUMENTS, triggerAdd = true → mở modal
   useEffect(() => {
@@ -361,28 +351,16 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
       onTriggerHandled?.();
     }
   }, [triggerAdd]);
-  const updateColumnFilter = (key: string, value: string) => {
-    setColumnFilters(prev => ({ ...prev, [key]: value }));
-  };
-  const clearColumnFilters = () => setColumnFilters({});
-
   const rows = data.filter(item => {
     if (!isDocTrack(item)) return false;
     const q = searchQuery.trim().toLowerCase();
-    const matchSearch = !q ||
+    if (!q) return true;
+    return (
       (item.jobContent || '').toLowerCase().includes(q) ||
       (item.unit || '').toLowerCase().includes(q) ||
       (item.techSpecModel || '').toLowerCase().includes(q) ||
-      (item.notes || '').toLowerCase().includes(q);
-
-    const cf = columnFilters;
-    const matchColumn =
-      (!cf.jobContent || (item.jobContent || '').toLowerCase().includes((cf.jobContent || '').toLowerCase())) &&
-      (!cf.unit || (item.unit || '').toLowerCase().includes((cf.unit || '').toLowerCase())) &&
-      (!cf.techSpecModel || (item.techSpecModel || '').toLowerCase().includes((cf.techSpecModel || '').toLowerCase())) &&
-      (!cf.notes || (item.notes || '').toLowerCase().includes((cf.notes || '').toLowerCase()));
-
-    return matchSearch && matchColumn;
+      (item.notes || '').toLowerCase().includes(q)
+    );
   });
 
   const nextStt = String(rows.length + 1);
@@ -400,9 +378,9 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
       techSpecModel: fm.model,
       techSpecOrigin: [fm.manufacturer, fm.origin].filter(Boolean).join(' - '),
       issueContent: encodeModels(formData.models),
-      docCo: formData.models.some(m => m.docs.some(d => d.label.toLowerCase().includes('c/o') && d.value.trim())),
-      docCq: formData.models.some(m => m.docs.some(d => d.label.toLowerCase().includes('c/q') && d.value.trim())),
-      docFireInspection: formData.models.some(m => m.docs.some(d => d.label.toLowerCase().includes('pccc') && d.value.trim())),
+      docCo: formData.models.some(m => m.docs.some(d => d.text.toLowerCase().includes('c/o') && d.text.trim())),
+      docCq: formData.models.some(m => m.docs.some(d => d.text.toLowerCase().includes('c/q') && d.text.trim())),
+      docFireInspection: formData.models.some(m => m.docs.some(d => d.text.toLowerCase().includes('pccc') && d.text.trim())),
       notes: formData.notes ? `${formData.notes} ${DOC_TRACK_TAG}` : DOC_TRACK_TAG,
     };
   };
@@ -457,7 +435,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
               <p className="text-[10px] font-extrabold text-slate-400 uppercase mb-0.5">{m.model}</p>
             )}
             <div className="space-y-0.5">
-              {m.docs.map((d, j) => <DocLine key={j} label={d.label} value={d.value} />)}
+              {m.docs.map((d, j) => <DocLine key={j} text={d.text} />)}
             </div>
           </div>
         ))}
@@ -474,8 +452,8 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
             placeholder="Tìm hàng hóa, model, số chứng từ..."
             className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
-        {(searchQuery || Object.values(columnFilters).some(v => v)) && (
-          <button type="button" onClick={() => { setSearchQuery(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
+        {searchQuery && (
+          <button type="button" onClick={() => setSearchQuery('')} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
         )}
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="hidden text-xs font-extrabold text-slate-500 sm:block">Theo dõi chứng từ hàng hóa</div>
@@ -501,18 +479,6 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
               <th className="px-2 py-3 text-center">Thao tác</th>
             </tr>
           </thead>
-          <tfoot className="bg-slate-50/80 border-t border-slate-200">
-            <tr>
-              <td className="w-10 min-w-[40px] px-2 py-1"></td>
-              <td className="w-[180px] px-2 py-1"><input value={columnFilters.jobContent || ''} onChange={e => updateColumnFilter('jobContent', e.target.value)} placeholder="Tên HHTB..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-              <td className="w-12 px-2 py-1"><input value={columnFilters.unit || ''} onChange={e => updateColumnFilter('unit', e.target.value)} placeholder="ĐV..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-              <td className="w-12 px-2 py-1"></td>
-              <td className="w-[200px] px-2 py-1"><input value={columnFilters.techSpecModel || ''} onChange={e => updateColumnFilter('techSpecModel', e.target.value)} placeholder="Model..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-              <td className="w-[280px] px-2 py-1"></td>
-              <td className="w-[140px] px-2 py-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-              <td className="w-20 px-2 py-1"></td>
-            </tr>
-          </tfoot>
           <tbody className="divide-y divide-slate-100 bg-white text-xs text-slate-700">
             {rows.map((item, index) => (
               <tr key={item.id} className="group align-top hover:bg-slate-50/60">
@@ -556,7 +522,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
 
       {(modalMode === 'add' || modalMode === 'edit') && (
         <DocFormModal
-          title={modalMode === 'add' ? 'Thêm hàng hóa mới' : 'Chỉnh sửa hàng hóa'}
+          title={modalMode === 'add' ? 'Thêm chứng từ mới' : 'Chỉnh sửa hàng hóa'}
           initial={modalMode === 'edit' && editingItem
             ? toFormState(editingItem)
             : { ...EMPTY_FORM, models: [{ ...EMPTY_MODEL, docs: [{ ...EMPTY_DOC }] }] }}

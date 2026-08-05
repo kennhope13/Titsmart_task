@@ -171,7 +171,7 @@ export const TaskManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const selectedProjectFromUrl = searchParams.get('project') || '';
-  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addPurchasingPlan, materialPlans, purchasingPlans } = useRealtimeStore();
+  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addPurchasingPlan, materialPlans, purchasingPlans, deleteMaterialPlan, deletePurchasingPlan } = useRealtimeStore();
 
   const [selectedProjectCode, setSelectedProjectCode] = useState<string>('all');
   const [selectedRomanSection, setSelectedRomanSection] = useState<string>('all');
@@ -467,6 +467,120 @@ export const TaskManagementPage: React.FC = () => {
     setOcrIssueDraft('');
     setParentIdSelect('default');
     setIsNewTaskModalOpen(true);
+  };
+
+  // ----------------------------------------------------------------
+  // ĐỒNG BỘ TỪ KẾ HOẠCH VẬT TƯ → QUẢN LÝ TIẾN ĐỘ
+  // Tạo Tasks cho các MaterialPlan items chưa có Task tương ứng
+  // ----------------------------------------------------------------
+  const handleSyncFromMaterialPlan = () => {
+    const projCode = selectedProjectCode !== 'all' ? selectedProjectCode : projectCode;
+    if (!projCode) { triggerToast('Vui lòng chọn dự án trước!', 'warning'); return; }
+
+    const projMaterials = materialPlans.filter(m => m.projectCode === projCode && m.jobContent?.trim());
+    const proj = projects.find(p => p.code === projCode);
+    const projName = proj?.name || projCode;
+
+    // Build a Set of existing task names (lowercase) để check trùng
+    const existingTaskNames = new Set(
+      tasks.filter(t => t.projectCode === projCode).map(t => t.name?.trim().toLowerCase())
+    );
+    const existingTaskStts = new Set(
+      tasks.filter(t => t.projectCode === projCode).map(t => t.stt?.trim())
+    );
+
+    const toCreate: Omit<Task, 'id'>[] = [];
+    let sectionName = '';
+
+    // Duyệt theo thứ tự materialPlans — section header trước, item sau
+    projMaterials.forEach(m => {
+      const isSection = String(m.notes || '').toLowerCase().includes('[section]') ||
+                        /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(m.stt || '').trim());
+
+      if (isSection) {
+        sectionName = m.jobContent?.trim() || '';
+        // Tạo section header task nếu chưa có
+        if (!existingTaskNames.has(sectionName.toLowerCase())) {
+          toCreate.push({
+            stt: m.stt || '',
+            code: '',
+            name: sectionName,
+            projectCode: projCode,
+            projectName: projName,
+            volume: 0,
+            unit: '',
+            progress: 0,
+            status: 'Chưa làm',
+            purchaseStatus: '',
+            constrStatus: '',
+            isDone: false,
+            isSectionHeader: true,
+            sectionName: sectionName,
+            notes: m.notes || '',
+          });
+          existingTaskNames.add(sectionName.toLowerCase());
+          existingTaskStts.add(m.stt || '');
+        }
+      } else {
+        const itemName = m.jobContent?.trim() || '';
+        const itemStt = m.stt?.trim() || '';
+        // Bỏ qua nếu đã tồn tại (check cả tên lẫn STT)
+        if (existingTaskNames.has(itemName.toLowerCase()) || existingTaskStts.has(itemStt)) return;
+
+        toCreate.push({
+          stt: itemStt,
+          code: '',
+          name: itemName,
+          projectCode: projCode,
+          projectName: projName,
+          volume: Number(m.contractVolume || 0),
+          unit: m.unit || '',
+          progress: 0,
+          status: 'Chưa làm',
+          purchaseStatus: 'Chưa đặt hàng',
+          constrStatus: 'Chưa thi công',
+          isDone: false,
+          isSectionHeader: false,
+          sectionName: sectionName,
+          notes: m.notes || '',
+        });
+        existingTaskNames.add(itemName.toLowerCase());
+        existingTaskStts.add(itemStt);
+      }
+    });
+
+    if (toCreate.length === 0) {
+      triggerToast('Tất cả hạng mục đã được đồng bộ, không có gì mới.', 'info');
+      return;
+    }
+
+    addTasksBatch(toCreate);
+    triggerToast(`Đã đồng bộ ${toCreate.length} hạng mục từ Kế hoạch Vật tư!`, 'success');
+  };
+
+  // ----------------------------------------------------------------
+  // XÓA TASK KÈM XÓA MATERIALPLAN + PURCHASINGPLAN TƯƠNG ỨNG
+  // ----------------------------------------------------------------
+  const handleDeleteTask = (task: Task) => {
+    // Xóa task
+    deleteTask(task.id);
+
+    // Tìm và xóa MaterialPlan khớp theo stt + tên + dự án
+    const matchingMaterial = materialPlans.find(
+      m => m.projectCode === task.projectCode &&
+           m.stt?.trim() === (task.stt || '').trim() &&
+           m.jobContent?.trim().toLowerCase() === (task.name || '').trim().toLowerCase()
+    );
+    if (matchingMaterial) {
+      deleteMaterialPlan(matchingMaterial.id);
+      // Xóa PurchasingPlan nếu có
+      const matchingPurchasing = purchasingPlans.find(
+        p => p.projectCode === task.projectCode &&
+             p.stt?.trim() === (task.stt || '').trim() &&
+             p.content?.trim().toLowerCase() === (task.name || '').trim().toLowerCase()
+      );
+      if (matchingPurchasing) deletePurchasingPlan(matchingPurchasing.id);
+    }
   };
 
 
@@ -788,46 +902,60 @@ export const TaskManagementPage: React.FC = () => {
       assignedEngineerName: eng?.name || '',
     });
 
-    // Đồng bộ sang Kế hoạch Vật tư nếu chưa có
+    // ----------------------------------------------------------------
+    // ĐỒNG BỘ SANG KẾ HOẠCH VẬT TƯ
+    // ----------------------------------------------------------------
     if (!isSectionHeader) {
+      // Kiểm tra đã có chưa — check theo cả STT lẫn tên để tránh false positive
       const existingMaterial = materialPlans.find(
-        m => m.projectCode === projectCode && m.jobContent?.trim().toLowerCase() === name.trim().toLowerCase()
+        m => m.projectCode === projectCode &&
+             m.stt?.trim() === taskStt.trim() &&
+             m.jobContent?.trim().toLowerCase() === name.trim().toLowerCase()
       );
       if (!existingMaterial) {
-        // Xác định ID cha trong MaterialPlan
-        let materialParentId: string | undefined = undefined;
+        // Tìm section cha trong MaterialPlan theo sectionName
+        const sectionInMaterial = materialPlans.find(
+          m => m.projectCode === projectCode &&
+               (String(m.notes || '').toLowerCase().includes('[section]') ||
+                /^[IVXLCDM]+$/i.test(String(m.stt || '').trim())) &&
+               m.jobContent?.trim().toLowerCase() === finalSectionName.trim().toLowerCase()
+        );
 
-        if (taskParentId) {
-          const parentTaskObj = tasks.find(t => t.id === taskParentId);
-          if (parentTaskObj) {
-            // Thử tìm MaterialPlan trùng tên với task cha
-            const matchByName = materialPlans.find(
-              m => m.projectCode === projectCode &&
-                   m.jobContent?.trim().toLowerCase() === parentTaskObj.name.trim().toLowerCase()
-            );
-            if (matchByName) {
-              materialParentId = matchByName.id;
-            } else {
-              // Fallback: tìm section bằng sectionName của task cha
-              const sectionName = parentTaskObj.sectionName || finalSectionName;
-              const sectionMatch = materialPlans.find(
-                m => m.projectCode === projectCode &&
-                     (String(m.notes || '').toLowerCase().includes('[section]') || /^[IVXLCDM]+$/i.test(String(m.stt || '').trim())) &&
-                     m.jobContent?.trim().toLowerCase() === sectionName.trim().toLowerCase()
-              );
-              materialParentId = sectionMatch?.id;
-            }
-          }
-        } else {
-          // Không có task cha → dùng sectionName để tìm section trong materialPlan
-          const sectionMatch = materialPlans.find(
+        // Nếu chưa có section này trong MaterialPlan, tạo section trước
+        if (!sectionInMaterial && finalSectionName) {
+          const sectionCount = materialPlans.filter(
             m => m.projectCode === projectCode &&
-                 (String(m.notes || '').toLowerCase().includes('[section]') || /^[IVXLCDM]+$/i.test(String(m.stt || '').trim())) &&
-                 m.jobContent?.trim().toLowerCase() === finalSectionName.trim().toLowerCase()
+                 (String(m.notes || '').toLowerCase().includes('[section]') ||
+                  /^[IVXLCDM]+$/i.test(String(m.stt || '').trim()))
+          ).length;
+          const sectionTask = tasks.find(
+            t => t.projectCode === projectCode && t.isSectionHeader &&
+                 (t.sectionName === finalSectionName || t.name === finalSectionName)
           );
-          materialParentId = sectionMatch?.id;
+          addMaterialPlan({
+            projectCode,
+            stt: sectionTask?.stt || toRoman(sectionCount + 1),
+            jobContent: finalSectionName,
+            unit: '',
+            contractVolume: 0,
+            progressStatus: 'Chưa thi công',
+            orderedVolume: 0,
+            orderedStatus: 'Chưa đặt hàng',
+            supplyScope: 'unknown',
+            notes: '[section]',
+          });
         }
 
+        // Kiểm tra section cha có phải nhà thầu không
+        const normalizeVn = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
+        const sectionIsContractor =
+          (sectionInMaterial && (sectionInMaterial.supplyScope === 'contractor' || normalizeVn(sectionInMaterial.jobContent || '').includes('nha thau cung cap'))) ||
+          normalizeVn(finalSectionName).includes('nha thau cung cap');
+
+        const itemNotes = sectionIsContractor ? '[contractor]' : '';
+        const itemSupplyScope: 'contractor' | 'unknown' = sectionIsContractor ? 'contractor' : 'unknown';
+
+        // Tạo item trong MaterialPlan
         addMaterialPlan({
           projectCode,
           stt: taskStt,
@@ -837,10 +965,35 @@ export const TaskManagementPage: React.FC = () => {
           progressStatus: 'Chưa thi công',
           orderedVolume: 0,
           orderedStatus: 'Chưa đặt hàng',
-          supplyScope: 'unknown',
-          notes: '',
-          parentId: materialParentId,
+          supplyScope: itemSupplyScope,
+          notes: itemNotes,
+          parentId: sectionInMaterial?.id,
         });
+
+        // Nếu là nhà thầu → cũng tạo PurchasingPlan
+        if (sectionIsContractor) {
+          addPurchasingPlan({
+            projectCode,
+            stt: taskStt,
+            content: name,
+            unit: unit,
+            volumeContract: volume,
+            volumeOrder: 0,
+            unitPrice: 0,
+            vatRate: 10,
+            vatAmount: 0,
+            totalAmount: 0,
+            prepayPercent: 0,
+            prepayAmount: 0,
+            remainingAmount: 0,
+            orderStatus: 'Chưa đặt hàng',
+            contractStatus: 'Chưa ký',
+            paymentDate: '',
+            invoiceStatus: 'Chưa xuất',
+            notes: itemNotes,
+            parentId: sectionInMaterial?.id,
+          });
+        }
       }
     }
 
@@ -1197,6 +1350,16 @@ export const TaskManagementPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
 
+            {/* Nút đồng bộ từ Kế hoạch Vật tư */}
+            <button
+              onClick={handleSyncFromMaterialPlan}
+              className="flex items-center gap-1.5 border border-primary/30 bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary/10 transition-all shadow-xs whitespace-nowrap"
+              title="Đồng bộ hạng mục từ tab Kế hoạch Vật tư sang đây"
+            >
+              <span className="material-symbols-outlined text-base">sync</span>
+              <span>Đồng bộ từ KH Vật tư</span>
+            </button>
+
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
@@ -1285,7 +1448,7 @@ export const TaskManagementPage: React.FC = () => {
                             <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
                             <span onClick={() => handleOpenEditModal(t)} className="truncate cursor-pointer hover:underline flex-1">{t.name}</span>
                             <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-base">add_circle</span></button>
-                            <button onClick={(e) => { e.stopPropagation(); deleteTask(t.id); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-base">delete</span></button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-base">delete</span></button>
                           </div>
                         </td>
                       </tr>
@@ -1341,7 +1504,7 @@ export const TaskManagementPage: React.FC = () => {
                             {depth > 1 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}
                             <span onClick={() => startEditing(t.id, 'name', t.name)} className="truncate flex-1 cursor-pointer hover:underline hover:text-blue-600 block">{t.name}</span>
                             <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button>
-                            <button onClick={(e) => { e.stopPropagation(); deleteTask(t.id); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button>
                           </div>
                         )}
                       </td>

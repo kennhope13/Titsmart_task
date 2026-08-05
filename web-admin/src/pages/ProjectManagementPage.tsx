@@ -242,6 +242,8 @@ export const ProjectManagementPage: React.FC = () => {
     }
 
     if (pendingProjectTasks.length > 0) {
+      // Lưu thứ tự tuyệt đối theo file Excel dạng [order:NNN] để sắp xếp mục I-XII đúng sau khi load
+      let orderCounter = 0;
       const existingTaskKeys = new Set(tasks.filter((task) => task.projectCode === code).map((task) => `${task.stt.trim()}|${task.name.trim().toLowerCase()}`));
       const importedTasks: Omit<Task, 'id'>[] = pendingProjectTasks
         .filter((item) => {
@@ -284,7 +286,8 @@ export const ProjectManagementPage: React.FC = () => {
         if (existingMaterialPlanKeys.has(key)) continue;
         existingMaterialPlanKeys.add(key);
         const supplyScope = item.supplyScope === 'owner' ? 'owner' : item.supplyScope === 'contractor' ? 'contractor' : 'unknown';
-        const supplyLabel = supplyScope === 'owner' ? 'Ch? ??u t? cung c?p' : supplyScope === 'contractor' ? 'Nh? th?u cung c?p' : '';
+        const supplyLabel = supplyScope === 'owner' ? 'Chủ đầu tư cung cấp' : supplyScope === 'contractor' ? 'Nhà thầu cung cấp' : '';
+        const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
         await addMaterialPlan({
           projectCode: code,
           stt: item.stt || String(index + 1),
@@ -304,7 +307,7 @@ export const ProjectManagementPage: React.FC = () => {
           docFireInspection: false,
           dispatchToSite: false,
           supplyScope,
-          notes: [item.isSectionHeader ? '[section]' : '', supplyScope !== 'unknown' ? `[${supplyScope}]` : '', item.notes, supplyLabel, TEXT.materialSyncNote].filter(Boolean).join(' | '),
+          notes: [item.isSectionHeader ? '[section]' : '', supplyScope !== 'unknown' ? `[${supplyScope}]` : '', item.notes, supplyLabel, orderTag, TEXT.materialSyncNote].filter(Boolean).join(' | '),
         });
       }
 
@@ -314,10 +317,12 @@ export const ProjectManagementPage: React.FC = () => {
           .map((plan) => `${String(plan.stt || '').trim()}|${String(plan.content || '').trim().toLowerCase()}`)
       );
 
-      for (const [index, item] of pendingProjectTasks.filter((item) => !item.isSectionHeader && item.name?.trim() && item.supplyScope === 'contractor').entries()) {
+      // Import cả mục I-XII (section) lẫn hạng mục nhà thầu cung cấp — đồng bộ tự động như phụ lục
+      for (const [index, item] of pendingProjectTasks.filter((item) => (item.isSectionHeader || item.supplyScope === 'contractor') && item.name?.trim()).entries()) {
         const key = `${String(item.stt || '').trim()}|${String(item.name || '').trim().toLowerCase()}`;
         if (existingPurchasingKeys.has(key)) continue;
         existingPurchasingKeys.add(key);
+        const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
         // Không import đơn giá, tiền thuế, thành tiền khi tạo dự án mới từ phụ lục (vẫn lấy % thuế VAT)
         await addPurchasingPlan({
           projectCode: code,
@@ -336,7 +341,7 @@ export const ProjectManagementPage: React.FC = () => {
           orderStatus: TEXT.purchaseStatus,
           contractStatus: '\u0110\u00e3 c\u00f3 ph\u1ee5 l\u1ee5c',
           invoiceStatus: 'Ch\u01b0a xu\u1ea5t',
-          notes: [item.notes, '\u0110\u1ed3ng b\u1ed9 t\u1eeb ph\u1ee5 l\u1ee5c khi t\u1ea1o d\u1ef1 \u00e1n'].filter(Boolean).join(' | '),
+          notes: [item.isSectionHeader ? '[section]' : '', item.notes, orderTag, '\u0110\u1ed3ng b\u1ed9 t\u1eeb ph\u1ee5 l\u1ee5c khi t\u1ea1o d\u1ef1 \u00e1n'].filter(Boolean).join(' | '),
         });
       }
     }
