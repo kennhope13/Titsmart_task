@@ -175,6 +175,16 @@ export const ProjectCostPlanPage: React.FC = () => {
     const { id, type } = deleteConfirm;
     
     if (type === 'material') {
+      // Nếu item là contractor → xóa purchasing tương ứng luôn
+      const plan = materialPlans.find(p => p.id === id);
+      if (plan && isContractorMaterialPlan(plan)) {
+        const key = normalizePlanKey(plan.stt, plan.jobContent, plan.parentId);
+        const matchingPurchasing = purchasingPlans.find(p =>
+          p.projectCode === plan.projectCode &&
+          normalizePlanKey(p.stt, p.content, p.parentId) === key
+        );
+        if (matchingPurchasing) deletePurchasingPlan(matchingPurchasing.id);
+      }
       deleteMaterialPlan(id);
       triggerToast('Đã xóa Kế hoạch vật tư thành công!', 'success');
     } else if (type === 'purchasing') {
@@ -1029,8 +1039,8 @@ export const ProjectCostPlanPage: React.FC = () => {
   };
 
   // Form states for creating items
-  const [newPlanData, setNewPlanData] = useState<Partial<ProjectMaterialPlan>>({
-    stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: ''
+  const [newPlanData, setNewPlanData] = useState<Partial<ProjectMaterialPlan> & { isContractor?: boolean }>({
+    stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: false
   });
   const [newPurchasingData, setNewPurchasingData] = useState<Partial<ProjectPurchasing>>({
     stt: '', content: '', unit: 'bộ', volumeContract: 1, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''
@@ -1143,24 +1153,24 @@ export const ProjectCostPlanPage: React.FC = () => {
               <span className="material-symbols-outlined text-sm">file_download</span>
               Xuất Excel
             </button>
-            <button 
-              onClick={() => {
-                if (!selectedProject) {
-                  triggerToast('Vui lòng khởi tạo dự án trước khi thêm dữ liệu!', 'warning');
-                  return;
-                }
-                setIsCreatingSectionHeader(false);
-                if (activeTab === 'MATERIAL_PLAN') setIsNewPlanOpen(true);
-                else if (activeTab === 'PURCHASING') setIsNewPurchasingOpen(true);
-                else if (activeTab === 'EXPENSE') setIsNewExpenseOpen(true);
-                else if (activeTab === 'LABOR') setIsNewLaborOpen(true);
-                else if (activeTab === 'DOCUMENTS') setTriggerAddDoc(true);
-              }} 
-              className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
-            >
-              <span className="material-symbols-outlined text-sm">add</span>
-              Thêm Mới
-            </button>
+            {activeTab !== 'MATERIAL_PLAN' && activeTab !== 'PURCHASING' && (
+              <button 
+                onClick={() => {
+                  if (!selectedProject) {
+                    triggerToast('Vui lòng khởi tạo dự án trước khi thêm dữ liệu!', 'warning');
+                    return;
+                  }
+                  setIsCreatingSectionHeader(false);
+                  if (activeTab === 'EXPENSE') setIsNewExpenseOpen(true);
+                  else if (activeTab === 'LABOR') setIsNewLaborOpen(true);
+                  else if (activeTab === 'DOCUMENTS') setTriggerAddDoc(true);
+                }} 
+                className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
+              >
+                <span className="material-symbols-outlined text-sm">add</span>
+                Thêm Mới
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -1410,6 +1420,15 @@ export const ProjectCostPlanPage: React.FC = () => {
             return String(currentProjMaterialPlans.filter(p => !p.parentId).length + 1);
           })();
 
+          const isContractor = !!newPlanData.isContractor;
+          const baseNote = (() => {
+            const tags = [];
+            if (isCreatingSectionHeader && !parentId) tags.push('[section]');
+            if (isContractor) tags.push('[contractor]');
+            if (newPlanData.notes) tags.push(newPlanData.notes);
+            return tags.join(' | ');
+          })();
+
           addMaterialPlan({
             projectCode: selectedProject,
             stt: autoStt,
@@ -1427,12 +1446,77 @@ export const ProjectCostPlanPage: React.FC = () => {
             docCq: !!newPlanData.docCq,
             docFireInspection: !!newPlanData.docFireInspection,
             dispatchToSite: !!newPlanData.dispatchToSite,
-            notes: isCreatingSectionHeader && !parentId ? '[section]' : (newPlanData.notes || ''),
+            supplyScope: isContractor ? 'contractor' : 'unknown',
+            notes: baseNote,
             parentId: parentId || undefined
           });
-          
+
+          // Đồng bộ sang tab Mua hàng nếu là nhà thầu (và không phải đầu mục lớn)
+          if (!isCreatingSectionHeader && isContractor) {
+            const contractVol = Number(newPlanData.contractVolume || 1);
+            addPurchasingPlan({
+              projectCode: selectedProject,
+              stt: autoStt,
+              content: newPlanData.jobContent || '',
+              unit: newPlanData.unit || 'bộ',
+              volumeContract: contractVol,
+              volumeOrder: 0,
+              unitPrice: 0,
+              vatRate: 10,
+              vatAmount: 0,
+              totalAmount: 0,
+              prepayPercent: 0,
+              prepayAmount: 0,
+              remainingAmount: 0,
+              orderStatus: 'Chưa đặt hàng',
+              contractStatus: 'Chưa ký',
+              paymentDate: '',
+              invoiceStatus: 'Chưa xuất',
+              notes: baseNote,
+              parentId: parentId || undefined
+            });
+          }
+
+          // Đồng bộ sang tab Quản lý Tiến độ (TaskManagement)
+          if (!isCreatingSectionHeader) {
+            const projName = projects.find(p => p.code === selectedProject)?.name || selectedProject;
+            const currentSectionName = (() => {
+              if (parentId) {
+                const parentObj = currentProjMaterialPlans.find(p => p.id === parentId);
+                return parentObj?.jobContent || '';
+              }
+              const sectionId = sectionPlanIdForNew;
+              if (sectionId) {
+                const sec = currentProjMaterialPlans.find(p => p.id === sectionId);
+                return sec?.jobContent || '';
+              }
+              return '';
+            })();
+            const existingTask = tasks.find(t => t.projectCode === selectedProject && t.name === (newPlanData.jobContent || ''));
+            if (!existingTask) {
+              addTask({
+                stt: autoStt,
+                code: '',
+                name: newPlanData.jobContent || '',
+                projectCode: selectedProject,
+                projectName: projName,
+                volume: Number(newPlanData.contractVolume || 1),
+                unit: newPlanData.unit || 'bộ',
+                progress: 0,
+                status: 'Chưa làm',
+                purchaseStatus: 'Chưa đặt hàng',
+                constrStatus: 'Chưa thi công',
+                isDone: false,
+                isSectionHeader: false,
+                sectionName: currentSectionName,
+                notes: baseNote,
+                parentId: parentId || undefined
+              });
+            }
+          }
+
           // Reset form
-          setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: ''});
+          setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: false});
 
           if (isCreatingSectionHeader) {
             // Giống TaskManagementPage: sau khi tạo đầu mục lớn, KHÔNG đóng modal, chuyển sang mode thêm hạng mục nhỏ
@@ -1571,6 +1655,20 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.docCq} onChange={(e) => setNewPlanData({...newPlanData, docCq: e.target.checked})} /> <span className="font-bold">Chứng từ CQ</span></div>
                 <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.dispatchToSite} onChange={(e) => setNewPlanData({...newPlanData, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi tới CT</span></div>
               </div>
+              {/* Nhà thầu cung cấp */}
+              <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                <input
+                  type="checkbox"
+                  id="isContractorCheck"
+                  checked={!!newPlanData.isContractor}
+                  onChange={(e) => setNewPlanData({...newPlanData, isContractor: e.target.checked})}
+                  className="w-4 h-4 accent-amber-500"
+                />
+                <label htmlFor="isContractorCheck" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
+                  Nhà thầu cung cấp — tự động đồng bộ sang tab Mua hàng
+                </label>
+              </div>
             </>
           )}
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newPlanData.notes} onChange={(e) => setNewPlanData({...newPlanData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -1584,6 +1682,23 @@ export const ProjectCostPlanPage: React.FC = () => {
           <form onSubmit={(e) => {
             e.preventDefault();
             updateMaterialPlan(editingPlan.id, editingPlan);
+            // Nếu là contractor → sync sang purchasing plan
+            if (isContractorMaterialPlan(editingPlan)) {
+              const key = normalizePlanKey(editingPlan.stt, editingPlan.jobContent, editingPlan.parentId);
+              const matchingPurchasing = purchasingPlans.find(p =>
+                p.projectCode === editingPlan.projectCode &&
+                normalizePlanKey(p.stt, p.content, p.parentId) === key
+              );
+              if (matchingPurchasing) {
+                updatePurchasingPlan(matchingPurchasing.id, {
+                  ...matchingPurchasing,
+                  stt: editingPlan.stt,
+                  content: editingPlan.jobContent,
+                  unit: editingPlan.unit,
+                  volumeContract: editingPlan.contractVolume || matchingPurchasing.volumeContract,
+                });
+              }
+            }
             setEditingPlan(null);
             triggerToast('Đã cập nhật Kế hoạch Vật tư thành công!', 'success');
           }} className="space-y-3 text-xs">
@@ -1625,6 +1740,20 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.docCo} onChange={(e) => setEditingPlan({...editingPlan, docCo: e.target.checked})} /> <span className="font-bold">CO</span></div>
               <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.docCq} onChange={(e) => setEditingPlan({...editingPlan, docCq: e.target.checked})} /> <span className="font-bold">CQ</span></div>
               <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.dispatchToSite} onChange={(e) => setEditingPlan({...editingPlan, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi CT</span></div>
+            </div>
+            {/* Nhà thầu */}
+            <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+              <input
+                type="checkbox"
+                id="editIsContractorCheck"
+                checked={editingPlan.supplyScope === 'contractor'}
+                onChange={(e) => setEditingPlan({...editingPlan, supplyScope: e.target.checked ? 'contractor' : 'unknown'})}
+                className="w-4 h-4 accent-amber-500"
+              />
+              <label htmlFor="editIsContractorCheck" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
+                Nhà thầu cung cấp — hiển thị trong tab Mua hàng
+              </label>
             </div>
             <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingPlan.notes} onChange={(e) => setEditingPlan({...editingPlan, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingPlan(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Cập nhật</button></div>

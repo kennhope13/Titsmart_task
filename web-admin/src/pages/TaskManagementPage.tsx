@@ -171,7 +171,7 @@ export const TaskManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const selectedProjectFromUrl = searchParams.get('project') || '';
-  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask } = useRealtimeStore();
+  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addPurchasingPlan, materialPlans, purchasingPlans } = useRealtimeStore();
 
   const [selectedProjectCode, setSelectedProjectCode] = useState<string>('all');
   const [selectedRomanSection, setSelectedRomanSection] = useState<string>('all');
@@ -223,6 +223,40 @@ export const TaskManagementPage: React.FC = () => {
   // Edit Task Modal state
   const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  const [editingCell, setEditingCell] = useState<{ id: string; field: keyof Task } | null>(null);
+  const [tempValue, setTempValue] = useState<any>('');
+
+  const startEditing = (id: string, field: keyof Task, value: any) => {
+    setEditingCell({ id, field });
+    if (field === 'progress') {
+      const n = Number(value || 0);
+      setTempValue(n <= 1 ? Math.round(n * 100) : n);
+    } else {
+      setTempValue(value === undefined || value === null ? '' : value);
+    }
+  };
+
+  const saveEditing = (task: Task) => {
+    if (!editingCell) return;
+    const { id, field } = editingCell;
+    let finalValue = tempValue;
+    if (field === 'volume') {
+      finalValue = Number(tempValue || 0);
+    } else if (field === 'progress') {
+      finalValue = Number(tempValue || 0) / 100;
+    }
+    const nextProgress = field === 'progress' ? finalValue : task.progress;
+    
+    updateTask(id, { 
+      [field]: finalValue,
+      ...(field === 'progress' ? {
+        isDone: nextProgress >= 1,
+        status: taskStatusFromProgress(task.isSectionHeader ? 0 : nextProgress),
+      } : {})
+    });
+    setEditingCell(null);
+  };
   const [editStt, setEditStt] = useState('');
   const [editName, setEditName] = useState('');
   const [editSectionName, setEditSectionName] = useState('');
@@ -731,8 +765,11 @@ export const TaskManagementPage: React.FC = () => {
     const nextStt = String(tasks.filter(t => t.projectCode === projectCode).length + 1);
     const nextProgress = isSectionHeader ? 0 : calculateAutoProgressRatio(purchaseStatus, constrStatus);
     const createdSectionName = finalSectionName;
+    const taskStt = isSectionHeader ? (stt || toRoman(tasks.filter(t => t.projectCode === projectCode && t.isSectionHeader).length + 1)) : (stt || nextStt);
+    const taskParentId = parentIdSelect !== 'default' ? parentIdSelect : undefined;
+
     addTask({
-      stt: isSectionHeader ? (stt || toRoman(tasks.filter(t => t.projectCode === projectCode && t.isSectionHeader).length + 1)) : (stt || nextStt),
+      stt: taskStt,
       code: `TSK-${Date.now()}`,
       name,
       projectCode,
@@ -746,10 +783,66 @@ export const TaskManagementPage: React.FC = () => {
       isDone: !isSectionHeader && nextProgress >= 1,
       isSectionHeader,
       sectionName: finalSectionName,
-      parentId: parentIdSelect !== 'default' ? parentIdSelect : undefined,
+      parentId: taskParentId,
       assignedEngineerId: engineerId,
       assignedEngineerName: eng?.name || '',
     });
+
+    // Đồng bộ sang Kế hoạch Vật tư nếu chưa có
+    if (!isSectionHeader) {
+      const existingMaterial = materialPlans.find(
+        m => m.projectCode === projectCode && m.jobContent?.trim().toLowerCase() === name.trim().toLowerCase()
+      );
+      if (!existingMaterial) {
+        // Xác định ID cha trong MaterialPlan
+        let materialParentId: string | undefined = undefined;
+
+        if (taskParentId) {
+          const parentTaskObj = tasks.find(t => t.id === taskParentId);
+          if (parentTaskObj) {
+            // Thử tìm MaterialPlan trùng tên với task cha
+            const matchByName = materialPlans.find(
+              m => m.projectCode === projectCode &&
+                   m.jobContent?.trim().toLowerCase() === parentTaskObj.name.trim().toLowerCase()
+            );
+            if (matchByName) {
+              materialParentId = matchByName.id;
+            } else {
+              // Fallback: tìm section bằng sectionName của task cha
+              const sectionName = parentTaskObj.sectionName || finalSectionName;
+              const sectionMatch = materialPlans.find(
+                m => m.projectCode === projectCode &&
+                     (String(m.notes || '').toLowerCase().includes('[section]') || /^[IVXLCDM]+$/i.test(String(m.stt || '').trim())) &&
+                     m.jobContent?.trim().toLowerCase() === sectionName.trim().toLowerCase()
+              );
+              materialParentId = sectionMatch?.id;
+            }
+          }
+        } else {
+          // Không có task cha → dùng sectionName để tìm section trong materialPlan
+          const sectionMatch = materialPlans.find(
+            m => m.projectCode === projectCode &&
+                 (String(m.notes || '').toLowerCase().includes('[section]') || /^[IVXLCDM]+$/i.test(String(m.stt || '').trim())) &&
+                 m.jobContent?.trim().toLowerCase() === finalSectionName.trim().toLowerCase()
+          );
+          materialParentId = sectionMatch?.id;
+        }
+
+        addMaterialPlan({
+          projectCode,
+          stt: taskStt,
+          jobContent: name,
+          unit: unit,
+          contractVolume: volume,
+          progressStatus: 'Chưa thi công',
+          orderedVolume: 0,
+          orderedStatus: 'Chưa đặt hàng',
+          supplyScope: 'unknown',
+          notes: '',
+          parentId: materialParentId,
+        });
+      }
+    }
 
     setName('');
     setStt('');
@@ -757,9 +850,29 @@ export const TaskManagementPage: React.FC = () => {
     setCustomSectionInput('');
 
     if (isSectionHeader) {
+      // Đồng bộ section header sang Kế hoạch Vật tư
+      const existingSection = materialPlans.find(
+        m => m.projectCode === projectCode &&
+             (String(m.notes || '').toLowerCase().includes('[section]') || /^[IVXLCDM]+$/i.test(String(m.stt || '').trim())) &&
+             m.jobContent?.trim().toLowerCase() === name.trim().toLowerCase()
+      );
+      if (!existingSection) {
+        addMaterialPlan({
+          projectCode,
+          stt: taskStt,
+          jobContent: name,
+          unit: '',
+          contractVolume: 0,
+          progressStatus: 'Chưa thi công',
+          orderedVolume: 0,
+          orderedStatus: 'Chưa đặt hàng',
+          supplyScope: 'unknown',
+          notes: '[section]',
+        });
+      }
       setIsSectionHeader(false);
       setSectionSelect(createdSectionName);
-      triggerToast('\u0110\u00e3 t\u1ea1o \u0110\u1ea7u m\u1ee5c l\u1edbn. B\u1ea1n c\u00f3 th\u1ec3 th\u00eam H\u1ea1ng m\u1ee5c nh\u1ecf trong \u0111\u1ea7u m\u1ee5c n\u00e0y.', 'success');
+      triggerToast('Đã tạo Đầu mục lớn. Bạn có thể thêm Hạng mục nhỏ trong đầu mục này.', 'success');
       return;
     }
 
@@ -1211,7 +1324,72 @@ export const TaskManagementPage: React.FC = () => {
                   
                   const rowClass = `hover:bg-slate-100 transition-colors border-b border-slate-50 ${rowBg}`;
 
-                  return (<tr key={t.id} className={rowClass}><td onClick={() => handleOpenEditModal(t)} className={`sticky left-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 font-mono text-center cursor-pointer hover:text-blue-600 whitespace-nowrap ${sttStyle}`}>{t.computedStt || t.stt || idx + 1}</td><td onClick={() => handleOpenEditModal(t)} className={`sticky left-[42px] z-10 py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] leading-tight cursor-pointer hover:text-blue-600 hover:underline transition-colors truncate ${fontStyle}`} title={t.name}><div style={{ paddingLeft }} className="flex items-center gap-1">{depth > 1 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}<span className="truncate flex-1">{t.name}</span><button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button><button onClick={(e) => { e.stopPropagation(); deleteTask(t.id); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button></div></td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-right font-mono font-semibold text-slate-900 cursor-pointer hover:text-blue-600 whitespace-nowrap">{t.volume ? t.volume.toLocaleString('vi-VN') : '-'}</td><td className="py-1.5 px-1 text-center font-mono text-slate-500 whitespace-nowrap">{t.unit || '-'}</td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-center whitespace-nowrap cursor-pointer"><span className={'inline-flex min-w-10 items-center justify-center px-1.5 py-0.5 font-mono font-bold text-[10px] rounded border ' + (isFinished ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : pct > 0 ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600')}>{pct}%</span></td><td className="py-1.5 px-1 text-center whitespace-nowrap"><select value={t.purchaseStatus || 'Chưa đặt hàng'} onChange={(e) => { const nextPurchaseStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(nextPurchaseStatus, t.constrStatus); updateTask(t.id, { purchaseStatus: nextPurchaseStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-transparent px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></td><td className="py-1.5 px-1 text-center whitespace-nowrap"><select value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); updateTask(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-transparent px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 font-semibold text-red-600 cursor-pointer hover:underline truncate" title={t.issue || ''}>{t.issue ? (<span className="inline-flex items-center gap-1 whitespace-nowrap truncate"><span className="material-symbols-outlined text-red-500 text-xs flex-shrink-0">warning</span><span className="truncate">{t.issue}</span></span>) : (<span className="text-slate-300">-</span>)}</td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-slate-600 cursor-pointer hover:underline truncate" title={t.issueStatus || ''}>{t.issueStatus || <span className="text-slate-300">-</span>}</td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-center cursor-pointer"><span className={'material-symbols-outlined text-sm ' + (isFinished ? 'text-emerald-600' : 'text-slate-300')}>{isFinished ? 'check_circle' : 'radio_button_unchecked'}</span></td><td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-slate-500 cursor-pointer hover:underline truncate" title={t.notes || ''}>{t.notes || <span className="text-slate-300">-</span>}</td></tr>);
+                  return (
+                    <tr key={t.id} className={rowClass} onDoubleClick={() => handleOpenEditModal(t)}>
+                      <td className={`sticky left-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 font-mono text-center whitespace-nowrap ${sttStyle}`}>
+                        {editingCell?.id === t.id && editingCell?.field === 'stt' ? (
+                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10px]" />
+                        ) : (
+                          <span onClick={() => startEditing(t.id, 'stt', t.computedStt || t.stt)} className="cursor-pointer hover:bg-slate-200/50 block w-full px-1">{t.computedStt || t.stt || idx + 1}</span>
+                        )}
+                      </td>
+                      <td className={`sticky left-[42px] z-10 py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] leading-tight transition-colors truncate ${fontStyle}`} title={t.name}>
+                        {editingCell?.id === t.id && editingCell?.field === 'name' ? (
+                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10.5px]" />
+                        ) : (
+                          <div style={{ paddingLeft }} className="flex items-center gap-1">
+                            {depth > 1 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}
+                            <span onClick={() => startEditing(t.id, 'name', t.name)} className="truncate flex-1 cursor-pointer hover:underline hover:text-blue-600 block">{t.name}</span>
+                            <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button>
+                            <button onClick={(e) => { e.stopPropagation(); deleteTask(t.id); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-1.5 px-1 text-right font-mono font-semibold text-slate-900 whitespace-nowrap">
+                        {editingCell?.id === t.id && editingCell?.field === 'volume' ? (
+                          <input type="number" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full text-right border rounded px-0.5 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10px]" />
+                        ) : (
+                          <span onClick={() => startEditing(t.id, 'volume', t.volume)} className="cursor-pointer hover:text-blue-600 hover:bg-slate-100 block w-full px-1">{t.volume ? t.volume.toLocaleString('vi-VN') : '-'}</span>
+                        )}
+                      </td>
+                      <td className="py-1.5 px-1 text-center font-mono text-slate-500 whitespace-nowrap">
+                        {editingCell?.id === t.id && editingCell?.field === 'unit' ? (
+                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary text-[10px]" />
+                        ) : (
+                          <span onClick={() => startEditing(t.id, 'unit', t.unit)} className="cursor-pointer hover:bg-slate-100 block w-full">{t.unit || '-'}</span>
+                        )}
+                      </td>
+                      <td className="py-1.5 px-1 text-center whitespace-nowrap">
+                        <span className={'inline-flex min-w-10 items-center justify-center px-1.5 py-0.5 font-mono font-bold text-[10px] rounded border ' + (isFinished ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : pct > 0 ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600')}>{pct}%</span>
+                      </td>
+                      <td className="py-1.5 px-1 text-center whitespace-nowrap"><select value={t.purchaseStatus || 'Chưa đặt hàng'} onChange={(e) => { const nextPurchaseStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(nextPurchaseStatus, t.constrStatus); updateTask(t.id, { purchaseStatus: nextPurchaseStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-transparent px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></td>
+                      <td className="py-1.5 px-1 text-center whitespace-nowrap"><select value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); updateTask(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-transparent px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></td>
+                      <td className="py-1.5 px-1 font-semibold text-red-600 truncate" title={t.issue || ''}>
+                        {editingCell?.id === t.id && editingCell?.field === 'issue' ? (
+                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-red-600 font-bold focus:outline-primary text-[10px]" />
+                        ) : (
+                          <span onClick={() => startEditing(t.id, 'issue', t.issue)} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">
+                            {t.issue ? (<span className="inline-flex items-center gap-1 whitespace-nowrap truncate"><span className="material-symbols-outlined text-red-500 text-xs flex-shrink-0">warning</span><span className="truncate">{t.issue}</span></span>) : (<span className="text-slate-300">-</span>)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-1.5 px-1 text-slate-600 truncate" title={t.issueStatus || ''}>
+                        {editingCell?.id === t.id && editingCell?.field === 'issueStatus' ? (
+                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-600 font-bold focus:outline-primary text-[10px]" />
+                        ) : (
+                          <span onClick={() => startEditing(t.id, 'issueStatus', t.issueStatus)} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">{t.issueStatus || <span className="text-slate-300">-</span>}</span>
+                        )}
+                      </td>
+                      <td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-center cursor-pointer"><span className={'material-symbols-outlined text-sm ' + (isFinished ? 'text-emerald-600' : 'text-slate-300')}>{isFinished ? 'check_circle' : 'radio_button_unchecked'}</span></td>
+                      <td className="py-1.5 px-1 text-slate-500 truncate" title={t.notes || ''}>
+                        {editingCell?.id === t.id && editingCell?.field === 'notes' ? (
+                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-700 font-bold focus:outline-primary text-[10px]" />
+                        ) : (
+                          <span onClick={() => startEditing(t.id, 'notes', t.notes)} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">{t.notes || <span className="text-slate-300">-</span>}</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
                 })
               )}
             </tbody>
