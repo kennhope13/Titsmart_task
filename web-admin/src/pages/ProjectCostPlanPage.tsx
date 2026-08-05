@@ -143,6 +143,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     laborPayrolls,
     tasks,
     addTask,
+    addTasksBatch,
     addMaterialPlan,
     updateMaterialPlan,
     deleteMaterialPlan,
@@ -314,20 +315,23 @@ export const ProjectCostPlanPage: React.FC = () => {
         const baselineKey = (stt: string, content: string) =>
           `${stt.trim()}|${normalizeImportText(content).replace(/\\s+/g, ' ')}`;
         
+        // Dùng getState() để lấy dữ liệu MỚI NHẤT từ store, tránh stale closure
+        const freshState = useRealtimeStore.getState();
+        
         const materialBaselineMap = new Map(
-          materialPlans
+          freshState.materialPlans
             .filter((plan) => plan.projectCode === selectedProject)
             .map((plan) => [baselineKey(plan.stt || '', plan.jobContent || ''), plan])
         );
         
         const purchasingBaselineMap = new Map(
-          purchasingPlans
+          freshState.purchasingPlans
             .filter((plan) => plan.projectCode === selectedProject)
             .map((plan) => [baselineKey(plan.stt || '', plan.content || ''), plan])
         );
 
         const taskBaselineMap = new Map(
-          tasks
+          freshState.tasks
             .filter((t) => t.projectCode === selectedProject)
             .map((t) => [baselineKey(t.stt || '', t.name || ''), t])
         );
@@ -354,6 +358,8 @@ export const ProjectCostPlanPage: React.FC = () => {
           };
 
           const pendingTasks: any[] = [];
+          let globalOrder = 0; // thứ tự tuyệt đối trong file, dùng để sort sau
+
           wb.SheetNames.forEach((sheetName) => {
             const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets[sheetName], { header: 1, defval: '' });
             const headerRowIndex = findAppendixHeaderRow(rows);
@@ -389,13 +395,18 @@ export const ProjectCostPlanPage: React.FC = () => {
               if (isSummaryRow) return;
 
               const isSectionRow = romanToNumber(stt) !== null;
+
+              // Giữ STT gốc từ Excel, không thay đổi
+              const effectiveStt = stt;
+              // Lưu thứ tự tuyệt đối vào notes dạng [order:NNN] để sort đúng sau khi load
+              const orderTag = `[order:${String(++globalOrder).padStart(5, '0')}]`;
               const supplyScope = normalizeImportText(content).includes('nha thau cung cap') ? 'contractor' : normalizeImportText(content).includes('chu dau tu cung cap') ? 'owner' : 'unknown';
-              const rowKey = baselineKey(stt, content);
-              const baseNote = [isSectionRow ? '[section]' : '', supplyScope === 'contractor' ? '[contractor]' : '', supplyScope === 'owner' ? '[owner]' : '', String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
+              const rowKey = baselineKey(effectiveStt, content);
+              const baseNote = [isSectionRow ? '[section]' : '', supplyScope === 'contractor' ? '[contractor]' : '', supplyScope === 'owner' ? '[owner]' : '', orderTag, String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
               const existingMaterial = materialBaselineMap.get(rowKey);
               if (existingMaterial) {
                 updateMaterialPlan(existingMaterial.id, {
-                  stt,
+                  stt: effectiveStt,
                   jobContent: content,
                   unit: String(row[unitCol] || ''),
                   contractVolume: volumeContract,
@@ -407,20 +418,20 @@ export const ProjectCostPlanPage: React.FC = () => {
               } else {
                 addMaterialPlan({
                   projectCode: selectedProject,
-                  stt,
+                  stt: effectiveStt,
                   jobContent: content,
                   unit: String(row[unitCol] || ''),
                   contractVolume: volumeContract,
                   techSpecModel: modelCol >= 0 ? String(row[modelCol] || '') : '',
                   techSpecOrigin: originCol >= 0 ? String(row[originCol] || '') : '',
-                  progressStatus: 'Ch\u01b0a thi c\u00f4ng',
+                  progressStatus: 'Chưa thi công',
                   orderedVolume: 0,
-                  orderedStatus: 'Ch\u01b0a \u0111\u1eb7t h\u00e0ng',
+                  orderedStatus: 'Chưa đặt hàng',
                   issueContent: '',
                   supplyScope,
                   notes: baseNote,
                 });
-                materialBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt, jobContent: content, unit: String(row[unitCol] || ''), contractVolume: volumeContract } as ProjectMaterialPlan);
+                materialBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, jobContent: content, unit: String(row[unitCol] || ''), contractVolume: volumeContract } as ProjectMaterialPlan);
               }
               appendixMaterialCount++;
 
@@ -431,7 +442,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 const existingPurchasing = purchasingBaselineMap.get(rowKey);
                 if (existingPurchasing) {
                   updatePurchasingPlan(existingPurchasing.id, {
-                    stt,
+                    stt: effectiveStt,
                     content,
                     unit: String(row[unitCol] || ''),
                     volumeContract,
@@ -445,7 +456,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 } else {
                   addPurchasingPlan({
                     projectCode: selectedProject,
-                    stt,
+                    stt: effectiveStt,
                     content,
                     unit: String(row[unitCol] || ''),
                     volumeContract,
@@ -457,12 +468,12 @@ export const ProjectCostPlanPage: React.FC = () => {
                     prepayPercent: 0,
                     prepayAmount: 0,
                     remainingAmount: totalWithVat,
-                    orderStatus: 'Ch\u01b0a \u0111\u1eb7t h\u00e0ng',
-                    contractStatus: '\u0110\u00e3 c\u00f3 ph\u1ee5 l\u1ee5c',
-                    invoiceStatus: 'Ch\u01b0a xu\u1ea5t',
+                    orderStatus: 'Chưa đặt hàng',
+                    contractStatus: 'Đã có phụ lục',
+                    invoiceStatus: 'Chưa xuất',
                     notes: baseNote,
                   });
-                  purchasingBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt, content, unit: String(row[unitCol] || ''), volumeContract, volumeOrder: 0, unitPrice, vatRate, vatAmount: computedVatAmount, totalAmount: totalWithVat, prepayPercent: 0, prepayAmount: 0, remainingAmount: totalWithVat, orderStatus: '', contractStatus: '', invoiceStatus: '' } as ProjectPurchasing);
+                  purchasingBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, content, unit: String(row[unitCol] || ''), volumeContract, volumeOrder: 0, unitPrice, vatRate, vatAmount: computedVatAmount, totalAmount: totalWithVat, prepayPercent: 0, prepayAmount: 0, remainingAmount: totalWithVat, orderStatus: '', contractStatus: '', invoiceStatus: '' } as ProjectPurchasing);
                 }
                 appendixPurchasingCount++;
               }
@@ -470,9 +481,9 @@ export const ProjectCostPlanPage: React.FC = () => {
               const existingTask = taskBaselineMap.get(rowKey);
               if (!existingTask) {
                 const projName = projects.find(p => p.code === selectedProject)?.name || selectedProject;
-                const currentSectionName = isSectionRow ? content : (pendingTasks.slice().reverse().find((task) => task.isSectionHeader)?.name || 'Kh?c');
+                const currentSectionName = isSectionRow ? content : (pendingTasks.slice().reverse().find((task) => task.isSectionHeader)?.name || 'Khác');
                 pendingTasks.push({
-                  stt,
+                  stt: effectiveStt,
                   code: '',
                   name: content,
                   projectCode: selectedProject,
@@ -480,15 +491,15 @@ export const ProjectCostPlanPage: React.FC = () => {
                   volume: isSectionRow ? 0 : volumeContract,
                   unit: isSectionRow ? '' : String(row[unitCol] || ''),
                   progress: 0,
-                  status: 'Ch?a l?m',
-                  purchaseStatus: isSectionRow ? '' : 'Ch?a ??t h?ng',
-                  constrStatus: isSectionRow ? '' : 'Ch?a thi c?ng',
+                  status: 'Chưa làm',
+                  purchaseStatus: isSectionRow ? '' : 'Chưa đặt hàng',
+                  constrStatus: isSectionRow ? '' : 'Chưa thi công',
                   isDone: false,
                   isSectionHeader: isSectionRow,
                   sectionName: currentSectionName,
                   notes: baseNote
                 });
-                taskBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt, name: content } as any);
+                taskBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, name: content } as any);
               }
             });
           });
@@ -501,13 +512,18 @@ export const ProjectCostPlanPage: React.FC = () => {
           if (appendixMaterialCount === 0 && appendixPurchasingCount === 0) {
             triggerToast('Không tìm thấy bảng phụ lục PL01 hợp lệ trong file Excel này.', 'warning');
           } else {
-            triggerToast(
-              `Đã nhập phụ lục PL01 cho dự án ${selectedProject}: ${appendixMaterialCount} dòng hạng mục, ${appendixPurchasingCount} dòng giá trị hợp đồng.`,
-              'success'
-            );
+            // Tự động tạo Tasks ngay — không cần hỏi
             if (pendingTasks.length > 0) {
-              setPendingTaskItems(pendingTasks);
-              setShowCreateTaskConfirm(true);
+              addTasksBatch(pendingTasks);
+              triggerToast(
+                `Đã nhập phụ lục PL01 cho dự án ${selectedProject}: ${appendixMaterialCount} dòng vật tư, ${appendixPurchasingCount} dòng mua hàng, ${pendingTasks.length} công việc đã được đồng bộ tự động.`,
+                'success'
+              );
+            } else {
+              triggerToast(
+                `Đã nhập phụ lục PL01 cho dự án ${selectedProject}: ${appendixMaterialCount} dòng hạng mục, ${appendixPurchasingCount} dòng giá trị hợp đồng.`,
+                'success'
+              );
             }
           }
           if (fileInputRef.current) fileInputRef.current.value = '';
@@ -765,13 +781,33 @@ export const ProjectCostPlanPage: React.FC = () => {
   const currentProjMaterialPlans = useMemo(() => {
     const filtered = materialPlans.filter((plan) => plan.projectCode === selectedProject && plan.jobContent?.trim());
     
-    // Fallback logic for legacy data (Excel imports) without parentId
+    // Trích order tag từ notes: [order:00042] → 42
+    const getOrderIndex = (notes?: string): number => {
+      const match = String(notes || '').match(/\[order:(\d+)\]/);
+      return match ? parseInt(match[1], 10) : 99999;
+    };
+
+    // Sort theo order tag nếu có, fallback về created_at order (DB order)
+    const sorted = [...filtered].sort((a, b) => {
+      const oa = getOrderIndex(a.notes);
+      const ob = getOrderIndex(b.notes);
+      // Nếu cả hai đều có order tag → sort theo order tag
+      if (oa !== 99999 && ob !== 99999) return oa - ob;
+      // Nếu chỉ một trong hai có → có order tag đứng trước
+      if (oa !== 99999) return -1;
+      if (ob !== 99999) return 1;
+      // Cả hai không có order tag → fallback về STT
+      return compareTaskStt(a.stt, b.stt);
+    });
+
+    // Fallback: gán parentId theo thứ tự sequential (section → items tiếp theo)
     let currentSection: ProjectMaterialPlan | null = null;
-    const itemsWithParents = filtered.map(plan => {
+    const itemsWithParents = sorted.map(plan => {
       if (isSectionMarker(plan.stt, plan.notes)) {
         currentSection = plan;
         return { ...plan };
-      } else if (!plan.parentId && currentSection) {
+      }
+      if (!plan.parentId && currentSection) {
         return { ...plan, parentId: currentSection.id };
       }
       return { ...plan };
@@ -793,10 +829,16 @@ export const ProjectCostPlanPage: React.FC = () => {
     const flattened: ProjectMaterialPlan[] = [];
     
     const flattenTree = (nodes: any[]) => {
+      // Sections sort theo Roman value, items sort theo order tag rồi STT
       nodes.sort((a, b) => {
-        const sttCompare = compareTaskStt(a.stt, b.stt);
-        if (sttCompare !== 0) return sttCompare;
-        return String(a.jobContent || '').localeCompare(String(b.jobContent || ''), 'vi', { numeric: true, sensitivity: 'base' });
+        const aIsSection = isSectionMarker(a.stt, a.notes);
+        const bIsSection = isSectionMarker(b.stt, b.notes);
+        if (aIsSection && bIsSection) {
+          return (romanToNumber(a.stt) ?? 9999) - (romanToNumber(b.stt) ?? 9999);
+        }
+        const oa = getOrderIndex(a.notes), ob = getOrderIndex(b.notes);
+        if (oa !== 99999 && ob !== 99999) return oa - ob;
+        return compareTaskStt(a.stt, b.stt);
       });
       
       nodes.forEach(node => {
@@ -1049,7 +1091,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''
   });
   const [newLaborData, setNewLaborData] = useState<Partial<LaborPayroll>>({
-    stt: '', date: '', content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''
+    stt: '', date: new Date().toISOString().split('T')[0], content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''
   });
 
   return (
@@ -1060,7 +1102,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">calculate</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">KẾ HOẠCH & CHI PHÍ DỰ ÁN</h1>
+          <h1 className="text-2xl font-black text-slate-900 border-l-4 border-primary pl-4 uppercase font-['Inter']">KẾ HOẠCH & CHI PHÍ DỰ ÁN</h1>
         </div>
 
         {/* Project Selector & Actions */}
@@ -1330,7 +1372,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {currentProjLabor.map((lab) => (
-                  <tr key={lab.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingLabor(lab)}>
+                  <tr key={lab.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingLabor({...lab, date: lab.date || new Date().toISOString().split('T')[0]})}>
                     <td className="p-3 text-center font-bold text-slate-400">{lab.stt || '-'}</td>
                     <td className="p-3 font-semibold text-slate-900">{lab.date}</td>
                     <td className="p-3 font-bold text-slate-900">{lab.workerName || '-'}</td>
@@ -2314,11 +2356,11 @@ export const ProjectCostPlanPage: React.FC = () => {
             notes: newLaborData.notes || ''
           });
           setIsNewLaborOpen(false);
-          setNewLaborData({stt: '', date: '', content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''});
+          setNewLaborData({stt: '', date: new Date().toISOString().split('T')[0], content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''});
           triggerToast('Đã thêm Lương công nhật thành công!', 'success');
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block font-bold mb-1">Ngày chấm công *</label><input type="text" placeholder="VD: 16,17,18 hoặc 2026-07-27" required value={newLaborData.date} onChange={(e) => setNewLaborData({...newLaborData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Ngày chấm công *</label><input type="date" required value={newLaborData.date || new Date().toISOString().split('T')[0]} onChange={(e) => setNewLaborData({...newLaborData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Loại thanh toán</label><input type="text" value={newLaborData.content} onChange={(e) => setNewLaborData({...newLaborData, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -2365,7 +2407,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             setEditingLabor(null);
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold mb-1">Ngày làm *</label><input type="text" required value={editingLabor.date} onChange={(e) => setEditingLabor({...editingLabor, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Ngày làm *</label><input type="date" required value={String(editingLabor.date || '').split('T')[0] || new Date().toISOString().split('T')[0]} onChange={(e) => setEditingLabor({...editingLabor, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Loại thanh toán</label><input type="text" value={editingLabor.content} onChange={(e) => setEditingLabor({...editingLabor, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -2436,7 +2478,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               </button>
               <button
                 onClick={() => {
-                  pendingTaskItems.forEach(t => addTask(t));
+                  addTasksBatch(pendingTaskItems);
                   setShowCreateTaskConfirm(false);
                   setPendingTaskItems([]);
                   triggerToast(`Đã tạo ${pendingTaskItems.length} Công việc từ phụ lục PL01!`, 'success');

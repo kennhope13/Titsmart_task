@@ -86,7 +86,6 @@ input[type="number"] {
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
-.doc-tracking-page h1,
 .materials-page h2,
 .cost-plan-compact h1 {
   font-weight: 800 !important;
@@ -109,7 +108,6 @@ input[type="number"] {
 
 .doc-tracking-page h1 {
   color: #172033;
-  font-weight: 750;
   letter-spacing: 0;
 }
 

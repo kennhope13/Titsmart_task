@@ -260,7 +260,9 @@ export const DocumentTrackingPage: React.FC = () => {
   };
 
   return (
-    <div className="doc-tracking-page flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
+    <>
+      <style>{`.doc-tracking-page .page-header-title { font-family: 'Inter', sans-serif !important; font-weight: 900 !important; }`}</style>
+      <div className="doc-tracking-page flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
       
       {/* HEADER SECTION */}
       <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -268,7 +270,7 @@ export const DocumentTrackingPage: React.FC = () => {
           <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">drafts</span>
           </div>
-          <h1 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4">Theo dõi Hồ sơ gửi đi</h1>
+          <h1 className="page-header-title text-2xl text-slate-900 border-l-4 border-primary pl-4 uppercase">Theo dõi Hồ sơ gửi đi</h1>
         </div>
 
         <div className="flex gap-2">
@@ -602,33 +604,39 @@ export const DocumentTrackingPage: React.FC = () => {
       {/* MODALS */}
       {/* Add New Doc Modal */}
       <Modal isOpen={isNewDocOpen} onClose={() => setIsNewDocOpen(false)} title="Thêm thông tin Hồ Sơ Gửi Đi mới">
-        <form onSubmit={(e) => {
+        <form onSubmit={async (e) => {
           e.preventDefault();
-          const val = Number(newDoc.contractValue || 0);
-          const prepayPct = Number(newDoc.prepayPercent || 0);
-          const prepayAmt = val * prepayPct;
+          try {
+            const val = Number(newDoc.contractValue || 0);
+            const prepayPct = Number(newDoc.prepayPercent || 0);
+            const prepayAmt = val * prepayPct;
 
-          addDocumentTrack({
-            stt: newDoc.stt || String(documentTracks.length + 1),
-            contractNo: newDoc.contractNo || '',
-            contractName: newDoc.contractName || '',
-            company: newDoc.company || '',
-            receiverName: newDoc.receiverName || '',
-            phone: newDoc.phone || '',
-            address: newDoc.address || '',
-            sendDate: newDoc.sendDate || '',
-            receiveDate: newDoc.receiveDate || '',
-            docStatus: newDoc.docStatus || 'Chưa ký',
-            side: newDoc.side || 'Bên trả',
-            contractValue: val,
-            prepayPercent: prepayPct,
-            prepayAmount: prepayAmt,
-            paymentStatus: newDoc.paymentStatus || 'Chưa thanh toán',
-            isCompleted: !!newDoc.isCompleted,
-            notes: newDoc.notes || ''
-          });
-          setIsNewDocOpen(false);
-          setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: 'NĂM CĂN', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: ''});
+            await addDocumentTrack({
+              stt: newDoc.stt || String(documentTracks.length + 1),
+              contractNo: newDoc.contractNo || '',
+              contractName: newDoc.contractName || '',
+              company: newDoc.company || '',
+              receiverName: newDoc.receiverName || '',
+              phone: newDoc.phone || '',
+              address: newDoc.address || '',
+              sendDate: newDoc.sendDate || '',
+              receiveDate: newDoc.receiveDate || '',
+              docStatus: newDoc.docStatus || 'Chưa ký',
+              side: newDoc.side || 'Bên trả',
+              contractValue: val,
+              prepayPercent: prepayPct,
+              prepayAmount: prepayAmt,
+              paymentStatus: newDoc.paymentStatus || 'Chưa thanh toán',
+              isCompleted: !!newDoc.isCompleted,
+              notes: newDoc.notes || ''
+            });
+            triggerToast('Thêm hồ sơ mới thành công', 'success');
+            setIsNewDocOpen(false);
+            setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: 'NĂM CĂN', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: ''});
+          } catch (err) {
+            console.error(err);
+            triggerToast('Lỗi khi thêm hồ sơ mới', 'warning');
+          }
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gapx-2 py-2">
             <div><label className="block font-bold mb-1">Mã/Số Hợp đồng</label><input type="text" value={newDoc.contractNo} onChange={(e) => setNewDoc({...newDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -733,5 +741,6 @@ export const DocumentTrackingPage: React.FC = () => {
       </Modal>
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
     </div>
+    </>
   );
 };
