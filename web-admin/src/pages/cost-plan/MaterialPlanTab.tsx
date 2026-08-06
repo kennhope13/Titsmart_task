@@ -5,12 +5,12 @@ interface MaterialPlanTabProps {
   data: ProjectMaterialPlan[];
   onEdit: (plan: ProjectMaterialPlan) => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, plan: ProjectMaterialPlan) => void;
-  onAddSubtask?: (plan: ProjectMaterialPlan) => void;
+  onUpdate: (id: string, plan: Partial<ProjectMaterialPlan>) => void | Promise<void>;
+  onAddSubtask?: (plan: ProjectMaterialPlan, suggestedStt?: string) => void;
   searchQuery: string;
-  setSearchQuery: (val: string) => void;
+  setSearchQuery: (q: string) => void;
   statusFilter: string;
-  setStatusFilter: (val: string) => void;
+  setStatusFilter: (s: string) => void;
 }
 
 const TEXT = {
@@ -55,9 +55,6 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
   const [subTab, setSubTab] = useState<'TECH' | 'ORDER' | 'DOCS'>('TECH');
   const [editingCell, setEditingCell] = useState<{ id: string; field: keyof ProjectMaterialPlan } | null>(null);
   const [tempValue, setTempValue] = useState<any>('');
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
-  const updateColumnFilter = (key: string, value: string) => setColumnFilters(prev => ({ ...prev, [key]: value }));
-  const clearColumnFilters = () => setColumnFilters({});
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const toggleSection = (sectionKey: string) => {
@@ -69,6 +66,23 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
   };
 
   const filteredData = useMemo(() => {
+    let filtered = [...data];
+    if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(p => 
+            p.jobContent?.toLowerCase().includes(q) || 
+            p.unit?.toLowerCase().includes(q) || 
+            p.notes?.toLowerCase().includes(q)
+        );
+    }
+    if (statusFilter && statusFilter !== 'Tất cả' && statusFilter !== 'ALL') {
+      filtered = filtered.filter(p => {
+        if (isParentRow(p)) return true;
+        if (statusFilter === 'Chưa thi công') return p.progressStatus === 'Chưa thi công' || !p.progressStatus;
+        return p.progressStatus === statusFilter;
+      });
+    }
+
     const romanToInt = (s: string): number => {
       const map: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
       const upper = s.toUpperCase();
@@ -86,16 +100,13 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
       return text.split(/[.\-]/).map(p => { const n = parseInt(p, 10); return isNaN(n) ? Infinity : n; });
     };
 
-    // Sort sections by their stt: Roman sections by Roman value, numeric sections
-    // by numeric parts (e.g. '33' < '34' < '105'). Then assign items to their
-    // section based on the nearest section header BEFORE them in the data array.
     const sectionSortKey = (r: ProjectMaterialPlan): number[] => {
       const stt = String(r.stt || '').trim();
       if (/^[IVXLCDM]+$/i.test(stt)) return [0, romanToInt(stt)];
       return [1, ...numericSttParts(stt)];
     };
     const sectionOrder = new Map<string, number>();
-    [...data]
+    [...filtered]
       .filter(r => isParentRow(r))
       .sort((a, b) => {
         const ka = sectionSortKey(a), kb = sectionSortKey(b);
@@ -107,34 +118,32 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
       })
       .forEach((r, i) => sectionOrder.set(r.id, i));
 
-    // Position = Excel [order:NNN] tag when present (true file order regardless
-    // of array order: imports PREPEND records, API returns created_at order);
-    // fall back to the array index for records created outside the import flow.
     const orderTagValue = (notes?: string): number | null => {
       const m = String(notes || '').match(/\[order:([\d.]+)\]/);
       return m ? parseFloat(m[1]) : null;
     };
-    const originalOrderMap = new Map<string, number>(data.map((r, i) => [r.id, orderTagValue(r.notes) ?? i]));
+    const originalOrderMap = new Map<string, number>(filtered.map((r, i) => [r.id, orderTagValue(r.notes) ?? (1000000 - i)]));
 
-    const getSectionIndexForItem = (plan: ProjectMaterialPlan): number => {
+    const getSectionIndexForItem = (plan: ProjectMaterialPlan, visited = new Set<string>()): number => {
+      if (visited.has(plan.id)) return -1;
+      visited.add(plan.id);
+
       if (isParentRow(plan)) return sectionOrder.get(plan.id) ?? Infinity;
-      // User-added subtasks carry a real parentId — group them under that section
-      // even when the item sits before its section in the data array.
-      if (plan.parentId && sectionOrder.has(plan.parentId)) return sectionOrder.get(plan.parentId)!;
-      // For items with a parentId pointing to a regular item (not a section), inherit
-      // the parent's originalOrderMap position so the child is grouped under the same
-      // section as its parent. This handles items created via task sync where the child
-      // is prepended at array index 0 but the parent sits at the correct import position.
-      let effectivePos = originalOrderMap.get(plan.id) ?? Infinity;
+      
       if (plan.parentId) {
-        const parentPos = originalOrderMap.get(plan.parentId);
-        if (parentPos !== undefined) effectivePos = parentPos;
+        if (sectionOrder.has(plan.parentId)) return sectionOrder.get(plan.parentId)!;
+        
+        const parentItem = filtered.find(r => r.id === plan.parentId);
+        if (parentItem) {
+          const parentSecIdx = getSectionIndexForItem(parentItem, visited);
+          if (parentSecIdx !== -1) return parentSecIdx;
+        }
       }
-      // position (sections always precede their items in the Excel order).
-      const myPos = effectivePos;
+
+      const myPos = originalOrderMap.get(plan.id) ?? Infinity;
       let bestSecIdx = -1;
       let bestSecPos = -1;
-      data.forEach(r => {
+      filtered.forEach(r => {
         if (isParentRow(r)) {
           const secPos = originalOrderMap.get(r.id) ?? Infinity;
           if (secPos <= myPos && secPos > bestSecPos) {
@@ -146,38 +155,22 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
       return bestSecIdx === -1 ? -1 : bestSecIdx;
     };
 
-    return data
-      .filter((plan) => {
-        const q = (searchQuery || '').trim().toLowerCase();
-        const matchSearch = !q ||
-          (plan.jobContent || '').toLowerCase().includes(q) ||
-          (plan.techSpecModel || '').toLowerCase().includes(q) ||
-          (plan.notes || '').toLowerCase().includes(q);
-        const cf = columnFilters;
-        const matchColumn =
-          (!cf.jobContent || (plan.jobContent || '').toLowerCase().includes((cf.jobContent || '').toLowerCase())) &&
-          (!cf.techSpecModel || (plan.techSpecModel || '').toLowerCase().includes((cf.techSpecModel || '').toLowerCase())) &&
-          (!cf.unit || (plan.unit || '').toLowerCase().includes((cf.unit || '').toLowerCase())) &&
-          (!cf.progressStatus || String(plan.progressStatus || '').includes(cf.progressStatus)) &&
-          (!cf.orderedStatus || String(plan.orderedStatus || '').includes(cf.orderedStatus));
-        return matchSearch && matchColumn;
-      })
-      .sort((a, b) => {
-        const secA = getSectionIndexForItem(a);
-        const secB = getSectionIndexForItem(b);
-        if (secA !== secB) return secA - secB;
-        // Within same section: header first, then items by numeric stt
-        const aIsSec = isParentRow(a) ? 0 : 1;
-        const bIsSec = isParentRow(b) ? 0 : 1;
-        if (aIsSec !== bIsSec) return aIsSec - bIsSec;
-        const ap = numericSttParts(a.stt), bp = numericSttParts(b.stt);
-        for (let i = 0; i < Math.max(ap.length, bp.length); i++) {
-          const diff = (ap[i] ?? Infinity) - (bp[i] ?? Infinity);
-          if (diff !== 0) return diff;
-        }
-        return 0;
-      });
-  }, [data, searchQuery, columnFilters]);
+    return filtered.sort((a, b) => {
+      const secA = getSectionIndexForItem(a);
+      const secB = getSectionIndexForItem(b);
+      if (secA !== secB) return secA - secB;
+      // Within same section: header first, then items by numeric stt
+      const aIsSec = isParentRow(a) ? 0 : 1;
+      const bIsSec = isParentRow(b) ? 0 : 1;
+      if (aIsSec !== bIsSec) return aIsSec - bIsSec;
+      const ap = numericSttParts(a.stt), bp = numericSttParts(b.stt);
+      for (let i = 0; i < Math.max(ap.length, bp.length); i++) {
+        const diff = (ap[i] ?? Infinity) - (bp[i] ?? Infinity);
+        if (diff !== 0) return diff;
+      }
+      return 0;
+    });
+  }, [data, searchQuery, statusFilter]);
 
   const startEditing = (id: string, field: keyof ProjectMaterialPlan, value: any) => {
     setEditingCell({ id, field });
@@ -208,35 +201,6 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-white">
-      <div className="flex flex-col items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/70 p-3 md:flex-row">
-        <div className="relative w-full flex-1">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400">search</span>
-          <input
-            type="text"
-            placeholder={TEXT.search}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
-        {(searchQuery || Object.values(columnFilters).some(v => v)) && (
-          <button type="button" onClick={() => { setSearchQuery(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
-        )}
-        <div className="flex w-full items-center gap-2 md:w-auto">
-          <span className="whitespace-nowrap text-xs font-bold text-slate-500">{TEXT.statusFilter}</span>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="min-w-[150px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="ALL">{TEXT.all}</option>
-            <option value={TEXT.notStarted}>{TEXT.notStarted}</option>
-            <option value={TEXT.doing}>{TEXT.doing}</option>
-            <option value={TEXT.done}>{TEXT.done}</option>
-          </select>
-        </div>
-      </div>
-
       <div className="flex border-b border-slate-200 px-4 bg-slate-50 gap-4 sticky top-0 z-10">
         <button
           onClick={() => setSubTab('TECH')}
@@ -318,12 +282,11 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
           </thead>
           <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
             {(() => {
-              // Group items by section — same approach as TaskManagementPage
               const groups: { [key: string]: any[] } = {};
               const order: string[] = [];
               let currentSectionKey = '__default__';
 
-              // First pass: group by section
+              // Group by section. True orphans go to __orphaned__
               filteredData.forEach(t => {
                 if (isParentRow(t)) {
                   currentSectionKey = t.id;
@@ -333,8 +296,14 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   }
                   groups[currentSectionKey].unshift({ ...t, _isHeader: true });
                 } else {
-                  // Use parentId if available, otherwise use current section
-                  const targetSection = (t.parentId && groups[t.parentId]) ? t.parentId : currentSectionKey;
+                  let targetSection = currentSectionKey;
+                  if (t.parentId && groups[t.parentId]) {
+                    targetSection = t.parentId;
+                  } else {
+                    const hasOrderTag = /\[order:([\d.]+)\]/.test(String(t.notes || ''));
+                    if (!hasOrderTag) targetSection = '__orphaned__';
+                  }
+
                   if (!groups[targetSection]) {
                     groups[targetSection] = [];
                     order.push(targetSection);
@@ -343,9 +312,26 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                 }
               });
 
+              // Push orphaned items to the absolute bottom
+              const orphanedIdx = order.indexOf('__orphaned__');
+              if (orphanedIdx !== -1) {
+                order.splice(orphanedIdx, 1);
+                order.push('__orphaned__');
+              }
+
               const flattened: any[] = [];
               order.forEach((secKey) => {
-                const sectionHeader = groups[secKey].find((t: any) => t._isHeader);
+                let sectionHeader = groups[secKey].find((t: any) => t._isHeader);
+                if (secKey === '__orphaned__' && !sectionHeader) {
+                  sectionHeader = {
+                    id: '__orphaned__',
+                    stt: '',
+                    jobContent: 'CHƯA PHÂN NHÓM',
+                    content: 'CHƯA PHÂN NHÓM',
+                    isSec: true,
+                    _isHeader: true
+                  };
+                }
                 const items = groups[secKey].filter((t: any) => !t._isHeader);
 
                 // Build tree within this section (for sub-items with parentId)
@@ -381,40 +367,53 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
 
               const colSpanCount = subTab === 'TECH' ? 8 : 9;
 
-              return flattened
-                .filter(plan => plan.isSec || !collapsedSections.has(plan._sectionKey || ''))
-                .map((plan, index) => {
-                const parent = plan.isSec;
-                const depth = plan.depth || 0;
-                
-                if (parent) {
-                  const isCollapsed = collapsedSections.has(plan._sectionKey || '');
-                  return (
-                    <tr key={plan.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                      <td className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
-                        {plan.stt}
-                      </td>
-                      <td colSpan={colSpanCount} className="sticky left-[32px] z-10 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" title={plan.jobContent}>
-                        <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
-                            className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
-                            title={isCollapsed ? 'Mở rộng đầu mục' : 'Thu gọn đầu mục'}
-                          >
-                            <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
-                          </button>
-                          <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                          <span className="truncate flex-1">{plan.jobContent}</span>
-                          {onAddSubtask && (
-                            <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
-                              <span className="material-symbols-outlined text-[16px]">add_circle</span>
+              return (
+                <>
+                  {flattened
+                    .filter(plan => plan.isSec || !collapsedSections.has(plan._sectionKey || ''))
+                    .map((plan, index) => {
+                      const parent = plan.isSec;
+                      const depth = plan.depth || 0;
+                      
+                      const realIndex = flattened.indexOf(plan);
+                      let nextNum = 1;
+                      for (let i = realIndex + 1; i < flattened.length; i++) {
+                        const nextItem = flattened[i];
+                        if (nextItem.depth <= depth) break;
+                        if (nextItem.depth === depth + 1) {
+                          nextNum++;
+                        }
+                      }
+                      const suggestedStt = depth === 0 ? String(nextNum) : `${plan.computedStt}.${nextNum}`;
+
+                      if (parent) {
+                        const isCollapsed = collapsedSections.has(plan._sectionKey || '');
+                    return (
+                      <tr key={plan.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
+                        <td className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
+                          {plan.stt}
+                        </td>
+                        <td colSpan={colSpanCount} className="sticky left-[32px] z-10 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" title={plan.jobContent}>
+                          <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
+                              className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
+                              title={isCollapsed ? 'Mở rộng đầu mục' : 'Thu gọn đầu mục'}
+                            >
+                              <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                             </button>
-                          )}
-                          {onDelete && (
-                            <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-200 transition-colors inline-flex items-center" title="Xóa">
-                              <span className="material-symbols-outlined text-[16px]">delete</span>
-                            </button>
-                          )}
+                            <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
+                            <span className="truncate flex-1">{plan.jobContent}</span>
+                            {onAddSubtask && (
+                              <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
+                                <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                              </button>
+                            )}
+                            {onDelete && (
+                              <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-200 transition-colors inline-flex items-center" title="Xóa">
+                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                              </button>
+                            )}
                         </div>
                       </td>
                     </tr>
@@ -457,7 +456,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-xs"
                       />
                     ) : (
-                      <span onClick={() => startEditing(plan.id, 'stt', plan.computedStt || plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block w-full">{plan.computedStt || plan.stt || index + 1}</span>
+                      <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block w-full">{depth > 0 ? plan.computedStt : plan.stt}</span>
                     )}
                   </td>
                   {/* NỘI DUNG */}
@@ -473,15 +472,15 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-xs"
                       />
                     ) : (
-                      <div style={{ paddingLeft }} className={`flex items-center gap-1 overflow-hidden whitespace-nowrap group-hover:bg-slate-100 ${stickyBg}`}>
-                        {depth >= 1 && (
-                          <span className="material-symbols-outlined flex-shrink-0 text-slate-300 text-lg mr-1 translate-y-[2px]">
-                            subdirectory_arrow_right
-                          </span>
-                        )}
-                        <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block truncate flex-1">{plan.jobContent}</span>
+                      <div className="flex items-center gap-1.5 w-full overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
+                        {depth > 0 && <span className="text-slate-300">↳</span>}
+                        <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded flex-1 truncate" title={plan.jobContent}>
+                          {plan.jobContent}
+                        </span>
+                        
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center ml-1">
                         {onAddSubtask && (
-                          <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
+                          <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
                             <span className="material-symbols-outlined text-[14px]">add_circle</span>
                           </button>
                         )}
@@ -490,6 +489,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <span className="material-symbols-outlined text-[14px]">delete</span>
                           </button>
                         )}
+                      </div>
                       </div>
                     )}
                   </td>
@@ -793,16 +793,16 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       <div onClick={() => startEditing(plan.id, 'notes', plan.notes)} className="w-full truncate cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded" title={cleanNotes(plan.notes)}>{cleanNotes(plan.notes)}</div>
                     )}
                   </td>
-                </tr>
-              );
-            })})()}
+                  </tr>
+                );
+            })}</>
+          )})()}
           </tbody>
         </table>
       </div>
     </div>
   );
+
+
+
 };
-
-
-
-
