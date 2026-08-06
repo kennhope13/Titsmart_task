@@ -91,6 +91,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     updateLaborPayroll,
     deleteLaborPayroll,
     activityLogs,
+    deleteTask,
   } = useRealtimeStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -111,24 +112,49 @@ export const ProjectCostPlanPage: React.FC = () => {
     const { id, type } = deleteConfirm;
     
     if (type === 'material') {
-      // Nếu item là contractor → xóa purchasing tương ứng luôn
       const plan = materialPlans.find(p => p.id === id);
-      if (plan && isContractorMaterialPlan(plan)) {
-        const linkedPurchasing = purchasingPlans.find(p => p.materialPlanId === id);
-        if (linkedPurchasing) {
-          deletePurchasingPlan(linkedPurchasing.id);
-        } else {
-          const key = normalizePlanKey(plan.stt, plan.jobContent, plan.parentId);
-          const matchingPurchasing = purchasingPlans.find(p =>
-            p.projectCode === plan.projectCode &&
-            normalizePlanKey(p.stt, p.content, p.parentId) === key
-          );
-          if (matchingPurchasing) deletePurchasingPlan(matchingPurchasing.id);
+      if (plan) {
+        if (isContractorMaterialPlan(plan)) {
+          const linkedPurchasing = purchasingPlans.find(p => p.materialPlanId === id);
+          if (linkedPurchasing) {
+            deletePurchasingPlan(linkedPurchasing.id);
+          } else {
+            const key = normalizePlanKey(plan.stt, plan.jobContent, plan.parentId);
+            const matchingPurchasing = purchasingPlans.find(p =>
+              p.projectCode === plan.projectCode &&
+              normalizePlanKey(p.stt, p.content, p.parentId) === key
+            );
+            if (matchingPurchasing) deletePurchasingPlan(matchingPurchasing.id);
+          }
         }
+        
+        // Đồng bộ xóa sang Quản lý tiến độ
+        const matchingTask = tasks.find(t => t.projectCode === plan.projectCode && t.name === plan.jobContent);
+        if (matchingTask) deleteTask(matchingTask.id);
       }
       deleteMaterialPlan(id);
       triggerToast('Đã xóa Kế hoạch vật tư thành công!', 'success');
     } else if (type === 'purchasing') {
+      const pPlan = purchasingPlans.find(p => p.id === id);
+      if (pPlan) {
+        let matPlan = null;
+        if (pPlan.materialPlanId) {
+          matPlan = materialPlans.find(m => m.id === pPlan.materialPlanId);
+        } else {
+          const key = normalizePlanKey(pPlan.stt, pPlan.content, pPlan.parentId);
+          matPlan = materialPlans.find(m => 
+            m.projectCode === pPlan.projectCode &&
+            normalizePlanKey(m.stt, m.jobContent, m.parentId) === key
+          );
+        }
+        
+        if (matPlan) {
+          deleteMaterialPlan(matPlan.id);
+          // Đồng bộ xóa sang Quản lý tiến độ
+          const matchingTask = tasks.find(t => t.projectCode === matPlan!.projectCode && t.name === matPlan!.jobContent);
+          if (matchingTask) deleteTask(matchingTask.id);
+        }
+      }
       deletePurchasingPlan(id);
       triggerToast('Đã xóa Mua sắm hàng hóa thành công!', 'success');
     } else if (type === 'expense') {
