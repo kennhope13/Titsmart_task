@@ -14,12 +14,6 @@ const filters = [
 export const PersonnelPage: React.FC = () => {
   const { engineers, projects, addEngineer, createEngineer, fetchProjects } = useRealtimeStore();
   const [filter, setFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
-  const updateColumnFilter = (key: string, value: string) => {
-    setColumnFilters(prev => ({ ...prev, [key]: value }));
-  };
-  const clearColumnFilters = () => setColumnFilters({});
 
   const [lockedIds, setLockedIds] = useState<string[]>([]);
   const [name, setName] = useState('');
@@ -108,7 +102,10 @@ export const PersonnelPage: React.FC = () => {
 
   const people = useMemo(() => engineers.map((engineer, index) => ({
     ...engineer,
-    managedProjects: engineer.managedProjects || [],
+    assignedProjects: [
+      ...(engineer.managedProjects || []),
+      ...(engineer.memberProjects || []),
+    ].filter((value, index, self) => self.findIndex((item) => item.code === value.code) === index),
     code: `NV-${String(index + 1).padStart(3, '0')}`,
     role: index <= 1 ? 'Quản lý' : 'Nhân viên/Thợ',
     team: index % 2 === 0 ? 'Đội thi công 1' : 'Đội bảo trì',
@@ -119,21 +116,8 @@ export const PersonnelPage: React.FC = () => {
       || (filter === 'worker' && person.role.includes('Nhân viên'))
       || (filter === 'active' && !person.locked)
       || (filter === 'locked' && person.locked);
-    const q = searchTerm.trim().toLowerCase();
-    const matchSearch = !q ||
-      (person.name || '').toLowerCase().includes(q) ||
-      (person.code || '').toLowerCase().includes(q) ||
-      (person.role || '').toLowerCase().includes(q) ||
-      (person.team || '').toLowerCase().includes(q);
-    const cf = columnFilters;
-    const matchColumn =
-      (!cf.name || (person.name || '').toLowerCase().includes((cf.name || '').toLowerCase())) &&
-      (!cf.code || (person.code || '').toLowerCase().includes((cf.code || '').toLowerCase())) &&
-      (!cf.role || (person.role || '').toLowerCase().includes((cf.role || '').toLowerCase())) &&
-      (!cf.phone || (person.phone || '').includes(cf.phone)) &&
-      (!cf.team || (person.team || '').toLowerCase().includes((cf.team || '').toLowerCase()));
-    return matchFilter && matchSearch && matchColumn;
-  }), [engineers, filter, lockedIds, searchTerm, columnFilters]);
+    return matchFilter;
+  }), [engineers, filter, lockedIds]);
 
   const handleAddPerson = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -148,7 +132,7 @@ export const PersonnelPage: React.FC = () => {
       });
       triggerToast(
         selectedProjectCodes.length > 0
-          ? `Đã thêm nhân sự "${name.trim()}" và gán quản lý ${selectedProjectCodes.length} dự án!`
+          ? `Đã thêm nhân sự "${name.trim()}" và gán ${selectedProjectCodes.length} dự án!`
           : `Đã thêm nhân sự "${name.trim()}"!`,
         'success'
       );
@@ -200,36 +184,24 @@ export const PersonnelPage: React.FC = () => {
       <section className="grid grid-cols-1 gap-0">
         <div className="bg-white border-b border-r border-slate-200 shadow-xs overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex flex-wrap items-center gap-2 sticky top-0 z-10 bg-white">
-              <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Tìm nhân sự..." className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
-              {(searchTerm || Object.values(columnFilters).some(v => v)) && (
-                <button type="button" onClick={() => { setSearchTerm(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
-              )}
               {filters.map((item) => <button key={item.key} onClick={() => setFilter(item.key)} className={`app-tab-button flex items-center gap-1.5 px-3 py-1.5 border-b-2 transition-all whitespace-nowrap ${filter === item.key ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}>{item.label}</button>)}
             </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase text-[11px]"><tr><th className="text-left p-3">Họ tên</th><th className="text-left p-3">Mã NV</th><th className="text-left p-3">Vai trò</th><th className="text-left p-3">Dự án quản lý</th><th className="text-left p-3">SĐT</th><th className="text-left p-3">Trạng thái</th><th className="text-left p-3">Chức năng</th></tr></thead>
-              <tfoot className="bg-slate-50/80 border-t border-slate-200">
-                <tr>
-                  <td className="p-1"><input value={columnFilters.name || ''} onChange={e => updateColumnFilter('name', e.target.value)} placeholder="Họ tên..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                  <td className="p-1"><input value={columnFilters.code || ''} onChange={e => updateColumnFilter('code', e.target.value)} placeholder="Mã NV..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                  <td className="p-1"><input value={columnFilters.role || ''} onChange={e => updateColumnFilter('role', e.target.value)} placeholder="Vai trò..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                  <td className="p-1"></td>
-                  <td className="p-1"><input value={columnFilters.phone || ''} onChange={e => updateColumnFilter('phone', e.target.value)} placeholder="SĐT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                  <td className="p-1"></td>
-                  <td className="p-1"></td>
-                </tr>
-              </tfoot>
+              <thead className="bg-slate-50 text-slate-500 uppercase text-[11px]"><tr><th className="text-left p-3">Họ tên</th><th className="text-left p-3">Mã NV</th><th className="text-left p-3">Vai trò</th><th className="text-left p-3">Dự án</th><th className="text-left p-3">SĐT</th><th className="text-left p-3">Trạng thái</th><th className="text-left p-3">Chức năng</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {people.map((person) => (
                   <tr key={person.id} className="hover:bg-slate-50">
-                    <td className="p-3 font-extrabold text-slate-900">{person.name}<div className="text-[11px] font-semibold text-slate-500">{person.team}</div></td>
+                    <td className="p-3 text-sm font-semibold text-slate-900 tracking-tight">
+                      <div className="truncate">{person.name}</div>
+                      <div className="text-[11px] font-medium text-slate-500 mt-1">{person.team}</div>
+                    </td>
                     <td className="p-3 font-mono font-bold text-primary">{person.code}</td>
                     <td className="p-3 font-semibold text-slate-700">{person.role}</td>
                     <td className="p-3">
-                      {person.managedProjects.length > 0 ? (
+                      {person.assignedProjects.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
-                          {person.managedProjects.map((mp) => (
+                          {person.assignedProjects.map((mp) => (
                             <span key={mp.code} className="px-2 py-0.5 rounded-full bg-blue-50 text-primary text-[11px] font-bold border border-blue-100 whitespace-nowrap">{mp.name}</span>
                           ))}
                         </div>
@@ -266,7 +238,7 @@ export const PersonnelPage: React.FC = () => {
               </select>
               <input value={team} onChange={(event) => setTeam(event.target.value)} placeholder="Đội/Nhóm" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">Dự án quản lý <span className="font-normal text-slate-400">(chọn 1 hoặc nhiều)</span></label>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Dự án <span className="font-normal text-slate-400">(chọn 1 hoặc nhiều)</span></label>
                 <div className="max-h-36 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1.5 bg-slate-50">
                   {projects.length === 0 && <p className="text-[11px] text-slate-400">Chưa có dự án nào.</p>}
                   {projects.map((p) => (

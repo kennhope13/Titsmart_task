@@ -1812,27 +1812,41 @@ export const ProjectCostPlanPage: React.FC = () => {
             }
             return '';
           })();
-          const existingTask = tasks.find(t => t.projectCode === selectedProject && t.name === (newPurchasingData.content || ''));
-          if (!existingTask) {
-            addTask({
-              stt: autoStt,
-              code: '',
-              name: newPurchasingData.content || '',
-              projectCode: selectedProject,
-              projectName: projName,
-              volume: contractVol,
-              unit: newPurchasingData.unit || 'bộ',
-              progress: 0,
-              status: 'Chưa làm',
-              purchaseStatus: newPurchasingData.orderStatus || 'Chưa đặt hàng',
-              constrStatus: 'Chưa thi công',
-              isDone: false,
-              isSectionHeader: isCreatingSectionHeader,
-              sectionName: currentSectionName,
-              notes: `[contractor] ${newPurchasingData.notes || ''}`.trim(),
-              parentId: materialParentId || undefined
-            });
+          let taskParentId = undefined;
+          if (parentId) {
+            const parentPurchasing = currentProjPurchasing.find(p => p.id === parentId);
+            if (parentPurchasing) {
+              const isParentSec = isSectionMarker(parentPurchasing.stt, '');
+              const pTask = tasks.find(t => 
+                t.projectCode === selectedProject && 
+                t.name === parentPurchasing.content && 
+                (isParentSec ? t.isSectionHeader : (!t.isSectionHeader && t.sectionName === currentSectionName))
+              ) || tasks.find(t => t.projectCode === selectedProject && t.name === parentPurchasing.content);
+              
+              if (pTask) {
+                taskParentId = pTask.id;
+              }
+            }
           }
+
+          addTask({
+            stt: autoStt,
+            code: '',
+            name: newPurchasingData.content || '',
+            projectCode: selectedProject,
+            projectName: projName,
+            volume: contractVol,
+            unit: newPurchasingData.unit || 'bộ',
+            progress: 0,
+            status: 'Chưa làm',
+            purchaseStatus: newPurchasingData.orderStatus || 'Chưa đặt hàng',
+            constrStatus: 'Chưa thi công',
+            isDone: false,
+            isSectionHeader: isCreatingSectionHeader,
+            sectionName: currentSectionName,
+            notes: `[contractor] ${newPurchasingData.notes || ''}`.trim(),
+            parentId: taskParentId
+          });
 
           // Reset form
           setNewPurchasingData({stt: '', content: '', unit: 'bộ', volumeContract: 1, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''});

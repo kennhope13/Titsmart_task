@@ -113,6 +113,15 @@ export const createTask = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Project not found for code: ' + projectCode });
     }
 
+    // Validate parent_id exists before creating to avoid P2003 FK error
+    const parentIdClean = cleanUuid(parentId ?? parent_id);
+    if (parentIdClean) {
+      const parentExists = await prisma.task.findUnique({ where: { id: parentIdClean } });
+      if (!parentExists) {
+        return res.status(400).json({ error: 'Parent task not found (id=' + parentIdClean + '). Please refresh the page and try again.' });
+      }
+    }
+
     const task = await prisma.task.create({
       data: {
         stt: optionalTruncateText(data.stt, 50),
@@ -134,7 +143,7 @@ export const createTask = async (req: Request, res: Response) => {
         assigned_engineer_id: cleanUuid(data.assignedEngineerId ?? data.assigned_engineer_id),
         due_date: data.dueDate ? new Date(data.dueDate) : null,
         project_id: projectId,
-        parent_id: cleanUuid(parentId ?? parent_id),
+        parent_id: parentIdClean,
       },
       include: {
         project: true,

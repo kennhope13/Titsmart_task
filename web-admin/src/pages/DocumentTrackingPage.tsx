@@ -145,20 +145,7 @@ export const DocumentTrackingPage: React.FC = () => {
     reader.readAsBinaryString(file);
   };
 
-  const [activeFilterStatus, setActiveFilterStatus] = useState('all');
-  const [activeFilterPayment, setActiveFilterPayment] = useState('all');
   const [activeTab, setActiveTab] = useState<'overview' | 'delivery' | 'finance' | 'completion'>('overview');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
-
-  const updateColumnFilter = (key: string, value: string) => {
-    setColumnFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const clearColumnFilters = () => {
-    setColumnFilters({});
-  };
 
   // Modals state
   const [isNewDocOpen, setIsNewDocOpen] = useState(false);
@@ -169,15 +156,7 @@ export const DocumentTrackingPage: React.FC = () => {
     stt: '', contractNo: '', contractName: '', projectCode: 'NĂM CĂN', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: ''
   });
 
-  // Extract status options from data
-  const docStatusOptions = useMemo(() => {
-    const statuses = new Set<string>();
-    documentTracks.forEach(d => {
-      if (d.docStatus) statuses.add(d.docStatus);
-    });
-    return Array.from(statuses);
-  }, [documentTracks]);
-
+  // Helper utilities
   const getSttNumber = (stt?: string) => {
     const parsed = Number(String(stt || '').replace(/\D/g, ''));
     return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
@@ -185,35 +164,12 @@ export const DocumentTrackingPage: React.FC = () => {
 
   // Filtered tracks
   const filteredTracks = useMemo(() => {
-    return documentTracks.filter(track => {
-      const matchStatus = activeFilterStatus === 'all' || track.docStatus === activeFilterStatus;
-      const matchPayment = activeFilterPayment === 'all' || track.paymentStatus === activeFilterPayment;
-
-      const query = searchTerm.trim().toLowerCase();
-      const matchSearch = !query ||
-        (track.contractNo || '').toLowerCase().includes(query) ||
-        (track.contractName || '').toLowerCase().includes(query) ||
-        (track.company || '').toLowerCase().includes(query) ||
-        (track.receiverName || '').toLowerCase().includes(query);
-
-      const cf = columnFilters;
-      const matchColumn =
-        (!cf.contractNo || (track.contractNo || '').toLowerCase().includes((cf.contractNo || '').toLowerCase())) &&
-        (!cf.contractName || (track.contractName || '').toLowerCase().includes((cf.contractName || '').toLowerCase())) &&
-        (!cf.company || (track.company || '').toLowerCase().includes((cf.company || '').toLowerCase())) &&
-        (!cf.receiverName || (track.receiverName || '').toLowerCase().includes((cf.receiverName || '').toLowerCase())) &&
-        (!cf.phone || (track.phone || '').toLowerCase().includes((cf.phone || '').toLowerCase())) &&
-        (!cf.address || (track.address || '').toLowerCase().includes((cf.address || '').toLowerCase())) &&
-        (!cf.side || (track.side || '').toLowerCase().includes((cf.side || '').toLowerCase())) &&
-        (!cf.notes || (track.notes || '').toLowerCase().includes((cf.notes || '').toLowerCase()));
-
-      return matchStatus && matchPayment && matchSearch && matchColumn;
-    }).sort((a, b) => {
+    return [...documentTracks].sort((a, b) => {
       const sttDiff = getSttNumber(a.stt) - getSttNumber(b.stt);
       if (sttDiff !== 0) return sttDiff;
       return String(a.contractNo || '').localeCompare(String(b.contractNo || ''), 'vi');
     });
-  }, [documentTracks, activeFilterStatus, activeFilterPayment, searchTerm, columnFilters]);
+  }, [documentTracks]);
 
   // Computed summary metrics
   const summary = useMemo(() => {
@@ -306,46 +262,6 @@ export const DocumentTrackingPage: React.FC = () => {
       </section>
 
       <div className="p-0 space-y-0">
-      {/* FILTER & SEARCH */}
-      <section className="bg-white border-y border-slate-200 rounded-none shadow-none px-2 py-2 flex flex-col xl:flex-row justify-between gapx-2 py-2">
-        <div className="flex flex-wrap items-center gapx-2 py-2">
-          <input 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
-            placeholder="Tìm theo số HĐ, tên HĐ, đối tác..." 
-            className="w-80 max-w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white" 
-          />
-          {(searchTerm || Object.values(columnFilters).some(v => v)) && (
-            <button type="button" onClick={() => { setSearchTerm(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
-          )}
-
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase">Tình trạng HĐ:</span>
-            <select 
-              value={activeFilterStatus} 
-              onChange={(e) => setActiveFilterStatus(e.target.value)} 
-              className="border border-slate-200 px-2 py-1.5 rounded-md text-xs font-bold text-slate-700 focus:outline-none bg-white"
-            >
-              <option value="all">Tất cả tình trạng</option>
-              {docStatusOptions.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase">Thanh toán:</span>
-            <select 
-              value={activeFilterPayment} 
-              onChange={(e) => setActiveFilterPayment(e.target.value)} 
-              className="border border-slate-200 px-2 py-1.5 rounded-md text-xs font-bold text-slate-700 focus:outline-none bg-white"
-            >
-              <option value="all">Tất cả thanh toán</option>
-              <option value="Chưa thanh toán">Chưa thanh toán</option>
-              <option value="Đã thanh toán">Đã thanh toán</option>
-            </select>
-          </div>
-        </div>
-      </section>
-
       {/* TABS & TABLE */}
       <section className="bg-white border-y border-slate-200 rounded-none shadow-none overflow-hidden">
           <div className="w-full flex items-center justify-between border-b border-slate-200 bg-white rounded-t-xl px-4 pt-1 shadow-xs border-x sticky top-0 z-10">
@@ -402,18 +318,6 @@ export const DocumentTrackingPage: React.FC = () => {
                    <th className="px-2 py-2 text-center">Xóa</th>
                  </tr>
                </thead>
-               <tfoot className="bg-slate-50/80 border-t border-slate-200">
-                 <tr>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"><input value={columnFilters.contractNo || ''} onChange={e => updateColumnFilter('contractNo', e.target.value)} placeholder="Số HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"><input value={columnFilters.contractName || ''} onChange={e => updateColumnFilter('contractName', e.target.value)} placeholder="Tên HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"><input value={columnFilters.company || ''} onChange={e => updateColumnFilter('company', e.target.value)} placeholder="Công ty..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"></td>
-                 </tr>
-               </tfoot>
                <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {filteredTracks.map(track => (
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
@@ -459,20 +363,6 @@ export const DocumentTrackingPage: React.FC = () => {
                    <th className="px-2 py-2">Ghi chú</th>
                  </tr>
                </thead>
-               <tfoot className="bg-slate-50/80 border-t border-slate-200">
-                 <tr>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"><input value={columnFilters.contractNo || ''} onChange={e => updateColumnFilter('contractNo', e.target.value)} placeholder="Số HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"><input value={columnFilters.company || ''} onChange={e => updateColumnFilter('company', e.target.value)} placeholder="Công ty..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"><input value={columnFilters.receiverName || ''} onChange={e => updateColumnFilter('receiverName', e.target.value)} placeholder="Người nhận..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"><input value={columnFilters.phone || ''} onChange={e => updateColumnFilter('phone', e.target.value)} placeholder="SĐT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"><input value={columnFilters.address || ''} onChange={e => updateColumnFilter('address', e.target.value)} placeholder="Địa chỉ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                 </tr>
-               </tfoot>
                <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {filteredTracks.map(track => (
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
@@ -516,18 +406,6 @@ export const DocumentTrackingPage: React.FC = () => {
                    <th className="px-2 py-2 text-center">Thanh toán</th>
                  </tr>
                </thead>
-               <tfoot className="bg-slate-50/80 border-t border-slate-200">
-                 <tr>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"><input value={columnFilters.contractNo || ''} onChange={e => updateColumnFilter('contractNo', e.target.value)} placeholder="Số HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"><input value={columnFilters.contractName || ''} onChange={e => updateColumnFilter('contractName', e.target.value)} placeholder="Tên HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"><input value={columnFilters.side || ''} onChange={e => updateColumnFilter('side', e.target.value)} placeholder="Bên..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"></td>
-                 </tr>
-               </tfoot>
                <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {filteredTracks.map(track => (
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
@@ -567,17 +445,6 @@ export const DocumentTrackingPage: React.FC = () => {
                    <th className="px-2 py-2">Ghi chú</th>
                  </tr>
                </thead>
-               <tfoot className="bg-slate-50/80 border-t border-slate-200">
-                 <tr>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"><input value={columnFilters.contractNo || ''} onChange={e => updateColumnFilter('contractNo', e.target.value)} placeholder="Số HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"><input value={columnFilters.contractName || ''} onChange={e => updateColumnFilter('contractName', e.target.value)} placeholder="Tên HĐ..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"></td>
-                   <td className="px-1 py-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-                 </tr>
-               </tfoot>
                <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {filteredTracks.map(track => (
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>

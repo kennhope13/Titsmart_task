@@ -351,17 +351,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
       onTriggerHandled?.();
     }
   }, [triggerAdd]);
-  const rows = data.filter(item => {
-    if (!isDocTrack(item)) return false;
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      (item.jobContent || '').toLowerCase().includes(q) ||
-      (item.unit || '').toLowerCase().includes(q) ||
-      (item.techSpecModel || '').toLowerCase().includes(q) ||
-      (item.notes || '').toLowerCase().includes(q)
-    );
-  });
+  const rows = data.filter(item => isDocTrack(item));
 
   const nextStt = String(rows.length + 1);
   const openAdd  = () => { setEditingItem(null);  setModalMode('add');  };
@@ -445,21 +435,6 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
 
   return (
     <div className="flex w-full max-w-full h-full min-h-0 flex-col bg-white overflow-hidden">
-      <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/70 p-3">
-        <div className="relative w-full max-w-lg">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400">search</span>
-          <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Tìm hàng hóa, model, số chứng từ..."
-            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-        </div>
-        {searchQuery && (
-          <button type="button" onClick={() => setSearchQuery('')} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
-        )}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="hidden text-xs font-extrabold text-slate-500 sm:block">Theo dõi chứng từ hàng hóa</div>
-        </div>
-      </div>
-
       <div className="w-full overflow-x-auto custom-scrollbar flex-1 min-h-0">
         <table className="w-max min-w-full border-collapse text-left">
           <colgroup>

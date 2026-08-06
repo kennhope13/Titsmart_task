@@ -4,9 +4,9 @@ import { ProjectPurchasing } from '../../types';
 interface PurchasingTabProps {
   data: ProjectPurchasing[];
   onEdit: (plan: ProjectPurchasing, subTab: 'PRICING' | 'PAYMENT') => void;
-  onUpdate: (id: string, plan: ProjectPurchasing) => void;
+  onUpdate: (id: string, plan: Partial<ProjectPurchasing>) => void | Promise<void>;
   onDelete: (id: string) => void;
-  onAddSubtask?: (plan: ProjectPurchasing) => void;
+  onAddSubtask?: (plan: ProjectPurchasing, suggestedStt?: string) => void;
   searchQuery: string;
   setSearchQuery: (val: string) => void;
   statusFilter: string;
@@ -63,17 +63,11 @@ const TEXT = {
 };
 
 export const PurchasingTab: React.FC<PurchasingTabProps> = ({
-  data, onEdit, onUpdate, onDelete, onAddSubtask, searchQuery, setSearchQuery, statusFilter, setStatusFilter
+  data, onEdit, onDelete, onUpdate, onAddSubtask, searchQuery, setSearchQuery, statusFilter, setStatusFilter
 }) => {
   const [subTab, setSubTab] = React.useState<'PRICING' | 'PAYMENT'>('PRICING');
   const [editingCell, setEditingCell] = React.useState<{ id: string; field: keyof ProjectPurchasing } | null>(null);
   const [tempValue, setTempValue] = React.useState<any>('');
-  const [columnFilters, setColumnFilters] = React.useState<Record<string, string>>({});
-  const updateColumnFilter = (key: string, value: string) => {
-    setColumnFilters(prev => ({ ...prev, [key]: value }));
-  };
-  const clearColumnFilters = () => setColumnFilters({});
-
   const [collapsedSections, setCollapsedSections] = React.useState<Set<string>>(new Set());
   const toggleSection = (sectionKey: string) => {
     setCollapsedSections(prev => {
@@ -133,24 +127,30 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
     const m = String(notes || '').match(/\[order:([\d.]+)\]/);
     return m ? parseFloat(m[1]) : null;
   };
-  const originalOrderMap = new Map<string, number>(data.map((r, i) => [r.id, orderTagValue(r.notes) ?? i]));
+  const originalOrderMap = new Map<string, number>(data.map((r, i) => [r.id, orderTagValue(r.notes) ?? (1000000 - i)]));
 
-  const getSectionIndexForItem = (pur: ProjectPurchasing): number => {
+  const getSectionIndexForItem = (pur: ProjectPurchasing, visited = new Set<string>()): number => {
+    if (visited.has(pur.id)) return -1;
+    visited.add(pur.id);
+
     if (isSectionRow(pur)) return sectionOrder.get(pur.id) ?? Infinity;
-    // User-added subtasks carry a real parentId — group them under that section
-    // even when the item sits before its section in the data array.
-    if (pur.parentId && sectionOrder.has(pur.parentId)) return sectionOrder.get(pur.parentId)!;
-    // For items with a parentId pointing to a regular item (not a section), inherit
-    // the parent's originalOrderMap position so the child is grouped under the same
-    // section as its parent. This handles items created via task sync where the child
-    // is prepended at array index 0 but the parent sits at the correct import position.
-    let effectivePos = originalOrderMap.get(pur.id) ?? Infinity;
+    
     if (pur.parentId) {
-      const parentPos = originalOrderMap.get(pur.parentId);
-      if (parentPos !== undefined) effectivePos = parentPos;
+      if (sectionOrder.has(pur.parentId)) return sectionOrder.get(pur.parentId)!;
+      
+      const parentItem = data.find(r => r.id === pur.parentId);
+      if (parentItem) {
+        const parentSecIdx = getSectionIndexForItem(parentItem, visited);
+        if (parentSecIdx !== -1) return parentSecIdx;
+      }
     }
-    // position (sections always precede their items in the Excel order).
-    const myPos = effectivePos;
+
+    // Use originalOrderMap to find the closest preceding section
+    // If it's a manually added item (no order tag), it stays at root (-1)
+    const hasOrderTag = /\[order:([\d.]+)\]/.test(String(pur.notes || ''));
+    if (!hasOrderTag) return -1;
+
+    const myPos = originalOrderMap.get(pur.id) ?? Infinity;
     let bestSecIdx = -1;
     let bestSecPos = -1;
     data.forEach(r => {
@@ -165,27 +165,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
     return bestSecIdx === -1 ? -1 : bestSecIdx;
   };
 
-  const filteredData = data
-    .filter((pur) => {
-      const section = isSectionRow(pur);
-      const matchesSearch = !searchQuery.trim() || [pur.stt, pur.content, pur.unit, pur.orderStatus, pur.contractStatus, pur.invoiceStatus, pur.notes]
-        .join(' ')
-        .toLowerCase()
-        .includes(searchQuery.trim().toLowerCase());
-      const matchesStatus = statusFilter === 'ALL' || section || pur.orderStatus === statusFilter;
-
-      const cf = columnFilters;
-      const matchColumn =
-        (!cf.content || (pur.content || '').toLowerCase().includes((cf.content || '').toLowerCase())) &&
-        (!cf.unit || (pur.unit || '').toLowerCase().includes((cf.unit || '').toLowerCase())) &&
-        (!cf.orderStatus || (pur.orderStatus || '').toLowerCase().includes((cf.orderStatus || '').toLowerCase())) &&
-        (!cf.contractStatus || (pur.contractStatus || '').toLowerCase().includes((cf.contractStatus || '').toLowerCase())) &&
-        (!cf.invoiceStatus || (pur.invoiceStatus || '').toLowerCase().includes((cf.invoiceStatus || '').toLowerCase())) &&
-        (!cf.notes || (pur.notes || '').toLowerCase().includes((cf.notes || '').toLowerCase()));
-
-      return matchesSearch && matchesStatus && matchColumn;
-    })
-    .sort((a, b) => {
+  const filteredData = [...data].sort((a, b) => {
       const secA = getSectionIndexForItem(a);
       const secB = getSectionIndexForItem(b);
       if (secA !== secB) return secA - secB;
@@ -258,53 +238,21 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
 
   return (
     <div className="flex w-full max-w-full h-full min-h-0 flex-col bg-white overflow-hidden">
-      {/* Search and Filter */}
-      <div className="flex flex-col items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/70 p-3 md:flex-row">
-        <div className="relative w-full flex-1">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400">search</span>
-          <input
-            type="text"
-            placeholder={TEXT.searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
-        {(searchQuery || Object.values(columnFilters).some(v => v)) && (
-          <button type="button" onClick={() => { setSearchQuery(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
-        )}
-        <div className="flex w-full items-center gap-2 md:w-auto">
-          <span className="whitespace-nowrap text-xs font-bold text-slate-500">{TEXT.filter}</span>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="min-w-[150px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="ALL">{TEXT.all}</option>
-            <option value={TEXT.notOrdered}>{TEXT.notOrdered}</option>
-            <option value={TEXT.ordered}>{TEXT.ordered}</option>
-            <option value={TEXT.delivering}>{TEXT.delivering}</option>
-            <option value={TEXT.received}>{TEXT.received}</option>
-          </select>
-        </div>
-      </div>
-
       {/* Sub Tabs Selector */}
       <div className="flex border-b border-slate-200 bg-slate-50 px-3 py-1.5 gap-2 sticky top-0 z-10">
         {[
-          { id: 'PRICING', label: '1. Đơn giá & Hợp đồng', icon: 'payments' },
-          { id: 'PAYMENT', label: '2. Thanh toán & Hóa đơn', icon: 'account_balance_wallet' }
+          { id: 'PRICING', label: 'Đơn giá & Hợp đồng' },
+          { id: 'PAYMENT', label: 'Thanh toán & Hóa đơn' }
         ].map(t => (
           <button
             key={t.id}
             onClick={() => setSubTab(t.id as any)}
-              className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${
+              className={`app-tab-button px-3 py-3 border-b-2 transition-all whitespace-nowrap ${
                 subTab === t.id
                   ? 'border-primary text-primary'
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
           >
-            <span className="material-symbols-outlined text-base leading-none">{t.icon}</span>
             {t.label}
           </button>
         ))}
@@ -346,11 +294,11 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white font-medium text-slate-700">
             {(() => {
-              // Group items by section — same approach as TaskManagementPage
               const groups: { [key: string]: any[] } = {};
               const order: string[] = [];
               let currentSectionKey = '__default__';
 
+              // First pass: group by section. True orphans go to __orphaned__
               filteredData.forEach(t => {
                 if (isSectionRow(t)) {
                   currentSectionKey = t.id;
@@ -360,7 +308,11 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   }
                   groups[currentSectionKey].unshift({ ...t, _isHeader: true });
                 } else {
-                  const targetSection = (t.parentId && groups[t.parentId]) ? t.parentId : currentSectionKey;
+                  let targetSection = currentSectionKey;
+                  if (t.parentId && groups[t.parentId]) {
+                    targetSection = t.parentId;
+                  }
+                  
                   if (!groups[targetSection]) {
                     groups[targetSection] = [];
                     order.push(targetSection);
@@ -369,9 +321,26 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 }
               });
 
+              // Push orphaned items to the absolute bottom
+              const orphanedIdx = order.indexOf('__orphaned__');
+              if (orphanedIdx !== -1) {
+                order.splice(orphanedIdx, 1);
+                order.push('__orphaned__');
+              }
+
               const flattened: any[] = [];
               order.forEach((secKey) => {
-                const sectionHeader = groups[secKey].find((t: any) => t._isHeader);
+                let sectionHeader = groups[secKey].find((t: any) => t._isHeader);
+                if (secKey === '__orphaned__' && !sectionHeader) {
+                  sectionHeader = {
+                    id: '__orphaned__',
+                    stt: '',
+                    jobContent: 'CHƯA PHÂN NHÓM',
+                    content: 'CHƯA PHÂN NHÓM',
+                    isSec: true,
+                    _isHeader: true
+                  };
+                }
                 const items = groups[secKey].filter((t: any) => !t._isHeader);
 
                 const map = new Map<string, any>();
@@ -409,6 +378,17 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 .map((pur, index) => {
                 const parent = pur.isSec;
                 const depth = pur.depth || 0;
+                
+                const realIndex = flattened.indexOf(pur);
+                let nextNum = 1;
+                for (let i = realIndex + 1; i < flattened.length; i++) {
+                  const nextItem = flattened[i];
+                  if (nextItem.depth <= depth) break;
+                  if (nextItem.depth === depth + 1) {
+                    nextNum++;
+                  }
+                }
+                const suggestedStt = depth === 0 ? String(nextNum) : `${pur.computedStt}.${nextNum}`;
 
                 if (parent) {
                   const isCollapsed = collapsedSections.has(pur._sectionKey || '');
@@ -424,13 +404,18 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
                             title={isCollapsed ? 'Mở rộng đầu mục' : 'Thu gọn đầu mục'}
                           >
-                            <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
+                            <span className={`material-symbols-outlined text-base transition-transform duration-200 text-primary ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                           </button>
                           <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
                           <span className="truncate flex-1">{pur.content}</span>
                           {onAddSubtask && (
-                            <button onClick={(e) => { e.stopPropagation(); onAddSubtask(pur); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
+                            <button onClick={(e) => { e.stopPropagation(); onAddSubtask(pur, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
                               <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                            </button>
+                          )}
+                          {onDelete && (
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(pur.id); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-rose-600 hover:bg-rose-100 transition-colors inline-flex items-center ml-1" title="Xóa">
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
                             </button>
                           )}
                         </div>
@@ -478,7 +463,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                         className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-xs"
                       />
                     ) : (
-                      <span onClick={() => startEditing(pur.id, 'stt', pur.computedStt || pur.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block w-full">{pur.computedStt || pur.stt || index + 1}</span>
+                      <span onClick={() => startEditing(pur.id, 'stt', pur.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block w-full">{depth > 0 ? pur.computedStt : (pur.stt || index + 1)}</span>
                     )}
                   </td>
 
@@ -506,7 +491,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                         )}
                         <span onClick={() => startEditing(pur.id, 'content', pur.content)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block truncate flex-1">{pur.content}</span>
                         {onAddSubtask && (
-                          <button onClick={(e) => { e.stopPropagation(); onAddSubtask(pur); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
+                          <button onClick={(e) => { e.stopPropagation(); onAddSubtask(pur, suggestedStt); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
                             <span className="material-symbols-outlined text-[14px]">add_circle</span>
                           </button>
                         )}

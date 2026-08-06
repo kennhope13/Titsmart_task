@@ -143,31 +143,31 @@ export const Sidebar: React.FC = () => {
             </div>
           </div>
         ))}
-      </nav>
 
-      <div className="p-3 border-t border-slate-100">
-        <NavLink
-          to="/account"
-          className={({ isActive }) =>
-            `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all ${
-              isActive
-                ? 'bg-blue-50 ring-1 ring-blue-100'
-                : 'hover:bg-slate-50'
-            }`
-          }
-        >
-          <img
-            src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80"
-            alt="Avatar quản lý"
-            className="w-8 h-8 rounded-full object-cover border border-slate-200 flex-shrink-0"
-          />
-          <div className="min-w-0 leading-tight flex-1">
-            <span className="block font-bold text-xs text-slate-800 truncate">Admin</span>
-            <span className="block text-[10px] text-slate-500 truncate">Quản trị viên</span>
-          </div>
-          <span className="material-symbols-outlined text-base text-slate-400 flex-shrink-0">settings</span>
-        </NavLink>
-      </div>
+        <div className="pt-4 border-t border-slate-100">
+          <NavLink
+            to="/account"
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-3 py-3 rounded-xl transition-all ${
+                isActive
+                  ? 'bg-blue-50 ring-1 ring-blue-100'
+                  : 'hover:bg-slate-50'
+              }`
+            }
+          >
+            <img
+              src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80"
+              alt="Avatar quản lý"
+              className="w-10 h-10 rounded-full object-cover border border-slate-200 flex-shrink-0"
+            />
+            <div className="min-w-0 leading-tight flex-1">
+              <span className="block font-bold text-xs text-slate-800 truncate">Admin</span>
+              <span className="block text-[10px] text-slate-500 truncate">Quản trị viên</span>
+            </div>
+            <span className="material-symbols-outlined text-base text-slate-400 flex-shrink-0">settings</span>
+          </NavLink>
+        </div>
+      </nav>
     </aside>
   );
 };

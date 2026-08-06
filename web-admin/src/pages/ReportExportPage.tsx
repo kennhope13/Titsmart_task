@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
 
 const tabs = [
@@ -12,7 +12,6 @@ const tabs = [
 export const ReportExportPage: React.FC = () => {
   const { tasks, engineers, updateTask, updateTaskProgress } = useRealtimeStore();
   const [activeTab, setActiveTab] = useState('pending');
-  const [rejectReason, setRejectReason] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const updateColumnFilter = (key: string, value: string) => {
@@ -55,12 +54,7 @@ export const ReportExportPage: React.FC = () => {
   };
 
   const reject = (id: string) => {
-    if (!rejectReason.trim()) {
-      alert('Vui lòng nhập lý do từ chối / yêu cầu sửa.');
-      return;
-    }
-    updateTask(id, { issue: rejectReason.trim(), issueStatus: 'Yêu cầu sửa' });
-    setRejectReason('');
+    updateTask(id, { issue: '', issueStatus: 'Yêu cầu sửa' });
   };
 
   return (
@@ -81,7 +75,7 @@ export const ReportExportPage: React.FC = () => {
 
         {['pending', 'approved', 'rejected'].includes(activeTab) && (
           <div className="p-4 space-y-3">
-            {activeTab === 'pending' && <input value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} placeholder="Lý do từ chối / yêu cầu sửa" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none" />}
+
             {reportTasks.map((task) => (
               <div key={task.id} className="rounded-xl border border-slate-200 p-4 flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
                 <div className="flex gap-3 min-w-0">

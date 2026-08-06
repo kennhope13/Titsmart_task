@@ -183,11 +183,11 @@ interface RealtimeStoreState {
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
   addProject: (proj: Omit<Project, 'id'>) => Promise<Project | undefined>;
-  deleteProject: (id: string) => void;
+  deleteProject: (id: string) => Promise<void>;
 
   // New Actions
-  addMaterialPlan: (plan: Omit<ProjectMaterialPlan, 'id'>) => Promise<void>;
-  updateMaterialPlan: (id: string, fields: Partial<ProjectMaterialPlan>) => void;
+  addMaterialPlan: (plan: Omit<ProjectMaterialPlan, 'id'>) => Promise<string | undefined>;
+  updateMaterialPlan: (id: string, fields: Partial<ProjectMaterialPlan>) => Promise<void>;
   deleteMaterialPlan: (id: string) => void;
 
   addPurchasingPlan: (plan: Omit<ProjectPurchasing, 'id'>) => Promise<void>;
@@ -977,8 +977,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ materialPlans: nextPlans });
           return { materialPlans: nextPlans };
         });
+        return created.id;
       } catch (e) {
         console.error('Failed to add material plan', e);
+        return undefined;
       }
     },
 

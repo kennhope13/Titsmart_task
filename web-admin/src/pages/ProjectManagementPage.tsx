@@ -134,18 +134,42 @@ export const ProjectManagementPage: React.FC = () => {
 
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => setToastState({ show: true, message, type });
 
+  const resolveProjectMemberNames = (project: Project) => {
+    const memberFromIds = (project.members || [])
+      .map((memberId) => engineers.find((eng) => eng.id === memberId)?.name)
+      .filter(Boolean) as string[];
+
+    const memberFromManaged = engineers
+      .filter((eng) => eng.managedProjects?.some((mp) => mp.code === project.code))
+      .map((eng) => eng.name);
+
+    const memberFromAssigned = engineers
+      .filter((eng) => eng.memberProjects?.some((mp) => mp.code === project.code))
+      .map((eng) => eng.name);
+
+    const combined = Array.from(new Set([...memberFromIds, ...memberFromManaged, ...memberFromAssigned]));
+    if (combined.length > 0) return combined;
+    if (project.managerName && project.managerName !== TEXT.unassigned) return [project.managerName];
+    return [];
+  };
+
   const displayProjects = useMemo(() => {
     const merged = [...projects, ...deriveProjectsFromTasks(tasks).filter((derived) => !projects.some((project) => project.code === derived.code))];
     const q = searchQuery.trim().toLowerCase();
     if (!q) return merged;
-    return merged.filter((project) => [project.name, project.code, project.location, project.client, project.managerName].some((value) => String(value || '').toLowerCase().includes(q)));
-  }, [projects, tasks, searchQuery]);
+    return merged.filter((project) => {
+      const memberNames = resolveProjectMemberNames(project).join(' ');
+      return [project.name, project.code, project.location, project.client, project.managerName, memberNames]
+        .some((value) => String(value || '').toLowerCase().includes(q));
+    });
+  }, [projects, tasks, searchQuery, engineers]);
 
   const enhancedProjects = useMemo(() => {
     return displayProjects.map((project) => {
       const projectTasks = tasks.filter((task) => task.projectCode === project.code && !task.isSectionHeader);
       const totalTasks = projectTasks.length || project.totalTasks;
       const completedTasks = projectTasks.filter((task) => task.isDone || task.progress >= 1).length || project.completedTasks;
+      const memberNames = resolveProjectMemberNames(project);
       
       let progress = project.progressPercent;
       if (projectTasks.length > 0) {
@@ -174,6 +198,7 @@ export const ProjectManagementPage: React.FC = () => {
         totalTasks,
         completedTasks,
         progress,
+        memberNames,
         totalMaterials,
         completedMaterials,
         materialProgress,
@@ -307,7 +332,7 @@ export const ProjectManagementPage: React.FC = () => {
           docFireInspection: false,
           dispatchToSite: false,
           supplyScope,
-          notes: [item.isSectionHeader ? '[section]' : '', supplyScope !== 'unknown' ? `[${supplyScope}]` : '', item.notes, supplyLabel, orderTag, TEXT.materialSyncNote].filter(Boolean).join(' | '),
+          notes: [orderTag, item.isSectionHeader ? '[section]' : '', supplyScope !== 'unknown' ? `[${supplyScope}]` : '', item.notes, supplyLabel, TEXT.materialSyncNote].filter(Boolean).join(' | '),
         });
       }
 
@@ -341,7 +366,7 @@ export const ProjectManagementPage: React.FC = () => {
           orderStatus: TEXT.purchaseStatus,
           contractStatus: '\u0110\u00e3 c\u00f3 ph\u1ee5 l\u1ee5c',
           invoiceStatus: 'Ch\u01b0a xu\u1ea5t',
-          notes: [item.isSectionHeader ? '[section]' : '', item.notes, orderTag, '\u0110\u1ed3ng b\u1ed9 t\u1eeb ph\u1ee5 l\u1ee5c khi t\u1ea1o d\u1ef1 \u00e1n'].filter(Boolean).join(' | '),
+          notes: [orderTag, item.isSectionHeader ? '[section]' : '', item.notes, '\u0110\u1ed3ng b\u1ed9 t\u1eeb ph\u1ee5 l\u1ee5c khi t\u1ea1o d\u1ef1 \u00e1n'].filter(Boolean).join(' | '),
         });
       }
     }
@@ -484,6 +509,16 @@ export const ProjectManagementPage: React.FC = () => {
                       </p>
                     )}
 
+                    {/* Nhân sự dự án */}
+                    {project.memberNames?.length ? (
+                      <p className="text-[11px] text-slate-500 truncate">
+                        <span className="font-semibold text-slate-400">Nhân sự: </span>
+                        {project.memberNames.slice(0, 3).join(', ')}{project.memberNames.length > 3 ? ` +${project.memberNames.length - 3}` : ''}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-slate-400">Chưa có nhân sự</p>
+                    )}
+
                     {/* Tiến độ */}
                     <div className="mt-auto pt-1">
                       <div className="flex items-center justify-between mb-1.5">
@@ -506,7 +541,8 @@ export const ProjectManagementPage: React.FC = () => {
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
                     title={TEXT.deleteProject}
-                    className="absolute top-3 right-3 rounded-lg p-1 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition opacity-0 group-hover:opacity-100"
+                    aria-label="Xóa dự án"
+                    className="absolute top-3 right-3 rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition z-20"
                   >
                     <span className="material-symbols-outlined text-base">delete</span>
                   </button>

@@ -13,6 +13,12 @@ const formatEngineer = (e: any) => ({
   managedProjects: Array.isArray(e.projects_managed)
     ? e.projects_managed.map((p: any) => ({ code: p.code, name: p.name }))
     : [],
+  memberProjects: Array.isArray(e.project_memberships)
+    ? e.project_memberships
+        .map((membership: any) => membership.project)
+        .filter(Boolean)
+        .map((p: any) => ({ code: p.code, name: p.name }))
+    : [],
 });
 
 export const getEngineers = async (_req: Request, res: Response) => {
@@ -20,7 +26,10 @@ export const getEngineers = async (_req: Request, res: Response) => {
     const engineers = await prisma.user.findMany({
       where: { role: 'engineer' },
       orderBy: { created_at: 'desc' },
-      include: { projects_managed: { select: { code: true, name: true } } },
+      include: {
+        projects_managed: { select: { code: true, name: true } },
+        project_memberships: { include: { project: { select: { code: true, name: true } } } },
+      },
     });
     res.json(engineers.map(formatEngineer));
   } catch (error) {
@@ -40,6 +49,8 @@ export const createEngineer = async (req: Request, res: Response) => {
       ? String(email).trim().toLowerCase()
       : `eng-${Date.now()}@titsmart.local`;
 
+    const codes: string[] = Array.isArray(projectCodes) ? projectCodes.map(String) : [];
+
     const user = await prisma.user.create({
       data: {
         full_name: name,
@@ -50,18 +61,28 @@ export const createEngineer = async (req: Request, res: Response) => {
       },
     });
 
-    // Gán người này làm Quản lý dự án cho các dự án được chọn
-    const codes: string[] = Array.isArray(projectCodes) ? projectCodes.map(String) : [];
     if (codes.length > 0) {
-      await prisma.project.updateMany({
+      const projects = await prisma.project.findMany({
         where: { code: { in: codes } },
-        data: { manager_id: user.id, manager_name: name },
+        select: { id: true },
       });
+      if (projects.length > 0) {
+        await prisma.projectMember.createMany({
+          data: projects.map((project) => ({
+            user_id: user.id,
+            project_id: project.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
     }
 
     const created = await prisma.user.findUnique({
       where: { id: user.id },
-      include: { projects_managed: { select: { code: true, name: true } } },
+      include: {
+        projects_managed: { select: { code: true, name: true } },
+        project_memberships: { include: { project: { select: { code: true, name: true } } } },
+      },
     });
 
     res.status(201).json(formatEngineer(created));

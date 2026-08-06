@@ -89,6 +89,7 @@ model User {
   updated_at    DateTime  @default(now()) @db.Timestamptz
 
   projects_managed Project[] @relation("ProjectManager")
+  project_memberships ProjectMember[]
   tasks_assigned   Task[]    @relation("TaskAssignedEngineer")
   task_assignments TaskAssignment[] @relation("TaskAssignedUser")
   tasks_assigned_by TaskAssignment[] @relation("TaskAssignedBy")
@@ -124,6 +125,7 @@ model Project {
   updated_at        DateTime  @default(now()) @db.Timestamptz
 
   manager           User?     @relation("ProjectManager", fields: [manager_id], references: [id], onDelete: SetNull)
+  member_assignments ProjectMember[]
   tasks             Task[]
   materials         Material[]
   inventory_transactions InventoryTransaction[]
@@ -138,6 +140,20 @@ model Project {
 
   @@index([status])
   @@map("projects")
+}
+
+model ProjectMember {
+  user_id    String   @db.Uuid
+  project_id String   @db.Uuid
+  role       String?  @db.VarChar(100)
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, project_id])
+  @@index([project_id])
+  @@map("project_members")
 }
 
 model Task {

@@ -124,6 +124,7 @@ export interface Engineer {
   phone: string;
   email: string;
   managedProjects?: { code: string; name: string }[];
+  memberProjects?: { code: string; name: string }[];
 }
 
 export interface NotificationItem {
@@ -176,6 +177,7 @@ export interface ProjectMaterialPlan {
 export interface ProjectPurchasing {
   id: string;
   parentId?: string;
+  materialPlanId?: string;
   stt: string;
   projectCode: string;
   content: string;

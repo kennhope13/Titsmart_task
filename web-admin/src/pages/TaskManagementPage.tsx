@@ -470,95 +470,6 @@ export const TaskManagementPage: React.FC = () => {
   };
 
   // ----------------------------------------------------------------
-  // ĐỒNG BỘ TỪ KẾ HOẠCH VẬT TƯ → QUẢN LÝ TIẾN ĐỘ
-  // Tạo Tasks cho các MaterialPlan items chưa có Task tương ứng
-  // ----------------------------------------------------------------
-  const handleSyncFromMaterialPlan = () => {
-    const projCode = selectedProjectCode !== 'all' ? selectedProjectCode : projectCode;
-    if (!projCode) { triggerToast('Vui lòng chọn dự án trước!', 'warning'); return; }
-
-    const projMaterials = materialPlans.filter(m => m.projectCode === projCode && m.jobContent?.trim());
-    const proj = projects.find(p => p.code === projCode);
-    const projName = proj?.name || projCode;
-
-    // Build a Set of existing task names (lowercase) để check trùng
-    const existingTaskNames = new Set(
-      tasks.filter(t => t.projectCode === projCode).map(t => t.name?.trim().toLowerCase())
-    );
-    const existingTaskStts = new Set(
-      tasks.filter(t => t.projectCode === projCode).map(t => t.stt?.trim())
-    );
-
-    const toCreate: Omit<Task, 'id'>[] = [];
-    let sectionName = '';
-
-    // Duyệt theo thứ tự materialPlans — section header trước, item sau
-    projMaterials.forEach(m => {
-      const isSection = String(m.notes || '').toLowerCase().includes('[section]') ||
-                        /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(m.stt || '').trim());
-
-      if (isSection) {
-        sectionName = m.jobContent?.trim() || '';
-        // Tạo section header task nếu chưa có
-        if (!existingTaskNames.has(sectionName.toLowerCase())) {
-          toCreate.push({
-            stt: m.stt || '',
-            code: '',
-            name: sectionName,
-            projectCode: projCode,
-            projectName: projName,
-            volume: 0,
-            unit: '',
-            progress: 0,
-            status: 'Chưa làm',
-            purchaseStatus: '',
-            constrStatus: '',
-            isDone: false,
-            isSectionHeader: true,
-            sectionName: sectionName,
-            notes: m.notes || '',
-          });
-          existingTaskNames.add(sectionName.toLowerCase());
-          existingTaskStts.add(m.stt || '');
-        }
-      } else {
-        const itemName = m.jobContent?.trim() || '';
-        const itemStt = m.stt?.trim() || '';
-        // Bỏ qua nếu đã tồn tại (check cả tên lẫn STT)
-        if (existingTaskNames.has(itemName.toLowerCase()) || existingTaskStts.has(itemStt)) return;
-
-        toCreate.push({
-          stt: itemStt,
-          code: '',
-          name: itemName,
-          projectCode: projCode,
-          projectName: projName,
-          volume: Number(m.contractVolume || 0),
-          unit: m.unit || '',
-          progress: 0,
-          status: 'Chưa làm',
-          purchaseStatus: 'Chưa đặt hàng',
-          constrStatus: 'Chưa thi công',
-          isDone: false,
-          isSectionHeader: false,
-          sectionName: sectionName,
-          notes: m.notes || '',
-        });
-        existingTaskNames.add(itemName.toLowerCase());
-        existingTaskStts.add(itemStt);
-      }
-    });
-
-    if (toCreate.length === 0) {
-      triggerToast('Tất cả hạng mục đã được đồng bộ, không có gì mới.', 'info');
-      return;
-    }
-
-    addTasksBatch(toCreate);
-    triggerToast(`Đã đồng bộ ${toCreate.length} hạng mục từ Kế hoạch Vật tư!`, 'success');
-  };
-
-  // ----------------------------------------------------------------
   // XÓA TASK KÈM XÓA MATERIALPLAN + PURCHASINGPLAN TƯƠNG ỨNG
   // ----------------------------------------------------------------
   const handleDeleteTask = (task: Task) => {
@@ -934,9 +845,10 @@ export const TaskManagementPage: React.FC = () => {
             t => t.projectCode === projectCode && t.isSectionHeader &&
                  (t.sectionName === finalSectionName || t.name === finalSectionName)
           );
+          const sectionStt = sectionTask?.stt || toRoman(sectionCount + 1);
           addMaterialPlan({
             projectCode,
-            stt: sectionTask?.stt || toRoman(sectionCount + 1),
+            stt: sectionStt,
             jobContent: finalSectionName,
             unit: '',
             contractVolume: 0,
@@ -946,7 +858,36 @@ export const TaskManagementPage: React.FC = () => {
             supplyScope: 'unknown',
             notes: '[section]',
           });
+          // Đồng bộ section header sang Mua hàng
+          addPurchasingPlan({
+            projectCode,
+            stt: sectionStt,
+            content: finalSectionName,
+            unit: '',
+            volumeContract: 0,
+            volumeOrder: 0,
+            unitPrice: 0,
+            vatRate: 10,
+            vatAmount: 0,
+            totalAmount: 0,
+            prepayPercent: 0,
+            prepayAmount: 0,
+            remainingAmount: 0,
+            orderStatus: 'Chưa đặt hàng',
+            contractStatus: 'Chưa ký',
+            paymentDate: '',
+            invoiceStatus: 'Chưa xuất',
+            notes: '[section]',
+          });
         }
+
+        // Tìm section cha trong PurchasingPlan theo sectionName
+        const sectionInPurchasing = purchasingPlans.find(
+          p => p.projectCode === projectCode &&
+               (String(p.notes || '').toLowerCase().includes('[section]') ||
+                /^[IVXLCDM]+$/i.test(String(p.stt || '').trim())) &&
+               p.content?.trim().toLowerCase() === finalSectionName.trim().toLowerCase()
+        );
 
         // Kiểm tra section cha có phải nhà thầu không
         const normalizeVn = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
@@ -960,6 +901,12 @@ export const TaskManagementPage: React.FC = () => {
           m => m.projectCode === projectCode &&
                m.stt?.trim() === parentTask.stt.trim() &&
                m.jobContent?.trim().toLowerCase() === parentTask.name.trim().toLowerCase()
+        ) : null;
+        // Tìm item cha trong PurchasingPlan tương ứng với task cha
+        const parentPurchasingPlan = parentTask ? purchasingPlans.find(
+          p => p.projectCode === projectCode &&
+               p.stt?.trim() === parentTask.stt.trim() &&
+               p.content?.trim().toLowerCase() === parentTask.name.trim().toLowerCase()
         ) : null;
 
         const itemNotes = sectionIsContractor ? '[contractor]' : '';
@@ -980,30 +927,28 @@ export const TaskManagementPage: React.FC = () => {
           parentId: parentMaterialPlan?.id || sectionInMaterial?.id,
         });
 
-        // Nếu là nhà thầu → cũng tạo PurchasingPlan
-        if (sectionIsContractor) {
-          addPurchasingPlan({
-            projectCode,
-            stt: taskStt,
-            content: name,
-            unit: unit,
-            volumeContract: volume,
-            volumeOrder: 0,
-            unitPrice: 0,
-            vatRate: 10,
-            vatAmount: 0,
-            totalAmount: 0,
-            prepayPercent: 0,
-            prepayAmount: 0,
-            remainingAmount: 0,
-            orderStatus: 'Chưa đặt hàng',
-            contractStatus: 'Chưa ký',
-            paymentDate: '',
-            invoiceStatus: 'Chưa xuất',
-            notes: itemNotes,
-            parentId: parentMaterialPlan?.id || sectionInMaterial?.id,
-          });
-        }
+        // Tạo PurchasingPlan cho mọi hạng mục (không chỉ nhà thầu)
+        addPurchasingPlan({
+          projectCode,
+          stt: taskStt,
+          content: name,
+          unit: unit,
+          volumeContract: volume,
+          volumeOrder: 0,
+          unitPrice: 0,
+          vatRate: 10,
+          vatAmount: 0,
+          totalAmount: 0,
+          prepayPercent: 0,
+          prepayAmount: 0,
+          remainingAmount: 0,
+          orderStatus: 'Chưa đặt hàng',
+          contractStatus: 'Chưa ký',
+          paymentDate: '',
+          invoiceStatus: 'Chưa xuất',
+          notes: itemNotes,
+          parentId: parentPurchasingPlan?.id || sectionInPurchasing?.id,
+        });
       }
     }
 
@@ -1030,6 +975,27 @@ export const TaskManagementPage: React.FC = () => {
           orderedVolume: 0,
           orderedStatus: 'Chưa đặt hàng',
           supplyScope: 'unknown',
+          notes: '[section]',
+        });
+        // Đồng bộ section header sang Mua hàng
+        addPurchasingPlan({
+          projectCode,
+          stt: taskStt,
+          content: name,
+          unit: '',
+          volumeContract: 0,
+          volumeOrder: 0,
+          unitPrice: 0,
+          vatRate: 10,
+          vatAmount: 0,
+          totalAmount: 0,
+          prepayPercent: 0,
+          prepayAmount: 0,
+          remainingAmount: 0,
+          orderStatus: 'Chưa đặt hàng',
+          contractStatus: 'Chưa ký',
+          paymentDate: '',
+          invoiceStatus: 'Chưa xuất',
           notes: '[section]',
         });
       }
@@ -1359,17 +1325,6 @@ export const TaskManagementPage: React.FC = () => {
             </select>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
-
-            {/* Nút đồng bộ từ Kế hoạch Vật tư */}
-            <button
-              onClick={handleSyncFromMaterialPlan}
-              className="flex items-center gap-1.5 border border-primary/30 bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary/10 transition-all shadow-xs whitespace-nowrap"
-              title="Đồng bộ hạng mục từ tab Kế hoạch Vật tư sang đây"
-            >
-              <span className="material-symbols-outlined text-base">sync</span>
-              <span>Đồng bộ từ KH Vật tư</span>
-            </button>
-
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
@@ -1570,17 +1525,6 @@ export const TaskManagementPage: React.FC = () => {
         </div>
 
         {/* Clean Footer */}
-        <div className="py-2 px-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center">
-          <div className="flex items-center gap-1 truncate">
-            <span>Đang xem:</span>
-            <strong className="text-slate-800 font-bold truncate">
-              {selectedRomanSection === 'all' ? 'Tất cả các Đầu mục cha' : selectedRomanSection}
-            </strong>
-          </div>
-          <span className="font-mono font-bold text-slate-700 flex-shrink-0">
-              {totalPureItems} hạng mục
-          </span>
-        </div>
       </div>
 
 

@@ -299,9 +299,6 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   let targetSection = currentSectionKey;
                   if (t.parentId && groups[t.parentId]) {
                     targetSection = t.parentId;
-                  } else {
-                    const hasOrderTag = /\[order:([\d.]+)\]/.test(String(t.notes || ''));
-                    if (!hasOrderTag) targetSection = '__orphaned__';
                   }
 
                   if (!groups[targetSection]) {

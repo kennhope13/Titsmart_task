@@ -87,22 +87,6 @@ export const LaborTab: React.FC<LaborTabProps> = ({
               <th className="w-[60px] px-1.5 py-1.5 text-center">Thao tác</th>
             </tr>
           </thead>
-          <tfoot className="bg-slate-50/80 border-t border-slate-200">
-            <tr>
-              <td className="px-1 py-1"></td>
-              <td className="px-1 py-1"><input value={columnFilters.date || ''} onChange={e => updateColumnFilter('date', e.target.value)} placeholder="Ngày..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-              <td className="px-1 py-1"><input value={columnFilters.workerName || ''} onChange={e => updateColumnFilter('workerName', e.target.value)} placeholder="Họ tên..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-              <td className="px-1 py-1"><input value={columnFilters.content || ''} onChange={e => updateColumnFilter('content', e.target.value)} placeholder="Nội dung..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-              <td className="px-1 py-1"><input value={columnFilters.unit || ''} onChange={e => updateColumnFilter('unit', e.target.value)} placeholder="ĐVT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-              <td className="px-1 py-1"></td>
-              <td className="px-1 py-1"></td>
-              <td className="px-1 py-1"></td>
-              <td className="px-1 py-1"><input value={columnFilters.bankAccount || ''} onChange={e => updateColumnFilter('bankAccount', e.target.value)} placeholder="TK..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-              <td className="px-1 py-1"></td>
-              <td className="px-1 py-1"></td>
-              <td className="px-1 py-1"></td>
-            </tr>
-          </tfoot>
           <tbody className="divide-y divide-slate-100 bg-white text-xs text-slate-700">
             {filteredData.map((lab) => (
               <tr key={lab.id} className="group align-middle transition-colors hover:bg-blue-50/30">
