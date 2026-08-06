@@ -881,6 +881,8 @@ export const TaskManagementPage: React.FC = () => {
     const createdSectionName = finalSectionName;
     const taskStt = isSectionHeader ? (stt || toRoman(tasks.filter(t => t.projectCode === projectCode && t.isSectionHeader).length + 1)) : (stt || nextStt);
     const taskParentId = parentIdSelect !== 'default' ? parentIdSelect : undefined;
+    // Validate rằng parentId thực sự tồn tại trong tasks array (tránh FK error)
+    const validatedParentId = taskParentId && tasks.find(t => t.id === taskParentId) ? taskParentId : undefined;
 
     addTask({
       stt: taskStt,
@@ -897,7 +899,7 @@ export const TaskManagementPage: React.FC = () => {
       isDone: !isSectionHeader && nextProgress >= 1,
       isSectionHeader,
       sectionName: finalSectionName,
-      parentId: taskParentId,
+      parentId: validatedParentId,
       assignedEngineerId: engineerId,
       assignedEngineerName: eng?.name || '',
     });
@@ -953,7 +955,7 @@ export const TaskManagementPage: React.FC = () => {
           normalizeVn(finalSectionName).includes('nha thau cung cap');
 
         // Tìm item cha trong MaterialPlan tương ứng với task cha (để gắn parentId đúng)
-        const parentTask = taskParentId ? tasks.find(t => t.id === taskParentId) : null;
+        const parentTask = validatedParentId ? tasks.find(t => t.id === validatedParentId) : null;
         const parentMaterialPlan = parentTask ? materialPlans.find(
           m => m.projectCode === projectCode &&
                m.stt?.trim() === parentTask.stt.trim() &&
