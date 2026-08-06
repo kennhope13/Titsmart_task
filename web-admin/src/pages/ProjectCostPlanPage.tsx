@@ -1414,8 +1414,13 @@ export const ProjectCostPlanPage: React.FC = () => {
           const currentSectionName = (() => {
             if (isCreatingSectionHeader) return newPlanData.jobContent || '';
             if (parentId) {
-              const parentObj = currentProjMaterialPlans.find(p => p.id === parentId);
-              return parentObj?.jobContent || '';
+              let currentObj = currentProjMaterialPlans.find(p => p.id === parentId);
+              let safeCount = 0;
+              while (currentObj && !isSectionMarker(currentObj.stt, currentObj.notes) && currentObj.parentId && safeCount < 50) {
+                currentObj = currentProjMaterialPlans.find(p => p.id === currentObj!.parentId);
+                safeCount++;
+              }
+              return currentObj?.jobContent || '';
             }
             const sectionId = sectionPlanIdForNew;
             if (sectionId) {
@@ -1431,10 +1436,11 @@ export const ProjectCostPlanPage: React.FC = () => {
             if (parentObj) {
               // Tìm Task ID tương ứng với parentObj (vì parentId hiện tại là ID của MaterialPlan)
               // Cần ưu tiên task nằm trong cùng sectionName
+              const isParentSec = isSectionMarker(parentObj.stt, parentObj.notes);
               const pTask = tasks.find(t => 
                 t.projectCode === selectedProject && 
                 t.name === parentObj.jobContent && 
-                (parentObj.isSec ? t.isSectionHeader : (!t.isSectionHeader && t.sectionName === currentSectionName))
+                (isParentSec ? t.isSectionHeader : (!t.isSectionHeader && t.sectionName === currentSectionName))
               ) || tasks.find(t => t.projectCode === selectedProject && t.name === parentObj.jobContent);
               
               if (pTask) {
