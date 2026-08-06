@@ -121,24 +121,17 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
       // User-added subtasks carry a real parentId — group them under that section
       // even when the item sits before its section in the data array.
       if (plan.parentId && sectionOrder.has(plan.parentId)) return sectionOrder.get(plan.parentId)!;
-      // If parentId points to a regular item (not a section), walk up the parentId
-      // chain to find the owning section. This handles items created via task sync
-      // where parentId → parent item → section header.
+      // For items with a parentId pointing to a regular item (not a section), inherit
+      // the parent's originalOrderMap position so the child is grouped under the same
+      // section as its parent. This handles items created via task sync where the child
+      // is prepended at array index 0 but the parent sits at the correct import position.
+      let effectivePos = originalOrderMap.get(plan.id) ?? Infinity;
       if (plan.parentId) {
-        let cursor: ProjectMaterialPlan | undefined = data.find(r => r.id === plan.parentId);
-        while (cursor) {
-          const current = cursor;
-          if (isParentRow(current)) {
-            const secIdx = sectionOrder.get(current.id);
-            if (secIdx !== undefined) return secIdx;
-            break;
-          }
-          cursor = current.parentId ? data.find(r => r.id === current.parentId) : undefined;
-        }
+        const parentPos = originalOrderMap.get(plan.parentId);
+        if (parentPos !== undefined) effectivePos = parentPos;
       }
-      // Find the nearest section whose Excel position is before this item's
       // position (sections always precede their items in the Excel order).
-      const myPos = originalOrderMap.get(plan.id) ?? Infinity;
+      const myPos = effectivePos;
       let bestSecIdx = -1;
       let bestSecPos = -1;
       data.forEach(r => {
