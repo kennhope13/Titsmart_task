@@ -952,10 +952,18 @@ export const TaskManagementPage: React.FC = () => {
           (sectionInMaterial && (sectionInMaterial.supplyScope === 'contractor' || normalizeVn(sectionInMaterial.jobContent || '').includes('nha thau cung cap'))) ||
           normalizeVn(finalSectionName).includes('nha thau cung cap');
 
+        // Tìm item cha trong MaterialPlan tương ứng với task cha (để gắn parentId đúng)
+        const parentTask = taskParentId ? tasks.find(t => t.id === taskParentId) : null;
+        const parentMaterialPlan = parentTask ? materialPlans.find(
+          m => m.projectCode === projectCode &&
+               m.stt?.trim() === parentTask.stt.trim() &&
+               m.jobContent?.trim().toLowerCase() === parentTask.name.trim().toLowerCase()
+        ) : null;
+
         const itemNotes = sectionIsContractor ? '[contractor]' : '';
         const itemSupplyScope: 'contractor' | 'unknown' = sectionIsContractor ? 'contractor' : 'unknown';
 
-        // Tạo item trong MaterialPlan
+        // Tạo item trong MaterialPlan, gắn parentId vào item cha (nếu có) thay vì section header
         addMaterialPlan({
           projectCode,
           stt: taskStt,
@@ -967,7 +975,7 @@ export const TaskManagementPage: React.FC = () => {
           orderedStatus: 'Chưa đặt hàng',
           supplyScope: itemSupplyScope,
           notes: itemNotes,
-          parentId: sectionInMaterial?.id,
+          parentId: parentMaterialPlan?.id || sectionInMaterial?.id,
         });
 
         // Nếu là nhà thầu → cũng tạo PurchasingPlan
@@ -991,7 +999,7 @@ export const TaskManagementPage: React.FC = () => {
             paymentDate: '',
             invoiceStatus: 'Chưa xuất',
             notes: itemNotes,
-            parentId: sectionInMaterial?.id,
+            parentId: parentMaterialPlan?.id || sectionInMaterial?.id,
           });
         }
       }

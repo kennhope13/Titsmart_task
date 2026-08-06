@@ -121,6 +121,21 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
       // User-added subtasks carry a real parentId — group them under that section
       // even when the item sits before its section in the data array.
       if (plan.parentId && sectionOrder.has(plan.parentId)) return sectionOrder.get(plan.parentId)!;
+      // If parentId points to a regular item (not a section), walk up the parentId
+      // chain to find the owning section. This handles items created via task sync
+      // where parentId → parent item → section header.
+      if (plan.parentId) {
+        let cursor: ProjectMaterialPlan | undefined = data.find(r => r.id === plan.parentId);
+        while (cursor) {
+          const current = cursor;
+          if (isParentRow(current)) {
+            const secIdx = sectionOrder.get(current.id);
+            if (secIdx !== undefined) return secIdx;
+            break;
+          }
+          cursor = current.parentId ? data.find(r => r.id === current.parentId) : undefined;
+        }
+      }
       // Find the nearest section whose Excel position is before this item's
       // position (sections always precede their items in the Excel order).
       const myPos = originalOrderMap.get(plan.id) ?? Infinity;
@@ -308,41 +323,6 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               )}
             </tr>
           </thead>
-          <tfoot className="bg-slate-50/80 border-t border-slate-200">
-            <tr>
-              <td style={{ width: 32 }} className="px-1 py-1"></td>
-              <td style={{ width: 280 }} className="px-1 py-1"><input value={columnFilters.jobContent || ''} onChange={e => updateColumnFilter('jobContent', e.target.value)} placeholder="Nội dung..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-              <td style={{ width: 40 }} className="px-1 py-1"><input value={columnFilters.unit || ''} onChange={e => updateColumnFilter('unit', e.target.value)} placeholder="ĐVT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-              <td style={{ width: 50 }} className="px-1 py-1"></td>
-              {subTab === 'TECH' && (
-                <>
-                  <td style={{ width: 70 }} className="px-1 py-1"></td>
-                  <td style={{ width: 70 }} className="px-1 py-1"></td>
-                  <td style={{ width: 70 }} className="px-1 py-1"></td>
-                  <td style={{ width: 60 }} className="px-1 py-1"></td>
-                </>
-              )}
-              {subTab === 'ORDER' && (
-                <>
-                  <td style={{ width: 52 }} className="px-1 py-1"></td>
-                  <td style={{ width: 75 }} className="px-1 py-1"></td>
-                  <td style={{ width: 70 }} className="px-1 py-1"></td>
-                  <td style={{ width: 80 }} className="px-1 py-1"></td>
-                  <td style={{ width: 80 }} className="px-1 py-1"></td>
-                </>
-              )}
-              {subTab === 'DOCS' && (
-                <>
-                  <td style={{ width: 40 }} className="px-1 py-1"></td>
-                  <td style={{ width: 40 }} className="px-1 py-1"></td>
-                  <td style={{ width: 60 }} className="px-1 py-1"></td>
-                  <td style={{ width: 60 }} className="px-1 py-1"></td>
-                  <td style={{ width: 70 }} className="px-1 py-1"></td>
-                </>
-              )}
-              <td style={{ width: 110 }} className="px-1 py-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
-            </tr>
-          </tfoot>
           <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
             {(() => {
               // Group items by section — same approach as TaskManagementPage
