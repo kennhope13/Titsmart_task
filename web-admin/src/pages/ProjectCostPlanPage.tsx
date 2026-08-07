@@ -403,6 +403,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           const pendingTasks: any[] = [];
           let globalOrder = 0; // thứ tự tuyệt đối trong file, dùng để sort sau
           let romanSectionCounter = 0; // Đếm số đầu mục lớn để chuyển thành số La Mã
+          let currentSectionSupplyScope = 'unknown'; // Theo dõi supplyScope của section hiện tại cho các hạng mục con
 
           wb.SheetNames.forEach((sheetName) => {
             const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets[sheetName], { header: 1, defval: '' });
@@ -446,11 +447,14 @@ export const ProjectCostPlanPage: React.FC = () => {
               if (isSectionRow) {
                 romanSectionCounter++;
                 effectiveStt = toRoman(romanSectionCounter);
+                currentSectionSupplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
               }
               
+              const rowSupplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
+              const supplyScope = isSectionRow ? currentSectionSupplyScope : (rowSupplyScope !== 'unknown' ? rowSupplyScope : currentSectionSupplyScope);
+
               // Lưu thứ tự tuyệt đối vào notes dạng [order:NNN] để sort đúng sau khi load
               const orderTag = `[order:${String(++globalOrder).padStart(5, '0')}]`;
-              const supplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
               const rowKey = baselineKey(effectiveStt, content);
               const baseNote = [isSectionRow ? '[section]' : '', supplyScope === 'contractor' ? '[contractor]' : '', supplyScope === 'owner' ? '[owner]' : '', orderTag, String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
               const existingMaterial = materialBaselineMap.get(rowKey);
