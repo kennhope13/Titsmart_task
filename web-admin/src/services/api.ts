@@ -60,6 +60,8 @@ export const api = {
     getAll: async () => (await axios.get(`${API_URL}/users/engineers`)).data,
     create: async (data: { fullName: string; phone?: string; email?: string; title?: string; projectCodes?: string[] }) =>
       (await axios.post(`${API_URL}/users`, data)).data,
+    update: async (id: string, data: { fullName: string; phone?: string; title?: string; projectCodes?: string[] }) =>
+      (await axios.put(`${API_URL}/users/${id}`, data)).data,
   },
   activityLogs: {
     getAll: async () => (await axios.get(`${API_URL}/activity-logs`)).data,

@@ -24,7 +24,21 @@ const percentText = (value: unknown) => {
   return n <= 1 ? `${Math.round(n * 100)}%` : `${n}%`;
 };
 const isSectionRow = (pur: ProjectPurchasing) => String(pur.notes || '').toLowerCase().includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(pur.stt || '').trim());
-const cleanNotes = (value?: string) => String(value || '').replace(/\s*\|?\s*\[section\]\s*/gi, '').trim();
+const cleanNotes = (value?: string) => {
+  return String(value || '')
+    .replace(/\[order:[\d.]+\]/g, '')
+    .replace(/\[section\]/gi, '')
+    .replace(/\[contractor\]/gi, '')
+    .replace(/\[owner\]/gi, '')
+    .replace(/Nhà thầu cung cấp/gi, '')
+    .replace(/Chủ đầu tư cung cấp/gi, '')
+    .replace(/Import từ phụ lục dự án/gi, '')
+    .replace(/Đồng bộ từ phụ lục khi tạo dự án/gi, '')
+    .split('|')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .join(' | ');
+};
 const computedVat = (pur: ProjectPurchasing) => Number(pur.vatAmount || 0) || (Number(pur.volumeOrder || 0) * Number(pur.unitPrice || 0) * Number(pur.vatRate || 0)) / 100;
 const computedTotal = (pur: ProjectPurchasing) => Number(pur.totalAmount || 0) || (Number(pur.volumeOrder || 0) * Number(pur.unitPrice || 0)) + computedVat(pur);
 const computedPayment = (pur: ProjectPurchasing) => Number(pur.prepayAmount || 0) || (computedTotal(pur) * Number(pur.prepayPercent || 0));
@@ -130,7 +144,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
   const originalOrderMap = new Map<string, number>(data.map((r, i) => [r.id, orderTagValue(r.notes) ?? (1000000 - i)]));
 
   const getSectionIndexForItem = (pur: ProjectPurchasing, visited = new Set<string>()): number => {
-    if (visited.has(pur.id)) return -1;
+    if (visited.has(pur.id)) return Infinity;
     visited.add(pur.id);
 
     if (isSectionRow(pur)) return sectionOrder.get(pur.id) ?? Infinity;
@@ -148,10 +162,10 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
     // Use originalOrderMap to find the closest preceding section
     // If it's a manually added item (no order tag), it stays at root (-1)
     const hasOrderTag = /\[order:([\d.]+)\]/.test(String(pur.notes || ''));
-    if (!hasOrderTag) return -1;
+    if (!hasOrderTag) return Infinity;
 
     const myPos = originalOrderMap.get(pur.id) ?? Infinity;
-    let bestSecIdx = -1;
+    let bestSecIdx = Infinity;
     let bestSecPos = -1;
     data.forEach(r => {
       if (isSectionRow(r)) {
@@ -162,7 +176,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
         }
       }
     });
-    return bestSecIdx === -1 ? -1 : bestSecIdx;
+    return bestSecIdx === -1 ? Infinity : bestSecIdx;
   };
 
   const filteredData = [...data].sort((a, b) => {

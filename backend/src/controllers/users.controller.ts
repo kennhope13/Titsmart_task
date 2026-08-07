@@ -21,15 +21,36 @@ const formatEngineer = (e: any) => ({
     : [],
 });
 
+const parseProjectCodes = (projectCodes: unknown) => (
+  Array.isArray(projectCodes)
+    ? Array.from(new Set(projectCodes.map((value: unknown) => String(value || '').trim()).filter(Boolean)))
+    : []
+);
+
+const includeEngineerProjects = {
+  projects_managed: { select: { code: true, name: true } },
+  project_memberships: { include: { project: { select: { code: true, name: true } } } },
+} as const;
+
+const loadProjectsByCodes = async (codes: string[]) => {
+  const projects = await prisma.project.findMany({
+    where: { code: { in: codes } },
+    select: { id: true, code: true },
+  });
+
+  if (projects.length !== codes.length) {
+    return null;
+  }
+
+  return projects;
+};
+
 export const getEngineers = async (_req: Request, res: Response) => {
   try {
     const engineers = await prisma.user.findMany({
       where: { role: 'engineer' },
       orderBy: { created_at: 'desc' },
-      include: {
-        projects_managed: { select: { code: true, name: true } },
-        project_memberships: { include: { project: { select: { code: true, name: true } } } },
-      },
+      include: includeEngineerProjects,
     });
     res.json(engineers.map(formatEngineer));
   } catch (error) {
@@ -49,45 +70,110 @@ export const createEngineer = async (req: Request, res: Response) => {
       ? String(email).trim().toLowerCase()
       : `eng-${Date.now()}@titsmart.local`;
 
-    const codes: string[] = Array.isArray(projectCodes) ? projectCodes.map(String) : [];
+    const codes = parseProjectCodes(projectCodes);
 
-    const user = await prisma.user.create({
-      data: {
-        full_name: name,
-        email: safeEmail,
-        phone: phone ? String(phone) : null,
-        title: title ? String(title) : 'Kỹ sư',
-        role: 'engineer',
-      },
-    });
-
-    if (codes.length > 0) {
-      const projects = await prisma.project.findMany({
-        where: { code: { in: codes } },
-        select: { id: true },
-      });
-      if (projects.length > 0) {
-        await prisma.projectMember.createMany({
-          data: projects.map((project) => ({
-            user_id: user.id,
-            project_id: project.id,
-          })),
-          skipDuplicates: true,
-        });
-      }
+    if (codes.length === 0) {
+      return res.status(400).json({ error: 'Vui lòng chọn ít nhất 1 dự án cho nhân sự' });
     }
 
-    const created = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: {
-        projects_managed: { select: { code: true, name: true } },
-        project_memberships: { include: { project: { select: { code: true, name: true } } } },
-      },
+    const projects = await loadProjectsByCodes(codes);
+
+    if (!projects) {
+      return res.status(400).json({ error: 'Có dự án không hợp lệ hoặc đã bị xóa, vui lòng tải lại danh sách dự án' });
+    }
+
+    const created = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          full_name: name,
+          email: safeEmail,
+          phone: phone ? String(phone) : null,
+          title: title ? String(title) : 'Kỹ sư',
+          role: 'engineer',
+        },
+      });
+
+      await tx.projectMember.createMany({
+        data: projects.map((project) => ({
+          user_id: user.id,
+          project_id: project.id,
+        })),
+        skipDuplicates: true,
+      });
+
+      return tx.user.findUnique({
+        where: { id: user.id },
+        include: includeEngineerProjects,
+      });
     });
 
     res.status(201).json(formatEngineer(created));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Lỗi khi tạo nhân sự' });
+  }
+};
+
+export const updateEngineer = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { fullName, phone, title, projectCodes } = req.body;
+    const name = String(fullName || '').trim();
+
+    if (!id) return res.status(400).json({ error: 'Thiếu mã nhân sự' });
+    if (!name) return res.status(400).json({ error: 'Thiếu họ tên' });
+
+    const codes = parseProjectCodes(projectCodes);
+    if (codes.length === 0) {
+      return res.status(400).json({ error: 'Vui lòng chọn ít nhất 1 dự án cho nhân sự' });
+    }
+
+    const projects = await loadProjectsByCodes(codes);
+    if (!projects) {
+      return res.status(400).json({ error: 'Có dự án không hợp lệ hoặc đã bị xóa, vui lòng tải lại danh sách dự án' });
+    }
+
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true },
+    });
+
+    if (!existing || existing.role !== 'engineer') {
+      return res.status(404).json({ error: 'Không tìm thấy nhân sự cần cập nhật' });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id },
+        data: {
+          full_name: name,
+          phone: phone ? String(phone) : null,
+          title: title ? String(title) : 'Kỹ sư',
+          updated_at: new Date(),
+        },
+      });
+
+      await tx.projectMember.deleteMany({
+        where: { user_id: id },
+      });
+
+      await tx.projectMember.createMany({
+        data: projects.map((project) => ({
+          user_id: id,
+          project_id: project.id,
+        })),
+        skipDuplicates: true,
+      });
+
+      return tx.user.findUnique({
+        where: { id },
+        include: includeEngineerProjects,
+      });
+    });
+
+    res.json(formatEngineer(updated));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Lỗi khi cập nhật nhân sự' });
   }
 };

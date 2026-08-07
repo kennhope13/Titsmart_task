@@ -267,7 +267,6 @@ export const ProjectManagementPage: React.FC = () => {
     }
 
     if (pendingProjectTasks.length > 0) {
-      // Lưu thứ tự tuyệt đối theo file Excel dạng [order:NNN] để sắp xếp mục I-XII đúng sau khi load
       let orderCounter = 0;
       const existingTaskKeys = new Set(tasks.filter((task) => task.projectCode === code).map((task) => `${task.stt.trim()}|${task.name.trim().toLowerCase()}`));
       const importedTasks: Omit<Task, 'id'>[] = pendingProjectTasks
@@ -317,8 +316,8 @@ export const ProjectManagementPage: React.FC = () => {
           projectCode: code,
           stt: item.stt || String(index + 1),
           jobContent: item.name,
-          unit: '',
-          contractVolume: 0,
+          unit: item.unit || '',
+          contractVolume: item.volume || 0,
           techSpecModel: '',
           techSpecOrigin: '',
           progressStatus: '',
@@ -342,13 +341,11 @@ export const ProjectManagementPage: React.FC = () => {
           .map((plan) => `${String(plan.stt || '').trim()}|${String(plan.content || '').trim().toLowerCase()}`)
       );
 
-      // Import cả mục I-XII (section) lẫn hạng mục nhà thầu cung cấp — đồng bộ tự động như phụ lục
       for (const [index, item] of pendingProjectTasks.filter((item) => (item.isSectionHeader || item.supplyScope === 'contractor') && item.name?.trim()).entries()) {
         const key = `${String(item.stt || '').trim()}|${String(item.name || '').trim().toLowerCase()}`;
         if (existingPurchasingKeys.has(key)) continue;
         existingPurchasingKeys.add(key);
         const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
-        // Không import đơn giá, tiền thuế, thành tiền khi tạo dự án mới từ phụ lục (vẫn lấy % thuế VAT)
         await addPurchasingPlan({
           projectCode: code,
           stt: item.stt || String(index + 1),
@@ -357,7 +354,7 @@ export const ProjectManagementPage: React.FC = () => {
           volumeContract: item.volume || 0,
           volumeOrder: 0,
           unitPrice: 0,
-          vatRate: item.vatRate || 0,
+          vatRate: item.vatRate || 10,
           vatAmount: 0,
           totalAmount: 0,
           prepayPercent: 0,

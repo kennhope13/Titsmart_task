@@ -107,6 +107,80 @@ export const ProjectCostPlanPage: React.FC = () => {
     itemName: string;
   } | null>(null);
 
+  const handleUpdatePurchasingPlanSync = (id: string, updates: Partial<ProjectPurchasing>) => {
+    const existing = purchasingPlans.find(p => p.id === id);
+    updatePurchasingPlan(id, updates);
+    if (!existing) return;
+
+    if (updates.stt !== undefined || updates.content !== undefined || updates.unit !== undefined || updates.volumeContract !== undefined) {
+      const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      
+      const matchingMaterial = materialPlans.find(m => 
+        (existing.materialPlanId && m.id === existing.materialPlanId) ||
+        (m.projectCode === existing.projectCode && norm(m.stt) === norm(existing.stt) && norm(m.jobContent) === norm(existing.content))
+      );
+      if (matchingMaterial) {
+        triggerToast(`Đã đồng bộ sang Kế hoạch vật tư: ${matchingMaterial.jobContent}`, 'success');
+        updateMaterialPlan(matchingMaterial.id, {
+          stt: updates.stt !== undefined ? updates.stt : matchingMaterial.stt,
+          jobContent: updates.content !== undefined ? updates.content : matchingMaterial.jobContent,
+          unit: updates.unit !== undefined ? updates.unit : matchingMaterial.unit,
+          contractVolume: updates.volumeContract !== undefined ? updates.volumeContract : matchingMaterial.contractVolume
+        });
+      } else {
+        triggerToast(`Không tìm thấy mục tương ứng trong Kế hoạch vật tư! (STT: ${existing.stt}, Nội dung: ${existing.content})`, 'error');
+      }
+
+      const matchingTask = tasks.find(t => 
+        t.projectCode === existing.projectCode && 
+        norm(t.stt) === norm(existing.stt) && 
+        norm(t.name) === norm(existing.content)
+      );
+      if (matchingTask) {
+        updateTask(matchingTask.id, {
+          stt: updates.stt !== undefined ? updates.stt : matchingTask.stt,
+          name: updates.content !== undefined ? updates.content : matchingTask.name
+        });
+      }
+    }
+  };
+
+  const handleUpdateMaterialPlanSync = (id: string, updates: Partial<ProjectMaterialPlan>) => {
+    const existing = materialPlans.find(p => p.id === id);
+    updateMaterialPlan(id, updates);
+    if (!existing) return;
+
+    if (updates.stt !== undefined || updates.jobContent !== undefined || updates.unit !== undefined || updates.contractVolume !== undefined) {
+      const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+      const matchingPurchasing = purchasingPlans.find(p => 
+        p.projectCode === existing.projectCode && 
+        norm(p.stt) === norm(existing.stt) && 
+        norm(p.content) === norm(existing.jobContent)
+      );
+      if (matchingPurchasing) {
+        updatePurchasingPlan(matchingPurchasing.id, {
+          stt: updates.stt !== undefined ? updates.stt : matchingPurchasing.stt,
+          content: updates.jobContent !== undefined ? updates.jobContent : matchingPurchasing.content,
+          unit: updates.unit !== undefined ? updates.unit : matchingPurchasing.unit,
+          volumeContract: updates.contractVolume !== undefined ? updates.contractVolume : matchingPurchasing.volumeContract
+        });
+      }
+
+      const matchingTask = tasks.find(t => 
+        t.projectCode === existing.projectCode && 
+        norm(t.stt) === norm(existing.stt) && 
+        norm(t.name) === norm(existing.jobContent)
+      );
+      if (matchingTask) {
+        updateTask(matchingTask.id, {
+          stt: updates.stt !== undefined ? updates.stt : matchingTask.stt,
+          name: updates.jobContent !== undefined ? updates.jobContent : matchingTask.name
+        });
+      }
+    }
+  };
+
   const confirmDeleteAction = () => {
     if (!deleteConfirm) return;
     const { id, type } = deleteConfirm;
@@ -941,7 +1015,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   // Form states for creating items
   const [newPlanData, setNewPlanData] = useState<Partial<ProjectMaterialPlan> & { isContractor?: boolean }>({
-    stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: false
+    stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true
   });
   const [newPurchasingData, setNewPurchasingData] = useState<Partial<ProjectPurchasing>>({
     stt: '', content: '', unit: 'bộ', volumeContract: 1, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''
@@ -1084,7 +1158,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         {activeTab === 'MATERIAL_PLAN' && (
           <MaterialPlanTab
             data={currentProjMaterialPlans}
-            onUpdate={updateMaterialPlan}
+            onUpdate={handleUpdateMaterialPlanSync}
             onEdit={setEditingPlan}
             onDelete={(id) => {
               const item = currentProjMaterialPlans.find(p => p.id === id);
@@ -1094,7 +1168,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               setParentPlanIdForNew(plan.id);
               setIsCreatingSectionHeader(false);
               setIsNewPlanOpen(true);
-              setNewPlanData(prev => ({ ...prev, stt: suggestedStt || '', isContractor: isContractorMaterialPlan(plan) }));
+              setNewPlanData(prev => ({ ...prev, stt: suggestedStt || '', isContractor: true }));
             }}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -1107,7 +1181,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         {activeTab === 'PURCHASING' && (
           <PurchasingTab
             data={currentProjPurchasing}
-            onUpdate={updatePurchasingPlan}
+            onUpdate={handleUpdatePurchasingPlanSync}
             onEdit={setEditingPurchasing}
             onDelete={(id) => {
               const item = currentProjPurchasing.find(p => p.id === id);
@@ -1313,7 +1387,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       </Modal>
 
       {/* 1. Modal Kế Hoạch Vật Tư */}
-      <Modal isOpen={isNewPlanOpen} onClose={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setSectionPlanIdForNew(null); setIsCreatingSectionHeader(false); setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: false}); }} title={isCreatingSectionHeader ? 'Thêm Đầu mục lớn — Kế hoạch Vật tư' : 'Thêm Hạng mục — Kế hoạch Vật tư'} size="xl">
+      <Modal isOpen={isNewPlanOpen} onClose={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setSectionPlanIdForNew(null); setIsCreatingSectionHeader(false); setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true}); }} title={isCreatingSectionHeader ? 'Thêm Đầu mục lớn — Kế hoạch Vật tư' : 'Thêm Hạng mục — Kế hoạch Vật tư'} size="xl">
         <form onSubmit={async (e) => {
           e.preventDefault();
           const parentId = isCreatingSectionHeader ? null : (parentPlanIdForNew || sectionPlanIdForNew || null);
@@ -1469,7 +1543,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           });
 
           // Reset form
-          setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: false});
+          setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true});
 
           setIsNewPlanOpen(false);
           setParentPlanIdForNew(null);
@@ -1617,8 +1691,25 @@ export const ProjectCostPlanPage: React.FC = () => {
               </div>
             </>
           )}
+          
+          {isCreatingSectionHeader && (
+            <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 mb-3">
+              <input
+                type="checkbox"
+                id="isContractorCheckHeader"
+                checked={!!newPlanData.isContractor}
+                onChange={(e) => setNewPlanData({...newPlanData, isContractor: e.target.checked})}
+                className="w-4 h-4 accent-amber-500"
+              />
+              <label htmlFor="isContractorCheckHeader" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
+                Tự động đồng bộ Đầu mục này sang tab Mua hàng
+              </label>
+            </div>
+          )}
+
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newPlanData.notes} onChange={(e) => setNewPlanData({...newPlanData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setIsCreatingSectionHeader(false); setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: false}); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">{isCreatingSectionHeader ? 'Lưu Đầu Mục' : 'Thêm Hạng Mục'}</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setIsCreatingSectionHeader(false); setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true}); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">{isCreatingSectionHeader ? 'Lưu Đầu Mục' : 'Thêm Hạng Mục'}</button></div>
         </form>
       </Modal>
 
@@ -1709,7 +1800,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
       {/* 2. Modal Mua Sắm Hàng Hóa */}
       <Modal isOpen={isNewPurchasingOpen} onClose={() => { setIsNewPurchasingOpen(false); setParentPurchasingIdForNew(null); setSectionPurchasingIdForNew(null); setIsCreatingSectionHeader(false); setNewPurchasingData({stt: '', content: '', unit: 'bộ', volumeContract: 0, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''}); }} title={isCreatingSectionHeader ? 'Thêm Đầu mục lớn — Mua sắm Hàng hóa' : 'Thêm Hạng mục — Mua sắm Hàng hóa'} size="xl">
-        <form onSubmit={(e) => {
+        <form onSubmit={async (e) => {
           e.preventDefault();
           const parentId = isCreatingSectionHeader ? null : (parentPurchasingIdForNew || sectionPurchasingIdForNew || null);
           const contractVol = Number(newPurchasingData.volumeContract || 1);
@@ -1739,28 +1830,6 @@ export const ProjectCostPlanPage: React.FC = () => {
             }
             return String(currentProjPurchasing.filter(p => !p.parentId).length + 1);
           })();
-
-          addPurchasingPlan({
-            projectCode: selectedProject,
-            stt: autoStt,
-            content: newPurchasingData.content || '',
-            unit: newPurchasingData.unit || 'bộ',
-            volumeContract: contractVol,
-            volumeOrder: orderVol,
-            unitPrice: unitPrice,
-            vatRate: vat,
-            vatAmount: taxAmt,
-            totalAmount: totalAmt,
-            prepayPercent: prepayPct,
-            prepayAmount: prepayAmt,
-            remainingAmount: remainingAmt,
-            orderStatus: newPurchasingData.orderStatus || 'Chưa đặt hàng',
-            contractStatus: newPurchasingData.contractStatus || 'Chưa ký',
-            paymentDate: newPurchasingData.paymentDate || '',
-            invoiceStatus: newPurchasingData.invoiceStatus || 'Chưa xuất',
-            notes: isCreatingSectionHeader && !parentId ? '[section]' : (newPurchasingData.notes || ''),
-            parentId: parentId || undefined
-          });
 
           // Đồng bộ ngược lại sang tab Kế hoạch Vật tư (luôn là nhà thầu)
           let materialParentId = undefined;
@@ -1802,8 +1871,13 @@ export const ProjectCostPlanPage: React.FC = () => {
           const currentSectionName = (() => {
             if (isCreatingSectionHeader) return newPurchasingData.content || '';
             if (parentId) {
-              const parentObj = currentProjPurchasing.find(p => p.id === parentId);
-              return parentObj?.content || '';
+              let currentObj = currentProjPurchasing.find(p => p.id === parentId);
+              let safeCount = 0;
+              while (currentObj && !isSectionMarker(currentObj.stt, currentObj.notes) && currentObj.parentId && safeCount < 50) {
+                currentObj = currentProjPurchasing.find(p => p.id === currentObj!.parentId);
+                safeCount++;
+              }
+              return currentObj?.content || '';
             }
             const sectionId = sectionPurchasingIdForNew;
             if (sectionId) {
@@ -1846,6 +1920,28 @@ export const ProjectCostPlanPage: React.FC = () => {
             sectionName: currentSectionName,
             notes: `[contractor] ${newPurchasingData.notes || ''}`.trim(),
             parentId: taskParentId
+          });
+
+          addPurchasingPlan({
+            projectCode: selectedProject,
+            stt: autoStt,
+            content: newPurchasingData.content || '',
+            unit: newPurchasingData.unit || 'bộ',
+            volumeContract: contractVol,
+            volumeOrder: orderVol,
+            unitPrice: unitPrice,
+            vatRate: vat,
+            vatAmount: taxAmt,
+            totalAmount: totalAmt,
+            prepayPercent: prepayPct,
+            prepayAmount: prepayAmt,
+            remainingAmount: remainingAmt,
+            orderStatus: newPurchasingData.orderStatus || 'Chưa đặt hàng',
+            contractStatus: newPurchasingData.contractStatus || 'Chưa ký',
+            paymentDate: newPurchasingData.paymentDate || '',
+            invoiceStatus: newPurchasingData.invoiceStatus || 'Chưa xuất',
+            notes: isCreatingSectionHeader && !parentId ? '[section]' : newPurchasingData.notes || '',
+            parentId: parentId || undefined
           });
 
           // Reset form
@@ -2050,7 +2146,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             const prepayAmt = totalAmt * prepayPct;
             const remainingAmt = totalAmt - prepayAmt;
 
-            updatePurchasingPlan(editingPurchasing.id, {
+            handleUpdatePurchasingPlanSync(editingPurchasing.id, {
               ...editingPurchasing,
               vatAmount: taxAmt,
               totalAmount: totalAmt,
@@ -2479,6 +2575,8 @@ export const ProjectCostPlanPage: React.FC = () => {
     </div>
   );
 };
+
+
 
 
 

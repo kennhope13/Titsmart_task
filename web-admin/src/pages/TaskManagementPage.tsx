@@ -160,6 +160,22 @@ const compareTaskStt = (a?: string, b?: string) => {
 };
 
 
+const cleanNotes = (value?: string) => {
+  return String(value || '')
+    .replace(/\[order:[\d.]+\]/g, '')
+    .replace(/\[section\]/gi, '')
+    .replace(/\[contractor\]/gi, '')
+    .replace(/\[owner\]/gi, '')
+    .replace(/Nhà thầu cung cấp/gi, '')
+    .replace(/Chủ đầu tư cung cấp/gi, '')
+    .replace(/Import từ phụ lục dự án/gi, '')
+    .replace(/Đồng bộ từ phụ lục khi tạo dự án/gi, '')
+    .split('|')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .join(' | ');
+};
+
 // Helper function to truncate long text cleanly
 const truncateText = (text: string, maxLength: number = 40): string => {
   if (!text) return '';
@@ -1509,11 +1525,11 @@ export const TaskManagementPage: React.FC = () => {
                         )}
                       </td>
                       <td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-center cursor-pointer"><span className={'material-symbols-outlined text-sm ' + (isFinished ? 'text-emerald-600' : 'text-slate-300')}>{isFinished ? 'check_circle' : 'radio_button_unchecked'}</span></td>
-                      <td className="py-1.5 px-1 text-slate-500 truncate" title={t.notes || ''}>
+                      <td className="py-1.5 px-1 text-slate-500 truncate" title={cleanNotes(t.notes)}>
                         {editingCell?.id === t.id && editingCell?.field === 'notes' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-700 font-bold focus:outline-primary text-[10px]" />
                         ) : (
-                          <span onClick={() => startEditing(t.id, 'notes', t.notes)} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">{t.notes || <span className="text-slate-300">-</span>}</span>
+                          <span onClick={() => startEditing(t.id, 'notes', t.notes)} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">{cleanNotes(t.notes) || <span className="text-slate-300">-</span>}</span>
                         )}
                       </td>
                     </tr>

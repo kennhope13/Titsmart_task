@@ -31,7 +31,21 @@ const isParentRow = (plan: ProjectMaterialPlan) => {
   return notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
 };
 
-const cleanNotes = (value?: string) => String(value || '').replace(/\s*\|?\s*\[(section|owner|contractor)\]\s*/gi, '').trim();
+const cleanNotes = (value?: string) => {
+  return String(value || '')
+    .replace(/\[order:[\d.]+\]/g, '')
+    .replace(/\[section\]/gi, '')
+    .replace(/\[contractor\]/gi, '')
+    .replace(/\[owner\]/gi, '')
+    .replace(/Nhà thầu cung cấp/gi, '')
+    .replace(/Chủ đầu tư cung cấp/gi, '')
+    .replace(/Import từ phụ lục dự án/gi, '')
+    .replace(/Đồng bộ từ phụ lục khi tạo dự án/gi, '')
+    .split('|')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .join(' | ');
+};
 
 const showNumber = (value?: number) => {
   const n = Number(value || 0);
@@ -125,7 +139,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
     const originalOrderMap = new Map<string, number>(filtered.map((r, i) => [r.id, orderTagValue(r.notes) ?? (1000000 - i)]));
 
     const getSectionIndexForItem = (plan: ProjectMaterialPlan, visited = new Set<string>()): number => {
-      if (visited.has(plan.id)) return -1;
+      if (visited.has(plan.id)) return Infinity;
       visited.add(plan.id);
 
       if (isParentRow(plan)) return sectionOrder.get(plan.id) ?? Infinity;
@@ -141,7 +155,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
       }
 
       const myPos = originalOrderMap.get(plan.id) ?? Infinity;
-      let bestSecIdx = -1;
+      let bestSecIdx = Infinity;
       let bestSecPos = -1;
       filtered.forEach(r => {
         if (isParentRow(r)) {
@@ -152,7 +166,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
           }
         }
       });
-      return bestSecIdx === -1 ? -1 : bestSecIdx;
+      return bestSecIdx === -1 ? Infinity : bestSecIdx;
     };
 
     return filtered.sort((a, b) => {

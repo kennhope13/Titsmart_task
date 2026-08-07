@@ -1,17 +1,33 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { Activity, Search, ArrowLeft } from 'lucide-react-native';
+import { Activity, Search, Clock, Calendar } from 'lucide-react-native';
 import { useRealtimeStore } from '../services/realtimeStore';
-import { colors } from '../theme';
-import { AppText, Card, Screen, ScreenHeader, SectionTitle } from '../components/MobileUI';
+import { colors, spacing, typography } from '../theme';
+import { AppText, Card, Screen, ScreenHeader } from '../components/MobileUI';
 
 export const ActivityLogScreen = () => {
   const { activityLogs } = useRealtimeStore();
   const [search, setSearch] = useState('');
   
-  const visible = useMemo(() => {
+  const groupedLogs = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    return activityLogs.filter((log) => !keyword || `${log.user} ${log.action} ${log.project}`.toLowerCase().includes(keyword));
+    const filtered = activityLogs.filter((log) => !keyword || `${log.user} ${log.action} ${log.project}`.toLowerCase().includes(keyword));
+    
+    return filtered.reduce((acc: Record<string, typeof activityLogs>, log) => {
+      const dateObj = new Date(log.timestamp);
+      let dateKey = 'Không xác định';
+      if (!Number.isNaN(dateObj.getTime())) {
+        const today = new Date();
+        const isToday = dateObj.getDate() === today.getDate() && dateObj.getMonth() === today.getMonth() && dateObj.getFullYear() === today.getFullYear();
+        dateKey = isToday ? 'Hôm nay' : dateObj.toLocaleDateString('vi-VN');
+      } else if (log.timestamp) {
+        dateKey = log.timestamp.split('T')[0].split(' ')[0]; // fallback
+      }
+      
+      if (!acc[dateKey]) acc[dateKey] = [];
+      acc[dateKey].push(log);
+      return acc;
+    }, {});
   }, [activityLogs, search]);
 
   const getInitials = (name?: string) => {
@@ -22,58 +38,72 @@ export const ActivityLogScreen = () => {
   return (
     <Screen style={styles.container}>
       <ScreenHeader
-        icon={<Activity size={21} color={colors.primary} />}
-        title="Lịch sử hoạt động"
-        subtitle="Nhật ký thao tác nghiệp vụ và đồng bộ dữ liệu"
+        icon={<Activity size={24} color={colors.primary} />}
+        title="Nhật ký hoạt động"
+        subtitle="Theo dõi lịch sử và các thao tác nghiệp vụ"
         badge={`${activityLogs.length}`}
       />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {/* Search */}
+      
+      <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
           <Search size={18} color={colors.slate[400]} />
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Tìm theo người thực hiện, hành động, dự án..."
+            placeholder="Tìm theo người thực hiện, thao tác..."
             placeholderTextColor={colors.slate[400]}
             style={styles.searchInput}
           />
         </View>
+      </View>
 
-        <SectionTitle title="Hoạt động gần đây" caption={`${visible.length} bản ghi chép`} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         
-        {/* Activity Timeline List */}
-        <View style={styles.list}>
-          {visible.map((log, index) => {
-            const initials = getInitials(log.user);
-            const dateObj = new Date(log.timestamp);
-            const dateStr = Number.isNaN(dateObj.getTime())
-              ? log.timestamp
-              : dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' - ' + dateObj.toLocaleDateString('vi-VN');
-
-            return (
-              <Card key={log.id || index} style={styles.row}>
-                <View style={styles.marker}>
-                  <AppText style={styles.markerText}>{initials}</AppText>
-                </View>
-                <View style={styles.copy}>
-                  <AppText style={styles.action} numberOfLines={2}>{log.action}</AppText>
-                  <View style={styles.metaRow}>
-                    <AppText style={styles.metaUser}>{log.user}</AppText>
-                    <View style={styles.bulletSeparator} />
-                    <AppText style={styles.metaProject}>{log.project || 'Hệ thống'}</AppText>
-                  </View>
-                  <AppText style={styles.time}>{dateStr}</AppText>
-                </View>
-              </Card>
-            );
-          })}
-          
-          {visible.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <AppText style={styles.empty}>Chưa ghi nhận hoạt động nào phù hợp.</AppText>
+        <View style={styles.listContainer}>
+          {Object.keys(groupedLogs).length === 0 ? (
+            <Card style={styles.emptyState}>
+              <Activity size={32} color={colors.slate[300]} style={{ marginBottom: 12 }} />
+              <AppText style={styles.emptyStateText}>Chưa ghi nhận hoạt động nào.</AppText>
             </Card>
-          ) : null}
+          ) : (
+            Object.entries(groupedLogs).map(([date, logs]) => (
+              <View key={date} style={styles.dateGroup}>
+                <View style={styles.dateHeader}>
+                  <Calendar size={16} color={colors.slate[500]} />
+                  <AppText style={styles.dateHeaderText}>{date}</AppText>
+                </View>
+
+                {logs.map((log, index) => {
+                  const initials = getInitials(log.user);
+                  const dateObj = new Date(log.timestamp);
+                  const timeStr = !Number.isNaN(dateObj.getTime()) ? dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
+
+                  return (
+                    <Card key={log.id || index} style={styles.logCard}>
+                      <View style={styles.markerContainer}>
+                        <AppText style={styles.markerText}>{initials}</AppText>
+                      </View>
+                      
+                      <View style={styles.cardContent}>
+                        <AppText style={styles.actionText} numberOfLines={2}>{log.action}</AppText>
+                        <View style={styles.metaInfo}>
+                          <AppText style={styles.metaUser}>{log.user}</AppText>
+                          <View style={styles.bulletPoint} />
+                          <AppText style={styles.metaProject}>{log.project || 'Hệ thống'}</AppText>
+                        </View>
+                      </View>
+                      
+                      {timeStr ? (
+                        <View style={styles.timeInfo}>
+                          <AppText style={styles.timeText}>{timeStr}</AppText>
+                        </View>
+                      ) : null}
+                    </Card>
+                  );
+                })}
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
     </Screen>
@@ -82,20 +112,63 @@ export const ActivityLogScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.slate[50] },
-  content: { paddingBottom: 28 },
-  searchBox: { margin: 16, marginBottom: 0, height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.slate[200], backgroundColor: colors.white, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  searchInput: { flex: 1, fontSize: 13, color: colors.slate[800], fontWeight: '500' },
-  list: { paddingHorizontal: 16, gap: 10 },
-  row: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', padding: 14, backgroundColor: colors.white },
-  marker: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  markerText: { fontSize: 11, fontWeight: '800', color: colors.primary },
-  copy: { flex: 1, justifyContent: 'center' },
-  action: { fontSize: 13.5, lineHeight: 18, fontWeight: '800', color: colors.slate[900] },
-  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  metaUser: { fontSize: 11, color: colors.slate[500], fontWeight: '700' },
-  bulletSeparator: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.slate[300], marginHorizontal: 8 },
-  metaProject: { fontSize: 11, color: colors.primary, fontWeight: '700' },
-  time: { marginTop: 4, fontSize: 10, color: colors.slate[400], fontWeight: '700' },
-  emptyCard: { padding: 20, alignItems: 'center' },
-  empty: { textAlign: 'center', color: colors.slate[400], fontSize: 13, fontStyle: 'italic' },
+  content: { paddingBottom: spacing.xxl },
+  searchContainer: {
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.slate[200],
+  },
+  searchBox: { 
+    height: 44, 
+    borderRadius: 12, 
+    borderWidth: 1, 
+    borderColor: colors.slate[200], 
+    backgroundColor: colors.slate[50], 
+    paddingHorizontal: spacing.md, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: spacing.sm 
+  },
+  searchInput: { flex: 1, fontSize: typography.fontSizes.md, color: colors.slate[800], fontWeight: typography.fontWeights.medium },
+  listContainer: { paddingHorizontal: spacing.lg, marginTop: spacing.md },
+  dateGroup: { marginBottom: spacing.xl },
+  dateHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md, paddingLeft: spacing.xs },
+  dateHeaderText: { fontSize: typography.fontSizes.md, fontWeight: typography.fontWeights.bold, color: colors.slate[700] },
+  logCard: { 
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md, 
+    marginBottom: spacing.sm,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.slate[100],
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
+    gap: spacing.md,
+  },
+  markerContainer: { 
+    width: 36, 
+    height: 36, 
+    borderRadius: 18, 
+    backgroundColor: colors.primaryLight, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+  },
+  markerText: { fontSize: typography.fontSizes.sm, fontWeight: typography.fontWeights.bold, color: colors.primary },
+  cardContent: { flex: 1, justifyContent: 'center' },
+  actionText: { fontSize: typography.fontSizes.md, lineHeight: 20, fontWeight: typography.fontWeights.semibold, color: colors.slate[900], marginBottom: 2 },
+  metaInfo: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+  metaUser: { fontSize: typography.fontSizes.xs, color: colors.slate[600], fontWeight: typography.fontWeights.medium },
+  bulletPoint: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.slate[300], marginHorizontal: spacing.sm },
+  metaProject: { fontSize: typography.fontSizes.xs, color: colors.primary, fontWeight: typography.fontWeights.medium },
+  timeInfo: { alignItems: 'flex-end', justifyContent: 'flex-start', height: '100%', paddingTop: 2 },
+  timeText: { fontSize: typography.fontSizes.xs, color: colors.slate[400], fontWeight: typography.fontWeights.semibold },
+  emptyState: { padding: spacing.xxl, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white, marginTop: spacing.md },
+  emptyStateText: { textAlign: 'center', color: colors.slate[500], fontSize: typography.fontSizes.md, fontWeight: typography.fontWeights.medium },
 });

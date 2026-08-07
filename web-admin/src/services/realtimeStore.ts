@@ -165,6 +165,7 @@ interface RealtimeStoreState {
   assignEngineer: (taskId: string, engineerId: string, engineerName: string) => void;
   addEngineer: (engineer: Omit<Engineer, 'id'>) => Engineer;
   createEngineer: (input: { name: string; phone?: string; email?: string; title?: string; projectCodes?: string[] }) => Promise<Engineer>;
+  updateEngineer: (id: string, input: { name: string; phone?: string; title?: string; projectCodes?: string[] }) => Promise<Engineer>;
   deleteTask: (id: string) => void;
 
   addMaterial: (mat: Omit<Material, 'id'>) => void;
@@ -706,6 +707,22 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       });
       get().logActivity('Đã thêm nhân sự: ' + input.name, input.name);
       return created;
+    },
+
+    updateEngineer: async (id, input) => {
+      const updated = await api.engineers.update(id, {
+        fullName: input.name,
+        phone: input.phone,
+        title: input.title,
+        projectCodes: input.projectCodes,
+      });
+      const engineers = await api.engineers.getAll();
+      set(() => {
+        persistAndNotify({ engineers });
+        return { engineers };
+      });
+      get().logActivity('Đã cập nhật nhân sự: ' + input.name, input.name);
+      return updated;
     },
 
     deleteTask: async (id) => {

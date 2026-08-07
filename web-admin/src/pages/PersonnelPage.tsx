@@ -12,17 +12,17 @@ const filters = [
 ];
 
 export const PersonnelPage: React.FC = () => {
-  const { engineers, projects, addEngineer, createEngineer, fetchProjects } = useRealtimeStore();
+  const { engineers, projects, addEngineer, createEngineer, updateEngineer, fetchProjects } = useRealtimeStore();
   const [filter, setFilter] = useState('all');
 
   const [lockedIds, setLockedIds] = useState<string[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState('Nhân viên/Thợ');
-  const [team, setTeam] = useState('Đội thi công 1');
   const [selectedProjectCodes, setSelectedProjectCodes] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
 
   const toggleProjectCode = (code: string) => {
     setSelectedProjectCodes(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
@@ -100,17 +100,34 @@ export const PersonnelPage: React.FC = () => {
     setLockedIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
   };
 
-  const people = useMemo(() => engineers.map((engineer, index) => ({
-    ...engineer,
-    assignedProjects: [
+  const resetForm = () => {
+    setEditingPersonId(null);
+    setName('');
+    setPhone('');
+    setRole('Nhân viên/Thợ');
+    setSelectedProjectCodes([]);
+  };
+
+  const closeForm = () => {
+    resetForm();
+    setIsFormOpen(false);
+  };
+
+  const people = useMemo(() => engineers.map((engineer, index) => {
+    const assignedProjects = [
       ...(engineer.managedProjects || []),
       ...(engineer.memberProjects || []),
-    ].filter((value, index, self) => self.findIndex((item) => item.code === value.code) === index),
-    code: `NV-${String(index + 1).padStart(3, '0')}`,
-    role: index <= 1 ? 'Quản lý' : 'Nhân viên/Thợ',
-    team: index % 2 === 0 ? 'Đội thi công 1' : 'Đội bảo trì',
-    locked: lockedIds.includes(engineer.id),
-  })).filter((person) => {
+    ].filter((value, assignedIndex, self) => self.findIndex((item) => item.code === value.code) === assignedIndex);
+
+    return {
+      ...engineer,
+      assignedProjects,
+      code: `NV-${String(index + 1).padStart(3, '0')}`,
+      role: engineer.title?.trim() || 'Nhân viên/Thợ',
+      team: assignedProjects[0]?.name || 'Chưa gán dự án',
+      locked: lockedIds.includes(engineer.id),
+    };
+  }).filter((person) => {
     const matchFilter = filter === 'all'
       || (filter === 'manager' && person.role.includes('Quản lý'))
       || (filter === 'worker' && person.role.includes('Nhân viên'))
@@ -119,26 +136,52 @@ export const PersonnelPage: React.FC = () => {
     return matchFilter;
   }), [engineers, filter, lockedIds]);
 
-  const handleAddPerson = async (event: React.FormEvent) => {
+  const openCreateModal = () => {
+    resetForm();
+    setIsFormOpen(true);
+  };
+
+  const openEditModal = (person: typeof people[number]) => {
+    setEditingPersonId(person.id);
+    setName(person.name || '');
+    setPhone(person.phone || '');
+    setRole(person.role || 'Nhân viên/Thợ');
+    setSelectedProjectCodes(person.assignedProjects.map((project) => project.code));
+    setIsFormOpen(true);
+  };
+
+  const handleSavePerson = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim() || submitting) return;
+    if (selectedProjectCodes.length === 0) {
+      triggerToast('Vui lòng chọn ít nhất 1 dự án cho nhân sự!', 'warning');
+      return;
+    }
     setSubmitting(true);
     try {
-      await createEngineer({
-        name: name.trim(),
-        phone,
-        title: role,
-        projectCodes: selectedProjectCodes,
-      });
-      triggerToast(
-        selectedProjectCodes.length > 0
-          ? `Đã thêm nhân sự "${name.trim()}" và gán ${selectedProjectCodes.length} dự án!`
-          : `Đã thêm nhân sự "${name.trim()}"!`,
-        'success'
-      );
-      setName(''); setPhone(''); setSelectedProjectCodes([]); setIsFormOpen(false);
+      if (editingPersonId) {
+        await updateEngineer(editingPersonId, {
+          name: name.trim(),
+          phone,
+          title: role,
+          projectCodes: selectedProjectCodes,
+        });
+        triggerToast(`Đã cập nhật nhân sự "${name.trim()}" thành công!`, 'success');
+      } else {
+        await createEngineer({
+          name: name.trim(),
+          phone,
+          title: role,
+          projectCodes: selectedProjectCodes,
+        });
+        triggerToast(`Đã thêm nhân sự "${name.trim()}" và gán ${selectedProjectCodes.length} dự án!`, 'success');
+      }
+      closeForm();
     } catch (e: any) {
-      triggerToast('Lỗi khi thêm nhân sự: ' + (e?.response?.data?.error || e.message || 'Không xác định'), 'warning');
+      triggerToast(
+        `${editingPersonId ? 'Lỗi khi cập nhật nhân sự: ' : 'Lỗi khi thêm nhân sự: '}${e?.response?.data?.error || e.message || 'Không xác định'}`,
+        'warning'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -174,7 +217,10 @@ export const PersonnelPage: React.FC = () => {
             <span className="material-symbols-outlined text-sm">file_download</span>
             Xuất Excel
           </button>
-          <button onClick={() => setIsFormOpen(true)} className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 flex items-center gap-1 shadow-xs">
+          <button
+            onClick={openCreateModal}
+            className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 flex items-center gap-1 shadow-xs"
+          >
             <span className="material-symbols-outlined text-sm align-[-2px]">add</span>Thêm nhân sự
           </button>
         </div>
@@ -191,7 +237,11 @@ export const PersonnelPage: React.FC = () => {
               <thead className="bg-slate-50 text-slate-500 uppercase text-[11px]"><tr><th className="text-left p-3">Họ tên</th><th className="text-left p-3">Mã NV</th><th className="text-left p-3">Vai trò</th><th className="text-left p-3">Dự án</th><th className="text-left p-3">SĐT</th><th className="text-left p-3">Trạng thái</th><th className="text-left p-3">Chức năng</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {people.map((person) => (
-                  <tr key={person.id} className="hover:bg-slate-50">
+                  <tr
+                    key={person.id}
+                    className="cursor-pointer hover:bg-slate-50"
+                    onClick={() => openEditModal(person)}
+                  >
                     <td className="p-3 text-sm font-semibold text-slate-900 tracking-tight">
                       <div className="truncate">{person.name}</div>
                       <div className="text-[11px] font-medium text-slate-500 mt-1">{person.team}</div>
@@ -211,7 +261,37 @@ export const PersonnelPage: React.FC = () => {
                     </td>
                     <td className="p-3 text-slate-600">{person.phone || 'Chưa cập nhật'}</td>
                     <td className="p-3"><span className={`px-2 py-1 rounded-full text-[11px] font-bold ${person.locked ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>
-                    <td className="p-3"><div className="flex flex-wrap gap-1.5"><button className="px-2 py-1 rounded border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">Sửa</button><button onClick={() => toggleLock(person.id)} className="px-2 py-1 rounded border border-slate-200 font-bold text-primary hover:bg-blue-50">{person.locked ? 'Mở khóa' : 'Khóa'}</button><button className="px-2 py-1 rounded border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">Gán đội/QL</button></div></td>
+                    <td className="p-3">
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEditModal(person);
+                          }}
+                          className="px-2 py-1 rounded border border-slate-200 font-bold text-slate-600 hover:bg-slate-50"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            toggleLock(person.id);
+                          }}
+                          className="px-2 py-1 rounded border border-slate-200 font-bold text-primary hover:bg-blue-50"
+                        >
+                          {person.locked ? 'Mở khóa' : 'Khóa'}
+                        </button>
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEditModal(person);
+                          }}
+                          className="px-2 py-1 rounded border border-slate-200 font-bold text-slate-600 hover:bg-slate-50"
+                        >
+                          Gán đội/QL
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -225,21 +305,26 @@ export const PersonnelPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
           <div className="bg-white rounded-xl w-full max-w-md shadow-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-extrabold text-lg text-slate-900">Thêm nhân sự</h3>
-              <button type="button" onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <h3 className="font-extrabold text-lg text-slate-900">{editingPersonId ? 'Chỉnh sửa nhân sự' : 'Thêm nhân sự'}</h3>
+              <button
+                type="button"
+                onClick={closeForm}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <form onSubmit={handleAddPerson} className="p-5 space-y-4">
+            <form onSubmit={handleSavePerson} className="p-5 space-y-4">
               <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Họ tên" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
               <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Số điện thoại" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
               <select value={role} onChange={(event) => setRole(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                 <option>Quản lý</option><option>Nhân viên/Thợ</option>
               </select>
-              <input value={team} onChange={(event) => setTeam(event.target.value)} placeholder="Đội/Nhóm" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">Dự án <span className="font-normal text-slate-400">(chọn 1 hoặc nhiều)</span></label>
-                <div className="max-h-36 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1.5 bg-slate-50">
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                  Dự án <span className="text-red-500">*</span> <span className="font-normal text-slate-400">(chọn 1 hoặc nhiều)</span>
+                </label>
+                <div className={`max-h-36 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 ${selectedProjectCodes.length === 0 ? 'border-red-200' : 'border-slate-200'}`}>
                   {projects.length === 0 && <p className="text-[11px] text-slate-400">Chưa có dự án nào.</p>}
                   {projects.map((p) => (
                     <label key={p.code} className="flex items-center gap-2 text-xs cursor-pointer">
@@ -249,11 +334,20 @@ export const PersonnelPage: React.FC = () => {
                     </label>
                   ))}
                 </div>
+                <p className={`mt-1 text-[11px] ${selectedProjectCodes.length > 0 ? 'text-primary' : 'text-red-500'}`}>
+                  {selectedProjectCodes.length > 0
+                    ? `Đã chọn ${selectedProjectCodes.length} dự án cho nhân sự này.`
+                    : 'Bắt buộc chọn ít nhất 1 dự án khi tạo nhân sự.'}
+                </p>
               </div>
               <div className="pt-2 flex gap-3">
-                <button type="button" onClick={() => setIsFormOpen(false)} className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200">Hủy</button>
-                <button type="submit" disabled={submitting} className="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 disabled:opacity-50">
-                  {submitting ? 'Đang thêm...' : 'Thêm nhân sự'}
+                <button type="button" onClick={closeForm} className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200">Hủy</button>
+                <button
+                  type="submit"
+                  disabled={submitting || projects.length === 0}
+                  className="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 disabled:opacity-50"
+                >
+                  {submitting ? (editingPersonId ? 'Đang lưu...' : 'Đang thêm...') : (editingPersonId ? 'Lưu thay đổi' : 'Thêm nhân sự')}
                 </button>
               </div>
             </form>
