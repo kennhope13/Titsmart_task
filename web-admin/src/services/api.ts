@@ -62,6 +62,7 @@ export const api = {
       (await axios.post(`${API_URL}/users`, data)).data,
     update: async (id: string, data: { fullName: string; phone?: string; title?: string; projectCodes?: string[] }) =>
       (await axios.put(`${API_URL}/users/${id}`, data)).data,
+    delete: async (id: string) => (await axios.delete(`${API_URL}/users/${id}`)).data,
   },
   activityLogs: {
     getAll: async () => (await axios.get(`${API_URL}/activity-logs`)).data,

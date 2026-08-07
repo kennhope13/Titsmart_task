@@ -166,6 +166,7 @@ interface RealtimeStoreState {
   addEngineer: (engineer: Omit<Engineer, 'id'>) => Engineer;
   createEngineer: (input: { name: string; phone?: string; email?: string; title?: string; projectCodes?: string[] }) => Promise<Engineer>;
   updateEngineer: (id: string, input: { name: string; phone?: string; title?: string; projectCodes?: string[] }) => Promise<Engineer>;
+  deleteEngineer: (id: string) => Promise<void>;
   deleteTask: (id: string) => void;
 
   addMaterial: (mat: Omit<Material, 'id'>) => void;
@@ -725,6 +726,16 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       return updated;
     },
 
+    deleteEngineer: async (id) => {
+      await api.engineers.delete(id);
+      const engineers = await api.engineers.getAll();
+      set(() => {
+        persistAndNotify({ engineers });
+        return { engineers };
+      });
+      get().logActivity('Đã xóa nhân sự', 'Hệ thống');
+    },
+
     deleteTask: async (id) => {
       try {
         const taskToDelete = get().tasks.find(t => t.id === id);
@@ -930,6 +941,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ projects: nextProjs });
           return { projects: nextProjs };
         });
+        get().fetchEngineers();
         return createdProj;
       } catch (e) {
         console.error('Failed to add project', e);

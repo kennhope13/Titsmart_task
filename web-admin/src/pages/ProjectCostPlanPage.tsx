@@ -92,6 +92,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     deleteLaborPayroll,
     activityLogs,
     deleteTask,
+    updateTask,
   } = useRealtimeStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,7 +129,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           contractVolume: updates.volumeContract !== undefined ? updates.volumeContract : matchingMaterial.contractVolume
         });
       } else {
-        triggerToast(`Không tìm thấy mục tương ứng trong Kế hoạch vật tư! (STT: ${existing.stt}, Nội dung: ${existing.content})`, 'error');
+        triggerToast(`Không tìm thấy mục tương ứng trong Kế hoạch vật tư! (STT: ${existing.stt}, Nội dung: ${existing.content})`, 'warning');
       }
 
       const matchingTask = tasks.find(t => 

@@ -45,6 +45,8 @@ export interface Project {
   totalTasks: number;
   completedTasks: number;
   issueTasksCount: number;
+  managerId?: string;
+  memberIds?: string[];
   managerName: string;
   members?: string[]; // Danh sách thành viên (ID)
   startDate?: string;
@@ -118,6 +120,7 @@ export interface Issue {
 
 export interface Engineer {
   id: string;
+  code?: string;
   name: string;
   title: string;
   avatar: string;

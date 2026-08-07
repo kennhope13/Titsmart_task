@@ -125,12 +125,14 @@ export const ProjectManagementPage: React.FC = () => {
   const [newProjLocation, setNewProjLocation] = useState('');
   const [newProjClient, setNewProjClient] = useState('');
   const [newProjContractValue, setNewProjContractValue] = useState('');
-  const [newProjManagerId, setNewProjManagerId] = useState(engineers[0]?.id || '');
-  const [newManagerName, setNewManagerName] = useState('');
-  const [newManagerTitle, setNewManagerTitle] = useState('Ch\u1ec9 huy tr\u01b0\u1edfng c\u00f4ng tr\u00ecnh');
+  const [selectedEngineerIds, setSelectedEngineerIds] = useState<string[]>([]);
   const [pendingProjectTasks, setPendingProjectTasks] = useState<NonNullable<WebOcrExtractedData['tableTasks']>>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+
+  const toggleEngineerId = (id: string) => {
+    setSelectedEngineerIds(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
+  };
 
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => setToastState({ show: true, message, type });
 
@@ -236,12 +238,10 @@ export const ProjectManagementPage: React.FC = () => {
     setLoading(true);
     setLoadingMessage('Đang tạo dự án...');
     try {
-    const selectedManager = engineers.find((eng) => eng.id === newProjManagerId);
-    const createdManager = newProjManagerId === '__NEW__' && newManagerName.trim()
-      ? addEngineer({ name: newManagerName.trim(), title: newManagerTitle.trim() || 'Ch\u1ec9 huy tr\u01b0\u1edfng c\u00f4ng tr\u00ecnh', avatar: '', phone: '', email: '' })
-      : null;
-    const finalManager = createdManager || selectedManager;
     const code = newProjCode.trim() ? newProjCode.trim().toUpperCase() : slugProjectCode(newProjName);
+
+    const selectedEngineers = engineers.filter(eng => selectedEngineerIds.includes(eng.id));
+    const managerName = selectedEngineers.length > 0 ? selectedEngineers.map(e => e.name).join(', ') : TEXT.unassigned;
 
     const newProject: Omit<Project, 'id'> = {
       code,
@@ -255,8 +255,10 @@ export const ProjectManagementPage: React.FC = () => {
       totalTasks: 0,
       completedTasks: 0,
       issueTasksCount: 0,
-      managerName: finalManager?.name || TEXT.unassigned,
-      members: finalManager?.id ? [finalManager.id] : [],
+      managerId: selectedEngineerIds[0],
+      managerName: managerName,
+      members: selectedEngineerIds,
+      memberIds: selectedEngineerIds,
       startDate: todayStamp(),
     };
 
@@ -376,9 +378,7 @@ export const ProjectManagementPage: React.FC = () => {
     setNewProjLocation('');
     setNewProjClient('');
     setNewProjContractValue('');
-    setNewProjManagerId(engineers[0]?.id || '');
-    setNewManagerName('');
-    setNewManagerTitle('Ch\u1ec9 huy tr\u01b0\u1edfng c\u00f4ng tr\u00ecnh');
+    setSelectedEngineerIds([]);
     setPendingProjectTasks([]);
     } finally {
       setLoading(false);
@@ -575,8 +575,20 @@ export const ProjectManagementPage: React.FC = () => {
             <div><label className="block font-bold text-slate-700 mb-1">Chủ đầu tư</label><input value={newProjClient} onChange={(event) => setNewProjClient(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div>
             <div><label className="block font-bold text-slate-700 mb-1">Giá trị hợp đồng</label><input value={newProjContractValue} onChange={(event) => setNewProjContractValue(event.target.value)} inputMode="numeric" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div>
           </div>
-          <div><label className="block font-bold text-slate-700 mb-1">Chỉ huy trưởng</label><select value={newProjManagerId} onChange={(event) => setNewProjManagerId(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-primary focus:outline-none"><option value="">-- Chọn Chỉ huy trưởng --</option>{engineers.map((eng) => <option key={eng.id} value={eng.id}>{eng.name}</option>)}<option value="__NEW__">+ Thêm người mới...</option></select></div>
-          {newProjManagerId === '__NEW__' && <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-blue-100 bg-blue-50 p-3"><div><label className="block font-bold text-slate-700 mb-1">Tên người mới *</label><input required value={newManagerName} onChange={(event) => setNewManagerName(event.target.value)} className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div><div><label className="block font-bold text-slate-700 mb-1">Chức danh</label><input value={newManagerTitle} onChange={(event) => setNewManagerTitle(event.target.value)} className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div></div>}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Nhân sự / Quản lý dự án</label>
+            <div className={`max-h-36 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 ${selectedEngineerIds.length === 0 ? 'border-red-200' : 'border-slate-200'}`}>
+              {engineers.length === 0 && <p className="text-[11px] text-slate-400">Chưa có nhân sự nào.</p>}
+              {engineers.map((eng) => (
+                <label key={eng.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input type="checkbox" checked={selectedEngineerIds.includes(eng.id)} onChange={() => toggleEngineerId(eng.id)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
+                  <span className="font-semibold text-slate-700">{eng.name}</span>
+                  <span className="text-slate-400">({eng.title || 'Nhân viên'})</span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">Người đầu tiên được chọn sẽ hiển thị dưới dạng Chỉ huy trưởng chính.</p>
+          </div>
           {pendingProjectTasks.length > 0 && <p className="text-sm text-emerald-700 font-semibold">Khi lưu dự án, hệ thống sẽ đưa {pendingProjectTasks.length} dòng vào tab Công việc và KH Vật tư.</p>}
           <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setIsNewProjectModalOpen(false)} className="px-4 py-2 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">{TEXT.cancel}</button><button type="submit" className="px-5 py-2 bg-primary text-white rounded-lg font-bold hover:opacity-90">{TEXT.create}</button></div>
         </form>

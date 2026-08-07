@@ -83,9 +83,30 @@ export const getProjectById = async (req: Request, res: Response) => {
 export const createProject = async (req: Request, res: Response) => {
   try {
     const data = mapToPrisma(req.body);
-    const project = await prisma.project.create({
-      data,
+    const memberIds = req.body.memberIds;
+
+    const project = await prisma.$transaction(async (tx) => {
+      const proj = await tx.project.create({
+        data,
+      });
+
+      if (Array.isArray(memberIds) && memberIds.length > 0) {
+        const validMemberIds = memberIds.map(cleanUuid).filter(Boolean) as string[];
+        if (validMemberIds.length > 0) {
+          await tx.projectMember.createMany({
+            data: validMemberIds.map((id) => ({
+              user_id: id,
+              project_id: proj.id,
+              role: 'manager',
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      return proj;
     });
+
     res.status(201).json(mapToFrontend(project));
   } catch (error) {
     console.error(error);
@@ -97,10 +118,35 @@ export const updateProject = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = mapToPrisma(req.body);
-    const project = await prisma.project.update({
-      where: { id },
-      data,
+    const memberIds = req.body.memberIds;
+
+    const project = await prisma.$transaction(async (tx) => {
+      const proj = await tx.project.update({
+        where: { id },
+        data,
+      });
+
+      if (Array.isArray(memberIds)) {
+        await tx.projectMember.deleteMany({
+          where: { project_id: id, role: 'manager' }, // only replace managers to not affect workers
+        });
+        
+        const validMemberIds = memberIds.map(cleanUuid).filter(Boolean) as string[];
+        if (validMemberIds.length > 0) {
+          await tx.projectMember.createMany({
+            data: validMemberIds.map((memberId) => ({
+              user_id: memberId,
+              project_id: id,
+              role: 'manager',
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      return proj;
     });
+
     res.json(mapToFrontend(project));
   } catch (error) {
     console.error(error);
