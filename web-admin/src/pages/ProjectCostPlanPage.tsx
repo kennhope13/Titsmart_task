@@ -402,6 +402,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
           const pendingTasks: any[] = [];
           let globalOrder = 0; // thứ tự tuyệt đối trong file, dùng để sort sau
+          let romanSectionCounter = 0; // Đếm số đầu mục lớn để chuyển thành số La Mã
 
           wb.SheetNames.forEach((sheetName) => {
             const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets[sheetName], { header: 1, defval: '' });
@@ -437,13 +438,19 @@ export const ProjectCostPlanPage: React.FC = () => {
               const isSummaryRow = normalizedContent.includes('tong cong') || (!stt && normalizedContent === 'cong');
               if (isSummaryRow) return;
 
-              const isSectionRow = romanToNumber(stt) !== null;
+              const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
+              const numericParentRegex = /^\d+$/;
+              const isSectionRow = romanRegex.test(stt) || (numericParentRegex.test(stt) && volumeContract === 0 && !String(row[unitCol] || '').trim());
 
-              // Giữ STT gốc từ Excel, không thay đổi
-              const effectiveStt = stt;
+              let effectiveStt = stt;
+              if (isSectionRow) {
+                romanSectionCounter++;
+                effectiveStt = toRoman(romanSectionCounter);
+              }
+              
               // Lưu thứ tự tuyệt đối vào notes dạng [order:NNN] để sort đúng sau khi load
               const orderTag = `[order:${String(++globalOrder).padStart(5, '0')}]`;
-              const supplyScope = normalizeImportText(content).includes('nha thau cung cap') ? 'contractor' : normalizeImportText(content).includes('chu dau tu cung cap') ? 'owner' : 'unknown';
+              const supplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
               const rowKey = baselineKey(effectiveStt, content);
               const baseNote = [isSectionRow ? '[section]' : '', supplyScope === 'contractor' ? '[contractor]' : '', supplyScope === 'owner' ? '[owner]' : '', orderTag, String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
               const existingMaterial = materialBaselineMap.get(rowKey);
@@ -478,7 +485,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               }
               appendixMaterialCount++;
 
-              if (isSectionRow || (supplyScope === 'contractor' && (volumeContract > 0 || unitPrice > 0 || totalAmount > 0))) {
+              if ((isSectionRow && supplyScope !== 'owner') || (supplyScope === 'contractor' && (volumeContract > 0 || unitPrice > 0 || totalAmount > 0))) {
                 const computedVatAmount = vatAmount || (vatRate ? totalBeforeVat * vatRate / 100 : 0);
                 const totalWithVat = totalAmount || totalBeforeVat + computedVatAmount;
 

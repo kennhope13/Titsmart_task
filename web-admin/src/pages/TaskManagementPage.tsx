@@ -850,6 +850,15 @@ export const TaskManagementPage: React.FC = () => {
                m.jobContent?.trim().toLowerCase() === finalSectionName.trim().toLowerCase()
         );
 
+        const normalizeVn = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
+        const sectionIsContractor =
+          (sectionInMaterial && (sectionInMaterial.supplyScope === 'contractor' || normalizeVn(sectionInMaterial.jobContent || '').includes('nha thau cung cap') || normalizeVn(sectionInMaterial.jobContent || '').includes('ben b cung cap'))) ||
+          normalizeVn(finalSectionName).includes('nha thau cung cap') || normalizeVn(finalSectionName).includes('ben b cung cap');
+
+        const sectionIsOwner =
+          (sectionInMaterial && (sectionInMaterial.supplyScope === 'owner' || normalizeVn(sectionInMaterial.jobContent || '').includes('chu dau tu cung cap') || normalizeVn(sectionInMaterial.jobContent || '').includes('ben a cung cap'))) ||
+          normalizeVn(finalSectionName).includes('chu dau tu cung cap') || normalizeVn(finalSectionName).includes('ben a cung cap');
+
         // Nếu chưa có section này trong MaterialPlan, tạo section trước
         if (!sectionInMaterial && finalSectionName) {
           const sectionCount = materialPlans.filter(
@@ -874,27 +883,29 @@ export const TaskManagementPage: React.FC = () => {
             supplyScope: 'unknown',
             notes: '[section]',
           });
-          // Đồng bộ section header sang Mua hàng
-          addPurchasingPlan({
-            projectCode,
-            stt: sectionStt,
-            content: finalSectionName,
-            unit: '',
-            volumeContract: 0,
-            volumeOrder: 0,
-            unitPrice: 0,
-            vatRate: 10,
-            vatAmount: 0,
-            totalAmount: 0,
-            prepayPercent: 0,
-            prepayAmount: 0,
-            remainingAmount: 0,
-            orderStatus: 'Chưa đặt hàng',
-            contractStatus: 'Chưa ký',
-            paymentDate: '',
-            invoiceStatus: 'Chưa xuất',
-            notes: '[section]',
-          });
+          if (!sectionIsOwner) {
+            // Đồng bộ section header sang Mua hàng
+            addPurchasingPlan({
+              projectCode,
+              stt: sectionStt,
+              content: finalSectionName,
+              unit: '',
+              volumeContract: 0,
+              volumeOrder: 0,
+              unitPrice: 0,
+              vatRate: 10,
+              vatAmount: 0,
+              totalAmount: 0,
+              prepayPercent: 0,
+              prepayAmount: 0,
+              remainingAmount: 0,
+              orderStatus: 'Chưa đặt hàng',
+              contractStatus: 'Chưa ký',
+              paymentDate: '',
+              invoiceStatus: 'Chưa xuất',
+              notes: '[section]',
+            });
+          }
         }
 
         // Tìm section cha trong PurchasingPlan theo sectionName
@@ -905,11 +916,7 @@ export const TaskManagementPage: React.FC = () => {
                p.content?.trim().toLowerCase() === finalSectionName.trim().toLowerCase()
         );
 
-        // Kiểm tra section cha có phải nhà thầu không
-        const normalizeVn = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
-        const sectionIsContractor =
-          (sectionInMaterial && (sectionInMaterial.supplyScope === 'contractor' || normalizeVn(sectionInMaterial.jobContent || '').includes('nha thau cung cap'))) ||
-          normalizeVn(finalSectionName).includes('nha thau cung cap');
+        // (Các biến sectionIsContractor và sectionIsOwner đã được định nghĩa ở trên)
 
         // Tìm item cha trong MaterialPlan tương ứng với task cha (để gắn parentId đúng)
         const parentTask = validatedParentId ? tasks.find(t => t.id === validatedParentId) : null;
@@ -943,28 +950,30 @@ export const TaskManagementPage: React.FC = () => {
           parentId: parentMaterialPlan?.id || sectionInMaterial?.id,
         });
 
-        // Tạo PurchasingPlan cho mọi hạng mục (không chỉ nhà thầu)
-        addPurchasingPlan({
-          projectCode,
-          stt: taskStt,
-          content: name,
-          unit: unit,
-          volumeContract: volume,
-          volumeOrder: 0,
-          unitPrice: 0,
-          vatRate: 10,
-          vatAmount: 0,
-          totalAmount: 0,
-          prepayPercent: 0,
-          prepayAmount: 0,
-          remainingAmount: 0,
-          orderStatus: 'Chưa đặt hàng',
-          contractStatus: 'Chưa ký',
-          paymentDate: '',
-          invoiceStatus: 'Chưa xuất',
-          notes: itemNotes,
-          parentId: parentPurchasingPlan?.id || sectionInPurchasing?.id,
-        });
+        if (!sectionIsOwner) {
+          // Tạo PurchasingPlan cho mọi hạng mục (trừ hạng mục của chủ đầu tư)
+          addPurchasingPlan({
+            projectCode,
+            stt: taskStt,
+            content: name,
+            unit: unit,
+            volumeContract: volume,
+            volumeOrder: 0,
+            unitPrice: 0,
+            vatRate: 10,
+            vatAmount: 0,
+            totalAmount: 0,
+            prepayPercent: 0,
+            prepayAmount: 0,
+            remainingAmount: 0,
+            orderStatus: 'Chưa đặt hàng',
+            contractStatus: 'Chưa ký',
+            paymentDate: '',
+            invoiceStatus: 'Chưa xuất',
+            notes: itemNotes,
+            parentId: parentPurchasingPlan?.id || sectionInPurchasing?.id,
+          });
+        }
       }
     }
 
