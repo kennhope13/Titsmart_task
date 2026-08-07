@@ -1458,19 +1458,23 @@ export const ProjectCostPlanPage: React.FC = () => {
             const contractVol = Number(newPlanData.contractVolume || 1);
             let purchasingParentId = undefined;
             if (parentId) {
-              const exactMatch = currentProjPurchasing.find(p => p.materialPlanId === parentId);
-              if (exactMatch) {
-                purchasingParentId = exactMatch.id;
-              } else {
-                const parentMaterial = currentProjMaterialPlans.find(p => p.id === parentId);
-                if (parentMaterial) {
-                  const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-                  const matchingPurchasing = currentProjPurchasing.find(
-                    p => norm(p.stt) === norm(parentMaterial.stt) && norm(p.content) === norm(parentMaterial.jobContent)
-                  );
-                  if (matchingPurchasing) purchasingParentId = matchingPurchasing.id;
-                }
-              }
+              const findPurchasingMatch = (matId: string): string | undefined => {
+                const exactMatch = currentProjPurchasing.find(p => p.materialPlanId === matId);
+                if (exactMatch) return exactMatch.id;
+                
+                const matNode = currentProjMaterialPlans.find(p => p.id === matId);
+                if (!matNode) return undefined;
+                
+                const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+                const matchingPurchasing = currentProjPurchasing.find(
+                  p => norm(p.stt) === norm(matNode.stt) && norm(p.content) === norm(matNode.jobContent)
+                );
+                if (matchingPurchasing) return matchingPurchasing.id;
+                
+                if (matNode.parentId) return findPurchasingMatch(matNode.parentId);
+                return undefined;
+              };
+              purchasingParentId = findPurchasingMatch(parentId);
             }
 
             addPurchasingPlan({
