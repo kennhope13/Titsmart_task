@@ -863,6 +863,8 @@ export const ProjectCostPlanPage: React.FC = () => {
   const projectMetrics = useMemo(() => {
     const materialRows = currentProjMaterialPlans.filter((p) => !isSectionMarker(p.stt, p.notes));
     const purchasingRows = currentProjPurchasing.filter((p) => !isSectionMarker(p.stt, p.notes));
+  console.log("ALL PURCHASING ITEMS:", currentProjPurchasing.length);
+  console.log("CONTRACTOR PURCHASING ITEMS:", currentProjPurchasing.filter(p => !isSectionMarker(p.stt, p.notes)).length);
     const normalizeStatusText = (value?: string) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
     const calcPurchasingTotal = (p: ProjectPurchasing) => {
       const vatAmount = Number(p.vatAmount || 0) || (Number(p.volumeOrder || 0) * Number(p.unitPrice || 0) * Number(p.vatRate || 0)) / 100;
@@ -1596,9 +1598,10 @@ export const ProjectCostPlanPage: React.FC = () => {
                       setSectionPlanIdForNew(e.target.value || null);
                       setParentPlanIdForNew(null);
                     }}
+                    required={!isCreatingSectionHeader}
                     className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
                   >
-                    <option value="">-- Chọn Đầu mục cha --</option>
+                    <option value="" disabled>-- Chọn Đầu mục cha --</option>
                     {currentProjMaterialPlans.filter(p => isSectionMarker(p.stt, p.notes)).map(sec => (
                       <option key={sec.id} value={sec.id} title={sec.jobContent}>
                         {sec.stt ? `${sec.stt}. ` : ''}{sec.jobContent}
@@ -1998,9 +2001,10 @@ export const ProjectCostPlanPage: React.FC = () => {
                       setSectionPurchasingIdForNew(e.target.value || null);
                       setParentPurchasingIdForNew(null);
                     }}
+                    required={!isCreatingSectionHeader}
                     className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
                   >
-                    <option value="">-- Chọn Đầu mục cha --</option>
+                    <option value="" disabled>-- Chọn Đầu mục cha --</option>
                     {currentProjPurchasing.filter(p => isSectionMarker(p.stt, p.notes)).map(sec => (
                       <option key={sec.id} value={sec.id} title={sec.content}>
                         {sec.stt ? `${sec.stt}. ` : ''}{sec.content}
