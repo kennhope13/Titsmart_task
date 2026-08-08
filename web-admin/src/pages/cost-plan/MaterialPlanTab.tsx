@@ -517,7 +517,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary text-xs"
                       />
                     ) : (
-                      <span onClick={() => startEditing(plan.id, 'unit', plan.unit)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full truncate" title={plan.unit || ''}>{plan.unit || ''}</span>
+                      <span onClick={() => startEditing(plan.id, 'unit', plan.unit)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.unit || ''}>{plan.unit || ''}</span>
                     )}
                   </td>
                   {/* KL HĐ */}
@@ -533,7 +533,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full text-right border rounded px-0.5 py-0.5 bg-white text-slate-900 font-semibold focus:outline-primary text-xs"
                       />
                     ) : (
-                      <span onClick={() => startEditing(plan.id, 'contractVolume', plan.contractVolume)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full" title={showNumber(plan.contractVolume)}>{showNumber(plan.contractVolume)}</span>
+                      <span onClick={() => startEditing(plan.id, 'contractVolume', plan.contractVolume)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center" title={showNumber(plan.contractVolume)}>{showNumber(plan.contractVolume)}</span>
                     )}
                   </td>
 
@@ -552,7 +552,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-600 focus:outline-primary text-xs"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full truncate" title={plan.techSpecModel || ''}>{plan.techSpecModel || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.techSpecModel || ''}>{plan.techSpecModel || ''}</span>
                         )}
                       </td>
                       {/* ĐÁP ỨNG KỸ THUẬT */}
@@ -568,7 +568,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-600 focus:outline-primary text-xs"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'techSpecOrigin', plan.techSpecOrigin)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full truncate" title={plan.techSpecOrigin || ''}>{plan.techSpecOrigin || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'techSpecOrigin', plan.techSpecOrigin)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.techSpecOrigin || ''}>{plan.techSpecOrigin || ''}</span>
                         )}
                       </td>
                       {/* TÌNH TRẠNG */}
@@ -587,7 +587,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <option value="Đang xem xét">Đang xem xét</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'techSpecStatus', plan.techSpecStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full truncate">{plan.techSpecStatus || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'techSpecStatus', plan.techSpecStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate">{plan.techSpecStatus || ''}</span>
                         )}
                       </td>
                       {/* TIẾN ĐỘ */}
@@ -605,7 +605,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-700 font-bold focus:outline-primary text-xs"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'progressStatus', plan.progressStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{showProgress(plan.progressStatus)}</span>
+                          <span onClick={() => startEditing(plan.id, 'progressStatus', plan.progressStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{showProgress(plan.progressStatus)}</span>
                         )}
                       </td>
                     </>
@@ -626,7 +626,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             className="w-full text-right border rounded px-0.5 py-0.5 bg-white text-slate-900 font-semibold focus:outline-primary text-xs"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'orderedVolume', plan.orderedVolume)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full" title={showNumber(plan.orderedVolume)}>{showNumber(plan.orderedVolume)}</span>
+                          <span onClick={() => startEditing(plan.id, 'orderedVolume', plan.orderedVolume)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center" title={showNumber(plan.orderedVolume)}>{showNumber(plan.orderedVolume)}</span>
                         )}
                       </td>
                       {/* TT ĐẶT HÀNG */}
@@ -645,7 +645,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <option value="Đã nhận hàng">Đã nhận hàng</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'orderedStatus', plan.orderedStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full truncate" title={plan.orderedStatus || ''}>{plan.orderedStatus || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'orderedStatus', plan.orderedStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.orderedStatus || ''}>{plan.orderedStatus || ''}</span>
                         )}
                       </td>
                       {/* NGÀY CÓ HÀNG */}
@@ -661,7 +661,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-600 focus:outline-primary text-xs"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'expectedDate', plan.expectedDate)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{plan.expectedDate || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'expectedDate', plan.expectedDate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{plan.expectedDate || ''}</span>
                         )}
                       </td>
                       {/* NỘI DUNG VƯỚNG MẮC */}
@@ -677,7 +677,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             className="w-full border rounded px-0.5 py-0.5 bg-white text-red-600 font-semibold focus:outline-primary text-xs"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full truncate" title={plan.issueContent || ''}>{plan.issueContent || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.issueContent || ''}>{plan.issueContent || ''}</span>
                         )}
                       </td>
                       {/* TT XỬ LÝ */}
@@ -693,7 +693,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-600 focus:outline-primary text-xs"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'issueStatus', plan.issueStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full truncate" title={plan.issueStatus || ''}>{plan.issueStatus || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'issueStatus', plan.issueStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.issueStatus || ''}>{plan.issueStatus || ''}</span>
                         )}
                       </td>
                     </>
@@ -715,7 +715,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <option value="true">Có</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'docCo', plan.docCo)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{yesNo(plan.docCo)}</span>
+                          <span onClick={() => startEditing(plan.id, 'docCo', plan.docCo)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{yesNo(plan.docCo)}</span>
                         )}
                       </td>
                       {/* CQ */}
@@ -732,7 +732,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <option value="true">Có</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'docCq', plan.docCq)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{yesNo(plan.docCq)}</span>
+                          <span onClick={() => startEditing(plan.id, 'docCq', plan.docCq)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{yesNo(plan.docCq)}</span>
                         )}
                       </td>
                       {/* KIỂM ĐỊNH PCCC */}
@@ -749,7 +749,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <option value="true">Có</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'docFireInspection', plan.docFireInspection)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{yesNo(plan.docFireInspection)}</span>
+                          <span onClick={() => startEditing(plan.id, 'docFireInspection', plan.docFireInspection)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{yesNo(plan.docFireInspection)}</span>
                         )}
                       </td>
                       {/* ĐÃ GỬI TỚI CT */}
@@ -766,7 +766,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <option value="true">Có</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'dispatchToSite', plan.dispatchToSite)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{yesNo(plan.dispatchToSite)}</span>
+                          <span onClick={() => startEditing(plan.id, 'dispatchToSite', plan.dispatchToSite)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{yesNo(plan.dispatchToSite)}</span>
                         )}
                       </td>
                       {/* NGÀY */}
@@ -782,7 +782,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-600 focus:outline-primary text-xs"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'dispatchDate', plan.dispatchDate)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{plan.dispatchDate || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'dispatchDate', plan.dispatchDate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{plan.dispatchDate || ''}</span>
                         )}
                       </td>
                     </>

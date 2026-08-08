@@ -532,7 +532,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                         className="w-full text-center border rounded px-1 py-0.5 bg-white text-slate-900 focus:outline-primary"
                       />
                     ) : (
-                      <span onClick={() => startEditing(pur.id, 'unit', pur.unit)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{pur.unit || '-'}</span>
+                      <span onClick={() => startEditing(pur.id, 'unit', pur.unit)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{pur.unit || '-'}</span>
                     )}
                   </td>
 
@@ -554,7 +554,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-semibold focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'volumeContract', pur.volumeContract)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{numberText(pur.volumeContract)}</span>
+                          <span onClick={() => startEditing(pur.id, 'volumeContract', pur.volumeContract)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{numberText(pur.volumeContract)}</span>
                         )}
                       </td>
 
@@ -574,7 +574,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-semibold focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'volumeOrder', pur.volumeOrder)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{numberText(pur.volumeOrder)}</span>
+                          <span onClick={() => startEditing(pur.id, 'volumeOrder', pur.volumeOrder)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{numberText(pur.volumeOrder)}</span>
                         )}
                       </td>
 
@@ -594,7 +594,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-semibold focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'unitPrice', pur.unitPrice)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{money(pur.unitPrice)}</span>
+                          <span onClick={() => startEditing(pur.id, 'unitPrice', pur.unitPrice)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{money(pur.unitPrice)}</span>
                         )}
                       </td>
 
@@ -614,7 +614,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'vatRate', pur.vatRate)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{percentText(pur.vatRate)}</span>
+                          <span onClick={() => startEditing(pur.id, 'vatRate', pur.vatRate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{percentText(pur.vatRate)}</span>
                         )}
                       </td>
 
@@ -673,7 +673,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             <option value="Đã ký">Đã ký</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'contractStatus', pur.contractStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full truncate">{pur.contractStatus || '-'}</span>
+                          <span onClick={() => startEditing(pur.id, 'contractStatus', pur.contractStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate">{pur.contractStatus || '-'}</span>
                         )}
                       </td>
                     </>
@@ -700,7 +700,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'prepayPercent', pur.prepayPercent)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{percentText(pur.prepayPercent)}</span>
+                          <span onClick={() => startEditing(pur.id, 'prepayPercent', pur.prepayPercent)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{percentText(pur.prepayPercent)}</span>
                         )}
                       </td>
 
@@ -723,7 +723,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary text-[10px]"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'paymentDate', pur.paymentDate)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full">{pur.paymentDate || ''}</span>
+                          <span onClick={() => startEditing(pur.id, 'paymentDate', pur.paymentDate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{pur.paymentDate || ''}</span>
                         )}
                       </td>
 
@@ -745,7 +745,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             <option value="Đã xuất">Đã xuất</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'invoiceStatus', pur.invoiceStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded block w-full truncate">{pur.invoiceStatus || ''}</span>
+                          <span onClick={() => startEditing(pur.id, 'invoiceStatus', pur.invoiceStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate">{pur.invoiceStatus || ''}</span>
                         )}
                       </td>
                     </>
