@@ -51,8 +51,8 @@ const sttSortValue = (value?: string) => {
   return firstNumber ? Number(firstNumber) : Number.MAX_SAFE_INTEGER;
 };
 
-const normalizePlanKey = (stt?: string, content?: string, parentId?: string) =>
-  `${String(stt || '').trim()}|${String(content || '').trim().toLowerCase()}|${parentId || ''}`;
+const normalizePlanKey = (stt?: string, content?: string, _parentId?: string) =>
+  `${String(stt || '').trim()}|${String(content || '').trim().toLowerCase()}`;
 
 const isSectionMarker = (stt?: string, notes?: string) =>
   String(notes || '').toLowerCase().includes('[section]') || romanToNumber(stt) !== null;
@@ -904,10 +904,59 @@ export const ProjectCostPlanPage: React.FC = () => {
     [materialPlans, selectedProject]
   );
 
-  const currentProjPurchasing = useMemo(() =>
-    purchasingPlans.filter((plan) => plan.projectCode === selectedProject),
-    [purchasingPlans, selectedProject]
-  );
+  const currentProjPurchasing = useMemo(() => {
+    const projectPurchasing = purchasingPlans.filter((plan) => plan.projectCode === selectedProject);
+    const validIds = new Set<string>();
+
+    projectPurchasing.forEach(plan => {
+      const matPlan = plan.materialPlanId 
+        ? currentProjMaterialPlans.find(m => m.id === plan.materialPlanId)
+        : currentProjMaterialPlans.find(m => normalizePlanKey(m.stt, m.jobContent) === normalizePlanKey(plan.stt, plan.content));
+        
+      if (matPlan) {
+        if (isEffectiveContractorPlan(matPlan, currentProjMaterialPlans)) {
+          validIds.add(plan.id);
+        }
+      } else {
+        validIds.add(plan.id);
+      }
+    });
+
+    let added;
+    do {
+      added = false;
+      projectPurchasing.forEach(plan => {
+        if (validIds.has(plan.id) && plan.parentId && !validIds.has(plan.parentId)) {
+           validIds.add(plan.parentId);
+           added = true;
+        }
+      });
+    } while (added);
+
+    // Remove empty owner sections that were kept but shouldn't be.
+    // Actually, if it's an owner section and has no children, it won't be in validIds from pass 1
+    // UNLESS it had no matPlan. If it had no matPlan, it was added in pass 1.
+    // Let's ensure owner sections without matPlan are removed if they have no valid children.
+    projectPurchasing.forEach(plan => {
+      if (validIds.has(plan.id) && isSectionMarker(plan.stt, plan.notes)) {
+        const matPlan = plan.materialPlanId 
+          ? currentProjMaterialPlans.find(m => m.id === plan.materialPlanId)
+          : currentProjMaterialPlans.find(m => normalizePlanKey(m.stt, m.jobContent) === normalizePlanKey(plan.stt, plan.content));
+        
+        if (!matPlan) {
+          const content = String(plan.content || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (content.includes('chu dau tu cung cap') || content.includes('ben a cung cap')) {
+             const hasValidChild = projectPurchasing.some(p => p.parentId === plan.id && validIds.has(p.id));
+             if (!hasValidChild) {
+                validIds.delete(plan.id);
+             }
+          }
+        }
+      }
+    });
+
+    return projectPurchasing.filter(plan => validIds.has(plan.id));
+  }, [purchasingPlans, selectedProject, currentProjMaterialPlans]);
 
   // Tự động đồng bộ các hạng mục do nhà thầu cung cấp sang tab Mua hàng (chạy ngầm, không gây treo máy nhờ debounce)
   useEffect(() => {
@@ -1321,7 +1370,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               setParentPlanIdForNew(plan.id);
               setIsCreatingSectionHeader(false);
               setIsNewPlanOpen(true);
-              setNewPlanData(prev => ({ ...prev, stt: suggestedStt || '', isContractor: true }));
+              setNewPlanData(prev => ({ ...prev, stt: suggestedStt || '', isContractor: isEffectiveContractorPlan(plan, currentProjMaterialPlans) }));
             }}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -1594,50 +1643,57 @@ export const ProjectCostPlanPage: React.FC = () => {
 
           // Đồng bộ sang tab Mua hàng nếu là nhà thầu (Bao gồm cả đầu mục lớn để làm cha)
           if (isContractor) {
-            const contractVol = Number(newPlanData.contractVolume || 1);
-            let purchasingParentId = undefined;
-            if (parentId) {
-              const findPurchasingMatch = (matId: string): string | undefined => {
-                const exactMatch = currentProjPurchasing.find(p => p.materialPlanId === matId);
-                if (exactMatch) return exactMatch.id;
-                
-                const matNode = currentProjMaterialPlans.find(p => p.id === matId);
-                if (!matNode) return undefined;
-                
-                const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-                const matchingPurchasing = currentProjPurchasing.find(
-                  p => norm(p.stt) === norm(matNode.stt) && norm(p.content) === norm(matNode.jobContent)
-                );
-                if (matchingPurchasing) return matchingPurchasing.id;
-                
-                if (matNode.parentId) return findPurchasingMatch(matNode.parentId);
-                return undefined;
-              };
-              purchasingParentId = findPurchasingMatch(parentId);
-            }
+            syncingIdsRef.current.add(createdMaterialId);
+            try {
+              const contractVol = Number(newPlanData.contractVolume || 1);
+              let purchasingParentId = undefined;
+              if (parentId) {
+                const findPurchasingMatch = (matId: string): string | undefined => {
+                  const exactMatch = currentProjPurchasing.find(p => p.materialPlanId === matId);
+                  if (exactMatch) return exactMatch.id;
+                  
+                  const matNode = currentProjMaterialPlans.find(p => p.id === matId);
+                  if (!matNode) return undefined;
+                  
+                  const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+                  const matchingPurchasing = currentProjPurchasing.find(
+                    p => norm(p.stt) === norm(matNode.stt) && norm(p.content) === norm(matNode.jobContent)
+                  );
+                  if (matchingPurchasing) return matchingPurchasing.id;
+                  
+                  if (matNode.parentId) return findPurchasingMatch(matNode.parentId);
+                  return undefined;
+                };
+                purchasingParentId = findPurchasingMatch(parentId);
+              }
 
-            addPurchasingPlan({
-              projectCode: selectedProject,
-              materialPlanId: createdMaterialId,
-              stt: autoStt,
-              content: newPlanData.jobContent || '',
-              unit: newPlanData.unit || 'bộ',
-              volumeContract: contractVol,
-              volumeOrder: 0,
-              unitPrice: 0,
-              vatRate: 10,
-              vatAmount: 0,
-              totalAmount: 0,
-              prepayPercent: 0,
-              prepayAmount: 0,
-              remainingAmount: 0,
-              orderStatus: 'Chưa đặt hàng',
-              contractStatus: 'Chưa ký',
-              paymentDate: '',
-              invoiceStatus: 'Chưa xuất',
-              notes: baseNote,
-              parentId: purchasingParentId || undefined
-            });
+              await addPurchasingPlan({
+                projectCode: selectedProject,
+                materialPlanId: createdMaterialId,
+                stt: autoStt,
+                content: newPlanData.jobContent || '',
+                unit: newPlanData.unit || 'bộ',
+                volumeContract: contractVol,
+                volumeOrder: 0,
+                unitPrice: 0,
+                vatRate: 10,
+                vatAmount: 0,
+                totalAmount: 0,
+                prepayPercent: 0,
+                prepayAmount: 0,
+                remainingAmount: 0,
+                orderStatus: 'Chưa đặt hàng',
+                contractStatus: 'Chưa ký',
+                paymentDate: '',
+                invoiceStatus: 'Chưa xuất',
+                notes: baseNote,
+                parentId: purchasingParentId || undefined
+              });
+            } finally {
+              setTimeout(() => {
+                syncingIdsRef.current.delete(createdMaterialId);
+              }, 500);
+            }
           }
 
           // Đồng bộ sang tab Quản lý Tiến độ (TaskManagement)

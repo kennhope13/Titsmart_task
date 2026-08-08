@@ -248,7 +248,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
     setEditingCell(null);
   };
 
-  const colSpanCount = subTab === 'PRICING' ? 12 : 9;
+  const colSpanCount = subTab === 'PRICING' ? 11 : 8;
 
   return (
     <div className="flex w-full max-w-full h-full min-h-0 flex-col bg-white overflow-hidden">
@@ -278,7 +278,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
             {subTab === 'PRICING' ? (
               <tr className="bg-slate-50">
                 <th style={{ width: 32, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold">STT</th>
-                <th style={{ width: 155, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-[32px] z-20 bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{TEXT.content}</th>
+                <th style={{ width: 180, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-[32px] z-20 bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{TEXT.content}</th>
                 <th style={{ width: 38, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center">{TEXT.unit}</th>
                 <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">{TEXT.contractVolume}</th>
                 <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">{TEXT.orderVolume}</th>
@@ -288,21 +288,19 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">{TEXT.total}</th>
                 <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">{TEXT.orderStatus}</th>
                 <th style={{ width: 75, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">{TEXT.contractStatus}</th>
-                <th style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">{TEXT.note}</th>
-                <th style={{ width: 44, borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center">{TEXT.actions}</th>
+                <th style={{ width: 119, borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">{TEXT.note}</th>
               </tr>
             ) : (
               <tr className="bg-slate-50">
                 <th style={{ width: 32, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold">STT</th>
-                <th style={{ width: 155, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-[32px] z-20 bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{TEXT.content}</th>
+                <th style={{ width: 180, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-[32px] z-20 bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{TEXT.content}</th>
                 <th style={{ width: 38, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center">{TEXT.unit}</th>
                 <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">{TEXT.total}</th>
                 <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">{TEXT.prepayPercent}</th>
                 <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">{TEXT.payment}</th>
                 <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">{TEXT.paymentDate}</th>
                 <th style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">{TEXT.invoice}</th>
-                <th style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">{TEXT.note}</th>
-                <th style={{ width: 44, borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center">{TEXT.actions}</th>
+                <th style={{ width: 119, borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">{TEXT.note}</th>
               </tr>
             )}
           </thead>
@@ -507,6 +505,11 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                         {onAddSubtask && (
                           <button onClick={(e) => { e.stopPropagation(); onAddSubtask(pur, suggestedStt); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
                             <span className="material-symbols-outlined text-[14px]">add_circle</span>
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button onClick={(e) => { e.stopPropagation(); onDelete(pur.id); }} className="p-0.5 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-100 transition-colors inline-flex items-center flex-shrink-0" title="Xóa">
+                            <span className="material-symbols-outlined text-[14px]">delete</span>
                           </button>
                         )}
                       </div>
@@ -749,7 +752,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   )}
 
                   {/* GHI CHÚ */}
-                  <td className="w-[120px] min-w-[90px] max-w-[160px] border-r border-slate-100 px-1.5 py-1 text-slate-500 text-center">
+                  <td className="w-[120px] min-w-[90px] max-w-[160px] px-1.5 py-1 text-slate-500 text-center">
                     {editingCell?.id === pur.id && editingCell?.field === 'notes' ? (
                       <input
                         type="text"
@@ -766,18 +769,6 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                     ) : (
                       <div onClick={() => startEditing(pur.id, 'notes', pur.notes)} className="w-full truncate cursor-pointer hover:bg-slate-100 px-1.5 py-0.5 rounded" title={cleanNotes(pur.notes)}>{cleanNotes(pur.notes) || '-'}</div>
                     )}
-                  </td>
-                  
-                  {/* Actions Column */}
-                  <td className="sticky right-0 z-10 bg-white group-hover:bg-slate-50 border-l border-slate-100 w-[50px] min-w-[50px] max-w-[50px] px-1 py-1 text-center">
-                    <div className="flex items-center justify-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                      <button onClick={() => onEdit(pur, subTab)} className="rounded-lg bg-blue-50 p-1 text-blue-600 transition-colors hover:bg-blue-100 hover:text-blue-700" title={TEXT.edit}>
-                        <span className="material-symbols-outlined text-xs">edit</span>
-                      </button>
-                      <button onClick={(e) => { e.stopPropagation(); onDelete(pur.id); }} className="rounded-lg bg-rose-50 p-1 text-rose-600 transition-colors hover:bg-rose-100 hover:text-rose-700" title={TEXT.delete}>
-                        <span className="material-symbols-outlined text-xs">delete</span>
-                      </button>
-                    </div>
                   </td>
                 </tr>
               );
