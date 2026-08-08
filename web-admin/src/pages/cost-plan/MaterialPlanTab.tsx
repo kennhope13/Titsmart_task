@@ -242,7 +242,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
             <tr className="bg-slate-50">
               <th rowSpan={2} style={{ width: 32, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold">STT</th>
               <th rowSpan={2} style={{ width: 280, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-[32px] z-20 bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">NỘI DUNG</th>
-              <th rowSpan={2} style={{ width: 40, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">ĐVT</th>
+              <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">ĐVT</th>
               <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">KL HĐ</th>
 
               {subTab === 'TECH' && (
