@@ -431,8 +431,8 @@ export const ProjectManagementPage: React.FC = () => {
           <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100 whitespace-nowrap">
             {displayProjects.length} dự án
           </span>
-          <div className="relative w-full sm:w-64">
-            <span className="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-lg">search</span>
+          <div className="relative w-full sm:w-64 flex items-center">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
             <input
               type="text"
               value={searchQuery}
