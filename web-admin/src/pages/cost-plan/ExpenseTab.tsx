@@ -106,7 +106,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                   )}
                  </td>
                  <td className="sticky right-0 z-10 bg-white group-hover:bg-blue-50/30 border-l border-slate-100 p-3 text-center">
-                   <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <div className="flex items-center justify-center gap-2 transition-opacity">
                     <button onClick={() => onEdit(exp)} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition-colors" title="Chỉnh sửa">
                       <span className="material-symbols-outlined text-sm">edit</span>
                     </button>

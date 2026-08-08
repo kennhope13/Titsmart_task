@@ -469,7 +469,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
                 <td className="px-2 py-2.5">{renderDocsCell(item)}</td>
                 <td className="px-2 py-2.5 text-[11px] text-slate-500 break-words">{cleanNotes(item.notes) || '-'}</td>
                 <td className="px-2 py-2.5 text-center whitespace-nowrap">
-                  <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center justify-center gap-1 transition-opacity">
                     <button onClick={() => openEdit(item)} title="Sửa"
                       className="rounded p-1 text-slate-400 hover:bg-blue-50 hover:text-primary transition">
                       <span className="material-symbols-outlined text-base">edit</span>
