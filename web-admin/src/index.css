@@ -571,3 +571,4 @@ input[type="number"] {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+@keyframes shimmer { 100% { transform: translateX(100%); } }

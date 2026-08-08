@@ -1,13 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore, DEMO_ACCOUNTS } from '../services/authStore';
-
-const features = [
-  { icon: 'account_tree', title: 'Quản lý dự án', desc: 'Theo dõi tiến độ, kế hoạch và chi phí theo từng dự án.' },
-  { icon: 'warehouse', title: 'Kho & Vật tư', desc: 'Quản lý tồn kho, nhập xuất vật tư theo dự án.' },
-  { icon: 'request_quote', title: 'Chi phí & Lương', desc: 'Kiểm soát chi phí thực tế, lương nhân công và dự toán.' },
-  { icon: 'analytics', title: 'Báo cáo tổng hợp', desc: 'Báo cáo tiến độ, chi phí và nhân sự một cách trực quan.' },
-];
+import { User, Key, Eye, EyeOff, Lock, ArrowRight, Shield, Zap, Boxes, BarChart3 } from 'lucide-react';
 
 export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchStyle }) => {
   const navigate = useNavigate();
@@ -17,6 +11,11 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +33,7 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
       } else {
         setError(result.error || 'Đăng nhập thất bại.');
       }
-    }, 450);
+    }, 600);
   };
 
   const fillAccount = (account: (typeof DEMO_ACCOUNTS)[number]) => {
@@ -44,167 +43,179 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
   };
 
   return (
-    <div className="h-screen w-full flex flex-col md:flex-row bg-slate-50 overflow-hidden">
-      <div className="hidden md:flex flex-1 flex-col justify-between bg-primary relative overflow-hidden p-10 lg:p-14 text-white">
-        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-blue-500/10"></div>
-        <div className="absolute -bottom-32 -left-20 w-96 h-96 rounded-full bg-blue-400/10"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px] h-[560px] rounded-full border border-white/10"></div>
-
-        <div className="relative flex items-center gap-3">
-          <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-white shadow-sm overflow-hidden">
-            <img src="/logo.png" alt="TITSMART" className="w-full h-full object-contain p-0.5" />
-          </div>
-          <div>
-            <h1 className="font-extrabold text-xl leading-tight">TITSMART</h1>
-            <p className="text-[11px] text-blue-100 font-medium">Project Manager</p>
-          </div>
-        </div>
-
-        <div className="relative max-w-md">
-          <h2 className="text-3xl lg:text-4xl font-extrabold leading-tight">HỆ THỐNG QUẢN LÝ<br />CÔNG VIỆC & DỰ ÁN</h2>
-          <p className="mt-4 text-blue-100 text-sm leading-relaxed">
-            Giải pháp quản lý toàn diện cho doanh nghiệp: theo dõi tiến độ, kiểm soát chi phí, quản lý kho vật tư và nhân sự trong một nền tảng duy nhất.
-          </p>
-
-          <div className="mt-8 space-y-4">
-            {features.map((f) => (
-              <div key={f.title} className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-                  <span className="material-symbols-outlined text-lg">{f.icon}</span>
-                </div>
-                <div>
-                  <div className="font-bold text-sm">{f.title}</div>
-                  <div className="text-xs text-blue-100/90">{f.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative text-[11px] text-blue-100/70">© {new Date().getFullYear()} TITSMART Project Manager. All rights reserved.</div>
+    <div className="relative min-h-screen w-full flex bg-slate-50 overflow-hidden font-title-md">
+      {/* Background Soft Orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px] animate-pulse" style={{ animationDuration: '6s' }} />
+        <div className="absolute top-[60%] -left-[10%] w-[40%] h-[60%] rounded-full bg-blue-400/10 blur-[100px] animate-pulse" style={{ animationDuration: '8s' }} />
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 md:p-10 overflow-y-auto">
-        <div className="w-full max-w-md">
-          <div className="md:hidden flex items-center justify-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-lg bg-white shadow-sm border border-slate-200 flex items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="TITSMART" className="w-full h-full object-contain p-0.5" />
-            </div>
-            <div>
-              <h1 className="font-extrabold text-lg text-primary leading-tight">TITSMART</h1>
-              <p className="text-[10px] text-slate-500 font-medium">Project Manager</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 lg:p-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center">
-                <span className="material-symbols-outlined text-xl">lock</span>
-              </div>
-              <div>
-                <h2 className="page-title text-xl font-extrabold text-slate-900">ĐĂNG NHẬP</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Đăng nhập để tiếp tục với hệ thống</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <div>
-                <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">Tên đăng nhập</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">person</span>
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Nhập tên đăng nhập"
-                    autoComplete="username"
-                    className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none bg-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">Mật khẩu</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">key</span>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Nhập mật khẩu"
-                    autoComplete="current-password"
-                    className="w-full pl-9 pr-10 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none bg-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
-                    title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                  >
-                    <span className="material-symbols-outlined text-lg">{showPassword ? 'visibility_off' : 'visibility'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-red-50 border border-red-100 text-red-600 text-xs font-bold">
-                  <span className="material-symbols-outlined text-base flex-shrink-0">error</span>
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {loading ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
-                    Đang đăng nhập...
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-lg">login</span>
-                    Đăng nhập
-                  </>
-                )}
-              </button>
-            </form>
-
-            <div className="mt-6 pt-5 border-t border-slate-100">
-              <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-2.5">Tài khoản demo</div>
-              <div className="space-y-2">
-                {DEMO_ACCOUNTS.map((acc) => (
-                  <button
-                    key={acc.username}
-                    type="button"
-                    onClick={() => fillAccount(acc)}
-                    className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-200 transition-colors text-left group"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-xs font-extrabold text-slate-800 truncate">{acc.name} <span className="text-slate-400 font-semibold">• {acc.title}</span></div>
-                      <div className="text-[11px] font-mono text-slate-500 truncate">{acc.username} / {acc.password}</div>
+      <div className="relative z-10 flex w-full min-h-screen overflow-y-auto py-10">
+        {/* Login Form Container */}
+        <div className={`flex-1 flex flex-col items-center justify-center px-4 transition-all duration-1000 delay-150 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
+            {/* Premium Card - HORIZONTAL LAYOUT */}
+            <div className="w-full max-w-4xl bg-white rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,35,111,0.1)] border border-slate-100 relative mt-4 overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-400 to-primary"></div>
+              
+              <div className="flex flex-col md:flex-row p-8 sm:p-10 gap-10 md:gap-14">
+                
+                {/* Left Column: Branding & Demo Accounts */}
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    {/* Centered Logo & Header */}
+                    <div className="flex flex-col items-start mb-6">
+                      <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-sm overflow-hidden mb-4">
+                        <img src="/logo.png" alt="TITSMART" className="w-8 h-8 object-contain" />
+                      </div>
+                      <h1 className="text-3xl font-extrabold text-primary tracking-tight mb-1">TITSMART</h1>
+                      <p className="text-slate-400 font-bold text-[10px] tracking-[0.2em] uppercase">Project Manager</p>
                     </div>
-                    <span className="material-symbols-outlined text-base text-slate-400 group-hover:text-primary flex-shrink-0">login</span>
+                    
+                    <h2 className="text-xl font-extrabold text-slate-900 mb-2">Đăng nhập hệ thống</h2>
+                    <p className="text-slate-500 text-sm font-medium">Chào mừng bạn! Vui lòng nhập thông tin để tiếp tục.</p>
+                  </div>
+
+                  <div className="mt-8 pt-8 border-t border-slate-100 hidden md:block">
+                    <div className="mb-4">
+                      <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Tài khoản trải nghiệm</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      {DEMO_ACCOUNTS.map((acc, idx) => (
+                        <button
+                          key={acc.username}
+                          type="button"
+                          onClick={() => fillAccount(acc)}
+                          className="group flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-primary/5 hover:border-primary/20 transition-all duration-300 text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-full group-hover:border-primary/20 group-hover:bg-primary/5 transition-colors">
+                              {acc.title}
+                            </span>
+                            <span className="text-[11px] text-slate-500 font-mono">
+                              <strong className="text-slate-400 font-sans text-[9px] uppercase">ID:</strong> {acc.username}
+                            </span>
+                          </div>
+                          <div className="text-slate-300 group-hover:text-primary transition-colors shrink-0 ml-2">
+                            <ArrowRight size={14} strokeWidth={2.5} />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Login Form */}
+                <div className="flex-1 flex flex-col justify-center">
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Tên đăng nhập</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+                          <User size={20} strokeWidth={2} />
+                        </div>
+                        <input
+                          type="text"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          placeholder="Nhập tên đăng nhập"
+                          className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary focus:bg-white transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Mật khẩu</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+                          <Key size={20} strokeWidth={2} />
+                        </div>
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Nhập mật khẩu"
+                          className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-12 text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary focus:bg-white transition-all duration-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-primary transition-colors"
+                        >
+                          {showPassword ? <EyeOff size={20} strokeWidth={2} /> : <Eye size={20} strokeWidth={2} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {error && (
+                      <div className="animate-in fade-in slide-in-from-top-2 p-3.5 rounded-xl bg-red-50 border border-red-100 flex items-start gap-3">
+                        <div className="text-red-500 mt-0.5">
+                          <Lock size={18} strokeWidth={2.5} />
+                        </div>
+                        <p className="text-sm text-red-600 font-semibold">{error}</p>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full relative group overflow-hidden rounded-xl bg-primary text-white font-bold py-4 mt-2 transition-all duration-300 hover:bg-[#001a54] hover:shadow-[0_8px_25px_-8px_rgba(0,35,111,0.6)] disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2 text-[15px]">
+                        {loading ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Đang đăng nhập...
+                          </>
+                        ) : (
+                          <>
+                            Đăng nhập vào hệ thống
+                            <ArrowRight size={18} strokeWidth={2.5} className="group-hover:translate-x-1.5 transition-transform duration-300" />
+                          </>
+                        )}
+                      </span>
+                      <div className="absolute inset-0 h-full w-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                    </button>
+                  </form>
+                  
+                  {/* Mobile demo accounts (visible only on small screens) */}
+                  <div className="mt-8 pt-6 border-t border-slate-100 md:hidden">
+                    <div className="mb-4">
+                      <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Tài khoản trải nghiệm</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      {DEMO_ACCOUNTS.map((acc, idx) => (
+                        <button
+                          key={acc.username}
+                          type="button"
+                          onClick={() => fillAccount(acc)}
+                          className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 text-left"
+                        >
+                          <span className="text-[11px] font-bold text-slate-700">{acc.title}</span>
+                          <span className="text-[11px] text-slate-500 font-mono">ID: {acc.username}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                {onSwitchStyle && (
+                  <button
+                    onClick={onSwitchStyle}
+                    className="mt-6 w-full flex items-center justify-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-primary transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">style</span>
+                    Xem giao diện Classic
                   </button>
-                ))}
+                )}
               </div>
             </div>
+            
+            <p className="text-center text-slate-400 font-medium text-xs mt-8">
+              &copy; {new Date().getFullYear()} TITSMART Project Manager.
+            </p>
           </div>
-
-          <p className="text-center text-[11px] text-slate-400 mt-5">© {new Date().getFullYear()} TITSMART Project Manager</p>
-
-          {onSwitchStyle && (
-            <button
-              type="button"
-              onClick={onSwitchStyle}
-              className="mx-auto mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-[11px] font-bold text-slate-500 hover:bg-blue-50 hover:text-primary hover:border-blue-200 transition-colors"
-            >
-              <span className="material-symbols-outlined text-sm">style</span>
-              Xem giao diện đăng nhập khác
-            </button>
-          )}
         </div>
       </div>
     </div>
