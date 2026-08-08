@@ -68,6 +68,55 @@ const isContractorMaterialPlan = (plan: ProjectMaterialPlan) => {
   return plan.supplyScope === 'contractor' || notes.includes('[contractor]') || notes.includes('nha thau') || content.includes('nha thau cung cap');
 };
 
+const getSectionForMaterialPlan = (plan: ProjectMaterialPlan, allPlans: ProjectMaterialPlan[], visited = new Set<string>()) => {
+  if (visited.has(plan.id)) return null;
+  visited.add(plan.id);
+
+  if (isSectionMarker(plan.stt, plan.notes)) return plan;
+  
+  if (plan.parentId) {
+    const parent = allPlans.find(p => p.id === plan.parentId);
+    if (parent) {
+      if (isSectionMarker(parent.stt, parent.notes)) return parent;
+      return getSectionForMaterialPlan(parent, allPlans, visited);
+    }
+  }
+  
+  const orderTagValue = (notes?: string): number | null => {
+    const m = String(notes || '').match(/\[order:([\d.]+)\]/);
+    return m ? parseFloat(m[1]) : null;
+  };
+  
+  const myPos = orderTagValue(plan.notes);
+  if (myPos === null) return null;
+  
+  const sections = allPlans.filter(p => isSectionMarker(p.stt, p.notes));
+  let bestSec = null;
+  let bestSecPos = -1;
+  
+  sections.forEach(sec => {
+    const secPos = orderTagValue(sec.notes);
+    if (secPos !== null && secPos <= myPos && secPos > bestSecPos) {
+      bestSecPos = secPos;
+      bestSec = sec;
+    }
+  });
+  
+  return bestSec;
+};
+
+const isEffectiveContractorPlan = (plan: ProjectMaterialPlan, allPlans: ProjectMaterialPlan[]) => {
+  if (isSectionMarker(plan.stt, plan.notes)) {
+    return isContractorMaterialPlan(plan);
+  }
+  
+  if (plan.supplyScope === 'contractor') return true;
+  if (plan.supplyScope === 'owner') return false;
+  
+  const section = getSectionForMaterialPlan(plan, allPlans);
+  return section ? isContractorMaterialPlan(section) : false;
+};
+
 export const ProjectCostPlanPage: React.FC = () => {
   const {
     projects,
@@ -96,6 +145,12 @@ export const ProjectCostPlanPage: React.FC = () => {
   } = useRealtimeStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const syncingIdsRef = useRef<Set<string>>(new Set());
+
+
+
+
+
 
   // Pending tasks waiting for user confirmation before being created
   const [pendingTaskItems, setPendingTaskItems] = useState<Array<any>>([]);
@@ -181,6 +236,8 @@ export const ProjectCostPlanPage: React.FC = () => {
       }
     }
   };
+
+
 
   const confirmDeleteAction = () => {
     if (!deleteConfirm) return;
@@ -403,7 +460,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           const pendingTasks: any[] = [];
           let globalOrder = 0; // thứ tự tuyệt đối trong file, dùng để sort sau
           let romanSectionCounter = 0; // Đếm số đầu mục lớn để chuyển thành số La Mã
-          let currentSectionSupplyScope = 'unknown'; // Theo dõi supplyScope của section hiện tại cho các hạng mục con
+          let currentSectionSupplyScope: 'contractor' | 'owner' | 'unknown' = 'unknown'; // Theo dõi supplyScope của section hiện tại cho các hạng mục con
 
           wb.SheetNames.forEach((sheetName) => {
             const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets[sheetName], { header: 1, defval: '' });
@@ -423,6 +480,8 @@ export const ProjectCostPlanPage: React.FC = () => {
             const vatAmountCol = vatRateCol + 1;
             const totalCol = getColumnIndex(headerRow, ['tong tien'], vatAmountCol + 1);
             const notesCol = getColumnIndex(headerRow, ['ghi chu'], totalCol + 1);
+
+            const hasPrices = unitPriceCol !== -1 || totalCol !== -1;
 
             rows.slice(headerRowIndex + 1).forEach((row) => {
               const content = String(row[contentCol] || '').trim();
@@ -489,7 +548,9 @@ export const ProjectCostPlanPage: React.FC = () => {
               }
               appendixMaterialCount++;
 
-              if ((isSectionRow && supplyScope !== 'owner') || (supplyScope === 'contractor' && (volumeContract > 0 || unitPrice > 0 || totalAmount > 0))) {
+              const pushToPurchasing = ((isSectionRow && supplyScope !== 'owner') || supplyScope === 'contractor');
+
+              if (pushToPurchasing) {
                 const computedVatAmount = vatAmount || (vatRate ? totalBeforeVat * vatRate / 100 : 0);
                 const totalWithVat = totalAmount || totalBeforeVat + computedVatAmount;
 
@@ -847,6 +908,83 @@ export const ProjectCostPlanPage: React.FC = () => {
     purchasingPlans.filter((plan) => plan.projectCode === selectedProject),
     [purchasingPlans, selectedProject]
   );
+
+  // Tự động đồng bộ các hạng mục do nhà thầu cung cấp sang tab Mua hàng (chạy ngầm, không gây treo máy nhờ debounce)
+  useEffect(() => {
+    if (!selectedProject || currentProjMaterialPlans.length === 0) return;
+
+    let isCancelled = false;
+    const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+    const syncMissing = async () => {
+      const contractorPlans = currentProjMaterialPlans.filter(plan => 
+        isEffectiveContractorPlan(plan, currentProjMaterialPlans)
+      );
+
+      const missingPlans = contractorPlans.filter(plan => {
+        if (syncingIdsRef.current.has(plan.id)) return false;
+        return !currentProjPurchasing.some(p => 
+          p.materialPlanId === plan.id || 
+          (norm(p.stt) === norm(plan.stt) && norm(p.content) === norm(plan.jobContent))
+        );
+      });
+
+      if (missingPlans.length === 0) return;
+
+      const findPurchasingParentId = (matParentId?: string): string | undefined => {
+        if (!matParentId) return undefined;
+        const parentMat = currentProjMaterialPlans.find(m => m.id === matParentId);
+        if (!parentMat) return undefined;
+        const match = currentProjPurchasing.find(p =>
+          norm(p.stt) === norm(parentMat.stt) && norm(p.content) === norm(parentMat.jobContent)
+        );
+        return match ? match.id : undefined;
+      };
+
+      for (const plan of missingPlans) {
+        if (isCancelled) break;
+        
+        syncingIdsRef.current.add(plan.id);
+        const parentId = findPurchasingParentId(plan.parentId);
+
+        try {
+          await addPurchasingPlan({
+            projectCode: selectedProject,
+            materialPlanId: plan.id,
+            stt: plan.stt || '',
+            content: plan.jobContent || '',
+            unit: plan.unit || 'bộ',
+            volumeContract: plan.contractVolume || 1,
+            volumeOrder: 0,
+            unitPrice: 0,
+            vatRate: 0,
+            vatAmount: 0,
+            totalAmount: 0,
+            prepayPercent: 0,
+            prepayAmount: 0,
+            remainingAmount: 0,
+            orderStatus: 'Chưa đặt hàng',
+            contractStatus: 'Đã có phụ lục',
+            invoiceStatus: 'Chưa xuất',
+            notes: plan.notes || '',
+            parentId: parentId
+          });
+          // Yield to event loop
+          await new Promise(r => setTimeout(r, 10));
+        } catch (e) {
+          console.error('Auto sync error:', e);
+        } finally {
+          syncingIdsRef.current.delete(plan.id);
+        }
+      }
+    };
+
+    syncMissing();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedProject, currentProjMaterialPlans, currentProjPurchasing]);
   const currentProjExpenses = useMemo(() => 
     expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
     [expenses, selectedProject]
@@ -1143,6 +1281,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               <span className="material-symbols-outlined text-sm">file_download</span>
               Xuất Excel
             </button>
+
             {activeTab !== 'MATERIAL_PLAN' && activeTab !== 'PURCHASING' && activeTab !== 'ACTIVITY_LOG' && (
               <button 
                 onClick={() => {
@@ -1738,21 +1877,48 @@ export const ProjectCostPlanPage: React.FC = () => {
           <form onSubmit={(e) => {
             e.preventDefault();
             updateMaterialPlan(editingPlan.id, editingPlan);
-            // Nếu là contractor → sync sang purchasing plan
-            if (isContractorMaterialPlan(editingPlan)) {
-              const key = normalizePlanKey(editingPlan.stt, editingPlan.jobContent, editingPlan.parentId);
-              const matchingPurchasing = purchasingPlans.find(p =>
-                p.projectCode === editingPlan.projectCode &&
-                normalizePlanKey(p.stt, p.content, p.parentId) === key
-              );
+            const isContractor = isEffectiveContractorPlan(editingPlan, currentProjMaterialPlans);
+            const key = normalizePlanKey(editingPlan.stt, editingPlan.jobContent, editingPlan.parentId);
+            const matchingPurchasing = purchasingPlans.find(p =>
+              p.projectCode === editingPlan.projectCode &&
+              (p.materialPlanId === editingPlan.id || normalizePlanKey(p.stt, p.content, p.parentId) === key)
+            );
+
+            if (isContractor) {
               if (matchingPurchasing) {
                 updatePurchasingPlan(matchingPurchasing.id, {
-                  ...matchingPurchasing,
                   stt: editingPlan.stt,
                   content: editingPlan.jobContent,
                   unit: editingPlan.unit,
                   volumeContract: editingPlan.contractVolume || matchingPurchasing.volumeContract,
+                  materialPlanId: editingPlan.id,
                 });
+              } else {
+                addPurchasingPlan({
+                  projectCode: editingPlan.projectCode,
+                  materialPlanId: editingPlan.id,
+                  stt: editingPlan.stt,
+                  content: editingPlan.jobContent,
+                  unit: editingPlan.unit || '',
+                  volumeContract: editingPlan.contractVolume || 1,
+                  volumeOrder: 0,
+                  unitPrice: 0,
+                  vatRate: 0,
+                  vatAmount: 0,
+                  totalAmount: 0,
+                  prepayPercent: 0,
+                  prepayAmount: 0,
+                  remainingAmount: 0,
+                  orderStatus: 'Chưa đặt hàng',
+                  contractStatus: 'Đã có phụ lục',
+                  invoiceStatus: 'Chưa xuất',
+                  notes: editingPlan.notes || '',
+                  parentId: editingPlan.parentId || undefined
+                });
+              }
+            } else {
+              if (matchingPurchasing) {
+                deletePurchasingPlan(matchingPurchasing.id);
               }
             }
             setEditingPlan(null);
@@ -1802,8 +1968,8 @@ export const ProjectCostPlanPage: React.FC = () => {
               <input
                 type="checkbox"
                 id="editIsContractorCheck"
-                checked={editingPlan.supplyScope === 'contractor'}
-                onChange={(e) => setEditingPlan({...editingPlan, supplyScope: e.target.checked ? 'contractor' : 'unknown'})}
+                checked={isEffectiveContractorPlan(editingPlan, currentProjMaterialPlans)}
+                onChange={(e) => setEditingPlan({...editingPlan, supplyScope: e.target.checked ? 'contractor' : 'owner'})}
                 className="w-4 h-4 accent-amber-500"
               />
               <label htmlFor="editIsContractorCheck" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-1.5">
@@ -1862,6 +2028,28 @@ export const ProjectCostPlanPage: React.FC = () => {
               if (matchingMaterial) materialParentId = matchingMaterial.id;
             }
           }
+
+          // Determine scope
+          let resolvedSupplyScope = 'unknown';
+          let currentObj = parentId ? currentProjPurchasing.find(p => p.id === parentId) : null;
+          let tempObj = currentObj;
+          let safeCount2 = 0;
+          while (tempObj && safeCount2 < 50) {
+            if (String(tempObj.notes || '').toLowerCase().includes('[contractor]')) {
+              resolvedSupplyScope = 'contractor';
+              break;
+            } else if (String(tempObj.notes || '').toLowerCase().includes('[owner]')) {
+              resolvedSupplyScope = 'owner';
+              break;
+            }
+            if (tempObj.parentId) {
+              tempObj = currentProjPurchasing.find(p => p.id === tempObj!.parentId);
+            } else {
+              break;
+            }
+            safeCount2++;
+          }
+          const isContractor = resolvedSupplyScope === 'contractor' || (resolvedSupplyScope === 'unknown');
 
           addMaterialPlan({
             projectCode: selectedProject,

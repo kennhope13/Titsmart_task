@@ -453,12 +453,20 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       documentTracks: newState.documentTracks !== undefined ? newState.documentTracks : current.documentTracks,
       fieldLogs: newState.fieldLogs !== undefined ? newState.fieldLogs : current.fieldLogs,
     };
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      channel?.postMessage({ type: 'SYNC_STATE' });
-    } catch (e) {
-      console.error('Failed to save state', e);
+    
+    // Debounce localStorage persistence to prevent UI freezes during rapid sequential updates
+    if ((window as any).__persistTimeout) {
+      clearTimeout((window as any).__persistTimeout);
     }
+    
+    (window as any).__persistTimeout = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        channel?.postMessage({ type: 'SYNC_STATE' });
+      } catch (e) {
+        console.error('Failed to save state', e);
+      }
+    }, 500);
   };
 
   return {
