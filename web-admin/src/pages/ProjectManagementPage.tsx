@@ -487,10 +487,20 @@ export const ProjectManagementPage: React.FC = () => {
                       <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-500 font-extrabold text-xs mt-0.5">
                         {String(idx + 1).padStart(2, '0')}
                       </div>
-                      <div className="flex-1 bg-blue-50 rounded-lg px-3 py-2">
-                        <p className="font-bold text-primary text-sm leading-snug line-clamp-2" title={project.name}>
+                      <div className="flex-1 bg-blue-50 rounded-lg px-3 py-2 relative">
+                        <p className="font-bold text-primary text-sm leading-snug line-clamp-2 pr-6" title={project.name}>
                           {project.name}
                         </p>
+                        {/* Nút xóa — hiện khi hover (đã được dời vào trong khối tiêu đề) */}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
+                          title={TEXT.deleteProject}
+                          aria-label="Xóa dự án"
+                          className="absolute top-1.5 right-1.5 rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition z-20"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">delete</span>
+                        </button>
                       </div>
                     </div>
 
@@ -540,16 +550,7 @@ export const ProjectManagementPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Nút xóa — hiện khi hover */}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
-                    title={TEXT.deleteProject}
-                    aria-label="Xóa dự án"
-                    className="absolute top-0 right-0 rounded-bl-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition z-20"
-                  >
-                    <span className="material-symbols-outlined text-base">delete</span>
-                  </button>
+
                 </div>
               );
             })}
