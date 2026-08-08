@@ -486,7 +486,7 @@ export const MaterialTrackingPage: React.FC = () => {
         <section className="bg-white flex flex-col h-full">
 
         {/* TABS */}
-        <div className="flex items-center gap-4 px-4 border-b border-slate-200 bg-white rounded-t-xl pt-1 shadow-xs border-x sticky top-0 z-10">
+        <div className="flex items-center gap-4 px-4 border-b border-slate-200 bg-white pt-1 sticky top-0 z-10">
           {[
             { id: 'OVERVIEW', label: 'Tồn Kho Tổng Hợp', icon: 'inventory' },
             { id: 'IMPORT', label: 'Nhật Ký Nhập Kho', icon: 'login' },
