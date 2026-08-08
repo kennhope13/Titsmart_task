@@ -489,7 +489,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                           {plan.jobContent}
                         </span>
                         
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center ml-1">
+                        <div className="flex items-center ml-1 transition-opacity">
                         {onAddSubtask && (
                           <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
                             <span className="material-symbols-outlined text-[14px]">add_circle</span>
