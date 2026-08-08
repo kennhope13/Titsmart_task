@@ -133,7 +133,7 @@ export const ActivityLogPage: React.FC = () => {
           <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">history</span>
           </div>
-          <h1 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4">Nhật ký Hoạt động</h1>
+          <h1 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">NHẬT KÝ HOẠT ĐỘNG</h1>
         </div>
       </section>
 
@@ -206,9 +206,8 @@ export const ActivityLogPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="p-6 space-y-4">
       {/* LIST SECTION */}
-      <section className="bg-white border border-slate-200 rounded-xl shadow-xs p-6">
+      <section className="bg-white flex-1 p-6">
         {Object.keys(groupedLogs).length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <span className="material-symbols-outlined text-4xl text-slate-300">history_toggle_off</span>
@@ -259,7 +258,6 @@ export const ActivityLogPage: React.FC = () => {
           </div>
         )}
       </section>
-      </div>
     </div>
   );
 };
