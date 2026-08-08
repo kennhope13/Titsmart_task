@@ -514,14 +514,30 @@ export const ProjectManagementPage: React.FC = () => {
                     )}
 
                     {/* Nhân sự dự án */}
-                    {project.memberNames?.length ? (
-                      <p className="text-[11px] text-slate-500 truncate">
-                        <span className="font-semibold text-slate-400">Nhân sự: </span>
-                        {project.memberNames.slice(0, 3).join(', ')}{project.memberNames.length > 3 ? ` +${project.memberNames.length - 3}` : ''}
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-slate-400">Chưa có nhân sự</p>
-                    )}
+                    <div className="flex items-center gap-2 mt-1 pt-1 border-t border-slate-100/50">
+                      <span className="text-[11px] font-semibold text-slate-400 whitespace-nowrap">Nhân sự:</span>
+                      {project.memberNames?.length ? (
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                          {project.memberNames.slice(0, 3).map((name, i) => (
+                            <div key={i} className="flex items-center gap-1">
+                              <div className="w-4 h-4 rounded-full bg-sky-100 text-sky-700 border border-sky-200 flex items-center justify-center text-[9px] font-bold uppercase shrink-0">
+                                {name.charAt(0)}
+                              </div>
+                              <span className="text-[11px] font-semibold text-sky-700 truncate max-w-[65px]" title={name}>
+                                {name}
+                              </span>
+                            </div>
+                          ))}
+                          {project.memberNames.length > 3 && (
+                            <span className="text-[11px] font-semibold text-slate-400">
+                              +{project.memberNames.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="italic text-[11px] text-slate-400">Chưa có</span>
+                      )}
+                    </div>
 
                     {/* Tiến độ */}
                     <div className="mt-auto pt-1">
