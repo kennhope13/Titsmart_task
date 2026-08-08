@@ -497,7 +497,7 @@ export const ProjectManagementPage: React.FC = () => {
                           onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
                           title={TEXT.deleteProject}
                           aria-label="Xóa dự án"
-                          className="absolute top-1.5 right-1.5 rounded p-1 text-slate-400 hover:text-rose-500 transition z-20"
+                          className="absolute top-0 right-0 rounded-tr-lg rounded-bl-lg p-1.5 text-slate-400 hover:text-rose-500 transition z-20"
                         >
                           <span className="material-symbols-outlined text-[15px]">delete</span>
                         </button>
