@@ -1,7 +1,10 @@
-import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useRealtimeStore } from './services/realtimeStore';
+import { useAuthStore } from './services/authStore';
 import { Layout } from './components/layout/Layout';
+import { LoginPage } from './pages/LoginPage';
+import { LoginPageVariant } from './pages/LoginPageVariant';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProjectManagementPage } from './pages/ProjectManagementPage';
 import { TaskManagementPage } from './pages/TaskManagementPage';
@@ -15,10 +18,35 @@ import { ActivityLogPage } from './pages/ActivityLogPage';
 import { FieldLogsPage } from './pages/FieldLogsPage';
 import { ProjectCostPlanPage } from './pages/ProjectCostPlanPage';
 
+const ProtectedLayout: React.FC = () => {
+  const user = useAuthStore((state) => state.user);
+  if (!user) return <Navigate to="/login" replace />;
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  );
+};
+
 export const App: React.FC = () => {
+  const user = useAuthStore((state) => state.user);
+  const [loginStyle, setLoginStyle] = useState<'default' | 'variant'>(() => (localStorage.getItem('titsmart_login_style') as 'default' | 'variant') || 'default');
   const { fetchProjects, fetchTasks, fetchMaterials, fetchIssues, fetchEngineers, fetchActivityLogs, fetchAccounting, fetchFieldLogs } = useRealtimeStore();
 
+  const switchLoginStyle = (style: 'default' | 'variant') => {
+    localStorage.setItem('titsmart_login_style', style);
+    setLoginStyle(style);
+  };
+
+  const renderLogin = () =>
+    loginStyle === 'variant' ? (
+      <LoginPageVariant onSwitchStyle={() => switchLoginStyle('default')} />
+    ) : (
+      <LoginPage onSwitchStyle={() => switchLoginStyle('variant')} />
+    );
+
   useEffect(() => {
+    if (!user) return;
     fetchProjects();
     fetchTasks();
     fetchMaterials();
@@ -27,11 +55,12 @@ export const App: React.FC = () => {
     fetchActivityLogs();
     fetchAccounting();
     fetchFieldLogs();
-  }, []);
+  }, [user]);
 
   return (
-    <Layout>
-      <Routes>
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : renderLogin()} />
+      <Route element={<ProtectedLayout />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/projects" element={<ProjectManagementPage />} />
         <Route path="/tasks" element={<TaskManagementPage />} />
@@ -44,9 +73,9 @@ export const App: React.FC = () => {
         <Route path="/personnel" element={<PersonnelPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/account" element={<AccountPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Layout>
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 };
 

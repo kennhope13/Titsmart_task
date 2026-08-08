@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Toast } from '../components/common/Toast';
+import { Modal } from '../components/common/Modal';
 
 const filters = [
   { key: 'all', label: 'Tất cả' },
@@ -24,6 +25,7 @@ export const PersonnelPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
+  const [deletingPerson, setDeletingPerson] = useState<{ id: string; name: string } | null>(null);
 
   const toggleProjectCode = (code: string) => {
     setSelectedProjectCodes(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
@@ -38,7 +40,8 @@ export const PersonnelPage: React.FC = () => {
   };
 
   const handleExportExcel = () => {
-    const data = people.map(p => ({
+    const data = people.map((p, index) => ({
+      'STT': index + 1,
       'Mã nhân viên': p.code,
       'Họ tên': p.name,
       'Vai trò': p.role,
@@ -151,7 +154,6 @@ export const PersonnelPage: React.FC = () => {
   };
 
   const handleDeletePerson = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa nhân sự "${name}"?`)) return;
     try {
       await deleteEngineer(id);
       triggerToast(`Đã xóa nhân sự "${name}"`, 'success');
@@ -205,17 +207,17 @@ export const PersonnelPage: React.FC = () => {
             </div>
           <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative">
             <table className="w-full text-xs text-left border-collapse">
-              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-left p-3 bg-slate-50">Họ tên</th><th className="text-left p-3 bg-slate-50">Mã NV</th><th className="text-left p-3 bg-slate-50">Vai trò</th><th className="text-left p-3 bg-slate-50">Dự án</th><th className="text-left p-3 bg-slate-50">SĐT</th><th className="text-left p-3 bg-slate-50">Trạng thái</th><th className="text-left p-3 bg-slate-50">Chức năng</th></tr></thead>
+              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-3 bg-slate-50 w-10">STT</th><th className="text-left p-3 bg-slate-50">Họ tên</th><th className="text-left p-3 bg-slate-50">Mã NV</th><th className="text-left p-3 bg-slate-50">Vai trò</th><th className="text-left p-3 bg-slate-50">Dự án</th><th className="text-left p-3 bg-slate-50">SĐT</th><th className="text-left p-3 bg-slate-50">Trạng thái</th><th className="text-left p-3 bg-slate-50">Chức năng</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
-                {people.map((person) => (
+                {people.map((person, index) => (
                   <tr
                     key={person.id}
                     className="cursor-pointer hover:bg-slate-50"
                     onClick={() => openEditModal(person)}
                   >
+                    <td className="p-3 text-center font-mono font-bold text-slate-400 whitespace-nowrap">{index + 1}</td>
                     <td className="p-3 text-sm font-semibold text-slate-900 tracking-tight">
                       <div className="truncate">{person.name}</div>
-                      <div className="text-[11px] font-medium text-slate-500 mt-1">{person.team}</div>
                     </td>
                     <td className="p-3 font-mono font-bold text-primary whitespace-nowrap">{person.code}</td>
                     <td className="p-3 font-semibold text-slate-700 whitespace-nowrap">{person.role}</td>
@@ -232,43 +234,26 @@ export const PersonnelPage: React.FC = () => {
                     </td>
                     <td className="p-3 text-slate-600 whitespace-nowrap">{person.phone || 'Chưa cập nhật'}</td>
                     <td className="p-3 whitespace-nowrap"><span className={`px-2 py-1 rounded-full text-[11px] font-bold ${person.locked ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>
-                    <td className="p-3 min-w-[130px]">
-                      <div className="flex flex-wrap gap-1.5">
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openEditModal(person);
-                          }}
-                          className="px-2 py-1 rounded border border-slate-200 font-bold text-slate-600 hover:bg-slate-50"
-                        >
-                          Sửa
-                        </button>
+                    <td className="p-3 min-w-[150px] whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
                             toggleLock(person.id);
                           }}
-                          className="px-2 py-1 rounded border border-slate-200 font-bold text-primary hover:bg-blue-50"
+                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border text-[11px] font-bold active:scale-95 transition-all ${person.locked ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10'}`}
                         >
+                          <span className="material-symbols-outlined text-[14px]">{person.locked ? 'lock_open' : 'lock'}</span>
                           {person.locked ? 'Mở khóa' : 'Khóa'}
                         </button>
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
-                            openEditModal(person);
+                            setDeletingPerson({ id: person.id, name: person.name });
                           }}
-                          className="px-2 py-1 rounded border border-slate-200 font-bold text-slate-600 hover:bg-slate-50"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-red-200 bg-white text-[11px] font-bold text-red-600 hover:bg-red-50 hover:border-red-300 active:scale-95 transition-all"
                         >
-                          Gán đội/QL
-                        </button>
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleDeletePerson(person.id, person.name);
-                          }}
-                          className="px-2 py-1 rounded border border-red-200 font-bold text-red-600 hover:bg-red-50"
-                        >
-                          Xóa
+                          <span className="material-symbols-outlined text-[14px]">delete</span>Xóa
                         </button>
                       </div>
                     </td>
@@ -333,6 +318,17 @@ export const PersonnelPage: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+      {deletingPerson && (
+        <Modal isOpen={!!deletingPerson} onClose={() => setDeletingPerson(null)} title="Xác nhận xóa">
+          <div className="py-4">
+            <p className="mb-8 text-sm font-medium text-slate-700">Bạn chắc chắn muốn xóa nhân sự "{deletingPerson.name}"?</p>
+            <div className="flex justify-end gap-3 border-t pt-4">
+              <button onClick={() => setDeletingPerson(null)} className="px-4 py-2 border border-slate-300 text-slate-700 bg-white rounded hover:bg-slate-50 transition-colors font-medium">Hủy</button>
+              <button onClick={() => { const { id, name } = deletingPerson; setDeletingPerson(null); handleDeletePerson(id, name); }} className="px-4 py-2 bg-[#e53935] text-white rounded hover:bg-red-700 transition-colors font-bold shadow-md">Xóa</button>
+            </div>
+          </div>
+        </Modal>
       )}
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
     </div>

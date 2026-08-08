@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useRealtimeStore } from '../../services/realtimeStore';
+import { useAuthStore } from '../../services/authStore';
 
 export const Sidebar: React.FC = () => {
   const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
+  const user = useAuthStore((state) => state.user);
   const [showNotifPopover, setShowNotifPopover] = useState(false);
   const unreadCount = notifications.filter((item) => !item.read).length;
 
@@ -161,8 +163,8 @@ export const Sidebar: React.FC = () => {
               className="w-10 h-10 rounded-full object-cover border border-slate-200 flex-shrink-0"
             />
             <div className="min-w-0 leading-tight flex-1">
-              <span className="block font-bold text-xs text-slate-800 truncate">Admin</span>
-              <span className="block text-[10px] text-slate-500 truncate">Quản trị viên</span>
+              <span className="block font-bold text-xs text-slate-800 truncate">{user?.name || 'Admin'}</span>
+              <span className="block text-[10px] text-slate-500 truncate">{user?.title || 'Quản trị viên'}</span>
             </div>
             <span className="material-symbols-outlined text-base text-slate-400 flex-shrink-0">settings</span>
           </NavLink>

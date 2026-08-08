@@ -1,24 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
 
-const ACTION_TYPES = [
-  { label: 'Tất cả', value: 'ALL' },
-  { label: 'Tiến độ', value: 'tien-do' },
-  { label: 'Chi phí / Lương', value: 'chi-phi' },
-  { label: 'Vật tư / Kho', value: 'vat-tu' },
-  { label: 'Hồ sơ', value: 'ho-so' },
-  { label: 'Khác', value: 'khac' },
-];
-
-const classifyAction = (action: string) => {
-  const lower = action.toLowerCase();
-  if (lower.includes('tiến độ') || lower.includes('thi công') || lower.includes('nhập khẩu') || lower.includes('đồng bộ')) return 'tien-do';
-  if (lower.includes('chi') || lower.includes('lương') || lower.includes('hợp đồng') || lower.includes('thanh toán') || lower.includes('chi phí')) return 'chi-phi';
-  if (lower.includes('kho') || lower.includes('vật tư') || lower.includes('mua sắm') || lower.includes('mua hàng') || lower.includes('đặt hàng')) return 'vat-tu';
-  if (lower.includes('hồ sơ') || lower.includes('chứng từ') || lower.includes('tài liệu')) return 'ho-so';
-  return 'khac';
-};
-
 const parseDateKey = (timestamp: string): string => {
   const value = (timestamp || '').trim();
   if (!value) return 'unknown';
@@ -68,37 +50,19 @@ const parseTime = (timestamp: string): string => {
 
 export const ActivityLogPage: React.FC = () => {
   const { activityLogs } = useRealtimeStore();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('ALL');
-  const [userFilter, setUserFilter] = useState('ALL');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const uniqueUsers = useMemo(() => {
-    return Array.from(new Set(activityLogs.map((log) => log.user).filter(Boolean))).sort();
-  }, [activityLogs]);
-
   const filteredActivityLogs = useMemo(() => {
-    const keyword = searchTerm.trim().toLowerCase();
     return activityLogs.filter((log) => {
-      const matchSearch =
-        !keyword ||
-        (log.user || '').toLowerCase().includes(keyword) ||
-        (log.action || '').toLowerCase().includes(keyword) ||
-        (log.project || '').toLowerCase().includes(keyword);
-
-      const type = classifyAction(log.action || '');
-      const matchType = typeFilter === 'ALL' || type === typeFilter;
-      const matchUser = userFilter === 'ALL' || log.user === userFilter;
-
       let matchDate = true;
       const logDate = parseDateKey(log.timestamp || '');
       if (dateFrom && logDate !== 'unknown') matchDate = matchDate && logDate >= dateFrom;
       if (dateTo && logDate !== 'unknown') matchDate = matchDate && logDate <= dateTo;
 
-      return matchSearch && matchType && matchUser && matchDate;
+      return matchDate;
     });
-  }, [activityLogs, searchTerm, typeFilter, userFilter, dateFrom, dateTo]);
+  }, [activityLogs, dateFrom, dateTo]);
 
   const groupedLogs = useMemo(() => {
     return filteredActivityLogs.reduce((acc: Record<string, typeof activityLogs>, log) => {
@@ -111,16 +75,10 @@ export const ActivityLogPage: React.FC = () => {
   }, [filteredActivityLogs]);
 
   const hasFilters =
-    searchTerm.trim() !== '' ||
-    typeFilter !== 'ALL' ||
-    userFilter !== 'ALL' ||
     dateFrom !== '' ||
     dateTo !== '';
 
   const clearFilters = () => {
-    setSearchTerm('');
-    setTypeFilter('ALL');
-    setUserFilter('ALL');
     setDateFrom('');
     setDateTo('');
   };
@@ -138,71 +96,35 @@ export const ActivityLogPage: React.FC = () => {
       </section>
 
       <section className="bg-white border-b border-slate-200 px-6 py-4">
-        <div className="grid grid-cols-1 xl:grid-cols-[1.8fr_1fr] gap-3">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:gap-3 w-full">
-            <div className="relative flex-1 min-w-0">
-              <span className="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-lg">search</span>
-              <input
-                type="text"
-                placeholder="Tìm kiếm thao tác, người dùng, dự án..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white"
-              />
-            </div>
-
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full sm:w-1/2 xl:w-auto min-w-[170px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              {ACTION_TYPES.map((type) => (
-                <option key={type.value} value={type.value}>{type.label}</option>
-              ))}
-            </select>
-
-            <select
-              value={userFilter}
-              onChange={(e) => setUserFilter(e.target.value)}
-              className="w-full sm:w-1/2 xl:w-auto min-w-[170px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="ALL">Tất cả người dùng</option>
-              {uniqueUsers.map((user) => (
-                <option key={user} value={user}>{user}</option>
-              ))}
-            </select>
+        <div className="flex flex-wrap items-center justify-start gap-2">
+          <div className="flex items-center gap-2 min-w-[160px]">
+            <span className="text-[11px] font-bold text-slate-500">Từ</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
           </div>
-
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <div className="flex items-center gap-2 min-w-[160px]">
-              <span className="text-[11px] font-bold text-slate-500">Từ</span>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div className="flex items-center gap-2 min-w-[160px]">
-              <span className="text-[11px] font-bold text-slate-500">đến</span>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            {hasFilters && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50"
-              >
-                <span className="material-symbols-outlined text-[14px]">filter_alt_off</span>
-                Xóa lọc
-              </button>
-            )}
+          <div className="flex items-center gap-2 min-w-[160px]">
+            <span className="text-[11px] font-bold text-slate-500">đến</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
           </div>
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50"
+            >
+              <span className="material-symbols-outlined text-[14px]">filter_alt_off</span>
+              Xóa lọc
+            </button>
+          )}
         </div>
       </section>
 
@@ -219,36 +141,42 @@ export const ActivityLogPage: React.FC = () => {
             {Object.entries(groupedLogs).map(([date, logs]) => (
               <div key={date} className="space-y-4 w-full">
                 <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <span className="material-symbols-outlined text-slate-400 text-lg">calendar_month</span>
-                  <h3 className="text-sm font-bold text-slate-800">{date}</h3>
+                  <span className="material-symbols-outlined text-primary/60 text-lg">calendar_month</span>
+                  <h3 className="text-sm font-extrabold text-slate-800">{date}</h3>
+                  <span className="text-[10px] font-bold text-slate-400">({logs.length} thao tác)</span>
                 </div>
                 
-                <div className="space-y-3 w-full">
+                <div className="space-y-2.5 w-full">
                   {logs.map((log) => {
                      const timeStr = parseTime(log.timestamp || '');
-                     
+                      
                      return (
-                      <div key={log.id} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 hover:border-slate-300 hover:shadow-sm transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex-1 min-w-0 flex flex-col gap-2">
-                          <span className="block w-full text-sm font-bold text-slate-800 break-words">{log.action}</span>
-                          <div className="flex w-full flex-wrap items-center gap-3">
-                            <span className="inline-flex items-center gap-1 text-slate-600 text-[11px] font-semibold">
-                              <span className="material-symbols-outlined text-xs">person</span>
+                      <div key={log.id} className="flex items-start gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 hover:border-slate-300 hover:shadow-sm transition-all">
+                        <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-sm border border-white ${log.badgeBg || 'bg-slate-50'}`}>
+                          <span className={`material-symbols-outlined text-[16px] ${log.iconColor || 'text-slate-500'}`}>{log.icon || 'history'}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-xs font-bold text-slate-800 leading-relaxed break-words">{log.action}</p>
+                            {timeStr && (
+                              <span className="flex-shrink-0 inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 whitespace-nowrap mt-0.5">
+                                <span className="material-symbols-outlined text-[11px]">schedule</span>
+                                {timeStr}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-500">
+                              <span className="material-symbols-outlined text-[11px]">person</span>
                               {log.user}
                             </span>
                             <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                            <span className="inline-flex items-center gap-1 text-primary text-[11px] font-semibold">
-                              <span className="material-symbols-outlined text-xs">business_center</span>
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-primary/70">
+                              <span className="material-symbols-outlined text-[11px]">business_center</span>
                               {log.project || 'Hệ thống'}
                             </span>
                           </div>
                         </div>
-                        {timeStr && (
-                          <span className="text-[12px] text-slate-500 font-medium flex-shrink-0 flex items-center gap-1 bg-white border border-slate-200 px-2 py-1 rounded-md">
-                            <span className="material-symbols-outlined text-xs">schedule</span>
-                            {timeStr}
-                          </span>
-                        )}
                       </div>
                      );
                   })}
