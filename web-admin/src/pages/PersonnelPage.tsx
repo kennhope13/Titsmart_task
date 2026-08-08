@@ -165,7 +165,7 @@ export const PersonnelPage: React.FC = () => {
       <section className="border-b border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center"><span className="material-symbols-outlined text-xl">groups</span></div>
-          <div><h2 className="page-title text-2xl font-extrabold text-slate-900">Nhân sự</h2></div>
+          <div><h2 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">NHÂN SỰ</h2></div>
         </div>
         <div className="flex items-center gap-3">
           <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100">{engineers.length} nhân sự</span>

@@ -260,9 +260,9 @@ export const FieldLogsPage: React.FC = () => {
             <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-primary">
               <span className="material-symbols-outlined text-2xl">photo_camera</span>
             </div>
-            <div>
-              <h1 className="text-2xl font-extrabold uppercase text-slate-900">Nhật ký Hiện trường</h1>
-              <p className="text-xs font-semibold text-slate-400">
+            <div className="border-l-4 border-primary pl-4">
+              <h1 className="text-2xl font-extrabold uppercase text-slate-900">NHẬT KÝ HIỆN TRƯỜNG</h1>
+              <p className="text-xs font-semibold text-slate-400 mt-1">
                 {visibleLogs.length} báo cáo · {totalImages} ảnh
               </p>
             </div>

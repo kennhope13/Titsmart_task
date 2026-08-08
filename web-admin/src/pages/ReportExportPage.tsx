@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
 
 const tabs = [
@@ -62,7 +62,7 @@ export const ReportExportPage: React.FC = () => {
       <section className="border-b border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center"><span className="material-symbols-outlined text-xl">analytics</span></div>
-          <div><h2 className="page-title text-2xl font-extrabold text-slate-900">Báo cáo</h2></div>
+          <div><h2 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">BÁO CÁO</h2></div>
         </div>
         <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold border border-amber-100 whitespace-nowrap">{pending} chờ duyệt</span>
       </section>

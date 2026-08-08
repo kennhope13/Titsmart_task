@@ -447,7 +447,7 @@ export const MaterialTrackingPage: React.FC = () => {
             <span className="material-symbols-outlined text-xl">warehouse</span>
           </div>
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
               <h2 className="text-2xl font-extrabold text-slate-900">QUẢN LÝ KHO & VẬT TƯ</h2>
             </div>
           </div>
