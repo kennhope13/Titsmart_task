@@ -419,7 +419,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             <span className={`material-symbols-outlined text-base transition-transform duration-200 text-primary ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                           </button>
                           <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                          <span className="truncate flex-1 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); onEdit?.(pur); }}>{pur.content}</span>
+                          <span className="truncate flex-1 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); onEdit?.(pur, subTab); }}>{pur.content}</span>
                           {onAddSubtask && (
                             <button onClick={(e) => { e.stopPropagation(); onAddSubtask(pur, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
                               <span className="material-symbols-outlined text-[16px]">add_circle</span>
