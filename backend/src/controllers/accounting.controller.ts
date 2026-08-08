@@ -19,6 +19,7 @@ const formatMaterialPlan = (p: any) => ({
   contractVolume: Number(p.contract_volume),
   techSpecModel: p.tech_spec_model,
   techSpecOrigin: p.tech_spec_origin,
+  techSpecStatus: p.tech_spec_status,
   progressStatus: p.progress_status,
   orderedVolume: Number(p.ordered_volume),
   orderedStatus: p.ordered_status,
@@ -94,6 +95,7 @@ export const createMaterialPlan = async (req: Request, res: Response) => {
         contract_volume: contractVolume || 0,
         tech_spec_model: data.techSpecModel || '',
         tech_spec_origin: data.techSpecOrigin || '',
+        tech_spec_status: data.techSpecStatus || '',
         progress_status: data.progressStatus || '',
         ordered_volume: orderedVolume || 0,
         ordered_status: data.orderedStatus || '',
@@ -138,7 +140,8 @@ export const updateMaterialPlan = async (req: Request, res: Response) => {
     if (data.unit !== undefined) updateData.unit = data.unit;
     if (data.techSpecModel !== undefined) updateData.tech_spec_model = data.techSpecModel;
     if (data.techSpecOrigin !== undefined) updateData.tech_spec_origin = data.techSpecOrigin;
-    if (data.progressStatus !== undefined) updateData.progress_status = data.progressStatus;
+    if (data.techSpecStatus !== undefined) updateData.tech_spec_status = data.techSpecStatus;
+    if (data.progressStatus !== undefined) updateData.progress_status = String(data.progressStatus);
     if (data.orderedStatus !== undefined) updateData.ordered_status = data.orderedStatus;
     if (data.issueContent !== undefined) updateData.issue_content = data.issueContent;
     if (data.issueStatus !== undefined) updateData.issue_status = data.issueStatus;

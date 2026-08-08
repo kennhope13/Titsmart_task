@@ -801,7 +801,9 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full border rounded px-1 py-0.5 bg-white text-slate-500 focus:outline-primary text-xs"
                       />
                     ) : (
-                      <div onClick={() => startEditing(plan.id, 'notes', plan.notes)} className="w-full truncate cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded" title={cleanNotes(plan.notes)}>{cleanNotes(plan.notes)}</div>
+                      <div onClick={() => startEditing(plan.id, 'notes', plan.notes)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 px-1.5 py-2 rounded flex items-center" title={cleanNotes(plan.notes)}>
+                        <span className="truncate flex-1">{cleanNotes(plan.notes)}</span>
+                      </div>
                     )}
                   </td>
                   </tr>

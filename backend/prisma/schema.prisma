@@ -394,6 +394,7 @@ model ProjectMaterialPlan {
   contract_volume     Decimal  @default(0) @db.Decimal(18, 4)
   tech_spec_model     String?
   tech_spec_origin    String?
+  tech_spec_status    String?  @db.VarChar(255)
   progress_status     String?  @db.VarChar(255)
   ordered_volume      Decimal  @default(0) @db.Decimal(18, 4)
   ordered_status      String?  @db.VarChar(255)

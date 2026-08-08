@@ -324,6 +324,7 @@ const normalizeMaterialPlan = (plan: any): ProjectMaterialPlan => ({
   contractVolume: Number(plan.contractVolume ?? plan.contract_volume ?? 0),
   techSpecModel: plan.techSpecModel ?? plan.tech_spec_model ?? '',
   techSpecOrigin: plan.techSpecOrigin ?? plan.tech_spec_origin ?? '',
+  techSpecStatus: plan.techSpecStatus ?? plan.tech_spec_status ?? '',
   progressStatus: plan.progressStatus ?? plan.progress_status ?? '',
   orderedVolume: Number(plan.orderedVolume ?? plan.ordered_volume ?? 0),
   orderedStatus: plan.orderedStatus ?? plan.ordered_status ?? '',
