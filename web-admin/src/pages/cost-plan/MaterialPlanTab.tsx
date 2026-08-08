@@ -414,7 +414,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                               <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                             </button>
                             <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                            <span className="truncate flex-1">{plan.jobContent}</span>
+                            <span className="truncate flex-1 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); onEdit?.(plan); }}>{plan.jobContent}</span>
                             {onAddSubtask && (
                               <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
                                 <span className="material-symbols-outlined text-[16px]">add_circle</span>
