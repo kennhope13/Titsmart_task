@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { MaterialPlanTab } from './cost-plan/MaterialPlanTab';
 import { PurchasingTab } from './cost-plan/PurchasingTab';
 import { DocumentCertificateTab } from './cost-plan/DocumentCertificateTab';
-import { ActivityLogTab } from './cost-plan/ActivityLogTab';
+
 
 const romanToNumber = (value?: string) => {
   const romanMap: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
@@ -866,7 +866,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     }
   }, [projectOptions, selectedProject]);
 
-  const [activeTab, setActiveTab] = useState<'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS' | 'ACTIVITY_LOG'>('MATERIAL_PLAN');
+  const [activeTab, setActiveTab] = useState<'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('MATERIAL_PLAN');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
@@ -1278,7 +1278,6 @@ export const ProjectCostPlanPage: React.FC = () => {
             { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long' },
             { id: 'LABOR', label: 'Lương Công Nhật', icon: 'engineering' },
             { id: 'DOCUMENTS', label: 'Theo dõi chứng từ', icon: 'description' },
-            { id: 'ACTIVITY_LOG', label: 'Nhật ký hoạt động', icon: 'manage_history' },
           ].map(tab => (
             <button 
               key={tab.id}
@@ -1331,7 +1330,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               Xuất Excel
             </button>
 
-            {activeTab !== 'MATERIAL_PLAN' && activeTab !== 'PURCHASING' && activeTab !== 'ACTIVITY_LOG' && (
+            {activeTab !== 'MATERIAL_PLAN' && activeTab !== 'PURCHASING' && (
               <button 
                 onClick={() => {
                   if (!selectedProject) {
@@ -1564,15 +1563,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
         )}
 
-        {/* ACTIVITY LOG TAB */}
-        {activeTab === 'ACTIVITY_LOG' && (
-          <ActivityLogTab
-            data={activityLogs}
-            selectedProject={selectedProject}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
-        )}
+
 
       </div>
 
