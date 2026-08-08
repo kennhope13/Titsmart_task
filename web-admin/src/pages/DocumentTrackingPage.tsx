@@ -264,7 +264,7 @@ export const DocumentTrackingPage: React.FC = () => {
       <div className="p-0 space-y-0">
       {/* TABS & TABLE */}
       <section className="bg-white border-y border-slate-200 rounded-none shadow-none overflow-hidden">
-          <div className="w-full flex items-center justify-between border-b border-slate-200 bg-white rounded-t-xl px-4 pt-1 shadow-xs border-x sticky top-0 z-10">
+          <div className="w-full flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1 sticky top-0 z-10">
             <div className="flex items-center gap-4">
               {[
               { id: 'overview', label: 'Tổng quan', icon: 'dashboard', count: filteredTracks.length },
