@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
+import { Prisma } from '@prisma/client';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const cleanUuid = (value: unknown) => (typeof value === 'string' && UUID_RE.test(value) ? value : null);
@@ -108,7 +109,10 @@ export const createProject = async (req: Request, res: Response) => {
     });
 
     res.status(201).json(mapToFrontend(project));
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(400).json({ error: 'Mã hoặc dữ liệu bạn nhập đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.' });
+    }
     console.error(error);
     res.status(500).json({ error: 'Failed to create project' });
   }
