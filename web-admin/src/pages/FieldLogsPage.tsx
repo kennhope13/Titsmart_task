@@ -284,9 +284,9 @@ export const FieldLogsPage: React.FC = () => {
       </header>
 
       {/* Content */}
-      <div className="flex-1 space-y-8 p-6">
+      <div className="flex flex-col flex-1 p-6">
         {logsByDay.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white py-16 text-slate-400 shadow-sm">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white flex-1 text-slate-400 shadow-sm">
             <span className="material-symbols-outlined text-5xl">photo_library</span>
             <p className="text-sm font-bold">Chưa có ảnh hiện trường</p>
             <p className="text-xs">Nhấn <strong className="text-primary">Upload ảnh</strong> để thêm ảnh cho dự án</p>
