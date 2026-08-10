@@ -18,6 +18,7 @@ import {
   FieldLog
 } from '../types';
 import { api } from './apiSupabase';
+import { supabase } from '../lib/supabase';
 import inventorySeedData from './inventorySeedData.json';
 
 const inventorySeed = inventorySeedData as {
@@ -1286,3 +1287,64 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
   };
 });
+
+// ==========================================
+// SUPABASE REALTIME: Tự động đồng bộ dữ liệu giữa các thiết bị
+// ==========================================
+const REALTIME_TABLES = [
+  'projects', 'tasks', 'materials', 'issues', 'engineers',
+  'notifications', 'activity_logs', 'inventory_transactions',
+  'material_plans', 'purchasing_plans', 'expenses',
+  'labor_payrolls', 'document_tracks', 'field_logs'
+];
+
+let realtimeChannel: any = null;
+
+export function setupRealtimeSync() {
+  if (realtimeChannel) {
+    supabase.removeChannel(realtimeChannel);
+  }
+
+  // Debounce: gom nhiều thay đổi trong 2 giây thành 1 lần refresh
+  let refreshTimeout: any = null;
+  const debouncedRefresh = () => {
+    if (refreshTimeout) clearTimeout(refreshTimeout);
+    refreshTimeout = setTimeout(() => {
+      console.log('[Realtime] Đang đồng bộ dữ liệu...');
+      const store = useRealtimeStore.getState();
+      store.fetchProjects();
+      store.fetchAccounting();
+      // Refresh tasks, materials, issues cho tất cả projects
+      store.fetchProjects().then(() => {
+        const projects = useRealtimeStore.getState().projects;
+        if (projects.length > 0) {
+          store.fetchTasks(undefined);
+          store.fetchMaterials(undefined);
+          store.fetchIssues(undefined);
+        }
+      });
+      store.fetchEngineers();
+    }, 2000);
+  };
+
+  realtimeChannel = supabase
+    .channel('realtime-all-tables')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'materials' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'issues' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'engineers' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'material_plans' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'purchasing_plans' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'labor_payrolls' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'document_tracks' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'field_logs' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, debouncedRefresh)
+    .subscribe((status: string) => {
+      console.log('[Realtime] Trạng thái kết nối:', status);
+    });
+
+  console.log('[Realtime] Đã bật đồng bộ tức thì cho tất cả bảng dữ liệu.');
+}
