@@ -2,7 +2,7 @@ name: Build Electron App (Windows)
 
 on:
   push:
-    branches: [ "main", "feat/redesign-login-page" ]
+    branches: [ "**" ]
   pull_request:
     branches: [ "main" ]
 
