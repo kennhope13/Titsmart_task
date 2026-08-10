@@ -215,29 +215,132 @@ export const api = {
     },
   },
   accounting: {
-    getMaterialPlans: async () => [],
-    createMaterialPlan: async (data: any) => data,
-    updateMaterialPlan: async (id: string, data: any) => data,
-    deleteMaterialPlan: async (id: string) => ({ success: true }),
+    getMaterialPlans: async () => {
+      const { data, error } = await supabase.from('material_plans').select('*');
+      if (error) throw error;
+      return data.map(toCamelCase);
+    },
+    createMaterialPlan: async (data: any) => {
+      const payload = toSnakeCase(data);
+      const { data: result, error } = await supabase.from('material_plans').insert(payload).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    updateMaterialPlan: async (id: string, data: any) => {
+      const { data: result, error } = await supabase.from('material_plans').update(toSnakeCase(data)).eq('id', id).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    deleteMaterialPlan: async (id: string) => {
+      const { error } = await supabase.from('material_plans').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    },
 
-    getPurchasings: async () => [],
-    createPurchasing: async (data: any) => data,
-    updatePurchasing: async (id: string, data: any) => data,
-    deletePurchasing: async (id: string) => ({ success: true }),
+    getPurchasings: async () => {
+      const { data, error } = await supabase.from('purchasing_plans').select('*');
+      if (error) throw error;
+      return data.map(toCamelCase);
+    },
+    createPurchasing: async (data: any) => {
+      const payload = toSnakeCase(data);
+      const { data: result, error } = await supabase.from('purchasing_plans').insert(payload).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    updatePurchasing: async (id: string, data: any) => {
+      const { data: result, error } = await supabase.from('purchasing_plans').update(toSnakeCase(data)).eq('id', id).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    deletePurchasing: async (id: string) => {
+      const { error } = await supabase.from('purchasing_plans').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    },
 
-    getExpenses: async () => [],
-    createExpense: async (data: any) => data,
-    updateExpense: async (id: string, data: any) => data,
-    deleteExpense: async (id: string) => ({ success: true }),
+    getExpenses: async () => {
+      const { data, error } = await supabase.from('expenses').select('*');
+      if (error) throw error;
+      return data.map(toCamelCase);
+    },
+    createExpense: async (data: any) => {
+      const payload = toSnakeCase(data);
+      const { data: result, error } = await supabase.from('expenses').insert(payload).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    updateExpense: async (id: string, data: any) => {
+      const { data: result, error } = await supabase.from('expenses').update(toSnakeCase(data)).eq('id', id).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    deleteExpense: async (id: string) => {
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    },
 
-    getPayrolls: async () => [],
-    createPayroll: async (data: any) => data,
-    updatePayroll: async (id: string, data: any) => data,
-    deletePayroll: async (id: string) => ({ success: true }),
+    getLaborPayrolls: async () => {
+      const { data, error } = await supabase.from('labor_payrolls').select('*');
+      if (error) throw error;
+      return data.map(toCamelCase);
+    },
+    createLaborPayroll: async (data: any) => {
+      const payload = toSnakeCase(data);
+      const { data: result, error } = await supabase.from('labor_payrolls').insert(payload).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    updateLaborPayroll: async (id: string, data: any) => {
+      const { data: result, error } = await supabase.from('labor_payrolls').update(toSnakeCase(data)).eq('id', id).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    deleteLaborPayroll: async (id: string) => {
+      const { error } = await supabase.from('labor_payrolls').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    },
 
-    getDocumentTracks: async () => [],
-    createDocumentTrack: async (data: any) => data,
-    updateDocumentTrack: async (id: string, data: any) => data,
-    deleteDocumentTrack: async (id: string) => ({ success: true }),
-  }
+    getDocumentTracks: async () => {
+      const { data, error } = await supabase.from('document_tracks').select('*');
+      if (error) throw error;
+      return data.map(toCamelCase);
+    },
+    createDocumentTrack: async (data: any) => {
+      const payload = toSnakeCase(data);
+      const { data: result, error } = await supabase.from('document_tracks').insert(payload).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    updateDocumentTrack: async (id: string, data: any) => {
+      const { data: result, error } = await supabase.from('document_tracks').update(toSnakeCase(data)).eq('id', id).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    deleteDocumentTrack: async (id: string) => {
+      const { error } = await supabase.from('document_tracks').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    },
+  },
+  fieldLogs: {
+    getAll: async () => {
+      const { data, error } = await supabase.from('field_logs').select('*');
+      if (error) throw error;
+      return data.map(toCamelCase);
+    },
+    create: async (data: any) => {
+      const payload = toSnakeCase(data);
+      const { data: result, error } = await supabase.from('field_logs').insert(payload).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    delete: async (id: string) => {
+      const { error } = await supabase.from('field_logs').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    },
+  },
 };

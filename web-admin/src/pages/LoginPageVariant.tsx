@@ -12,7 +12,7 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!username.trim() || !password) {
@@ -20,19 +20,17 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      const result = login(username, password);
-      setLoading(false);
-      if (result.ok) {
-        navigate('/', { replace: true });
-      } else {
-        setError(result.error || 'Đăng nhập thất bại.');
-      }
-    }, 450);
+    const result = await login(username, password);
+    setLoading(false);
+    if (result.ok) {
+      navigate('/', { replace: true });
+    } else {
+      setError(result.error || 'Đăng nhập thất bại.');
+    }
   };
 
   const fillAccount = (account: (typeof DEMO_ACCOUNTS)[number]) => {
-    setUsername(account.username);
+    setUsername(account.email); // Use email for Supabase Auth
     setPassword(account.password);
     setError('');
   };

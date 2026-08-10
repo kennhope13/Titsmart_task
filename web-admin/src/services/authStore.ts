@@ -53,6 +53,8 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   },
 ];
 
+import { supabase } from '../lib/supabase';
+
 const loadSession = (): AuthUser | null => {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
@@ -64,32 +66,43 @@ const loadSession = (): AuthUser | null => {
 
 interface AuthStoreState {
   user: AuthUser | null;
-  login: (username: string, password: string) => { ok: boolean; error?: string };
-  logout: () => void;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStoreState>((set) => ({
   user: loadSession(),
-  login: (username, password) => {
-    const account = DEMO_ACCOUNTS.find(
-      (acc) => acc.username.toLowerCase() === username.trim().toLowerCase()
-    );
-    if (!account) return { ok: false, error: 'Tên đăng nhập không tồn tại.' };
-    if (account.password !== password) return { ok: false, error: 'Mật khẩu không đúng.' };
-    const user: AuthUser = {
-      id: `user_${account.role}`,
-      username: account.username,
-      name: account.name,
-      role: account.role,
-      title: account.title,
-      email: account.email,
-      phone: account.phone,
-    };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    set({ user });
-    return { ok: true };
+  login: async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (error) {
+      console.error('Supabase login error:', error.message);
+      return { ok: false, error: 'Email hoặc mật khẩu không đúng.' };
+    }
+
+    if (data.user) {
+      const account = DEMO_ACCOUNTS.find((acc) => acc.email.toLowerCase() === email.trim().toLowerCase());
+      
+      const user: AuthUser = {
+        id: data.user.id,
+        username: account?.username || data.user.email?.split('@')[0] || 'user',
+        name: account?.name || data.user.email?.split('@')[0] || 'User',
+        role: account?.role || 'staff',
+        title: account?.title || 'Nhân viên',
+        email: data.user.email || email,
+        phone: account?.phone || '',
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      set({ user });
+      return { ok: true };
+    }
+    return { ok: false, error: 'Lỗi không xác định.' };
   },
-  logout: () => {
+  logout: async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem(SESSION_KEY);
     set({ user: null });
   },
