@@ -100,11 +100,13 @@ export const DashboardPage: React.FC = () => {
 
   const ChartBox = ({ title, children, span = 1, onClick }: { title: string, children: React.ReactNode, span?: number, onClick?: () => void }) => (
     <div 
-      className={`bg-white border border-slate-300 rounded flex flex-col h-full xl:col-span-${span} ${onClick ? 'cursor-pointer hover:shadow-lg hover:border-primary hover:-translate-y-1 transition-all duration-300' : ''}`}
+      className={`group relative flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs h-full xl:col-span-${span} overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-md hover:border-blue-300 transition-all duration-200' : ''}`}
       onClick={onClick}
     >
-      <div className="bg-slate-100 border-b border-slate-300 px-3 py-2 flex justify-between items-center">
-        <span className="text-[11px] font-bold uppercase text-slate-700 truncate">{title}</span>
+      {/* Top accent bar */}
+      <div className={`h-1 w-full ${onClick ? 'bg-slate-100 group-hover:bg-blue-300' : 'bg-slate-100'} transition-colors`} />
+      <div className="bg-white border-b border-slate-100 px-4 py-3 flex justify-between items-center">
+        <span className={`text-sm font-extrabold text-slate-800 truncate ${onClick ? 'group-hover:text-primary transition-colors' : ''}`}>{title}</span>
       </div>
       <div className="flex-1 min-h-0 relative p-3 pb-4 pr-4">
         {children}
