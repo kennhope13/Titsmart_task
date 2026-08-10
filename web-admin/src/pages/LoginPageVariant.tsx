@@ -30,7 +30,7 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
   };
 
   const fillAccount = (account: (typeof DEMO_ACCOUNTS)[number]) => {
-    setUsername(account.email); // Use email for Supabase Auth
+    setUsername(account.username);
     setPassword(account.password);
     setError('');
   };
