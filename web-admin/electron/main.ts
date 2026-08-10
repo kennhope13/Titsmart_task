@@ -33,6 +33,9 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(process.env.DIST || path.join(__dirname, '../dist'), 'index.html'));
   }
+  
+  // Mở sẵn công cụ cho nhà phát triển để xem lỗi
+  mainWindow.webContents.openDevTools();
 }
 
 app.on('window-all-closed', () => {

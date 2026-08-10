@@ -65,7 +65,7 @@ export const Sidebar: React.FC = () => {
       <div className="relative p-5 flex items-center justify-between gap-3 border-b border-slate-100">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-xs flex-shrink-0 overflow-hidden bg-white">
-            <img src="/logo.png" alt="TITSMART" className="w-full h-full object-contain p-0.5" />
+            <img src="./logo.png" alt="TITSMART" className="w-full h-full object-contain p-0.5" />
           </div>
           <div className="min-w-0">
             <h1 className="font-bold text-base text-primary leading-tight truncate">TITSMART</h1>
