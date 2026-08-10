@@ -17,7 +17,7 @@ import {
   DocumentTrack,
   FieldLog
 } from '../types';
-import { api } from './api';
+import { api } from './apiSupabase';
 import inventorySeedData from './inventorySeedData.json';
 
 const inventorySeed = inventorySeedData as {
@@ -766,16 +766,22 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
-    addMaterial: (matData) => {
-      const newMat: Material = {
-        ...matData,
-        id: 'mat-' + Date.now(),
-      };
-      set((state) => {
-        const nextMats = [newMat, ...state.materials];
-        persistAndNotify({ materials: nextMats });
-        return { materials: nextMats };
-      });
+    addMaterial: async (matData) => {
+      try {
+        const newMat: Material = {
+          ...matData,
+          id: 'mat-' + Date.now(),
+        };
+        const created = await api.materials.createTransaction ? await (api.materials as any).create(newMat) : newMat; // Temporary fallback if create doesn't exist
+        
+        set((state) => {
+          const nextMats = [created || newMat, ...state.materials];
+          persistAndNotify({ materials: nextMats });
+          return { materials: nextMats };
+        });
+      } catch (e) {
+        console.error('Failed to add material', e);
+      }
     },
 
     updateMaterial: (id, updatedFields) => {
