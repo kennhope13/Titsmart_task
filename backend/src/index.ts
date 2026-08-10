@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import dotenv from 'dotenv';
 import projectRoutes from './routes/projects.routes';
 import taskRoutes from './routes/tasks.routes';
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 import usersRoutes from './routes/users.routes';
 import activityLogsRoutes from './routes/activityLogs.routes';
 import accountingRoutes from './routes/accounting.routes';
+import fieldLogsRoutes from './routes/fieldLogs.routes';
 
 // Routes
 app.use('/api/projects', projectRoutes);
@@ -29,6 +31,10 @@ app.use('/api/issues', issuesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/activity-logs', activityLogsRoutes);
 app.use('/api/accounting', accountingRoutes);
+app.use('/api/field-logs', fieldLogsRoutes);
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.resolve(__dirname, '../../storage/uploads')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

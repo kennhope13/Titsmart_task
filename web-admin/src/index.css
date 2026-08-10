@@ -57,3 +57,518 @@ input[type="number"] {
   -moz-appearance: textfield !important;
   appearance: textfield !important;
 }
+
+.page-title {
+  text-transform: uppercase !important;
+  font-family: ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 1.5rem !important;
+  line-height: 2rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  color: #0f172a !important;
+}
+
+/* Shared tab typography */
+.app-tab-button {
+  font-family: ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+}
+
+.app-tab-button .material-symbols-outlined {
+  font-family: "Material Symbols Outlined" !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+}
+
+.cost-plan-compact {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.materials-page h2,
+.cost-plan-compact h1 {
+  font-weight: 800 !important;
+}
+
+/* Document tracking readability */
+.doc-tracking-page {
+  color: #243244;
+  background: #f5f7fb;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.doc-tracking-page section {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.doc-tracking-page h1 {
+  color: #172033;
+  letter-spacing: 0;
+}
+
+.doc-tracking-page input,
+.doc-tracking-page select,
+.doc-tracking-page textarea,
+.doc-tracking-page button {
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.doc-tracking-page table {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #334155;
+  background: #ffffff;
+}
+
+.doc-tracking-page thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #eef3f8 !important;
+  color: #475569 !important;
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+}
+
+.doc-tracking-page th {
+  padding: 12px 14px !important;
+  border-bottom: 1px solid #cbd5e1;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.doc-tracking-page td {
+  padding: 13px 14px !important;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+.doc-tracking-page tbody tr:nth-child(even) {
+  background: #fbfcfe;
+}
+
+.doc-tracking-page tbody tr:hover {
+  background: #eef6ff !important;
+}
+
+.doc-tracking-page .font-mono {
+  font-family: ui-sans-serif, system-ui, sans-serif !important;
+  letter-spacing: 0;
+}
+
+.doc-tracking-page .font-extrabold,
+.doc-tracking-page .font-black {
+  font-weight: 700 !important;
+}
+
+.doc-tracking-page .text-\[10px\],
+.doc-tracking-page .text-\[11px\] {
+  font-size: 12px !important;
+}
+
+.doc-tracking-page td .text-\[10px\],
+.doc-tracking-page td .text-\[11px\] {
+  font-size: 12px !important;
+}
+
+.doc-tracking-page td span.rounded-full {
+  padding: 4px 9px !important;
+  border-radius: 6px !important;
+  font-weight: 650 !important;
+}
+
+.doc-tracking-page .text-rose-600 {
+  color: #b42318 !important;
+}
+
+.doc-tracking-page .text-emerald-700,
+.doc-tracking-page .text-emerald-600 {
+  color: #047857 !important;
+}
+
+.doc-tracking-page .text-amber-700,
+.doc-tracking-page .text-amber-600 {
+  color: #9a6700 !important;
+}
+
+.doc-tracking-page .bg-rose-50 {
+  background-color: #fff1f0 !important;
+}
+
+.doc-tracking-page .bg-emerald-50 {
+  background-color: #ecfdf5 !important;
+}
+
+.doc-tracking-page .bg-amber-50 {
+  background-color: #fffbeb !important;
+}
+
+.doc-tracking-page .custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.doc-tracking-page .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border: 2px solid #f8fafc;
+}
+
+
+
+/* Material inventory readability */
+.materials-page {
+  color: #243244;
+  background: #f5f7fb;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.materials-page section {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.materials-page h2 {
+  color: #172033;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+
+.materials-page input,
+.materials-page select,
+.materials-page textarea,
+.materials-page button {
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.materials-page table {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #334155;
+  background: #ffffff;
+}
+
+.materials-page thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #eef3f8 !important;
+  color: #475569 !important;
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+}
+
+.materials-page th {
+  padding: 12px 14px !important;
+  border-bottom: 1px solid #cbd5e1;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.materials-page td {
+  padding: 13px 14px !important;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+.materials-page tbody tr:nth-child(even) {
+  background: #fbfcfe;
+}
+
+.materials-page tbody tr:hover {
+  background: #eef6ff !important;
+}
+
+.materials-page .font-mono {
+  font-family: ui-sans-serif, system-ui, sans-serif !important;
+  letter-spacing: 0;
+}
+
+.materials-page .font-extrabold,
+.materials-page .font-black {
+  font-weight: 700 !important;
+}
+
+.materials-page .text-\[10px\],
+.materials-page .text-\[11px\] {
+  font-size: 12px !important;
+}
+
+.materials-page td .text-\[10px\],
+.materials-page td .text-\[11px\] {
+  font-size: 12px !important;
+}
+
+.materials-page td span.rounded-full {
+  padding: 4px 9px !important;
+  border-radius: 6px !important;
+  font-weight: 650 !important;
+}
+
+.materials-page .text-rose-600 {
+  color: #b42318 !important;
+}
+
+.materials-page .text-emerald-700,
+.materials-page .text-emerald-600 {
+  color: #047857 !important;
+}
+
+.materials-page .text-amber-700,
+.materials-page .text-amber-600 {
+  color: #9a6700 !important;
+}
+
+.materials-page .bg-rose-50 {
+  background-color: #fff1f0 !important;
+}
+
+.materials-page .bg-emerald-50 {
+  background-color: #ecfdf5 !important;
+}
+
+.materials-page .bg-amber-50 {
+  background-color: #fffbeb !important;
+}
+
+.materials-page .custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.materials-page .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border: 2px solid #f8fafc;
+}
+
+
+
+/* Cost plan compact table cells */
+.cost-plan-compact table {
+  font-size: 12px;
+}
+
+.cost-plan-compact th,
+.cost-plan-compact td {
+  line-height: 1.25;
+}
+
+.cost-plan-compact td,
+.cost-plan-compact th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Project management list */
+.project-management-page {
+  color: #223044;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.project-list-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .project-list-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .project-list-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1536px) {
+  .project-list-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.project-card {
+  cursor: pointer;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 11px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.project-card:hover,
+.project-card:focus-visible {
+  border-color: #a9c2e8;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.07);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.project-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.project-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.project-title {
+  flex-grow: 1;
+  white-space: normal;
+  word-break: break-word;
+  margin-top: 1px;
+  overflow: hidden;
+  color: #111827;
+  display: -webkit-box;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.project-status {
+  border-radius: 6px;
+  border: 1px solid transparent;
+  padding: 3px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.project-status--active {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.project-status--completed {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #047857;
+}
+
+.project-status--hold {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.project-delete-btn {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #dc2626;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.project-delete-btn:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.project-delete-btn .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.project-meta {
+  display: grid;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.project-meta div {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: start;
+  gap: 7px;
+}
+
+.project-meta dt {
+  color: #64748b;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.project-meta dd {
+  min-width: 0;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0;
+  text-align: right;
+  word-break: break-word;
+}
+
+.project-progress {
+  margin-top: 9px;
+}
+
+.project-progress__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.project-progress__bar {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8eef6;
+  margin-top: 5px;
+}
+
+.project-progress__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2563eb;
+}
+
+.project-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.project-stats span {
+  overflow: hidden;
+  border-radius: 6px;
+  background: #f5f7fb;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  padding: 5px 4px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@keyframes shimmer { 100% { transform: translateX(100%); } }

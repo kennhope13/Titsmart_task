@@ -3,58 +3,25 @@
 > vite --host --host 0.0.0.0
 
 
-  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m181[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m191[22m[2m[0m ms[22m
 
-  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m3000[22m/[39m
-  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.0.168:[1m3000[22m/[39m
-[2m14:30:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/TaskManagementPage.tsx, /src/index.css[22m
-[2m14:54:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ProjectCostPlanPage.tsx, /src/index.css[22m
-[2m14:55:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx[22m
-[2m15:02:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ProjectCostPlanPage.tsx, /src/index.css[22m
-[2m15:04:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ProjectCostPlanPage.tsx, /src/index.css[22m
-[2m15:55:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
-[2m15:55:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Sidebar.tsx, /src/index.css[22m
-[2m15:55:10[22m [36m[1m[vite][22m[39m [32m✨ new dependencies optimized: [33mtesseract.js[32m[39m
-[2m15:55:10[22m [36m[1m[vite][22m[39m [32m✨ optimized dependencies changed. reloading[39m
-[2m15:55:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Sidebar.tsx, /src/index.css[22m
-[2m15:56:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/WebOcrPage.tsx[22m
-[2m16:02:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/TaskManagementPage.tsx, /src/index.css[22m
-[2m16:02:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
-[2m16:02:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Sidebar.tsx, /src/index.css[22m
-[2m16:02:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/TaskManagementPage.tsx, /src/index.css[22m
-[2m16:03:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/TaskManagementPage.tsx, /src/index.css[22m
-[2m16:03:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/WebOcrPage.tsx[22m
-[2m16:04:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/TaskManagementPage.tsx, /src/index.css[22m
-[2m16:05:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/TaskManagementPage.tsx, /src/index.css[22m
-[2m16:08:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ProjectCostPlanPage.tsx, /src/index.css[22m
-[2m16:10:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/common/OcrUploadPanel.tsx[22m
-[2m16:10:51[22m [36m[1m[vite][22m[39m [32m✨ new dependencies optimized: [33mmammoth, pdfjs-dist[32m[39m
-[2m16:10:51[22m [36m[1m[vite][22m[39m [32m✨ optimized dependencies changed. reloading[39m
-[2m16:11:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/common/OcrUploadPanel.tsx, /src/index.css[22m
-[2m16:11:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/TaskManagementPage.tsx, /src/index.css[22m
-[2m16:12:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/common/OcrUploadPanel.tsx[22m
-[2m16:27:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx[22m
-[2m16:27:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx[22m
-[2m16:28:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx[22m
-[2m16:28:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx[22m
-[2m16:28:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx[22m
-[2m16:28:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
-[2m16:32:57[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/services/api.ts[22m
-[2m16:33:06[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx, /src/App.tsx[22m
-[2m16:33:06[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx, /src/App.tsx[22m
-[2m16:33:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
-[2m16:34:12[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/services/api.ts[22m
-[2m16:34:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx, /src/App.tsx[22m
-[2m16:34:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx, /src/App.tsx[22m
-[2m16:34:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
-[2m16:36:18[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/services/api.ts[22m
-[2m16:36:27[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx, /src/App.tsx[22m
-[2m16:36:27[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx, /src/App.tsx[22m
-[2m16:36:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
-[2m16:39:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx, /src/App.tsx[22m
-[2m16:42:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx, /src/App.tsx[22m
-[2m16:42:04[22m [36m[1m[vite][22m[39m [32m✨ new dependencies optimized: [33maxios[32m[39m
-[2m16:42:04[22m [36m[1m[vite][22m[39m [32m✨ optimized dependencies changed. reloading[39m
-[2m16:44:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
-[2m16:46:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx, /src/App.tsx[22m
-[2m16:48:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/ActivityLogPage.tsx, /src/pages/AccountPage.tsx, /src/pages/IssueResolutionPage.tsx, /src/pages/ReportExportPage.tsx, /src/pages/PersonnelPage.tsx, /src/components/layout/Layout.tsx, /src/pages/DashboardPage.tsx, /src/pages/MaterialTrackingPage.tsx, /src/pages/DocumentTrackingPage.tsx, /src/pages/TaskManagementPage.tsx, /src/pages/ProjectCostPlanPage.tsx, /src/components/layout/Sidebar.tsx, /src/App.tsx[22m
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.0.175:[1m5173[22m/[39m
+[2m17:15:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ProjectCostPlanPage.tsx, /src/index.css[22m
+[2m17:23:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/DocumentTrackingPage.tsx, /src/index.css[22m
+[2m17:23:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/DocumentTrackingPage.tsx, /src/index.css[22m
+[2m17:23:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/MaterialTrackingPage.tsx, /src/index.css[22m
+[2m17:23:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/MaterialTrackingPage.tsx, /src/index.css[22m
+[2m17:34:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ProjectCostPlanPage.tsx, /src/index.css[22m
+[2m17:45:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ProjectCostPlanPage.tsx, /src/index.css[22m
+[2m17:46:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ProjectCostPlanPage.tsx, /src/index.css[22m
+[2m17:46:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ProjectCostPlanPage.tsx, /src/index.css[22m
+[2m17:46:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ProjectCostPlanPage.tsx, /src/index.css[22m
+[2m17:57:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/cost-plan/PurchasingTab.tsx, /src/index.css[22m
+[2m17:58:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/cost-plan/MaterialPlanTab.tsx, /src/index.css[22m
+[2m17:58:37[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/pages/cost-plan/ExpenseTab.tsx[22m
+[2m17:58:59[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/pages/cost-plan/LaborTab.tsx[22m
+[2m18:01:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/cost-plan/PurchasingTab.tsx, /src/index.css[22m
+[2m18:02:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/cost-plan/MaterialPlanTab.tsx, /src/index.css[22m
+[2m18:02:37[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/pages/cost-plan/ExpenseTab.tsx[22m
+[2m18:02:58[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/pages/cost-plan/LaborTab.tsx[22m

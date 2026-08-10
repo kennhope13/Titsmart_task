@@ -1,10 +1,11 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Project, Task } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { WebOcrExtractedData } from '../services/webOcrService';
 
 const todayStamp = () => new Date().toISOString().split('T')[0];
@@ -58,10 +59,14 @@ const getImportedFieldValue = (data: WebOcrExtractedData, labels: string[]) => {
 
 const deriveProjectsFromTasks = (tasks: Task[]): Project[] => {
   const projectMap = new Map<string, Project>();
+  const progressMap = new Map<string, number>();
+
   tasks.forEach((task) => {
     if (!task.projectCode) return;
     const current = projectMap.get(task.projectCode);
     const isDone = task.isDone || task.progress >= 1;
+    const taskProg = isDone ? 1 : (task.progress || 0);
+    
     if (!current) {
       projectMap.set(task.projectCode, {
         id: 'derived-' + task.projectCode,
@@ -76,16 +81,18 @@ const deriveProjectsFromTasks = (tasks: Task[]): Project[] => {
         managerName: TEXT.unassigned,
         activeTeams: 0,
       });
+      progressMap.set(task.projectCode, task.isSectionHeader ? 0 : taskProg);
       return;
     }
     if (task.isSectionHeader) return;
     current.totalTasks += 1;
     current.completedTasks += isDone ? 1 : 0;
     current.issueTasksCount += task.issue ? 1 : 0;
+    progressMap.set(task.projectCode, (progressMap.get(task.projectCode) || 0) + taskProg);
   });
   return Array.from(projectMap.values()).map((project) => ({
     ...project,
-    progressPercent: project.totalTasks > 0 ? Math.round((project.completedTasks / project.totalTasks) * 100) : 0,
+    progressPercent: project.totalTasks > 0 ? Math.round(((progressMap.get(project.code) || 0) / project.totalTasks) * 100) : 0,
   }));
 };
 
@@ -108,7 +115,8 @@ export const ProjectManagementPage: React.FC = () => {
     laborPayrolls,
   } = useRealtimeStore();
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
@@ -117,26 +125,67 @@ export const ProjectManagementPage: React.FC = () => {
   const [newProjLocation, setNewProjLocation] = useState('');
   const [newProjClient, setNewProjClient] = useState('');
   const [newProjContractValue, setNewProjContractValue] = useState('');
-  const [newProjManagerId, setNewProjManagerId] = useState(engineers[0]?.id || '');
-  const [newManagerName, setNewManagerName] = useState('');
-  const [newManagerTitle, setNewManagerTitle] = useState('Ch\u1ec9 huy tr\u01b0\u1edfng c\u00f4ng tr\u00ecnh');
+  const [selectedEngineerIds, setSelectedEngineerIds] = useState<string[]>([]);
   const [pendingProjectTasks, setPendingProjectTasks] = useState<NonNullable<WebOcrExtractedData['tableTasks']>>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
-  const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => setToastState({ show: true, message, type });
+  const toggleEngineerId = (id: string) => {
+    setSelectedEngineerIds(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
+  };
+
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+    setToastState({ show: true, message, type });
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastState(prev => ({ ...prev, show: false }));
+    }, 5000);
+  };
+
+  const resolveProjectMemberNames = (project: Project) => {
+    const memberFromIds = (project.members || [])
+      .map((memberId) => engineers.find((eng) => eng.id === memberId)?.name)
+      .filter(Boolean) as string[];
+
+    const memberFromManaged = engineers
+      .filter((eng) => eng.managedProjects?.some((mp) => mp.code === project.code))
+      .map((eng) => eng.name);
+
+    const memberFromAssigned = engineers
+      .filter((eng) => eng.memberProjects?.some((mp) => mp.code === project.code))
+      .map((eng) => eng.name);
+
+    const combined = Array.from(new Set([...memberFromIds, ...memberFromManaged, ...memberFromAssigned]));
+    if (combined.length > 0) return combined;
+    if (project.managerName && project.managerName !== TEXT.unassigned) return [project.managerName];
+    return [];
+  };
 
   const displayProjects = useMemo(() => {
     const merged = [...projects, ...deriveProjectsFromTasks(tasks).filter((derived) => !projects.some((project) => project.code === derived.code))];
     const q = searchQuery.trim().toLowerCase();
     if (!q) return merged;
-    return merged.filter((project) => [project.name, project.code, project.location, project.client, project.managerName].some((value) => String(value || '').toLowerCase().includes(q)));
-  }, [projects, tasks, searchQuery]);
+    return merged.filter((project) => {
+      const memberNames = resolveProjectMemberNames(project).join(' ');
+      return [project.name, project.code, project.location, project.client, project.managerName, memberNames]
+        .some((value) => String(value || '').toLowerCase().includes(q));
+    });
+  }, [projects, tasks, searchQuery, engineers]);
 
   const enhancedProjects = useMemo(() => {
     return displayProjects.map((project) => {
       const projectTasks = tasks.filter((task) => task.projectCode === project.code && !task.isSectionHeader);
       const totalTasks = projectTasks.length || project.totalTasks;
       const completedTasks = projectTasks.filter((task) => task.isDone || task.progress >= 1).length || project.completedTasks;
-      const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : project.progressPercent;
+      const memberNames = resolveProjectMemberNames(project);
+      
+      let progress = project.progressPercent;
+      if (projectTasks.length > 0) {
+        const totalProgress = projectTasks.reduce((sum, task) => sum + (task.isDone ? 1 : (task.progress || 0)), 0);
+        progress = Math.round((totalProgress / projectTasks.length) * 100);
+      }
       
       const projMaterialPlans = materialPlans.filter((plan) => plan.projectCode === project.code);
       const totalMaterials = projMaterialPlans.length;
@@ -155,9 +204,11 @@ export const ProjectManagementPage: React.FC = () => {
 
       return {
         ...project,
+        status: progress >= 100 ? 'completed' : project.status,
         totalTasks,
         completedTasks,
         progress,
+        memberNames,
         totalMaterials,
         completedMaterials,
         materialProgress,
@@ -192,12 +243,13 @@ export const ProjectManagementPage: React.FC = () => {
     event.preventDefault();
     if (!newProjName.trim()) return;
 
-    const selectedManager = engineers.find((eng) => eng.id === newProjManagerId);
-    const createdManager = newProjManagerId === '__NEW__' && newManagerName.trim()
-      ? addEngineer({ name: newManagerName.trim(), title: newManagerTitle.trim() || 'Ch\u1ec9 huy tr\u01b0\u1edfng c\u00f4ng tr\u00ecnh', avatar: '', phone: '', email: '' })
-      : null;
-    const finalManager = createdManager || selectedManager;
+    setLoading(true);
+    setLoadingMessage('Đang tạo dự án...');
+    try {
     const code = newProjCode.trim() ? newProjCode.trim().toUpperCase() : slugProjectCode(newProjName);
+
+    const selectedEngineers = engineers.filter(eng => selectedEngineerIds.includes(eng.id));
+    const managerName = selectedEngineers.length > 0 ? selectedEngineers.map(e => e.name).join(', ') : TEXT.unassigned;
 
     const newProject: Omit<Project, 'id'> = {
       code,
@@ -211,8 +263,10 @@ export const ProjectManagementPage: React.FC = () => {
       totalTasks: 0,
       completedTasks: 0,
       issueTasksCount: 0,
-      managerName: finalManager?.name || TEXT.unassigned,
-      members: finalManager?.id ? [finalManager.id] : [],
+      managerId: selectedEngineerIds[0],
+      managerName: managerName,
+      members: selectedEngineerIds,
+      memberIds: selectedEngineerIds,
       startDate: todayStamp(),
     };
 
@@ -223,6 +277,7 @@ export const ProjectManagementPage: React.FC = () => {
     }
 
     if (pendingProjectTasks.length > 0) {
+      let orderCounter = 0;
       const existingTaskKeys = new Set(tasks.filter((task) => task.projectCode === code).map((task) => `${task.stt.trim()}|${task.name.trim().toLowerCase()}`));
       const importedTasks: Omit<Task, 'id'>[] = pendingProjectTasks
         .filter((item) => {
@@ -265,13 +320,14 @@ export const ProjectManagementPage: React.FC = () => {
         if (existingMaterialPlanKeys.has(key)) continue;
         existingMaterialPlanKeys.add(key);
         const supplyScope = item.supplyScope === 'owner' ? 'owner' : item.supplyScope === 'contractor' ? 'contractor' : 'unknown';
-        const supplyLabel = supplyScope === 'owner' ? 'Ch? ??u t? cung c?p' : supplyScope === 'contractor' ? 'Nh? th?u cung c?p' : '';
+        const supplyLabel = supplyScope === 'owner' ? 'Chủ đầu tư cung cấp' : supplyScope === 'contractor' ? 'Nhà thầu cung cấp' : '';
+        const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
         await addMaterialPlan({
           projectCode: code,
           stt: item.stt || String(index + 1),
           jobContent: item.name,
-          unit: '',
-          contractVolume: 0,
+          unit: item.unit || '',
+          contractVolume: item.volume || 0,
           techSpecModel: '',
           techSpecOrigin: '',
           progressStatus: '',
@@ -285,7 +341,7 @@ export const ProjectManagementPage: React.FC = () => {
           docFireInspection: false,
           dispatchToSite: false,
           supplyScope,
-          notes: [item.isSectionHeader ? '[section]' : '', supplyScope !== 'unknown' ? `[${supplyScope}]` : '', item.notes, supplyLabel, TEXT.materialSyncNote].filter(Boolean).join(' | '),
+          notes: [orderTag, item.isSectionHeader ? '[section]' : '', supplyScope !== 'unknown' ? `[${supplyScope}]` : '', item.notes, supplyLabel, TEXT.materialSyncNote].filter(Boolean).join(' | '),
         });
       }
 
@@ -294,14 +350,11 @@ export const ProjectManagementPage: React.FC = () => {
           .filter((plan) => plan.projectCode === code)
           .map((plan) => `${String(plan.stt || '').trim()}|${String(plan.content || '').trim().toLowerCase()}`)
       );
-
-      for (const [index, item] of pendingProjectTasks.filter((item) => !item.isSectionHeader && item.name?.trim() && item.supplyScope === 'contractor').entries()) {
+      for (const [index, item] of pendingProjectTasks.filter((item) => ((item.isSectionHeader && item.supplyScope !== 'owner') || item.supplyScope === 'contractor') && item.name?.trim()).entries()) {
         const key = `${String(item.stt || '').trim()}|${String(item.name || '').trim().toLowerCase()}`;
         if (existingPurchasingKeys.has(key)) continue;
         existingPurchasingKeys.add(key);
-        const totalBeforeVat = item.totalBeforeVat || ((item.volume || 0) * (item.unitPrice || 0));
-        const computedVatAmount = item.vatAmount || (item.vatRate ? totalBeforeVat * item.vatRate / 100 : 0);
-        const totalAmount = item.totalAmount || totalBeforeVat + computedVatAmount;
+        const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
         await addPurchasingPlan({
           projectCode: code,
           stt: item.stt || String(index + 1),
@@ -309,17 +362,17 @@ export const ProjectManagementPage: React.FC = () => {
           unit: item.unit || '',
           volumeContract: item.volume || 0,
           volumeOrder: 0,
-          unitPrice: item.unitPrice || 0,
-          vatRate: item.vatRate || 0,
-          vatAmount: computedVatAmount,
-          totalAmount,
+          unitPrice: 0,
+          vatRate: item.vatRate || 10,
+          vatAmount: 0,
+          totalAmount: 0,
           prepayPercent: 0,
           prepayAmount: 0,
-          remainingAmount: totalAmount,
+          remainingAmount: 0,
           orderStatus: TEXT.purchaseStatus,
           contractStatus: '\u0110\u00e3 c\u00f3 ph\u1ee5 l\u1ee5c',
           invoiceStatus: 'Ch\u01b0a xu\u1ea5t',
-          notes: [item.notes, '\u0110\u1ed3ng b\u1ed9 t\u1eeb ph\u1ee5 l\u1ee5c khi t\u1ea1o d\u1ef1 \u00e1n'].filter(Boolean).join(' | '),
+          notes: [orderTag, item.isSectionHeader ? '[section]' : '', item.notes, '\u0110\u1ed3ng b\u1ed9 t\u1eeb ph\u1ee5 l\u1ee5c khi t\u1ea1o d\u1ef1 \u00e1n'].filter(Boolean).join(' | '),
         });
       }
     }
@@ -332,48 +385,60 @@ export const ProjectManagementPage: React.FC = () => {
     setNewProjLocation('');
     setNewProjClient('');
     setNewProjContractValue('');
-    setNewProjManagerId(engineers[0]?.id || '');
-    setNewManagerName('');
-    setNewManagerTitle('Ch\u1ec9 huy tr\u01b0\u1edfng c\u00f4ng tr\u00ecnh');
+    setSelectedEngineerIds([]);
     setPendingProjectTasks([]);
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+    }
   };
 
-  const handleDeleteProject = () => {
+  const handleDeleteProject = async () => {
     if (!projectToDelete) return;
-    deleteProject(projectToDelete.id);
-    setProjectToDelete(null);
-    triggerToast(TEXT.deleted, 'success');
+    setLoading(true);
+    setLoadingMessage('Đang xóa dự án...');
+    try {
+      await deleteProject(projectToDelete.id);
+      setProjectToDelete(null);
+      triggerToast(TEXT.deleted, 'success');
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+    }
   };
 
   const statusLabel: Record<Project['status'], string> = { active: TEXT.active, completed: TEXT.completed, on_hold: TEXT.onHold };
+  const statusTone: Record<Project['status'], string> = {
+    active: 'project-status project-status--active',
+    completed: 'project-status project-status--completed',
+    on_hold: 'project-status project-status--hold',
+  };
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen bg-slate-50 relative">
+    <div className="project-management-page flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
+      <LoadingSpinner loading={loading} message={loadingMessage} />
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
 
-      <section className="border-b border-slate-200 bg-white px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">domain</span>
           </div>
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">{TEXT.projectManagement}</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">{TEXT.projectSubtitle}</p>
-          </div>
+          <h1 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4">{TEXT.projectManagement}</h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
           <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100 whitespace-nowrap">
             {displayProjects.length} dự án
           </span>
-          <div className="relative w-full sm:w-64">
-            <span className="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-lg">search</span>
+          <div className="relative w-full sm:w-64 flex items-center">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
             <input
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder={TEXT.searchProject}
-              className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-slate-50/50"
+              className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
             />
           </div>
           <button
@@ -387,21 +452,123 @@ export const ProjectManagementPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="p-6 space-y-6">
+      <div className="p-6">
         {enhancedProjects.length === 0 ? (
           <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl">
             <span className="material-symbols-outlined text-5xl text-slate-300">folder_open</span>
             <h3 className="mt-3 font-bold text-slate-700">{searchQuery ? TEXT.noProjectFound : TEXT.noProject}</h3>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {enhancedProjects.map((project) => (
-              <article key={project.id} onClick={() => openProjectTasks(project)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') openProjectTasks(project); }} className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="font-bold text-slate-900 truncate">{project.name}</h2><p className="text-xs text-slate-500 mt-1">Ma: {project.code}</p></div><button type="button" onClick={(event) => { event.stopPropagation(); setProjectToDelete(project); }} className="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 flex items-center justify-center" title={TEXT.deleteProject} aria-label={TEXT.deleteProject}><span className="material-symbols-outlined text-[18px]">delete</span></button></div>
-                <div className="mt-4 space-y-2 text-sm"><div className="flex justify-between gap-3"><span className="text-slate-500">Client</span><span className="font-semibold text-slate-700 text-right">{project.client || '-'}</span></div><div className="flex justify-between gap-3"><span className="text-slate-500">Location</span><span className="font-semibold text-slate-700 text-right">{project.location || '-'}</span></div><div className="flex justify-between gap-3"><span className="text-slate-500">PM</span><span className="font-semibold text-slate-700 text-right">{project.managerName || '-'}</span></div><div className="flex justify-between gap-3"><span className="text-slate-500">Status</span><span className="font-semibold text-slate-700 text-right">{statusLabel[project.status]}</span></div></div>
-                <div className="mt-4"><div className="flex items-center justify-between text-xs font-bold text-slate-600"><span>Progress</span><span>{project.progress}%</span></div><div className="h-2 rounded-full bg-slate-100 overflow-hidden mt-2"><div className="h-full bg-primary" style={{ width: project.progress + '%' }} /></div><div className="flex justify-between text-xs text-slate-500 mt-2"><span>Done: {project.completedTasks}</span><span>Remain: {Math.max(0, project.totalTasks - project.completedTasks)}</span></div></div>
-              </article>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+            {enhancedProjects.map((project, idx) => {
+              const barColor = project.progress >= 100 ? 'bg-emerald-500'
+                : project.progress >= 60 ? 'bg-blue-500'
+                : project.progress >= 30 ? 'bg-amber-400' : 'bg-slate-300';
+              const statusCfg = project.status === 'completed'
+                ? { dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' }
+                : project.status === 'on_hold'
+                  ? { dot: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' }
+                  : { dot: 'bg-blue-500', text: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' };
+              return (
+                <div
+                  key={project.id}
+                  onClick={() => openProjectTasks(project)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter') openProjectTasks(project); }}
+                  className="group relative flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs hover:shadow-md hover:border-blue-300 cursor-pointer transition-all duration-200 overflow-hidden"
+                >
+                  {/* Top accent bar */}
+                  <div className={`h-1 w-full ${barColor}`} />
+
+                  <div className="flex flex-col gap-3 p-4 flex-1">
+                    {/* Header: số + tên */}
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-500 font-extrabold text-xs mt-0.5">
+                        {String(idx + 1).padStart(2, '0')}
+                      </div>
+                      <div className="flex-1 bg-blue-50 rounded-lg px-3 py-2">
+                        <p className="font-bold text-primary text-sm leading-snug line-clamp-2" title={project.name}>
+                          {project.name}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Badge trạng thái */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                        {statusLabel[project.status]}
+                      </span>
+                      {project.location && (
+                        <span className="text-[11px] text-slate-400 truncate">{project.location}</span>
+                      )}
+                    </div>
+
+                    {/* Chủ đầu tư */}
+                    {(project as any).client && (
+                      <p className="text-[11px] text-slate-500 truncate">
+                        <span className="font-semibold text-slate-400">CĐT: </span>
+                        {(project as any).client}
+                      </p>
+                    )}
+
+                    {/* Nhân sự dự án */}
+                    <div className="flex items-center gap-2 mt-1 pt-1 border-t border-slate-100/50">
+                      <span className="text-[11px] font-semibold text-slate-400 whitespace-nowrap">Nhân sự:</span>
+                      {project.memberNames?.length ? (
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                          {project.memberNames.slice(0, 3).map((name, i) => (
+                            <div key={i} className="flex items-center gap-1">
+                              <div className="w-4 h-4 rounded-full bg-sky-100 text-sky-700 border border-sky-200 flex items-center justify-center text-[9px] font-bold uppercase shrink-0">
+                                {name.charAt(0)}
+                              </div>
+                              <span className="text-[11px] font-semibold text-sky-700 truncate max-w-[65px]" title={name}>
+                                {name}
+                              </span>
+                            </div>
+                          ))}
+                          {project.memberNames.length > 3 && (
+                            <span className="text-[11px] font-semibold text-slate-400">
+                              +{project.memberNames.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="italic text-[11px] text-slate-400">Chưa có</span>
+                      )}
+                    </div>
+
+                    {/* Tiến độ */}
+                    <div className="mt-auto pt-1">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] text-slate-400">Tiến độ</span>
+                        <span className={`text-xs font-extrabold ${
+                          project.progress >= 100 ? 'text-emerald-600'
+                          : project.progress >= 60 ? 'text-blue-600'
+                          : project.progress > 0 ? 'text-amber-600' : 'text-slate-400'
+                        }`}>{project.progress}%</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-700 ${barColor}`}
+                          style={{ width: `${project.progress}%` }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nút xóa — hiện khi hover */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
+                    title={TEXT.deleteProject}
+                    aria-label="Xóa dự án"
+                    className="absolute top-2 right-2 rounded p-1 text-slate-400 hover:text-rose-500 transition z-20"
+                  >
+                    <span className="material-symbols-outlined text-base">delete</span>
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -431,8 +598,20 @@ export const ProjectManagementPage: React.FC = () => {
             <div><label className="block font-bold text-slate-700 mb-1">Chủ đầu tư</label><input value={newProjClient} onChange={(event) => setNewProjClient(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div>
             <div><label className="block font-bold text-slate-700 mb-1">Giá trị hợp đồng</label><input value={newProjContractValue} onChange={(event) => setNewProjContractValue(event.target.value)} inputMode="numeric" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div>
           </div>
-          <div><label className="block font-bold text-slate-700 mb-1">Chỉ huy trưởng</label><select value={newProjManagerId} onChange={(event) => setNewProjManagerId(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-primary focus:outline-none"><option value="">-- Chọn Chỉ huy trưởng --</option>{engineers.map((eng) => <option key={eng.id} value={eng.id}>{eng.name}</option>)}<option value="__NEW__">+ Thêm người mới...</option></select></div>
-          {newProjManagerId === '__NEW__' && <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-blue-100 bg-blue-50 p-3"><div><label className="block font-bold text-slate-700 mb-1">Tên người mới *</label><input required value={newManagerName} onChange={(event) => setNewManagerName(event.target.value)} className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div><div><label className="block font-bold text-slate-700 mb-1">Chức danh</label><input value={newManagerTitle} onChange={(event) => setNewManagerTitle(event.target.value)} className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div></div>}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Nhân sự / Quản lý dự án</label>
+            <div className={`max-h-36 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 ${selectedEngineerIds.length === 0 ? 'border-red-200' : 'border-slate-200'}`}>
+              {engineers.length === 0 && <p className="text-[11px] text-slate-400">Chưa có nhân sự nào.</p>}
+              {engineers.map((eng) => (
+                <label key={eng.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input type="checkbox" checked={selectedEngineerIds.includes(eng.id)} onChange={() => toggleEngineerId(eng.id)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
+                  <span className="font-semibold text-slate-700">{eng.name}</span>
+                  <span className="text-slate-400">({eng.title || 'Nhân viên'})</span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">Người đầu tiên được chọn sẽ hiển thị dưới dạng Chỉ huy trưởng chính.</p>
+          </div>
           {pendingProjectTasks.length > 0 && <p className="text-sm text-emerald-700 font-semibold">Khi lưu dự án, hệ thống sẽ đưa {pendingProjectTasks.length} dòng vào tab Công việc và KH Vật tư.</p>}
           <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setIsNewProjectModalOpen(false)} className="px-4 py-2 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">{TEXT.cancel}</button><button type="submit" className="px-5 py-2 bg-primary text-white rounded-lg font-bold hover:opacity-90">{TEXT.create}</button></div>
         </form>

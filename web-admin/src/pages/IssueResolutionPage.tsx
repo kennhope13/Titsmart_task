@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
 
 const cleanText = (value?: string) => {
@@ -44,10 +44,27 @@ export const IssueResolutionPage: React.FC = () => {
   const { issues, addDirective, updateIssueStatus } = useRealtimeStore();
 
   const [selectedIssueId, setSelectedIssueId] = useState<string>(issues[0]?.id || '');
-  const [directiveText, setDirectiveText] = useState<string>('');
-  const [notifyClient, setNotifyClient] = useState<boolean>(true);
+  const [directiveText, setDirectiveText] = useState('');
+  const [notifyClient, setNotifyClient] = useState(true);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
 
   const selectedIssue = issues.find((issue) => issue.id === selectedIssueId) || issues[0];
+
+  const filteredIssues = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return issues.filter(issue => {
+      const matchStatus = filterStatus === 'all' || issue.status === filterStatus;
+      const matchPriority = filterPriority === 'all' || issue.priority === filterPriority;
+      const matchSearch = !q ||
+        cleanText(issue.title).toLowerCase().includes(q) ||
+        cleanText(issue.location).toLowerCase().includes(q) ||
+        cleanText(issue.assignedTo).toLowerCase().includes(q);
+      return matchStatus && matchPriority && matchSearch;
+    });
+  }, [issues, searchTerm, filterStatus, filterPriority]);
 
   const handleSendDirective = (event: React.FormEvent) => {
     event.preventDefault();
@@ -71,26 +88,46 @@ export const IssueResolutionPage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-slate-50 flex flex-col">
+    <div className="h-full overflow-hidden bg-slate-50 flex flex-col">
       <section className="bg-white border-b border-slate-200 shadow-xs px-5 py-4 flex items-center gap-4 flex-shrink-0">
         <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
           <span className="material-symbols-outlined text-xl">report_problem</span>
         </div>
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-extrabold text-slate-900">Xử lý sự cố</h2>
+            <h2 className="page-title text-2xl font-extrabold text-slate-900">Xử lý sự cố</h2>
           </div>
         </div>
       </section>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
       <section className="w-80 border-r border-slate-200 bg-white flex flex-col flex-shrink-0">
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-          <span className="text-sm font-extrabold text-slate-800 tracking-tight">Sự cố báo về <span className="text-primary">({issues.length})</span></span>
+        <div className="p-4 border-b border-slate-100 flex flex-col gap-3 bg-slate-50">
+          <span className="text-sm font-extrabold text-slate-800 tracking-tight">Sự cố báo về <span className="text-primary">({filteredIssues.length})</span></span>
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Tìm sự cố, địa điểm..."
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+          />
+          <div className="flex gap-2">
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="flex-1 border border-slate-200 px-2 py-1.5 rounded-md text-[11px] font-bold text-slate-700 focus:outline-none bg-white">
+              <option value="all">Tất cả trạng thái</option>
+              <option value="OPEN">Mới ghi nhận</option>
+              <option value="PROCESSING">Đang xử lý</option>
+              <option value="RESOLVED">Đã giải quyết</option>
+            </select>
+            <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="flex-1 border border-slate-200 px-2 py-1.5 rounded-md text-[11px] font-bold text-slate-700 focus:outline-none bg-white">
+              <option value="all">Tất cả mức độ</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="WARNING">Warning</option>
+              <option value="STANDARD">Standard</option>
+            </select>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto divide-y divide-slate-100 custom-scrollbar">
-          {issues.map((issue) => {
+          {filteredIssues.map((issue) => {
             const isSelected = issue.id === selectedIssueId;
             return (
               <div

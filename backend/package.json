@@ -17,10 +17,12 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",
     "@prisma/client": "^7.9.0",
+    "@types/multer": "^2.2.0",
     "@types/pg": "^8.20.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "multer": "^2.2.0",
     "pg": "^8.22.0",
     "prisma": "^7.9.0",
     "xlsx": "^0.18.5"

@@ -211,6 +211,23 @@ const detectSupplyScope = (value: unknown): SupplyScope => {
   return 'unknown';
 };
 
+const toRoman = (num: number): string => {
+  if (num <= 0) return 'I';
+  const lookup: [string, number][] = [
+    ['M', 1000], ['CM', 900], ['D', 500], ['CD', 400],
+    ['C', 100], ['XC', 90], ['L', 50], ['XL', 40],
+    ['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]
+  ];
+  let roman = '';
+  for (const i of lookup) {
+    while (num >= i[1]) {
+      roman += i[0];
+      num -= i[1];
+    }
+  }
+  return roman;
+};
+
 const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
   const rows = lines.map(splitTableLine);
   const headerIndex = rows.findIndex((cells, index) => index < 80 && isLikelyTableHeader(cells));
@@ -233,6 +250,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
   const parsedTasks: WebOcrTableTask[] = [];
   let currentSection = '';
   let currentSupplyScope: SupplyScope = 'unknown';
+  let romanSectionCounter = 0; // Đếm số đầu mục lớn
 
   for (let index = headerIndex + 1; index < rows.length; index += 1) {
     const cells = rows[index];
@@ -250,11 +268,12 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
 
     const volume = volumeCol >= 0 ? parseNumberValue(cells[volumeCol] || '') : 0;
     const unit = unitCol >= 0 ? String(cells[unitCol] || '').trim() : '';
-    const unitPrice = unitPriceCol >= 0 ? parseNumberValue(cells[unitPriceCol] || '') : 0;
-    const totalBeforeVat = preTaxCol >= 0 ? parseNumberValue(cells[preTaxCol] || '') : 0;
+    // Không import đơn giá, tiền thuế, thành tiền từ phụ lục dự án (vẫn lấy % thuế VAT)
+    const unitPrice = 0;
+    const totalBeforeVat = 0;
     const vatRate = vatRateCol >= 0 ? parseNumberValue(cells[vatRateCol] || '') : 0;
-    const vatAmount = vatAmountCol >= 0 ? parseNumberValue(cells[vatAmountCol] || '') : 0;
-    const totalAmount = totalCol >= 0 ? parseNumberValue(cells[totalCol] || '') : 0;
+    const vatAmount = 0;
+    const totalAmount = 0;
     const sttLookup = normalizeLookupText(stt).toUpperCase();
     const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
     const numericParentRegex = /^\d+$/;
@@ -280,8 +299,14 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
         : '';
     const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
 
+    let effectiveStt = stt;
+    if (isSectionHeader) {
+      romanSectionCounter++;
+      effectiveStt = toRoman(romanSectionCounter);
+    }
+
     parsedTasks.push({
-      stt: isSectionHeader ? stt : (stt || String(parsedTasks.length + 1)),
+      stt: isSectionHeader ? effectiveStt : (stt || String(parsedTasks.length + 1)),
       name,
       volume: isSectionHeader ? 0 : volume,
       unit: isSectionHeader ? '' : unit,

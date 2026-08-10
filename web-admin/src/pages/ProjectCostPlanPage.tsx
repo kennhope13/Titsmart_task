@@ -9,6 +9,7 @@ import { MaterialPlanTab } from './cost-plan/MaterialPlanTab';
 import { PurchasingTab } from './cost-plan/PurchasingTab';
 import { DocumentCertificateTab } from './cost-plan/DocumentCertificateTab';
 
+
 const romanToNumber = (value?: string) => {
   const romanMap: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
   const normalized = String(value || '').trim().toUpperCase();
@@ -22,6 +23,24 @@ const romanToNumber = (value?: string) => {
   return total;
 };
 
+const toRoman = (num: number): string => {
+  if (num <= 0) return 'I';
+  const lookup: [string, number][] = [
+    ['M', 1000], ['CM', 900], ['D', 500], ['CD', 400],
+    ['C', 100], ['XC', 90], ['L', 50], ['XL', 40],
+    ['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]
+  ];
+  let roman = '';
+  let n = num;
+  for (const [letter, value] of lookup) {
+    while (n >= value) {
+      roman += letter;
+      n -= value;
+    }
+  }
+  return roman;
+};
+
 const sttSortValue = (value?: string) => {
   const raw = String(value || '').trim();
   const numeric = Number(raw.replace(',', '.'));
@@ -32,7 +51,7 @@ const sttSortValue = (value?: string) => {
   return firstNumber ? Number(firstNumber) : Number.MAX_SAFE_INTEGER;
 };
 
-const normalizePlanKey = (stt?: string, content?: string) =>
+const normalizePlanKey = (stt?: string, content?: string, _parentId?: string) =>
   `${String(stt || '').trim()}|${String(content || '').trim().toLowerCase()}`;
 
 const isSectionMarker = (stt?: string, notes?: string) =>
@@ -49,6 +68,55 @@ const isContractorMaterialPlan = (plan: ProjectMaterialPlan) => {
   return plan.supplyScope === 'contractor' || notes.includes('[contractor]') || notes.includes('nha thau') || content.includes('nha thau cung cap');
 };
 
+const getSectionForMaterialPlan = (plan: ProjectMaterialPlan, allPlans: ProjectMaterialPlan[], visited = new Set<string>()) => {
+  if (visited.has(plan.id)) return null;
+  visited.add(plan.id);
+
+  if (isSectionMarker(plan.stt, plan.notes)) return plan;
+  
+  if (plan.parentId) {
+    const parent = allPlans.find(p => p.id === plan.parentId);
+    if (parent) {
+      if (isSectionMarker(parent.stt, parent.notes)) return parent;
+      return getSectionForMaterialPlan(parent, allPlans, visited);
+    }
+  }
+  
+  const orderTagValue = (notes?: string): number | null => {
+    const m = String(notes || '').match(/\[order:([\d.]+)\]/);
+    return m ? parseFloat(m[1]) : null;
+  };
+  
+  const myPos = orderTagValue(plan.notes);
+  if (myPos === null) return null;
+  
+  const sections = allPlans.filter(p => isSectionMarker(p.stt, p.notes));
+  let bestSec = null;
+  let bestSecPos = -1;
+  
+  sections.forEach(sec => {
+    const secPos = orderTagValue(sec.notes);
+    if (secPos !== null && secPos <= myPos && secPos > bestSecPos) {
+      bestSecPos = secPos;
+      bestSec = sec;
+    }
+  });
+  
+  return bestSec;
+};
+
+const isEffectiveContractorPlan = (plan: ProjectMaterialPlan, allPlans: ProjectMaterialPlan[]) => {
+  if (isSectionMarker(plan.stt, plan.notes)) {
+    return isContractorMaterialPlan(plan);
+  }
+  
+  if (plan.supplyScope === 'contractor') return true;
+  if (plan.supplyScope === 'owner') return false;
+  
+  const section = getSectionForMaterialPlan(plan, allPlans);
+  return section ? isContractorMaterialPlan(section) : false;
+};
+
 export const ProjectCostPlanPage: React.FC = () => {
   const {
     projects,
@@ -58,6 +126,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     laborPayrolls,
     tasks,
     addTask,
+    addTasksBatch,
     addMaterialPlan,
     updateMaterialPlan,
     deleteMaterialPlan,
@@ -70,13 +139,165 @@ export const ProjectCostPlanPage: React.FC = () => {
     addLaborPayroll,
     updateLaborPayroll,
     deleteLaborPayroll,
+    activityLogs,
+    deleteTask,
+    updateTask,
   } = useRealtimeStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const syncingIdsRef = useRef<Set<string>>(new Set());
+
+
+
+
+
 
   // Pending tasks waiting for user confirmation before being created
   const [pendingTaskItems, setPendingTaskItems] = useState<Array<any>>([]);
   const [showCreateTaskConfirm, setShowCreateTaskConfirm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    id: string;
+    type: 'material' | 'purchasing' | 'expense' | 'labor';
+    title: string;
+    itemName: string;
+  } | null>(null);
+
+  const handleUpdatePurchasingPlanSync = (id: string, updates: Partial<ProjectPurchasing>) => {
+    const existing = purchasingPlans.find(p => p.id === id);
+    updatePurchasingPlan(id, updates);
+    if (!existing) return;
+
+    if (updates.stt !== undefined || updates.content !== undefined || updates.unit !== undefined || updates.volumeContract !== undefined) {
+      const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      
+      const matchingMaterial = materialPlans.find(m => 
+        (existing.materialPlanId && m.id === existing.materialPlanId) ||
+        (m.projectCode === existing.projectCode && norm(m.stt) === norm(existing.stt) && norm(m.jobContent) === norm(existing.content))
+      );
+      if (matchingMaterial) {
+        triggerToast(`Đã đồng bộ sang Kế hoạch vật tư: ${matchingMaterial.jobContent}`, 'success');
+        updateMaterialPlan(matchingMaterial.id, {
+          stt: updates.stt !== undefined ? updates.stt : matchingMaterial.stt,
+          jobContent: updates.content !== undefined ? updates.content : matchingMaterial.jobContent,
+          unit: updates.unit !== undefined ? updates.unit : matchingMaterial.unit,
+          contractVolume: updates.volumeContract !== undefined ? updates.volumeContract : matchingMaterial.contractVolume
+        });
+      } else {
+        triggerToast(`Không tìm thấy mục tương ứng trong Kế hoạch vật tư! (STT: ${existing.stt}, Nội dung: ${existing.content})`, 'warning');
+      }
+
+      const matchingTask = tasks.find(t => 
+        t.projectCode === existing.projectCode && 
+        norm(t.stt) === norm(existing.stt) && 
+        norm(t.name) === norm(existing.content)
+      );
+      if (matchingTask) {
+        updateTask(matchingTask.id, {
+          stt: updates.stt !== undefined ? updates.stt : matchingTask.stt,
+          name: updates.content !== undefined ? updates.content : matchingTask.name
+        });
+      }
+    }
+  };
+
+  const handleUpdateMaterialPlanSync = (id: string, updates: Partial<ProjectMaterialPlan>) => {
+    const existing = materialPlans.find(p => p.id === id);
+    updateMaterialPlan(id, updates);
+    if (!existing) return;
+
+    if (updates.stt !== undefined || updates.jobContent !== undefined || updates.unit !== undefined || updates.contractVolume !== undefined) {
+      const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+      const matchingPurchasing = purchasingPlans.find(p => 
+        p.projectCode === existing.projectCode && 
+        norm(p.stt) === norm(existing.stt) && 
+        norm(p.content) === norm(existing.jobContent)
+      );
+      if (matchingPurchasing) {
+        updatePurchasingPlan(matchingPurchasing.id, {
+          stt: updates.stt !== undefined ? updates.stt : matchingPurchasing.stt,
+          content: updates.jobContent !== undefined ? updates.jobContent : matchingPurchasing.content,
+          unit: updates.unit !== undefined ? updates.unit : matchingPurchasing.unit,
+          volumeContract: updates.contractVolume !== undefined ? updates.contractVolume : matchingPurchasing.volumeContract
+        });
+      }
+
+      const matchingTask = tasks.find(t => 
+        t.projectCode === existing.projectCode && 
+        norm(t.stt) === norm(existing.stt) && 
+        norm(t.name) === norm(existing.jobContent)
+      );
+      if (matchingTask) {
+        updateTask(matchingTask.id, {
+          stt: updates.stt !== undefined ? updates.stt : matchingTask.stt,
+          name: updates.jobContent !== undefined ? updates.jobContent : matchingTask.name
+        });
+      }
+    }
+  };
+
+
+
+  const confirmDeleteAction = () => {
+    if (!deleteConfirm) return;
+    const { id, type } = deleteConfirm;
+    
+    if (type === 'material') {
+      const plan = materialPlans.find(p => p.id === id);
+      if (plan) {
+        if (isContractorMaterialPlan(plan)) {
+          const linkedPurchasing = purchasingPlans.find(p => p.materialPlanId === id);
+          if (linkedPurchasing) {
+            deletePurchasingPlan(linkedPurchasing.id);
+          } else {
+            const key = normalizePlanKey(plan.stt, plan.jobContent, plan.parentId);
+            const matchingPurchasing = purchasingPlans.find(p =>
+              p.projectCode === plan.projectCode &&
+              normalizePlanKey(p.stt, p.content, p.parentId) === key
+            );
+            if (matchingPurchasing) deletePurchasingPlan(matchingPurchasing.id);
+          }
+        }
+        
+        // Đồng bộ xóa sang Quản lý tiến độ
+        const matchingTask = tasks.find(t => t.projectCode === plan.projectCode && t.name === plan.jobContent);
+        if (matchingTask) deleteTask(matchingTask.id);
+      }
+      deleteMaterialPlan(id);
+      triggerToast('Đã xóa Kế hoạch vật tư thành công!', 'success');
+    } else if (type === 'purchasing') {
+      const pPlan = purchasingPlans.find(p => p.id === id);
+      if (pPlan) {
+        let matPlan = null;
+        if (pPlan.materialPlanId) {
+          matPlan = materialPlans.find(m => m.id === pPlan.materialPlanId);
+        } else {
+          const key = normalizePlanKey(pPlan.stt, pPlan.content, pPlan.parentId);
+          matPlan = materialPlans.find(m => 
+            m.projectCode === pPlan.projectCode &&
+            normalizePlanKey(m.stt, m.jobContent, m.parentId) === key
+          );
+        }
+        
+        if (matPlan) {
+          deleteMaterialPlan(matPlan.id);
+          // Đồng bộ xóa sang Quản lý tiến độ
+          const matchingTask = tasks.find(t => t.projectCode === matPlan!.projectCode && t.name === matPlan!.jobContent);
+          if (matchingTask) deleteTask(matchingTask.id);
+        }
+      }
+      deletePurchasingPlan(id);
+      triggerToast('Đã xóa Mua sắm hàng hóa thành công!', 'success');
+    } else if (type === 'expense') {
+      deleteExpense(id);
+      triggerToast('Đã xóa Chi phí dự án thành công!', 'success');
+    } else if (type === 'labor') {
+      deleteLaborPayroll(id);
+      triggerToast('Đã xóa Lương công nhật thành công!', 'success');
+    }
+    setDeleteConfirm(null);
+  };
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -96,7 +317,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     }
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
@@ -192,20 +413,23 @@ export const ProjectCostPlanPage: React.FC = () => {
         const baselineKey = (stt: string, content: string) =>
           `${stt.trim()}|${normalizeImportText(content).replace(/\\s+/g, ' ')}`;
         
+        // Dùng getState() để lấy dữ liệu MỚI NHẤT từ store, tránh stale closure
+        const freshState = useRealtimeStore.getState();
+        
         const materialBaselineMap = new Map(
-          materialPlans
+          freshState.materialPlans
             .filter((plan) => plan.projectCode === selectedProject)
             .map((plan) => [baselineKey(plan.stt || '', plan.jobContent || ''), plan])
         );
         
         const purchasingBaselineMap = new Map(
-          purchasingPlans
+          freshState.purchasingPlans
             .filter((plan) => plan.projectCode === selectedProject)
             .map((plan) => [baselineKey(plan.stt || '', plan.content || ''), plan])
         );
 
         const taskBaselineMap = new Map(
-          tasks
+          freshState.tasks
             .filter((t) => t.projectCode === selectedProject)
             .map((t) => [baselineKey(t.stt || '', t.name || ''), t])
         );
@@ -213,6 +437,8 @@ export const ProjectCostPlanPage: React.FC = () => {
         const importAppendixWorkbook = () => {
           let appendixMaterialCount = 0;
           let appendixPurchasingCount = 0;
+          const purchasingPromises: Promise<void>[] = [];
+          const materialPromises: Promise<any>[] = [];
 
           const findAppendixHeaderRow = (rows: any[][]) => {
             for (let i = 0; i < Math.min(rows.length, 30); i++) {
@@ -232,6 +458,10 @@ export const ProjectCostPlanPage: React.FC = () => {
           };
 
           const pendingTasks: any[] = [];
+          let globalOrder = 0; // thứ tự tuyệt đối trong file, dùng để sort sau
+          let romanSectionCounter = 0; // Đếm số đầu mục lớn để chuyển thành số La Mã
+          let currentSectionSupplyScope: 'contractor' | 'owner' | 'unknown' = 'unknown'; // Theo dõi supplyScope của section hiện tại cho các hạng mục con
+
           wb.SheetNames.forEach((sheetName) => {
             const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets[sheetName], { header: 1, defval: '' });
             const headerRowIndex = findAppendixHeaderRow(rows);
@@ -251,6 +481,8 @@ export const ProjectCostPlanPage: React.FC = () => {
             const totalCol = getColumnIndex(headerRow, ['tong tien'], vatAmountCol + 1);
             const notesCol = getColumnIndex(headerRow, ['ghi chu'], totalCol + 1);
 
+            const hasPrices = unitPriceCol !== -1 || totalCol !== -1;
+
             rows.slice(headerRowIndex + 1).forEach((row) => {
               const content = String(row[contentCol] || '').trim();
               if (!content) return;
@@ -266,14 +498,28 @@ export const ProjectCostPlanPage: React.FC = () => {
               const isSummaryRow = normalizedContent.includes('tong cong') || (!stt && normalizedContent === 'cong');
               if (isSummaryRow) return;
 
-              const isSectionRow = romanToNumber(stt) !== null;
-              const supplyScope = normalizeImportText(content).includes('nha thau cung cap') ? 'contractor' : normalizeImportText(content).includes('chu dau tu cung cap') ? 'owner' : 'unknown';
-              const rowKey = baselineKey(stt, content);
-              const baseNote = [isSectionRow ? '[section]' : '', supplyScope === 'contractor' ? '[contractor]' : '', supplyScope === 'owner' ? '[owner]' : '', String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
+              const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
+              const numericParentRegex = /^\d+$/;
+              const isSectionRow = romanRegex.test(stt) || (numericParentRegex.test(stt) && volumeContract === 0 && !String(row[unitCol] || '').trim());
+
+              let effectiveStt = stt;
+              if (isSectionRow) {
+                romanSectionCounter++;
+                effectiveStt = toRoman(romanSectionCounter);
+                currentSectionSupplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
+              }
+              
+              const rowSupplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
+              const supplyScope = isSectionRow ? currentSectionSupplyScope : (rowSupplyScope !== 'unknown' ? rowSupplyScope : currentSectionSupplyScope);
+
+              // Lưu thứ tự tuyệt đối vào notes dạng [order:NNN] để sort đúng sau khi load
+              const orderTag = `[order:${String(++globalOrder).padStart(5, '0')}]`;
+              const rowKey = baselineKey(effectiveStt, content);
+              const baseNote = [isSectionRow ? '[section]' : '', supplyScope === 'contractor' ? '[contractor]' : '', supplyScope === 'owner' ? '[owner]' : '', orderTag, String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
               const existingMaterial = materialBaselineMap.get(rowKey);
               if (existingMaterial) {
                 updateMaterialPlan(existingMaterial.id, {
-                  stt,
+                  stt: effectiveStt,
                   jobContent: content,
                   unit: String(row[unitCol] || ''),
                   contractVolume: volumeContract,
@@ -283,33 +529,35 @@ export const ProjectCostPlanPage: React.FC = () => {
                   notes: existingMaterial.notes || baseNote,
                 });
               } else {
-                addMaterialPlan({
+                materialPromises.push(addMaterialPlan({
                   projectCode: selectedProject,
-                  stt,
+                  stt: effectiveStt,
                   jobContent: content,
                   unit: String(row[unitCol] || ''),
                   contractVolume: volumeContract,
                   techSpecModel: modelCol >= 0 ? String(row[modelCol] || '') : '',
                   techSpecOrigin: originCol >= 0 ? String(row[originCol] || '') : '',
-                  progressStatus: 'Ch\u01b0a thi c\u00f4ng',
+                  progressStatus: 'Chưa thi công',
                   orderedVolume: 0,
-                  orderedStatus: 'Ch\u01b0a \u0111\u1eb7t h\u00e0ng',
+                  orderedStatus: 'Chưa đặt hàng',
                   issueContent: '',
                   supplyScope,
                   notes: baseNote,
-                });
-                materialBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt, jobContent: content, unit: String(row[unitCol] || ''), contractVolume: volumeContract } as ProjectMaterialPlan);
+                }));
+                materialBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, jobContent: content, unit: String(row[unitCol] || ''), contractVolume: volumeContract } as ProjectMaterialPlan);
               }
               appendixMaterialCount++;
 
-              if (!isSectionRow && supplyScope === 'contractor' && (volumeContract > 0 || unitPrice > 0 || totalAmount > 0)) {
+              const pushToPurchasing = ((isSectionRow && supplyScope !== 'owner') || supplyScope === 'contractor');
+
+              if (pushToPurchasing) {
                 const computedVatAmount = vatAmount || (vatRate ? totalBeforeVat * vatRate / 100 : 0);
                 const totalWithVat = totalAmount || totalBeforeVat + computedVatAmount;
 
                 const existingPurchasing = purchasingBaselineMap.get(rowKey);
                 if (existingPurchasing) {
                   updatePurchasingPlan(existingPurchasing.id, {
-                    stt,
+                    stt: effectiveStt,
                     content,
                     unit: String(row[unitCol] || ''),
                     volumeContract,
@@ -321,9 +569,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                     notes: existingPurchasing.notes || baseNote,
                   });
                 } else {
-                  addPurchasingPlan({
+                  purchasingPromises.push(addPurchasingPlan({
                     projectCode: selectedProject,
-                    stt,
+                    stt: effectiveStt,
                     content,
                     unit: String(row[unitCol] || ''),
                     volumeContract,
@@ -335,12 +583,12 @@ export const ProjectCostPlanPage: React.FC = () => {
                     prepayPercent: 0,
                     prepayAmount: 0,
                     remainingAmount: totalWithVat,
-                    orderStatus: 'Ch\u01b0a \u0111\u1eb7t h\u00e0ng',
-                    contractStatus: '\u0110\u00e3 c\u00f3 ph\u1ee5 l\u1ee5c',
-                    invoiceStatus: 'Ch\u01b0a xu\u1ea5t',
+                    orderStatus: 'Chưa đặt hàng',
+                    contractStatus: 'Đã có phụ lục',
+                    invoiceStatus: 'Chưa xuất',
                     notes: baseNote,
-                  });
-                  purchasingBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt, content, unit: String(row[unitCol] || ''), volumeContract, volumeOrder: 0, unitPrice, vatRate, vatAmount: computedVatAmount, totalAmount: totalWithVat, prepayPercent: 0, prepayAmount: 0, remainingAmount: totalWithVat, orderStatus: '', contractStatus: '', invoiceStatus: '' } as ProjectPurchasing);
+                  }));
+                  purchasingBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, content, unit: String(row[unitCol] || ''), volumeContract, volumeOrder: 0, unitPrice, vatRate, vatAmount: computedVatAmount, totalAmount: totalWithVat, prepayPercent: 0, prepayAmount: 0, remainingAmount: totalWithVat, orderStatus: '', contractStatus: '', invoiceStatus: '' } as ProjectPurchasing);
                 }
                 appendixPurchasingCount++;
               }
@@ -348,9 +596,9 @@ export const ProjectCostPlanPage: React.FC = () => {
               const existingTask = taskBaselineMap.get(rowKey);
               if (!existingTask) {
                 const projName = projects.find(p => p.code === selectedProject)?.name || selectedProject;
-                const currentSectionName = isSectionRow ? content : (pendingTasks.slice().reverse().find((task) => task.isSectionHeader)?.name || 'Kh?c');
+                const currentSectionName = isSectionRow ? content : (pendingTasks.slice().reverse().find((task) => task.isSectionHeader)?.name || 'Khác');
                 pendingTasks.push({
-                  stt,
+                  stt: effectiveStt,
                   code: '',
                   name: content,
                   projectCode: selectedProject,
@@ -358,34 +606,40 @@ export const ProjectCostPlanPage: React.FC = () => {
                   volume: isSectionRow ? 0 : volumeContract,
                   unit: isSectionRow ? '' : String(row[unitCol] || ''),
                   progress: 0,
-                  status: 'Ch?a l?m',
-                  purchaseStatus: isSectionRow ? '' : 'Ch?a ??t h?ng',
-                  constrStatus: isSectionRow ? '' : 'Ch?a thi c?ng',
+                  status: 'Chưa làm',
+                  purchaseStatus: isSectionRow ? '' : 'Chưa đặt hàng',
+                  constrStatus: isSectionRow ? '' : 'Chưa thi công',
                   isDone: false,
                   isSectionHeader: isSectionRow,
                   sectionName: currentSectionName,
                   notes: baseNote
                 });
-                taskBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt, name: content } as any);
+                taskBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, name: content } as any);
               }
             });
           });
 
-          return { appendixMaterialCount, appendixPurchasingCount, pendingTasks };
+          return { appendixMaterialCount, appendixPurchasingCount, pendingTasks, purchasingPromises, materialPromises };
         };
 
         if (isAppendixWorkbook) {
-          const { appendixMaterialCount, appendixPurchasingCount, pendingTasks } = importAppendixWorkbook();
+          const { appendixMaterialCount, appendixPurchasingCount, pendingTasks, purchasingPromises, materialPromises } = importAppendixWorkbook();
+          await Promise.all([...purchasingPromises, ...materialPromises]);
           if (appendixMaterialCount === 0 && appendixPurchasingCount === 0) {
             triggerToast('Không tìm thấy bảng phụ lục PL01 hợp lệ trong file Excel này.', 'warning');
           } else {
-            triggerToast(
-              `Đã nhập phụ lục PL01 cho dự án ${selectedProject}: ${appendixMaterialCount} dòng hạng mục, ${appendixPurchasingCount} dòng giá trị hợp đồng.`,
-              'success'
-            );
+            // Tự động tạo Tasks ngay — không cần hỏi
             if (pendingTasks.length > 0) {
-              setPendingTaskItems(pendingTasks);
-              setShowCreateTaskConfirm(true);
+              addTasksBatch(pendingTasks);
+              triggerToast(
+                `Đã nhập phụ lục PL01 cho dự án ${selectedProject}: ${appendixMaterialCount} dòng vật tư, ${appendixPurchasingCount} dòng mua hàng, ${pendingTasks.length} công việc đã được đồng bộ tự động.`,
+                'success'
+              );
+            } else {
+              triggerToast(
+                `Đã nhập phụ lục PL01 cho dự án ${selectedProject}: ${appendixMaterialCount} dòng hạng mục, ${appendixPurchasingCount} dòng giá trị hợp đồng.`,
+                'success'
+              );
             }
           }
           if (fileInputRef.current) fileInputRef.current.value = '';
@@ -612,7 +866,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     }
   }, [projectOptions, selectedProject]);
 
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('MATERIAL_PLAN');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
@@ -624,140 +878,162 @@ export const ProjectCostPlanPage: React.FC = () => {
   // Modals state
   const [editingPlan, setEditingPlan] = useState<ProjectMaterialPlan | null>(null);
   const [isNewPlanOpen, setIsNewPlanOpen] = useState(false);
+  const [sectionPlanIdForNew, setSectionPlanIdForNew] = useState<string | null>(null);
+  const [parentPlanIdForNew, setParentPlanIdForNew] = useState<string | null>(null);
+  const [isCreatingSectionHeader, setIsCreatingSectionHeader] = useState(false);
   const [editingPurchasing, setEditingPurchasing] = useState<ProjectPurchasing | null>(null);
   const [isNewPurchasingOpen, setIsNewPurchasingOpen] = useState(false);
+  const [sectionPurchasingIdForNew, setSectionPurchasingIdForNew] = useState<string | null>(null);
+  const [parentPurchasingIdForNew, setParentPurchasingIdForNew] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<ProjectExpense | null>(null);
   const [isNewExpenseOpen, setIsNewExpenseOpen] = useState(false);
   const [editingLabor, setEditingLabor] = useState<LaborPayroll | null>(null);
   const [isNewLaborOpen, setIsNewLaborOpen] = useState(false);
+  const [triggerAddDoc, setTriggerAddDoc] = useState(false);
 
   // ----------------------------------------------------
   // FILTER DATA BY SELECTED PROJECT
   // ----------------------------------------------------
-  const currentProjMaterialPlans = useMemo(() => {
-    const projectTasks = tasks.filter((task) => task.projectCode === selectedProject && task.name?.trim());
-    const projectImportedPlans = materialPlans.filter((plan) => plan.projectCode === selectedProject && plan.jobContent?.trim());
-
-    if (projectTasks.length === 0) {
-      return projectImportedPlans;
-    }
-
-    const materialByKey = new Map(
-      projectImportedPlans.map((plan) => [normalizePlanKey(plan.stt, plan.jobContent), plan])
-    );
-
-    let runningSection = 'Khac';
-    const progressRows = projectTasks.map((task) => {
-      const isHeaderTask = task.isSectionHeader || romanToNumber(task.stt) !== null;
-      if (isHeaderTask) runningSection = task.name;
-      return {
-        ...task,
-        materialSectionName: task.sectionName || runningSection,
-        materialIsHeader: isHeaderTask,
-      };
-    });
-
-    const groups: Record<string, typeof progressRows> = {};
-    const sectionOrder: string[] = [];
-
-    progressRows.forEach((task) => {
-      const section = task.materialSectionName || 'Khac';
-      if (!groups[section]) {
-        groups[section] = [];
-        sectionOrder.push(section);
-      }
-      groups[section].push(task);
-    });
-
-    sectionOrder.sort((a, b) => {
-      const leftHeader = groups[a].find((task) => task.materialIsHeader) || groups[a][0];
-      const rightHeader = groups[b].find((task) => task.materialIsHeader) || groups[b][0];
-      return sttSortValue(leftHeader?.stt) - sttSortValue(rightHeader?.stt) || String(leftHeader?.stt || '').localeCompare(String(rightHeader?.stt || ''), 'vi', { numeric: true, sensitivity: 'base' });
-    });
-
-    return sectionOrder.flatMap((section) => {
-      return groups[section].sort((a, b) => {
-        if (a.materialIsHeader && !b.materialIsHeader) return -1;
-        if (!a.materialIsHeader && b.materialIsHeader) return 1;
-        return sttSortValue(a.stt) - sttSortValue(b.stt) || String(a.stt || '').localeCompare(String(b.stt || ''), 'vi', { numeric: true, sensitivity: 'base' });
-      });
-    }).map((task, index): ProjectMaterialPlan => {
-      const existing = materialByKey.get(normalizePlanKey(task.stt || String(index + 1), task.name));
-      const useExistingColumns = Boolean(existing && !isAutoSyncedMaterialPlan(existing));
-      return {
-        id: existing?.id || 'task-material-' + task.id,
-        projectCode: selectedProject,
-        stt: task.stt || String(index + 1),
-        jobContent: task.name,
-        unit: useExistingColumns ? (existing?.unit || '') : (task.unit || ''),
-        contractVolume: useExistingColumns ? Number(existing?.contractVolume || 0) : Number(task.volume || 0),
-        techSpecModel: useExistingColumns ? (existing?.techSpecModel || '') : '',
-        techSpecOrigin: useExistingColumns ? (existing?.techSpecOrigin || '') : '',
-        progressStatus: useExistingColumns ? (existing?.progressStatus || '') : '',
-        orderedVolume: useExistingColumns ? Number(existing?.orderedVolume || 0) : 0,
-        orderedStatus: useExistingColumns ? (existing?.orderedStatus || '') : '',
-        expectedDate: useExistingColumns ? (existing?.expectedDate || '') : '',
-        issueContent: useExistingColumns ? (existing?.issueContent || '') : '',
-        issueStatus: useExistingColumns ? (existing?.issueStatus || '') : '',
-        docCo: useExistingColumns ? Boolean(existing?.docCo) : false,
-        docCq: useExistingColumns ? Boolean(existing?.docCq) : false,
-        docFireInspection: useExistingColumns ? Boolean(existing?.docFireInspection) : false,
-        dispatchToSite: useExistingColumns ? Boolean(existing?.dispatchToSite) : false,
-        dispatchDate: useExistingColumns ? (existing?.dispatchDate || '') : '',
-        supplyScope: existing?.supplyScope || 'unknown',
-        notes: [task.materialIsHeader ? '[section]' : '', useExistingColumns ? (existing?.notes || '') : ''].filter(Boolean).join(' | '),
-      };
-    });
-  }, [materialPlans, selectedProject, tasks]);
+  // NOTE: both datasets are passed to the tabs AS-IS (project filter only). The
+  // backend already returns them in Excel order (sections interleaved with their
+  // items); re-sorting here (sections first, then items) or rebuilding the
+  // purchasing rows from material plans breaks the hierarchy and duplicates
+  // section rows. MaterialPlanTab / PurchasingTab handle grouping themselves.
+  const currentProjMaterialPlans = useMemo(() =>
+    materialPlans.filter((plan) => plan.projectCode === selectedProject && plan.jobContent?.trim()),
+    [materialPlans, selectedProject]
+  );
 
   const currentProjPurchasing = useMemo(() => {
-    const purchasingByKey = new Map(
-      purchasingPlans
-        .filter((plan) => plan.projectCode === selectedProject)
-        .map((plan) => [normalizePlanKey(plan.stt, plan.content), plan])
-    );
+    const projectPurchasing = purchasingPlans.filter((plan) => plan.projectCode === selectedProject);
+    const validIds = new Set<string>();
 
-    const rows: ProjectPurchasing[] = [];
-    let pendingSection: ProjectPurchasing | null = null;
-    let sectionRows: ProjectPurchasing[] = [];
+    projectPurchasing.forEach(plan => {
+      const matPlan = plan.materialPlanId 
+        ? currentProjMaterialPlans.find(m => m.id === plan.materialPlanId)
+        : currentProjMaterialPlans.find(m => normalizePlanKey(m.stt, m.jobContent) === normalizePlanKey(plan.stt, plan.content));
+        
+      if (matPlan) {
+        if (isEffectiveContractorPlan(matPlan, currentProjMaterialPlans)) {
+          validIds.add(plan.id);
+        }
+      } else {
+        validIds.add(plan.id);
+      }
+    });
 
-    const flushSection = () => {
-      if (pendingSection && sectionRows.length > 0) rows.push(pendingSection, ...sectionRows);
-      if (!pendingSection && sectionRows.length > 0) rows.push(...sectionRows);
-      pendingSection = null;
-      sectionRows = [];
+    let added;
+    do {
+      added = false;
+      projectPurchasing.forEach(plan => {
+        if (validIds.has(plan.id) && plan.parentId && !validIds.has(plan.parentId)) {
+           validIds.add(plan.parentId);
+           added = true;
+        }
+      });
+    } while (added);
+
+    // Remove empty owner sections that were kept but shouldn't be.
+    // Actually, if it's an owner section and has no children, it won't be in validIds from pass 1
+    // UNLESS it had no matPlan. If it had no matPlan, it was added in pass 1.
+    // Let's ensure owner sections without matPlan are removed if they have no valid children.
+    projectPurchasing.forEach(plan => {
+      if (validIds.has(plan.id) && isSectionMarker(plan.stt, plan.notes)) {
+        const matPlan = plan.materialPlanId 
+          ? currentProjMaterialPlans.find(m => m.id === plan.materialPlanId)
+          : currentProjMaterialPlans.find(m => normalizePlanKey(m.stt, m.jobContent) === normalizePlanKey(plan.stt, plan.content));
+        
+        if (!matPlan) {
+          const content = String(plan.content || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (content.includes('chu dau tu cung cap') || content.includes('ben a cung cap')) {
+             const hasValidChild = projectPurchasing.some(p => p.parentId === plan.id && validIds.has(p.id));
+             if (!hasValidChild) {
+                validIds.delete(plan.id);
+             }
+          }
+        }
+      }
+    });
+
+    return projectPurchasing.filter(plan => validIds.has(plan.id));
+  }, [purchasingPlans, selectedProject, currentProjMaterialPlans]);
+
+  // Tự động đồng bộ các hạng mục do nhà thầu cung cấp sang tab Mua hàng (chạy ngầm, không gây treo máy nhờ debounce)
+  useEffect(() => {
+    if (!selectedProject || currentProjMaterialPlans.length === 0) return;
+
+    let isCancelled = false;
+    const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+    const syncMissing = async () => {
+      const contractorPlans = currentProjMaterialPlans.filter(plan => 
+        isEffectiveContractorPlan(plan, currentProjMaterialPlans)
+      );
+
+      const missingPlans = contractorPlans.filter(plan => {
+        if (syncingIdsRef.current.has(plan.id)) return false;
+        return !currentProjPurchasing.some(p => 
+          p.materialPlanId === plan.id || 
+          (norm(p.stt) === norm(plan.stt) && norm(p.content) === norm(plan.jobContent))
+        );
+      });
+
+      if (missingPlans.length === 0) return;
+
+      const findPurchasingParentId = (matParentId?: string): string | undefined => {
+        if (!matParentId) return undefined;
+        const parentMat = currentProjMaterialPlans.find(m => m.id === matParentId);
+        if (!parentMat) return undefined;
+        const match = currentProjPurchasing.find(p =>
+          norm(p.stt) === norm(parentMat.stt) && norm(p.content) === norm(parentMat.jobContent)
+        );
+        return match ? match.id : undefined;
+      };
+
+      for (const plan of missingPlans) {
+        if (isCancelled) break;
+        
+        syncingIdsRef.current.add(plan.id);
+        const parentId = findPurchasingParentId(plan.parentId);
+
+        try {
+          await addPurchasingPlan({
+            projectCode: selectedProject,
+            materialPlanId: plan.id,
+            stt: plan.stt || '',
+            content: plan.jobContent || '',
+            unit: plan.unit || 'bộ',
+            volumeContract: plan.contractVolume || 1,
+            volumeOrder: 0,
+            unitPrice: 0,
+            vatRate: 0,
+            vatAmount: 0,
+            totalAmount: 0,
+            prepayPercent: 0,
+            prepayAmount: 0,
+            remainingAmount: 0,
+            orderStatus: 'Chưa đặt hàng',
+            contractStatus: 'Đã có phụ lục',
+            invoiceStatus: 'Chưa xuất',
+            notes: plan.notes || '',
+            parentId: parentId
+          });
+          // Yield to event loop
+          await new Promise(r => setTimeout(r, 10));
+        } catch (e) {
+          console.error('Auto sync error:', e);
+        } finally {
+          syncingIdsRef.current.delete(plan.id);
+        }
+      }
     };
 
-    currentProjMaterialPlans.forEach((plan) => {
-      const section = isSectionMarker(plan.stt, plan.notes);
-      if (section) {
-        flushSection();
-        pendingSection = {
-          id: `purchase-section-${plan.id}`,
-          projectCode: selectedProject,
-          stt: plan.stt,
-          content: plan.jobContent,
-          unit: '', volumeContract: 0, volumeOrder: 0, unitPrice: 0, vatRate: 0, vatAmount: 0,
-          totalAmount: 0, prepayPercent: 0, prepayAmount: 0, remainingAmount: 0,
-          orderStatus: '', contractStatus: '', paymentDate: '', invoiceStatus: '', notes: '[section]',
-        };
-        return;
-      }
-      if (!isContractorMaterialPlan(plan)) return;
-      const existing = purchasingByKey.get(normalizePlanKey(plan.stt, plan.jobContent));
-      sectionRows.push(existing || {
-        id: `material-purchase-${plan.id}`,
-        projectCode: selectedProject,
-        stt: plan.stt,
-        content: plan.jobContent,
-        unit: '', volumeContract: 0, volumeOrder: 0, unitPrice: 0, vatRate: 0, vatAmount: 0,
-        totalAmount: 0, prepayPercent: 0, prepayAmount: 0, remainingAmount: 0,
-        orderStatus: '', contractStatus: '', paymentDate: '', invoiceStatus: '', notes: '',
-      });
-    });
-    flushSection();
-    return rows;
-  }, [currentProjMaterialPlans, purchasingPlans, selectedProject]);
+    syncMissing();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedProject, currentProjMaterialPlans, currentProjPurchasing]);
   const currentProjExpenses = useMemo(() => 
     expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
     [expenses, selectedProject]
@@ -774,6 +1050,8 @@ export const ProjectCostPlanPage: React.FC = () => {
   const projectMetrics = useMemo(() => {
     const materialRows = currentProjMaterialPlans.filter((p) => !isSectionMarker(p.stt, p.notes));
     const purchasingRows = currentProjPurchasing.filter((p) => !isSectionMarker(p.stt, p.notes));
+  console.log("ALL PURCHASING ITEMS:", currentProjPurchasing.length);
+  console.log("CONTRACTOR PURCHASING ITEMS:", currentProjPurchasing.filter(p => !isSectionMarker(p.stt, p.notes)).length);
     const normalizeStatusText = (value?: string) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
     const calcPurchasingTotal = (p: ProjectPurchasing) => {
       const vatAmount = Number(p.vatAmount || 0) || (Number(p.volumeOrder || 0) * Number(p.unitPrice || 0) * Number(p.vatRate || 0)) / 100;
@@ -927,7 +1205,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       }));
       sheetName = 'TheoDoiChungTu';
     } else {
-      return; // No export for Overview
+      return;
     }
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -937,8 +1215,8 @@ export const ProjectCostPlanPage: React.FC = () => {
   };
 
   // Form states for creating items
-  const [newPlanData, setNewPlanData] = useState<Partial<ProjectMaterialPlan>>({
-    stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: ''
+  const [newPlanData, setNewPlanData] = useState<Partial<ProjectMaterialPlan> & { isContractor?: boolean }>({
+    stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true
   });
   const [newPurchasingData, setNewPurchasingData] = useState<Partial<ProjectPurchasing>>({
     stt: '', content: '', unit: 'bộ', volumeContract: 1, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''
@@ -947,21 +1225,18 @@ export const ProjectCostPlanPage: React.FC = () => {
     stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''
   });
   const [newLaborData, setNewLaborData] = useState<Partial<LaborPayroll>>({
-    stt: '', date: '', content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''
+    stt: '', date: new Date().toISOString().split('T')[0], content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''
   });
 
   return (
-    <div className="px-5 py-4 space-y-4">
+    <div className="flex flex-col flex-1 overflow-y-auto">
       {/* HEADER SECTION */}
-      <section className="bg-white border border-slate-200 rounded-xl shadow-xs p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">calculate</span>
           </div>
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">Kế hoạch & Chi phí Dự án</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">Quản lý tổng hợp ngân sách, vật tư kế hoạch, mua sắm vật tư và chi phí chi tiết theo công trình</p>
-          </div>
+          <h1 className="text-2xl font-black text-slate-900 border-l-4 border-primary pl-4 uppercase font-['Inter']">KẾ HOẠCH & CHI PHÍ DỰ ÁN</h1>
         </div>
 
         {/* Project Selector & Actions */}
@@ -973,19 +1248,6 @@ export const ProjectCostPlanPage: React.FC = () => {
             accept=".xlsx,.xls,.csv,.pdf,.doc,.docx" 
             className="hidden" 
           />
-          <button 
-            onClick={() => {
-              if (!selectedProject) {
-                triggerToast('Vui lòng khởi tạo dự án trước khi nhập dữ liệu!', 'warning');
-                return;
-              }
-              fileInputRef.current?.click();
-            }} 
-            className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-2 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 shadow-xs text-blue-600 border-blue-100"
-          >
-            <span className="material-symbols-outlined text-base">file_upload</span>
-            Nhập File
-          </button>
 
           <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200">
             <span className="text-xs font-bold text-slate-500 uppercase px-2">Dự án:</span>
@@ -1007,60 +1269,15 @@ export const ProjectCostPlanPage: React.FC = () => {
         </div>
       </section>
 
-      {/* METRICS ROW */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Quỹ Công trình</span>
-            <span className="material-symbols-outlined text-lg text-blue-500 bg-blue-50 p-1.5 rounded-md">account_balance_wallet</span>
-          </div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-2">{projectMetrics.fund.toLocaleString('vi-VN')} <span className="text-xs font-semibold text-slate-500">đ</span></div>
-          <div className="text-[10px] text-slate-500 mt-1">Dự trù ngân sách của công trường</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Tổng chi thực tế</span>
-            <span className="material-symbols-outlined text-lg text-rose-500 bg-rose-50 p-1.5 rounded-md">payments</span>
-          </div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-2">{projectMetrics.totalSpent.toLocaleString('vi-VN')} <span className="text-xs font-semibold text-slate-500">đ</span></div>
-          <div className="text-[10px] text-slate-500 mt-1">Chi công trình ({projectMetrics.totalExp.toLocaleString('vi-VN')}đ) + Lương ({projectMetrics.totalLab.toLocaleString('vi-VN')}đ)</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Tồn quỹ cuối kỳ</span>
-            <span className="material-symbols-outlined text-lg text-emerald-500 bg-emerald-50 p-1.5 rounded-md">savings</span>
-          </div>
-          <div className={`text-2xl font-extrabold mt-2 ${projectMetrics.balance < 0 ? 'text-red-600' : 'text-slate-900'}`}>{projectMetrics.balance.toLocaleString('vi-VN')} <span className="text-xs font-semibold text-slate-500">đ</span></div>
-          <div className="text-[10px] text-slate-500 mt-1">Ngân quỹ còn lại của dự án</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase">Tiến độ Vật tư</span>
-            <span className="material-symbols-outlined text-lg text-amber-500 bg-amber-50 p-1.5 rounded-md">inventory</span>
-          </div>
-          <div className="flex items-center gap-2 mt-2">
-            <div className="text-2xl font-extrabold text-slate-900">{projectMetrics.progressPercent}%</div>
-            <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
-              <div className="bg-amber-500 h-full rounded-full" style={{ width: `${projectMetrics.progressPercent}%` }}></div>
-            </div>
-          </div>
-          <div className="text-[10px] text-slate-500 mt-1">Tỷ lệ vật tư đã hoàn tất cung cấp</div>
-        </div>
-      </section>
-
       {/* TABS SELECTOR */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white rounded-t-xl px-4 pt-1 shadow-xs border-x">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1 shadow-xs border-x">
+        <div className="flex items-center gap-4 overflow-x-auto">
           {[
-            { id: 'OVERVIEW', label: 'Tổng Quan & Biểu Đồ', icon: 'monitoring' },
             { id: 'MATERIAL_PLAN', label: 'Kế Hoạch Vật Tư', icon: 'list_alt' },
             { id: 'PURCHASING', label: 'Mua hàng (nhà thầu)', icon: 'shopping_bag' },
             { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long' },
             { id: 'LABOR', label: 'Lương Công Nhật', icon: 'engineering' },
-            { id: 'DOCUMENTS', label: 'Theo dõi chứng từ', icon: 'description' }
+            { id: 'DOCUMENTS', label: 'Theo dõi chứng từ', icon: 'description' },
           ].map(tab => (
             <button 
               key={tab.id}
@@ -1077,7 +1294,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           ))}
         </div>
 
-        {activeTab !== 'OVERVIEW' && (
+        {true && (
           <div className="flex gap-2 pb-1.5">
             <input 
               type="file" 
@@ -1112,92 +1329,47 @@ export const ProjectCostPlanPage: React.FC = () => {
               <span className="material-symbols-outlined text-sm">file_download</span>
               Xuất Excel
             </button>
-            <button 
-              onClick={() => {
-                if (!selectedProject) {
-                  triggerToast('Vui lòng khởi tạo dự án trước khi thêm dữ liệu!', 'warning');
-                  return;
-                }
-                if (activeTab === 'MATERIAL_PLAN') setIsNewPlanOpen(true);
-                else if (activeTab === 'PURCHASING') setIsNewPurchasingOpen(true);
-                else if (activeTab === 'EXPENSE') setIsNewExpenseOpen(true);
-                else if (activeTab === 'LABOR') setIsNewLaborOpen(true);
-              }} 
-              className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
-            >
-              <span className="material-symbols-outlined text-sm">add</span>
-              Thêm Mới
-            </button>
+
+            {activeTab !== 'MATERIAL_PLAN' && activeTab !== 'PURCHASING' && (
+              <button 
+                onClick={() => {
+                  if (!selectedProject) {
+                    triggerToast('Vui lòng khởi tạo dự án trước khi thêm dữ liệu!', 'warning');
+                    return;
+                  }
+                  setIsCreatingSectionHeader(false);
+                  if (activeTab === 'EXPENSE') setIsNewExpenseOpen(true);
+                  else if (activeTab === 'LABOR') setIsNewLaborOpen(true);
+                  else if (activeTab === 'DOCUMENTS') setTriggerAddDoc(true);
+                }} 
+                className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
+              >
+                <span className="material-symbols-outlined text-sm">add</span>
+                Thêm Mới
+              </button>
+            )}
           </div>
         )}
       </div>
 
       {/* TAB CONTENTS */}
-      <div className="bg-white border-x border-b border-slate-200 rounded-b-xl shadow-xs overflow-hidden">
-        
-        {/* OVERVIEW TAB */}
-        {activeTab === 'OVERVIEW' && (
-          <div className="p-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Chart Area */}
-            <div className="border border-slate-200 rounded-xl p-4 lg:col-span-2">
-              <h3 className="text-sm font-bold text-slate-900 mb-4">Cơ cấu Chi phí & Mua sắm hàng hóa</h3>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                    <YAxis tickFormatter={(v) => `${(v/1000000).toFixed(1)}M`} tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(v) => `${Number(v).toLocaleString('vi-VN')} đ`} />
-                    <Legend />
-                    <Bar dataKey="value" fill="#0284c7" name="Chi phí thực tế (đ)">
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Side summary panel */}
-            <div className="border border-slate-200 rounded-xl p-4 space-y-4">
-              <h3 className="text-sm font-bold text-slate-900">Chi tiết Báo cáo Tài chính</h3>
-              <div className="divide-y divide-slate-100 text-xs">
-                <div className="flex justify-between py-2.5">
-                  <span className="text-slate-500 font-medium">Chi mua sắm vật tư (Hợp đồng)</span>
-                  <span className="font-bold text-slate-800">{projectMetrics.totalPurchasing.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between py-2.5">
-                  <span className="text-slate-500 font-medium">Chi công trình hiện trường</span>
-                  <span className="font-bold text-slate-800">{projectMetrics.totalExp.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between py-2.5">
-                  <span className="text-slate-500 font-medium">Chi tiền lương công nhật</span>
-                  <span className="font-bold text-slate-800">{projectMetrics.totalLab.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between py-2.5">
-                  <span className="text-slate-500 font-medium">Chứng từ thiếu (CO)</span>
-                  <span className="font-bold text-rose-600">{projectMetrics.missingCo} vật tư</span>
-                </div>
-                <div className="flex justify-between py-2.5">
-                  <span className="text-slate-500 font-medium">Chứng từ thiếu (CQ)</span>
-                  <span className="font-bold text-rose-600">{projectMetrics.missingCq} vật tư</span>
-                </div>
-                <div className="flex justify-between py-2.5 bg-slate-50 p-2 rounded-lg font-bold mt-2">
-                  <span className="text-slate-700">Tổng quỹ chi tiêu</span>
-                  <span className="text-primary">{projectMetrics.fund.toLocaleString('vi-VN')} đ</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
+      <div className="bg-white border-x border-b border-slate-200 shadow-xs overflow-hidden flex-1 relative flex flex-col">
         {/* MATERIAL PLAN TAB */}
         {activeTab === 'MATERIAL_PLAN' && (
           <MaterialPlanTab
             data={currentProjMaterialPlans}
+            onUpdate={handleUpdateMaterialPlanSync}
             onEdit={setEditingPlan}
-            onDelete={deleteMaterialPlan}
+            onDelete={(id) => {
+              const item = currentProjMaterialPlans.find(p => p.id === id);
+              setDeleteConfirm({ isOpen: true, id, type: 'material', title: 'Xóa kế hoạch vật tư', itemName: `hạng mục "${item?.jobContent}"` });
+            }}
+            onAddSubtask={(plan, suggestedStt) => {
+              setParentPlanIdForNew(plan.id);
+              setIsCreatingSectionHeader(false);
+              setIsNewPlanOpen(true);
+              setNewPlanData(prev => ({ ...prev, stt: suggestedStt || '', isContractor: isEffectiveContractorPlan(plan, currentProjMaterialPlans) }));
+            }}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             statusFilter={statusFilter}
@@ -1209,8 +1381,18 @@ export const ProjectCostPlanPage: React.FC = () => {
         {activeTab === 'PURCHASING' && (
           <PurchasingTab
             data={currentProjPurchasing}
+            onUpdate={handleUpdatePurchasingPlanSync}
             onEdit={setEditingPurchasing}
-            onDelete={deletePurchasingPlan}
+            onDelete={(id) => {
+              const item = currentProjPurchasing.find(p => p.id === id);
+              setDeleteConfirm({ isOpen: true, id, type: 'purchasing', title: 'Xóa mua sắm hàng hóa', itemName: `mục "${item?.content}"` });
+            }}
+            onAddSubtask={(plan, suggestedStt) => {
+              setParentPurchasingIdForNew(plan.id);
+              setIsCreatingSectionHeader(false);
+              setIsNewPurchasingOpen(true);
+              setNewPurchasingData(prev => ({ ...prev, stt: suggestedStt || '' }));
+            }}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             statusFilter={statusFilter}
@@ -1222,8 +1404,17 @@ export const ProjectCostPlanPage: React.FC = () => {
         {activeTab === 'DOCUMENTS' && (
           <DocumentCertificateTab
             data={currentProjMaterialPlans}
+            selectedProject={selectedProject}
+            onAdd={addMaterialPlan}
+            onUpdate={updateMaterialPlan}
+            onDelete={(id) => {
+              const item = currentProjMaterialPlans.find(p => p.id === id);
+              setDeleteConfirm({ isOpen: true, id, type: 'material', title: 'Xóa chứng từ', itemName: `chứng từ của "${item?.jobContent}"` });
+            }}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+            triggerAdd={triggerAddDoc}
+            onTriggerHandled={() => setTriggerAddDoc(false)}
           />
         )}
 
@@ -1277,7 +1468,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                     </td>
                     <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <button 
-                        onClick={() => { if(window.confirm('Xóa phiếu chi này?')) deleteExpense(exp.id) }} 
+                        onClick={() => {
+                          setDeleteConfirm({ isOpen: true, id: exp.id, type: 'expense', title: 'Xóa phiếu chi', itemName: `phiếu chi "${exp.content}"` });
+                        }} 
                         className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">delete</span>
@@ -1315,7 +1508,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {currentProjLabor.map((lab) => (
-                  <tr key={lab.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingLabor(lab)}>
+                  <tr key={lab.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingLabor({...lab, date: lab.date || new Date().toISOString().split('T')[0]})}>
                     <td className="p-3 text-center font-bold text-slate-400">{lab.stt || '-'}</td>
                     <td className="p-3 font-semibold text-slate-900">{lab.date}</td>
                     <td className="p-3 font-bold text-slate-900">{lab.workerName || '-'}</td>
@@ -1351,7 +1544,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                     </td>
                     <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <button 
-                        onClick={() => { if(window.confirm('Xóa dòng thanh toán lương công nhật này?')) deleteLaborPayroll(lab.id) }} 
+                        onClick={() => {
+                          setDeleteConfirm({ isOpen: true, id: lab.id, type: 'labor', title: 'Xóa lương công nhật', itemName: `lương của "${lab.workerName || lab.description}"` });
+                        }} 
                         className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">delete</span>
@@ -1367,16 +1562,56 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
         )}
 
+
+
       </div>
 
       {/* MODALS */}
+      {/* Confirm dialog: Xóa hạng mục */}
+      <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title={deleteConfirm?.title || 'Xác nhận xóa'}>
+        <div className="py-4">
+          <p className="mb-8 text-sm font-medium text-slate-700">Bạn chắc chắn muốn xóa {deleteConfirm?.itemName}?</p>
+          <div className="flex justify-end gap-3 border-t pt-4">
+            <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border border-slate-300 text-slate-700 bg-white rounded hover:bg-slate-50 transition-colors font-medium">Hủy</button>
+            <button onClick={confirmDeleteAction} className="px-4 py-2 bg-[#e53935] text-white rounded hover:bg-red-700 transition-colors font-bold shadow-md">Xóa</button>
+          </div>
+        </div>
+      </Modal>
+
       {/* 1. Modal Kế Hoạch Vật Tư */}
-      <Modal isOpen={isNewPlanOpen} onClose={() => setIsNewPlanOpen(false)} title="Thêm hạng mục Kế hoạch Vật tư mới">
-        <form onSubmit={(e) => {
+      <Modal isOpen={isNewPlanOpen} onClose={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setSectionPlanIdForNew(null); setIsCreatingSectionHeader(false); setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true}); }} title={isCreatingSectionHeader ? 'Thêm Đầu mục lớn — Kế hoạch Vật tư' : 'Thêm Hạng mục — Kế hoạch Vật tư'} size="xl">
+        <form onSubmit={async (e) => {
           e.preventDefault();
-          addMaterialPlan({
+          const parentId = isCreatingSectionHeader ? null : (parentPlanIdForNew || sectionPlanIdForNew || null);
+          
+          // Auto STT: La Mã cho đầu mục lớn, số thứ tự cho hạng mục nhỏ
+          const autoStt = (() => {
+            if (newPlanData.stt) return newPlanData.stt;
+            if (isCreatingSectionHeader) {
+              const sectionCount = currentProjMaterialPlans.filter(p => isSectionMarker(p.stt, p.notes)).length;
+              return toRoman(sectionCount + 1);
+            }
+            if (parentId) {
+              const parentObj = currentProjMaterialPlans.find(p => p.id === parentId);
+              const siblings = currentProjMaterialPlans.filter(p => p.parentId === parentId);
+              const nextIndex = siblings.length + 1;
+              return parentObj?.stt ? `${parentObj.stt}.${nextIndex}` : String(nextIndex);
+            }
+            return String(currentProjMaterialPlans.filter(p => !p.parentId).length + 1);
+          })();
+
+          const isContractor = !!newPlanData.isContractor;
+          const baseNote = (() => {
+            const tags = [];
+            if (isCreatingSectionHeader && !parentId) tags.push('[section]');
+            if (isContractor) tags.push('[contractor]');
+            if (newPlanData.notes) tags.push(newPlanData.notes);
+            return tags.join(' | ');
+          })();
+
+          const createdMaterialId = await addMaterialPlan({
             projectCode: selectedProject,
-            stt: newPlanData.stt || String(currentProjMaterialPlans.length + 1),
+            stt: autoStt,
             jobContent: newPlanData.jobContent || '',
             unit: newPlanData.unit || 'bộ',
             contractVolume: Number(newPlanData.contractVolume || 1),
@@ -1391,112 +1626,431 @@ export const ProjectCostPlanPage: React.FC = () => {
             docCq: !!newPlanData.docCq,
             docFireInspection: !!newPlanData.docFireInspection,
             dispatchToSite: !!newPlanData.dispatchToSite,
-            notes: newPlanData.notes || ''
+            supplyScope: isContractor ? 'contractor' : 'unknown',
+            notes: baseNote,
+            parentId: parentId || undefined
           });
+
+          // Đồng bộ sang tab Mua hàng nếu là nhà thầu (Bao gồm cả đầu mục lớn để làm cha)
+          if (isContractor) {
+            if (createdMaterialId) syncingIdsRef.current.add(createdMaterialId);
+            try {
+              const contractVol = Number(newPlanData.contractVolume || 1);
+              let purchasingParentId = undefined;
+              if (parentId) {
+                const findPurchasingMatch = (matId: string): string | undefined => {
+                  const exactMatch = currentProjPurchasing.find(p => p.materialPlanId === matId);
+                  if (exactMatch) return exactMatch.id;
+                  
+                  const matNode = currentProjMaterialPlans.find(p => p.id === matId);
+                  if (!matNode) return undefined;
+                  
+                  const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+                  const matchingPurchasing = currentProjPurchasing.find(
+                    p => norm(p.stt) === norm(matNode.stt) && norm(p.content) === norm(matNode.jobContent)
+                  );
+                  if (matchingPurchasing) return matchingPurchasing.id;
+                  
+                  if (matNode.parentId) return findPurchasingMatch(matNode.parentId);
+                  return undefined;
+                };
+                purchasingParentId = findPurchasingMatch(parentId);
+              }
+
+              await addPurchasingPlan({
+                projectCode: selectedProject,
+                materialPlanId: createdMaterialId,
+                stt: autoStt,
+                content: newPlanData.jobContent || '',
+                unit: newPlanData.unit || 'bộ',
+                volumeContract: contractVol,
+                volumeOrder: 0,
+                unitPrice: 0,
+                vatRate: 10,
+                vatAmount: 0,
+                totalAmount: 0,
+                prepayPercent: 0,
+                prepayAmount: 0,
+                remainingAmount: 0,
+                orderStatus: 'Chưa đặt hàng',
+                contractStatus: 'Chưa ký',
+                paymentDate: '',
+                invoiceStatus: 'Chưa xuất',
+                notes: baseNote,
+                parentId: purchasingParentId || undefined
+              });
+            } finally {
+              setTimeout(() => {
+                if (createdMaterialId) syncingIdsRef.current.delete(createdMaterialId);
+              }, 500);
+            }
+          }
+
+          // Đồng bộ sang tab Quản lý Tiến độ (TaskManagement)
+          const projName = projects.find(p => p.code === selectedProject)?.name || selectedProject;
+          const currentSectionName = (() => {
+            if (isCreatingSectionHeader) return newPlanData.jobContent || '';
+            if (parentId) {
+              let currentObj = currentProjMaterialPlans.find(p => p.id === parentId);
+              let safeCount = 0;
+              while (currentObj && !isSectionMarker(currentObj.stt, currentObj.notes) && currentObj.parentId && safeCount < 50) {
+                currentObj = currentProjMaterialPlans.find(p => p.id === currentObj!.parentId);
+                safeCount++;
+              }
+              return currentObj?.jobContent || '';
+            }
+            const sectionId = sectionPlanIdForNew;
+            if (sectionId) {
+              const sec = currentProjMaterialPlans.find(p => p.id === sectionId);
+              return sec?.jobContent || '';
+            }
+            return '';
+          })();
+
+          let taskParentId = undefined;
+          if (parentId) {
+            const parentObj = currentProjMaterialPlans.find(p => p.id === parentId);
+            if (parentObj) {
+              // Tìm Task ID tương ứng với parentObj (vì parentId hiện tại là ID của MaterialPlan)
+              // Cần ưu tiên task nằm trong cùng sectionName
+              const isParentSec = isSectionMarker(parentObj.stt, parentObj.notes);
+              const pTask = tasks.find(t => 
+                t.projectCode === selectedProject && 
+                t.name === parentObj.jobContent && 
+                (isParentSec ? t.isSectionHeader : (!t.isSectionHeader && t.sectionName === currentSectionName))
+              ) || tasks.find(t => t.projectCode === selectedProject && t.name === parentObj.jobContent);
+              
+              if (pTask) {
+                taskParentId = pTask.id;
+              }
+            }
+          }
+
+          addTask({
+            stt: autoStt,
+            code: '',
+            name: newPlanData.jobContent || '',
+            projectCode: selectedProject,
+            projectName: projName,
+            volume: Number(newPlanData.contractVolume || 1),
+            unit: newPlanData.unit || 'bộ',
+            progress: 0,
+            status: 'Chưa làm',
+            purchaseStatus: 'Chưa đặt hàng',
+            constrStatus: 'Chưa thi công',
+            isDone: false,
+            isSectionHeader: isCreatingSectionHeader,
+            sectionName: currentSectionName,
+            notes: baseNote,
+            parentId: taskParentId
+          });
+
+          // Reset form
+          setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true});
+
           setIsNewPlanOpen(false);
-          setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: ''});
-        }} className="space-y-3 text-xs">
-          <div>
-            <label className="block font-bold mb-1">Tên vật tư / hạng mục *</label>
-            <input type="text" required value={newPlanData.jobContent} onChange={(e) => setNewPlanData({...newPlanData, jobContent: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="block font-bold mb-1">Đơn vị tính</label><input type="text" value={newPlanData.unit} onChange={(e) => setNewPlanData({...newPlanData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" value={newPlanData.contractVolume} onChange={(e) => setNewPlanData({...newPlanData, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="block font-bold mb-1">Mã hiệu / Quy cách</label><input type="text" value={newPlanData.techSpecModel} onChange={(e) => setNewPlanData({...newPlanData, techSpecModel: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Nguồn sản xuất / Xuất xứ</label><input type="text" value={newPlanData.techSpecOrigin} onChange={(e) => setNewPlanData({...newPlanData, techSpecOrigin: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block font-bold mb-1">Tiến độ thi công</label>
-              <select value={newPlanData.progressStatus} onChange={(e) => setNewPlanData({...newPlanData, progressStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                <option value="Chưa thi công">Chưa thi công</option>
-                <option value="Đang thi công">Đang thi công</option>
-                <option value="Đã hoàn thành">Đã hoàn thành</option>
-              </select>
+          setParentPlanIdForNew(null);
+          setSectionPlanIdForNew(null);
+          setIsCreatingSectionHeader(false);
+          triggerToast('Đã thêm Hạng mục thành công!', 'success');
+        }} className="space-y-3.5 text-xs">
+
+          {/* Banner chế độ hiện tại */}
+          {isCreatingSectionHeader ? (
+            <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
+              <span className="material-symbols-outlined text-base text-primary">folder_open</span>
+              <span className="font-bold text-primary">Chế độ: Thêm Đầu mục lớn (nhóm cha)</span>
             </div>
-            <div>
-              <label className="block font-bold mb-1">Trạng thái đặt hàng</label>
-              <select value={newPlanData.orderedStatus} onChange={(e) => setNewPlanData({...newPlanData, orderedStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                <option value="Chưa đặt hàng">Chưa đặt hàng</option>
-                <option value="Đã đặt hàng">Đã đặt hàng</option>
-                <option value="Đã nhận đủ">Đã nhận đủ</option>
-              </select>
+          ) : parentPlanIdForNew ? (
+            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
+              <span className="material-symbols-outlined text-base text-emerald-600">subdirectory_arrow_right</span>
+              <span className="font-bold text-emerald-700">
+                Đang thêm mục con của:{' '}
+                <span className="text-slate-800">
+                  {(() => {
+                    const p = currentProjMaterialPlans.find(x => x.id === parentPlanIdForNew);
+                    return p ? `${p.stt ? p.stt + '. ' : ''}${p.jobContent}` : '—';
+                  })()}
+                </span>
+              </span>
             </div>
-          </div>
+          ) : null}
+
+          {!isCreatingSectionHeader && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
+                <div className="flex items-center gap-1.5">
+                  <select
+                    value={sectionPlanIdForNew || ''}
+                    onChange={(e) => {
+                      setSectionPlanIdForNew(e.target.value || null);
+                      setParentPlanIdForNew(null);
+                    }}
+                    required={!isCreatingSectionHeader}
+                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
+                  >
+                    <option value="" disabled>-- Chọn Đầu mục cha --</option>
+                    {currentProjMaterialPlans.filter(p => isSectionMarker(p.stt, p.notes)).map(sec => (
+                      <option key={sec.id} value={sec.id} title={sec.jobContent}>
+                        {sec.stt ? `${sec.stt}. ` : ''}{sec.jobContent}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => { setIsCreatingSectionHeader(true); setSectionPlanIdForNew(null); setParentPlanIdForNew(null); setNewPlanData(prev => ({ ...prev, stt: '' })); }}
+                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
+                    title="Tạo Đầu mục lớn mới"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Thuộc Hạng mục cha (tuỳ chọn)</label>
+                <select
+                  value={parentPlanIdForNew || ''}
+                  onChange={(e) => setParentPlanIdForNew(e.target.value || null)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold truncate"
+                  disabled={!sectionPlanIdForNew}
+                >
+                  <option value="">-- Không có --</option>
+                  {sectionPlanIdForNew && currentProjMaterialPlans
+                    .filter(p => p.parentId === sectionPlanIdForNew)
+                    .map(t => (
+                      <option key={t.id} value={t.id} title={t.jobContent}>
+                        {t.stt ? `${t.stt}. ` : ''}{t.jobContent}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           <div>
-            <label className="block font-bold mb-1">Ngày cấp hàng dự kiến</label>
-            <input type="date" value={newPlanData.expectedDate || ''} onChange={(e) => setNewPlanData({...newPlanData, expectedDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
+            <label className="block font-bold text-slate-700 mb-1">
+              {isCreatingSectionHeader ? 'Tên Đầu mục lớn *' : 'Tên vật tư / hạng mục *'}
+            </label>
+            <input
+              type="text"
+              required
+              placeholder={isCreatingSectionHeader ? 'VD: HỆ THỐNG ĐIỆN CHIẾU SÁNG' : 'VD: Máy bơm điện Q=54m3/h; H=30mH2O'}
+              value={newPlanData.jobContent}
+              onChange={(e) => setNewPlanData({...newPlanData, jobContent: e.target.value})}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+            />
           </div>
-          <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
-            <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.docCo} onChange={(e) => setNewPlanData({...newPlanData, docCo: e.target.checked})} /> <span className="font-bold">Chứng từ CO</span></div>
-            <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.docCq} onChange={(e) => setNewPlanData({...newPlanData, docCq: e.target.checked})} /> <span className="font-bold">Chứng từ CQ</span></div>
-            <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.dispatchToSite} onChange={(e) => setNewPlanData({...newPlanData, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi tới CT</span></div>
-          </div>
+          {!isCreatingSectionHeader && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block font-bold mb-1">Đơn vị tính</label><input type="text" value={newPlanData.unit} onChange={(e) => setNewPlanData({...newPlanData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" value={newPlanData.contractVolume} onChange={(e) => setNewPlanData({...newPlanData, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block font-bold mb-1">Mã hiệu / Quy cách</label><input type="text" value={newPlanData.techSpecModel} onChange={(e) => setNewPlanData({...newPlanData, techSpecModel: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Nguồn sản xuất / Xuất xứ</label><input type="text" value={newPlanData.techSpecOrigin} onChange={(e) => setNewPlanData({...newPlanData, techSpecOrigin: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold mb-1">Tiến độ thi công</label>
+                  <select value={newPlanData.progressStatus} onChange={(e) => setNewPlanData({...newPlanData, progressStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="Chưa thi công">Chưa thi công</option>
+                    <option value="Đang thi công">Đang thi công</option>
+                    <option value="Đã hoàn thành">Đã hoàn thành</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold mb-1">Trạng thái đặt hàng</label>
+                  <select value={newPlanData.orderedStatus} onChange={(e) => setNewPlanData({...newPlanData, orderedStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="Chưa đặt hàng">Chưa đặt hàng</option>
+                    <option value="Đã đặt hàng">Đã đặt hàng</option>
+                    <option value="Đã nhận đủ">Đã nhận đủ</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block font-bold mb-1">Ngày cấp hàng dự kiến</label>
+                <input type="date" value={newPlanData.expectedDate || ''} onChange={(e) => setNewPlanData({...newPlanData, expectedDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
+              </div>
+              <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
+                <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.docCo} onChange={(e) => setNewPlanData({...newPlanData, docCo: e.target.checked})} /> <span className="font-bold">Chứng từ CO</span></div>
+                <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.docCq} onChange={(e) => setNewPlanData({...newPlanData, docCq: e.target.checked})} /> <span className="font-bold">Chứng từ CQ</span></div>
+                <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.dispatchToSite} onChange={(e) => setNewPlanData({...newPlanData, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi tới CT</span></div>
+              </div>
+              {/* Nhà thầu cung cấp */}
+              <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                <input
+                  type="checkbox"
+                  id="isContractorCheck"
+                  checked={!!newPlanData.isContractor}
+                  onChange={(e) => setNewPlanData({...newPlanData, isContractor: e.target.checked})}
+                  className="w-4 h-4 accent-amber-500"
+                />
+                <label htmlFor="isContractorCheck" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
+                  Nhà thầu cung cấp — tự động đồng bộ sang tab Mua hàng
+                </label>
+              </div>
+            </>
+          )}
+          
+          {isCreatingSectionHeader && (
+            <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 mb-3">
+              <input
+                type="checkbox"
+                id="isContractorCheckHeader"
+                checked={!!newPlanData.isContractor}
+                onChange={(e) => setNewPlanData({...newPlanData, isContractor: e.target.checked})}
+                className="w-4 h-4 accent-amber-500"
+              />
+              <label htmlFor="isContractorCheckHeader" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
+                Tự động đồng bộ Đầu mục này sang tab Mua hàng
+              </label>
+            </div>
+          )}
+
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newPlanData.notes} onChange={(e) => setNewPlanData({...newPlanData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewPlanOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu mới</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setIsCreatingSectionHeader(false); setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true}); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">{isCreatingSectionHeader ? 'Lưu Đầu Mục' : 'Thêm Hạng Mục'}</button></div>
         </form>
       </Modal>
 
       {/* Edit Plan Modal */}
-      <Modal isOpen={!!editingPlan} onClose={() => setEditingPlan(null)} title="Cập nhật Kế hoạch Vật tư">
-        {editingPlan && (
+      {(() => {
+        const isParent = editingPlan && (editingPlan.notes?.toLowerCase().includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test((editingPlan.stt || '').trim()));
+        return (
+          <Modal isOpen={!!editingPlan} onClose={() => { setEditingPlan(null); setIsCreatingSectionHeader(false); }} title={isParent ? "Chỉnh sửa Đầu mục cha" : "Cập nhật Kế hoạch Vật tư"}>
+            {editingPlan && (
           <form onSubmit={(e) => {
             e.preventDefault();
             updateMaterialPlan(editingPlan.id, editingPlan);
+            const isContractor = isEffectiveContractorPlan(editingPlan, currentProjMaterialPlans);
+            const key = normalizePlanKey(editingPlan.stt, editingPlan.jobContent, editingPlan.parentId);
+            const matchingPurchasing = purchasingPlans.find(p =>
+              p.projectCode === editingPlan.projectCode &&
+              (p.materialPlanId === editingPlan.id || normalizePlanKey(p.stt, p.content, p.parentId) === key)
+            );
+
+            if (isContractor) {
+              if (matchingPurchasing) {
+                updatePurchasingPlan(matchingPurchasing.id, {
+                  stt: editingPlan.stt,
+                  content: editingPlan.jobContent,
+                  unit: editingPlan.unit,
+                  volumeContract: editingPlan.contractVolume || matchingPurchasing.volumeContract,
+                  materialPlanId: editingPlan.id,
+                });
+              } else {
+                addPurchasingPlan({
+                  projectCode: editingPlan.projectCode,
+                  materialPlanId: editingPlan.id,
+                  stt: editingPlan.stt,
+                  content: editingPlan.jobContent,
+                  unit: editingPlan.unit || '',
+                  volumeContract: editingPlan.contractVolume || 1,
+                  volumeOrder: 0,
+                  unitPrice: 0,
+                  vatRate: 0,
+                  vatAmount: 0,
+                  totalAmount: 0,
+                  prepayPercent: 0,
+                  prepayAmount: 0,
+                  remainingAmount: 0,
+                  orderStatus: 'Chưa đặt hàng',
+                  contractStatus: 'Đã có phụ lục',
+                  invoiceStatus: 'Chưa xuất',
+                  notes: editingPlan.notes || '',
+                  parentId: editingPlan.parentId || undefined
+                });
+              }
+            } else {
+              if (matchingPurchasing) {
+                deletePurchasingPlan(matchingPurchasing.id);
+              }
+            }
             setEditingPlan(null);
+            triggerToast('Đã cập nhật Kế hoạch Vật tư thành công!', 'success');
           }} className="space-y-3 text-xs">
-            <div className="grid grid-cols-3 gap-3">
-              <div><label className="block font-bold mb-1">STT</label><input type="text" value={editingPlan.stt} onChange={(e) => setEditingPlan({...editingPlan, stt: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div className="col-span-2"><label className="block font-bold mb-1">Tên vật tư *</label><input type="text" required value={editingPlan.jobContent} onChange={(e) => setEditingPlan({...editingPlan, jobContent: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingPlan.unit} onChange={(e) => setEditingPlan({...editingPlan, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" value={editingPlan.contractVolume} onChange={(e) => setEditingPlan({...editingPlan, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold mb-1">Mã hiệu / Quy cách</label><input type="text" value={editingPlan.techSpecModel} onChange={(e) => setEditingPlan({...editingPlan, techSpecModel: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Nguồn gốc</label><input type="text" value={editingPlan.techSpecOrigin} onChange={(e) => setEditingPlan({...editingPlan, techSpecOrigin: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block font-bold mb-1">Tiến độ</label>
-                <select value={editingPlan.progressStatus} onChange={(e) => setEditingPlan({...editingPlan, progressStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                  <option value="Chưa thi công">Chưa thi công</option>
-                  <option value="Đang thi công">Đang thi công</option>
-                  <option value="Đã hoàn thành">Đã hoàn thành</option>
-                </select>
-              </div>
-              <div>
-                <label className="block font-bold mb-1">Trạng thái đặt</label>
-                <select value={editingPlan.orderedStatus} onChange={(e) => setEditingPlan({...editingPlan, orderedStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                  <option value="Chưa đặt hàng">Chưa đặt hàng</option>
-                  <option value="Đã đặt hàng">Đã đặt hàng</option>
-                  <option value="Đã nhận đủ">Đã nhận đủ</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block font-bold mb-1">Ngày cấp hàng dự kiến</label>
-              <input type="date" value={editingPlan.expectedDate || ''} onChange={(e) => setEditingPlan({...editingPlan, expectedDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
-            </div>
-            <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
-              <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.docCo} onChange={(e) => setEditingPlan({...editingPlan, docCo: e.target.checked})} /> <span className="font-bold">CO</span></div>
-              <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.docCq} onChange={(e) => setEditingPlan({...editingPlan, docCq: e.target.checked})} /> <span className="font-bold">CQ</span></div>
-              <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.dispatchToSite} onChange={(e) => setEditingPlan({...editingPlan, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi CT</span></div>
-            </div>
-            <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingPlan.notes} onChange={(e) => setEditingPlan({...editingPlan, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingPlan(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Cập nhật</button></div>
+            {isParent ? (
+              <>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><label className="block font-bold mb-1">STT / Mã</label><input type="text" value={editingPlan.stt} onChange={(e) => setEditingPlan({...editingPlan, stt: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none" /></div>
+                  <div className="col-span-2"><label className="block font-bold mb-1">Dự án</label><input type="text" disabled value={projects.find(p => p.code === selectedProject)?.name || editingPlan.projectCode} className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-100 font-bold text-slate-500 cursor-not-allowed" /></div>
+                </div>
+                <div><label className="block font-bold text-slate-700 mb-1">Nội dung Công việc *</label><textarea required rows={4} value={editingPlan.jobContent} onChange={(e) => setEditingPlan({...editingPlan, jobContent: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><label className="block font-bold mb-1">STT</label><input type="text" value={editingPlan.stt} onChange={(e) => setEditingPlan({...editingPlan, stt: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                  <div className="col-span-2"><label className="block font-bold mb-1">Tên vật tư *</label><textarea required rows={3} value={editingPlan.jobContent} onChange={(e) => setEditingPlan({...editingPlan, jobContent: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingPlan.unit} onChange={(e) => setEditingPlan({...editingPlan, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                  <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" value={editingPlan.contractVolume} onChange={(e) => setEditingPlan({...editingPlan, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="block font-bold mb-1">Mã hiệu / Quy cách</label><input type="text" value={editingPlan.techSpecModel} onChange={(e) => setEditingPlan({...editingPlan, techSpecModel: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                  <div><label className="block font-bold mb-1">Nguồn gốc</label><input type="text" value={editingPlan.techSpecOrigin} onChange={(e) => setEditingPlan({...editingPlan, techSpecOrigin: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold mb-1">Tiến độ</label>
+                    <select value={editingPlan.progressStatus} onChange={(e) => setEditingPlan({...editingPlan, progressStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                      <option value="Chưa thi công">Chưa thi công</option>
+                      <option value="Đang thi công">Đang thi công</option>
+                      <option value="Đã hoàn thành">Đã hoàn thành</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold mb-1">Trạng thái đặt</label>
+                    <select value={editingPlan.orderedStatus} onChange={(e) => setEditingPlan({...editingPlan, orderedStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                      <option value="Chưa đặt hàng">Chưa đặt hàng</option>
+                      <option value="Đã đặt hàng">Đã đặt hàng</option>
+                      <option value="Đã nhận đủ">Đã nhận đủ</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-bold mb-1">Ngày cấp hàng dự kiến</label>
+                  <input type="date" value={editingPlan.expectedDate || ''} onChange={(e) => setEditingPlan({...editingPlan, expectedDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
+                </div>
+                <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
+                  <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.docCo} onChange={(e) => setEditingPlan({...editingPlan, docCo: e.target.checked})} /> <span className="font-bold">CO</span></div>
+                  <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.docCq} onChange={(e) => setEditingPlan({...editingPlan, docCq: e.target.checked})} /> <span className="font-bold">CQ</span></div>
+                  <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.dispatchToSite} onChange={(e) => setEditingPlan({...editingPlan, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi CT</span></div>
+                </div>
+                {/* Nhà thầu */}
+                <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                  <input
+                    type="checkbox"
+                    id="editIsContractorCheck"
+                    checked={isEffectiveContractorPlan(editingPlan, currentProjMaterialPlans)}
+                    onChange={(e) => setEditingPlan({...editingPlan, supplyScope: e.target.checked ? 'contractor' : 'owner'})}
+                    className="w-4 h-4 accent-amber-500"
+                  />
+                  <label htmlFor="editIsContractorCheck" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
+                    Nhà thầu cung cấp — hiển thị trong tab Mua hàng
+                  </label>
+                </div>
+                <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingPlan.notes} onChange={(e) => setEditingPlan({...editingPlan, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              </>
+            )}
+            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setEditingPlan(null); setIsCreatingSectionHeader(false); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Cập nhật</button></div>
           </form>
         )}
       </Modal>
+        );
+      })()}
 
       {/* 2. Modal Mua Sắm Hàng Hóa */}
-      <Modal isOpen={isNewPurchasingOpen} onClose={() => setIsNewPurchasingOpen(false)} title="Thêm Hợp đồng Mua sắm mới">
-        <form onSubmit={(e) => {
+      <Modal isOpen={isNewPurchasingOpen} onClose={() => { setIsNewPurchasingOpen(false); setParentPurchasingIdForNew(null); setSectionPurchasingIdForNew(null); setIsCreatingSectionHeader(false); setNewPurchasingData({stt: '', content: '', unit: 'bộ', volumeContract: 0, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''}); }} title={isCreatingSectionHeader ? 'Thêm Đầu mục lớn — Mua sắm Hàng hóa' : 'Thêm Hạng mục — Mua sắm Hàng hóa'} size="xl">
+        <form onSubmit={async (e) => {
           e.preventDefault();
+          const parentId = isCreatingSectionHeader ? null : (parentPurchasingIdForNew || sectionPurchasingIdForNew || null);
           const contractVol = Number(newPurchasingData.volumeContract || 1);
           const orderVol = Number(newPurchasingData.volumeOrder || 0);
           const unitPrice = Number(newPurchasingData.unitPrice || 0);
@@ -1509,9 +2063,138 @@ export const ProjectCostPlanPage: React.FC = () => {
           const prepayAmt = totalAmt * prepayPct;
           const remainingAmt = totalAmt - prepayAmt;
 
+          // Auto STT: La Mã cho đầu mục lớn, số thứ tự cho hạng mục nhỏ
+          const autoStt = (() => {
+            if (newPurchasingData.stt) return newPurchasingData.stt;
+            if (isCreatingSectionHeader) {
+              const sectionCount = currentProjMaterialPlans.filter(p => isSectionMarker(p.stt, p.notes)).length;
+              return toRoman(sectionCount + 1);
+            }
+            if (parentId) {
+              const parentObj = currentProjPurchasing.find(p => p.id === parentId);
+              const siblings = currentProjPurchasing.filter(p => p.parentId === parentId);
+              const nextIndex = siblings.length + 1;
+              return parentObj?.stt ? `${parentObj.stt}.${nextIndex}` : String(nextIndex);
+            }
+            return String(currentProjPurchasing.filter(p => !p.parentId).length + 1);
+          })();
+
+          // Đồng bộ ngược lại sang tab Kế hoạch Vật tư (luôn là nhà thầu)
+          let materialParentId = undefined;
+          if (parentId) {
+            const parentPurchasing = currentProjPurchasing.find(p => p.id === parentId);
+            if (parentPurchasing) {
+              const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+              const matchingMaterial = currentProjMaterialPlans.find(
+                p => norm(p.stt) === norm(parentPurchasing.stt) && norm(p.jobContent) === norm(parentPurchasing.content)
+              );
+              if (matchingMaterial) materialParentId = matchingMaterial.id;
+            }
+          }
+
+          // Determine scope
+          let resolvedSupplyScope = 'unknown';
+          let currentObj = parentId ? currentProjPurchasing.find(p => p.id === parentId) : null;
+          let tempObj = currentObj;
+          let safeCount2 = 0;
+          while (tempObj && safeCount2 < 50) {
+            if (String(tempObj.notes || '').toLowerCase().includes('[contractor]')) {
+              resolvedSupplyScope = 'contractor';
+              break;
+            } else if (String(tempObj.notes || '').toLowerCase().includes('[owner]')) {
+              resolvedSupplyScope = 'owner';
+              break;
+            }
+            if (tempObj.parentId) {
+              tempObj = currentProjPurchasing.find(p => p.id === tempObj!.parentId);
+            } else {
+              break;
+            }
+            safeCount2++;
+          }
+          const isContractor = resolvedSupplyScope === 'contractor' || (resolvedSupplyScope === 'unknown');
+
+          addMaterialPlan({
+            projectCode: selectedProject,
+            stt: autoStt,
+            jobContent: newPurchasingData.content || '',
+            unit: newPurchasingData.unit || 'bộ',
+            contractVolume: contractVol,
+            techSpecModel: '',
+            techSpecOrigin: '',
+            progressStatus: 'Chưa thi công',
+            orderedVolume: orderVol,
+            orderedStatus: newPurchasingData.orderStatus || 'Chưa đặt hàng',
+            expectedDate: '',
+            issueContent: '',
+            docCo: false,
+            docCq: false,
+            docFireInspection: false,
+            dispatchToSite: false,
+            supplyScope: 'contractor',
+            notes: isCreatingSectionHeader && !parentId ? '[section] | [contractor]' : `[contractor] ${newPurchasingData.notes || ''}`.trim(),
+            parentId: materialParentId || undefined
+          });
+
+          // Đồng bộ sang tab Quản lý Tiến độ (TaskManagement)
+          const projName = projects.find(p => p.code === selectedProject)?.name || selectedProject;
+          const currentSectionName = (() => {
+            if (isCreatingSectionHeader) return newPurchasingData.content || '';
+            if (parentId) {
+              let currentObj = currentProjPurchasing.find(p => p.id === parentId);
+              let safeCount = 0;
+              while (currentObj && !isSectionMarker(currentObj.stt, currentObj.notes) && currentObj.parentId && safeCount < 50) {
+                currentObj = currentProjPurchasing.find(p => p.id === currentObj!.parentId);
+                safeCount++;
+              }
+              return currentObj?.content || '';
+            }
+            const sectionId = sectionPurchasingIdForNew;
+            if (sectionId) {
+              const sec = currentProjPurchasing.find(p => p.id === sectionId);
+              return sec?.content || '';
+            }
+            return '';
+          })();
+          let taskParentId = undefined;
+          if (parentId) {
+            const parentPurchasing = currentProjPurchasing.find(p => p.id === parentId);
+            if (parentPurchasing) {
+              const isParentSec = isSectionMarker(parentPurchasing.stt, '');
+              const pTask = tasks.find(t => 
+                t.projectCode === selectedProject && 
+                t.name === parentPurchasing.content && 
+                (isParentSec ? t.isSectionHeader : (!t.isSectionHeader && t.sectionName === currentSectionName))
+              ) || tasks.find(t => t.projectCode === selectedProject && t.name === parentPurchasing.content);
+              
+              if (pTask) {
+                taskParentId = pTask.id;
+              }
+            }
+          }
+
+          addTask({
+            stt: autoStt,
+            code: '',
+            name: newPurchasingData.content || '',
+            projectCode: selectedProject,
+            projectName: projName,
+            volume: contractVol,
+            unit: newPurchasingData.unit || 'bộ',
+            progress: 0,
+            status: 'Chưa làm',
+            purchaseStatus: newPurchasingData.orderStatus || 'Chưa đặt hàng',
+            constrStatus: 'Chưa thi công',
+            isDone: false,
+            isSectionHeader: isCreatingSectionHeader,
+            sectionName: currentSectionName,
+            notes: `[contractor] ${newPurchasingData.notes || ''}`.trim(),
+            parentId: taskParentId
+          });
+
           addPurchasingPlan({
             projectCode: selectedProject,
-            stt: newPurchasingData.stt || String(currentProjPurchasing.length + 1),
+            stt: autoStt,
             content: newPurchasingData.content || '',
             unit: newPurchasingData.unit || 'bộ',
             volumeContract: contractVol,
@@ -1527,98 +2210,194 @@ export const ProjectCostPlanPage: React.FC = () => {
             contractStatus: newPurchasingData.contractStatus || 'Chưa ký',
             paymentDate: newPurchasingData.paymentDate || '',
             invoiceStatus: newPurchasingData.invoiceStatus || 'Chưa xuất',
-            notes: newPurchasingData.notes || ''
+            notes: isCreatingSectionHeader && !parentId ? '[section]' : newPurchasingData.notes || '',
+            parentId: parentId || undefined
           });
-          setIsNewPurchasingOpen(false);
+
+          // Reset form
           setNewPurchasingData({stt: '', content: '', unit: 'bộ', volumeContract: 1, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''});
-        }} className="space-y-3 text-xs">
-          <div>
-            <label className="block font-bold mb-1">Tên Hàng hóa / Hợp đồng *</label>
-            <input type="text" required value={newPurchasingData.content} onChange={(e) => setNewPurchasingData({...newPurchasingData, content: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" />
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newPurchasingData.unit} onChange={(e) => setNewPurchasingData({...newPurchasingData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" value={String(newPurchasingData.volumeContract)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeContract: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" value={String(newPurchasingData.volumeOrder)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeOrder: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" value={String(newPurchasingData.unitPrice)} onChange={(e) => setNewPurchasingData({...newPurchasingData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
-            <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" value={String(newPurchasingData.vatRate)} onChange={(e) => setNewPurchasingData({...newPurchasingData, vatRate: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" min="0" max="100" value={String(Math.round((newPurchasingData.prepayPercent || 0) * 100))} onChange={(e) => setNewPurchasingData({...newPurchasingData, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          </div>
-          <div>
-            <label className="block font-bold mb-1">Ngày dự kiến có hàng</label>
-            <input type="date" value={newPurchasingData.paymentDate || ''} onChange={(e) => setNewPurchasingData({...newPurchasingData, paymentDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
-          </div>
-          {(() => {
-            const liveContractVol = Number(newPurchasingData.volumeContract || 0);
-            const liveUnitPrice = Number(newPurchasingData.unitPrice || 0);
-            const liveVatRate = Number(newPurchasingData.vatRate || 0);
-            const livePrepayPercent = Number(newPurchasingData.prepayPercent || 0);
 
-            const liveRawTotal = liveContractVol * liveUnitPrice;
-            const liveVatAmount = liveRawTotal * (liveVatRate / 100);
-            const liveTotalAmount = liveRawTotal + liveVatAmount;
-            const livePrepayAmount = liveTotalAmount * livePrepayPercent;
-            const liveRemainingAmount = liveTotalAmount - livePrepayAmount;
+          setIsNewPurchasingOpen(false);
+          setParentPurchasingIdForNew(null);
+          setSectionPurchasingIdForNew(null);
+          setIsCreatingSectionHeader(false);
+          triggerToast('Đã thêm Hạng mục thành công!', 'success');
+        }} className="space-y-3.5 text-xs">
 
-            return (
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5 text-[11px] font-mono text-slate-600 mt-2">
-                <div className="flex justify-between">
-                  <span>Thành tiền (chưa VAT):</span>
-                  <span className="font-bold text-slate-800">{liveRawTotal.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Thuế VAT ({liveVatRate}%):</span>
-                  <span className="font-bold text-slate-800">{liveVatAmount.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
-                  <span>Tổng tiền (có VAT):</span>
-                  <span className="text-primary">{liveTotalAmount.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tiền Tạm ứng ({Math.round(livePrepayPercent * 100)}%):</span>
-                  <span className="font-bold text-rose-600">{livePrepayAmount.toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
-                  <span>Còn lại phải trả:</span>
-                  <span className="text-emerald-600">{liveRemainingAmount.toLocaleString('vi-VN')} đ</span>
+          {/* Banner chế độ hiện tại */}
+          {isCreatingSectionHeader ? (
+            <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
+              <span className="material-symbols-outlined text-base text-primary">folder_open</span>
+              <span className="font-bold text-primary">Chế độ: Thêm Đầu mục lớn (nhóm cha)</span>
+            </div>
+          ) : parentPurchasingIdForNew ? (
+            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
+              <span className="material-symbols-outlined text-base text-emerald-600">subdirectory_arrow_right</span>
+              <span className="font-bold text-emerald-700">
+                Đang thêm mục con của:{' '}
+                <span className="text-slate-800">
+                  {(() => {
+                    const p = currentProjPurchasing.find(x => x.id === parentPurchasingIdForNew);
+                    return p ? `${p.stt ? p.stt + '. ' : ''}${p.content}` : '—';
+                  })()}
+                </span>
+              </span>
+            </div>
+          ) : null}
+
+          {!isCreatingSectionHeader && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
+                <div className="flex items-center gap-1.5">
+                  <select
+                    value={sectionPurchasingIdForNew || ''}
+                    onChange={(e) => {
+                      setSectionPurchasingIdForNew(e.target.value || null);
+                      setParentPurchasingIdForNew(null);
+                    }}
+                    required={!isCreatingSectionHeader}
+                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
+                  >
+                    <option value="" disabled>-- Chọn Đầu mục cha --</option>
+                    {currentProjPurchasing.filter(p => isSectionMarker(p.stt, p.notes)).map(sec => (
+                      <option key={sec.id} value={sec.id} title={sec.content}>
+                        {sec.stt ? `${sec.stt}. ` : ''}{sec.content}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => { setIsCreatingSectionHeader(true); setSectionPurchasingIdForNew(null); setParentPurchasingIdForNew(null); setNewPurchasingData(prev => ({ ...prev, stt: '' })); }}
+                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
+                    title="Tạo Đầu mục lớn mới"
+                  >
+                    +
+                  </button>
                 </div>
               </div>
-            );
-          })()}
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block font-bold mb-1">TT Đặt hàng</label>
-              <select value={newPurchasingData.orderStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, orderStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                <option value="Chưa đặt hàng">Chưa đặt hàng</option>
-                <option value="Đã đặt hàng">Đã đặt hàng</option>
-                <option value="Đang giao hàng">Đang giao hàng</option>
-                <option value="Đã nhận hàng">Đã nhận hàng</option>
-              </select>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Thuộc Hạng mục cha (tuỳ chọn)</label>
+                <select
+                  value={parentPurchasingIdForNew || ''}
+                  onChange={(e) => setParentPurchasingIdForNew(e.target.value || null)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold truncate"
+                  disabled={!sectionPurchasingIdForNew}
+                >
+                  <option value="">-- Không có --</option>
+                  {sectionPurchasingIdForNew && currentProjPurchasing
+                    .filter(p => p.parentId === sectionPurchasingIdForNew)
+                    .map(t => (
+                      <option key={t.id} value={t.id} title={t.content}>
+                        {t.stt ? `${t.stt}. ` : ''}{t.content}
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block font-bold mb-1">Hợp đồng</label>
-              <select value={newPurchasingData.contractStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, contractStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                <option value="Chưa ký">Chưa ký</option>
-                <option value="Đang trình duyệt">Đang trình duyệt</option>
-                <option value="Đã ký">Đã ký</option>
-              </select>
-            </div>
-            <div>
-              <label className="block font-bold mb-1">Hóa đơn</label>
-              <select value={newPurchasingData.invoiceStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, invoiceStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                <option value="Chưa xuất">Chưa xuất</option>
-                <option value="Đang kiểm tra">Đang kiểm tra</option>
-                <option value="Đã xuất">Đã xuất</option>
-              </select>
-            </div>
+          )}
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              {isCreatingSectionHeader ? 'Tên Đầu mục lớn *' : 'Tên Hàng hóa / Hợp đồng *'}
+            </label>
+            <input
+              type="text"
+              required
+              placeholder={isCreatingSectionHeader ? 'VD: HỆ THỐNG ĐIỆN CHIẾU SÁNG' : 'VD: Cáp điện 3x185mm2, hãng LS'}
+              value={newPurchasingData.content}
+              onChange={(e) => setNewPurchasingData({...newPurchasingData, content: e.target.value})}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+            />
           </div>
+          {!isCreatingSectionHeader && (
+            <>
+              <div className="grid grid-cols-4 gap-3">
+                <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newPurchasingData.unit} onChange={(e) => setNewPurchasingData({...newPurchasingData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" value={String(newPurchasingData.volumeContract)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeContract: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" value={String(newPurchasingData.volumeOrder)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeOrder: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" value={String(newPurchasingData.unitPrice)} onChange={(e) => setNewPurchasingData({...newPurchasingData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
+                <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" value={String(newPurchasingData.vatRate)} onChange={(e) => setNewPurchasingData({...newPurchasingData, vatRate: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" min="0" max="100" value={String(Math.round((newPurchasingData.prepayPercent || 0) * 100))} onChange={(e) => setNewPurchasingData({...newPurchasingData, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              </div>
+              <div>
+                <label className="block font-bold mb-1">Ngày dự kiến có hàng</label>
+                <input type="date" value={newPurchasingData.paymentDate || ''} onChange={(e) => setNewPurchasingData({...newPurchasingData, paymentDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
+              </div>
+              {(() => {
+                const liveContractVol = Number(newPurchasingData.volumeContract || 0);
+                const liveUnitPrice = Number(newPurchasingData.unitPrice || 0);
+                const liveVatRate = Number(newPurchasingData.vatRate || 0);
+                const livePrepayPercent = Number(newPurchasingData.prepayPercent || 0);
+
+                const liveRawTotal = liveContractVol * liveUnitPrice;
+                const liveVatAmount = liveRawTotal * (liveVatRate / 100);
+                const liveTotalAmount = liveRawTotal + liveVatAmount;
+                const livePrepayAmount = liveTotalAmount * livePrepayPercent;
+                const liveRemainingAmount = liveTotalAmount - livePrepayAmount;
+
+                return (
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5 text-[11px] font-mono text-slate-600 mt-2">
+                    <div className="flex justify-between">
+                      <span>Thành tiền (chưa VAT):</span>
+                      <span className="font-bold text-slate-800">{liveRawTotal.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Thuế VAT ({liveVatRate}%):</span>
+                      <span className="font-bold text-slate-800">{liveVatAmount.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
+                      <span>Tổng tiền (có VAT):</span>
+                      <span className="text-primary">{liveTotalAmount.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tiền Tạm ứng ({Math.round(livePrepayPercent * 100)}%):</span>
+                      <span className="font-bold text-rose-600">{livePrepayAmount.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
+                      <span>Còn lại phải trả:</span>
+                      <span className="text-emerald-600">{liveRemainingAmount.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                  </div>
+                );
+              })()}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-bold mb-1">TT Đặt hàng</label>
+                  <select value={newPurchasingData.orderStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, orderStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="Chưa đặt hàng">Chưa đặt hàng</option>
+                    <option value="Đã đặt hàng">Đã đặt hàng</option>
+                    <option value="Đang giao hàng">Đang giao hàng</option>
+                    <option value="Đã nhận hàng">Đã nhận hàng</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold mb-1">Hợp đồng</label>
+                  <select value={newPurchasingData.contractStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, contractStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="Chưa ký">Chưa ký</option>
+                    <option value="Đang trình duyệt">Đang trình duyệt</option>
+                    <option value="Đã ký">Đã ký</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold mb-1">Hóa đơn</label>
+                  <select value={newPurchasingData.invoiceStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, invoiceStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="Chưa xuất">Chưa xuất</option>
+                    <option value="Đang kiểm tra">Đang kiểm tra</option>
+                    <option value="Đã xuất">Đã xuất</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
           <div>
             <label className="block font-bold mb-1">Ghi chú</label>
             <input type="text" placeholder="Nhập ghi chú (nếu có)" value={newPurchasingData.notes} onChange={(e) => setNewPurchasingData({...newPurchasingData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs" />
           </div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewPurchasingOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu mới</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewPurchasingOpen(false); setParentPurchasingIdForNew(null); setIsCreatingSectionHeader(false); setNewPurchasingData({stt: '', content: '', unit: 'bộ', volumeContract: 0, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''}); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">{isCreatingSectionHeader ? 'Lưu Đầu Mục' : 'Thêm Hạng Mục'}</button></div>
         </form>
       </Modal>
 
@@ -1638,7 +2417,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             const prepayAmt = totalAmt * prepayPct;
             const remainingAmt = totalAmt - prepayAmt;
 
-            updatePurchasingPlan(editingPurchasing.id, {
+            handleUpdatePurchasingPlanSync(editingPurchasing.id, {
               ...editingPurchasing,
               vatAmount: taxAmt,
               totalAmount: totalAmt,
@@ -1646,6 +2425,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               remainingAmount: remainingAmt
             });
             setEditingPurchasing(null);
+            triggerToast('Đã cập nhật Mua sắm thành công!', 'success');
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">STT</label><input type="text" value={editingPurchasing.stt} onChange={(e) => setEditingPurchasing({...editingPurchasing, stt: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -1765,6 +2545,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           });
           setIsNewExpenseOpen(false);
           setNewExpenseData({stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''});
+          triggerToast('Đã thêm Chi phí thành công!', 'success');
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={newExpenseData.date} onChange={(e) => setNewExpenseData({...newExpenseData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -1838,6 +2619,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               totalAmount: total
             });
             setEditingExpense(null);
+            triggerToast('Đã cập nhật Chi phí thành công!', 'success');
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={editingExpense.date} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -1924,10 +2706,11 @@ export const ProjectCostPlanPage: React.FC = () => {
             notes: newLaborData.notes || ''
           });
           setIsNewLaborOpen(false);
-          setNewLaborData({stt: '', date: '', content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''});
+          setNewLaborData({stt: '', date: new Date().toISOString().split('T')[0], content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''});
+          triggerToast('Đã thêm Lương công nhật thành công!', 'success');
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block font-bold mb-1">Ngày chấm công *</label><input type="text" placeholder="VD: 16,17,18 hoặc 2026-07-27" required value={newLaborData.date} onChange={(e) => setNewLaborData({...newLaborData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Ngày chấm công *</label><input type="date" required value={newLaborData.date || new Date().toISOString().split('T')[0]} onChange={(e) => setNewLaborData({...newLaborData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Loại thanh toán</label><input type="text" value={newLaborData.content} onChange={(e) => setNewLaborData({...newLaborData, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -1974,7 +2757,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             setEditingLabor(null);
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold mb-1">Ngày làm *</label><input type="text" required value={editingLabor.date} onChange={(e) => setEditingLabor({...editingLabor, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Ngày làm *</label><input type="date" required value={String(editingLabor.date || '').split('T')[0] || new Date().toISOString().split('T')[0]} onChange={(e) => setEditingLabor({...editingLabor, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Loại thanh toán</label><input type="text" value={editingLabor.content} onChange={(e) => setEditingLabor({...editingLabor, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -2045,7 +2828,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               </button>
               <button
                 onClick={() => {
-                  pendingTaskItems.forEach(t => addTask(t));
+                  addTasksBatch(pendingTaskItems);
                   setShowCreateTaskConfirm(false);
                   setPendingTaskItems([]);
                   triggerToast(`Đã tạo ${pendingTaskItems.length} Công việc từ phụ lục PL01!`, 'success');
@@ -2057,11 +2840,14 @@ export const ProjectCostPlanPage: React.FC = () => {
               </button>
             </div>
           </div>
+
         </div>
       )}
     </div>
   );
 };
+
+
 
 
 

@@ -19,6 +19,7 @@ export interface Task {
   isDone: boolean;
   isSectionHeader?: boolean; // Cờ đánh dấu dòng Tiêu đề Mục (I, II, III...)
   sectionName?: string; // Tên phân mục cha
+  parentId?: string; // ID của mục cha (nếu là mục con)
   notes?: string;
   assignerId?: string;
   assignerName?: string;
@@ -44,6 +45,8 @@ export interface Project {
   totalTasks: number;
   completedTasks: number;
   issueTasksCount: number;
+  managerId?: string;
+  memberIds?: string[];
   managerName: string;
   members?: string[]; // Danh sách thành viên (ID)
   startDate?: string;
@@ -70,6 +73,7 @@ export interface Material {
   totalExport?: number;
   category?: string;
   specs?: string;
+  notes?: string;
 }
 
 export interface InventoryTransaction {
@@ -80,6 +84,7 @@ export interface InventoryTransaction {
   materialCode: string;
   materialName: string;
   specs?: string;
+  category?: string;
   unit: string;
   quantity: number;
   sourceOrProject: string; // Nguồn Nhập hoặc Mã Dự Án xuất
@@ -115,11 +120,14 @@ export interface Issue {
 
 export interface Engineer {
   id: string;
+  code?: string;
   name: string;
   title: string;
   avatar: string;
   phone: string;
   email: string;
+  managedProjects?: { code: string; name: string }[];
+  memberProjects?: { code: string; name: string }[];
 }
 
 export interface NotificationItem {
@@ -145,6 +153,7 @@ export interface ActivityLog {
 
 export interface ProjectMaterialPlan {
   id: string;
+  parentId?: string;
   stt: string;
   projectCode: string;
   jobContent: string;
@@ -152,6 +161,7 @@ export interface ProjectMaterialPlan {
   contractVolume: number;
   techSpecModel?: string;
   techSpecOrigin?: string;
+  techSpecStatus?: string;
   progressStatus?: string;
   orderedVolume?: number;
   orderedStatus?: string;
@@ -169,6 +179,8 @@ export interface ProjectMaterialPlan {
 
 export interface ProjectPurchasing {
   id: string;
+  parentId?: string;
+  materialPlanId?: string;
   stt: string;
   projectCode: string;
   content: string;
@@ -232,7 +244,7 @@ export interface DocumentTrack {
   stt: string;
   contractNo: string;
   contractName: string;
-  projectCode: string;
+  projectCode?: string;
   company: string;
   receiverName: string;
   phone: string;
@@ -252,11 +264,7 @@ export interface DocumentTrack {
 export interface FieldLog {
   id: string;
   projectCode: string;
-  taskId: string;
-  engineerId: string;
-  timestamp: string; // Giờ báo cáo
   note: string;
-  images: string[]; // Base64 hoặc URL
-  gpsLocation?: { lat: number; lng: number; text?: string }; // Tọa độ
-  statusUpdate: 'Đang làm' | 'Hoàn thành' | 'Vướng mắc';
+  images: string[]; // URL ảnh (đường dẫn /uploads/...)
+  timestamp: string; // Thời điểm tạo báo cáo
 }

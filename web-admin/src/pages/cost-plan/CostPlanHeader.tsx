@@ -22,7 +22,7 @@ export const CostPlanHeader: React.FC<CostPlanHeaderProps> = ({
               <span className="material-symbols-outlined text-[22px]">request_quote</span>
             </div>
             <div className="min-w-0">
-              <h1 className="truncate text-xl font-extrabold leading-tight text-slate-900">Kế hoạch & Chi phí Dự án</h1>
+              <h1 className="page-title text-2xl font-extrabold text-slate-900">Kế hoạch & Chi phí Dự án</h1>
               <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
                 {selectedProjectName}
               </p>

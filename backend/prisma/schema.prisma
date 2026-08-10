@@ -89,6 +89,7 @@ model User {
   updated_at    DateTime  @default(now()) @db.Timestamptz
 
   projects_managed Project[] @relation("ProjectManager")
+  project_memberships ProjectMember[]
   tasks_assigned   Task[]    @relation("TaskAssignedEngineer")
   task_assignments TaskAssignment[] @relation("TaskAssignedUser")
   tasks_assigned_by TaskAssignment[] @relation("TaskAssignedBy")
@@ -124,6 +125,7 @@ model Project {
   updated_at        DateTime  @default(now()) @db.Timestamptz
 
   manager           User?     @relation("ProjectManager", fields: [manager_id], references: [id], onDelete: SetNull)
+  member_assignments ProjectMember[]
   tasks             Task[]
   materials         Material[]
   inventory_transactions InventoryTransaction[]
@@ -134,9 +136,24 @@ model Project {
   expenses          ProjectExpense[]
   labor_payrolls    LaborPayroll[]
   document_tracks   DocumentTrack[]
+  field_logs        FieldLog[]
 
   @@index([status])
   @@map("projects")
+}
+
+model ProjectMember {
+  user_id    String   @db.Uuid
+  project_id String   @db.Uuid
+  role       String?  @db.VarChar(100)
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, project_id])
+  @@index([project_id])
+  @@map("project_members")
 }
 
 model Task {
@@ -157,6 +174,7 @@ model Task {
   is_done              Boolean   @default(false)
   is_section_header    Boolean   @default(false)
   section_name         String?
+  parent_id            String?   @db.Uuid
   notes                String?
   assigned_engineer_id String?   @db.Uuid
   due_date             DateTime? @db.Date
@@ -165,6 +183,8 @@ model Task {
   updated_at           DateTime  @default(now()) @db.Timestamptz
 
   project              Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent               Task?     @relation("TaskToTask", fields: [parent_id], references: [id], onDelete: Cascade)
+  sub_tasks            Task[]    @relation("TaskToTask")
   assigned_engineer    User?     @relation("TaskAssignedEngineer", fields: [assigned_engineer_id], references: [id], onDelete: SetNull)
   task_assignments     TaskAssignment[]
   materials            Material[]
@@ -374,6 +394,7 @@ model ProjectMaterialPlan {
   contract_volume     Decimal  @default(0) @db.Decimal(18, 4)
   tech_spec_model     String?
   tech_spec_origin    String?
+  tech_spec_status    String?  @db.VarChar(255)
   progress_status     String?  @db.VarChar(255)
   ordered_volume      Decimal  @default(0) @db.Decimal(18, 4)
   ordered_status      String?  @db.VarChar(255)
@@ -386,10 +407,13 @@ model ProjectMaterialPlan {
   dispatch_to_site    Boolean  @default(false)
   dispatch_date       DateTime? @db.Date
   notes               String?
+  parent_id           String?  @db.Uuid
   created_at          DateTime @default(now()) @db.Timestamptz
   updated_at          DateTime @default(now()) @db.Timestamptz
 
   project             Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent              ProjectMaterialPlan?  @relation("MaterialPlanHierarchy", fields: [parent_id], references: [id])
+  children            ProjectMaterialPlan[] @relation("MaterialPlanHierarchy")
 
   @@index([project_id])
   @@map("project_material_plans")
@@ -415,10 +439,13 @@ model ProjectPurchasing {
   payment_date     DateTime? @db.Date
   invoice_status   String?  @db.VarChar(255)
   notes            String?
+  parent_id        String?  @db.Uuid
   created_at       DateTime @default(now()) @db.Timestamptz
   updated_at       DateTime @default(now()) @db.Timestamptz
 
   project          Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent           ProjectPurchasing?  @relation("PurchasingHierarchy", fields: [parent_id], references: [id])
+  children         ProjectPurchasing[] @relation("PurchasingHierarchy")
 
   @@index([project_id])
   @@map("project_purchasing")
@@ -478,7 +505,7 @@ model LaborPayroll {
 
 model DocumentTrack {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  project_id     String   @db.Uuid
+  project_id     String?  @db.Uuid
   stt            String?  @db.VarChar(50)
   contract_no    String   @db.VarChar(120)
   contract_name  String
@@ -499,8 +526,21 @@ model DocumentTrack {
   created_at     DateTime @default(now()) @db.Timestamptz
   updated_at     DateTime @default(now()) @db.Timestamptz
 
-  project        Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project        Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
 
   @@index([project_id])
   @@map("document_tracks")
+}
+
+model FieldLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id String   @db.Uuid
+  note       String?
+  images     Json     @default("[]")
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  project    Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@map("field_logs")
 }

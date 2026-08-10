@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
+import { Prisma } from '@prisma/client';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const cleanUuid = (value: unknown) => (typeof value === 'string' && UUID_RE.test(value) ? value : null);
@@ -50,6 +51,10 @@ const mapToFrontend = (project: any) => {
 export const getProjects = async (req: Request, res: Response) => {
   try {
     const projects = await prisma.project.findMany({
+      where: {
+        // Loại bỏ project nội bộ dùng cho kho công ty
+        NOT: { code: 'COMPANY' },
+      },
       orderBy: { created_at: 'desc' },
     });
     res.json(projects.map(mapToFrontend));
@@ -79,11 +84,35 @@ export const getProjectById = async (req: Request, res: Response) => {
 export const createProject = async (req: Request, res: Response) => {
   try {
     const data = mapToPrisma(req.body);
-    const project = await prisma.project.create({
-      data,
+    const memberIds = req.body.memberIds;
+
+    const project = await prisma.$transaction(async (tx) => {
+      const proj = await tx.project.create({
+        data,
+      });
+
+      if (Array.isArray(memberIds) && memberIds.length > 0) {
+        const validMemberIds = memberIds.map(cleanUuid).filter(Boolean) as string[];
+        if (validMemberIds.length > 0) {
+          await tx.projectMember.createMany({
+            data: validMemberIds.map((id) => ({
+              user_id: id,
+              project_id: proj.id,
+              role: 'manager',
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      return proj;
     });
+
     res.status(201).json(mapToFrontend(project));
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(400).json({ error: 'Mã hoặc dữ liệu bạn nhập đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.' });
+    }
     console.error(error);
     res.status(500).json({ error: 'Failed to create project' });
   }
@@ -93,10 +122,35 @@ export const updateProject = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = mapToPrisma(req.body);
-    const project = await prisma.project.update({
-      where: { id },
-      data,
+    const memberIds = req.body.memberIds;
+
+    const project = await prisma.$transaction(async (tx) => {
+      const proj = await tx.project.update({
+        where: { id },
+        data,
+      });
+
+      if (Array.isArray(memberIds)) {
+        await tx.projectMember.deleteMany({
+          where: { project_id: id, role: 'manager' }, // only replace managers to not affect workers
+        });
+        
+        const validMemberIds = memberIds.map(cleanUuid).filter(Boolean) as string[];
+        if (validMemberIds.length > 0) {
+          await tx.projectMember.createMany({
+            data: validMemberIds.map((memberId) => ({
+              user_id: memberId,
+              project_id: id,
+              role: 'manager',
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      return proj;
     });
+
     res.json(mapToFrontend(project));
   } catch (error) {
     console.error(error);

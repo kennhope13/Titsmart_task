@@ -1,305 +1,398 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { FieldLog } from '../types';
 
-export const FieldLogsPage: React.FC = () => {
-  const { fieldLogs, projects, tasks, addFieldLog, updateTask } = useRealtimeStore();
-  
-  const [isReportOpen, setIsReportOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState('');
-  const [selectedTask, setSelectedTask] = useState('');
-  const [note, setNote] = useState('');
-  const [statusUpdate, setStatusUpdate] = useState<'Đang làm' | 'Hoàn thành' | 'Vướng mắc'>('Đang làm');
-  
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [gpsLocation, setGpsLocation] = useState<{lat: number, lng: number, text?: string}>();
-  const [isGettingGps, setIsGettingGps] = useState(false);
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
+const formatTime = (value: string) => {
+  try {
+    return new Date(value).toLocaleString('vi-VN');
+  } catch {
+    return value;
+  }
+};
+
+const formatDate = (value: string) => {
+  try {
+    return new Date(value).toLocaleDateString('vi-VN');
+  } catch {
+    return value;
+  }
+};
+
+const formatTimeOnly = (value: string) => {
+  try {
+    return new Date(value).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return value;
+  }
+};
+
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+
+const Lightbox: React.FC<{ images: string[]; index: number; onClose: () => void; onPrev: () => void; onNext: () => void }> = ({
+  images, index, onClose, onPrev, onNext,
+}) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" onClick={onClose}>
+    <button onClick={onClose} className="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition">
+      <span className="material-symbols-outlined">close</span>
+    </button>
+    {index > 0 && (
+      <button onClick={(e) => { e.stopPropagation(); onPrev(); }}
+        className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition">
+        <span className="material-symbols-outlined">chevron_left</span>
+      </button>
+    )}
+    <img src={images[index]} alt="Ảnh hiện trường" className="max-h-[88vh] max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+    {index < images.length - 1 && (
+      <button onClick={(e) => { e.stopPropagation(); onNext(); }}
+        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition">
+        <span className="material-symbols-outlined">chevron_right</span>
+      </button>
+    )}
+    <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white">
+      {index + 1} / {images.length}
+    </span>
+  </div>
+);
+
+// ── Upload Modal ──────────────────────────────────────────────────────────────
+
+const UploadModal: React.FC<{
+  defaultProjectCode: string;
+  projects: { code: string; name: string }[];
+  onClose: () => void;
+  onUpload: (input: { projectCode: string; note: string; images: File[] }) => Promise<void>;
+}> = ({ defaultProjectCode, projects, onClose, onUpload }) => {
+  const [projectCode, setProjectCode] = useState(defaultProjectCode || '');
+  const [note, setNote] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const availableTasks = tasks.filter(t => t.projectCode === selectedProject && !t.isSectionHeader);
+  useEffect(() => {
+    if (!projectCode && defaultProjectCode) setProjectCode(defaultProjectCode);
+  }, [defaultProjectCode]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    files.forEach(file => {
+  const handleFiles = (list: FileList | null) => {
+    if (!list || list.length === 0) return;
+    const next = Array.from(list).filter(f => f.type.startsWith('image/'));
+    if (next.length === 0) { setError('Chỉ chấp nhận file ảnh'); return; }
+    setError('');
+    setFiles(prev => [...prev, ...next]);
+    next.forEach(f => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageUrls(prev => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
+      reader.onloadend = () => setPreviews(prev => [...prev, reader.result as string]);
+      reader.readAsDataURL(f);
     });
   };
 
-  const getLocation = () => {
-    setIsGettingGps(true);
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        setGpsLocation({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          text: `Vĩ độ: ${pos.coords.latitude.toFixed(6)}, Kinh độ: ${pos.coords.longitude.toFixed(6)}`
-        });
-        setIsGettingGps(false);
-      }, (err) => {
-        console.error("GPS Error:", err);
-        alert("Không thể lấy tọa độ GPS. Vui lòng cấp quyền vị trí.");
-        setIsGettingGps(false);
-      }, { timeout: 10000 });
-    } else {
-      alert("Trình duyệt không hỗ trợ định vị GPS.");
-      setIsGettingGps(false);
-    }
+  const removeFile = (idx: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== idx));
+    setPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProject || !selectedTask || !note) return;
-
-    const newLog: Omit<FieldLog, 'id'> = {
-      projectCode: selectedProject,
-      taskId: selectedTask,
-      engineerId: 'eng-1', // Mock current user
-      timestamp: new Date().toISOString(),
-      note,
-      images: imageUrls,
-      gpsLocation,
-      statusUpdate
-    };
-
-    addFieldLog(newLog);
-
-    // Auto update task status if completed
-    if (statusUpdate === 'Hoàn thành') {
-      const task = tasks.find(t => t.id === selectedTask);
-      if (task) {
-        updateTask(selectedTask, { 
-          isDone: true, 
-          progress: 1, 
-          constrStatus: 'Đã hoàn thành',
-          status: 'Hoàn thành'
-        });
-      }
-    } else if (statusUpdate === 'Vướng mắc') {
-      updateTask(selectedTask, {
-        issue: note,
-        issueStatus: 'OPEN'
-      });
+    if (!projectCode) { setError('Vui lòng chọn dự án'); return; }
+    if (files.length === 0) { setError('Vui lòng chọn ít nhất 1 ảnh'); return; }
+    setIsUploading(true);
+    setError('');
+    try {
+      await onUpload({ projectCode, note, images: files });
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setError('Upload thất bại. Vui lòng kiểm tra kết nối và thử lại.');
+      setIsUploading(false);
     }
-
-    setIsReportOpen(false);
-    setNote('');
-    setImageUrls([]);
-    setGpsLocation(undefined);
   };
 
   return (
-    <div className="flex-1 bg-slate-100 min-h-screen relative max-w-2xl mx-auto border-x border-slate-200">
-      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-        <h1 className="text-lg font-bold text-slate-800">Nhật ký Công trình</h1>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
+          <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-800">
+            <span className="material-symbols-outlined text-base text-primary">add_a_photo</span>
+            Upload ảnh hiện trường
+          </h3>
+          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
+            <span className="material-symbols-outlined text-lg">close</span>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 space-y-4 overflow-y-auto p-5">
+            {/* Dự án */}
+            <div>
+              <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">
+                Dự án <span className="text-rose-500 normal-case font-normal">*</span>
+              </label>
+              <select required value={projectCode}
+                onChange={e => setProjectCode(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">-- Chọn dự án --</option>
+                {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
+              </select>
+            </div>
+
+            {/* Ảnh */}
+            <div>
+              <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">
+                Ảnh hiện trường <span className="text-rose-500 normal-case font-normal">*</span>
+              </label>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {previews.map((url, i) => (
+                  <div key={i} className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                    <img src={url} alt="preview" className="h-full w-full object-cover" />
+                    <button type="button" onClick={() => removeFile(i)}
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow hover:bg-red-600">
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => fileInputRef.current?.click()}
+                  className="flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:bg-slate-50 hover:text-primary transition">
+                  <span className="material-symbols-outlined mb-0.5 text-xl">add_photo_alternate</span>
+                  <span className="text-[10px] font-bold">Thêm ảnh</span>
+                </button>
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
+              {files.length > 0 && (
+                <p className="mt-2 text-[11px] font-semibold text-slate-500">{files.length} ảnh đã chọn</p>
+              )}
+            </div>
+
+            {/* Ghi chú */}
+            <div>
+              <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">Ghi chú</label>
+              <textarea rows={2} value={note} onChange={e => setNote(e.target.value)}
+                placeholder="Mô tả nội dung hiện trường (tùy chọn)..."
+                className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+
+            {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600">{error}</p>}
+          </div>
+
+          <div className="flex flex-shrink-0 justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-4">
+            <button type="button" onClick={onClose}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
+            <button type="submit" disabled={isUploading}
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-xs font-bold text-white shadow-sm hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
+              {isUploading ? (
+                <>
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  Đang upload...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-sm">upload</span>
+                  Upload
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
+export const FieldLogsPage: React.FC = () => {
+  const { fieldLogs, projects, addFieldLog, deleteFieldLog, fetchFieldLogs } = useRealtimeStore();
+  const [selectedProject, setSelectedProject] = useState('');
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
+
+  useEffect(() => {
+    fetchFieldLogs();
+  }, [fetchFieldLogs]);
+
+  const visibleLogs = useMemo(() => {
+    const sorted = [...fieldLogs].sort((a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    if (!selectedProject) return sorted;
+    return sorted.filter(l => l.projectCode === selectedProject);
+  }, [fieldLogs, selectedProject]);
+
+  const logsByDay = useMemo(() => {
+    const groups = new Map<string, FieldLog[]>();
+    for (const log of visibleLogs) {
+      const day = formatDate(log.timestamp);
+      const arr = groups.get(day) || [];
+      arr.push(log);
+      groups.set(day, arr);
+    }
+    return Array.from(groups.entries());
+  }, [visibleLogs]);
+
+  const projectName = (code: string) => projects.find(p => p.code === code)?.name || code;
+  const totalImages = visibleLogs.reduce((sum, l) => sum + l.images.length, 0);
+
+  const handleUpload = async (input: { projectCode: string; note: string; images: File[] }) => {
+    await addFieldLog(input);
+    await fetchFieldLogs();
+  };
+
+  const handleDelete = async () => {
+    if (!deletingId) return;
+    try {
+      await deleteFieldLog(deletingId);
+    } catch (e) {
+      console.error(e);
+    }
+    setDeletingId(null);
+  };
+
+  return (
+    <div className="flex min-h-full flex-1 flex-col bg-slate-100">
+      {/* Header */}
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-6 py-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-primary">
+              <span className="material-symbols-outlined text-2xl">photo_camera</span>
+            </div>
+            <div className="border-l-4 border-primary pl-4">
+              <h1 className="text-2xl font-extrabold uppercase text-slate-900">NHẬT KÝ HIỆN TRƯỜNG</h1>
+              <p className="text-xs font-semibold text-slate-400 mt-1">
+                {visibleLogs.length} báo cáo · {totalImages} ảnh
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
+              className="max-w-xs flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 md:w-64">
+              <option value="">Tất cả dự án</option>
+              {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
+            </select>
+            <button onClick={() => setIsUploadOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-95">
+              <span className="material-symbols-outlined text-lg">add_a_photo</span>
+              Upload ảnh
+            </button>
+          </div>
+        </div>
       </header>
 
-      <div className="p-4 pb-24 space-y-6">
-        {fieldLogs.length === 0 ? (
-          <div className="text-center text-slate-500 py-10 bg-white rounded-xl shadow-sm border border-slate-100">
-            Chưa có báo cáo hiện trường nào.
+      {/* Content */}
+      <div className={`flex flex-col flex-1 ${logsByDay.length === 0 ? '' : 'p-6 space-y-8'}`}>
+        {logsByDay.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 bg-white flex-1 text-slate-400">
+            <span className="material-symbols-outlined text-5xl">photo_library</span>
+            <p className="text-sm font-bold">Chưa có ảnh hiện trường</p>
+            <p className="text-xs">Nhấn <strong className="text-primary">Upload ảnh</strong> để thêm ảnh cho dự án</p>
           </div>
         ) : (
-          fieldLogs.map((log, index) => {
-            const project = projects.find(p => p.code === log.projectCode);
-            const task = tasks.find(t => t.id === log.taskId);
-            
-            return (
-              <div key={log.id || index} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-3 border-b border-slate-100 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
-                    KS
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-slate-800 text-sm">Kỹ sư Hiện trường</p>
-                    <p className="text-xs text-slate-500">
-                      {new Date(log.timestamp).toLocaleString('vi-VN')}
-                    </p>
-                  </div>
-                  <div>
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                      log.statusUpdate === 'Hoàn thành' ? 'bg-emerald-100 text-emerald-700' :
-                      log.statusUpdate === 'Vướng mắc' ? 'bg-red-100 text-red-700' :
-                      'bg-blue-100 text-blue-700'
-                    }`}>
-                      {log.statusUpdate}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="p-3 bg-slate-50 text-xs border-b border-slate-100">
-                  <p className="font-semibold text-slate-700"><span className="text-slate-500">Dự án:</span> {project?.name}</p>
-                  <p className="font-semibold text-slate-700 mt-1"><span className="text-slate-500">Hạng mục:</span> {task?.name}</p>
-                </div>
-
-                <div className="p-4 text-sm text-slate-800 whitespace-pre-wrap">
-                  {log.note}
-                </div>
-
-                {log.images && log.images.length > 0 && (
-                  <div className="p-2 grid grid-cols-2 gap-2">
-                    {log.images.map((img: string, i: number) => (
-                      <div key={i} className="relative aspect-square bg-black/5 rounded-lg overflow-hidden group">
-                        <img src={img} alt="field" className="w-full h-full object-cover" />
-                        {log.gpsLocation && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-1.5 text-[9px] text-white backdrop-blur-sm">
-                            <p className="font-mono">📍 {log.gpsLocation.text}</p>
-                            <p className="font-mono mt-0.5">⏱ {new Date(log.timestamp).toLocaleString('vi-VN')}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+          logsByDay.map(([day, logs]) => (
+            <section key={day}>
+              <div className="mb-3 flex items-center gap-3">
+                <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-600">{day}</h2>
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-xs font-semibold text-slate-400">{logs.length} báo cáo</span>
               </div>
-            );
-          })
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {logs.map((log, index) => (
+                  <div key={log.id} className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    {/* Header Card */}
+                    <div className="flex items-start justify-between gap-3 bg-slate-50 p-3">
+                      <div className="flex flex-1 items-start gap-2">
+                        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded bg-slate-200 text-xs font-bold text-slate-600">
+                          {(index + 1).toString().padStart(2, '0')}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-extrabold text-slate-700 line-clamp-2">
+                            {projectName(log.projectCode)}
+                          </p>
+                          <div className="mt-1 flex items-center gap-1.5">
+                            <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+                              <span className="mr-1 h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                              {formatTimeOnly(log.timestamp)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <button onClick={() => setDeletingId(log.id)} title="Xóa báo cáo"
+                        className="flex-shrink-0 rounded p-1 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
+                        <span className="material-symbols-outlined text-base">delete</span>
+                      </button>
+                    </div>
+
+                    {/* Note */}
+                    {log.note && (
+                      <p className="whitespace-pre-wrap border-t border-slate-100 px-4 py-2.5 text-[11px] text-slate-600">
+                        {log.note}
+                      </p>
+                    )}
+
+                    {/* Images Grid */}
+                    <div className="mt-auto border-t border-slate-100 p-2">
+                      <p className="mb-1.5 px-1 text-[10px] font-bold text-slate-400">
+                        {log.images.length} ẢNH HIỆN TRƯỜNG
+                      </p>
+                      <div className="grid grid-cols-4 gap-1 sm:grid-cols-5 md:grid-cols-6">
+                        {log.images.map((img, i) => (
+                          <button key={i} onClick={() => setLightbox({ images: log.images, index: i })}
+                            className="group relative aspect-square overflow-hidden rounded bg-slate-100">
+                            <img src={img} alt="Ảnh hiện trường" loading="lazy"
+                              className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/20 group-hover:opacity-100">
+                              <span className="material-symbols-outlined text-[16px] text-white">zoom_in</span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))
         )}
       </div>
 
-      {/* Floating Action Button */}
-      <button 
-        onClick={() => setIsReportOpen(true)}
-        className="fixed bottom-6 right-6 lg:right-[calc(50%-20rem+1.5rem)] w-14 h-14 bg-primary text-white rounded-full shadow-xl flex items-center justify-center hover:bg-blue-700 transition-transform hover:scale-105 z-20"
-      >
-        <span className="material-symbols-outlined text-2xl">add_a_photo</span>
-      </button>
+      {/* Upload Modal */}
+      {isUploadOpen && (
+        <UploadModal
+          defaultProjectCode={selectedProject}
+          projects={projects}
+          onClose={() => setIsUploadOpen(false)}
+          onUpload={handleUpload} />
+      )}
 
-      {/* Report Modal / Bottom Sheet */}
-      {isReportOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center sm:items-center">
-          <div className="bg-white w-full sm:w-[500px] sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-bold text-slate-800">Báo cáo Hiện trường</h2>
-              <button onClick={() => setIsReportOpen(false)} className="p-1 rounded-full hover:bg-slate-100 text-slate-500">
-                <span className="material-symbols-outlined">close</span>
-              </button>
+      {/* Lightbox */}
+      {lightbox && (
+        <Lightbox
+          images={lightbox.images}
+          index={lightbox.index}
+          onClose={() => setLightbox(null)}
+          onPrev={() => setLightbox(l => l ? { ...l, index: l.index - 1 } : l)}
+          onNext={() => setLightbox(l => l ? { ...l, index: l.index + 1 } : l)} />
+      )}
+
+      {/* Confirm delete */}
+      {deletingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeletingId(null)} />
+          <div className="relative w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 text-center shadow-2xl ring-1 ring-slate-200">
+            <span className="material-symbols-outlined text-4xl text-rose-500">delete_forever</span>
+            <p className="text-sm font-bold text-slate-800">Xóa báo cáo này?</p>
+            <p className="text-xs text-slate-500">Các ảnh trong báo cáo sẽ bị xóa vĩnh viễn.</p>
+            <div className="flex justify-center gap-3 pt-1">
+              <button onClick={() => setDeletingId(null)}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
+              <button onClick={handleDelete}
+                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 active:scale-95">Xóa</button>
             </div>
-            
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Dự án</label>
-                <select 
-                  required
-                  value={selectedProject} 
-                  onChange={e => { setSelectedProject(e.target.value); setSelectedTask(''); }}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50"
-                >
-                  <option value="">-- Chọn dự án --</option>
-                  {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Đầu việc</label>
-                <select 
-                  required
-                  disabled={!selectedProject}
-                  value={selectedTask} 
-                  onChange={e => setSelectedTask(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50"
-                >
-                  <option value="">-- Chọn đầu việc thi công --</option>
-                  {availableTasks.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Ảnh Hiện trường</label>
-                <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
-                  {imageUrls.map((url, i) => (
-                    <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 border border-slate-200">
-                      <img src={url} alt="upload" className="w-full h-full object-cover" />
-                      <button 
-                        type="button"
-                        onClick={() => setImageUrls(urls => urls.filter((_, idx) => idx !== i))}
-                        className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px]"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                  <button 
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-50 shrink-0"
-                  >
-                    <span className="material-symbols-outlined mb-1 text-xl">add_photo_alternate</span>
-                  </button>
-                </div>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  multiple 
-                  className="hidden" 
-                  ref={fileInputRef}
-                  onChange={handleImageUpload}
-                />
-
-                <div className="flex items-center gap-2 mt-2">
-                  <button 
-                    type="button"
-                    onClick={getLocation}
-                    disabled={isGettingGps}
-                    className="px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 rounded text-slate-700 flex items-center gap-1 border border-slate-200"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">my_location</span>
-                    {isGettingGps ? 'Đang lấy vị trí...' : gpsLocation ? 'Lấy lại tọa độ' : 'Lấy tọa độ GPS'}
-                  </button>
-                  {gpsLocation && <span className="text-[10px] text-emerald-600 font-mono bg-emerald-50 px-2 py-1 rounded">📍 Đã có GPS</span>}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Nội dung báo cáo</label>
-                <textarea 
-                  required
-                  rows={3}
-                  placeholder="Ghi chú về tiến độ, công việc đã hoàn thành hoặc vướng mắc..."
-                  value={note}
-                  onChange={e => setNote(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Trạng thái cập nhật</label>
-                <div className="flex gap-2">
-                  {['Đang làm', 'Hoàn thành', 'Vướng mắc'].map((st) => (
-                    <label key={st} className={`flex-1 flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer transition-colors ${
-                      statusUpdate === st 
-                        ? (st === 'Hoàn thành' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 
-                           st === 'Vướng mắc' ? 'border-red-500 bg-red-50 text-red-700' : 
-                           'border-blue-500 bg-blue-50 text-blue-700')
-                        : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-                    }`}>
-                      <input 
-                        type="radio" 
-                        name="status" 
-                        value={st} 
-                        checked={statusUpdate === st}
-                        onChange={(e) => setStatusUpdate(e.target.value as any)}
-                        className="hidden"
-                      />
-                      <span className="text-sm font-bold">{st}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100">
-                <button 
-                  type="submit"
-                  className="w-full bg-primary text-white py-3 rounded-lg font-bold text-sm shadow-md hover:bg-blue-700"
-                >
-                  Gửi báo cáo
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

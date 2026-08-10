@@ -110,18 +110,14 @@ export const OcrUploadPanel: React.FC<OcrUploadPanelProps> = ({ onExtracted, com
       }
 
       setExtractedPreview(result.extracted);
-      setMessage({ type: 'info', text: 'Kiểm tra dữ liệu bên dưới. Nếu đúng mẫu thì điền vào form, nếu chưa đúng hãy chọn lại file hoặc điền/chỉnh thủ công.' });
+      // Tự động điền dữ liệu vào form sau khi đọc file xong
+      onExtracted(result.extracted);
+      setMessage({ type: 'success', text: 'Đã tự động điền dữ liệu vào form. Có thể chỉnh lại từng ô trước khi lưu.' });
     } catch (error: any) {
       setMessage({ type: 'warning', text: error?.message || 'Không thể trích xuất dữ liệu từ file này.' });
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const applyExtractedData = () => {
-    if (!extractedPreview) return;
-    onExtracted(extractedPreview);
-    setMessage({ type: 'success', text: 'Đã điền dữ liệu vào form. Có thể chỉnh lại từng ô trước khi lưu.' });
   };
 
   const resetSelection = () => {
@@ -218,17 +214,13 @@ export const OcrUploadPanel: React.FC<OcrUploadPanelProps> = ({ onExtracted, com
         <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-extrabold text-slate-800">Dữ liệu nhận diện có đúng với form này không?</p>
-              <p className="mt-0.5 text-slate-500">Xác nhận để điền vào form, hoặc chọn lại nếu muốn thay đổi nguồn dữ liệu.</p>
+              <p className="font-extrabold text-slate-800">Dữ liệu đã nhận diện và tự động điền vào form</p>
+              <p className="mt-0.5 text-slate-500">Có thể chỉnh lại từng ô trong form, hoặc chọn lại file nếu muốn thay đổi nguồn dữ liệu.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={resetSelection} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 font-bold text-slate-600 hover:bg-slate-50">
                 <span className="material-symbols-outlined text-sm">refresh</span>
                 Chọn lại
-              </button>
-              <button type="button" onClick={applyExtractedData} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 font-bold text-white hover:bg-emerald-700">
-                <span className="material-symbols-outlined text-sm">check_circle</span>
-                Đúng, điền vào form
               </button>
             </div>
           </div>

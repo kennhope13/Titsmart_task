@@ -18,12 +18,37 @@ import {
   FieldLog
 } from '../types';
 import { api } from './api';
+import inventorySeedData from './inventorySeedData.json';
+
+const inventorySeed = inventorySeedData as {
+  materials: Material[];
+  inventoryTransactions: InventoryTransaction[];
+};
+
+const seedMaterialsForProject = (projectId?: string) => (
+  projectId
+    ? inventorySeed.materials.filter((material) => material.projectCode === projectId)
+    : inventorySeed.materials
+);
+
+const mergeMaterialsWithSeed = (materials: Material[], projectId?: string) => {
+  const seen = new Set(materials.flatMap((material) => [
+    material.id,
+    material.code?.toLowerCase(),
+  ].filter(Boolean)));
+
+  const seed = seedMaterialsForProject(projectId).filter((material) => (
+    !seen.has(material.id) && !seen.has(material.code.toLowerCase())
+  ));
+
+  return [...materials, ...seed];
+};
 
 // Utility to check if STT or row is a section header (I, II, III...)
 const isRomanOrSection = (stt: string, volume: number, unit: string) => {
   if (!stt) return volume === 0 && !unit;
   const clean = stt.trim().toUpperCase();
-  const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|Má»¤C\s+[A-Z0-9]+|[A-Z]{1,2})$/;
+  const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/;
   return romanRegex.test(clean) || (volume === 0 && (!unit || unit.trim() === ''));
 };
 
@@ -139,14 +164,19 @@ interface RealtimeStoreState {
   updateTaskProgress: (id: string, progress: number, isDone: boolean) => void;
   assignEngineer: (taskId: string, engineerId: string, engineerName: string) => void;
   addEngineer: (engineer: Omit<Engineer, 'id'>) => Engineer;
+  createEngineer: (input: { name: string; phone?: string; email?: string; title?: string; projectCodes?: string[] }) => Promise<Engineer>;
+  updateEngineer: (id: string, input: { name: string; phone?: string; title?: string; projectCodes?: string[] }) => Promise<Engineer>;
+  deleteEngineer: (id: string) => Promise<void>;
   deleteTask: (id: string) => void;
 
   addMaterial: (mat: Omit<Material, 'id'>) => void;
   updateMaterial: (id: string, updatedFields: Partial<Material>) => void;
   updateMaterialStatus: (id: string, status: string) => void;
   deleteMaterial: (id: string) => void;
+  setMaterials: (materials: Material[]) => void;
 
-  addInventoryTransaction: (transaction: Omit<InventoryTransaction, 'id' | 'createdAt'>) => void;
+  addInventoryTransaction: (transaction: Omit<InventoryTransaction, 'id' | 'createdAt'>) => Promise<void>;
+  addInventoryTransactionsBatch: (transactions: Omit<InventoryTransaction, 'id' | 'createdAt'>[]) => Promise<void>;
 
   addIssue: (issue: Omit<Issue, 'id'>) => void;
   updateIssueStatus: (id: string, status: IssueStatus) => void;
@@ -155,14 +185,14 @@ interface RealtimeStoreState {
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
   addProject: (proj: Omit<Project, 'id'>) => Promise<Project | undefined>;
-  deleteProject: (id: string) => void;
+  deleteProject: (id: string) => Promise<void>;
 
   // New Actions
-  addMaterialPlan: (plan: Omit<ProjectMaterialPlan, 'id'>) => void;
-  updateMaterialPlan: (id: string, fields: Partial<ProjectMaterialPlan>) => void;
+  addMaterialPlan: (plan: Omit<ProjectMaterialPlan, 'id'>) => Promise<string | undefined>;
+  updateMaterialPlan: (id: string, fields: Partial<ProjectMaterialPlan>) => Promise<void>;
   deleteMaterialPlan: (id: string) => void;
 
-  addPurchasingPlan: (plan: Omit<ProjectPurchasing, 'id'>) => void;
+  addPurchasingPlan: (plan: Omit<ProjectPurchasing, 'id'>) => Promise<void>;
   updatePurchasingPlan: (id: string, fields: Partial<ProjectPurchasing>) => void;
   deletePurchasingPlan: (id: string) => void;
 
@@ -178,7 +208,8 @@ interface RealtimeStoreState {
   updateDocumentTrack: (id: string, fields: Partial<DocumentTrack>) => void;
   deleteDocumentTrack: (id: string) => void;
   
-  addFieldLog: (log: Omit<FieldLog, 'id'>) => void;
+  addFieldLog: (input: { projectCode: string; note?: string; images: File[] }) => Promise<void>;
+  deleteFieldLog: (id: string) => Promise<void>;
   logActivity: (action: string, project: string, user?: string) => void;
 }
 
@@ -191,6 +222,89 @@ const normalizeVietnamese = (value: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[\u0111\u0110]/g, 'd')
     .toLowerCase();
+
+const isTempMaterialRef = (value?: string) => {
+  const text = String(value || '').toLowerCase();
+  return !text || text.startsWith('mat-temp-');
+};
+
+const findMaterialIndexForTransaction = (materials: Material[], txData: Partial<InventoryTransaction>) => (
+  materials.findIndex((m) => {
+    if (txData.materialId && !isTempMaterialRef(txData.materialId) && m.id === txData.materialId) return true;
+    if (txData.materialCode && !isTempMaterialRef(txData.materialCode) && m.code.toLowerCase() === txData.materialCode.toLowerCase()) return true;
+
+    const normName = normalizeVietnamese(m.name);
+    const normSpecs = normalizeVietnamese(m.specs || m.englishName || '');
+    const normTxName = normalizeVietnamese(txData.materialName || '');
+    const normTxSpecs = normalizeVietnamese(txData.specs || '');
+    return Boolean(normTxName) && normName === normTxName && normSpecs === normTxSpecs;
+  })
+);
+
+const mergeInventoryTransactionIntoState = (
+  materials: Material[],
+  inventoryTransactions: InventoryTransaction[],
+  txData: Omit<InventoryTransaction, 'id' | 'createdAt'>,
+  persisted?: { material?: Material; transaction?: InventoryTransaction }
+) => {
+  const newTransaction: InventoryTransaction = persisted?.transaction || {
+    ...txData,
+    id: 'inv-' + Date.now(),
+    createdAt: new Date().toISOString(),
+  };
+
+  let nextMats = [...materials];
+
+  // Tìm vật tư trong local state theo thông tin từ DB (sau khi API trả về)
+  let materialIndex = findMaterialIndexForTransaction(nextMats, persisted?.material ? {
+    materialId: persisted.material.id,
+    materialCode: persisted.material.code,
+    materialName: persisted.material.name,
+    specs: persisted.material.specs || persisted.material.englishName || '',
+  } : txData);
+
+  // Fallback: nếu không tìm thấy theo thông tin DB, thử tìm bằng ID gốc từ request
+  // (tránh trường hợp vật tư seed có id='mat-xxx' không khớp UUID từ DB)
+  if (materialIndex < 0 && persisted?.material && txData.materialId) {
+    materialIndex = nextMats.findIndex((m) => m.id === txData.materialId);
+  }
+
+  if (persisted?.material) {
+    nextMats = materialIndex >= 0
+      // Cập nhật bản ghi hiện có (kể cả khi ID local khác UUID từ DB) với data mới nhất từ server
+      ? nextMats.map((m, index) => index === materialIndex ? { ...m, ...persisted.material } : m)
+      // Vật tư hoàn toàn mới (chưa có trong local state) — thêm vào đầu
+      : [persisted.material, ...nextMats];
+  } else if (materialIndex >= 0) {
+    const matchedMat = nextMats[materialIndex];
+    const totalImport = (matchedMat.totalImport || 0) + (txData.type === 'IMPORT' ? txData.quantity : 0);
+    const totalExport = (matchedMat.totalExport || 0) + (txData.type === 'EXPORT' ? txData.quantity : 0);
+    const currentStock = (matchedMat.initialStock || 0) + totalImport - totalExport;
+
+    nextMats = nextMats.map((m, index) => index === materialIndex ? {
+      ...m,
+      totalImport,
+      totalExport,
+      currentStock,
+    } : m);
+  }
+
+  const txMaterial = persisted?.material || nextMats[materialIndex];
+  const finalTx: InventoryTransaction = txMaterial ? {
+    ...newTransaction,
+    materialId: txMaterial.id,
+    materialCode: txMaterial.code,
+    materialName: txMaterial.name,
+    category: txMaterial.category || newTransaction.category || '',
+    specs: txMaterial.specs || txMaterial.englishName || newTransaction.specs || '',
+    unit: txMaterial.unit || newTransaction.unit || 'Cái',
+  } : newTransaction;
+
+  return {
+    materials: nextMats,
+    inventoryTransactions: [finalTx, ...inventoryTransactions],
+  };
+};
 
 const deriveSupplyScope = (plan: any): 'contractor' | 'owner' | 'unknown' => {
   const explicit = plan.supplyScope ?? plan.supply_scope;
@@ -210,6 +324,7 @@ const normalizeMaterialPlan = (plan: any): ProjectMaterialPlan => ({
   contractVolume: Number(plan.contractVolume ?? plan.contract_volume ?? 0),
   techSpecModel: plan.techSpecModel ?? plan.tech_spec_model ?? '',
   techSpecOrigin: plan.techSpecOrigin ?? plan.tech_spec_origin ?? '',
+  techSpecStatus: plan.techSpecStatus ?? plan.tech_spec_status ?? '',
   progressStatus: plan.progressStatus ?? plan.progress_status ?? '',
   orderedVolume: Number(plan.orderedVolume ?? plan.ordered_volume ?? 0),
   orderedStatus: plan.orderedStatus ?? plan.ordered_status ?? '',
@@ -223,6 +338,7 @@ const normalizeMaterialPlan = (plan: any): ProjectMaterialPlan => ({
   dispatchDate: plan.dispatchDate ?? plan.dispatch_date ?? '',
   supplyScope: deriveSupplyScope(plan),
   notes: plan.notes || '',
+  parentId: plan.parentId ?? plan.parent_id ?? undefined,
 });
 
 const normalizePurchasingPlan = (plan: any): ProjectPurchasing => ({
@@ -245,6 +361,67 @@ const normalizePurchasingPlan = (plan: any): ProjectPurchasing => ({
   paymentDate: plan.paymentDate ?? plan.payment_date ?? '',
   invoiceStatus: plan.invoiceStatus ?? plan.invoice_status ?? '',
   notes: plan.notes || '',
+  parentId: plan.parentId ?? plan.parent_id ?? undefined,
+});
+
+const normalizeExpense = (exp: any): ProjectExpense => ({
+  id: exp.id,
+  projectCode: exp.projectCode || exp.project?.code || '',
+  stt: exp.stt || '',
+  date: exp.date ?? exp.expenseDate ?? exp.expense_date ?? '',
+  content: exp.content || '',
+  description: exp.description || '',
+  unit: exp.unit || '',
+  quantity: Number(exp.quantity || 0),
+  unitPrice: Number(exp.unitPrice ?? exp.unit_price ?? 0),
+  taxAmount: Number(exp.taxAmount ?? exp.tax_amount ?? 0),
+  totalAmount: Number(exp.totalAmount ?? exp.total_amount ?? 0),
+  incomeAmount: Number(exp.incomeAmount ?? exp.income_amount ?? 0),
+  balanceFund: Number(exp.balanceFund ?? exp.balance_fund ?? 0),
+  notes: exp.notes || '',
+  invoiceUrl: exp.invoiceUrl ?? exp.invoice_url ?? '',
+});
+
+const normalizeLaborPayroll = (lab: any): LaborPayroll => ({
+  id: lab.id,
+  projectCode: lab.projectCode || lab.project?.code || '',
+  stt: lab.stt || '',
+  date: lab.date ?? lab.payrollDate ?? lab.payroll_date ?? '',
+  workerName: lab.workerName ?? lab.worker_name ?? '',
+  content: lab.content || '',
+  description: lab.description || '',
+  unit: lab.unit || '',
+  quantity: Number(lab.quantity || 0),
+  unitPrice: Number(lab.unitPrice ?? lab.unit_price ?? 0),
+  totalAmount: Number(lab.totalAmount ?? lab.total_amount ?? 0),
+  bankAccount: lab.bankAccount ?? lab.bank_account ?? '',
+  bankInfo: lab.bankInfo ?? lab.bank_info ?? '',
+  idCardFrontUrl: lab.idCardFrontUrl ?? lab.id_card_front_url ?? '',
+  idCardBackUrl: lab.idCardBackUrl ?? lab.id_card_back_url ?? '',
+  paymentStatus: lab.paymentStatus ?? lab.payment_status ?? '',
+  notes: lab.notes || '',
+});
+
+const normalizeDocumentTrack = (doc: any): DocumentTrack => ({
+  id: doc.id,
+  projectCode: doc.projectCode || doc.project?.code || '',
+  stt: doc.stt || '',
+  contractNo: doc.contractNo ?? doc.contract_no ?? '',
+  contractName: doc.contractName ?? doc.contract_name ?? '',
+  company: doc.company || '',
+  receiverName: doc.receiverName ?? doc.receiver_name ?? '',
+  phone: doc.phone || '',
+  address: doc.address || '',
+  sendDate: doc.sendDate ?? doc.send_date ?? '',
+  receiveDate: doc.receiveDate ?? doc.receive_date ?? '',
+  docStatus: doc.docStatus ?? doc.doc_status ?? '',
+  side: doc.side || '',
+  contractValue: Number(doc.contractValue ?? doc.contract_value ?? 0),
+  prepayPercent: Number(doc.prepayPercent ?? doc.prepay_percent ?? 0),
+  prepayAmount: Number(doc.prepayAmount ?? doc.prepay_amount ?? 0),
+  paymentStatus: doc.paymentStatus ?? doc.payment_status ?? '',
+  isCompleted: Boolean(doc.isCompleted ?? doc.is_completed ?? false),
+  notes: doc.notes || '',
 });
 
 export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
@@ -277,23 +454,31 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       documentTracks: newState.documentTracks !== undefined ? newState.documentTracks : current.documentTracks,
       fieldLogs: newState.fieldLogs !== undefined ? newState.fieldLogs : current.fieldLogs,
     };
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      channel?.postMessage({ type: 'SYNC_STATE' });
-    } catch (e) {
-      console.error('Failed to save state', e);
+    
+    // Debounce localStorage persistence to prevent UI freezes during rapid sequential updates
+    if ((window as any).__persistTimeout) {
+      clearTimeout((window as any).__persistTimeout);
     }
+    
+    (window as any).__persistTimeout = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        channel?.postMessage({ type: 'SYNC_STATE' });
+      } catch (e) {
+        console.error('Failed to save state', e);
+      }
+    }, 500);
   };
 
   return {
     projects: [],
     tasks: [],
-    materials: [],
+    materials: inventorySeed.materials,
     issues: [],
     engineers: [],
     notifications: [],
     activityLogs: [],
-    inventoryTransactions: [],
+    inventoryTransactions: inventorySeed.inventoryTransactions,
     materialPlans: [],
     purchasingPlans: [],
     expenses: [],
@@ -304,7 +489,11 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     fetchProjects: async () => {
       try {
         const projects = await api.projects.getAll();
-        set({ projects });
+        // Lọc bỏ project nội bộ "Kho Công Ty" khỏi danh sách dự án
+        const filtered = Array.isArray(projects)
+          ? projects.filter((p: any) => p.code !== 'COMPANY')
+          : projects;
+        set({ projects: filtered });
       } catch (e) {
         console.error('Failed to fetch projects', e);
       }
@@ -321,10 +510,17 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     fetchMaterials: async (projectId) => {
       try {
-        const materials = await api.materials.getAll(projectId);
-        set({ materials });
+        const [materials, inventoryTransactions] = await Promise.all([
+          api.materials.getAll(projectId),
+          api.materials.getTransactions(),
+        ]);
+        set({
+          materials: mergeMaterialsWithSeed(Array.isArray(materials) ? materials : [], projectId),
+          inventoryTransactions: Array.isArray(inventoryTransactions) ? inventoryTransactions : get().inventoryTransactions,
+        });
       } catch (e) {
         console.error('Failed to fetch materials', e);
+        set({ materials: seedMaterialsForProject(projectId) });
       }
     },
 
@@ -382,6 +578,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         if (Array.isArray(documentTracks)) nextState.documentTracks = documentTracks;
         
         set(nextState);
+        persistAndNotify(nextState);
       } catch (e) {
         console.error('Failed to fetch accounting', e);
       }
@@ -396,7 +593,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity('ÄÃ£ táº¡o thá»§ cÃ´ng háº¡ng má»¥c cÃ´ng viá»‡c: ' + createdTask.name, createdTask.projectName || createdTask.projectCode);
+        get().logActivity('Đã tạo thủ công hạng mục công việc: ' + createdTask.name, createdTask.projectName || createdTask.projectCode);
       } catch (e) {
         console.error('Failed to add task', e);
       }
@@ -412,9 +609,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const nextNotifs: NotificationItem[] = [
             {
               id: 'notif-' + Date.now(),
-              title: 'Import Excel thÃ nh cÃ´ng',
-              message: `ÄÃ£ náº¡p ${createdTasks.length} háº¡ng má»¥c tá»« tá»‡p Excel.`,
-              timestamp: 'Vá»«a xong',
+              title: 'Import Excel thành công',
+              message: `Đã nạp ${createdTasks.length} hạng mục từ tập Excel.`,
+              timestamp: 'Vừa xong',
               read: false,
               type: 'system',
               icon: 'file_upload',
@@ -425,7 +622,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { tasks: nextTasks, projects: nextProjects, notifications: nextNotifs };
         });
         if (createdTasks.length > 0) {
-          get().logActivity(`ÄÃ£ nháº­p kháº©u ${createdTasks.length} háº¡ng má»¥c cÃ´ng viá»‡c tá»« file Excel`, createdTasks[0].projectName || 'Tiáº¿n Ä‘á»™', 'Excel Sync');
+          get().logActivity(`Đã nhập khẩu ${createdTasks.length} hạng mục công việc từ file Excel`, createdTasks[0].projectName || 'Tiến độ', 'Excel Sync');
         }
       } catch (e) {
         console.error('Failed to add tasks batch', e);
@@ -441,7 +638,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity('ÄÃ£ chá»‰nh sá»­a thÃ´ng tin cÃ´ng viá»‡c: ' + updatedTask.name, updatedTask.projectName || updatedTask.projectCode);
+        get().logActivity('Đã chỉnh sửa thông tin công việc: ' + updatedTask.name, updatedTask.projectName || updatedTask.projectCode);
       } catch (e) {
         console.error('Failed to update task', e);
       }
@@ -460,7 +657,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity(`ÄÃ£ cáº­p nháº­t tiáº¿n Ä‘á»™ thi cÃ´ng thÃ nh ${Math.round(progress * 100)}%`, updatedTask.projectName || updatedTask.projectCode);
+        get().logActivity(`Đã cập nhật tiến độ thi công thành ${Math.round(progress * 100)}%`, updatedTask.projectName || updatedTask.projectCode);
       } catch (e) {
         console.error('Failed to update task progress', e);
       }
@@ -475,9 +672,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const nextTasks = state.tasks.map((t) => (t.id === taskId ? updatedTask : t));
           const newNotif: NotificationItem = {
             id: 'notif-assign-' + Date.now(),
-            title: 'PhÃ¢n cÃ´ng nhÃ¢n sá»±',
-            message: `ÄÃ£ giao háº¡ng má»¥c "${updatedTask.name}" cho ${engineerName}.`,
-            timestamp: 'Vá»«a xong',
+              title: 'Phân công nhân sự',
+              message: `Đã giao hạng mục "${updatedTask.name}" cho ${engineerName}.`,
+              timestamp: 'Vừa xong',
             read: false,
             type: 'task_assigned',
             icon: 'person_add',
@@ -504,6 +701,50 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       return newEngineer;
     },
 
+    createEngineer: async (input) => {
+      const created = await api.engineers.create({
+        fullName: input.name,
+        phone: input.phone,
+        email: input.email,
+        title: input.title,
+        projectCodes: input.projectCodes,
+      });
+      // Nạp lại danh sách để đồng bộ managedProjects và id thật từ DB
+      const engineers = await api.engineers.getAll();
+      set(() => {
+        persistAndNotify({ engineers });
+        return { engineers };
+      });
+      get().logActivity('Đã thêm nhân sự: ' + input.name, input.name);
+      return created;
+    },
+
+    updateEngineer: async (id, input) => {
+      const updated = await api.engineers.update(id, {
+        fullName: input.name,
+        phone: input.phone,
+        title: input.title,
+        projectCodes: input.projectCodes,
+      });
+      const engineers = await api.engineers.getAll();
+      set(() => {
+        persistAndNotify({ engineers });
+        return { engineers };
+      });
+      get().logActivity('Đã cập nhật nhân sự: ' + input.name, input.name);
+      return updated;
+    },
+
+    deleteEngineer: async (id) => {
+      await api.engineers.delete(id);
+      const engineers = await api.engineers.getAll();
+      set(() => {
+        persistAndNotify({ engineers });
+        return { engineers };
+      });
+      get().logActivity('Đã xóa nhân sự', 'Hệ thống');
+    },
+
     deleteTask: async (id) => {
       try {
         const taskToDelete = get().tasks.find(t => t.id === id);
@@ -518,7 +759,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { tasks: nextTasks, projects: nextProjects };
         });
         if (taskToDelete) {
-          get().logActivity('ÄÃ£ xÃ³a cÃ´ng viá»‡c: ' + taskToDelete.name, taskToDelete.projectName || taskToDelete.projectCode);
+          get().logActivity('Đã xóa công việc: ' + taskToDelete.name, taskToDelete.projectName || taskToDelete.projectCode);
         }
       } catch (e) {
         console.error('Failed to delete task', e);
@@ -561,36 +802,82 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       });
     },
 
-    addInventoryTransaction: (transactionData) => {
-      const newTransaction: InventoryTransaction = {
-        ...transactionData,
-        id: 'inv-' + Date.now(),
-        createdAt: new Date().toISOString(),
-      };
+    setMaterials: (materialsList) => {
+      set({ materials: materialsList });
+      persistAndNotify({ materials: materialsList });
+    },
+
+    addInventoryTransaction: async (transactionData) => {
+      try {
+        const persisted = await api.materials.createTransaction(transactionData);
+        set((state) => {
+          const nextState = mergeInventoryTransactionIntoState(
+            state.materials,
+            state.inventoryTransactions,
+            transactionData,
+            persisted
+          );
+          persistAndNotify(nextState);
+          return nextState;
+        });
+        // Đồng bộ lại toàn bộ dữ liệu kho từ DB để đảm bảo số tồn luôn chính xác
+        try {
+          const [freshMaterials, freshTransactions] = await Promise.all([
+            api.materials.getAll(undefined),
+            api.materials.getTransactions(),
+          ]);
+          if (Array.isArray(freshMaterials) && Array.isArray(freshTransactions)) {
+            set({
+              materials: mergeMaterialsWithSeed(freshMaterials),
+              inventoryTransactions: freshTransactions,
+            });
+          }
+        } catch (syncErr) {
+          console.warn('Post-transaction sync failed, local state already updated', syncErr);
+        }
+      } catch (e) {
+        console.error('Failed to persist inventory transaction, applying local fallback', e);
+        set((state) => {
+          const nextState = mergeInventoryTransactionIntoState(
+            state.materials,
+            state.inventoryTransactions,
+            transactionData
+          );
+          persistAndNotify(nextState);
+          return nextState;
+        });
+      }
+    },
+
+    addInventoryTransactionsBatch: async (batchData) => {
+      const persistedResults: Array<{ material?: Material; transaction?: InventoryTransaction } | undefined> = [];
+      for (const txData of batchData) {
+        try {
+          persistedResults.push(await api.materials.createTransaction(txData));
+        } catch (e) {
+          console.error('Failed to persist inventory transaction in batch, applying local fallback for row', e);
+          persistedResults.push(undefined);
+        }
+      }
 
       set((state) => {
-        const nextTransactions = [newTransaction, ...state.inventoryTransactions];
-        const nextMats = state.materials.map(m => {
-          if (m.id === transactionData.materialId) {
-            let currentStock = m.currentStock || m.initialStock || 0;
-            let totalImport = m.totalImport || 0;
-            let totalExport = m.totalExport || 0;
+        let nextMaterials = state.materials;
+        let nextTransactions = state.inventoryTransactions;
 
-            if (transactionData.type === 'IMPORT') {
-              currentStock += transactionData.quantity;
-              totalImport += transactionData.quantity;
-            } else if (transactionData.type === 'EXPORT') {
-              currentStock -= transactionData.quantity;
-              totalExport += transactionData.quantity;
-            }
-
-            return { ...m, currentStock, totalImport, totalExport };
-          }
-          return m;
+        batchData.forEach((txData, index) => {
+          const nextState = mergeInventoryTransactionIntoState(
+            nextMaterials,
+            nextTransactions,
+            txData,
+            persistedResults[index]
+          );
+          nextMaterials = nextState.materials;
+          nextTransactions = nextState.inventoryTransactions;
         });
 
-        persistAndNotify({ inventoryTransactions: nextTransactions, materials: nextMats });
-        return { inventoryTransactions: nextTransactions, materials: nextMats };
+        const nextState = { materials: nextMaterials, inventoryTransactions: nextTransactions };
+        persistAndNotify(nextState);
+        return nextState;
       });
     },
 
@@ -626,7 +913,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
                 {
                   id: 'tl-' + Date.now(),
                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                  author: 'Ban Quáº£n LÃ½ Dá»± Ãn',
+                  author: 'Ban Quản Lý Dự Án',
                   message: directive,
                 },
                 ...i.timelineLogs,
@@ -663,6 +950,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ projects: nextProjs });
           return { projects: nextProjs };
         });
+        get().fetchEngineers();
         return createdProj;
       } catch (e) {
         console.error('Failed to add project', e);
@@ -686,7 +974,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const nextPurchasingPlans = state.purchasingPlans.filter((p) => p.projectCode !== projectCode);
           const nextExpenses = state.expenses.filter((e) => e.projectCode !== projectCode);
           const nextLaborPayrolls = state.laborPayrolls.filter((p) => p.projectCode !== projectCode);
-          const nextDocumentTracks = state.documentTracks.filter((d) => d.projectCode !== projectCode);
           const nextFieldLogs = state.fieldLogs.filter((l) => l.projectCode !== projectCode);
 
           persistAndNotify({
@@ -698,7 +985,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
             purchasingPlans: nextPurchasingPlans,
             expenses: nextExpenses,
             laborPayrolls: nextLaborPayrolls,
-            documentTracks: nextDocumentTracks,
             fieldLogs: nextFieldLogs,
           });
 
@@ -711,7 +997,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
             purchasingPlans: nextPurchasingPlans,
             expenses: nextExpenses,
             laborPayrolls: nextLaborPayrolls,
-            documentTracks: nextDocumentTracks,
             fieldLogs: nextFieldLogs,
           };
         });
@@ -730,8 +1015,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ materialPlans: nextPlans });
           return { materialPlans: nextPlans };
         });
+        return created.id;
       } catch (e) {
         console.error('Failed to add material plan', e);
+        return undefined;
       }
     },
 
@@ -802,7 +1089,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     addExpense: async (expData) => {
       try {
-        const created = await api.accounting.createExpense(expData);
+        const created = normalizeExpense(await api.accounting.createExpense(expData));
         set((state) => {
           const nextExps = [created, ...state.expenses];
           persistAndNotify({ expenses: nextExps });
@@ -815,7 +1102,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateExpense: async (id, fields) => {
       try {
-        const updated = await api.accounting.updateExpense(id, fields);
+        const updated = normalizeExpense(await api.accounting.updateExpense(id, fields));
         set((state) => {
           const nextExps = state.expenses.map((e) => (e.id === id ? updated : e));
           persistAndNotify({ expenses: nextExps });
@@ -841,7 +1128,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     addLaborPayroll: async (payrollData) => {
       try {
-        const created = await api.accounting.createPayroll(payrollData);
+        const created = normalizeLaborPayroll(await api.accounting.createPayroll(payrollData));
         set((state) => {
           const nextPayrolls = [created, ...state.laborPayrolls];
           persistAndNotify({ laborPayrolls: nextPayrolls });
@@ -854,7 +1141,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateLaborPayroll: async (id, fields) => {
       try {
-        const updated = await api.accounting.updatePayroll(id, fields);
+        const updated = normalizeLaborPayroll(await api.accounting.updatePayroll(id, fields));
         set((state) => {
           const nextPayrolls = state.laborPayrolls.map((l) => (l.id === id ? updated : l));
           persistAndNotify({ laborPayrolls: nextPayrolls });
@@ -880,7 +1167,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     addDocumentTrack: async (trackData) => {
       try {
-        const created = await api.accounting.createDocumentTrack(trackData);
+        const created = normalizeDocumentTrack(await api.accounting.createDocumentTrack(trackData));
         set((state) => {
           const nextTracks = [created, ...state.documentTracks];
           persistAndNotify({ documentTracks: nextTracks });
@@ -893,7 +1180,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateDocumentTrack: async (id, fields) => {
       try {
-        const updated = await api.accounting.updateDocumentTrack(id, fields);
+        const updated = normalizeDocumentTrack(await api.accounting.updateDocumentTrack(id, fields));
         set((state) => {
           const nextTracks = state.documentTracks.map((d) => (d.id === id ? updated : d));
           persistAndNotify({ documentTracks: nextTracks });
@@ -917,9 +1204,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
     
-    addFieldLog: async (logData) => {
+    addFieldLog: async (input) => {
       try {
-        const created = await api.fieldLogs.create(logData);
+        const created = await api.fieldLogs.create(input);
         set((state) => {
           const nextLogs = [created, ...state.fieldLogs];
           persistAndNotify({ fieldLogs: nextLogs });
@@ -927,34 +1214,69 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         });
       } catch (e) {
         console.error('Failed to add field log', e);
+        throw e;
       }
     },
 
-    logActivity: (action, project, user = 'Ká»¹ sÆ° Nam') => {
+    deleteFieldLog: async (id) => {
+      try {
+        await api.fieldLogs.delete(id);
+        set((state) => {
+          const nextLogs = state.fieldLogs.filter((l) => l.id !== id);
+          persistAndNotify({ fieldLogs: nextLogs });
+          return { fieldLogs: nextLogs };
+        });
+      } catch (e) {
+        console.error('Failed to delete field log', e);
+        throw e;
+      }
+    },
+
+    logActivity: (action, project, user = 'Kỹ sư Nam') => {
+      const icon = action.toLowerCase().includes('tiến độ') ? 'trending_up' :
+            action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'payments' :
+            action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'warehouse' :
+            action.toLowerCase().includes('hồ sơ') ? 'drafts' : 'history';
+      const badgeBg = action.toLowerCase().includes('tiến độ') ? 'bg-blue-50' :
+                 action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'bg-emerald-50' :
+                 action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'bg-amber-50' :
+                 action.toLowerCase().includes('hồ sơ') ? 'bg-violet-50' : 'bg-slate-50';
+      const iconColor = action.toLowerCase().includes('tiến độ') ? 'text-blue-500' :
+                   action.toLowerCase().includes('chi') || action.toLowerCase().includes('lương') || action.toLowerCase().includes('hợp đồng') ? 'text-emerald-500' :
+                   action.toLowerCase().includes('kho') || action.toLowerCase().includes('vật tư') ? 'text-amber-500' :
+                   action.toLowerCase().includes('hồ sơ') ? 'text-violet-500' : 'text-slate-500';
+
+      // Optimistic update local state ngay lập tức
       set((state) => {
-        const newLog: ActivityLog = {
+        const optimisticLog: ActivityLog = {
           id: 'act-' + Date.now() + '-' + Math.floor(Math.random() * 100),
           user,
           action,
           project,
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('vi-VN'),
-          icon: action.toLowerCase().includes('tiáº¿n Ä‘á»™') ? 'trending_up' :
-                action.toLowerCase().includes('chi') || action.toLowerCase().includes('lÆ°Æ¡ng') || action.toLowerCase().includes('há»£p Ä‘á»“ng') ? 'payments' :
-                action.toLowerCase().includes('kho') || action.toLowerCase().includes('váº­t tÆ°') ? 'warehouse' :
-                action.toLowerCase().includes('há»“ sÆ¡') ? 'drafts' : 'history',
-          badgeBg: action.toLowerCase().includes('tiáº¿n Ä‘á»™') ? 'bg-blue-50' :
-                   action.toLowerCase().includes('chi') || action.toLowerCase().includes('lÆ°Æ¡ng') || action.toLowerCase().includes('há»£p Ä‘á»“ng') ? 'bg-emerald-50' :
-                   action.toLowerCase().includes('kho') || action.toLowerCase().includes('váº­t tÆ°') ? 'bg-amber-50' :
-                   action.toLowerCase().includes('há»“ sÆ¡') ? 'bg-violet-50' : 'bg-slate-50',
-          iconColor: action.toLowerCase().includes('tiáº¿n Ä‘á»™') ? 'text-blue-500' :
-                     action.toLowerCase().includes('chi') || action.toLowerCase().includes('lÆ°Æ¡ng') || action.toLowerCase().includes('há»£p Ä‘á»“ng') ? 'text-emerald-500' :
-                     action.toLowerCase().includes('kho') || action.toLowerCase().includes('váº­t tÆ°') ? 'text-amber-500' :
-                     action.toLowerCase().includes('há»“ sÆ¡') ? 'text-violet-500' : 'text-slate-500',
+          icon,
+          badgeBg,
+          iconColor,
         };
-        const nextLogs = [newLog, ...state.activityLogs].slice(0, 100);
+        const nextLogs = [optimisticLog, ...state.activityLogs].slice(0, 100);
         persistAndNotify({ activityLogs: nextLogs });
         return { activityLogs: nextLogs };
       });
+
+      // Lưu vào DB không đồng bộ (fire-and-forget)
+      api.activityLogs.create({ user, action, project, icon, badgeBg, iconColor })
+        .then((saved) => {
+          // Thay thế bản optimistic bằng bản từ DB (có ID thật)
+          set((state) => {
+            const nextLogs = state.activityLogs.map((l) =>
+              l.action === action && l.user === user && l.id.startsWith('act-')
+                ? { ...l, id: saved.id, timestamp: saved.timestamp }
+                : l
+            );
+            return { activityLogs: nextLogs };
+          });
+        })
+        .catch((e) => console.warn('logActivity: failed to persist to DB', e));
     },
   };
 });

@@ -19,6 +19,7 @@ const formatMaterialPlan = (p: any) => ({
   contractVolume: Number(p.contract_volume),
   techSpecModel: p.tech_spec_model,
   techSpecOrigin: p.tech_spec_origin,
+  techSpecStatus: p.tech_spec_status,
   progressStatus: p.progress_status,
   orderedVolume: Number(p.ordered_volume),
   orderedStatus: p.ordered_status,
@@ -31,6 +32,7 @@ const formatMaterialPlan = (p: any) => ({
   dispatchToSite: p.dispatch_to_site,
   dispatchDate: p.dispatch_date,
   notes: p.notes,
+  parentId: p.parent_id,
 });
 
 const formatPurchasing = (p: any) => ({
@@ -55,6 +57,7 @@ const formatPurchasing = (p: any) => ({
   paymentDate: p.payment_date,
   invoiceStatus: p.invoice_status,
   notes: p.notes,
+  parentId: p.parent_id,
 });
 
 // --- MATERIAL PLANS ---
@@ -62,8 +65,16 @@ export const getMaterialPlans = async (req: Request, res: Response) => {
   try {
     const plans = await prisma.projectMaterialPlan.findMany({
       include: { project: true },
-      orderBy: { created_at: 'desc' }
+      orderBy: [
+        { project_id: 'asc' },
+        { parent_id: 'asc' },
+        { created_at: 'asc' }
+      ]
     });
+    // NOTE: do NOT sort in-memory here. The DB order (created_at asc) preserves the
+    // original Excel layout where each section header is followed by its own items;
+    // re-sorting (sections first, then items by numeric stt) breaks that hierarchy
+    // and makes the UI group every item under the last section.
     const formatted = plans.map(formatMaterialPlan);
     res.json(formatted);
   } catch (error) { res.status(500).json({ error: 'Failed to fetch material plans' }); }
@@ -71,7 +82,7 @@ export const getMaterialPlans = async (req: Request, res: Response) => {
 
 export const createMaterialPlan = async (req: Request, res: Response) => {
   try {
-    const { projectCode, jobContent, contractVolume, orderedVolume, expectedDate, dispatchDate, docCO, docCQ, docFireInspection, dispatchToSite, ...data } = req.body;
+    const { projectCode, jobContent, contractVolume, orderedVolume, expectedDate, dispatchDate, docCO, docCQ, docCo, docCq, docFireInspection, dispatchToSite, ...data } = req.body;
     const project_id = await resolveProjectId(projectCode);
     if (!project_id) return res.status(400).json({ error: 'Invalid projectCode' });
 
@@ -84,18 +95,20 @@ export const createMaterialPlan = async (req: Request, res: Response) => {
         contract_volume: contractVolume || 0,
         tech_spec_model: data.techSpecModel || '',
         tech_spec_origin: data.techSpecOrigin || '',
+        tech_spec_status: data.techSpecStatus || '',
         progress_status: data.progressStatus || '',
         ordered_volume: orderedVolume || 0,
         ordered_status: data.orderedStatus || '',
         expected_date: expectedDate ? new Date(expectedDate) : null,
         issue_content: data.issueContent || '',
         issue_status: data.issueStatus || '',
-        doc_co: docCO || false,
-        doc_cq: docCQ || false,
+        doc_co: (docCo !== undefined ? docCo : docCO) || false,
+        doc_cq: (docCq !== undefined ? docCq : docCQ) || false,
         doc_fire_inspection: docFireInspection || false,
         dispatch_to_site: dispatchToSite || false,
         dispatch_date: dispatchDate ? new Date(dispatchDate) : null,
         notes: data.notes || '',
+        parent_id: data.parentId || null,
       },
       include: { project: true }
     });
@@ -109,7 +122,7 @@ export const createMaterialPlan = async (req: Request, res: Response) => {
 export const updateMaterialPlan = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { projectCode, jobContent, contractVolume, orderedVolume, expectedDate, dispatchDate, docCO, docCQ, docFireInspection, dispatchToSite, ...data } = req.body;
+    const { projectCode, jobContent, contractVolume, orderedVolume, expectedDate, dispatchDate, docCO, docCQ, docCo, docCq, docFireInspection, dispatchToSite, ...data } = req.body;
     
     const updateData: any = {};
     if (jobContent !== undefined) updateData.job_content = jobContent;
@@ -117,15 +130,18 @@ export const updateMaterialPlan = async (req: Request, res: Response) => {
     if (orderedVolume !== undefined) updateData.ordered_volume = orderedVolume;
     if (expectedDate !== undefined) updateData.expected_date = expectedDate ? new Date(expectedDate) : null;
     if (dispatchDate !== undefined) updateData.dispatch_date = dispatchDate ? new Date(dispatchDate) : null;
-    if (docCO !== undefined) updateData.doc_co = docCO;
-    if (docCQ !== undefined) updateData.doc_cq = docCQ;
+    const actualDocCo = docCo !== undefined ? docCo : docCO;
+    const actualDocCq = docCq !== undefined ? docCq : docCQ;
+    if (actualDocCo !== undefined) updateData.doc_co = actualDocCo;
+    if (actualDocCq !== undefined) updateData.doc_cq = actualDocCq;
     if (docFireInspection !== undefined) updateData.doc_fire_inspection = docFireInspection;
     if (dispatchToSite !== undefined) updateData.dispatch_to_site = dispatchToSite;
     if (data.stt !== undefined) updateData.stt = data.stt;
     if (data.unit !== undefined) updateData.unit = data.unit;
     if (data.techSpecModel !== undefined) updateData.tech_spec_model = data.techSpecModel;
     if (data.techSpecOrigin !== undefined) updateData.tech_spec_origin = data.techSpecOrigin;
-    if (data.progressStatus !== undefined) updateData.progress_status = data.progressStatus;
+    if (data.techSpecStatus !== undefined) updateData.tech_spec_status = data.techSpecStatus;
+    if (data.progressStatus !== undefined) updateData.progress_status = String(data.progressStatus);
     if (data.orderedStatus !== undefined) updateData.ordered_status = data.orderedStatus;
     if (data.issueContent !== undefined) updateData.issue_content = data.issueContent;
     if (data.issueStatus !== undefined) updateData.issue_status = data.issueStatus;
@@ -157,7 +173,7 @@ export const getPurchasings = async (req: Request, res: Response) => {
   try {
     const data = await prisma.projectPurchasing.findMany({
       include: { project: true },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'asc' }
     });
     const formatted = data.map(formatPurchasing);
     res.json(formatted);
@@ -187,9 +203,10 @@ export const createPurchasing = async (req: Request, res: Response) => {
         remaining_amount: remainingAmount || 0,
         order_status: orderStatus || '',
         contract_status: contractStatus || '',
-        invoice_status: invoiceStatus || '',
         payment_date: paymentDate ? new Date(paymentDate) : null,
+        invoice_status: invoiceStatus || '',
         notes: data.notes || '',
+        parent_id: data.parentId || null,
       },
       include: { project: true }
     });
@@ -244,7 +261,7 @@ export const getExpenses = async (req: Request, res: Response) => {
   try {
     const data = await prisma.projectExpense.findMany({
       include: { project: true },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'asc' }
     });
     const formatted = data.map(p => ({
       id: p.id,
@@ -341,7 +358,7 @@ export const getPayrolls = async (req: Request, res: Response) => {
   try {
     const data = await prisma.laborPayroll.findMany({
       include: { project: true },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'asc' }
     });
     const formatted = data.map(p => ({
       id: p.id,
@@ -440,44 +457,50 @@ export const deletePayroll = async (req: Request, res: Response) => {
 
 
 // --- DOCUMENT TRACKS ---
+const formatDocumentTrack = (p: any) => ({
+  id: p.id,
+  projectId: p.project_id || '',
+  projectCode: p.project?.code || '',
+  projectName: p.project?.name || '',
+  stt: p.stt,
+  contractNo: p.contract_no,
+  contractName: p.contract_name,
+  company: p.company,
+  receiverName: p.receiver_name,
+  phone: p.phone,
+  address: p.address,
+  sendDate: p.send_date,
+  receiveDate: p.receive_date,
+  docStatus: p.doc_status,
+  side: p.side,
+  contractValue: Number(p.contract_value),
+  prepayPercent: Number(p.prepay_percent),
+  prepayAmount: Number(p.prepay_amount),
+  paymentStatus: p.payment_status,
+  isCompleted: p.is_completed,
+  notes: p.notes
+});
+
 export const getDocumentTracks = async (req: Request, res: Response) => {
   try {
     const data = await prisma.documentTrack.findMany({
       include: { project: true },
-      orderBy: { created_at: 'desc' }
+      orderBy: [{ send_date: 'asc' }, { created_at: 'asc' }]
     });
-    const formatted = data.map(p => ({
-      id: p.id,
-      projectId: p.project_id,
-      projectCode: p.project?.code || '',
-      projectName: p.project?.name || '',
-      stt: p.stt,
-      contractNo: p.contract_no,
-      contractName: p.contract_name,
-      company: p.company,
-      receiverName: p.receiver_name,
-      phone: p.phone,
-      address: p.address,
-      sendDate: p.send_date,
-      receiveDate: p.receive_date,
-      docStatus: p.doc_status,
-      side: p.side,
-      contractValue: Number(p.contract_value),
-      prepayPercent: Number(p.prepay_percent),
-      prepayAmount: Number(p.prepay_amount),
-      paymentStatus: p.payment_status,
-      isCompleted: p.is_completed,
-      notes: p.notes
-    }));
-    res.json(formatted);
+    data.sort((a, b) => {
+      const aNum = Number(String(a.stt || '').replace(/\D/g, ''));
+      const bNum = Number(String(b.stt || '').replace(/\D/g, ''));
+      if (Number.isFinite(aNum) && Number.isFinite(bNum) && aNum !== bNum) return aNum - bNum;
+      return String(a.stt || '').localeCompare(String(b.stt || ''), 'vi');
+    });
+    res.json(data.map(formatDocumentTrack));
   } catch (error) { res.status(500).json({ error: 'Failed to fetch document tracks' }); }
 };
 
 export const createDocumentTrack = async (req: Request, res: Response) => {
   try {
     const { projectCode, sendDate, receiveDate, contractValue, prepayPercent, prepayAmount, isCompleted, contractNo, contractName, receiverName, paymentStatus, ...data } = req.body;
-    const project_id = await resolveProjectId(projectCode);
-    if (!project_id) return res.status(400).json({ error: 'Invalid projectCode' });
+    const project_id = projectCode ? await resolveProjectId(projectCode) : null;
 
     const p = await prisma.documentTrack.create({
       data: {
@@ -502,7 +525,7 @@ export const createDocumentTrack = async (req: Request, res: Response) => {
       },
       include: { project: true }
     });
-    res.status(201).json(p);
+    res.status(201).json(formatDocumentTrack(p));
   } catch (error) { res.status(500).json({ error: 'Failed to create document track' }); }
 };
 
@@ -512,6 +535,7 @@ export const updateDocumentTrack = async (req: Request, res: Response) => {
     const { projectCode, sendDate, receiveDate, contractValue, prepayPercent, prepayAmount, isCompleted, contractNo, contractName, receiverName, paymentStatus, ...data } = req.body;
     
     const updateData: any = {};
+    if (projectCode !== undefined) updateData.project_id = projectCode ? await resolveProjectId(projectCode) : null;
     if (data.stt !== undefined) updateData.stt = data.stt;
     if (contractNo !== undefined) updateData.contract_no = contractNo;
     if (contractName !== undefined) updateData.contract_name = contractName;
@@ -535,7 +559,7 @@ export const updateDocumentTrack = async (req: Request, res: Response) => {
       data: updateData,
       include: { project: true }
     });
-    res.json(p);
+    res.json(formatDocumentTrack(p));
   } catch (error) { res.status(500).json({ error: 'Failed to update document track' }); }
 };
 
