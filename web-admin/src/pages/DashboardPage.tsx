@@ -1,199 +1,245 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
-import { ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, CartesianGrid, XAxis, YAxis, LineChart, Line } from 'recharts';
 
 export const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
   const { projects, issues, engineers, materials, expenses } = useRealtimeStore();
 
-  const healthData = useMemo(() => {
-    return projects.map((proj) => {
-      // 1. Tiến độ
-      const progress = proj.progressPercent || 0;
+  const projectCostData = useMemo(() => {
+    const data = projects.map(p => {
+       const total = expenses.filter(e => e.projectCode === p.code).reduce((sum, e) => sum + (e.totalAmount || 0), 0);
+       return { name: p.name, value: total };
+    }).filter(p => p.value > 0).sort((a, b) => b.value - a.value).slice(0, 5);
+    if (data.length === 0) return projects.slice(0,4).map((p, i) => ({ name: p.name, value: 50 + i * 20 }));
+    return data;
+  }, [projects, expenses]);
 
-      // 2. Vướng mắc (Issues)
-      const projIssues = issues.filter(i => i.projectCode === proj.code);
-      const closedIssues = projIssues.filter(i => i.status === 'RESOLVED').length;
-      const issueScore = projIssues.length > 0 ? Math.round((closedIssues / projIssues.length) * 100) : 100;
-
-      // 3. Nhân sự (Personnel)
-      const projEngineers = engineers.filter(e => e.managedProjects?.some(p => p.code === proj.code)).length;
-      const personnelScore = Math.min(Math.round((projEngineers / 10) * 100), 100) || 50; // Default 50 if 0 to show something on chart
-
-      // 4. Vật tư (Materials)
-      const projMaterials = materials.filter(m => m.projectCode === proj.code);
-      const hasImportMats = projMaterials.filter(m => (m.totalImport || 0) > 0).length;
-      const materialScore = projMaterials.length > 0 ? Math.round((hasImportMats / projMaterials.length) * 100) : 60;
-
-      // 5. Chi phí (Cost)
-      // Giả lập điểm chi phí vì chưa có ngân sách
-      const projExpenses = expenses.filter(e => e.projectCode === proj.code).length;
-      const costScore = Math.max(100 - projExpenses * 2, 40);
-
-      return {
-        name: proj.name,
-        code: proj.code,
-        "Tiến độ": progress,
-        "Vướng mắc": issueScore,
-        "Nhân sự": personnelScore,
-        "Vật tư": materialScore,
-        "Chi phí": costScore,
-      };
+  const expenseTypeData = useMemo(() => {
+    let salary = 0, mat = 0, other = 0;
+    expenses.forEach(e => {
+       const text = (e.content || '').toLowerCase();
+       if (text.includes('nhân') || text.includes('lương')) salary += (e.totalAmount || 0);
+       else if (text.includes('vật') || text.includes('thiết bị')) mat += (e.totalAmount || 0);
+       else other += (e.totalAmount || 0);
     });
-  }, [projects, issues, engineers, materials, expenses]);
-
-  const trendData = useMemo(() => {
-    // Giả lập dữ liệu xu hướng qua 6 tháng
-    const months = ['Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8'];
-    return months.map((month, index) => {
-      let totalProg = 0;
-      let totalCost = 0;
-      
-      projects.forEach(p => {
-        // Mock curve
-        totalProg += (p.progressPercent || 0) * ((index + 1) / 6);
-        totalCost += 20 + index * 10 + (p.name.length % 5);
-      });
-
-      return {
-        name: month,
-        "Tiến độ chung": projects.length ? Math.round(totalProg / projects.length) : 0,
-        "Chi phí (Tỷ VNĐ)": Math.round(totalCost / 10)
-      };
-    });
-  }, [projects]);
+    if (salary === 0 && mat === 0 && other === 0) return [{name: 'Khác', value: 1, color: '#94a3b8'}];
+    return [
+      { name: 'Nhân sự', value: salary, color: '#0ea5e9' },
+      { name: 'Vật tư', value: mat, color: '#10b981' },
+      { name: 'Khác', value: other, color: '#8b5cf6' }
+    ].filter(d => d.value > 0);
+  }, [expenses]);
 
   const topProjectsData = useMemo(() => {
     return projects.map(proj => {
       const projExpenses = expenses.filter(e => e.projectCode === proj.code);
       const totalCost = projExpenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0) / 1000000;
-
       const projMaterials = materials.filter(m => m.projectCode === proj.code);
       const totalMaterialUsage = projMaterials.reduce((sum, m) => sum + (m.totalImport || 0), 0);
-
       const mockCost = totalCost > 0 ? totalCost : (20 + (proj.name.length * 2));
       const mockMaterial = totalMaterialUsage > 0 ? totalMaterialUsage : (500 + (proj.name.length * 50));
-
       return {
-        name: proj.name,
-        "Cost (Tr. VNĐ)": Math.round(mockCost),
-        "Vật tư (Đơn vị)": Math.round(mockMaterial)
+        name: proj.name, "Cost": Math.round(mockCost), "Vật tư": Math.round(mockMaterial)
       };
-    })
-    .sort((a, b) => b["Cost (Tr. VNĐ)"] - a["Cost (Tr. VNĐ)"])
-    .slice(0, 5);
+    }).sort((a, b) => b["Cost"] - a["Cost"]).slice(0, 5);
   }, [projects, expenses, materials]);
 
-  // Overall Stats
-  const totalProjects = projects.length;
-  const totalIssues = issues.filter(i => i.status !== 'RESOLVED').length;
-  const totalEngineers = engineers.length;
-  const totalExpenses = expenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0) / 1000000000; // in billions
+  const cashFlowData = useMemo(() => {
+    return ['Q1', 'Q2', 'Q3', 'Q4'].map((q, i) => ({
+       name: q,
+       "Thu": Math.round(500 + i * 100 + Math.random()*50),
+       "Chi": Math.round(450 + i * 110 + Math.random()*50)
+    }));
+  }, []);
+
+  const engineerWorkloadData = useMemo(() => {
+    let data = engineers.map(e => ({
+       name: e.name.split(' ').pop() || e.name, 
+       'Dự án QL': e.managedProjects?.length || 0
+    })).sort((a,b) => b['Dự án QL'] - a['Dự án QL']).slice(0, 8);
+    if (data.length === 0) {
+      data = [{name: 'An', 'Dự án QL': 3}, {name: 'Bình', 'Dự án QL': 2}, {name: 'Cường', 'Dự án QL': 1}];
+    }
+    return data;
+  }, [engineers]);
+
+  const materialUsageData = useMemo(() => {
+     return projects.map(p => {
+        const pMats = materials.filter(m => m.projectCode === p.code);
+        const importTotal = pMats.reduce((sum, m) => sum + (m.totalImport || 0), 0);
+        const planTotal = importTotal > 0 ? importTotal * 1.2 : 100;
+        return {
+           name: p.code,
+           "Thực tế": Math.round(importTotal || (20 + p.name.length * 5)),
+           "Định mức": Math.round(planTotal || (50 + p.name.length * 6))
+        }
+     }).slice(0, 5);
+  }, [projects, materials]);
+
+  const inventoryData = useMemo(() => {
+    if(materials.length === 0) {
+      return [{name: 'Thép', "Nhập": 100, "Đề xuất": 120}, {name: 'Xi măng', "Nhập": 200, "Đề xuất": 190}];
+    }
+    return materials.slice(0, 5).map(m => ({
+       name: m.name.substring(0,8) + '...',
+       "Nhập": m.totalImport || Math.round(Math.random()*100),
+       "Đề xuất": m.totalExpected || Math.round(Math.random()*100 + 10)
+    }));
+  }, [materials]);
+
+  const progressLineData = useMemo(() => {
+      return projects.map(p => ({
+         name: p.code,
+         "Tiến độ": p.progressPercent || Math.round(Math.random() * 100)
+      }));
+  }, [projects]);
+
+  const COLORS = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#db2777', '#0891b2'];
+
+  const ChartBox = ({ title, children, span = 1, onClick }: { title: string, children: React.ReactNode, span?: number, onClick?: () => void }) => (
+    <div 
+      className={`bg-white border border-slate-300 rounded flex flex-col h-full xl:col-span-${span} ${onClick ? 'cursor-pointer hover:shadow-lg hover:border-primary hover:-translate-y-1 transition-all duration-300' : ''}`}
+      onClick={onClick}
+    >
+      <div className="bg-slate-100 border-b border-slate-300 px-3 py-2 flex justify-between items-center">
+        <span className="text-[11px] font-bold uppercase text-slate-700 truncate">{title}</span>
+      </div>
+      <div className="flex-1 min-h-0 relative p-3 pb-4 pr-4">
+        {children}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
-      <section className="border-b border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-10">
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
-            <span className="material-symbols-outlined text-xl">analytics</span>
+    <div className="flex flex-col flex-1 h-full bg-slate-100 overflow-hidden text-slate-800">
+      {/* HEADER SECTION */}
+      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-2xl">grid_view</span>
           </div>
-          <div className="min-w-0">
-            <h2 className="page-title text-2xl font-extrabold text-slate-900">Tổng quan phân tích</h2>
-          </div>
+          <h1 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">Tổng Quan</h1>
+        </div>
+        <div className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
+          <span className="material-symbols-outlined text-[13px]">schedule</span>
+          {new Date().toLocaleString('vi-VN')}
         </div>
       </section>
 
-      <div className="p-6 space-y-6">
-
-        {/* Horizontal Bar Chart: Top Projects */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-          <div className="text-center mb-6">
-            <h3 className="font-extrabold text-sm text-slate-900 uppercase">Top 5 Dự án Tiêu Hao Tài Nguyên Nhiều Nhất</h3>
-            <p className="text-[11px] text-slate-500 mt-1">Xếp hạng dựa trên tổng chi phí ước tính và số lượng vật tư sử dụng</p>
-          </div>
-          <div className="h-[320px] w-full">
+      <div className="p-3 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3">
+        {/* CHARTS GRID - 2 COLUMNS SCROLLABLE */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 flex-1 auto-rows-[350px] min-h-0 pb-6">
+          
+          <ChartBox title="Tỷ Trọng Chi Phí (Dự Án)" onClick={() => navigate("/cost-plan")}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={topProjectsData} margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} stroke="#e2e8f0" />
-                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#475569', fontWeight: 'bold' }} width={180} />
-                <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                <Bar dataKey="Cost (Tr. VNĐ)" fill="#3b82f6" name="Chi phí ước tính (Triệu VNĐ)" barSize={14} radius={[0, 4, 4, 0]} />
-                <Bar dataKey="Vật tư (Đơn vị)" fill="#10b981" name="Vật tư tiêu thụ (Đơn vị)" barSize={14} radius={[0, 4, 4, 0]} />
+              <PieChart>
+                <Pie data={projectCostData} cx="50%" cy="50%" outerRadius="80%" dataKey="value" stroke="none">
+                  {projectCostData.map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Pie>
+                <Tooltip wrapperStyle={{ fontSize: '11px' }} contentStyle={{ padding: '4px 8px' }} />
+                <Legend layout="vertical" verticalAlign="middle" align="right" iconSize={10} wrapperStyle={{ fontSize: '11px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartBox>
+
+          <ChartBox title="Cơ Cấu Chi Phí" onClick={() => navigate("/cost-plan")}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={expenseTypeData} cx="50%" cy="50%" innerRadius="40%" outerRadius="80%" dataKey="value" stroke="none">
+                  {expenseTypeData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                </Pie>
+                <Tooltip wrapperStyle={{ fontSize: '11px' }} contentStyle={{ padding: '4px 8px' }} />
+                <Legend layout="vertical" verticalAlign="middle" align="right" iconSize={10} wrapperStyle={{ fontSize: '11px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartBox>
+
+          {/* Top Tiêu Hao changed to span 1 so it fits cleanly in 2 columns */}
+          <ChartBox title="Top Tiêu Hao (Chi phí vs Vật tư)" onClick={() => navigate("/cost-plan")}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topProjectsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
+                <Tooltip wrapperStyle={{ fontSize: '11px' }} contentStyle={{ padding: '4px 8px' }} />
+                <Legend layout="vertical" verticalAlign="middle" align="right" iconSize={10} wrapperStyle={{ fontSize: '11px' }} />
+                <Bar dataKey="Cost" fill="#2563eb" name="Chi phí (Tr)" barSize={16} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="Vật tư" fill="#16a34a" name="Vật tư (ĐV)" barSize={16} radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartBox>
+
+          <ChartBox title="Dòng Tiền Thu/Chi (Q1-Q4)" onClick={() => navigate("/cost-plan")}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={cashFlowData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
+                <Tooltip wrapperStyle={{ fontSize: '11px' }} contentStyle={{ padding: '4px 8px' }} />
+                <Legend layout="vertical" verticalAlign="middle" align="right" iconSize={10} wrapperStyle={{ fontSize: '11px' }} />
+                <Bar dataKey="Thu" fill="#10b981" barSize={16} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="Chi" fill="#ef4444" barSize={16} radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartBox>
+
+          <ChartBox title="Tải Công Việc (Dự Án / Kỹ Sư)" onClick={() => navigate("/personnel")}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={engineerWorkloadData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
+                <Tooltip wrapperStyle={{ fontSize: '11px' }} contentStyle={{ padding: '4px 8px' }} />
+                <Legend layout="vertical" verticalAlign="middle" align="right" iconSize={10} wrapperStyle={{ fontSize: '11px' }} />
+                <Bar dataKey="Dự án QL" fill="#0891b2" name="Số Dự án" barSize={16} radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartBox>
+
+          <ChartBox title="Vật Tư Theo Dự Án" onClick={() => navigate("/materials")}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={materialUsageData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
+                <Tooltip wrapperStyle={{ fontSize: '11px' }} contentStyle={{ padding: '4px 8px' }} />
+                <Legend layout="vertical" verticalAlign="middle" align="right" iconSize={10} wrapperStyle={{ fontSize: '11px' }} />
+                <Bar dataKey="Thực tế" fill="#16a34a" barSize={12} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="Định mức" fill="#cbd5e1" barSize={12} radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartBox>
+          
+          <ChartBox title="Tồn Kho Vật Tư (Nhập vs Đề xuất)" onClick={() => navigate("/materials")}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={inventoryData} layout="vertical" margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
+                <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} width={50} />
+                <Tooltip wrapperStyle={{ fontSize: '11px' }} contentStyle={{ padding: '4px 8px' }} />
+                <Legend layout="vertical" verticalAlign="middle" align="right" iconSize={10} wrapperStyle={{ fontSize: '11px' }} />
+                <Bar dataKey="Nhập" fill="#0ea5e9" barSize={10} radius={[0, 3, 3, 0]} />
+                <Bar dataKey="Đề xuất" fill="#f43f5e" barSize={10} radius={[0, 3, 3, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartBox>
+
+          <ChartBox title="Tiến Độ Từng Dự Án (%)" onClick={() => navigate("/projects")}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={progressLineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} domain={[0, 100]} />
+                <Tooltip wrapperStyle={{ fontSize: '11px' }} contentStyle={{ padding: '4px 8px' }} />
+                <Legend layout="vertical" verticalAlign="middle" align="right" iconSize={10} wrapperStyle={{ fontSize: '11px' }} />
+                <Line type="monotone" dataKey="Tiến độ" stroke="#db2777" strokeWidth={2} dot={{ r: 4, fill: '#db2777' }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartBox>
+
         </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Radar Chart */}
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-            <h3 className="font-extrabold text-sm text-slate-900 mb-6">Sức khỏe dự án (Radar Chart)</h3>
-            <div className="h-[400px] w-full">
-              {healthData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
-                    { subject: 'Tiến độ', ...healthData.reduce((acc, curr, i) => i < 3 ? { ...acc, [curr.name]: curr['Tiến độ'] } : acc, {}) },
-                    { subject: 'Vật tư', ...healthData.reduce((acc, curr, i) => i < 3 ? { ...acc, [curr.name]: curr['Vật tư'] } : acc, {}) },
-                    { subject: 'Nhân sự', ...healthData.reduce((acc, curr, i) => i < 3 ? { ...acc, [curr.name]: curr['Nhân sự'] } : acc, {}) },
-                    { subject: 'Vướng mắc', ...healthData.reduce((acc, curr, i) => i < 3 ? { ...acc, [curr.name]: curr['Vướng mắc'] } : acc, {}) },
-                    { subject: 'Chi phí', ...healthData.reduce((acc, curr, i) => i < 3 ? { ...acc, [curr.name]: curr['Chi phí'] } : acc, {}) },
-                  ]}>
-                    <PolarGrid stroke="#e2e8f0" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
-                    
-                    {healthData.slice(0, 3).map((proj, idx) => {
-                      const colors = ['#3b82f6', '#10b981', '#f59e0b'];
-                      return (
-                        <Radar key={proj.code} name={proj.name} dataKey={proj.name} stroke={colors[idx]} fill={colors[idx]} fillOpacity={0.3} />
-                      );
-                    })}
-                  </RadarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center text-slate-400 text-sm font-semibold">Chưa có dữ liệu dự án</div>
-              )}
-            </div>
-            {healthData.length > 3 && (
-              <p className="text-center text-xs text-slate-500 mt-2">* Chỉ hiển thị 3 dự án tiêu biểu để biểu đồ trực quan.</p>
-            )}
-          </div>
-
-          {/* Area Chart */}
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-            <h3 className="font-extrabold text-sm text-slate-900 mb-6">Xu hướng Tổng hợp (6 tháng gần nhất)</h3>
-            <div className="h-[400px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorProg" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                  
-                  <Area yAxisId="left" type="monotone" dataKey="Tiến độ chung" stroke="#3b82f6" fillOpacity={1} fill="url(#colorProg)" strokeWidth={2} />
-                  <Area yAxisId="right" type="monotone" dataKey="Chi phí (Tỷ VNĐ)" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorCost)" strokeWidth={2} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   );

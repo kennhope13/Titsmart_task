@@ -1205,7 +1205,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       }));
       sheetName = 'TheoDoiChungTu';
     } else {
-      return; // No export for Overview
+      return;
     }
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -1271,7 +1271,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
       {/* TABS SELECTOR */}
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1 shadow-xs border-x">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 overflow-x-auto">
           {[
             { id: 'MATERIAL_PLAN', label: 'Kế Hoạch Vật Tư', icon: 'list_alt' },
             { id: 'PURCHASING', label: 'Mua hàng (nhà thầu)', icon: 'shopping_bag' },
@@ -1353,8 +1353,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       </div>
 
       {/* TAB CONTENTS */}
-      <div className="bg-white border-x border-b border-slate-200 shadow-xs overflow-hidden flex-1">
-        
+      <div className="bg-white border-x border-b border-slate-200 shadow-xs overflow-hidden flex-1 relative flex flex-col">
         {/* MATERIAL PLAN TAB */}
         {activeTab === 'MATERIAL_PLAN' && (
           <MaterialPlanTab
