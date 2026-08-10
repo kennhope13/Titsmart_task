@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -33,3 +36,11 @@ jobs:
         name: TITSMART-Setup-Windows
         path: web-admin/release/*.exe
         retention-days: 7
+        
+    - name: Publish to GitHub Releases
+      uses: softprops/action-gh-release@v2
+      with:
+        name: 🚀 Phiên bản mới nhất (Latest)
+        tag_name: latest
+        files: web-admin/release/*.exe
+        fail_on_unmatched_files: false
