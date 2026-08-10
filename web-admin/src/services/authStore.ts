@@ -73,10 +73,22 @@ interface AuthStoreState {
 export const useAuthStore = create<AuthStoreState>((set) => ({
   user: loadSession(),
   login: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    let { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
+
+    // Auto-register if user doesn't exist
+    if (error && error.message.includes('Invalid login credentials')) {
+      const signUpRes = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
+      if (!signUpRes.error && signUpRes.data.user) {
+        data = signUpRes.data;
+        error = null;
+      }
+    }
 
     if (error) {
       console.error('Supabase login error:', error.message);
