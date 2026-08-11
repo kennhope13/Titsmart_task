@@ -159,7 +159,7 @@ interface RealtimeStoreState {
   fetchFieldLogs: () => Promise<void>;
 
   // Actions
-  addTask: (task: Omit<Task, 'id'>) => void;
+  addTask: (task: Omit<Task, 'id'>) => Promise<string | undefined>;
   addTasksBatch: (tasks: Omit<Task, 'id'>[]) => Promise<void>;
   updateTask: (id: string, updatedFields: Partial<Task>) => void;
   updateTaskProgress: (id: string, progress: number, isDone: boolean) => void;
@@ -193,7 +193,7 @@ interface RealtimeStoreState {
   updateMaterialPlan: (id: string, fields: Partial<ProjectMaterialPlan>) => Promise<void>;
   deleteMaterialPlan: (id: string) => void;
 
-  addPurchasingPlan: (plan: Omit<ProjectPurchasing, 'id'>) => Promise<void>;
+  addPurchasingPlan: (plan: Omit<ProjectPurchasing, 'id'>) => Promise<string | undefined>;
   updatePurchasingPlan: (id: string, fields: Partial<ProjectPurchasing>) => void;
   deletePurchasingPlan: (id: string) => void;
 
@@ -608,8 +608,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { tasks: nextTasks, projects: nextProjects };
         });
         get().logActivity('Đã tạo thủ công hạng mục công việc: ' + createdTask.name, createdTask.projectName || createdTask.projectCode);
+        return createdTask.id;
       } catch (e) {
         console.error('Failed to add task', e);
+        return undefined;
       }
     },
 
@@ -1076,8 +1078,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ purchasingPlans: nextPurs });
           return { purchasingPlans: nextPurs };
         });
+        return created.id;
       } catch (e) {
         console.error('Failed to add purchasing plan', e);
+        return undefined;
       }
     },
 

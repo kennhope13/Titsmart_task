@@ -790,7 +790,7 @@ export const TaskManagementPage: React.FC = () => {
     setIsSectionHeader(false);
     triggerToast('Đ trch dữ liệu phụ lục vo form thm hạng mục. Kiểm tra lại trước khi lưu.', 'success');
   };
-  const handleCreateTask = (e: React.FormEvent) => {
+  const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
@@ -811,7 +811,7 @@ export const TaskManagementPage: React.FC = () => {
     // Validate rằng parentId thực sự tồn tại trong tasks array (tránh FK error)
     const validatedParentId = taskParentId && tasks.find(t => t.id === taskParentId) ? taskParentId : undefined;
 
-    addTask({
+    const newTaskId = await addTask({
       stt: taskStt,
       code: `TSK-${Date.now()}`,
       name,
@@ -860,6 +860,9 @@ export const TaskManagementPage: React.FC = () => {
           normalizeVn(finalSectionName).includes('chu dau tu cung cap') || normalizeVn(finalSectionName).includes('ben a cung cap');
 
         // Nếu chưa có section này trong MaterialPlan, tạo section trước
+        let sectionMaterialId = sectionInMaterial?.id;
+        let sectionPurchasingId: string | undefined = undefined;
+
         if (!sectionInMaterial && finalSectionName) {
           const sectionCount = materialPlans.filter(
             m => m.projectCode === projectCode &&
@@ -871,7 +874,7 @@ export const TaskManagementPage: React.FC = () => {
                  (t.sectionName === finalSectionName || t.name === finalSectionName)
           );
           const sectionStt = sectionTask?.stt || toRoman(sectionCount + 1);
-          addMaterialPlan({
+          sectionMaterialId = await addMaterialPlan({
             projectCode,
             stt: sectionStt,
             jobContent: finalSectionName,
@@ -885,7 +888,7 @@ export const TaskManagementPage: React.FC = () => {
           });
           if (!sectionIsOwner) {
             // Đồng bộ section header sang Mua hàng
-            addPurchasingPlan({
+            sectionPurchasingId = await addPurchasingPlan({
               projectCode,
               stt: sectionStt,
               content: finalSectionName,
@@ -909,12 +912,14 @@ export const TaskManagementPage: React.FC = () => {
         }
 
         // Tìm section cha trong PurchasingPlan theo sectionName
-        const sectionInPurchasing = purchasingPlans.find(
-          p => p.projectCode === projectCode &&
-               (String(p.notes || '').toLowerCase().includes('[section]') ||
-                /^[IVXLCDM]+$/i.test(String(p.stt || '').trim())) &&
-               p.content?.trim().toLowerCase() === finalSectionName.trim().toLowerCase()
-        );
+        const sectionInPurchasing = sectionPurchasingId 
+          ? { id: sectionPurchasingId } 
+          : purchasingPlans.find(
+              p => p.projectCode === projectCode &&
+                   (String(p.notes || '').toLowerCase().includes('[section]') ||
+                    /^[IVXLCDM]+$/i.test(String(p.stt || '').trim())) &&
+                   p.content?.trim().toLowerCase() === finalSectionName.trim().toLowerCase()
+            );
 
         // (Các biến sectionIsContractor và sectionIsOwner đã được định nghĩa ở trên)
 
@@ -936,7 +941,7 @@ export const TaskManagementPage: React.FC = () => {
         const itemSupplyScope: 'contractor' | 'unknown' = sectionIsContractor ? 'contractor' : 'unknown';
 
         // Tạo item trong MaterialPlan, gắn parentId vào item cha (nếu có) thay vì section header
-        addMaterialPlan({
+        await addMaterialPlan({
           projectCode,
           stt: taskStt,
           jobContent: name,
@@ -947,12 +952,12 @@ export const TaskManagementPage: React.FC = () => {
           orderedStatus: 'Chưa đặt hàng',
           supplyScope: itemSupplyScope,
           notes: itemNotes,
-          parentId: parentMaterialPlan?.id || sectionInMaterial?.id,
+          parentId: parentMaterialPlan?.id || sectionMaterialId,
         });
 
         if (!sectionIsOwner) {
           // Tạo PurchasingPlan cho mọi hạng mục (trừ hạng mục của chủ đầu tư)
-          addPurchasingPlan({
+          await addPurchasingPlan({
             projectCode,
             stt: taskStt,
             content: name,
@@ -990,7 +995,7 @@ export const TaskManagementPage: React.FC = () => {
              m.jobContent?.trim().toLowerCase() === name.trim().toLowerCase()
       );
       if (!existingSection) {
-        addMaterialPlan({
+        await addMaterialPlan({
           projectCode,
           stt: taskStt,
           jobContent: name,
@@ -1003,7 +1008,7 @@ export const TaskManagementPage: React.FC = () => {
           notes: '[section]',
         });
         // Đồng bộ section header sang Mua hàng
-        addPurchasingPlan({
+        await addPurchasingPlan({
           projectCode,
           stt: taskStt,
           content: name,
