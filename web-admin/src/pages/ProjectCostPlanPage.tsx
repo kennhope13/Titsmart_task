@@ -905,7 +905,34 @@ export const ProjectCostPlanPage: React.FC = () => {
   );
 
   const currentProjPurchasing = useMemo(() => {
-    return purchasingPlans.filter((plan) => plan.projectCode === selectedProject && plan.content?.trim());
+    let projectPurchasing = purchasingPlans.filter((plan) => plan.projectCode === selectedProject && plan.content?.trim());
+    
+    // Sắp xếp các hạng mục theo thứ tự gốc (order) để đảm bảo các dòng con nằm ngay dưới dòng cha (section)
+    const getOrder = (notes: string) => {
+      const m = String(notes || '').match(/\[order:([\d.]+)\]/);
+      return m ? parseFloat(m[1]) : 999999;
+    };
+    projectPurchasing.sort((a, b) => getOrder(a.notes || '') - getOrder(b.notes || ''));
+
+    // Lọc bỏ các section "Chủ đầu tư cung cấp" (owner) và toàn bộ các hạng mục con bên trong nó
+    let currentIsOwnerSection = false;
+    projectPurchasing = projectPurchasing.filter(plan => {
+       const isSection = String(plan.notes || '').toLowerCase().includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(plan.stt || '').trim());
+       
+       if (isSection) {
+         const content = String(plan.content || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+         if (content.includes('chu dau tu cung cap') || content.includes('ben a cung cap')) {
+            currentIsOwnerSection = true;
+         } else {
+            currentIsOwnerSection = false;
+         }
+       }
+       
+       // Nếu đang nằm trong vùng của section chủ đầu tư, thì loại bỏ (ẩn khỏi tab Mua hàng)
+       return !currentIsOwnerSection;
+    });
+
+    return projectPurchasing;
   }, [purchasingPlans, selectedProject]);
 
   // Tự động đồng bộ các hạng mục do nhà thầu cung cấp sang tab Mua hàng (chạy ngầm, không gây treo máy nhờ debounce)
