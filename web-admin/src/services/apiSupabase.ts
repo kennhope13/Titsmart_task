@@ -203,17 +203,7 @@ export const api = {
       return toCamelCase(result);
     },
   },
-  fieldLogs: {
-    getAll: async (projectCode?: string) => {
-      return []; // Chưa tạo bảng fieldLogs
-    },
-    create: async (data: any) => {
-      return { success: true };
-    },
-    delete: async (id: string) => {
-      return { success: true };
-    },
-  },
+
   accounting: {
     getMaterialPlans: async () => {
       const { data, error } = await supabase.from('material_plans').select('*');
