@@ -244,16 +244,12 @@ export const api = {
     },
     createPurchasing: async (data: any) => {
       const payload = toSnakeCase(data);
-      delete payload.material_plan_id;
-      delete payload.parent_id;
       const { data: result, error } = await supabase.from('purchasing_plans').insert(payload).select().single();
       if (error) throw error;
       return toCamelCase(result);
     },
     updatePurchasing: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
-      delete payload.material_plan_id;
-      delete payload.parent_id;
       const { data: result, error } = await supabase.from('purchasing_plans').update(payload).eq('id', id).select().single();
       if (error) throw error;
       return toCamelCase(result);
