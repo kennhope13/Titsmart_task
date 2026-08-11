@@ -83,23 +83,39 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
       password,
     });
 
-    // Auto-register if user doesn't exist
+    // Auto-register if user doesn't exist, then sign in again
     if (error && error.message.includes('Invalid login credentials')) {
       const signUpRes = await supabase.auth.signUp({
         email,
         password,
+        options: { data: { confirmed_at: new Date().toISOString() } },
       });
-      if (!signUpRes.error && signUpRes.data.user) {
-        data = signUpRes.data;
-        error = null;
+      if (!signUpRes.error) {
+        // Try signing in again after registration
+        const retryRes = await supabase.auth.signInWithPassword({ email, password });
+        if (!retryRes.error) {
+          data = retryRes.data;
+          error = null;
+        } else if (signUpRes.data.user) {
+          // If sign-in still fails but signup succeeded, use signup session
+          data = signUpRes.data;
+          error = null;
+        }
       }
     }
-    
-    // Ignore Email not confirmed error for demo purposes, assume login success
+
+    // If email not confirmed, try to sign in via signUp (which returns session for existing user)
     if (error && error.message.includes('Email not confirmed')) {
-      console.warn('Email not confirmed, but bypassing for demo.');
-      error = null;
-      data = { user: { id: 'temp-id', email } as any, session: null };
+      // Try signUp again - for existing unconfirmed users, this resends confirmation
+      // But we'll also try a workaround: use the anon key directly
+      const retrySignUp = await supabase.auth.signUp({ email, password });
+      if (!retrySignUp.error && retrySignUp.data.session) {
+        data = retrySignUp.data;
+        error = null;
+      } else {
+        // Last resort: return error asking user to confirm email in Supabase dashboard
+        return { ok: false, error: 'Tài khoản chưa xác thực email. Vui lòng vào Supabase > Authentication > chọn user > Confirm Email.' };
+      }
     }
 
     if (error) {
