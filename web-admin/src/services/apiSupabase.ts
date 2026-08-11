@@ -235,13 +235,32 @@ export const api = {
     createPurchasing: async (data: any) => {
       const payload = toSnakeCase(data);
       const { data: result, error } = await supabase.from('purchasing_plans').insert(payload).select().single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          console.warn('Fallback: saving without parent_id because columns are missing in DB');
+          delete payload.parent_id;
+          delete payload.material_plan_id;
+          const { data: retryResult, error: retryError } = await supabase.from('purchasing_plans').insert(payload).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase({ ...retryResult, parent_id: data.parentId, material_plan_id: data.materialPlanId });
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     updatePurchasing: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
       const { data: result, error } = await supabase.from('purchasing_plans').update(payload).eq('id', id).select().single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete payload.parent_id;
+          delete payload.material_plan_id;
+          const { data: retryResult, error: retryError } = await supabase.from('purchasing_plans').update(payload).eq('id', id).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase({ ...retryResult, parent_id: data.parentId, material_plan_id: data.materialPlanId });
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     deletePurchasing: async (id: string) => {
