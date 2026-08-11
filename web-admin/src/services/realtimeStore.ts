@@ -583,7 +583,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       } catch (e) { console.error('[Accounting] Failed expenses', e); }
 
       try {
-        const laborPayrolls = await api.accounting.getPayrolls();
+        const laborPayrolls = await api.accounting.getLaborPayrolls();
         if (Array.isArray(laborPayrolls)) nextState.laborPayrolls = laborPayrolls;
       } catch (e) { console.error('[Accounting] Failed labor_payrolls', e); }
 
