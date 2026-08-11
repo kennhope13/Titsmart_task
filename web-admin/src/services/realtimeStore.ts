@@ -562,26 +562,39 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     fetchAccounting: async () => {
+      const nextState: any = {};
+
+      // Tải từng bảng độc lập — 1 bảng lỗi không ảnh hưởng bảng khác
       try {
-        const [materialPlans, purchasingPlans, expenses, laborPayrolls, documentTracks] = await Promise.all([
-          api.accounting.getMaterialPlans(),
-          api.accounting.getPurchasings(),
-          api.accounting.getExpenses(),
-          api.accounting.getPayrolls(),
-          api.accounting.getDocumentTracks()
-        ]);
-        
-        const nextState: any = {};
+        const materialPlans = await api.accounting.getMaterialPlans();
         if (Array.isArray(materialPlans)) nextState.materialPlans = materialPlans.map(normalizeMaterialPlan);
+        console.log('[Accounting] Loaded material_plans:', materialPlans?.length || 0);
+      } catch (e) { console.error('[Accounting] Failed material_plans', e); }
+
+      try {
+        const purchasingPlans = await api.accounting.getPurchasings();
         if (Array.isArray(purchasingPlans)) nextState.purchasingPlans = purchasingPlans.map(normalizePurchasingPlan);
+        console.log('[Accounting] Loaded purchasing_plans:', purchasingPlans?.length || 0);
+      } catch (e) { console.error('[Accounting] Failed purchasing_plans', e); }
+
+      try {
+        const expenses = await api.accounting.getExpenses();
         if (Array.isArray(expenses)) nextState.expenses = expenses;
+      } catch (e) { console.error('[Accounting] Failed expenses', e); }
+
+      try {
+        const laborPayrolls = await api.accounting.getPayrolls();
         if (Array.isArray(laborPayrolls)) nextState.laborPayrolls = laborPayrolls;
+      } catch (e) { console.error('[Accounting] Failed labor_payrolls', e); }
+
+      try {
+        const documentTracks = await api.accounting.getDocumentTracks();
         if (Array.isArray(documentTracks)) nextState.documentTracks = documentTracks;
-        
+      } catch (e) { console.error('[Accounting] Failed document_tracks', e); }
+
+      if (Object.keys(nextState).length > 0) {
         set(nextState);
         persistAndNotify(nextState);
-      } catch (e) {
-        console.error('Failed to fetch accounting', e);
       }
     },
 
