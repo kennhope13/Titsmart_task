@@ -920,7 +920,7 @@ export const ProjectCostPlanPage: React.FC = () => {
        const isSection = String(plan.notes || '').toLowerCase().includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(plan.stt || '').trim());
        
        if (isSection) {
-         const content = String(plan.content || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+         const content = String(plan.content || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
          if (content.includes('chu dau tu cung cap') || content.includes('ben a cung cap')) {
             currentIsOwnerSection = true;
          } else {
