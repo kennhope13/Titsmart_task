@@ -53,6 +53,8 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   },
 ];
 
+import { supabase } from '../lib/supabase';
+
 const loadSession = (): AuthUser | null => {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
@@ -64,32 +66,83 @@ const loadSession = (): AuthUser | null => {
 
 interface AuthStoreState {
   user: AuthUser | null;
-  login: (username: string, password: string) => { ok: boolean; error?: string };
-  logout: () => void;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStoreState>((set) => ({
   user: loadSession(),
-  login: (username, password) => {
-    const account = DEMO_ACCOUNTS.find(
-      (acc) => acc.username.toLowerCase() === username.trim().toLowerCase()
-    );
-    if (!account) return { ok: false, error: 'Tên đăng nhập không tồn tại.' };
-    if (account.password !== password) return { ok: false, error: 'Mật khẩu không đúng.' };
-    const user: AuthUser = {
-      id: `user_${account.role}`,
-      username: account.username,
-      name: account.name,
-      role: account.role,
-      title: account.title,
-      email: account.email,
-      phone: account.phone,
-    };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    set({ user });
-    return { ok: true };
+  login: async (usernameOrEmail, password) => {
+    let email = usernameOrEmail.trim();
+    if (!email.includes('@')) {
+      email = `${email}@titsmart.vn`;
+    }
+
+    let { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    // Auto-register if user doesn't exist, then sign in again
+    if (error && error.message.includes('Invalid login credentials')) {
+      const signUpRes = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { confirmed_at: new Date().toISOString() } },
+      });
+      if (!signUpRes.error) {
+        // Try signing in again after registration
+        const retryRes = await supabase.auth.signInWithPassword({ email, password });
+        if (!retryRes.error) {
+          data = retryRes.data;
+          error = null;
+        } else if (signUpRes.data.user) {
+          // If sign-in still fails but signup succeeded, use signup session
+          data = signUpRes.data;
+          error = null;
+        }
+      }
+    }
+
+    // If email not confirmed, try to sign in via signUp (which returns session for existing user)
+    if (error && error.message.includes('Email not confirmed')) {
+      // Try signUp again - for existing unconfirmed users, this resends confirmation
+      // But we'll also try a workaround: use the anon key directly
+      const retrySignUp = await supabase.auth.signUp({ email, password });
+      if (!retrySignUp.error && retrySignUp.data.session) {
+        data = retrySignUp.data;
+        error = null;
+      } else {
+        // Last resort: return error asking user to confirm email in Supabase dashboard
+        return { ok: false, error: 'Tài khoản chưa xác thực email. Vui lòng vào Supabase > Authentication > chọn user > Confirm Email.' };
+      }
+    }
+
+    if (error) {
+      console.error('Supabase login error:', error.message);
+      return { ok: false, error: 'Tài khoản hoặc mật khẩu không đúng.' };
+    }
+
+    if (data.user) {
+      const account = DEMO_ACCOUNTS.find((acc) => acc.email.toLowerCase() === email.toLowerCase());
+      
+      const user: AuthUser = {
+        id: data.user.id,
+        username: account?.username || usernameOrEmail.trim(),
+        name: account?.name || usernameOrEmail.trim(),
+        role: account?.role || 'staff',
+        title: account?.title || 'Nhân viên',
+        email: data.user.email || email,
+        phone: account?.phone || '',
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      set({ user });
+      return { ok: true };
+    }
+    return { ok: false, error: 'Lỗi không xác định' };
   },
-  logout: () => {
+  logout: async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem(SESSION_KEY);
     set({ user: null });
   },

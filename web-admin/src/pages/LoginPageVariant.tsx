@@ -12,7 +12,7 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!username.trim() || !password) {
@@ -20,15 +20,13 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      const result = login(username, password);
-      setLoading(false);
-      if (result.ok) {
-        navigate('/', { replace: true });
-      } else {
-        setError(result.error || 'Đăng nhập thất bại.');
-      }
-    }, 450);
+    const result = await login(username, password);
+    setLoading(false);
+    if (result.ok) {
+      navigate('/', { replace: true });
+    } else {
+      setError(result.error || 'Đăng nhập thất bại.');
+    }
   };
 
   const fillAccount = (account: (typeof DEMO_ACCOUNTS)[number]) => {
@@ -48,7 +46,7 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
         <div className="bg-white rounded-2xl border border-slate-200 shadow-[0_8px_30px_rgba(15,23,42,0.08)] overflow-hidden">
           <div className="px-8 pt-8 pb-6 text-center border-b border-slate-100 bg-gradient-to-b from-blue-50/70 to-white">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="TITSMART" className="w-full h-full object-contain p-1" />
+              <img src="./logo.png" alt="TITSMART" className="w-full h-full object-contain p-1" />
             </div>
             <h1 className="mt-3 text-xl font-extrabold text-primary leading-tight">TITSMART</h1>
             <p className="text-[11px] text-slate-500 font-medium mt-0.5">HỆ THỐNG QUẢN LÝ CÔNG VIỆC & DỰ ÁN</p>

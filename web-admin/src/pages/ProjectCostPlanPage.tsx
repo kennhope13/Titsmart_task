@@ -905,58 +905,35 @@ export const ProjectCostPlanPage: React.FC = () => {
   );
 
   const currentProjPurchasing = useMemo(() => {
-    const projectPurchasing = purchasingPlans.filter((plan) => plan.projectCode === selectedProject);
-    const validIds = new Set<string>();
+    let projectPurchasing = purchasingPlans.filter((plan) => plan.projectCode === selectedProject && plan.content?.trim());
+    
+    // Sắp xếp các hạng mục theo thứ tự gốc (order) để đảm bảo các dòng con nằm ngay dưới dòng cha (section)
+    const getOrder = (notes: string) => {
+      const m = String(notes || '').match(/\[order:([\d.]+)\]/);
+      return m ? parseFloat(m[1]) : 999999;
+    };
+    projectPurchasing.sort((a, b) => getOrder(a.notes || '') - getOrder(b.notes || ''));
 
-    projectPurchasing.forEach(plan => {
-      const matPlan = plan.materialPlanId 
-        ? currentProjMaterialPlans.find(m => m.id === plan.materialPlanId)
-        : currentProjMaterialPlans.find(m => normalizePlanKey(m.stt, m.jobContent) === normalizePlanKey(plan.stt, plan.content));
-        
-      if (matPlan) {
-        if (isEffectiveContractorPlan(matPlan, currentProjMaterialPlans)) {
-          validIds.add(plan.id);
-        }
-      } else {
-        validIds.add(plan.id);
-      }
+    // Lọc bỏ các section "Chủ đầu tư cung cấp" (owner) và toàn bộ các hạng mục con bên trong nó
+    let currentIsOwnerSection = false;
+    projectPurchasing = projectPurchasing.filter(plan => {
+       const isSection = String(plan.notes || '').toLowerCase().includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(plan.stt || '').trim());
+       
+       if (isSection) {
+         const content = String(plan.content || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+         if (content.includes('chu dau tu cung cap') || content.includes('ben a cung cap')) {
+            currentIsOwnerSection = true;
+         } else {
+            currentIsOwnerSection = false;
+         }
+       }
+       
+       // Nếu đang nằm trong vùng của section chủ đầu tư, thì loại bỏ (ẩn khỏi tab Mua hàng)
+       return !currentIsOwnerSection;
     });
 
-    let added;
-    do {
-      added = false;
-      projectPurchasing.forEach(plan => {
-        if (validIds.has(plan.id) && plan.parentId && !validIds.has(plan.parentId)) {
-           validIds.add(plan.parentId);
-           added = true;
-        }
-      });
-    } while (added);
-
-    // Remove empty owner sections that were kept but shouldn't be.
-    // Actually, if it's an owner section and has no children, it won't be in validIds from pass 1
-    // UNLESS it had no matPlan. If it had no matPlan, it was added in pass 1.
-    // Let's ensure owner sections without matPlan are removed if they have no valid children.
-    projectPurchasing.forEach(plan => {
-      if (validIds.has(plan.id) && isSectionMarker(plan.stt, plan.notes)) {
-        const matPlan = plan.materialPlanId 
-          ? currentProjMaterialPlans.find(m => m.id === plan.materialPlanId)
-          : currentProjMaterialPlans.find(m => normalizePlanKey(m.stt, m.jobContent) === normalizePlanKey(plan.stt, plan.content));
-        
-        if (!matPlan) {
-          const content = String(plan.content || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-          if (content.includes('chu dau tu cung cap') || content.includes('ben a cung cap')) {
-             const hasValidChild = projectPurchasing.some(p => p.parentId === plan.id && validIds.has(p.id));
-             if (!hasValidChild) {
-                validIds.delete(plan.id);
-             }
-          }
-        }
-      }
-    });
-
-    return projectPurchasing.filter(plan => validIds.has(plan.id));
-  }, [purchasingPlans, selectedProject, currentProjMaterialPlans]);
+    return projectPurchasing;
+  }, [purchasingPlans, selectedProject]);
 
   // Tự động đồng bộ các hạng mục do nhà thầu cung cấp sang tab Mua hàng (chạy ngầm, không gây treo máy nhờ debounce)
   useEffect(() => {

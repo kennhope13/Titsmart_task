@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { useRealtimeStore } from './services/realtimeStore';
+import { useRealtimeStore, setupRealtimeSync } from './services/realtimeStore';
 import { useAuthStore } from './services/authStore';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/LoginPage';
@@ -55,6 +55,8 @@ export const App: React.FC = () => {
     fetchActivityLogs();
     fetchAccounting();
     fetchFieldLogs();
+    // Bật đồng bộ Realtime giữa các thiết bị
+    setupRealtimeSync();
   }, [user]);
 
   return (

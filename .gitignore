@@ -1,1 +1,14 @@
 .aider*
+node_modules/
+web-admin/node_modules/
+web-admin/release/
+web-admin/dist/
+backend/node_modules/
+mobile-app/node_modules/
+*.exe
+*.dll
+*.asar
+*.bin
+.env
+.env.local
+.env.production

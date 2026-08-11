@@ -65,7 +65,7 @@ export const Sidebar: React.FC = () => {
       <div className="relative p-5 flex items-center justify-between gap-3 border-b border-slate-100">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-xs flex-shrink-0 overflow-hidden bg-white">
-            <img src="/logo.png" alt="TITSMART" className="w-full h-full object-contain p-0.5" />
+            <img src="./logo.png" alt="TITSMART" className="w-full h-full object-contain p-0.5" />
           </div>
           <div className="min-w-0">
             <h1 className="font-bold text-base text-primary leading-tight truncate">TITSMART</h1>
@@ -163,11 +163,9 @@ export const Sidebar: React.FC = () => {
                 : 'hover:bg-slate-50'
             }`}
           >
-            <img
-              src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80"
-              alt="Avatar quản lý"
-              className="w-10 h-10 rounded-full object-cover border border-slate-200 flex-shrink-0"
-            />
+            <div className="w-10 h-10 rounded-full border border-slate-200 flex-shrink-0 flex items-center justify-center font-bold text-lg text-white bg-blue-600 uppercase shadow-sm">
+              {(user?.name || 'A').charAt(0)}
+            </div>
             <div className="min-w-0 text-left leading-tight flex-1">
               <span className="block font-bold text-xs text-slate-800 truncate">{user?.name || 'Admin'}</span>
               <span className="block text-[10px] text-slate-500 truncate">{user?.title || 'Quản trị viên'}</span>
