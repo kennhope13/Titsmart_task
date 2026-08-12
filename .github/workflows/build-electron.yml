@@ -2,8 +2,6 @@ name: Build Electron App (Windows)
 
 on:
   push:
-    branches: [ "**" ]
-  pull_request:
     branches: [ "main" ]
 
 permissions:
@@ -26,21 +24,36 @@ jobs:
       working-directory: ./web-admin
       run: npm install
 
+    - name: Get App Version
+      id: version
+      working-directory: ./web-admin
+      run: Write-Output ("version=" + (node -p "require('./package.json').version")) >> $env:GITHUB_ENV
+
     - name: Build Electron App
       working-directory: ./web-admin
       run: npm run build:electron
 
-    - name: Upload Windows Installer (.exe)
+    - name: Upload Build Artifacts (.exe + update files)
       uses: actions/upload-artifact@v4
       with:
         name: TITSMART-Setup-Windows
-        path: web-admin/release/*.exe
+        path: |
+          web-admin/release/*.exe
+          web-admin/release/*.exe.blockmap
+          web-admin/release/latest.yml
         retention-days: 7
-        
+
     - name: Publish to GitHub Releases
       uses: softprops/action-gh-release@v2
       with:
-        name: 🚀 Phiên bản mới nhất (Latest)
-        tag_name: latest
-        files: web-admin/release/*.exe
+        name: TITSMART Project Manager v${{ env.VERSION }}
+        tag_name: v${{ env.VERSION }}
+        body: |
+          Phiên bản **v${{ env.VERSION }}** — TITSMART Project Manager
+          Build và phát hành tự động từ GitHub Actions.
+        files: |
+          web-admin/release/*.exe
+          web-admin/release/*.exe.blockmap
+          web-admin/release/latest.yml
+        update_release: true
         fail_on_unmatched_files: false

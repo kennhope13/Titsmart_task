@@ -437,7 +437,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         const importAppendixWorkbook = () => {
           let appendixMaterialCount = 0;
           let appendixPurchasingCount = 0;
-          const purchasingPromises: Promise<void>[] = [];
+          const purchasingPromises: Promise<string | undefined>[] = [];
           const materialPromises: Promise<any>[] = [];
 
           const findAppendixHeaderRow = (rows: any[][]) => {

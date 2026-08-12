@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sidebar } from './Sidebar';
+import { UpdateNotifier } from '../common/UpdateNotifier';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="ml-60 flex flex-col h-screen flex-1 overflow-hidden">
         <main className="flex-1 bg-slate-50 flex flex-col w-full max-w-full overflow-hidden">{children}</main>
       </div>
+      <UpdateNotifier />
     </div>
   );
 };

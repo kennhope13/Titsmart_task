@@ -15,6 +15,13 @@ export default defineConfig({
           electron({
             main: {
               entry: 'electron/main.ts',
+              vite: {
+                build: {
+                  rollupOptions: {
+                    external: ['electron-updater'],
+                  },
+                },
+              },
             },
             preload: {
               input: 'electron/preload.ts',

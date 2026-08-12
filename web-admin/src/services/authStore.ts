@@ -78,10 +78,12 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
       email = `${email}@titsmart.vn`;
     }
 
-    let { data, error } = await supabase.auth.signInWithPassword({
+    const signInRes = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    let data: any = signInRes.data;
+    let error = signInRes.error;
 
     // Auto-register if user doesn't exist, then sign in again
     if (error && error.message.includes('Invalid login credentials')) {

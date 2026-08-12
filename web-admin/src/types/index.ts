@@ -71,6 +71,7 @@ export interface Material {
   currentStock?: number;
   totalImport?: number;
   totalExport?: number;
+  totalExpected?: number;
   category?: string;
   specs?: string;
   notes?: string;

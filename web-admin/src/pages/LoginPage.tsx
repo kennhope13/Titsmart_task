@@ -25,8 +25,8 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      const result = login(username, password);
+    setTimeout(async () => {
+      const result = await login(username, password);
       setLoading(false);
       if (result.ok) {
         navigate('/', { replace: true });

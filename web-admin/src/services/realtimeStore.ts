@@ -1152,7 +1152,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     addLaborPayroll: async (payrollData) => {
       try {
-        const created = normalizeLaborPayroll(await api.accounting.createPayroll(payrollData));
+        const created = normalizeLaborPayroll(await api.accounting.createLaborPayroll(payrollData));
         set((state) => {
           const nextPayrolls = [created, ...state.laborPayrolls];
           persistAndNotify({ laborPayrolls: nextPayrolls });
@@ -1165,7 +1165,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateLaborPayroll: async (id, fields) => {
       try {
-        const updated = normalizeLaborPayroll(await api.accounting.updatePayroll(id, fields));
+        const updated = normalizeLaborPayroll(await api.accounting.updateLaborPayroll(id, fields));
         set((state) => {
           const nextPayrolls = state.laborPayrolls.map((l) => (l.id === id ? updated : l));
           persistAndNotify({ laborPayrolls: nextPayrolls });
@@ -1178,7 +1178,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     deleteLaborPayroll: async (id) => {
       try {
-        await api.accounting.deletePayroll(id);
+        await api.accounting.deleteLaborPayroll(id);
         set((state) => {
           const nextPayrolls = state.laborPayrolls.filter((l) => l.id !== id);
           persistAndNotify({ laborPayrolls: nextPayrolls });

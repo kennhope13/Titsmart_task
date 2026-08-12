@@ -19,5 +19,5 @@ Khi người dùng muốn tạo "đầu mục lớn" (section header / parent it
 
 ## Kiểm tra
 
-- [ ] 9. Chạy TypeScript build để đảm bảo không có lỗi
+- [x] 9. Chạy TypeScript build để đảm bảo không có lỗi
 - [ ] 10. Kiểm tra luồng: Tạo đầu mục cha → chọn nó trong dropdown → thêm đầu mục nhỏ bên trong

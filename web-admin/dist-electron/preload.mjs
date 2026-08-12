@@ -1,10 +1,1 @@
-"use strict";
-const electron = require("electron");
-electron.contextBridge.exposeInMainWorld("electronAPI", {
-  on: (channel, callback) => {
-    electron.ipcRenderer.on(channel, (_, data) => callback(data));
-  },
-  send: (channel, data) => {
-    electron.ipcRenderer.send(channel, data);
-  }
-});
+"use strict";const e=require("electron");e.contextBridge.exposeInMainWorld("electronAPI",{on:(d,n)=>{e.ipcRenderer.on(d,(t,r)=>n(r))},send:(d,n)=>{e.ipcRenderer.send(d,n)},onUpdateStatus:d=>{e.ipcRenderer.on("update:status",(n,t)=>d(t))},checkForUpdates:()=>e.ipcRenderer.send("update:check"),downloadUpdate:()=>e.ipcRenderer.send("update:download"),installUpdate:()=>e.ipcRenderer.send("update:install")});
