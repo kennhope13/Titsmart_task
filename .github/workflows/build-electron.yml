@@ -31,26 +31,9 @@ jobs:
       working-directory: ./web-admin
       run: Write-Output ("version=" + (node -p "require('./package.json').version")) >> $env:GITHUB_ENV
 
-    - name: Build Electron App (with retry)
+    - name: Build Electron App
       working-directory: ./web-admin
-      shell: pwsh
-      run: |
-        $attempts = 0
-        $ok = $false
-        while (-not $ok -and $attempts -lt 4) {
-          $attempts++
-          Write-Host "==> Build attempt $attempts/4"
-          npm run build:electron
-          $ok = $LASTEXITCODE -eq 0
-          if (-not $ok) {
-            Write-Host "Build failed (EPERM may be Windows Defender locking extracted files). Cleaning and waiting before retry..."
-            Start-Sleep -Seconds 20
-            Remove-Item -Recurse -Force release -ErrorAction SilentlyContinue
-            Start-Sleep -Seconds 10
-          }
-        }
-        if (-not $ok) { exit 1 }
-        Write-Host "Build succeeded"
+      run: npm run build:electron -- --publish never
 
     - name: Upload Build Artifacts (.exe + update files)
       uses: actions/upload-artifact@v4
