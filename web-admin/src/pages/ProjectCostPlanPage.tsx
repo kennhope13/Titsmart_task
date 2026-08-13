@@ -500,6 +500,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             parsedRows.forEach((row, index) => {
               const content = String(row[contentCol] || '').trim();
               if (!content) return;
+              if (!/[a-zA-ZÀ-ỹ]/.test(content)) return;
 
               const stt = String(row[sttCol] || '').trim();
               const volumeContract = numVal(row[volumeCol]);
@@ -515,7 +516,12 @@ export const ProjectCostPlanPage: React.FC = () => {
               const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
               const numericParentRegex = /^\d+$/;
               const isRoman = romanRegex.test(stt);
-              const isSection = !stt.includes('.') || romanRegex.test(stt);
+              const cleanStt = String(stt || '').trim().replace(/\.$/, '');
+              const hasNoDot = !cleanStt.includes('.');
+              const startsWithPhan = content.trim().toUpperCase().startsWith('PHẦN ');
+              const cleanUnitVal = String(row[unitCol] || '').replace(/^[-–—_.\s]+$/, '').trim();
+              const hasNoVolumeAndUnit = (volumeContract === 0 || !volumeContract) && (!cleanUnitVal || cleanUnitVal === '');
+              const isSection = startsWithPhan || (hasNoDot && isMainSectionName(content)) || (hasNoDot && hasNoVolumeAndUnit && isRoman);
 
               let effectiveStt = stt;
               if (isSection) {
@@ -786,6 +792,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             rows.slice(startRow).forEach(row => {
               const content = row[1];
               if (!content) return;
+              if (!/[a-zA-ZÀ-ỹ]/.test(content)) return;
 
               const stt = String(row[0] || '');
               const contentStr = String(content);
@@ -868,6 +875,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             rows.slice(startRow).forEach(row => {
               const content = row[2];
               if (!content) return;
+              if (!/[a-zA-ZÀ-ỹ]/.test(content)) return;
               addLaborPayroll({
                 projectCode: selectedProject,
                 stt: String(row[0] || ''),

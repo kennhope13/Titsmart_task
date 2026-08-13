@@ -281,14 +281,8 @@ export const ProjectManagementPage: React.FC = () => {
       let currentSubSectionId: string | undefined = undefined;
       const sttIdMap = new Map<string, string>();
       
-      const isMainSectionName = (name: string): boolean => {
-        const norm = name.toLowerCase();
-        return norm.includes('phần vttb') || 
-               norm.includes('cung cấp') || 
-               norm.includes('chủ đầu tư') || 
-               norm.includes('nhà thầu') || 
-               norm.startsWith('phần ');
-      };
+
+
 
       const tasksWithIds = pendingProjectTasks.map((item, index) => {
         const taskId = crypto.randomUUID();
@@ -316,8 +310,18 @@ export const ProjectManagementPage: React.FC = () => {
         const numericParentRegex = /^\d+$/;
         
         const isRoman = romanRegex.test(sttVal);
+          if (!/[a-zA-ZÀ-ỹ]/.test(item.name || '')) continue;
         const cleanUnitVal = (item.unit || '').replace(/^[-–—_.\s]+$/, '').trim();
-        const isSection = !sttVal.includes('.') || romanRegex.test(sttVal);
+        
+        const isMainSectionName = (name: string): boolean => {
+            const norm = (name || '').toLowerCase();
+            return norm.includes('phần vttb') || norm.includes('cung cấp') || norm.includes('chủ đầu tư') || norm.includes('nhà thầu') || norm.startsWith('phần ') || norm.startsWith('hệ thống ');
+        };
+        const cleanStt = String(sttVal || '').trim().replace(/\.$/, '');
+        const hasNoDot = !cleanStt.includes('.');
+        const startsWithPhan = String(item.name || '').trim().toUpperCase().startsWith('PHẦN ');
+        const hasNoVolumeAndUnit = (item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === '');
+        const isSection = startsWithPhan || (hasNoDot && isMainSectionName(item.name)) || (hasNoDot && hasNoVolumeAndUnit && isRoman);
         
         let parentId = undefined;
         if (isSection) {

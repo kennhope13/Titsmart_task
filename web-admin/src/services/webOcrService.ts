@@ -273,6 +273,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const stt = String(cells[sttCol] || '').trim();
     const name = String(cells[nameCol] || cells.find((cell, cellIndex) => cellIndex !== sttCol && normalizeLookupText(cell) !== 'stt') || '').trim();
     if (!name || isTotalOrNoiseRow(name)) continue;
+    if (!/[a-zA-ZÀ-ỹ]/.test(name)) continue;
     if (normalizeLookupText(stt) === 'stt') continue;
 
     const volume = volumeCol >= 0 ? parseNumberValue(cells[volumeCol] || '') : 0;
@@ -296,7 +297,11 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     // A section header is ONLY a roman numeral if the file has roman numerals, OR if it has [section] in notes.
     const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
     const isRomanSection = romanRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
-    const isSectionHeader = !stt.includes('.');
+    const cleanStt = String(stt || '').trim().replace(/\.$/, '');
+    const hasNoDot = !cleanStt.includes('.');
+    const startsWithPhan = name.trim().toUpperCase().startsWith('PHẦN ');
+    const hasNoVolumeAndUnit = (volume === 0 || !volume) && (!cleanUnitVal || cleanUnitVal === '');
+    const isSectionHeader = startsWithPhan || (hasNoDot && isMainSectionName(name)) || (hasNoDot && hasNoVolumeAndUnit && isRomanSection);
     const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
     
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';

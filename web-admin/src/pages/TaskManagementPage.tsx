@@ -646,6 +646,7 @@ export const TaskManagementPage: React.FC = () => {
 
             const itemName = r[nameCol] || r[sttCol];
             if (!itemName || String(itemName).trim().length === 0) continue;
+            if (!/[a-zA-ZÀ-ỹ]/.test(String(itemName))) continue;
 
             const sttVal = r[sttCol] ? String(r[sttCol]).trim() : '';
             const volVal = volCol >= 0 ? (typeof r[volCol] === 'number' ? r[volCol] : (parseFloat(r[volCol]) || 0)) : 0;
@@ -656,7 +657,12 @@ export const TaskManagementPage: React.FC = () => {
 
             const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
             const cleanUnitVal = unitVal.replace(/^[-–—_.\s]+$/, '').trim();
-            const isSection = !sttVal.includes('.') || romanRegex.test(sttVal);
+            const cleanStt = String(sttVal || '').trim().replace(/\.$/, '');
+            const hasNoDot = !cleanStt.includes('.');
+            const isRoman = romanRegex.test(cleanStt);
+            const startsWithPhan = String(itemName || '').trim().toUpperCase().startsWith('PHẦN ');
+            const hasNoVolumeAndUnit = (volVal === 0 || !volVal) && (!cleanUnitVal || cleanUnitVal === '');
+            const isSection = startsWithPhan || (hasNoDot && isMainSectionName(itemName)) || (hasNoDot && hasNoVolumeAndUnit && isRoman);
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${itemName}`;
@@ -1237,7 +1243,7 @@ export const TaskManagementPage: React.FC = () => {
       };
       
       if (sectionHeader) {
-        flattened.push({ ...sectionHeader, depth: 0, computedStt: toRoman(groupIndex + 1), _sectionKey: sec });
+        flattened.push({ ...sectionHeader, depth: 0, computedStt: sectionHeader.stt || toRoman(groupIndex + 1), _sectionKey: sec });
       }
       flattenTree(roots, sectionHeader ? 1 : 0, '', sec);
     });
