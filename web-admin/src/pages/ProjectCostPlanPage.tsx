@@ -496,7 +496,8 @@ export const ProjectCostPlanPage: React.FC = () => {
 
             const hasPrices = unitPriceCol !== -1 || totalCol !== -1;
 
-            rows.slice(headerRowIndex + 1).forEach((row) => {
+            const parsedRows = rows.slice(headerRowIndex + 1);
+            parsedRows.forEach((row, index) => {
               const content = String(row[contentCol] || '').trim();
               if (!content) return;
 
@@ -514,9 +515,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
               const numericParentRegex = /^\d+$/;
               const isRoman = romanRegex.test(stt);
-              const isSectionRow = isRoman || (numericParentRegex.test(stt) && volumeContract === 0 && !String(row[unitCol] || '').trim());
-              const startsWithPhan = content.trim().startsWith('PHẦN ');
-              const isSection = startsWithPhan || (isSectionRow && isMainSectionName(content));
+              const isSection = !stt.includes('.') || romanRegex.test(stt);
 
               let effectiveStt = stt;
               if (isSection) {
@@ -536,7 +535,14 @@ export const ProjectCostPlanPage: React.FC = () => {
                 currentMainSectionId = rowId;
                 currentSubSectionId = undefined;
               } else {
-                const isSubFolder = isSectionRow || (volumeContract === 0 && !String(row[unitCol] || '').trim()) || content.toLowerCase().trim().startsWith('hệ thống ');
+                let isSubFolder = false;
+                const nextRow = parsedRows[index + 1];
+                if (nextRow) {
+                  const nextStt = String(nextRow[sttCol] || '').trim();
+                  if (nextStt && nextStt.startsWith(stt + '.')) {
+                    isSubFolder = true;
+                  }
+                }
                 if (isSubFolder) {
                   parentId = currentMainSectionId;
                   currentSubSectionId = rowId;

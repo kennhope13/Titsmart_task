@@ -317,16 +317,21 @@ export const ProjectManagementPage: React.FC = () => {
         
         const isRoman = romanRegex.test(sttVal);
         const cleanUnitVal = (item.unit || '').replace(/^[-–—_.\s]+$/, '').trim();
-        const isSectionRow = isRoman || (numericParentRegex.test(sttVal) && (item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === ''));
-        const startsWithPhan = item.name.trim().startsWith('PHẦN ');
-        const isSection = startsWithPhan || (isSectionRow && isMainSectionName(item.name));
+        const isSection = !sttVal.includes('.') || romanRegex.test(sttVal);
         
         let parentId = undefined;
         if (isSection) {
           currentMainSectionId = item.id;
           currentSubSectionId = undefined;
         } else {
-          const isSubFolder = isSectionRow || ((item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === '')) || item.name.toLowerCase().trim().startsWith('hệ thống ');
+          let isSubFolder = false;
+          const nextItem = pendingProjectTasks[index + 1];
+          if (nextItem) {
+            const nextStt = String(nextItem.stt || '').trim();
+            if (nextStt && nextStt.startsWith(sttVal + '.')) {
+              isSubFolder = true;
+            }
+          }
           if (isSubFolder) {
             parentId = currentMainSectionId;
             currentSubSectionId = item.id;

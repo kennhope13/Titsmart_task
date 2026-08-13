@@ -656,10 +656,7 @@ export const TaskManagementPage: React.FC = () => {
 
             const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
             const cleanUnitVal = unitVal.replace(/^[-–—_.\s]+$/, '').trim();
-            const isRoman = romanRegex.test(sttVal);
-            const startsWithPhan = String(itemName || '').trim().startsWith('PHẦN ');
-            const isMainSection = startsWithPhan || (isRoman ? isMainSectionName(itemName) : (!sttVal.includes('.') && volVal === 0 && (!cleanUnitVal || cleanUnitVal === '') && isMainSectionName(itemName)));
-            const isSection = isMainSection;
+            const isSection = !sttVal.includes('.') || romanRegex.test(sttVal);
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${itemName}`;
@@ -680,7 +677,14 @@ export const TaskManagementPage: React.FC = () => {
                currentMainSectionId = taskId;
                currentSubSectionId = undefined;
             } else {
-               const isSubFolder = isRoman || (volVal === 0 && (!cleanUnitVal || cleanUnitVal === '')) || String(itemName || '').toLowerCase().trim().startsWith('hệ thống ');
+               let isSubFolder = false;
+               const nextRow = rows[i + 1];
+               if (nextRow) {
+                 const nextStt = nextRow[sttCol] ? String(nextRow[sttCol]).trim() : '';
+                 if (nextStt && nextStt.startsWith(sttVal + '.')) {
+                   isSubFolder = true;
+                 }
+               }
                if (isSubFolder) {
                  parentId = currentMainSectionId;
                  currentSubSectionId = taskId;

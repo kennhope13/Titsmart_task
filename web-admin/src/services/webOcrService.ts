@@ -296,9 +296,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     // A section header is ONLY a roman numeral if the file has roman numerals, OR if it has [section] in notes.
     const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
     const isRomanSection = romanRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
-    const isSectionRow = isRomanSection || (volume === 0 && (!cleanUnitVal || cleanUnitVal === ''));
-    const startsWithPhan = name.trim().startsWith('PHẦN ');
-    const isSectionHeader = startsWithPhan || (isSectionRow && isMainSectionName(name));
+    const isSectionHeader = !stt.includes('.');
     const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
     
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
@@ -308,7 +306,26 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const supplyScope = explicitSupplyScope !== 'unknown' ? explicitSupplyScope : currentSupplyScope;
     const cleanSectionName = stripSectionPrefix(name);
     
-    const isSubFolder = !isSectionHeader && (isSectionRow || (volume === 0 && (!cleanUnitVal || cleanUnitVal === '')) || name.toLowerCase().trim().startsWith('hệ thống '));
+    // Find next valid row's STT to detect if this is a subfolder with children
+    let isSubFolder = false;
+    if (!isSectionHeader) {
+      let nextSttVal = '';
+      for (let nextIdx = index + 1; nextIdx < rows.length; nextIdx++) {
+        const nextCells = rows[nextIdx];
+        if (!nextCells || !nextCells.length) continue;
+        const nextStt = String(nextCells[sttCol] || '').trim();
+        const nextSttLookup = normalizeLookupText(nextStt).toUpperCase();
+        const nextHasValidStt = romanRegex.test(nextSttLookup) || numericParentRegex.test(nextSttLookup) || decimalItemRegex.test(nextSttLookup);
+        if (nextHasValidStt) {
+          nextSttVal = nextStt;
+          break;
+        }
+      }
+      if (nextSttVal && nextSttVal.startsWith(stt + '.')) {
+        isSubFolder = true;
+      }
+    }
+
     const sectionName = isSectionHeader ? cleanSectionName : currentSection;
 
     if (isSectionHeader) currentSection = sectionName;
