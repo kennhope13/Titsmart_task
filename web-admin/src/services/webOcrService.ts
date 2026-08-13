@@ -306,6 +306,12 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     else if (headerSupplyScope !== 'unknown') currentSupplyScope = headerSupplyScope;
     const supplyScope = explicitSupplyScope !== 'unknown' ? explicitSupplyScope : currentSupplyScope;
     const cleanSectionName = stripSectionPrefix(name);
+    
+    // We update isSectionHeader/isSubFolder logic
+    const startsWithSectionKeyword = name.toLowerCase().trim().startsWith('phần ') && 
+                                     !name.toLowerCase().trim().startsWith('phần mềm') && 
+                                     !name.toLowerCase().trim().startsWith('phần cứng');
+    const isSubFolder = !isSectionHeader && (isSectionRow || (volume === 0 && (!cleanUnitVal || cleanUnitVal === '')) || startsWithSectionKeyword);
     const sectionName = isSectionHeader ? cleanSectionName : currentSection;
 
     if (isSectionHeader) currentSection = sectionName;

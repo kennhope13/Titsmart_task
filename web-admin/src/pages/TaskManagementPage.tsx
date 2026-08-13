@@ -679,7 +679,9 @@ export const TaskManagementPage: React.FC = () => {
                currentMainSectionId = taskId;
                currentSubSectionId = undefined;
             } else {
-               const startsWithSectionKeyword = String(itemName || '').toLowerCase().trim().startsWith('phần ') || String(itemName || '').toLowerCase().trim().startsWith('hệ thống ');
+               const startsWithSectionKeyword = String(itemName || '').toLowerCase().trim().startsWith('phần ') && 
+                                                !String(itemName || '').toLowerCase().trim().startsWith('phần mềm') && 
+                                                !String(itemName || '').toLowerCase().trim().startsWith('phần cứng');
                const isSubFolder = isRoman || (volVal === 0 && (!cleanUnitVal || cleanUnitVal === '')) || startsWithSectionKeyword;
                if (isSubFolder) {
                  parentId = currentMainSectionId;
