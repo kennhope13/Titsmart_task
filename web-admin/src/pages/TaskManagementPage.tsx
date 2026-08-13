@@ -659,7 +659,7 @@ export const TaskManagementPage: React.FC = () => {
             const autoProgress = calculateAutoProgressRatio(rawPurchaseStatus, rawConstrStatus);
             const finalProgress = progressCol >= 0 && rawProgress > 0 ? importedProgress : autoProgress;
             
-            const taskId = `TSK-IMP-${Date.now()}-${i}`;
+            const taskId = crypto.randomUUID();
             if (sttVal) sttIdMap.set(sttVal, taskId);
             
             let parentId = undefined;
@@ -673,6 +673,7 @@ export const TaskManagementPage: React.FC = () => {
             }
 
             importedTasks.push({
+              id: taskId,
               stt: sttVal || `${i - startRow + 1}`,
               code: taskId,
               name: String(itemName).trim(),
