@@ -462,6 +462,19 @@ export const ProjectCostPlanPage: React.FC = () => {
           let romanSectionCounter = 0; // Đếm số đầu mục lớn để chuyển thành số La Mã
           let currentSectionSupplyScope: 'contractor' | 'owner' | 'unknown' = 'unknown'; // Theo dõi supplyScope của section hiện tại cho các hạng mục con
 
+          let currentMainSectionId: string | undefined = undefined;
+          let currentSubSectionId: string | undefined = undefined;
+          const sttIdMap = new Map<string, string>();
+          
+          const isMainSectionName = (name: string): boolean => {
+            const norm = name.toLowerCase();
+            return norm.includes('phần vttb') || 
+                   norm.includes('cung cấp') || 
+                   norm.includes('chủ đầu tư') || 
+                   norm.includes('nhà thầu') || 
+                   norm.startsWith('phần ');
+          };
+
           wb.SheetNames.forEach((sheetName) => {
             const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets[sheetName], { header: 1, defval: '' });
             const headerRowIndex = findAppendixHeaderRow(rows);
@@ -500,25 +513,57 @@ export const ProjectCostPlanPage: React.FC = () => {
 
               const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
               const numericParentRegex = /^\d+$/;
-              const isSectionRow = romanRegex.test(stt) || (numericParentRegex.test(stt) && volumeContract === 0 && !String(row[unitCol] || '').trim());
+              const isRoman = romanRegex.test(stt);
+              const isSectionRow = isRoman || (numericParentRegex.test(stt) && volumeContract === 0 && !String(row[unitCol] || '').trim());
+              const isSection = isSectionRow && isMainSectionName(content);
 
               let effectiveStt = stt;
-              if (isSectionRow) {
+              if (isSection) {
                 romanSectionCounter++;
                 effectiveStt = toRoman(romanSectionCounter);
                 currentSectionSupplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
               }
               
               const rowSupplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
-              const supplyScope = isSectionRow ? currentSectionSupplyScope : (rowSupplyScope !== 'unknown' ? rowSupplyScope : currentSectionSupplyScope);
+              const supplyScope = isSection ? currentSectionSupplyScope : (rowSupplyScope !== 'unknown' ? rowSupplyScope : currentSectionSupplyScope);
+
+              const rowId = crypto.randomUUID();
+              if (stt) sttIdMap.set(stt, rowId);
+
+              let parentId = undefined;
+              if (isSection) {
+                currentMainSectionId = rowId;
+                currentSubSectionId = undefined;
+              } else {
+                const isSubFolder = isSectionRow || (volumeContract === 0 && !String(row[unitCol] || '').trim());
+                if (isSubFolder) {
+                  parentId = currentMainSectionId;
+                  currentSubSectionId = rowId;
+                } else {
+                  let foundDottedParent = false;
+                  if (stt.includes('.')) {
+                    const parts = stt.split('.');
+                    parts.pop();
+                    const parentStt = parts.join('.');
+                    if (sttIdMap.has(parentStt)) {
+                      parentId = sttIdMap.get(parentStt);
+                      foundDottedParent = true;
+                    }
+                  }
+                  if (!foundDottedParent) {
+                    parentId = currentSubSectionId || currentMainSectionId;
+                  }
+                }
+              }
 
               // Lưu thứ tự tuyệt đối vào notes dạng [order:NNN] để sort đúng sau khi load
               const orderTag = `[order:${String(++globalOrder).padStart(5, '0')}]`;
               const rowKey = baselineKey(effectiveStt, content);
-              const baseNote = [isSectionRow ? '[section]' : '', supplyScope === 'contractor' ? '[contractor]' : '', supplyScope === 'owner' ? '[owner]' : '', orderTag, String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
+              const baseNote = [isSection ? '[section]' : '', supplyScope === 'contractor' ? '[contractor]' : '', supplyScope === 'owner' ? '[owner]' : '', orderTag, String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
               const existingMaterial = materialBaselineMap.get(rowKey);
               if (existingMaterial) {
                 updateMaterialPlan(existingMaterial.id, {
+                  parentId: parentId,
                   stt: effectiveStt,
                   jobContent: content,
                   unit: String(row[unitCol] || ''),
@@ -530,6 +575,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                 });
               } else {
                 materialPromises.push(addMaterialPlan({
+                  id: rowId,
+                  parentId: parentId,
                   projectCode: selectedProject,
                   stt: effectiveStt,
                   jobContent: content,
@@ -540,15 +587,16 @@ export const ProjectCostPlanPage: React.FC = () => {
                   progressStatus: 'Chưa thi công',
                   orderedVolume: 0,
                   orderedStatus: 'Chưa đặt hàng',
+                  expectedDate: '',
                   issueContent: '',
                   supplyScope,
                   notes: baseNote,
                 }));
-                materialBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, jobContent: content, unit: String(row[unitCol] || ''), contractVolume: volumeContract } as ProjectMaterialPlan);
+                materialBaselineMap.set(rowKey, { id: rowId, projectCode: selectedProject, stt: effectiveStt, jobContent: content, unit: String(row[unitCol] || ''), contractVolume: volumeContract } as ProjectMaterialPlan);
               }
               appendixMaterialCount++;
 
-              const pushToPurchasing = ((isSectionRow && supplyScope !== 'owner') || supplyScope === 'contractor');
+              const pushToPurchasing = ((isSection && supplyScope !== 'owner') || supplyScope === 'contractor');
 
               if (pushToPurchasing) {
                 const computedVatAmount = vatAmount || (vatRate ? totalBeforeVat * vatRate / 100 : 0);
@@ -557,6 +605,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 const existingPurchasing = purchasingBaselineMap.get(rowKey);
                 if (existingPurchasing) {
                   updatePurchasingPlan(existingPurchasing.id, {
+                    parentId: parentId,
                     stt: effectiveStt,
                     content,
                     unit: String(row[unitCol] || ''),
@@ -570,6 +619,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                   });
                 } else {
                   purchasingPromises.push(addPurchasingPlan({
+                    id: rowId,
+                    parentId: parentId,
                     projectCode: selectedProject,
                     stt: effectiveStt,
                     content,
@@ -588,7 +639,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     invoiceStatus: 'Chưa xuất',
                     notes: baseNote,
                   }));
-                  purchasingBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, content, unit: String(row[unitCol] || ''), volumeContract, volumeOrder: 0, unitPrice, vatRate, vatAmount: computedVatAmount, totalAmount: totalWithVat, prepayPercent: 0, prepayAmount: 0, remainingAmount: totalWithVat, orderStatus: '', contractStatus: '', invoiceStatus: '' } as ProjectPurchasing);
+                  purchasingBaselineMap.set(rowKey, { id: rowId, projectCode: selectedProject, stt: effectiveStt, content, unit: String(row[unitCol] || ''), volumeContract, volumeOrder: 0, unitPrice, vatRate, vatAmount: computedVatAmount, totalAmount: totalWithVat, prepayPercent: 0, prepayAmount: 0, remainingAmount: totalWithVat, orderStatus: '', contractStatus: '', invoiceStatus: '' } as ProjectPurchasing);
                 }
                 appendixPurchasingCount++;
               }
@@ -596,21 +647,23 @@ export const ProjectCostPlanPage: React.FC = () => {
               const existingTask = taskBaselineMap.get(rowKey);
               if (!existingTask) {
                 const projName = projects.find(p => p.code === selectedProject)?.name || selectedProject;
-                const currentSectionName = isSectionRow ? content : (pendingTasks.slice().reverse().find((task) => task.isSectionHeader)?.name || 'Khác');
+                const currentSectionName = isSection ? content : (pendingTasks.slice().reverse().find((task) => task.isSectionHeader)?.name || 'Khác');
                 pendingTasks.push({
+                  id: rowId,
+                  parentId: parentId,
                   stt: effectiveStt,
-                  code: '',
+                  code: rowId,
                   name: content,
                   projectCode: selectedProject,
                   projectName: projName,
-                  volume: isSectionRow ? 0 : volumeContract,
-                  unit: isSectionRow ? '' : String(row[unitCol] || ''),
+                  volume: isSection ? 0 : volumeContract,
+                  unit: isSection ? '' : String(row[unitCol] || ''),
                   progress: 0,
                   status: 'Chưa làm',
-                  purchaseStatus: isSectionRow ? '' : 'Chưa đặt hàng',
-                  constrStatus: isSectionRow ? '' : 'Chưa thi công',
+                  purchaseStatus: isSection ? '' : 'Chưa đặt hàng',
+                  constrStatus: isSection ? '' : 'Chưa thi công',
                   isDone: false,
-                  isSectionHeader: isSectionRow,
+                  isSectionHeader: isSection,
                   sectionName: currentSectionName,
                   notes: baseNote
                 });

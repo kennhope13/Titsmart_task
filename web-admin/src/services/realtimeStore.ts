@@ -189,11 +189,10 @@ interface RealtimeStoreState {
   deleteProject: (id: string) => Promise<void>;
 
   // New Actions
-  addMaterialPlan: (plan: Omit<ProjectMaterialPlan, 'id'>) => Promise<string | undefined>;
+  addMaterialPlan: (plan: Omit<ProjectMaterialPlan, 'id'> & { id?: string }) => Promise<string | undefined>;
   updateMaterialPlan: (id: string, fields: Partial<ProjectMaterialPlan>) => Promise<void>;
-  deleteMaterialPlan: (id: string) => void;
-
-  addPurchasingPlan: (plan: Omit<ProjectPurchasing, 'id'>) => Promise<string | undefined>;
+  deleteMaterialPlan: (id: string) => Promise<void>;
+  addPurchasingPlan: (plan: Omit<ProjectPurchasing, 'id'> & { id?: string }) => Promise<string | undefined>;
   updatePurchasingPlan: (id: string, fields: Partial<ProjectPurchasing>) => void;
   deletePurchasingPlan: (id: string) => void;
 
