@@ -868,6 +868,8 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('MATERIAL_PLAN');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
+  const isSubmittingPlanRef = useRef(false);
   const [statusFilter, setStatusFilter] = useState('ALL');
 
   useEffect(() => {
@@ -938,6 +940,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   // Tự động đồng bộ các hạng mục do nhà thầu cung cấp sang tab Mua hàng (chạy ngầm, không gây treo máy nhờ debounce)
   useEffect(() => {
     if (!selectedProject || currentProjMaterialPlans.length === 0) return;
+    if (isSubmittingPlanRef.current) return;
 
     let isCancelled = false;
     const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
@@ -1343,6 +1346,8 @@ export const ProjectCostPlanPage: React.FC = () => {
             }}
             onAddSubtask={(plan, suggestedStt) => {
               setParentPlanIdForNew(plan.id);
+              const section = getSectionForMaterialPlan(plan, currentProjMaterialPlans);
+              if (section) setSectionPlanIdForNew(section.id);
               setIsCreatingSectionHeader(false);
               setIsNewPlanOpen(true);
               setNewPlanData(prev => ({ ...prev, stt: suggestedStt || '', isContractor: isEffectiveContractorPlan(plan, currentProjMaterialPlans) }));
@@ -1366,6 +1371,18 @@ export const ProjectCostPlanPage: React.FC = () => {
             }}
             onAddSubtask={(plan, suggestedStt) => {
               setParentPurchasingIdForNew(plan.id);
+              const getSectionForPurchasing = (p: ProjectPurchasing, all: ProjectPurchasing[], visited = new Set<string>()): ProjectPurchasing | null => {
+                if (visited.has(p.id)) return null;
+                visited.add(p.id);
+                if (isSectionMarker(p.stt, p.notes)) return p;
+                if (p.parentId) {
+                  const parent = all.find(x => x.id === p.parentId);
+                  if (parent) return getSectionForPurchasing(parent, all, visited);
+                }
+                return null;
+              };
+              const section = getSectionForPurchasing(plan, currentProjPurchasing);
+              if (section) setSectionPurchasingIdForNew(section.id);
               setIsCreatingSectionHeader(false);
               setIsNewPurchasingOpen(true);
               setNewPurchasingData(prev => ({ ...prev, stt: suggestedStt || '' }));
@@ -1586,7 +1603,10 @@ export const ProjectCostPlanPage: React.FC = () => {
             return tags.join(' | ');
           })();
 
-          const createdMaterialId = await addMaterialPlan({
+          setIsSubmittingPlan(true);
+          isSubmittingPlanRef.current = true;
+          try {
+            const createdMaterialId = await addMaterialPlan({
             projectCode: selectedProject,
             stt: autoStt,
             jobContent: newPlanData.jobContent || '',
@@ -1651,7 +1671,6 @@ export const ProjectCostPlanPage: React.FC = () => {
                 remainingAmount: 0,
                 orderStatus: 'Chưa đặt hàng',
                 contractStatus: 'Chưa ký',
-                paymentDate: '',
                 invoiceStatus: 'Chưa xuất',
                 notes: baseNote,
                 parentId: purchasingParentId || undefined
@@ -1722,6 +1741,11 @@ export const ProjectCostPlanPage: React.FC = () => {
             parentId: taskParentId
           });
 
+          } finally {
+            setIsSubmittingPlan(false);
+            isSubmittingPlanRef.current = false;
+          }
+
           // Reset form
           setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true});
 
@@ -1757,7 +1781,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 w-full">
                   <select
                     value={sectionPlanIdForNew || ''}
                     onChange={(e) => {
@@ -1765,7 +1789,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                       setParentPlanIdForNew(null);
                     }}
                     required={!isCreatingSectionHeader}
-                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
+                    className="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
                   >
                     <option value="" disabled>-- Chọn Đầu mục cha --</option>
                     {currentProjMaterialPlans.filter(p => isSectionMarker(p.stt, p.notes)).map(sec => (
@@ -2091,8 +2115,11 @@ export const ProjectCostPlanPage: React.FC = () => {
           }
           const isContractor = resolvedSupplyScope === 'contractor' || (resolvedSupplyScope === 'unknown');
 
-          addMaterialPlan({
-            projectCode: selectedProject,
+          setIsSubmittingPlan(true);
+          isSubmittingPlanRef.current = true;
+          try {
+            await addMaterialPlan({
+              projectCode: selectedProject,
             stt: autoStt,
             jobContent: newPurchasingData.content || '',
             unit: newPurchasingData.unit || 'bộ',
@@ -2150,7 +2177,8 @@ export const ProjectCostPlanPage: React.FC = () => {
             }
           }
 
-          addTask({
+          // Await so that the `isSubmittingPlanRef` stays true until both are done
+          await addTask({
             stt: autoStt,
             code: '',
             name: newPurchasingData.content || '',
@@ -2169,7 +2197,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             parentId: taskParentId
           });
 
-          addPurchasingPlan({
+          await addPurchasingPlan({
             projectCode: selectedProject,
             stt: autoStt,
             content: newPurchasingData.content || '',
@@ -2185,11 +2213,16 @@ export const ProjectCostPlanPage: React.FC = () => {
             remainingAmount: remainingAmt,
             orderStatus: newPurchasingData.orderStatus || 'Chưa đặt hàng',
             contractStatus: newPurchasingData.contractStatus || 'Chưa ký',
-            paymentDate: newPurchasingData.paymentDate || '',
+            ...(newPurchasingData.paymentDate ? { paymentDate: newPurchasingData.paymentDate } : {}),
             invoiceStatus: newPurchasingData.invoiceStatus || 'Chưa xuất',
             notes: isCreatingSectionHeader && !parentId ? '[section]' : newPurchasingData.notes || '',
             parentId: parentId || undefined
           });
+
+          } finally {
+            setIsSubmittingPlan(false);
+            isSubmittingPlanRef.current = false;
+          }
 
           // Reset form
           setNewPurchasingData({stt: '', content: '', unit: 'bộ', volumeContract: 1, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''});
@@ -2226,7 +2259,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 w-full">
                   <select
                     value={sectionPurchasingIdForNew || ''}
                     onChange={(e) => {
@@ -2234,7 +2267,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                       setParentPurchasingIdForNew(null);
                     }}
                     required={!isCreatingSectionHeader}
-                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
+                    className="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
                   >
                     <option value="" disabled>-- Chọn Đầu mục cha --</option>
                     {currentProjPurchasing.filter(p => isSectionMarker(p.stt, p.notes)).map(sec => (

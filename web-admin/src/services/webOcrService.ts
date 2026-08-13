@@ -279,8 +279,19 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const numericParentRegex = /^\d+$/;
     const decimalItemRegex = /^\d+(?:\.\d+)+$/;
     const hasValidStt = romanRegex.test(sttLookup) || numericParentRegex.test(sttLookup) || decimalItemRegex.test(sttLookup);
+    
+    // Bỏ qua các dòng không có STT hợp lệ (như dòng Thuế VAT, Tiền thuế...)
     if (!hasValidStt) continue;
-    const isSectionHeader = romanRegex.test(sttLookup) || (numericParentRegex.test(sttLookup) && volume === 0 && !unit);
+    
+    const cleanUnitVal = unit.replace(/^[-–—_.\s]+$/, '').trim();
+    // A section header is ONLY a roman numeral if the file has roman numerals, OR if it has [section] in notes.
+    const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
+    const isRomanSection = romanRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
+    const isLevel2Item = !isRomanSection && volume === 0 && (!cleanUnitVal || cleanUnitVal === '');
+    
+    // We only treat it as a folder (isSectionHeader) if it's a roman section.
+    const isSectionHeader = isRomanSection;
+    
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
     const headerSupplyScope = isSectionHeader ? detectSupplyScope(rowText) : 'unknown';
     if (explicitSupplyScope !== 'unknown') currentSupplyScope = explicitSupplyScope;
@@ -297,7 +308,6 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
       : effectiveSupplyScope === 'contractor'
         ? 'Nh\u00e0 th\u1ea7u cung c\u1ea5p'
         : '';
-    const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
 
     let effectiveStt = stt;
     if (isSectionHeader) {
@@ -306,7 +316,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     }
 
     parsedTasks.push({
-      stt: isSectionHeader ? effectiveStt : (stt || String(parsedTasks.length + 1)),
+      stt: isSectionHeader ? effectiveStt : stt,
       name,
       volume: isSectionHeader ? 0 : volume,
       unit: isSectionHeader ? '' : unit,
@@ -319,7 +329,46 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
       vatAmount: isSectionHeader ? 0 : vatAmount,
       totalBeforeVat: isSectionHeader ? 0 : totalBeforeVat,
       totalAmount: isSectionHeader ? 0 : totalAmount,
-    });
+      // We temporarily store a flag to help with STT post-processing
+      _isLevel2: isLevel2Item
+    } as any);
+  }
+
+  // POST-PROCESSING: Generate hierarchical STTs for non-header items
+  let currentLevel2 = 0;
+  let currentLevel3 = 0;
+  let lastSection = '';
+  
+  for (const task of parsedTasks) {
+    if (task.isSectionHeader) {
+      currentLevel2 = 0;
+      currentLevel3 = 0;
+      lastSection = task.sectionName;
+      continue;
+    }
+    
+    // If we changed sections implicitly (shouldn't happen but just in case)
+    if (task.sectionName !== lastSection) {
+      currentLevel2 = 0;
+      currentLevel3 = 0;
+      lastSection = task.sectionName;
+    }
+    
+    const anyTask = task as any;
+    if (anyTask._isLevel2) {
+      currentLevel2++;
+      currentLevel3 = 0;
+      task.stt = String(currentLevel2);
+    } else {
+      currentLevel3++;
+      // If there was no level 2 before this, just use the item counter
+      if (currentLevel2 === 0) {
+        task.stt = String(currentLevel3);
+      } else {
+        task.stt = `${currentLevel2}.${currentLevel3}`;
+      }
+    }
+    delete anyTask._isLevel2;
   }
 
   return parsedTasks;
