@@ -287,10 +287,8 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     // A section header is ONLY a roman numeral if the file has roman numerals, OR if it has [section] in notes.
     const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
     const isRomanSection = romanRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
-    const isLevel2Item = !isRomanSection && volume === 0 && (!cleanUnitVal || cleanUnitVal === '');
-    
-    // We only treat it as a folder (isSectionHeader) if it's a roman section.
-    const isSectionHeader = isRomanSection;
+    const isSectionHeader = isRomanSection || (volume === 0 && (!cleanUnitVal || cleanUnitVal === ''));
+    const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
     
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
     const headerSupplyScope = isSectionHeader ? detectSupplyScope(rowText) : 'unknown';
