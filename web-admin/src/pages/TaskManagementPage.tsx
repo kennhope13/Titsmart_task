@@ -627,6 +627,7 @@ export const TaskManagementPage: React.FC = () => {
           const isDoneCol = getColIdx(headerRow, ['hoan thanh', 'da xong'], -1);
 
           let currentSection = 'Mục chung';
+          const sttIdMap = new Map<string, string>();
 
           for (let i = startRow; i < rows.length; i++) {
             const r = rows[i];
@@ -644,7 +645,8 @@ export const TaskManagementPage: React.FC = () => {
 
             const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
             const cleanUnitVal = unitVal.replace(/^[-–—_.\s]+$/, '').trim();
-            const isSection = romanRegex.test(sttVal) || (volVal === 0 && (!cleanUnitVal || cleanUnitVal === ''));
+            const isTopLevelFolder = !sttVal.includes('.') && volVal === 0 && (!cleanUnitVal || cleanUnitVal === '');
+            const isSection = romanRegex.test(sttVal) || isTopLevelFolder;
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${itemName}`;
@@ -656,10 +658,23 @@ export const TaskManagementPage: React.FC = () => {
             const importedProgress = rawProgress > 1 ? rawProgress / 100 : rawProgress;
             const autoProgress = calculateAutoProgressRatio(rawPurchaseStatus, rawConstrStatus);
             const finalProgress = progressCol >= 0 && rawProgress > 0 ? importedProgress : autoProgress;
+            
+            const taskId = `TSK-IMP-${Date.now()}-${i}`;
+            if (sttVal) sttIdMap.set(sttVal, taskId);
+            
+            let parentId = undefined;
+            if (sttVal.includes('.')) {
+              const parts = sttVal.split('.');
+              parts.pop();
+              const parentStt = parts.join('.');
+              if (sttIdMap.has(parentStt)) {
+                parentId = sttIdMap.get(parentStt);
+              }
+            }
 
             importedTasks.push({
               stt: sttVal || `${i - startRow + 1}`,
-              code: `TSK-IMP-${Date.now()}-${i}`,
+              code: taskId,
               name: String(itemName).trim(),
               projectCode: targetProjectCode,
               projectName: sheetName,
@@ -674,6 +689,7 @@ export const TaskManagementPage: React.FC = () => {
               isDone: isDoneCol >= 0 ? (r[isDoneCol] === true || normalizeStatusText(String(r[isDoneCol])) === 'da hoan thanh') : (finalProgress >= 1),
               isSectionHeader: isSection,
               sectionName: currentSection,
+              parentId: parentId,
               notes: '',
               assignedEngineerId: engineers[0]?.id || '',
               assignedEngineerName: engineers[0]?.name || '',
