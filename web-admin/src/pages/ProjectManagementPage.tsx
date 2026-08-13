@@ -318,9 +318,7 @@ export const ProjectManagementPage: React.FC = () => {
         const isRoman = romanRegex.test(sttVal);
         const cleanUnitVal = (item.unit || '').replace(/^[-–—_.\s]+$/, '').trim();
         const isSectionRow = isRoman || (numericParentRegex.test(sttVal) && (item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === ''));
-        const startsWithPhan = item.name.toLowerCase().trim().startsWith('phần ') && 
-                               !item.name.toLowerCase().trim().startsWith('phần mềm') && 
-                               !item.name.toLowerCase().trim().startsWith('phần cứng');
+        const startsWithPhan = item.name.trim().startsWith('PHẦN ');
         const isSection = startsWithPhan || (isSectionRow && isMainSectionName(item.name));
         
         let parentId = undefined;

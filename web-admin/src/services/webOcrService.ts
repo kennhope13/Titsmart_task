@@ -297,9 +297,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
     const isRomanSection = romanRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
     const isSectionRow = isRomanSection || (volume === 0 && (!cleanUnitVal || cleanUnitVal === ''));
-    const startsWithPhan = name.toLowerCase().trim().startsWith('phần ') && 
-                           !name.toLowerCase().trim().startsWith('phần mềm') && 
-                           !name.toLowerCase().trim().startsWith('phần cứng');
+    const startsWithPhan = name.trim().startsWith('PHẦN ');
     const isSectionHeader = startsWithPhan || (isSectionRow && isMainSectionName(name));
     const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
     

@@ -515,9 +515,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               const numericParentRegex = /^\d+$/;
               const isRoman = romanRegex.test(stt);
               const isSectionRow = isRoman || (numericParentRegex.test(stt) && volumeContract === 0 && !String(row[unitCol] || '').trim());
-              const startsWithPhan = content.toLowerCase().trim().startsWith('phần ') && 
-                                     !content.toLowerCase().trim().startsWith('phần mềm') && 
-                                     !content.toLowerCase().trim().startsWith('phần cứng');
+              const startsWithPhan = content.trim().startsWith('PHẦN ');
               const isSection = startsWithPhan || (isSectionRow && isMainSectionName(content));
 
               let effectiveStt = stt;

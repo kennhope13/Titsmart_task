@@ -657,9 +657,7 @@ export const TaskManagementPage: React.FC = () => {
             const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
             const cleanUnitVal = unitVal.replace(/^[-–—_.\s]+$/, '').trim();
             const isRoman = romanRegex.test(sttVal);
-            const startsWithPhan = String(itemName || '').toLowerCase().trim().startsWith('phần ') && 
-                                   !String(itemName || '').toLowerCase().trim().startsWith('phần mềm') && 
-                                   !String(itemName || '').toLowerCase().trim().startsWith('phần cứng');
+            const startsWithPhan = String(itemName || '').trim().startsWith('PHẦN ');
             const isMainSection = startsWithPhan || (isRoman ? isMainSectionName(itemName) : (!sttVal.includes('.') && volVal === 0 && (!cleanUnitVal || cleanUnitVal === '') && isMainSectionName(itemName)));
             const isSection = isMainSection;
 
