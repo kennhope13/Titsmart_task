@@ -535,7 +535,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                 currentMainSectionId = rowId;
                 currentSubSectionId = undefined;
               } else {
-                const isSubFolder = isSectionRow || (volumeContract === 0 && !String(row[unitCol] || '').trim());
+                const startsWithSectionKeyword = content.toLowerCase().trim().startsWith('phần ') || content.toLowerCase().trim().startsWith('hệ thống ');
+                const isSubFolder = isSectionRow || (volumeContract === 0 && !String(row[unitCol] || '').trim()) || startsWithSectionKeyword;
                 if (isSubFolder) {
                   parentId = currentMainSectionId;
                   currentSubSectionId = rowId;

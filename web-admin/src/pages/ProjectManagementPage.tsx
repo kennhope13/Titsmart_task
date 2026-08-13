@@ -325,7 +325,8 @@ export const ProjectManagementPage: React.FC = () => {
           currentMainSectionId = item.id;
           currentSubSectionId = undefined;
         } else {
-          const isSubFolder = isSectionRow || ((item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === ''));
+          const startsWithSectionKeyword = item.name.toLowerCase().trim().startsWith('phần ') || item.name.toLowerCase().trim().startsWith('hệ thống ');
+          const isSubFolder = isSectionRow || ((item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === '')) || startsWithSectionKeyword;
           if (isSubFolder) {
             parentId = currentMainSectionId;
             currentSubSectionId = item.id;

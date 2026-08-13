@@ -676,28 +676,29 @@ export const TaskManagementPage: React.FC = () => {
             
             let parentId = undefined;
             if (isSection) {
-              currentMainSectionId = taskId;
-              currentSubSectionId = undefined;
+               currentMainSectionId = taskId;
+               currentSubSectionId = undefined;
             } else {
-              const isSubFolder = isRoman || (volVal === 0 && (!cleanUnitVal || cleanUnitVal === ''));
-              if (isSubFolder) {
-                parentId = currentMainSectionId;
-                currentSubSectionId = taskId;
-              } else {
-                let foundDottedParent = false;
-                if (sttVal.includes('.')) {
-                  const parts = sttVal.split('.');
-                  parts.pop();
-                  const parentStt = parts.join('.');
-                  if (sttIdMap.has(parentStt)) {
-                    parentId = sttIdMap.get(parentStt);
-                    foundDottedParent = true;
-                  }
-                }
-                if (!foundDottedParent) {
-                  parentId = currentSubSectionId || currentMainSectionId;
-                }
-              }
+               const startsWithSectionKeyword = String(itemName || '').toLowerCase().trim().startsWith('phần ') || String(itemName || '').toLowerCase().trim().startsWith('hệ thống ');
+               const isSubFolder = isRoman || (volVal === 0 && (!cleanUnitVal || cleanUnitVal === '')) || startsWithSectionKeyword;
+               if (isSubFolder) {
+                 parentId = currentMainSectionId;
+                 currentSubSectionId = taskId;
+               } else {
+                 let foundDottedParent = false;
+                 if (sttVal.includes('.')) {
+                   const parts = sttVal.split('.');
+                   parts.pop();
+                   const parentStt = parts.join('.');
+                   if (sttIdMap.has(parentStt)) {
+                     parentId = sttIdMap.get(parentStt);
+                     foundDottedParent = true;
+                   }
+                 }
+                 if (!foundDottedParent) {
+                   parentId = currentSubSectionId || currentMainSectionId;
+                 }
+               }
             }
 
             importedTasks.push({
