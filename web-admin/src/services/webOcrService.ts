@@ -252,6 +252,15 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
   let currentSupplyScope: SupplyScope = 'unknown';
   let romanSectionCounter = 0; // Đếm số đầu mục lớn
 
+  const isMainSectionName = (nameStr: string): boolean => {
+    const norm = nameStr.toLowerCase();
+    return norm.includes('phần vttb') || 
+           norm.includes('cung cấp') || 
+           norm.includes('chủ đầu tư') || 
+           norm.includes('nhà thầu') || 
+           norm.startsWith('phần ');
+  };
+
   for (let index = headerIndex + 1; index < rows.length; index += 1) {
     const cells = rows[index];
     if (!cells.length) continue;
@@ -287,7 +296,8 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     // A section header is ONLY a roman numeral if the file has roman numerals, OR if it has [section] in notes.
     const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
     const isRomanSection = romanRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
-    const isSectionHeader = isRomanSection || (volume === 0 && (!cleanUnitVal || cleanUnitVal === ''));
+    const isSectionRow = isRomanSection || (volume === 0 && (!cleanUnitVal || cleanUnitVal === ''));
+    const isSectionHeader = isSectionRow && isMainSectionName(name);
     const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
     
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
