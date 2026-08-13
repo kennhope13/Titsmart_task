@@ -627,7 +627,18 @@ export const TaskManagementPage: React.FC = () => {
           const isDoneCol = getColIdx(headerRow, ['hoan thanh', 'da xong'], -1);
 
           let currentSection = 'Mục chung';
+          let currentMainSectionId: string | undefined = undefined;
+          let currentSubSectionId: string | undefined = undefined;
           const sttIdMap = new Map<string, string>();
+
+          const isMainSectionName = (name: string): boolean => {
+            const norm = name.toLowerCase();
+            return norm.includes('phần vttb') || 
+                   norm.includes('cung cấp') || 
+                   norm.includes('chủ đầu tư') || 
+                   norm.includes('nhà thầu') || 
+                   norm.startsWith('phần ');
+          };
 
           for (let i = startRow; i < rows.length; i++) {
             const r = rows[i];
@@ -645,8 +656,9 @@ export const TaskManagementPage: React.FC = () => {
 
             const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
             const cleanUnitVal = unitVal.replace(/^[-–—_.\s]+$/, '').trim();
-            const isTopLevelFolder = !sttVal.includes('.') && volVal === 0 && (!cleanUnitVal || cleanUnitVal === '');
-            const isSection = romanRegex.test(sttVal) || isTopLevelFolder;
+            const isRoman = romanRegex.test(sttVal);
+            const isMainSection = isRoman ? isMainSectionName(itemName) : (!sttVal.includes('.') && volVal === 0 && (!cleanUnitVal || cleanUnitVal === '') && isMainSectionName(itemName));
+            const isSection = isMainSection;
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${itemName}`;
@@ -663,12 +675,28 @@ export const TaskManagementPage: React.FC = () => {
             if (sttVal) sttIdMap.set(sttVal, taskId);
             
             let parentId = undefined;
-            if (sttVal.includes('.')) {
-              const parts = sttVal.split('.');
-              parts.pop();
-              const parentStt = parts.join('.');
-              if (sttIdMap.has(parentStt)) {
-                parentId = sttIdMap.get(parentStt);
+            if (isSection) {
+              currentMainSectionId = taskId;
+              currentSubSectionId = undefined;
+            } else {
+              const isSubFolder = isRoman || (volVal === 0 && (!cleanUnitVal || cleanUnitVal === ''));
+              if (isSubFolder) {
+                parentId = currentMainSectionId;
+                currentSubSectionId = taskId;
+              } else {
+                let foundDottedParent = false;
+                if (sttVal.includes('.')) {
+                  const parts = sttVal.split('.');
+                  parts.pop();
+                  const parentStt = parts.join('.');
+                  if (sttIdMap.has(parentStt)) {
+                    parentId = sttIdMap.get(parentStt);
+                    foundDottedParent = true;
+                  }
+                }
+                if (!foundDottedParent) {
+                  parentId = currentSubSectionId || currentMainSectionId;
+                }
               }
             }
 
