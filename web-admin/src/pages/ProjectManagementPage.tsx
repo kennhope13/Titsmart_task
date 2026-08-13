@@ -318,17 +318,17 @@ export const ProjectManagementPage: React.FC = () => {
         const isRoman = romanRegex.test(sttVal);
         const cleanUnitVal = (item.unit || '').replace(/^[-–—_.\s]+$/, '').trim();
         const isSectionRow = isRoman || (numericParentRegex.test(sttVal) && (item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === ''));
-        const isSection = isSectionRow && isMainSectionName(item.name);
+        const startsWithPhan = item.name.toLowerCase().trim().startsWith('phần ') && 
+                               !item.name.toLowerCase().trim().startsWith('phần mềm') && 
+                               !item.name.toLowerCase().trim().startsWith('phần cứng');
+        const isSection = startsWithPhan || (isSectionRow && isMainSectionName(item.name));
         
         let parentId = undefined;
         if (isSection) {
           currentMainSectionId = item.id;
           currentSubSectionId = undefined;
         } else {
-          const startsWithSectionKeyword = item.name.toLowerCase().trim().startsWith('phần ') && 
-                                           !item.name.toLowerCase().trim().startsWith('phần mềm') && 
-                                           !item.name.toLowerCase().trim().startsWith('phần cứng');
-          const isSubFolder = isSectionRow || ((item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === '')) || startsWithSectionKeyword;
+          const isSubFolder = isSectionRow || ((item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === '')) || item.name.toLowerCase().trim().startsWith('hệ thống ');
           if (isSubFolder) {
             parentId = currentMainSectionId;
             currentSubSectionId = item.id;

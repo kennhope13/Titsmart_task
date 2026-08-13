@@ -297,7 +297,10 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
     const isRomanSection = romanRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
     const isSectionRow = isRomanSection || (volume === 0 && (!cleanUnitVal || cleanUnitVal === ''));
-    const isSectionHeader = isSectionRow && isMainSectionName(name);
+    const startsWithPhan = name.toLowerCase().trim().startsWith('phần ') && 
+                           !name.toLowerCase().trim().startsWith('phần mềm') && 
+                           !name.toLowerCase().trim().startsWith('phần cứng');
+    const isSectionHeader = startsWithPhan || (isSectionRow && isMainSectionName(name));
     const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
     
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
@@ -307,11 +310,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const supplyScope = explicitSupplyScope !== 'unknown' ? explicitSupplyScope : currentSupplyScope;
     const cleanSectionName = stripSectionPrefix(name);
     
-    // We update isSectionHeader/isSubFolder logic
-    const startsWithSectionKeyword = name.toLowerCase().trim().startsWith('phần ') && 
-                                     !name.toLowerCase().trim().startsWith('phần mềm') && 
-                                     !name.toLowerCase().trim().startsWith('phần cứng');
-    const isSubFolder = !isSectionHeader && (isSectionRow || (volume === 0 && (!cleanUnitVal || cleanUnitVal === '')) || startsWithSectionKeyword);
+    const isSubFolder = !isSectionHeader && (isSectionRow || (volume === 0 && (!cleanUnitVal || cleanUnitVal === '')) || name.toLowerCase().trim().startsWith('hệ thống '));
     const sectionName = isSectionHeader ? cleanSectionName : currentSection;
 
     if (isSectionHeader) currentSection = sectionName;

@@ -515,7 +515,10 @@ export const ProjectCostPlanPage: React.FC = () => {
               const numericParentRegex = /^\d+$/;
               const isRoman = romanRegex.test(stt);
               const isSectionRow = isRoman || (numericParentRegex.test(stt) && volumeContract === 0 && !String(row[unitCol] || '').trim());
-              const isSection = isSectionRow && isMainSectionName(content);
+              const startsWithPhan = content.toLowerCase().trim().startsWith('phần ') && 
+                                     !content.toLowerCase().trim().startsWith('phần mềm') && 
+                                     !content.toLowerCase().trim().startsWith('phần cứng');
+              const isSection = startsWithPhan || (isSectionRow && isMainSectionName(content));
 
               let effectiveStt = stt;
               if (isSection) {
@@ -535,10 +538,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 currentMainSectionId = rowId;
                 currentSubSectionId = undefined;
               } else {
-                const startsWithSectionKeyword = content.toLowerCase().trim().startsWith('phần ') && 
-                                                 !content.toLowerCase().trim().startsWith('phần mềm') && 
-                                                 !content.toLowerCase().trim().startsWith('phần cứng');
-                const isSubFolder = isSectionRow || (volumeContract === 0 && !String(row[unitCol] || '').trim()) || startsWithSectionKeyword;
+                const isSubFolder = isSectionRow || (volumeContract === 0 && !String(row[unitCol] || '').trim()) || content.toLowerCase().trim().startsWith('hệ thống ');
                 if (isSubFolder) {
                   parentId = currentMainSectionId;
                   currentSubSectionId = rowId;
