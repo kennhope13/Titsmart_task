@@ -643,7 +643,8 @@ export const TaskManagementPage: React.FC = () => {
             if (sttVal.toLowerCase() === 'stt' || String(itemName).toLowerCase().includes('mo ta cong viec moi thau')) continue;
 
             const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
-            const isSection = romanRegex.test(sttVal) || (volVal === 0 && (!unitVal || unitVal === ''));
+            const cleanUnitVal = unitVal.replace(/^[-–—_.\s]+$/, '').trim();
+            const isSection = romanRegex.test(sttVal) || (volVal === 0 && (!cleanUnitVal || cleanUnitVal === ''));
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${itemName}`;
@@ -904,7 +905,6 @@ export const TaskManagementPage: React.FC = () => {
               remainingAmount: 0,
               orderStatus: 'Chưa đặt hàng',
               contractStatus: 'Chưa ký',
-              paymentDate: '',
               invoiceStatus: 'Chưa xuất',
               notes: '[section]',
             });
@@ -973,7 +973,6 @@ export const TaskManagementPage: React.FC = () => {
             remainingAmount: 0,
             orderStatus: 'Chưa đặt hàng',
             contractStatus: 'Chưa ký',
-            paymentDate: '',
             invoiceStatus: 'Chưa xuất',
             notes: itemNotes,
             parentId: parentPurchasingPlan?.id || sectionInPurchasing?.id,
@@ -1024,7 +1023,6 @@ export const TaskManagementPage: React.FC = () => {
           remainingAmount: 0,
           orderStatus: 'Chưa đặt hàng',
           contractStatus: 'Chưa ký',
-          paymentDate: '',
           invoiceStatus: 'Chưa xuất',
           notes: '[section]',
         });

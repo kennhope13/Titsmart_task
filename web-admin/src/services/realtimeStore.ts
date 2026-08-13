@@ -1150,9 +1150,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
-    addLaborPayroll: async (payrollData) => {
+    addLaborPayroll: async (labData) => {
       try {
-        const created = normalizeLaborPayroll(await api.accounting.createLaborPayroll(payrollData));
+        const created = normalizeLaborPayroll(await api.accounting.createLaborPayroll(labData));
         set((state) => {
           const nextPayrolls = [created, ...state.laborPayrolls];
           persistAndNotify({ laborPayrolls: nextPayrolls });

@@ -405,7 +405,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                           {plan.stt}
                         </td>
                         <td colSpan={colSpanCount} className="sticky left-[50px] z-10 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" title={plan.jobContent}>
-                          <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                          <div className="flex items-center gap-2 min-w-0 overflow-hidden whitespace-nowrap">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
                               className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
@@ -483,8 +483,12 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-xs"
                       />
                     ) : (
-                      <div className="flex items-center gap-1.5 w-full overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
-                        {depth > 0 && <span className="text-slate-300">↳</span>}
+                      <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
+                        {depth > 1 && (
+                          <span className="material-symbols-outlined flex-shrink-0 text-slate-300 text-[14px] mr-1 translate-y-[1px]">
+                            subdirectory_arrow_right
+                          </span>
+                        )}
                         <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded flex-1 truncate" title={plan.jobContent}>
                           {plan.jobContent}
                         </span>
