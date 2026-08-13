@@ -348,41 +348,50 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     } as any);
   }
 
-  // POST-PROCESSING: Generate hierarchical STTs for non-header items
-  let currentLevel2 = 0;
-  let currentLevel3 = 0;
-  let lastSection = '';
-  
-  for (const task of parsedTasks) {
-    if (task.isSectionHeader) {
-      currentLevel2 = 0;
-      currentLevel3 = 0;
-      lastSection = task.sectionName;
-      continue;
-    }
+  const hasDottedStt = parsedTasks.some(t => t.stt && String(t.stt).includes('.'));
+
+  if (!hasDottedStt) {
+    // POST-PROCESSING: Generate hierarchical STTs for non-header items
+    let currentLevel2 = 0;
+    let currentLevel3 = 0;
+    let lastSection = '';
     
-    // If we changed sections implicitly (shouldn't happen but just in case)
-    if (task.sectionName !== lastSection) {
-      currentLevel2 = 0;
-      currentLevel3 = 0;
-      lastSection = task.sectionName;
-    }
-    
-    const anyTask = task as any;
-    if (anyTask._isLevel2) {
-      currentLevel2++;
-      currentLevel3 = 0;
-      task.stt = String(currentLevel2);
-    } else {
-      currentLevel3++;
-      // If there was no level 2 before this, just use the item counter
-      if (currentLevel2 === 0) {
-        task.stt = String(currentLevel3);
-      } else {
-        task.stt = `${currentLevel2}.${currentLevel3}`;
+    for (const task of parsedTasks) {
+      if (task.isSectionHeader) {
+        currentLevel2 = 0;
+        currentLevel3 = 0;
+        lastSection = task.sectionName;
+        continue;
       }
+      
+      // If we changed sections implicitly (shouldn't happen but just in case)
+      if (task.sectionName !== lastSection) {
+        currentLevel2 = 0;
+        currentLevel3 = 0;
+        lastSection = task.sectionName;
+      }
+      
+      const anyTask = task as any;
+      if (anyTask._isLevel2) {
+        currentLevel2++;
+        currentLevel3 = 0;
+        task.stt = String(currentLevel2);
+      } else {
+        currentLevel3++;
+        // If there was no level 2 before this, just use the item counter
+        if (currentLevel2 === 0) {
+          task.stt = String(currentLevel3);
+        } else {
+          task.stt = `${currentLevel2}.${currentLevel3}`;
+        }
+      }
+      delete anyTask._isLevel2;
     }
-    delete anyTask._isLevel2;
+  } else {
+    for (const task of parsedTasks) {
+      const anyTask = task as any;
+      delete anyTask._isLevel2;
+    }
   }
 
   return parsedTasks;
