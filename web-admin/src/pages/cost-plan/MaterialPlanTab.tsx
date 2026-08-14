@@ -188,9 +188,8 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
 
   const startEditing = (id: string, field: keyof ProjectMaterialPlan, value: any) => {
     setEditingCell({ id, field });
-    if (field === 'progressStatus') {
-      const n = Number(value || 0);
-      setTempValue(n <= 1 ? Math.round(n * 100) : n);
+    if (field === 'progressStatus' || field === 'orderedStatus') {
+      setTempValue(value || '');
     } else {
       setTempValue(value === undefined || value === null ? '' : value);
     }
@@ -203,8 +202,8 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
     let finalValue = tempValue;
     if (field === 'contractVolume' || field === 'orderedVolume') {
       finalValue = Number(tempValue || 0);
-    } else if (field === 'progressStatus') {
-      finalValue = Number(tempValue || 0) / 100;
+    } else if (field === 'progressStatus' || field === 'orderedStatus') {
+      finalValue = tempValue;
     } else if (field === 'docCo' || field === 'docCq' || field === 'docFireInspection' || field === 'dispatchToSite') {
       finalValue = tempValue === true || tempValue === 'true' || tempValue === 'Có';
     }
@@ -238,58 +237,58 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
 
       <div className="w-full max-w-full min-h-0 flex-1 overflow-x-auto custom-scrollbar">
         <table className="w-full table-fixed border-collapse text-left text-xs">
-          <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
+          <thead className="sticky top-0 z-30 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
               <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold">STT</th>
               <th rowSpan={2} style={{ width: 280, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-[50px] z-20 bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">NỘI DUNG</th>
-              <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">ĐVT</th>
-              <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">KL HĐ</th>
+              <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
+              <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL HĐ</th>
 
               {subTab === 'TECH' && (
                 <>
-                  <th colSpan={3} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">TIÊU CHUẨN KỸ THUẬT</th>
-                  <th rowSpan={2} style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">TIẾN ĐỘ</th>
+                  <th colSpan={3} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIÊU CHUẨN KỸ THUẬT</th>
+                  <th rowSpan={2} style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIẾN ĐỘ</th>
                 </>
               )}
 
               {subTab === 'ORDER' && (
                 <>
-                  <th rowSpan={2} style={{ width: 52, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">KL ĐẶT HÀNG</th>
-                  <th rowSpan={2} style={{ width: 75, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
-                  <th rowSpan={2} style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">NGÀY CÓ HÀNG</th>
-                  <th colSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">VƯỚNG MẮC/ TỒN ĐỌNG</th>
+                  <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐẶT HÀNG</th>
+                  <th rowSpan={2} style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
+                  <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">NGÀY CÓ HÀNG</th>
+                  <th colSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">VƯỚNG MẮC/ TỒN ĐỌNG</th>
                 </>
               )}
 
               {subTab === 'DOCS' && (
                 <>
-                  <th colSpan={3} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
-                  <th colSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">LUÂN CHUYỂN VẬT TƯ</th>
+                  <th colSpan={3} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
+                  <th colSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">LUÂN CHUYỂN VẬT TƯ</th>
                 </>
               )}
-              <th rowSpan={2} style={{ width: 110, borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>
+              <th rowSpan={2} style={{ width: 110, borderBottom: '1px solid #94a3b8' }} className="sticky right-0 z-20 bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>
             </tr>
             <tr className="bg-slate-50">
               {subTab === 'TECH' && (
                 <>
-                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">CHÀO HÀNG</th>
-                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">ĐÁP ỨNG KỸ THUẬT</th>
-                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">TÌNH TRẠNG</th>
+                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">CHÀO HÀNG</th>
+                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">ĐÁP ỨNG KỸ THUẬT</th>
+                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">TÌNH TRẠNG</th>
                 </>
               )}
               {subTab === 'ORDER' && (
                 <>
-                  <th style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">NỘI DUNG</th>
-                  <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">TT XỬ LÝ</th>
+                  <th style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">NỘI DUNG</th>
+                  <th style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">TT XỬ LÝ</th>
                 </>
               )}
               {subTab === 'DOCS' && (
                 <>
-                  <th style={{ width: 40, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">CO</th>
-                  <th style={{ width: 40, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">CQ</th>
-                  <th style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">KIỂM ĐỊNH PCCC</th>
-                  <th style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">ĐÃ GỬI TỚI CT</th>
-                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">NGÀY</th>
+                  <th style={{ width: 40, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">CO</th>
+                  <th style={{ width: 40, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">CQ</th>
+                  <th style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">KIỂM ĐỊNH PCCC</th>
+                  <th style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">ĐÃ GỬI TỚI CT</th>
+                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">NGÀY</th>
                 </>
               )}
             </tr>
@@ -360,7 +359,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                 const flattenTree = (nodes: any[], depth: number, prefix: string = '', sectionKey: string = '') => {
                   nodes.forEach((node: any, idx: number) => {
                     const currentNum = (idx + 1).toString();
-                    const computedStt = depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum);
+                    const computedStt = node.stt || (depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum));
                     flattened.push({ ...node, depth, computedStt, isSec: false, _sectionKey: sectionKey });
                     flattenTree(node.children, depth + 1, computedStt, sectionKey);
                   });
@@ -405,7 +404,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                           {plan.stt}
                         </td>
                         <td colSpan={colSpanCount} className="sticky left-[50px] z-10 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" title={plan.jobContent}>
-                          <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                          <div className="flex items-center gap-2 min-w-0 overflow-hidden whitespace-nowrap">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
                               className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
@@ -455,7 +454,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               return (
                 <tr key={plan.id} onDoubleClick={() => onEdit(plan)} className={rowClass}>
                   {/* STT */}
-                  <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 px-1 py-2 text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
+                  <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 p-0 align-top text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
                     {editingCell?.id === plan.id && editingCell?.field === 'stt' ? (
                       <input
                         type="text"
@@ -464,14 +463,14 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         onBlur={() => saveEditing(plan)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                         autoFocus
-                        className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-xs"
+                        className="w-full text-center bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                       />
                     ) : (
                       <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block w-full">{depth > 0 ? plan.computedStt : plan.stt}</span>
                     )}
                   </td>
                   {/* NỘI DUNG */}
-                  <td className={`sticky left-[50px] z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-left overflow-hidden ${fontStyle}`}>
+                  <td className={`sticky left-[50px] z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 p-0 align-top shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-left overflow-hidden ${fontStyle}`}>
                     {editingCell?.id === plan.id && editingCell?.field === 'jobContent' ? (
                       <input
                         type="text"
@@ -480,12 +479,16 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         onBlur={() => saveEditing(plan)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                         autoFocus
-                        className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-xs"
+                        className="w-full bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                       />
                     ) : (
-                      <div className="flex items-center gap-1.5 w-full overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
-                        {depth > 0 && <span className="text-slate-300">↳</span>}
-                        <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-100 px-1 py-0.5 rounded flex-1 truncate" title={plan.jobContent}>
+                      <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
+                        {depth > 1 && (
+                          <span className="material-symbols-outlined flex-shrink-0 text-slate-300 text-[14px] mr-1 translate-y-[1px]">
+                            subdirectory_arrow_right
+                          </span>
+                        )}
+                        <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-100 flex-1 truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.jobContent}>
                           {plan.jobContent}
                         </span>
                         
@@ -505,7 +508,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                     )}
                   </td>
                   {/* ĐVT */}
-                  <td className="overflow-hidden truncate px-1 py-2 text-center font-mono text-slate-500">
+                  <td className="overflow-hidden truncate p-0 align-top text-center font-mono text-slate-500">
                     {editingCell?.id === plan.id && editingCell?.field === 'unit' ? (
                       <input
                         type="text"
@@ -514,14 +517,14 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         onBlur={() => saveEditing(plan)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                         autoFocus
-                        className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary text-xs"
+                        className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                       />
                     ) : (
-                      <span onClick={() => startEditing(plan.id, 'unit', plan.unit)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.unit || ''}>{plan.unit || ''}</span>
+                      <span onClick={() => startEditing(plan.id, 'unit', plan.unit)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.unit || ''}>{plan.unit || ''}</span>
                     )}
                   </td>
                   {/* KL HĐ */}
-                  <td className="overflow-hidden truncate px-1 py-2 text-right font-mono font-semibold text-slate-900">
+                  <td className="overflow-hidden truncate p-0 align-top text-right font-mono font-semibold text-slate-900">
                     {editingCell?.id === plan.id && editingCell?.field === 'contractVolume' ? (
                       <input
                         type="number"
@@ -530,17 +533,17 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         onBlur={() => saveEditing(plan)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                         autoFocus
-                        className="w-full text-right border rounded px-0.5 py-0.5 bg-white text-slate-900 font-semibold focus:outline-primary text-xs"
+                        className="w-full text-right bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                       />
                     ) : (
-                      <span onClick={() => startEditing(plan.id, 'contractVolume', plan.contractVolume)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center" title={showNumber(plan.contractVolume)}>{showNumber(plan.contractVolume)}</span>
+                      <span onClick={() => startEditing(plan.id, 'contractVolume', plan.contractVolume)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={showNumber(plan.contractVolume)}>{showNumber(plan.contractVolume)}</span>
                     )}
                   </td>
 
                   {subTab === 'TECH' && (
                     <>
                       {/* CHÀO HÀNG */}
-                      <td className="overflow-hidden truncate px-1 py-1.5 text-slate-600">
+                      <td className="overflow-hidden truncate p-0 align-top text-slate-600">
                         {editingCell?.id === plan.id && editingCell?.field === 'techSpecModel' ? (
                           <input
                             type="text"
@@ -549,14 +552,14 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-600 focus:outline-primary text-xs"
+                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.techSpecModel || ''}>{plan.techSpecModel || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.techSpecModel || ''}>{plan.techSpecModel || ''}</span>
                         )}
                       </td>
                       {/* ĐÁP ỨNG KỸ THUẬT */}
-                      <td className="overflow-hidden truncate px-1 py-1.5 text-slate-600">
+                      <td className="overflow-hidden truncate p-0 align-top text-slate-600">
                         {editingCell?.id === plan.id && editingCell?.field === 'techSpecOrigin' ? (
                           <input
                             type="text"
@@ -565,21 +568,21 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-600 focus:outline-primary text-xs"
+                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'techSpecOrigin', plan.techSpecOrigin)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.techSpecOrigin || ''}>{plan.techSpecOrigin || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'techSpecOrigin', plan.techSpecOrigin)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.techSpecOrigin || ''}>{plan.techSpecOrigin || ''}</span>
                         )}
                       </td>
                       {/* TÌNH TRẠNG */}
-                      <td className="overflow-hidden truncate px-1 py-1.5 text-slate-600">
+                      <td className="overflow-hidden truncate p-0 align-top text-slate-600">
                         {editingCell?.id === plan.id && editingCell?.field === 'techSpecStatus' ? (
                           <select
                             value={tempValue}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, techSpecStatus: e.target.value }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
                             autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-600 focus:outline-primary text-xs"
+                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           >
                             <option value="">Chưa xác định</option>
                             <option value="Đáp ứng">Đáp ứng</option>
@@ -587,25 +590,28 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <option value="Đang xem xét">Đang xem xét</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'techSpecStatus', plan.techSpecStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate">{plan.techSpecStatus || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'techSpecStatus', plan.techSpecStatus)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{plan.techSpecStatus || ''}</span>
                         )}
                       </td>
                       {/* TIẾN ĐỘ */}
-                      <td className="overflow-hidden px-1 py-1.5 text-center font-mono font-bold text-slate-700 whitespace-nowrap">
+                      <td className="overflow-hidden p-0 align-top text-center font-mono font-bold text-slate-700 whitespace-nowrap">
                         {editingCell?.id === plan.id && editingCell?.field === 'progressStatus' ? (
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={tempValue}
-                            onChange={(e) => setTempValue(e.target.value)}
-                            onBlur={() => saveEditing(plan)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
+                          <select
+                            value={tempValue as string}
+                            onChange={(e) => {
+                              onUpdate(plan.id, { ...plan, progressStatus: e.target.value });
+                              setEditingCell(null);
+                            }}
+                            onBlur={() => setEditingCell(null)}
                             autoFocus
-                            className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-700 font-bold focus:outline-primary text-xs"
-                          />
+                            className="w-full text-center bg-white text-slate-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
+                          >
+                            <option value="Chưa thi công">Chưa thi công</option>
+                            <option value="Đang thi công">Đang thi công</option>
+                            <option value="Đã hoàn thành">Đã hoàn thành</option>
+                          </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'progressStatus', plan.progressStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{showProgress(plan.progressStatus)}</span>
+                          <span onClick={() => startEditing(plan.id, 'progressStatus', plan.progressStatus)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{showProgress(plan.progressStatus)}</span>
                         )}
                       </td>
                     </>
@@ -614,7 +620,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   {subTab === 'ORDER' && (
                     <>
                       {/* KL ĐẶT HÀNG */}
-                      <td className="overflow-hidden truncate px-1 py-1.5 text-right font-mono font-semibold text-slate-900">
+                      <td className="overflow-hidden truncate p-0 align-top text-right font-mono font-semibold text-slate-900">
                         {editingCell?.id === plan.id && editingCell?.field === 'orderedVolume' ? (
                           <input
                             type="number"
@@ -623,21 +629,21 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full text-right border rounded px-0.5 py-0.5 bg-white text-slate-900 font-semibold focus:outline-primary text-xs"
+                            className="w-full text-right bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'orderedVolume', plan.orderedVolume)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center" title={showNumber(plan.orderedVolume)}>{showNumber(plan.orderedVolume)}</span>
+                          <span onClick={() => startEditing(plan.id, 'orderedVolume', plan.orderedVolume)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={showNumber(plan.orderedVolume)}>{showNumber(plan.orderedVolume)}</span>
                         )}
                       </td>
                       {/* TT ĐẶT HÀNG */}
-                      <td className="overflow-hidden truncate px-1 py-1.5 text-center font-semibold text-slate-700">
+                      <td className="overflow-hidden truncate p-0 align-top text-center font-semibold text-slate-700">
                         {editingCell?.id === plan.id && editingCell?.field === 'orderedStatus' ? (
                           <select
                             value={tempValue}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, orderedStatus: e.target.value }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
                             autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-700 font-semibold focus:outline-primary text-xs"
+                            className="w-full bg-white text-slate-700 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           >
                             <option value="">Chưa đặt hàng</option>
                             <option value="Đã đặt hàng">Đã đặt hàng</option>
@@ -645,11 +651,11 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <option value="Đã nhận hàng">Đã nhận hàng</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'orderedStatus', plan.orderedStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.orderedStatus || ''}>{plan.orderedStatus || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'orderedStatus', plan.orderedStatus)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.orderedStatus || ''}>{plan.orderedStatus || ''}</span>
                         )}
                       </td>
                       {/* NGÀY CÓ HÀNG */}
-                      <td className="overflow-hidden px-1 py-1.5 text-center font-mono text-slate-600 truncate">
+                      <td className="overflow-hidden p-0 align-top text-center font-mono text-slate-600 truncate">
                         {editingCell?.id === plan.id && editingCell?.field === 'expectedDate' ? (
                           <input
                             type="date"
@@ -658,14 +664,14 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-600 focus:outline-primary text-xs"
+                            className="w-full text-center bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'expectedDate', plan.expectedDate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{plan.expectedDate || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'expectedDate', plan.expectedDate)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{plan.expectedDate || ''}</span>
                         )}
                       </td>
                       {/* NỘI DUNG VƯỚNG MẮC */}
-                      <td className="overflow-hidden truncate px-1 py-1.5 font-semibold text-red-600">
+                      <td className="overflow-hidden truncate p-0 align-top font-semibold text-red-600">
                         {editingCell?.id === plan.id && editingCell?.field === 'issueContent' ? (
                           <input
                             type="text"
@@ -674,14 +680,14 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-red-600 font-semibold focus:outline-primary text-xs"
+                            className="w-full bg-white text-red-600 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.issueContent || ''}>{plan.issueContent || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.issueContent || ''}>{plan.issueContent || ''}</span>
                         )}
                       </td>
                       {/* TT XỬ LÝ */}
-                      <td className="overflow-hidden truncate px-1 py-1.5 text-slate-600">
+                      <td className="overflow-hidden truncate p-0 align-top text-slate-600">
                         {editingCell?.id === plan.id && editingCell?.field === 'issueStatus' ? (
                           <input
                             type="text"
@@ -690,10 +696,10 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-600 focus:outline-primary text-xs"
+                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'issueStatus', plan.issueStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate" title={plan.issueStatus || ''}>{plan.issueStatus || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'issueStatus', plan.issueStatus)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.issueStatus || ''}>{plan.issueStatus || ''}</span>
                         )}
                       </td>
                     </>
@@ -702,75 +708,75 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   {subTab === 'DOCS' && (
                     <>
                       {/* CO */}
-                      <td className="overflow-hidden px-1 py-1.5 text-center font-bold text-emerald-700">
+                      <td className="overflow-hidden p-0 align-top text-center font-bold text-emerald-700">
                         {editingCell?.id === plan.id && editingCell?.field === 'docCo' ? (
                           <select
                             value={tempValue ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, docCo: e.target.value === 'true' }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
                             autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-emerald-700 font-bold focus:outline-primary text-xs"
+                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'docCo', plan.docCo)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{yesNo(plan.docCo)}</span>
+                          <span onClick={() => startEditing(plan.id, 'docCo', plan.docCo)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{yesNo(plan.docCo)}</span>
                         )}
                       </td>
                       {/* CQ */}
-                      <td className="overflow-hidden px-1 py-1.5 text-center font-bold text-emerald-700">
+                      <td className="overflow-hidden p-0 align-top text-center font-bold text-emerald-700">
                         {editingCell?.id === plan.id && editingCell?.field === 'docCq' ? (
                           <select
                             value={tempValue ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, docCq: e.target.value === 'true' }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
                             autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-emerald-700 font-bold focus:outline-primary text-xs"
+                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'docCq', plan.docCq)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{yesNo(plan.docCq)}</span>
+                          <span onClick={() => startEditing(plan.id, 'docCq', plan.docCq)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{yesNo(plan.docCq)}</span>
                         )}
                       </td>
                       {/* KIỂM ĐỊNH PCCC */}
-                      <td className="overflow-hidden px-1 py-1.5 text-center font-bold text-emerald-700">
+                      <td className="overflow-hidden p-0 align-top text-center font-bold text-emerald-700">
                         {editingCell?.id === plan.id && editingCell?.field === 'docFireInspection' ? (
                           <select
                             value={tempValue ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, docFireInspection: e.target.value === 'true' }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
                             autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-emerald-700 font-bold focus:outline-primary text-xs"
+                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'docFireInspection', plan.docFireInspection)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{yesNo(plan.docFireInspection)}</span>
+                          <span onClick={() => startEditing(plan.id, 'docFireInspection', plan.docFireInspection)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{yesNo(plan.docFireInspection)}</span>
                         )}
                       </td>
                       {/* ĐÃ GỬI TỚI CT */}
-                      <td className="overflow-hidden px-1 py-1.5 text-center font-semibold text-slate-700">
+                      <td className="overflow-hidden p-0 align-top text-center font-semibold text-slate-700">
                         {editingCell?.id === plan.id && editingCell?.field === 'dispatchToSite' ? (
                           <select
                             value={tempValue ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, dispatchToSite: e.target.value === 'true' }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
                             autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-700 font-semibold focus:outline-primary text-xs"
+                            className="w-full bg-white text-slate-700 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
                           </select>
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'dispatchToSite', plan.dispatchToSite)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{yesNo(plan.dispatchToSite)}</span>
+                          <span onClick={() => startEditing(plan.id, 'dispatchToSite', plan.dispatchToSite)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{yesNo(plan.dispatchToSite)}</span>
                         )}
                       </td>
                       {/* NGÀY */}
-                      <td className="overflow-hidden px-1 py-1.5 text-center font-mono text-slate-600 truncate">
+                      <td className="overflow-hidden p-0 align-top text-center font-mono text-slate-600 truncate">
                         {editingCell?.id === plan.id && editingCell?.field === 'dispatchDate' ? (
                           <input
                             type="date"
@@ -779,17 +785,17 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-600 focus:outline-primary text-xs"
+                            className="w-full text-center bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(plan.id, 'dispatchDate', plan.dispatchDate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{plan.dispatchDate || ''}</span>
+                          <span onClick={() => startEditing(plan.id, 'dispatchDate', plan.dispatchDate)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{plan.dispatchDate || ''}</span>
                         )}
                       </td>
                     </>
                   )}
 
                   {/* GHI CHÚ */}
-                  <td className="sticky right-0 z-10 bg-white group-hover:bg-slate-50 border-l border-slate-100 overflow-hidden truncate px-1.5 py-1.5 text-slate-500">
+                  <td className="sticky right-0 z-10 bg-white group-hover:bg-slate-50 border-l border-slate-100 overflow-hidden truncate p-0 align-top text-slate-500">
                     {editingCell?.id === plan.id && editingCell?.field === 'notes' ? (
                       <input
                         type="text"
@@ -798,10 +804,10 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         onBlur={() => saveEditing(plan)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                         autoFocus
-                        className="w-full border rounded px-1 py-0.5 bg-white text-slate-500 focus:outline-primary text-xs"
+                        className="w-full bg-white text-slate-500 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
                       />
                     ) : (
-                      <div onClick={() => startEditing(plan.id, 'notes', plan.notes)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 px-1.5 py-2 rounded flex items-center" title={cleanNotes(plan.notes)}>
+                      <div onClick={() => startEditing(plan.id, 'notes', plan.notes)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={cleanNotes(plan.notes)}>
                         <span className="truncate flex-1">{cleanNotes(plan.notes)}</span>
                       </div>
                     )}

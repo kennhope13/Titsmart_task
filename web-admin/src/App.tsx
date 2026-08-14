@@ -18,6 +18,8 @@ import { ActivityLogPage } from './pages/ActivityLogPage';
 import { FieldLogsPage } from './pages/FieldLogsPage';
 import { ProjectCostPlanPage } from './pages/ProjectCostPlanPage';
 
+import { UpdateNotifier } from './components/common/UpdateNotifier';
+
 const ProtectedLayout: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   if (!user) return <Navigate to="/login" replace />;
@@ -60,24 +62,28 @@ export const App: React.FC = () => {
   }, [user]);
 
   return (
-    <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : renderLogin()} />
-      <Route element={<ProtectedLayout />}>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/projects" element={<ProjectManagementPage />} />
-        <Route path="/tasks" element={<TaskManagementPage />} />
-        <Route path="/document-tracking" element={<DocumentTrackingPage />} />
-        <Route path="/field-logs" element={<FieldLogsPage />} />
-        <Route path="/materials" element={<MaterialTrackingPage />} />
-        <Route path="/cost-plan" element={<ProjectCostPlanPage />} />
-        <Route path="/issues" element={<IssueResolutionPage />} />
-        <Route path="/reports" element={<ReportExportPage />} />
-        <Route path="/personnel" element={<PersonnelPage />} />
-        <Route path="/activity-log" element={<ActivityLogPage />} />
-        <Route path="/account" element={<AccountPage />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <UpdateNotifier />
+      <Routes>
+        <Route path="/login" element={user ? <Navigate to="/" replace /> : renderLogin()} />
+        <Route element={<ProtectedLayout />}>
+          <Route path="/" element={<Navigate to="/projects" replace />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/projects" element={<ProjectManagementPage />} />
+          <Route path="/tasks" element={<TaskManagementPage />} />
+          <Route path="/document-tracking" element={<DocumentTrackingPage />} />
+          <Route path="/field-logs" element={<FieldLogsPage />} />
+          <Route path="/materials" element={<MaterialTrackingPage />} />
+          <Route path="/cost-plan" element={<ProjectCostPlanPage />} />
+          <Route path="/issues" element={<IssueResolutionPage />} />
+          <Route path="/reports" element={<ReportExportPage />} />
+          <Route path="/personnel" element={<PersonnelPage />} />
+          <Route path="/activity-log" element={<ActivityLogPage />} />
+          <Route path="/account" element={<AccountPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 };
 

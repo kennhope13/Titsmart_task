@@ -31,7 +31,7 @@ export const Sidebar: React.FC = () => {
       title: 'Bảng điều khiển',
       collapsible: false,
       items: [
-        { label: 'Tổng quan', path: '/', icon: 'dashboard' },
+        { label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' },
       ]
     },
     {

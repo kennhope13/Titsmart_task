@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 import { Toast } from '../components/common/Toast';
 import { Material, InventoryTransaction } from '../types';
 
@@ -237,6 +238,17 @@ export const MaterialTrackingPage: React.FC = () => {
   const [txReceiverName, setTxReceiverName] = useState('');
   const [txNotes, setTxNotes] = useState('');
 
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string | React.ReactNode;
+    onConfirm: () => void;
+    icon?: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDestructive?: boolean;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
   const projectOptions = useMemo(() => {
     const byCode = new Map(projects.map((project) => [project.code, project]));
     materials.forEach((mat) => {
@@ -407,36 +419,46 @@ export const MaterialTrackingPage: React.FC = () => {
     const material = materials.find(m => m.id === txMaterialId);
     if (!material) return;
 
+    const commitTransaction = () => {
+      addInventoryTransaction({
+        type: transactionType,
+        date: txDate,
+        materialId: material.id,
+        materialCode: material.code,
+        materialName: material.name,
+        specs: material.specs || material.englishName || '',
+        unit: material.unit,
+        quantity: txQuantity,
+        sourceOrProject: txSourceOrProject,
+        receiverName: txReceiverName,
+        notes: txNotes,
+        // Truyền thêm để backend dùng khi vật tư chưa tồn tại trong DB
+        initialStock: material.initialStock || 0,
+        category: material.category || '',
+        volume: material.volume || 0,
+        unitPrice: material.unitPrice || 0,
+        supplier: material.supplier || '',
+      } as any);
+      setIsTransactionModalOpen(false);
+    };
+
     if (transactionType === 'EXPORT') {
       const current = material.currentStock !== undefined ? material.currentStock : (material.initialStock || 0);
       if (txQuantity > current) {
-        if (!window.confirm(`Cảnh báo: Số lượng xuất (${txQuantity}) lớn hơn Tồn kho hiện tại (${current}). Bạn có chắc chắn muốn xuất kho âm?`)) {
-          return;
-        }
+        setConfirmConfig({
+          isOpen: true,
+          title: 'Cảnh báo xuất kho âm',
+          message: `Số lượng xuất (${txQuantity}) lớn hơn Tồn kho hiện tại (${current}). Bạn có chắc chắn muốn tiếp tục xuất kho âm?`,
+          icon: 'warning',
+          isDestructive: true,
+          confirmText: 'Xuất kho',
+          onConfirm: commitTransaction,
+        });
+        return;
       }
     }
 
-    addInventoryTransaction({
-      type: transactionType,
-      date: txDate,
-      materialId: material.id,
-      materialCode: material.code,
-      materialName: material.name,
-      specs: material.specs || material.englishName || '',
-      unit: material.unit,
-      quantity: txQuantity,
-      sourceOrProject: txSourceOrProject,
-      receiverName: txReceiverName,
-      notes: txNotes,
-      // Truyền thêm để backend dùng khi vật tư chưa tồn tại trong DB
-      initialStock: material.initialStock || 0,
-      category: material.category || '',
-      volume: material.volume || 0,
-      unitPrice: material.unitPrice || 0,
-      supplier: material.supplier || '',
-    } as any);
-
-    setIsTransactionModalOpen(false);
+    commitTransaction();
   };
 
   return (
@@ -544,7 +566,17 @@ export const MaterialTrackingPage: React.FC = () => {
                         <td className="p-3.5 text-right font-bold text-primary text-sm">{(material.currentStock !== undefined ? material.currentStock : (material.initialStock || 0)).toLocaleString('vi-VN')}</td>
                         <td className="p-3.5 text-center">{material.unit}</td>
                         <td className="p-3.5 text-center" onClick={(event) => event.stopPropagation()}>
-                          <button type="button" onClick={() => { if (window.confirm(`Xóa vật tư "${material.name}"?`)) deleteMaterial(material.id); }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title="Xóa vật tư">
+                          <button type="button" onClick={() => {
+                            setConfirmConfig({
+                              isOpen: true,
+                              title: 'Xóa vật tư',
+                              message: `Bạn chắc chắn muốn xóa vật tư "${material.name}"?`,
+                              icon: 'delete',
+                              isDestructive: true,
+                              confirmText: 'Xóa',
+                              onConfirm: () => deleteMaterial(material.id),
+                            });
+                          }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title="Xóa vật tư">
                             <span className="material-symbols-outlined text-base">delete</span>
                           </button>
                         </td>
@@ -707,6 +739,19 @@ export const MaterialTrackingPage: React.FC = () => {
         </form>
       </Modal>
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        icon={confirmConfig.icon}
+        isDestructive={confirmConfig.isDestructive}
+        confirmText={confirmConfig.confirmText}
+        cancelText={confirmConfig.cancelText}
+      />
+
     </div>
   );
 };

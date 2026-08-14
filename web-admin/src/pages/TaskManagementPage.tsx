@@ -148,15 +148,29 @@ const sttSortParts = (value?: string) => {
 };
 
 const compareTaskStt = (a?: string, b?: string) => {
-  const left = sttSortParts(a);
-  const right = sttSortParts(b);
+  const textA = String(a || '').trim();
+  const textB = String(b || '').trim();
+  
+  const romanA = extractLeadingRomanNumber(textA);
+  const romanB = extractLeadingRomanNumber(textB);
+  
+  if (romanA !== null && romanB !== null) {
+    if (romanA !== romanB) return romanA - romanB;
+  } else if (romanA !== null && romanB === null) {
+    return -1;
+  } else if (romanA === null && romanB !== null) {
+    return 1;
+  }
+
+  const left = sttSortParts(textA);
+  const right = sttSortParts(textB);
   const max = Math.max(left.length, right.length);
   for (let index = 0; index < max; index += 1) {
     const leftValue = left[index] ?? 0;
     const rightValue = right[index] ?? 0;
     if (leftValue !== rightValue) return leftValue - rightValue;
   }
-  return String(a || '').localeCompare(String(b || ''), 'vi', { numeric: true, sensitivity: 'base' });
+  return textA.localeCompare(textB, 'vi', { numeric: true, sensitivity: 'base' });
 };
 
 
@@ -627,6 +641,18 @@ export const TaskManagementPage: React.FC = () => {
           const isDoneCol = getColIdx(headerRow, ['hoan thanh', 'da xong'], -1);
 
           let currentSection = 'Mục chung';
+          let currentMainSectionId: string | undefined = undefined;
+          let currentSubSectionId: string | undefined = undefined;
+          const sttIdMap = new Map<string, string>();
+
+          const isMainSectionName = (name: string): boolean => {
+            const norm = name.toLowerCase();
+            return norm.includes('phần vttb') || 
+                   norm.includes('cung cấp') || 
+                   norm.includes('chủ đầu tư') || 
+                   norm.includes('nhà thầu') || 
+                   norm.startsWith('phần ');
+          };
 
           for (let i = startRow; i < rows.length; i++) {
             const r = rows[i];
@@ -634,6 +660,7 @@ export const TaskManagementPage: React.FC = () => {
 
             const itemName = r[nameCol] || r[sttCol];
             if (!itemName || String(itemName).trim().length === 0) continue;
+            if (!/[a-zA-ZÀ-ỹ]/.test(String(itemName))) continue;
 
             const sttVal = r[sttCol] ? String(r[sttCol]).trim() : '';
             const volVal = volCol >= 0 ? (typeof r[volCol] === 'number' ? r[volCol] : (parseFloat(r[volCol]) || 0)) : 0;
@@ -643,7 +670,13 @@ export const TaskManagementPage: React.FC = () => {
             if (sttVal.toLowerCase() === 'stt' || String(itemName).toLowerCase().includes('mo ta cong viec moi thau')) continue;
 
             const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
-            const isSection = romanRegex.test(sttVal) || (volVal === 0 && (!unitVal || unitVal === ''));
+            const cleanUnitVal = unitVal.replace(/^[-–—_.\s]+$/, '').trim();
+            const cleanStt = String(sttVal || '').trim().replace(/\.$/, '');
+            const hasNoDot = !cleanStt.includes('.');
+            const isRoman = romanRegex.test(cleanStt);
+            const startsWithPhan = String(itemName || '').trim().toUpperCase().startsWith('PHẦN ');
+            const hasNoVolumeAndUnit = (volVal === 0 || !volVal) && (!cleanUnitVal || cleanUnitVal === '');
+            const isSection = startsWithPhan || (hasNoDot && isMainSectionName(itemName)) || (hasNoDot && hasNoVolumeAndUnit && isRoman);
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${itemName}`;
@@ -655,10 +688,47 @@ export const TaskManagementPage: React.FC = () => {
             const importedProgress = rawProgress > 1 ? rawProgress / 100 : rawProgress;
             const autoProgress = calculateAutoProgressRatio(rawPurchaseStatus, rawConstrStatus);
             const finalProgress = progressCol >= 0 && rawProgress > 0 ? importedProgress : autoProgress;
+            
+            const taskId = crypto.randomUUID();
+            if (sttVal) sttIdMap.set(sttVal, taskId);
+            
+            let parentId = undefined;
+            if (isSection) {
+               currentMainSectionId = taskId;
+               currentSubSectionId = undefined;
+            } else {
+               let isSubFolder = false;
+               const nextRow = rows[i + 1];
+               if (nextRow) {
+                 const nextStt = nextRow[sttCol] ? String(nextRow[sttCol]).trim() : '';
+                 if (nextStt && nextStt.startsWith(sttVal + '.')) {
+                   isSubFolder = true;
+                 }
+               }
+               if (isSubFolder) {
+                 parentId = currentMainSectionId;
+                 currentSubSectionId = taskId;
+               } else {
+                 let foundDottedParent = false;
+                 if (sttVal.includes('.')) {
+                   const parts = sttVal.split('.');
+                   parts.pop();
+                   const parentStt = parts.join('.');
+                   if (sttIdMap.has(parentStt)) {
+                     parentId = sttIdMap.get(parentStt);
+                     foundDottedParent = true;
+                   }
+                 }
+                 if (!foundDottedParent) {
+                   parentId = currentSubSectionId || currentMainSectionId;
+                 }
+               }
+            }
 
             importedTasks.push({
+              id: taskId,
               stt: sttVal || `${i - startRow + 1}`,
-              code: `TSK-IMP-${Date.now()}-${i}`,
+              code: taskId,
               name: String(itemName).trim(),
               projectCode: targetProjectCode,
               projectName: sheetName,
@@ -673,6 +743,7 @@ export const TaskManagementPage: React.FC = () => {
               isDone: isDoneCol >= 0 ? (r[isDoneCol] === true || normalizeStatusText(String(r[isDoneCol])) === 'da hoan thanh') : (finalProgress >= 1),
               isSectionHeader: isSection,
               sectionName: currentSection,
+              parentId: parentId,
               notes: '',
               assignedEngineerId: engineers[0]?.id || '',
               assignedEngineerName: engineers[0]?.name || '',
@@ -904,9 +975,9 @@ export const TaskManagementPage: React.FC = () => {
               remainingAmount: 0,
               orderStatus: 'Chưa đặt hàng',
               contractStatus: 'Chưa ký',
-              paymentDate: '',
               invoiceStatus: 'Chưa xuất',
               notes: '[section]',
+              isSec: true,
             });
           }
         }
@@ -973,7 +1044,6 @@ export const TaskManagementPage: React.FC = () => {
             remainingAmount: 0,
             orderStatus: 'Chưa đặt hàng',
             contractStatus: 'Chưa ký',
-            paymentDate: '',
             invoiceStatus: 'Chưa xuất',
             notes: itemNotes,
             parentId: parentPurchasingPlan?.id || sectionInPurchasing?.id,
@@ -1024,9 +1094,9 @@ export const TaskManagementPage: React.FC = () => {
           remainingAmount: 0,
           orderStatus: 'Chưa đặt hàng',
           contractStatus: 'Chưa ký',
-          paymentDate: '',
           invoiceStatus: 'Chưa xuất',
           notes: '[section]',
+          isSec: true,
         });
       }
       setIsSectionHeader(false);
@@ -1182,14 +1252,14 @@ export const TaskManagementPage: React.FC = () => {
         });
         nodes.forEach((node, idx) => {
           const currentNum = (idx + 1).toString();
-          const computedStt = depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum);
+          const computedStt = node.stt || (depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum));
           flattened.push({ ...node, depth, computedStt, _sectionKey: sectionKey });
           flattenTree(node.children, depth + 1, computedStt, sectionKey);
         });
       };
       
       if (sectionHeader) {
-        flattened.push({ ...sectionHeader, depth: 0, computedStt: toRoman(groupIndex + 1), _sectionKey: sec });
+        flattened.push({ ...sectionHeader, depth: 0, computedStt: sectionHeader.stt || toRoman(groupIndex + 1), _sectionKey: sec });
       }
       flattenTree(roots, sectionHeader ? 1 : 0, '', sec);
     });

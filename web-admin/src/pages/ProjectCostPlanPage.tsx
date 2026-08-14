@@ -459,8 +459,20 @@ export const ProjectCostPlanPage: React.FC = () => {
 
           const pendingTasks: any[] = [];
           let globalOrder = 0; // thứ tự tuyệt đối trong file, dùng để sort sau
-          let romanSectionCounter = 0; // Đếm số đầu mục lớn để chuyển thành số La Mã
           let currentSectionSupplyScope: 'contractor' | 'owner' | 'unknown' = 'unknown'; // Theo dõi supplyScope của section hiện tại cho các hạng mục con
+
+          let currentMainSectionId: string | undefined = undefined;
+          let currentSubSectionId: string | undefined = undefined;
+          const sttIdMap = new Map<string, string>();
+          
+          const isMainSectionName = (name: string): boolean => {
+            const norm = name.toLowerCase();
+            return norm.includes('phần vttb') || 
+                   norm.includes('cung cấp') || 
+                   norm.includes('chủ đầu tư') || 
+                   norm.includes('nhà thầu') || 
+                   norm.startsWith('phần ');
+          };
 
           wb.SheetNames.forEach((sheetName) => {
             const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets[sheetName], { header: 1, defval: '' });
@@ -483,9 +495,11 @@ export const ProjectCostPlanPage: React.FC = () => {
 
             const hasPrices = unitPriceCol !== -1 || totalCol !== -1;
 
-            rows.slice(headerRowIndex + 1).forEach((row) => {
+            const parsedRows = rows.slice(headerRowIndex + 1);
+            parsedRows.forEach((row, index) => {
               const content = String(row[contentCol] || '').trim();
               if (!content) return;
+              if (!/[a-zA-ZÀ-ỹ]/.test(content)) return;
 
               const stt = String(row[sttCol] || '').trim();
               const volumeContract = numVal(row[volumeCol]);
@@ -500,25 +514,66 @@ export const ProjectCostPlanPage: React.FC = () => {
 
               const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
               const numericParentRegex = /^\d+$/;
-              const isSectionRow = romanRegex.test(stt) || (numericParentRegex.test(stt) && volumeContract === 0 && !String(row[unitCol] || '').trim());
+              const isRoman = romanRegex.test(stt);
+              const cleanStt = String(stt || '').trim().replace(/\.$/, '');
+              const hasNoDot = !cleanStt.includes('.');
+              const startsWithPhan = content.trim().toUpperCase().startsWith('PHẦN ');
+              const cleanUnitVal = String(row[unitCol] || '').replace(/^[-–—_.\s]+$/, '').trim();
+              const hasNoVolumeAndUnit = (volumeContract === 0 || !volumeContract) && (!cleanUnitVal || cleanUnitVal === '');
+              const isSection = startsWithPhan || (hasNoDot && isMainSectionName(content)) || (hasNoDot && hasNoVolumeAndUnit && isRoman);
 
               let effectiveStt = stt;
-              if (isSectionRow) {
-                romanSectionCounter++;
-                effectiveStt = toRoman(romanSectionCounter);
+              if (isSection) {
                 currentSectionSupplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
               }
               
               const rowSupplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
-              const supplyScope = isSectionRow ? currentSectionSupplyScope : (rowSupplyScope !== 'unknown' ? rowSupplyScope : currentSectionSupplyScope);
+              const supplyScope = isSection ? currentSectionSupplyScope : (rowSupplyScope !== 'unknown' ? rowSupplyScope : currentSectionSupplyScope);
+
+              const rowId = crypto.randomUUID();
+              if (stt) sttIdMap.set(stt, rowId);
+
+              let parentId = undefined;
+              if (isSection) {
+                currentMainSectionId = rowId;
+                currentSubSectionId = undefined;
+              } else {
+                let isSubFolder = false;
+                const nextRow = parsedRows[index + 1];
+                if (nextRow) {
+                  const nextStt = String(nextRow[sttCol] || '').trim();
+                  if (nextStt && nextStt.startsWith(stt + '.')) {
+                    isSubFolder = true;
+                  }
+                }
+                if (isSubFolder) {
+                  parentId = currentMainSectionId;
+                  currentSubSectionId = rowId;
+                } else {
+                  let foundDottedParent = false;
+                  if (stt.includes('.')) {
+                    const parts = stt.split('.');
+                    parts.pop();
+                    const parentStt = parts.join('.');
+                    if (sttIdMap.has(parentStt)) {
+                      parentId = sttIdMap.get(parentStt);
+                      foundDottedParent = true;
+                    }
+                  }
+                  if (!foundDottedParent) {
+                    parentId = currentSubSectionId || currentMainSectionId;
+                  }
+                }
+              }
 
               // Lưu thứ tự tuyệt đối vào notes dạng [order:NNN] để sort đúng sau khi load
               const orderTag = `[order:${String(++globalOrder).padStart(5, '0')}]`;
               const rowKey = baselineKey(effectiveStt, content);
-              const baseNote = [isSectionRow ? '[section]' : '', supplyScope === 'contractor' ? '[contractor]' : '', supplyScope === 'owner' ? '[owner]' : '', orderTag, String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
+              const baseNote = [isSection ? '[section]' : '', supplyScope === 'contractor' ? '[contractor]' : '', supplyScope === 'owner' ? '[owner]' : '', orderTag, String(row[notesCol] || ''), sheetName].filter(Boolean).join(' | ');
               const existingMaterial = materialBaselineMap.get(rowKey);
               if (existingMaterial) {
                 updateMaterialPlan(existingMaterial.id, {
+                  parentId: parentId,
                   stt: effectiveStt,
                   jobContent: content,
                   unit: String(row[unitCol] || ''),
@@ -530,6 +585,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                 });
               } else {
                 materialPromises.push(addMaterialPlan({
+                  id: rowId,
+                  parentId: parentId,
                   projectCode: selectedProject,
                   stt: effectiveStt,
                   jobContent: content,
@@ -540,15 +597,16 @@ export const ProjectCostPlanPage: React.FC = () => {
                   progressStatus: 'Chưa thi công',
                   orderedVolume: 0,
                   orderedStatus: 'Chưa đặt hàng',
+                  expectedDate: '',
                   issueContent: '',
                   supplyScope,
                   notes: baseNote,
                 }));
-                materialBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, jobContent: content, unit: String(row[unitCol] || ''), contractVolume: volumeContract } as ProjectMaterialPlan);
+                materialBaselineMap.set(rowKey, { id: rowId, projectCode: selectedProject, stt: effectiveStt, jobContent: content, unit: String(row[unitCol] || ''), contractVolume: volumeContract } as ProjectMaterialPlan);
               }
               appendixMaterialCount++;
 
-              const pushToPurchasing = ((isSectionRow && supplyScope !== 'owner') || supplyScope === 'contractor');
+              const pushToPurchasing = ((isSection && supplyScope !== 'owner') || supplyScope === 'contractor');
 
               if (pushToPurchasing) {
                 const computedVatAmount = vatAmount || (vatRate ? totalBeforeVat * vatRate / 100 : 0);
@@ -557,6 +615,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 const existingPurchasing = purchasingBaselineMap.get(rowKey);
                 if (existingPurchasing) {
                   updatePurchasingPlan(existingPurchasing.id, {
+                    parentId: parentId,
                     stt: effectiveStt,
                     content,
                     unit: String(row[unitCol] || ''),
@@ -570,6 +629,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                   });
                 } else {
                   purchasingPromises.push(addPurchasingPlan({
+                    id: rowId,
+                    parentId: parentId,
                     projectCode: selectedProject,
                     stt: effectiveStt,
                     content,
@@ -588,7 +649,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     invoiceStatus: 'Chưa xuất',
                     notes: baseNote,
                   }));
-                  purchasingBaselineMap.set(rowKey, { id: '', projectCode: selectedProject, stt: effectiveStt, content, unit: String(row[unitCol] || ''), volumeContract, volumeOrder: 0, unitPrice, vatRate, vatAmount: computedVatAmount, totalAmount: totalWithVat, prepayPercent: 0, prepayAmount: 0, remainingAmount: totalWithVat, orderStatus: '', contractStatus: '', invoiceStatus: '' } as ProjectPurchasing);
+                  purchasingBaselineMap.set(rowKey, { id: rowId, projectCode: selectedProject, stt: effectiveStt, content, unit: String(row[unitCol] || ''), volumeContract, volumeOrder: 0, unitPrice, vatRate, vatAmount: computedVatAmount, totalAmount: totalWithVat, prepayPercent: 0, prepayAmount: 0, remainingAmount: totalWithVat, orderStatus: '', contractStatus: '', invoiceStatus: '' } as ProjectPurchasing);
                 }
                 appendixPurchasingCount++;
               }
@@ -596,21 +657,23 @@ export const ProjectCostPlanPage: React.FC = () => {
               const existingTask = taskBaselineMap.get(rowKey);
               if (!existingTask) {
                 const projName = projects.find(p => p.code === selectedProject)?.name || selectedProject;
-                const currentSectionName = isSectionRow ? content : (pendingTasks.slice().reverse().find((task) => task.isSectionHeader)?.name || 'Khác');
+                const currentSectionName = isSection ? content : (pendingTasks.slice().reverse().find((task) => task.isSectionHeader)?.name || 'Khác');
                 pendingTasks.push({
+                  id: rowId,
+                  parentId: parentId,
                   stt: effectiveStt,
-                  code: '',
+                  code: rowId,
                   name: content,
                   projectCode: selectedProject,
                   projectName: projName,
-                  volume: isSectionRow ? 0 : volumeContract,
-                  unit: isSectionRow ? '' : String(row[unitCol] || ''),
+                  volume: isSection ? 0 : volumeContract,
+                  unit: isSection ? '' : String(row[unitCol] || ''),
                   progress: 0,
                   status: 'Chưa làm',
-                  purchaseStatus: isSectionRow ? '' : 'Chưa đặt hàng',
-                  constrStatus: isSectionRow ? '' : 'Chưa thi công',
+                  purchaseStatus: isSection ? '' : 'Chưa đặt hàng',
+                  constrStatus: isSection ? '' : 'Chưa thi công',
                   isDone: false,
-                  isSectionHeader: isSectionRow,
+                  isSectionHeader: isSection,
                   sectionName: currentSectionName,
                   notes: baseNote
                 });
@@ -726,6 +789,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             rows.slice(startRow).forEach(row => {
               const content = row[1];
               if (!content) return;
+              if (!/[a-zA-ZÀ-ỹ]/.test(content)) return;
 
               const stt = String(row[0] || '');
               const contentStr = String(content);
@@ -808,6 +872,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             rows.slice(startRow).forEach(row => {
               const content = row[2];
               if (!content) return;
+              if (!/[a-zA-ZÀ-ỹ]/.test(content)) return;
               addLaborPayroll({
                 projectCode: selectedProject,
                 stt: String(row[0] || ''),
@@ -868,6 +933,8 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('MATERIAL_PLAN');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
+  const isSubmittingPlanRef = useRef(false);
   const [statusFilter, setStatusFilter] = useState('ALL');
 
   useEffect(() => {
@@ -961,6 +1028,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   // Tự động đồng bộ các hạng mục do nhà thầu cung cấp sang tab Mua hàng (chạy ngầm, không gây treo máy nhờ debounce)
   useEffect(() => {
     if (!selectedProject || currentProjMaterialPlans.length === 0) return;
+    if (isSubmittingPlanRef.current) return;
 
     let isCancelled = false;
     const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
@@ -1367,6 +1435,8 @@ export const ProjectCostPlanPage: React.FC = () => {
             }}
             onAddSubtask={(plan, suggestedStt) => {
               setParentPlanIdForNew(plan.id);
+              const section = getSectionForMaterialPlan(plan, currentProjMaterialPlans);
+              if (section) setSectionPlanIdForNew(section.id);
               setIsCreatingSectionHeader(false);
               setIsNewPlanOpen(true);
               setNewPlanData(prev => ({ ...prev, stt: suggestedStt || '', isContractor: isEffectiveContractorPlan(plan, currentProjMaterialPlans) }));
@@ -1390,6 +1460,18 @@ export const ProjectCostPlanPage: React.FC = () => {
             }}
             onAddSubtask={(plan, suggestedStt) => {
               setParentPurchasingIdForNew(plan.id);
+              const getSectionForPurchasing = (p: ProjectPurchasing, all: ProjectPurchasing[], visited = new Set<string>()): ProjectPurchasing | null => {
+                if (visited.has(p.id)) return null;
+                visited.add(p.id);
+                if (isSectionMarker(p.stt, p.notes)) return p;
+                if (p.parentId) {
+                  const parent = all.find(x => x.id === p.parentId);
+                  if (parent) return getSectionForPurchasing(parent, all, visited);
+                }
+                return null;
+              };
+              const section = getSectionForPurchasing(plan, currentProjPurchasing);
+              if (section) setSectionPurchasingIdForNew(section.id);
               setIsCreatingSectionHeader(false);
               setIsNewPurchasingOpen(true);
               setNewPurchasingData(prev => ({ ...prev, stt: suggestedStt || '' }));
@@ -1610,7 +1692,10 @@ export const ProjectCostPlanPage: React.FC = () => {
             return tags.join(' | ');
           })();
 
-          const createdMaterialId = await addMaterialPlan({
+          setIsSubmittingPlan(true);
+          isSubmittingPlanRef.current = true;
+          try {
+            const createdMaterialId = await addMaterialPlan({
             projectCode: selectedProject,
             stt: autoStt,
             jobContent: newPlanData.jobContent || '',
@@ -1675,7 +1760,6 @@ export const ProjectCostPlanPage: React.FC = () => {
                 remainingAmount: 0,
                 orderStatus: 'Chưa đặt hàng',
                 contractStatus: 'Chưa ký',
-                paymentDate: '',
                 invoiceStatus: 'Chưa xuất',
                 notes: baseNote,
                 parentId: purchasingParentId || undefined
@@ -1746,6 +1830,11 @@ export const ProjectCostPlanPage: React.FC = () => {
             parentId: taskParentId
           });
 
+          } finally {
+            setIsSubmittingPlan(false);
+            isSubmittingPlanRef.current = false;
+          }
+
           // Reset form
           setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true});
 
@@ -1781,7 +1870,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 w-full">
                   <select
                     value={sectionPlanIdForNew || ''}
                     onChange={(e) => {
@@ -1789,7 +1878,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                       setParentPlanIdForNew(null);
                     }}
                     required={!isCreatingSectionHeader}
-                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
+                    className="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
                   >
                     <option value="" disabled>-- Chọn Đầu mục cha --</option>
                     {currentProjMaterialPlans.filter(p => isSectionMarker(p.stt, p.notes)).map(sec => (
@@ -2115,8 +2204,11 @@ export const ProjectCostPlanPage: React.FC = () => {
           }
           const isContractor = resolvedSupplyScope === 'contractor' || (resolvedSupplyScope === 'unknown');
 
-          addMaterialPlan({
-            projectCode: selectedProject,
+          setIsSubmittingPlan(true);
+          isSubmittingPlanRef.current = true;
+          try {
+            await addMaterialPlan({
+              projectCode: selectedProject,
             stt: autoStt,
             jobContent: newPurchasingData.content || '',
             unit: newPurchasingData.unit || 'bộ',
@@ -2174,7 +2266,8 @@ export const ProjectCostPlanPage: React.FC = () => {
             }
           }
 
-          addTask({
+          // Await so that the `isSubmittingPlanRef` stays true until both are done
+          await addTask({
             stt: autoStt,
             code: '',
             name: newPurchasingData.content || '',
@@ -2193,7 +2286,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             parentId: taskParentId
           });
 
-          addPurchasingPlan({
+          await addPurchasingPlan({
             projectCode: selectedProject,
             stt: autoStt,
             content: newPurchasingData.content || '',
@@ -2209,11 +2302,16 @@ export const ProjectCostPlanPage: React.FC = () => {
             remainingAmount: remainingAmt,
             orderStatus: newPurchasingData.orderStatus || 'Chưa đặt hàng',
             contractStatus: newPurchasingData.contractStatus || 'Chưa ký',
-            paymentDate: newPurchasingData.paymentDate || '',
+            ...(newPurchasingData.paymentDate ? { paymentDate: newPurchasingData.paymentDate } : {}),
             invoiceStatus: newPurchasingData.invoiceStatus || 'Chưa xuất',
             notes: isCreatingSectionHeader && !parentId ? '[section]' : newPurchasingData.notes || '',
             parentId: parentId || undefined
           });
+
+          } finally {
+            setIsSubmittingPlan(false);
+            isSubmittingPlanRef.current = false;
+          }
 
           // Reset form
           setNewPurchasingData({stt: '', content: '', unit: 'bộ', volumeContract: 1, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''});
@@ -2250,7 +2348,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 w-full">
                   <select
                     value={sectionPurchasingIdForNew || ''}
                     onChange={(e) => {
@@ -2258,7 +2356,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                       setParentPurchasingIdForNew(null);
                     }}
                     required={!isCreatingSectionHeader}
-                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
+                    className="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
                   >
                     <option value="" disabled>-- Chọn Đầu mục cha --</option>
                     {currentProjPurchasing.filter(p => isSectionMarker(p.stt, p.notes)).map(sec => (

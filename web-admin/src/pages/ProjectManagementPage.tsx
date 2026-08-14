@@ -269,7 +269,6 @@ export const ProjectManagementPage: React.FC = () => {
       memberIds: selectedEngineerIds,
       startDate: todayStamp(),
     };
-
     const createdProject = await addProject(newProject);
     if (!createdProject) {
       triggerToast(TEXT.createFailed, 'warning');
@@ -278,17 +277,93 @@ export const ProjectManagementPage: React.FC = () => {
 
     if (pendingProjectTasks.length > 0) {
       let orderCounter = 0;
-      const existingTaskKeys = new Set(tasks.filter((task) => task.projectCode === code).map((task) => `${task.stt.trim()}|${task.name.trim().toLowerCase()}`));
-      const importedTasks: Omit<Task, 'id'>[] = pendingProjectTasks
-        .filter((item) => {
-          const key = `${item.stt.trim()}|${item.name.trim().toLowerCase()}`;
-          if (existingTaskKeys.has(key)) return false;
-          existingTaskKeys.add(key);
-          return true;
-        })
-        .map((item, index) => ({
-          stt: item.isSectionHeader ? (item.stt || '') : (item.stt || String(index + 1)),
-          code: `TSK-PL-${Date.now()}-${index}`,
+      let currentMainSectionId: string | undefined = undefined;
+      let currentSubSectionId: string | undefined = undefined;
+      const sttIdMap = new Map<string, string>();
+      
+
+
+
+      const tasksWithIds = pendingProjectTasks.map((item, index) => {
+        const taskId = crypto.randomUUID();
+        return {
+          ...item,
+          id: taskId,
+        };
+      });
+
+      tasksWithIds.forEach(item => {
+        if (item.stt) sttIdMap.set(item.stt.trim(), item.id);
+      });
+
+      const existingTaskKeys = new Set(tasks.filter((task) => task.projectCode === code).map((task) => `${task.parentId || 'root'}|${task.stt.trim()}|${task.name.trim().toLowerCase()}`));
+      
+      const importedTasks: Task[] = [];
+      
+      tasksWithIds.forEach((item, index) => {
+
+
+        const sttVal = item.stt.trim();
+        const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
+        const numericParentRegex = /^\d+$/;
+        
+        const isRoman = romanRegex.test(sttVal);
+          if (!/[a-zA-ZÀ-ỹ]/.test(item.name || '')) return;
+        const cleanUnitVal = (item.unit || '').replace(/^[-–—_.\s]+$/, '').trim();
+        
+        const isMainSectionName = (name: string): boolean => {
+            const norm = (name || '').toLowerCase();
+            return norm.includes('phần vttb') || norm.includes('cung cấp') || norm.includes('chủ đầu tư') || norm.includes('nhà thầu') || norm.startsWith('phần ') || norm.startsWith('hệ thống ');
+        };
+        const cleanStt = String(sttVal || '').trim().replace(/\.$/, '');
+        const hasNoDot = !cleanStt.includes('.');
+        const normalizedName = String(item.name || '').trim().toUpperCase();
+        const startsWithPhan = normalizedName.startsWith('PHẦN ') && !normalizedName.startsWith('PHẦN MỀM');
+        const hasNoVolumeAndUnit = (item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === '');
+        const isSection = startsWithPhan || (hasNoDot && isMainSectionName(item.name)) || (hasNoDot && hasNoVolumeAndUnit && isRoman);
+        
+        let parentId = undefined;
+        if (isSection) {
+          currentMainSectionId = item.id;
+          currentSubSectionId = undefined;
+        } else {
+          let isSubFolder = false;
+          const nextItem = pendingProjectTasks[index + 1];
+          if (nextItem) {
+            const nextStt = String(nextItem.stt || '').trim();
+            if (nextStt && nextStt.startsWith(sttVal + '.')) {
+              isSubFolder = true;
+            }
+          }
+          if (isSubFolder) {
+            parentId = currentMainSectionId;
+            currentSubSectionId = item.id;
+          } else {
+            let foundDottedParent = false;
+            if (sttVal.includes('.')) {
+              const parts = sttVal.split('.');
+              parts.pop();
+              const parentStt = parts.join('.');
+              if (sttIdMap.has(parentStt)) {
+                parentId = sttIdMap.get(parentStt);
+                foundDottedParent = true;
+              }
+            }
+            if (!foundDottedParent) {
+              parentId = currentSubSectionId || currentMainSectionId;
+            }
+          }
+        }
+
+        const key = `${parentId || 'root'}|${item.stt.trim()}|${item.name.trim().toLowerCase()}`;
+        if (existingTaskKeys.has(key)) return;
+        existingTaskKeys.add(key);
+
+        importedTasks.push({
+          id: item.id,
+          parentId: parentId,
+          stt: isSection ? (item.stt || '') : (item.stt || String(index + 1)),
+          code: item.id,
           name: item.name,
           projectCode: code,
           projectName: newProject.name,
@@ -296,17 +371,19 @@ export const ProjectManagementPage: React.FC = () => {
           unit: item.unit || '',
           progress: 0,
           status: TEXT.taskStatus as Task['status'],
-          purchaseStatus: item.isSectionHeader ? '' : TEXT.purchaseStatus,
-          constrStatus: item.isSectionHeader ? '' : TEXT.constructionStatus,
+          purchaseStatus: isSection ? '' : TEXT.purchaseStatus,
+          constrStatus: isSection ? '' : TEXT.constructionStatus,
           issue: '',
           issueStatus: '',
           isDone: false,
-          isSectionHeader: item.isSectionHeader,
-          sectionName: item.sectionName || '',
+          isSectionHeader: isSection,
+          sectionName: isSection ? item.name : (importedTasks.slice().reverse().find((t) => t.isSectionHeader)?.name || ''),
           notes: [item.notes, TEXT.importNote].filter(Boolean).join(' | '),
           assignedEngineerId: engineers[0]?.id || '',
           assignedEngineerName: engineers[0]?.name || '',
-        }));
+        });
+      });
+
       if (importedTasks.length > 0) await addTasksBatch(importedTasks);
 
       const existingMaterialPlanKeys = new Set(
@@ -315,14 +392,22 @@ export const ProjectManagementPage: React.FC = () => {
           .map((plan) => `${String(plan.stt || '').trim()}|${String(plan.jobContent || '').trim().toLowerCase()}`)
       );
 
-      for (const [index, item] of pendingProjectTasks.filter((item) => item.name?.trim()).entries()) {
+      for (const [index, item] of tasksWithIds.filter((item) => item.name?.trim()).entries()) {
         const key = `${String(item.stt || '').trim()}|${String(item.name || '').trim().toLowerCase()}`;
         if (existingMaterialPlanKeys.has(key)) continue;
         existingMaterialPlanKeys.add(key);
+
+        const matchingTask = importedTasks.find(t => t.id === item.id);
+        const rowId = item.id;
+        const parentId = matchingTask ? matchingTask.parentId : undefined;
+        const isSection = matchingTask ? matchingTask.isSectionHeader : false;
+
         const supplyScope = item.supplyScope === 'owner' ? 'owner' : item.supplyScope === 'contractor' ? 'contractor' : 'unknown';
         const supplyLabel = supplyScope === 'owner' ? 'Chủ đầu tư cung cấp' : supplyScope === 'contractor' ? 'Nhà thầu cung cấp' : '';
         const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
         await addMaterialPlan({
+          id: rowId,
+          parentId: parentId,
           projectCode: code,
           stt: item.stt || String(index + 1),
           jobContent: item.name,
@@ -341,7 +426,7 @@ export const ProjectManagementPage: React.FC = () => {
           docFireInspection: false,
           dispatchToSite: false,
           supplyScope,
-          notes: [orderTag, item.isSectionHeader ? '[section]' : '', supplyScope !== 'unknown' ? `[${supplyScope}]` : '', item.notes, supplyLabel, TEXT.materialSyncNote].filter(Boolean).join(' | '),
+          notes: [orderTag, isSection ? '[section]' : '', supplyScope !== 'unknown' ? `[${supplyScope}]` : '', item.notes, supplyLabel, TEXT.materialSyncNote].filter(Boolean).join(' | '),
         });
       }
 
@@ -350,12 +435,20 @@ export const ProjectManagementPage: React.FC = () => {
           .filter((plan) => plan.projectCode === code)
           .map((plan) => `${String(plan.stt || '').trim()}|${String(plan.content || '').trim().toLowerCase()}`)
       );
-      for (const [index, item] of pendingProjectTasks.filter((item) => ((item.isSectionHeader && item.supplyScope !== 'owner') || item.supplyScope === 'contractor') && item.name?.trim()).entries()) {
+      for (const [index, item] of tasksWithIds.filter((item) => ((item.isSectionHeader && item.supplyScope !== 'owner') || item.supplyScope === 'contractor') && item.name?.trim()).entries()) {
         const key = `${String(item.stt || '').trim()}|${String(item.name || '').trim().toLowerCase()}`;
         if (existingPurchasingKeys.has(key)) continue;
         existingPurchasingKeys.add(key);
+
+        const matchingTask = importedTasks.find(t => t.id === item.id);
+        const rowId = item.id;
+        const parentId = matchingTask ? matchingTask.parentId : undefined;
+        const isSection = matchingTask ? matchingTask.isSectionHeader : false;
+
         const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
         await addPurchasingPlan({
+          id: rowId,
+          parentId: parentId,
           projectCode: code,
           stt: item.stt || String(index + 1),
           content: item.name,
@@ -370,9 +463,9 @@ export const ProjectManagementPage: React.FC = () => {
           prepayAmount: 0,
           remainingAmount: 0,
           orderStatus: TEXT.purchaseStatus,
-          contractStatus: '\u0110\u00e3 c\u00f3 ph\u1ee5 l\u1ee5c',
-          invoiceStatus: 'Ch\u01b0a xu\u1ea5t',
-          notes: [orderTag, item.isSectionHeader ? '[section]' : '', item.notes, '\u0110\u1ed3ng b\u1ed9 t\u1eeb ph\u1ee5 l\u1ee5c khi t\u1ea1o d\u1ef1 \u00e1n'].filter(Boolean).join(' | '),
+          contractStatus: 'Đã có phụ lục',
+          invoiceStatus: 'Chưa xuất',
+          notes: [orderTag, isSection ? '[section]' : '', item.notes, 'Đồng bộ từ phụ lục khi tạo dự án'].filter(Boolean).join(' | '),
         });
       }
     }

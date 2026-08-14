@@ -1,77 +1,79 @@
 {
-  "name": "buildcore-pro-web-admin",
-  "private": true,
-  "version": "1.0.1",
-  "type": "module",
-  "main": "dist-electron/main.js",
-  "scripts": {
-    "dev": "vite --host",
-    "dev:web": "cross-env WEB_ONLY=true vite --host",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "build:electron": "vite build && electron-builder",
-    "publish:win": "vite build && electron-builder --win --publish always"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.112.2",
-    "@tanstack/react-query": "^5.28.9",
-    "@types/uuid": "^10.0.0",
-    "axios": "^1.18.1",
-    "clsx": "^2.1.0",
-    "docx": "^9.7.1",
-    "electron-updater": "^6.8.9",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1",
-    "lucide-react": "^0.359.0",
-    "mammoth": "^1.12.0",
-    "pdfjs-dist": "^6.1.200",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.3",
-    "recharts": "^2.12.3",
-    "tailwind-merge": "^2.2.2",
-    "tesseract.js": "^7.0.0",
-    "uuid": "^14.0.1",
-    "xlsx": "^0.18.5",
-    "zustand": "^4.5.2"
-  },
-  "devDependencies": {
-    "@types/node": "^20.11.30",
-    "@types/react": "^18.2.66",
-    "@types/react-dom": "^18.2.22",
-    "@vitejs/plugin-react": "^4.2.1",
-    "autoprefixer": "^10.4.19",
-    "cross-env": "^10.1.0",
-    "electron": "^43.3.0",
-    "electron-builder": "^26.15.3",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5.2.2",
-    "vite": "^5.1.6",
-    "vite-plugin-electron": "^1.1.1"
-  },
-  "build": {
-    "appId": "com.titsmart.projectmanager",
-    "productName": "TITSMART Project Manager",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist",
-      "dist-electron"
-    ],
-    "win": {
-      "target": "nsis"
-    },
-    "publish": {
-      "provider": "github",
-      "owner": "kennhope13",
-      "repo": "Titsmart_task"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "artifactName": "TITSMART-Setup.${ext}"
-    }
-  }
+    "name":  "buildcore-pro-web-admin",
+    "private":  true,
+    "version":  "1.0.7",
+    "description": "TITSMART Project Manager",
+    "type":  "module",
+    "main":  "dist-electron/main.js",
+    "scripts":  {
+                    "dev":  "vite --host",
+                    "dev:web":  "cross-env WEB_ONLY=true vite --host",
+                    "build":  "tsc \u0026\u0026 vite build",
+                    "preview":  "vite preview",
+                    "build:electron":  "vite build \u0026\u0026 electron-builder",
+                    "publish:win":  "vite build \u0026\u0026 electron-builder --win --publish always"
+                },
+    "dependencies":  {
+                         "@supabase/supabase-js":  "^2.112.2",
+                         "@tanstack/react-query":  "^5.28.9",
+                         "@types/uuid":  "^10.0.0",
+                         "axios":  "^1.18.1",
+                         "clsx":  "^2.1.0",
+                         "docx":  "^9.7.1",
+                         "electron-updater":  "^6.8.9",
+                         "html2canvas":  "^1.4.1",
+                         "jspdf":  "^2.5.1",
+                         "lucide-react":  "^0.359.0",
+                         "mammoth":  "^1.12.0",
+                         "pdfjs-dist":  "^6.1.200",
+                         "react":  "^18.2.0",
+                         "react-dom":  "^18.2.0",
+                         "react-router-dom":  "^6.22.3",
+                         "recharts":  "^2.12.3",
+                         "tailwind-merge":  "^2.2.2",
+                         "tesseract.js":  "^7.0.0",
+                         "uuid":  "^14.0.1",
+                         "xlsx":  "^0.18.5",
+                         "zustand":  "^4.5.2"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^20.11.30",
+                            "@types/react":  "^18.2.66",
+                            "@types/react-dom":  "^18.2.22",
+                            "@vitejs/plugin-react":  "^4.2.1",
+                            "autoprefixer":  "^10.4.19",
+                            "cross-env":  "^10.1.0",
+                            "electron":  "^43.3.0",
+                            "electron-builder":  "^26.15.3",
+                            "postcss":  "^8.4.38",
+                            "tailwindcss":  "^3.4.1",
+                            "typescript":  "^5.2.2",
+                            "vite":  "^5.1.6",
+                            "vite-plugin-electron":  "^1.1.1"
+                        },
+    "build":  {
+                  "appId":  "com.titsmart.projectmanager",
+                  "productName":  "TITSMART Project Manager",
+                  "directories":  {
+                                      "output":  "release"
+                                  },
+                  "files":  [
+                                "dist",
+                                "dist-electron"
+                            ],
+                  "win":  {
+                              "target":  "nsis",
+                              "icon":  "public/logo_256.png"
+                          },
+                  "publish":  {
+                                  "provider":  "github",
+                                  "owner":  "kennhope13",
+                                  "repo":  "Titsmart_task"
+                              },
+                  "nsis":  {
+                               "oneClick":  true,
+                               "artifactName":  "TITSMART-Setup.${ext}",
+                               "perMachine":  false
+                           }
+              }
 }

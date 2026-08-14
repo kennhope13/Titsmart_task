@@ -250,7 +250,15 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
   const parsedTasks: WebOcrTableTask[] = [];
   let currentSection = '';
   let currentSupplyScope: SupplyScope = 'unknown';
-  let romanSectionCounter = 0; // Đếm số đầu mục lớn
+
+  const isMainSectionName = (nameStr: string): boolean => {
+    const norm = nameStr.toLowerCase();
+    return norm.includes('phần vttb') || 
+           norm.includes('cung cấp') || 
+           norm.includes('chủ đầu tư') || 
+           norm.includes('nhà thầu') || 
+           norm.startsWith('phần ');
+  };
 
   for (let index = headerIndex + 1; index < rows.length; index += 1) {
     const cells = rows[index];
@@ -264,6 +272,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const stt = String(cells[sttCol] || '').trim();
     const name = String(cells[nameCol] || cells.find((cell, cellIndex) => cellIndex !== sttCol && normalizeLookupText(cell) !== 'stt') || '').trim();
     if (!name || isTotalOrNoiseRow(name)) continue;
+    if (!/[a-zA-ZÀ-ỹ]/.test(name)) continue;
     if (normalizeLookupText(stt) === 'stt') continue;
 
     const volume = volumeCol >= 0 ? parseNumberValue(cells[volumeCol] || '') : 0;
@@ -279,14 +288,48 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const numericParentRegex = /^\d+$/;
     const decimalItemRegex = /^\d+(?:\.\d+)+$/;
     const hasValidStt = romanRegex.test(sttLookup) || numericParentRegex.test(sttLookup) || decimalItemRegex.test(sttLookup);
+    
+    // Bỏ qua các dòng không có STT hợp lệ (như dòng Thuế VAT, Tiền thuế...)
     if (!hasValidStt) continue;
-    const isSectionHeader = romanRegex.test(sttLookup) || (numericParentRegex.test(sttLookup) && volume === 0 && !unit);
+    
+    const cleanUnitVal = unit.replace(/^[-–—_.\s]+$/, '').trim();
+    // A section header is ONLY a roman numeral if the file has roman numerals, OR if it has [section] in notes.
+    const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
+    const isRomanSection = romanRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
+    const cleanStt = String(stt || '').trim().replace(/\.$/, '');
+    const hasNoDot = !cleanStt.includes('.');
+    const startsWithPhan = name.trim().toUpperCase().startsWith('PHẦN ') && !name.trim().toUpperCase().startsWith('PHẦN MỀM');
+    const hasNoVolumeAndUnit = (volume === 0 || !volume) && (!cleanUnitVal || cleanUnitVal === '');
+    const isSectionHeader = startsWithPhan || (hasNoDot && isMainSectionName(name)) || (hasNoDot && hasNoVolumeAndUnit && isRomanSection);
+    const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
+    
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
     const headerSupplyScope = isSectionHeader ? detectSupplyScope(rowText) : 'unknown';
     if (explicitSupplyScope !== 'unknown') currentSupplyScope = explicitSupplyScope;
     else if (headerSupplyScope !== 'unknown') currentSupplyScope = headerSupplyScope;
     const supplyScope = explicitSupplyScope !== 'unknown' ? explicitSupplyScope : currentSupplyScope;
     const cleanSectionName = stripSectionPrefix(name);
+    
+    // Find next valid row's STT to detect if this is a subfolder with children
+    let isSubFolder = false;
+    if (!isSectionHeader) {
+      let nextSttVal = '';
+      for (let nextIdx = index + 1; nextIdx < rows.length; nextIdx++) {
+        const nextCells = rows[nextIdx];
+        if (!nextCells || !nextCells.length) continue;
+        const nextStt = String(nextCells[sttCol] || '').trim();
+        const nextSttLookup = normalizeLookupText(nextStt).toUpperCase();
+        const nextHasValidStt = romanRegex.test(nextSttLookup) || numericParentRegex.test(nextSttLookup) || decimalItemRegex.test(nextSttLookup);
+        if (nextHasValidStt) {
+          nextSttVal = nextStt;
+          break;
+        }
+      }
+      if (nextSttVal && nextSttVal.startsWith(stt + '.')) {
+        isSubFolder = true;
+      }
+    }
+
     const sectionName = isSectionHeader ? cleanSectionName : currentSection;
 
     if (isSectionHeader) currentSection = sectionName;
@@ -297,16 +340,11 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
       : effectiveSupplyScope === 'contractor'
         ? 'Nh\u00e0 th\u1ea7u cung c\u1ea5p'
         : '';
-    const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
 
     let effectiveStt = stt;
-    if (isSectionHeader) {
-      romanSectionCounter++;
-      effectiveStt = toRoman(romanSectionCounter);
-    }
 
     parsedTasks.push({
-      stt: isSectionHeader ? effectiveStt : (stt || String(parsedTasks.length + 1)),
+      stt: isSectionHeader ? effectiveStt : stt,
       name,
       volume: isSectionHeader ? 0 : volume,
       unit: isSectionHeader ? '' : unit,
@@ -319,7 +357,55 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
       vatAmount: isSectionHeader ? 0 : vatAmount,
       totalBeforeVat: isSectionHeader ? 0 : totalBeforeVat,
       totalAmount: isSectionHeader ? 0 : totalAmount,
-    });
+      // We temporarily store a flag to help with STT post-processing
+      _isLevel2: isLevel2Item
+    } as any);
+  }
+
+  const hasDottedStt = parsedTasks.some(t => t.stt && String(t.stt).includes('.'));
+
+  if (!hasDottedStt) {
+    // POST-PROCESSING: Generate hierarchical STTs for non-header items
+    let currentLevel2 = 0;
+    let currentLevel3 = 0;
+    let lastSection = '';
+    
+    for (const task of parsedTasks) {
+      if (task.isSectionHeader) {
+        currentLevel2 = 0;
+        currentLevel3 = 0;
+        lastSection = task.sectionName;
+        continue;
+      }
+      
+      // If we changed sections implicitly (shouldn't happen but just in case)
+      if (task.sectionName !== lastSection) {
+        currentLevel2 = 0;
+        currentLevel3 = 0;
+        lastSection = task.sectionName;
+      }
+      
+      const anyTask = task as any;
+      if (anyTask._isLevel2) {
+        currentLevel2++;
+        currentLevel3 = 0;
+        task.stt = String(currentLevel2);
+      } else {
+        currentLevel3++;
+        // If there was no level 2 before this, just use the item counter
+        if (currentLevel2 === 0) {
+          task.stt = String(currentLevel3);
+        } else {
+          task.stt = `${currentLevel2}.${currentLevel3}`;
+        }
+      }
+      delete anyTask._isLevel2;
+    }
+  } else {
+    for (const task of parsedTasks) {
+      const anyTask = task as any;
+      delete anyTask._isLevel2;
+    }
   }
 
   return parsedTasks;
