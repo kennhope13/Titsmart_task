@@ -31,8 +31,8 @@ export const UpdateNotifier: React.FC = () => {
           setState((s) => ({ ...s, visible: true, status: 'downloaded', version: p.version }));
           break;
         case 'error':
-          // Không làm phiền người dùng khi kiểm tra lỗi, chỉ log console
-          setState((s) => ({ ...s, visible: false }));
+          // Hiển thị lỗi ra UI để biết vì sao auto-update thất bại
+          setState((s) => ({ ...s, visible: true, status: 'error', message: p.message || 'Lỗi không xác định' }));
           console.error('[Update] Lỗi kiểm tra/cập nhật:', p.message);
           break;
         default:
@@ -46,7 +46,7 @@ export const UpdateNotifier: React.FC = () => {
   const dismiss = () => setState({ ...state, visible: false });
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 w-[380px] max-w-[calc(100vw-2rem)]">
+    <div className="fixed bottom-5 right-5 z-50 w-[420px] max-w-[calc(100vw-2rem)]">
       <div className="rounded-xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
         <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-1">
           <div className="flex items-center gap-3">
@@ -84,7 +84,16 @@ export const UpdateNotifier: React.FC = () => {
 
         {state.status === 'available' && state.releaseNotes && (
           <div className="px-4 pt-2 pb-1">
-            <p className="text-xs text-slate-500 whitespace-pre-line max-h-24 overflow-y-auto">{state.releaseNotes}</p>
+            <div 
+              className="text-xs text-slate-500 max-h-32 overflow-y-auto prose prose-sm prose-slate"
+              dangerouslySetInnerHTML={{ __html: state.releaseNotes }}
+            />
+          </div>
+        )}
+
+        {state.status === 'error' && (
+          <div className="px-4 pt-2 pb-1">
+            <p className="text-xs text-red-500 whitespace-pre-line max-h-24 overflow-y-auto">{state.message}</p>
           </div>
         )}
 

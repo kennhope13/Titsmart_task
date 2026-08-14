@@ -10,8 +10,11 @@ const toSnakeCase = (obj: any) => {
   if (!obj || typeof obj !== 'object') return obj;
   const result: any = {};
   for (const key in obj) {
-    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-    result[snakeKey] = obj[key];
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      if (key.startsWith('_') || key === 'subTasks' || key === 'children' || key === 'computedStt' || key === 'isSec' || key === 'depth') continue;
+      const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      result[snakeKey] = obj[key];
+    }
   }
   return result;
 };
@@ -123,12 +126,46 @@ export const api = {
     createTransaction: async (data: any) => {
       const payload = toSnakeCase(data);
       if (!payload.id) payload.id = uuidv4();
-      const { data: result, error } = await supabase.from('inventory_transactions').insert(payload).select().single();
+      
+      // Loại bỏ các trường không thuộc bảng inventory_transactions
+      const allowedKeys = ['id', 'type', 'date', 'material_id', 'material_code', 'material_name', 'specs', 'category', 'unit', 'quantity', 'source_or_project', 'receiver_name', 'notes', 'created_at'];
+      const sanitizedPayload: any = {};
+      for (const key of Object.keys(payload)) {
+        if (allowedKeys.includes(key)) {
+          sanitizedPayload[key] = payload[key];
+        }
+      }
+
+      const { data: result, error } = await supabase.from('inventory_transactions').insert(sanitizedPayload).select().single();
       if (error) throw error;
+      
+      // Update material stock
+      if (data.materialId) {
+        const { data: currentMat } = await supabase.from('materials').select('initial_stock, total_import, total_export').eq('id', data.materialId).single();
+        if (currentMat) {
+          const isImport = data.type === 'IMPORT';
+          const qty = Number(data.quantity) || 0;
+          const initialStock = Number(currentMat.initial_stock) || 0;
+          const newImport = (Number(currentMat.total_import) || 0) + (isImport ? qty : 0);
+          const newExport = (Number(currentMat.total_export) || 0) + (!isImport ? qty : 0);
+          const currentStock = initialStock + newImport - newExport;
+          
+          await supabase.from('materials').update({
+            total_import: newImport,
+            total_export: newExport,
+            current_stock: currentStock
+          }).eq('id', data.materialId);
+        }
+      }
+      
       return toCamelCase(result);
     },
     create: async (data: any) => {
-      const { data: result, error } = await supabase.from('materials').insert(toSnakeCase(data)).select().single();
+      const payload = toSnakeCase(data);
+      if (payload.id && String(payload.id).startsWith('mat-')) {
+        delete payload.id;
+      }
+      const { data: result, error } = await supabase.from('materials').insert(payload).select().single();
       if (error) throw error;
       return toCamelCase(result);
     },

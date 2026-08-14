@@ -83,12 +83,12 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                 </td>
                 <td className="w-[45px] px-1 py-1 text-center font-medium">{exp.unit}</td>
                 <td className="w-[65px] px-1.5 py-1 text-right font-semibold">{exp.quantity}</td>
-                <td className="px-1.5 py-1.5 text-right">{exp.unitPrice.toLocaleString('vi-VN')}</td>
-                <td className="px-1.5 py-1.5 text-right text-slate-500">{(exp.taxAmount || 0).toLocaleString('vi-VN')}</td>
+                <td className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-right">{exp.unitPrice.toLocaleString('vi-VN')}</td>
+                <td className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-right text-slate-500">{(exp.taxAmount || 0).toLocaleString('vi-VN')}</td>
                 <td className="bg-rose-50/30 px-1.5 py-1.5 text-right font-extrabold text-rose-600">-{exp.totalAmount.toLocaleString('vi-VN')}</td>
-                <td className="px-1.5 py-1.5 text-right font-extrabold text-emerald-600">{(exp.incomeAmount || 0) > 0 ? `+${exp.incomeAmount?.toLocaleString('vi-VN')}` : '-'}</td>
-                <td className="px-1.5 py-1.5 text-right font-extrabold text-primary">{(exp.balanceFund || 0) > 0 ? exp.balanceFund?.toLocaleString('vi-VN') : '-'}</td>
-                <td className="px-1.5 py-1.5 text-center">
+                <td className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-right font-extrabold text-emerald-600">{(exp.incomeAmount || 0) > 0 ? `+${exp.incomeAmount?.toLocaleString('vi-VN')}` : '-'}</td>
+                <td className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-right font-extrabold text-primary">{(exp.balanceFund || 0) > 0 ? exp.balanceFund?.toLocaleString('vi-VN') : '-'}</td>
+                <td className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center">
                   {exp.invoiceUrl ? (
                     <a 
                       href={exp.invoiceUrl} 

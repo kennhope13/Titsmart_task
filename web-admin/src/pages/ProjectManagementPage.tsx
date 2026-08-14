@@ -296,21 +296,19 @@ export const ProjectManagementPage: React.FC = () => {
         if (item.stt) sttIdMap.set(item.stt.trim(), item.id);
       });
 
-      const existingTaskKeys = new Set(tasks.filter((task) => task.projectCode === code).map((task) => `${task.stt.trim()}|${task.name.trim().toLowerCase()}`));
+      const existingTaskKeys = new Set(tasks.filter((task) => task.projectCode === code).map((task) => `${task.parentId || 'root'}|${task.stt.trim()}|${task.name.trim().toLowerCase()}`));
       
       const importedTasks: Task[] = [];
       
       tasksWithIds.forEach((item, index) => {
-        const key = `${item.stt.trim()}|${item.name.trim().toLowerCase()}`;
-        if (existingTaskKeys.has(key)) return;
-        existingTaskKeys.add(key);
+
 
         const sttVal = item.stt.trim();
         const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
         const numericParentRegex = /^\d+$/;
         
         const isRoman = romanRegex.test(sttVal);
-          if (!/[a-zA-ZÀ-ỹ]/.test(item.name || '')) continue;
+          if (!/[a-zA-ZÀ-ỹ]/.test(item.name || '')) return;
         const cleanUnitVal = (item.unit || '').replace(/^[-–—_.\s]+$/, '').trim();
         
         const isMainSectionName = (name: string): boolean => {
@@ -319,7 +317,8 @@ export const ProjectManagementPage: React.FC = () => {
         };
         const cleanStt = String(sttVal || '').trim().replace(/\.$/, '');
         const hasNoDot = !cleanStt.includes('.');
-        const startsWithPhan = String(item.name || '').trim().toUpperCase().startsWith('PHẦN ');
+        const normalizedName = String(item.name || '').trim().toUpperCase();
+        const startsWithPhan = normalizedName.startsWith('PHẦN ') && !normalizedName.startsWith('PHẦN MỀM');
         const hasNoVolumeAndUnit = (item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === '');
         const isSection = startsWithPhan || (hasNoDot && isMainSectionName(item.name)) || (hasNoDot && hasNoVolumeAndUnit && isRoman);
         
@@ -355,6 +354,10 @@ export const ProjectManagementPage: React.FC = () => {
             }
           }
         }
+
+        const key = `${parentId || 'root'}|${item.stt.trim()}|${item.name.trim().toLowerCase()}`;
+        if (existingTaskKeys.has(key)) return;
+        existingTaskKeys.add(key);
 
         importedTasks.push({
           id: item.id,

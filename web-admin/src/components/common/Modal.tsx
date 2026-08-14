@@ -6,6 +6,7 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   size?: 'md' | 'lg' | 'xl';
+  icon?: string;
 }
 
 const modalSizeClasses = {
@@ -14,7 +15,7 @@ const modalSizeClasses = {
   xl: 'max-w-5xl',
 };
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md', icon = 'add_task' }) => {
   if (!isOpen) return null;
 
   return (
@@ -23,7 +24,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         {/* Modal Header */}
         <div className="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
           <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-            <span className="material-symbols-outlined">add_task</span>
+            {icon && <span className="material-symbols-outlined">{icon}</span>}
             {title}
           </h3>
           <button

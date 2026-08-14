@@ -799,28 +799,43 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
-    updateMaterial: (id, updatedFields) => {
-      set((state) => {
-        const nextMats = state.materials.map((m) => (m.id === id ? { ...m, ...updatedFields } : m));
-        persistAndNotify({ materials: nextMats });
-        return { materials: nextMats };
-      });
+    updateMaterial: async (id, updatedFields) => {
+      try {
+        const updated = await api.materials.update(id, updatedFields);
+        set((state) => {
+          const nextMats = state.materials.map((m) => (m.id === id ? { ...m, ...updated } : m));
+          persistAndNotify({ materials: nextMats });
+          return { materials: nextMats };
+        });
+      } catch (e) {
+        console.error('Failed to update material', e);
+      }
     },
 
-    updateMaterialStatus: (id, status) => {
-      set((state) => {
-        const nextMats = state.materials.map((m) => (m.id === id ? { ...m, status } : m));
-        persistAndNotify({ materials: nextMats });
-        return { materials: nextMats };
-      });
+    updateMaterialStatus: async (id, status) => {
+      try {
+        const updated = await api.materials.update(id, { status });
+        set((state) => {
+          const nextMats = state.materials.map((m) => (m.id === id ? { ...m, ...updated } : m));
+          persistAndNotify({ materials: nextMats });
+          return { materials: nextMats };
+        });
+      } catch (e) {
+        console.error('Failed to update material status', e);
+      }
     },
 
-    deleteMaterial: (id) => {
-      set((state) => {
-        const nextMats = state.materials.filter((m) => m.id !== id);
-        persistAndNotify({ materials: nextMats });
-        return { materials: nextMats };
-      });
+    deleteMaterial: async (id) => {
+      try {
+        await api.materials.delete(id);
+        set((state) => {
+          const nextMats = state.materials.filter((m) => m.id !== id);
+          persistAndNotify({ materials: nextMats });
+          return { materials: nextMats };
+        });
+      } catch (e) {
+        console.error('Failed to delete material', e);
+      }
     },
 
     setMaterials: (materialsList) => {
@@ -1051,8 +1066,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ materialPlans: nextPlans });
           return { materialPlans: nextPlans };
         });
-      } catch (e) {
+      } catch (e: any) {
         console.error('Failed to update material plan', e);
+        if (typeof window !== 'undefined') alert('Lỗi lưu vật tư: ' + (e.message || String(e)));
       }
     },
 
@@ -1092,8 +1108,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ purchasingPlans: nextPurs });
           return { purchasingPlans: nextPurs };
         });
-      } catch (e) {
+      } catch (e: any) {
         console.error('Failed to update purchasing plan', e);
+        if (typeof window !== 'undefined') alert('Lỗi lưu mua sắm: ' + (e.message || String(e)));
       }
     },
 
@@ -1330,15 +1347,9 @@ export function setupRealtimeSync() {
       const store = useRealtimeStore.getState();
       store.fetchProjects();
       store.fetchAccounting();
-      // Refresh tasks, materials, issues cho tất cả projects
-      store.fetchProjects().then(() => {
-        const projects = useRealtimeStore.getState().projects;
-        if (projects.length > 0) {
-          store.fetchTasks(undefined);
-          store.fetchMaterials(undefined);
-          store.fetchIssues(undefined);
-        }
-      });
+      store.fetchMaterials(undefined);
+      store.fetchTasks(undefined);
+      store.fetchIssues(undefined);
       store.fetchEngineers();
     }, 2000);
   };
@@ -1350,6 +1361,7 @@ export function setupRealtimeSync() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'materials' }, debouncedRefresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'issues' }, debouncedRefresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'engineers' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_transactions' }, debouncedRefresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'material_plans' }, debouncedRefresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'purchasing_plans' }, debouncedRefresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, debouncedRefresh)

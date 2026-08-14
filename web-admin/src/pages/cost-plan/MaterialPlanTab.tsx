@@ -188,9 +188,8 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
 
   const startEditing = (id: string, field: keyof ProjectMaterialPlan, value: any) => {
     setEditingCell({ id, field });
-    if (field === 'progressStatus') {
-      const n = Number(value || 0);
-      setTempValue(n <= 1 ? Math.round(n * 100) : n);
+    if (field === 'progressStatus' || field === 'orderedStatus') {
+      setTempValue(value || '');
     } else {
       setTempValue(value === undefined || value === null ? '' : value);
     }
@@ -203,8 +202,8 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
     let finalValue = tempValue;
     if (field === 'contractVolume' || field === 'orderedVolume') {
       finalValue = Number(tempValue || 0);
-    } else if (field === 'progressStatus') {
-      finalValue = Number(tempValue || 0) / 100;
+    } else if (field === 'progressStatus' || field === 'orderedStatus') {
+      finalValue = tempValue;
     } else if (field === 'docCo' || field === 'docCq' || field === 'docFireInspection' || field === 'dispatchToSite') {
       finalValue = tempValue === true || tempValue === 'true' || tempValue === 'Có';
     }
@@ -238,58 +237,58 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
 
       <div className="w-full max-w-full min-h-0 flex-1 overflow-x-auto custom-scrollbar">
         <table className="w-full table-fixed border-collapse text-left text-xs">
-          <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
+          <thead className="sticky top-0 z-30 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
               <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold">STT</th>
               <th rowSpan={2} style={{ width: 280, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-[50px] z-20 bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">NỘI DUNG</th>
-              <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">ĐVT</th>
-              <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">KL HĐ</th>
+              <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
+              <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL HĐ</th>
 
               {subTab === 'TECH' && (
                 <>
-                  <th colSpan={3} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">TIÊU CHUẨN KỸ THUẬT</th>
-                  <th rowSpan={2} style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">TIẾN ĐỘ</th>
+                  <th colSpan={3} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIÊU CHUẨN KỸ THUẬT</th>
+                  <th rowSpan={2} style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIẾN ĐỘ</th>
                 </>
               )}
 
               {subTab === 'ORDER' && (
                 <>
-                  <th rowSpan={2} style={{ width: 52, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">KL ĐẶT HÀNG</th>
-                  <th rowSpan={2} style={{ width: 75, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
-                  <th rowSpan={2} style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">NGÀY CÓ HÀNG</th>
-                  <th colSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">VƯỚNG MẮC/ TỒN ĐỌNG</th>
+                  <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐẶT HÀNG</th>
+                  <th rowSpan={2} style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
+                  <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">NGÀY CÓ HÀNG</th>
+                  <th colSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">VƯỚNG MẮC/ TỒN ĐỌNG</th>
                 </>
               )}
 
               {subTab === 'DOCS' && (
                 <>
-                  <th colSpan={3} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
-                  <th colSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1.5 text-center leading-tight">LUÂN CHUYỂN VẬT TƯ</th>
+                  <th colSpan={3} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
+                  <th colSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">LUÂN CHUYỂN VẬT TƯ</th>
                 </>
               )}
-              <th rowSpan={2} style={{ width: 110, borderBottom: '1px solid #94a3b8' }} className="px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>
+              <th rowSpan={2} style={{ width: 110, borderBottom: '1px solid #94a3b8' }} className="sticky right-0 z-20 bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>
             </tr>
             <tr className="bg-slate-50">
               {subTab === 'TECH' && (
                 <>
-                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">CHÀO HÀNG</th>
-                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">ĐÁP ỨNG KỸ THUẬT</th>
-                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">TÌNH TRẠNG</th>
+                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">CHÀO HÀNG</th>
+                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">ĐÁP ỨNG KỸ THUẬT</th>
+                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">TÌNH TRẠNG</th>
                 </>
               )}
               {subTab === 'ORDER' && (
                 <>
-                  <th style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">NỘI DUNG</th>
-                  <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">TT XỬ LÝ</th>
+                  <th style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">NỘI DUNG</th>
+                  <th style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">TT XỬ LÝ</th>
                 </>
               )}
               {subTab === 'DOCS' && (
                 <>
-                  <th style={{ width: 40, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">CO</th>
-                  <th style={{ width: 40, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">CQ</th>
-                  <th style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">KIỂM ĐỊNH PCCC</th>
-                  <th style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">ĐÃ GỬI TỚI CT</th>
-                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="px-1 py-1 text-center leading-tight">NGÀY</th>
+                  <th style={{ width: 40, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">CO</th>
+                  <th style={{ width: 40, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">CQ</th>
+                  <th style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">KIỂM ĐỊNH PCCC</th>
+                  <th style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">ĐÃ GỬI TỚI CT</th>
+                  <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">NGÀY</th>
                 </>
               )}
             </tr>
@@ -597,17 +596,20 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       {/* TIẾN ĐỘ */}
                       <td className="overflow-hidden p-0 align-top text-center font-mono font-bold text-slate-700 whitespace-nowrap">
                         {editingCell?.id === plan.id && editingCell?.field === 'progressStatus' ? (
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={tempValue}
-                            onChange={(e) => setTempValue(e.target.value)}
-                            onBlur={() => saveEditing(plan)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
+                          <select
+                            value={tempValue as string}
+                            onChange={(e) => {
+                              onUpdate(plan.id, { ...plan, progressStatus: e.target.value });
+                              setEditingCell(null);
+                            }}
+                            onBlur={() => setEditingCell(null)}
                             autoFocus
                             className="w-full text-center bg-white text-slate-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-full min-h-[32px] box-border outline-none border-2 border-primary focus:border-primary"
-                          />
+                          >
+                            <option value="Chưa thi công">Chưa thi công</option>
+                            <option value="Đang thi công">Đang thi công</option>
+                            <option value="Đã hoàn thành">Đã hoàn thành</option>
+                          </select>
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'progressStatus', plan.progressStatus)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{showProgress(plan.progressStatus)}</span>
                         )}

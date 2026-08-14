@@ -58,6 +58,26 @@ input[type="number"] {
   appearance: textfield !important;
 }
 
+/* Fix title bar overlap with Electron window controls (Minimize, Maximize, Close) */
+main > div > section.sticky.top-0,
+main > div > header.sticky.top-0,
+main > div > div.sticky.top-0 {
+  padding-right: 140px !important;
+  -webkit-app-region: drag;
+}
+
+main > div > section.sticky.top-0 button,
+main > div > section.sticky.top-0 input,
+main > div > section.sticky.top-0 select,
+main > div > header.sticky.top-0 button,
+main > div > header.sticky.top-0 input,
+main > div > header.sticky.top-0 select,
+main > div > div.sticky.top-0 button,
+main > div > div.sticky.top-0 input,
+main > div > div.sticky.top-0 select {
+  -webkit-app-region: no-drag;
+}
+
 .page-title {
   text-transform: uppercase !important;
   font-family: ui-sans-serif, system-ui, sans-serif !important;
