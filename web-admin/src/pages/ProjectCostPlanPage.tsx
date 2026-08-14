@@ -459,7 +459,6 @@ export const ProjectCostPlanPage: React.FC = () => {
 
           const pendingTasks: any[] = [];
           let globalOrder = 0; // thứ tự tuyệt đối trong file, dùng để sort sau
-          let romanSectionCounter = 0; // Đếm số đầu mục lớn để chuyển thành số La Mã
           let currentSectionSupplyScope: 'contractor' | 'owner' | 'unknown' = 'unknown'; // Theo dõi supplyScope của section hiện tại cho các hạng mục con
 
           let currentMainSectionId: string | undefined = undefined;
@@ -525,8 +524,6 @@ export const ProjectCostPlanPage: React.FC = () => {
 
               let effectiveStt = stt;
               if (isSection) {
-                romanSectionCounter++;
-                effectiveStt = toRoman(romanSectionCounter);
                 currentSectionSupplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
               }
               

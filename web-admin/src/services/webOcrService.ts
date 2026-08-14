@@ -250,7 +250,6 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
   const parsedTasks: WebOcrTableTask[] = [];
   let currentSection = '';
   let currentSupplyScope: SupplyScope = 'unknown';
-  let romanSectionCounter = 0; // Đếm số đầu mục lớn
 
   const isMainSectionName = (nameStr: string): boolean => {
     const norm = nameStr.toLowerCase();
@@ -299,7 +298,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const isRomanSection = romanRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
     const cleanStt = String(stt || '').trim().replace(/\.$/, '');
     const hasNoDot = !cleanStt.includes('.');
-    const startsWithPhan = name.trim().toUpperCase().startsWith('PHẦN ');
+    const startsWithPhan = name.trim().toUpperCase().startsWith('PHẦN ') && !name.trim().toUpperCase().startsWith('PHẦN MỀM');
     const hasNoVolumeAndUnit = (volume === 0 || !volume) && (!cleanUnitVal || cleanUnitVal === '');
     const isSectionHeader = startsWithPhan || (hasNoDot && isMainSectionName(name)) || (hasNoDot && hasNoVolumeAndUnit && isRomanSection);
     const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
@@ -343,10 +342,6 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
         : '';
 
     let effectiveStt = stt;
-    if (isSectionHeader) {
-      romanSectionCounter++;
-      effectiveStt = toRoman(romanSectionCounter);
-    }
 
     parsedTasks.push({
       stt: isSectionHeader ? effectiveStt : stt,

@@ -148,15 +148,29 @@ const sttSortParts = (value?: string) => {
 };
 
 const compareTaskStt = (a?: string, b?: string) => {
-  const left = sttSortParts(a);
-  const right = sttSortParts(b);
+  const textA = String(a || '').trim();
+  const textB = String(b || '').trim();
+  
+  const romanA = extractLeadingRomanNumber(textA);
+  const romanB = extractLeadingRomanNumber(textB);
+  
+  if (romanA !== null && romanB !== null) {
+    if (romanA !== romanB) return romanA - romanB;
+  } else if (romanA !== null && romanB === null) {
+    return -1;
+  } else if (romanA === null && romanB !== null) {
+    return 1;
+  }
+
+  const left = sttSortParts(textA);
+  const right = sttSortParts(textB);
   const max = Math.max(left.length, right.length);
   for (let index = 0; index < max; index += 1) {
     const leftValue = left[index] ?? 0;
     const rightValue = right[index] ?? 0;
     if (leftValue !== rightValue) return leftValue - rightValue;
   }
-  return String(a || '').localeCompare(String(b || ''), 'vi', { numeric: true, sensitivity: 'base' });
+  return textA.localeCompare(textB, 'vi', { numeric: true, sensitivity: 'base' });
 };
 
 
@@ -963,6 +977,7 @@ export const TaskManagementPage: React.FC = () => {
               contractStatus: 'Chưa ký',
               invoiceStatus: 'Chưa xuất',
               notes: '[section]',
+              isSec: true,
             });
           }
         }
@@ -1081,6 +1096,7 @@ export const TaskManagementPage: React.FC = () => {
           contractStatus: 'Chưa ký',
           invoiceStatus: 'Chưa xuất',
           notes: '[section]',
+          isSec: true,
         });
       }
       setIsSectionHeader(false);
@@ -1236,7 +1252,7 @@ export const TaskManagementPage: React.FC = () => {
         });
         nodes.forEach((node, idx) => {
           const currentNum = (idx + 1).toString();
-          const computedStt = depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum);
+          const computedStt = node.stt || (depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum));
           flattened.push({ ...node, depth, computedStt, _sectionKey: sectionKey });
           flattenTree(node.children, depth + 1, computedStt, sectionKey);
         });

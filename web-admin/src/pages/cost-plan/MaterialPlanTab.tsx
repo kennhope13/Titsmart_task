@@ -360,7 +360,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                 const flattenTree = (nodes: any[], depth: number, prefix: string = '', sectionKey: string = '') => {
                   nodes.forEach((node: any, idx: number) => {
                     const currentNum = (idx + 1).toString();
-                    const computedStt = depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum);
+                    const computedStt = node.stt || (depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum));
                     flattened.push({ ...node, depth, computedStt, isSec: false, _sectionKey: sectionKey });
                     flattenTree(node.children, depth + 1, computedStt, sectionKey);
                   });
