@@ -2,7 +2,7 @@ name: Build Electron App (Windows)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "fix/excel-import-logic-sync" ]
 
 permissions:
   contents: write
