@@ -493,9 +493,14 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
               <div className="space-y-1">
                 {m.docs.map((d, j) => {
                   if (!d.fileUrls || d.fileUrls.length === 0) return null;
+                  
+                  // Fix backward compatibility for URLs saved as comma-separated strings
+                  const cleanUrls = d.fileUrls.flatMap(url => url.split(',').filter(Boolean));
+                  if (cleanUrls.length === 0) return null;
+
                   return (
                     <div key={j} className="flex flex-wrap gap-1.5">
-                      {d.fileUrls.map((url, uIdx) => {
+                      {cleanUrls.map((url, uIdx) => {
                         const isPdf = url.toLowerCase().endsWith('.pdf');
                         return (
                           <a key={uIdx} href={url} target="_blank" rel="noreferrer" 

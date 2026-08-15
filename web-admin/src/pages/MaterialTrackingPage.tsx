@@ -1,9 +1,10 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 import { Toast } from '../components/common/Toast';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { Material, InventoryTransaction } from '../types';
 
 const PURCHASE_STATUSES = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã có hàng', 'Hàng gia công'];
@@ -12,11 +13,21 @@ const CONSTRUCTION_STATUSES = ['Chưa thi công', 'Đang thi công', 'Đã thi c
 const normalizeText = (value?: string) => (value || '').toLowerCase();
 
 const normalizePurchaseStatus = (status?: string) => {
-  if (!status || status === 'Not Ordered' || status.includes('ChÆ')) return 'Chưa đặt hàng';
+  if (!status || status === 'Not Ordered' || status.includes('Chưa')) return 'Chưa đặt hàng';
   if (status === 'Ordered') return 'Đã đặt hàng';
   if (status === 'On-site' || status.includes('lÃ³') || status.includes('có hàng')) return 'Đã có hàng';
   if (status.includes('gia')) return 'Hàng gia công';
   return status;
+};
+
+const generateMaterialCode = (name: string, suffix?: string) => {
+  const normalized = name
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '-') // replace non-alphanumeric with hyphen
+    .replace(/-+/g, '-') // remove consecutive hyphens
+    .replace(/^-|-$/g, ''); // trim hyphens
+  return `TSM-${normalized}${suffix ? `-${suffix}` : ''}`.substring(0, 100);
 };
 
 const normalizeConstructionStatus = (status?: string) => {
@@ -42,11 +53,14 @@ const constructionBadgeClass = (status: string) => {
 };
 
 export const MaterialTrackingPage: React.FC = () => {
-  const { materials, projects, inventoryTransactions, updateMaterial, deleteMaterial, addMaterial, addInventoryTransaction } = useRealtimeStore();
+  const { materials, projects, inventoryTransactions, addMaterial, addMaterialsBatch, updateMaterial, deleteMaterial, addInventoryTransaction } = useRealtimeStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
     setToastState({ show: true, message, type });
     setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
@@ -54,17 +68,15 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
 
-        // Ensure this is an Inventory workbook
         const inventoryKeywords = ['TỒN', 'NHẬP', 'XUẤT', 'TON', 'NHAP', 'XUAT'];
-        const hasInventorySheets = wb.SheetNames.some(name => 
+        const hasInventorySheets = wb.SheetNames.length === 1 || wb.SheetNames.some(name => 
           inventoryKeywords.some(keyword => name.toUpperCase().includes(keyword))
         );
         if (!hasInventorySheets) {
@@ -106,64 +118,123 @@ export const MaterialTrackingPage: React.FC = () => {
           return;
         }
 
-        const sheet = wb.Sheets[targetSheetName];
-        const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
-        if (!rows || rows.length === 0) {
-          triggerToast('Sheet Excel không có dữ liệu!', 'warning');
-          return;
-        }
-
+        const ws = wb.Sheets[targetSheetName];
+        const rawData = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1 });
         let startRowIndex = -1;
-        let headerRow: any[] = [];
-        for (let i = 0; i < Math.min(rows.length, 15); i++) {
-          const r = rows[i];
-          if (r && (r.includes('STT') || r.includes('stt') || r.includes('Stt') || r.some((cell: any) => String(cell).toLowerCase() === 'stt'))) {
+        for (let i = 0; i < Math.min(rawData.length, 15); i++) {
+          const r = rawData[i] || [];
+          if (r.some((cell: any) => String(cell).toUpperCase() === 'STT')) {
             startRowIndex = i + 1;
-            headerRow = r;
             break;
           }
         }
 
         if (startRowIndex === -1) {
           triggerToast('Không tìm thấy dòng tiêu đề (STT) trong file Excel!', 'warning');
+          if (fileInputRef.current) fileInputRef.current.value = '';
           return;
         }
 
-        const headerString = headerRow.map(c => String(c || '').toLowerCase()).join('|');
-        const dataRows = rows.slice(startRowIndex);
+        const dataRows = rawData.slice(startRowIndex).filter((row: any[]) => row && row.length > 1 && (row[0] || row[1] || row[2] || row[3]));
+
+        if (dataRows.length === 0) {
+          triggerToast('File không có dữ liệu!', 'warning');
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          return;
+        }
+
         let importCount = 0;
 
         if (activeTab === 'OVERVIEW') {
-          const hasKeyword = headerString.includes('mã') || headerString.includes('tên vật tư') || headerString.includes('phân loại') || headerString.includes('tồn');
-          if (!hasKeyword) {
-            triggerToast('File không đúng cấu trúc Tồn kho (thiếu cột Mã vật tư/Tên vật tư/Tồn kho)!', 'warning');
-            return;
-          }
+          let lastCategory = '';
+          let lastName = '';
+          
+          const materialsToAdd: any[] = [];
+
+          const usedCodes = new Set<string>();
+          materials.forEach(m => usedCodes.add(m.code));
 
           dataRows.forEach((row) => {
-            const name = row[2] || row[1];
-            if (!name) return;
-            addMaterial({
-              code: String(row[1] || `MAT-${Math.floor(100 + Math.random() * 900)}`),
-              name: String(name),
-              englishName: String(row[3] || ''),
+            const category = row[1] || lastCategory;
+            const name = row[2] || lastName;
+            
+            if (!name && !row[3]) return; // Skip completely empty rows
+            
+            lastCategory = category;
+            lastName = name;
+            
+            let finalName = String(name).trim();
+            const specs = String(row[4] || '').trim();
+            
+            const sttVal = numVal(row[0]) || (importCount + materialsToAdd.length + 1);
+            
+            const unit = String(row[6] || 'Cái').trim();
+            
+            let finalCode = String(row[3] || '').trim();
+            if (!finalCode) {
+              let suffixNum = 0;
+              let codeBase = specs ? specs : finalName;
+              finalCode = generateMaterialCode(codeBase);
+              while (usedCodes.has(finalCode)) {
+                suffixNum++;
+                finalCode = generateMaterialCode(codeBase, String(suffixNum));
+              }
+            } else {
+              // If user provided a code, but it's a duplicate, try appending specs
+              if (usedCodes.has(finalCode)) {
+                let codeWithSpecs = finalCode;
+                if (specs) codeWithSpecs += `-${generateMaterialCode(specs).replace('TSM-', '')}`;
+                finalCode = codeWithSpecs;
+                
+                // If it's STILL a duplicate even after adding specs, then append a number as last resort
+                let suffixNum = 0;
+                let originalUserCode = finalCode;
+                while (usedCodes.has(finalCode)) {
+                  suffixNum++;
+                  finalCode = `${originalUserCode}-${suffixNum}`;
+                }
+              }
+            }
+            usedCodes.add(finalCode);
+            
+            materialsToAdd.push({
+              stt: sttVal,
+              code: finalCode,
+              name: finalName,
+              category: String(category || 'Vật tư chung'),
               projectCode: 'COMPANY',
               projectName: 'Kho Công Ty',
-              volume: numVal(row[6] || row[5] || 0),
-              initialStock: numVal(row[5] || 0),
-              currentStock: numVal(row[6] || 0),
-              totalImport: numVal(row[7] || 0),
-              totalExport: numVal(row[8] || 0),
-              unit: String(row[4] || 'cái'),
-              category: String(row[9] || 'Vật tư xây dựng'),
-              specs: String(row[3] || ''),
-              supplier: String(row[10] || ''),
+              specs: specs,
+              unit: unit || 'Cái',
+              initialStock: numVal(row[7] || 0),
+              currentStock: numVal(row[8] || numVal(row[7] || 0)),
+              totalImport: numVal(row[9] || 0),
+              totalExport: numVal(row[10] || 0),
+              notes: String(row[11] || ''),
+              volume: numVal(row[7] || 0),
               status: 'Đã có hàng',
             });
-            importCount++;
           });
+
+          // Add the entire batch sequentially in the exact top-to-bottom order from Excel
+          const doImport = async () => {
+            setLoading(true);
+            setLoadingMessage('Đang nhập dữ liệu vào kho, vui lòng chờ...');
+            try {
+              await addMaterialsBatch(materialsToAdd);
+              importCount += materialsToAdd.length;
+              triggerToast(`Đã nhập thành công ${importCount} vật tư vào Tồn Kho!`, 'success');
+              if (fileInputRef.current) fileInputRef.current.value = '';
+            } finally {
+              setLoading(false);
+              setLoadingMessage('');
+            }
+          };
+          await doImport();
+          return; // Exit here for OVERVIEW so it doesn't trigger the toast at the bottom
         } else {
           const isImport = activeTab === 'IMPORT';
+          const headerString = rawData[startRowIndex-1]?.join(' ') || '';
           const hasKeyword = headerString.includes('mã') || headerString.includes('số lượng') || headerString.includes('ngày') || (isImport ? headerString.includes('nguồn') : headerString.includes('người nhận') || headerString.includes('dự án'));
           if (!hasKeyword) {
             triggerToast(`File không đúng cấu trúc Nhật ký ${isImport ? 'Nhập' : 'Xuất'} kho!`, 'warning');
@@ -195,13 +266,14 @@ export const MaterialTrackingPage: React.FC = () => {
           });
         }
 
-        triggerToast(`Đã nhập thành công ${importCount} dòng dữ liệu vào Nhật ký ${activeTab === 'OVERVIEW' ? 'Tồn Kho' : activeTab === 'IMPORT' ? 'Nhập Kho' : 'Xuất Kho'}!`, 'success');
+        triggerToast(`Đã nhập thành công ${importCount} dòng dữ liệu vào Nhật ký ${activeTab === 'IMPORT' ? 'Nhập Kho' : 'Xuất Kho'}!`, 'success');
         if (fileInputRef.current) fileInputRef.current.value = '';
       } catch (err: any) {
         triggerToast('Lỗi phân tích Excel: ' + err.message, 'warning');
       }
     };
     reader.readAsBinaryString(file);
+    }
   };
 
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'IMPORT' | 'EXPORT'>('OVERVIEW');
@@ -211,6 +283,35 @@ export const MaterialTrackingPage: React.FC = () => {
   
   const [transactionType, setTransactionType] = useState<'IMPORT' | 'EXPORT'>('IMPORT');
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+
+  // Filter state
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterName, setFilterName] = useState('');
+  const [filterUnit, setFilterUnit] = useState('');
+
+  // Sticky header dynamic height
+  const stickyHeaderRef = useRef<HTMLDivElement>(null);
+  const [stickyHeight, setStickyHeight] = useState(0);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (stickyHeaderRef.current) {
+        setStickyHeight(stickyHeaderRef.current.offsetHeight);
+      }
+    };
+    
+    // Initial check
+    updateHeight();
+    
+    // Small delay to ensure rendering is complete
+    const timeoutId = setTimeout(updateHeight, 100);
+    
+    window.addEventListener('resize', updateHeight);
+    return () => {
+      window.removeEventListener('resize', updateHeight);
+      clearTimeout(timeoutId);
+    };
+  }, [activeTab]);
 
   // New Material form state
   const [newMatCode, setNewMatCode] = useState('');
@@ -271,7 +372,31 @@ export const MaterialTrackingPage: React.FC = () => {
     return Array.from(byCode.values());
   }, [materials, projects]);
 
-  const filteredMaterials = materials;
+  const uniqueCategories = useMemo(() => Array.from(new Set(materials.map(m => m.category || 'Vật tư chung').filter(Boolean))).sort(), [materials]);
+  const uniqueNames = useMemo(() => Array.from(new Set(materials.map(m => m.name || '').filter(Boolean))).sort(), [materials]);
+  const uniqueUnits = useMemo(() => Array.from(new Set(materials.map(m => m.unit || '').filter(Boolean))).sort(), [materials]);
+
+  const filteredMaterials = useMemo(() => {
+    let result = materials.filter(m => {
+      if (filterCategory && (m.category || 'Vật tư chung') !== filterCategory) return false;
+      if (filterName && m.name !== filterName) return false;
+      if (filterUnit && m.unit !== filterUnit) return false;
+
+      // OVERVIEW matches everything
+      if (activeTab === 'IMPORT' && m.totalImport === 0) return false;
+      if (activeTab === 'EXPORT' && m.totalExport === 0) return false;
+      return true;
+    });
+
+    // Sắp xếp theo STT (từ nhỏ đến lớn)
+    result.sort((a, b) => {
+      const sttA = a.stt ?? Number.MAX_SAFE_INTEGER;
+      const sttB = b.stt ?? Number.MAX_SAFE_INTEGER;
+      return sttA - sttB;
+    });
+
+    return result;
+  }, [materials, activeTab, filterCategory, filterName, filterUnit]);
 
   const imports = inventoryTransactions.filter(tx => tx.type === 'IMPORT');
 
@@ -371,12 +496,31 @@ export const MaterialTrackingPage: React.FC = () => {
     XLSX.writeFile(workbook, filename);
   };
 
-  const handleCreateOrder = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!matName.trim()) return;
+  const handleAddMaterial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!matName) {
+      triggerToast('Vui lòng nhập tên vật tư!', 'warning');
+      return;
+    }
 
-    addMaterial({
-      code: newMatCode.trim() || `MAT-${Math.floor(100 + Math.random() * 900)}`,
+    const maxStt = materials.reduce((max, m) => Math.max(max, m.stt || 0), 0);
+    const nextStt = maxStt + 1;
+
+    let finalCode = newMatCode;
+    if (!finalCode) {
+      let suffixNum = 0;
+      let codeBase = description ? description : matName;
+      finalCode = generateMaterialCode(codeBase);
+      const usedCodes = new Set(materials.map(m => m.code));
+      while (usedCodes.has(finalCode)) {
+        suffixNum++;
+        finalCode = generateMaterialCode(codeBase, String(suffixNum));
+      }
+    }
+
+    const newMat = {
+      stt: nextStt,
+      code: finalCode,
       name: matName.trim(),
       englishName: description.trim() || matName.trim(),
       projectCode: 'COMPANY',
@@ -391,7 +535,9 @@ export const MaterialTrackingPage: React.FC = () => {
       status: purchaseStatus,
       constrStatus,
       supplier,
-    });
+    };
+    
+    addMaterial(newMat);
 
     setIsPlaceOrderModalOpen(false);
     setMatName('');
@@ -464,7 +610,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
-      <section className="border-b border-slate-200 bg-white px-6 py-4 flex flex-col xl:flex-row justify-between xl:items-center gap-3">
+      <section className="border-b border-slate-200 bg-white pl-6 pr-[140px] py-4 flex flex-col xl:flex-row justify-between xl:items-center gap-3">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-xl">warehouse</span>
@@ -505,47 +651,89 @@ export const MaterialTrackingPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="flex-1 flex flex-col">
-        <section className="bg-white flex flex-col h-full">
+      <div className="flex-1 flex flex-col min-w-0">
+        <section className="bg-white flex flex-col h-full min-w-0">
 
-        {/* TABS */}
-        <div className="flex items-center gap-4 px-4 border-b border-slate-200 bg-white pt-1 sticky top-0 z-10">
-          {[
-            { id: 'OVERVIEW', label: 'Tồn Kho Tổng Hợp', icon: 'inventory' },
-            { id: 'IMPORT', label: 'Nhật Ký Nhập Kho', icon: 'login' },
-            { id: 'EXPORT', label: 'Nhật Ký Xuất Kho', icon: 'logout' }
-          ].map(tab => (
-            <button 
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${
-                activeTab === tab.id 
-                  ? 'border-primary text-primary' 
-                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
-              }`}
+        {/* TABS & FILTERS */}
+        <div ref={stickyHeaderRef} className="flex flex-col border-b border-slate-200 bg-white sticky top-0 z-20">
+          <div className="flex items-center gap-4 px-4 pt-1">
+            {[
+              { id: 'OVERVIEW', label: 'Tồn Kho Tổng Hợp', icon: 'inventory' },
+              { id: 'IMPORT', label: 'Nhật Ký Nhập Kho', icon: 'login' },
+              { id: 'EXPORT', label: 'Nhật Ký Xuất Kho', icon: 'logout' }
+            ].map(tab => (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${
+                  activeTab === tab.id 
+                    ? 'border-primary text-primary' 
+                    : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base leading-none">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          
+          {/* Lọc chi tiết */}
+          <div className="px-4 py-2.5 bg-slate-50/80 border-t border-slate-100 flex items-center gap-3 overflow-x-auto custom-scrollbar">
+            <div className="flex items-center gap-2 text-slate-500 font-semibold text-[13px] whitespace-nowrap pr-2">
+              <span className="material-symbols-outlined text-[18px]">filter_list</span>
+              Lọc chi tiết:
+            </div>
+            
+            <select 
+              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[180px] max-w-[250px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
             >
-              <span className="material-symbols-outlined text-base leading-none">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+              <option value="">Danh mục: Tất cả</option>
+              {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+
+            <select 
+              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[200px] max-w-[300px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+            >
+              <option value="">Tên Vật Tư: Tất cả</option>
+              {uniqueNames.map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+
+            <select 
+              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[120px] max-w-[180px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
+              value={filterUnit}
+              onChange={(e) => setFilterUnit(e.target.value)}
+            >
+              <option value="">ĐVT: Tất cả</option>
+              {uniqueUnits.map(u => <option key={u} value={u}>{u}</option>)}
+            </select>
+          </div>
         </div>
 
         {activeTab === 'OVERVIEW' && (
           <>
-            <div className="overflow-x-auto custom-scrollbar">
+            <div className="w-full">
               <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                 <thead 
+                   style={{ top: stickyHeight > 0 ? `${stickyHeight}px` : '102px' }}
+                   className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
+                 >
                  <tr>
-                   <th className="p-3.5 w-10 text-center">STT</th>
-                   <th className="p-3.5 min-w-64">Tên Vật Tư / Thiết Bị</th>
-                   <th className="p-3.5 min-w-32">Mã Vật Tư</th>
-                   <th className="p-3.5 min-w-40">Thông Số Kỹ Thuật / Quy Cách</th>
-                   <th className="p-3.5 text-right">Tồn Đầu</th>
-                   <th className="p-3.5 text-right">Nhập</th>
-                   <th className="p-3.5 text-right">Xuất</th>
-                   <th className="p-3.5 text-right">Tồn Kho</th>
-                   <th className="p-3.5 text-center">ĐVT</th>
-                   <th className="p-3.5 text-center min-w-20">Thao tác</th>
+                   <th className="p-2 w-10 text-center bg-slate-50">STT</th>
+                   <th className="p-2 w-[8%] bg-slate-50">Danh mục</th>
+                   <th className="p-2 w-[15%] bg-slate-50">Tên Vật Tư</th>
+                   <th className="p-2 w-[8%] bg-slate-50">Mã Vật Tư</th>
+                   <th className="p-2 w-[12%] bg-slate-50">Thông Số Kỹ Thuật</th>
+                   <th className="p-2 text-center w-[6%] bg-slate-50">ĐVT</th>
+                   <th className="p-2 text-right w-[7%] bg-slate-50">Tồn Đầu</th>
+                   <th className="p-2 text-right w-[7%] bg-slate-50">Nhập</th>
+                   <th className="p-2 text-right w-[7%] bg-slate-50">Xuất</th>
+                   <th className="p-2 text-right w-[7%] bg-slate-50">Tồn Kho</th>
+                   <th className="p-2 w-[10%] bg-slate-50">Ghi Chú</th>
+                   <th className="p-2 text-center w-[5%] bg-slate-50">Thao tác</th>
                  </tr>
                </thead>
                <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
@@ -553,19 +741,21 @@ export const MaterialTrackingPage: React.FC = () => {
                     const purchase = normalizePurchaseStatus(material.status);
                     return (
                       <tr key={material.id} onClick={() => openEditMaterial(material)} className="hover:bg-blue-50/50 transition-colors align-top cursor-pointer">
-                        <td className="p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
+                        <td className="p-3.5 text-center text-slate-500 font-medium">{material.stt || (index + 1)}</td>
+                        <td className="p-3.5 text-slate-600 text-xs">{material.category || 'Vật tư chung'}</td>
                         <td className="p-3.5">
                           <div className="font-bold text-slate-900 leading-snug">{material.name}</div>
                         </td>
                         <td className="p-3.5 font-mono text-slate-500 text-xs">{material.code}</td>
                         <td className="p-3.5 text-slate-600 text-xs">
-                          {material.englishName || '-'}
+                          {material.specs || '-'}
                         </td>
+                        <td className="p-3.5 text-center text-slate-600">{material.unit}</td>
                         <td className="p-3.5 text-right text-slate-500">{material.initialStock || 0}</td>
                         <td className="p-3.5 text-right text-emerald-600 font-bold">+{material.totalImport || 0}</td>
                         <td className="p-3.5 text-right text-amber-600 font-bold">-{material.totalExport || 0}</td>
                         <td className="p-3.5 text-right font-bold text-primary text-sm">{(material.currentStock !== undefined ? material.currentStock : (material.initialStock || 0)).toLocaleString('vi-VN')}</td>
-                        <td className="p-3.5 text-center">{material.unit}</td>
+                        <td className="p-3.5 text-slate-600 text-xs max-w-xs truncate" title={material.notes || ''}>{material.notes || '-'}</td>
                         <td className="p-3.5 text-center" onClick={(event) => event.stopPropagation()}>
                           <button type="button" onClick={() => {
                             setConfirmConfig({
@@ -592,19 +782,22 @@ export const MaterialTrackingPage: React.FC = () => {
         )}
 
         {activeTab === 'IMPORT' && (
-          <div className="overflow-x-auto custom-scrollbar">
+          <div className="w-full">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <thead 
+                style={{ top: stickyHeight > 0 ? `${stickyHeight}px` : '102px' }}
+                className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
+              >
                 <tr>
-                  <th className="p-3.5 w-10 text-center">STT</th>
-                  <th className="p-3.5">Ngày Nhập</th>
-                  <th className="p-3.5">Mã Vật Tư</th>
-                  <th className="p-3.5 min-w-64">Tên Vật Tư</th>
-                  <th className="p-3.5">Quy Cách</th>
-                  <th className="p-3.5 text-right">S.Lượng Nhập</th>
-                  <th className="p-3.5 text-center">ĐVT</th>
-                  <th className="p-3.5">Nguồn / Nhà Cung Cấp</th>
-                  <th className="p-3.5 min-w-40">Ghi chú</th>
+                  <th className="p-3.5 w-10 text-center bg-slate-50">STT</th>
+                  <th className="p-3.5 bg-slate-50">Ngày Nhập</th>
+                  <th className="p-3.5 bg-slate-50">Mã Vật Tư</th>
+                  <th className="p-3.5 min-w-64 bg-slate-50">Tên Vật Tư</th>
+                  <th className="p-3.5 text-slate-500 bg-slate-50">Quy Cách</th>
+                  <th className="p-3.5 text-right bg-slate-50">S.Lượng Nhập</th>
+                  <th className="p-3.5 text-center bg-slate-50">ĐVT</th>
+                  <th className="p-3.5 bg-slate-50">Nguồn / Nhà Cung Cấp</th>
+                  <th className="p-3.5 min-w-40 bg-slate-50">Ghi chú</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
@@ -628,20 +821,23 @@ export const MaterialTrackingPage: React.FC = () => {
         )}
 
         {activeTab === 'EXPORT' && (
-          <div className="overflow-x-auto custom-scrollbar">
+          <div className="w-full">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <thead 
+                style={{ top: stickyHeight > 0 ? `${stickyHeight}px` : '102px' }}
+                className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
+              >
                 <tr>
-                  <th className="p-3.5 w-10 text-center">STT</th>
-                  <th className="p-3.5">Ngày Xuất</th>
-                  <th className="p-3.5">Mã Vật Tư</th>
-                  <th className="p-3.5 min-w-64">Tên Vật Tư</th>
-                  <th className="p-3.5">Quy Cách</th>
-                  <th className="p-3.5 text-right">S.Lượng Xuất</th>
-                  <th className="p-3.5 text-center">ĐVT</th>
-                  <th className="p-3.5">Dự Án Nhận</th>
-                  <th className="p-3.5">Người Nhận</th>
-                  <th className="p-3.5 min-w-40">Ghi chú</th>
+                  <th className="p-3.5 w-10 text-center bg-slate-50">STT</th>
+                  <th className="p-3.5 bg-slate-50">Ngày Xuất</th>
+                  <th className="p-3.5 bg-slate-50">Mã Vật Tư</th>
+                  <th className="p-3.5 min-w-64 bg-slate-50">Tên Vật Tư</th>
+                  <th className="p-3.5 text-slate-500 bg-slate-50">Quy Cách</th>
+                  <th className="p-3.5 text-right bg-slate-50">S.Lượng Xuất</th>
+                  <th className="p-3.5 text-center bg-slate-50">ĐVT</th>
+                  <th className="p-3.5 bg-slate-50">Dự Án Nhận</th>
+                  <th className="p-3.5 bg-slate-50">Người Nhận</th>
+                  <th className="p-3.5 min-w-40 bg-slate-50">Ghi chú</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
@@ -692,7 +888,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
       {/* MODAL TẠO VẬT TƯ MỚI */}
       <Modal isOpen={isPlaceOrderModalOpen} onClose={() => setIsPlaceOrderModalOpen(false)} title="Thêm Vật Tư Mới (Tồn đầu kỳ)">
-        <form onSubmit={handleCreateOrder} className="space-y-3 text-xs">
+        <form onSubmit={handleAddMaterial} className="space-y-3 text-xs">
           <div><label className="block font-bold text-slate-700 mb-1">Mã vật tư (Tùy chọn)</label><input type="text" placeholder="Bỏ trống để tự động tạo (VD: MAT-186)" value={newMatCode} onChange={(event) => setNewMatCode(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Tên vật tư / thiết bị *</label><input type="text" required placeholder="VD: Cáp Cu/XLPE/PVC 2x2.5mm2" value={matName} onChange={(event) => setMatName(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Mô tả / quy cách</label><input type="text" placeholder="VD: chống nhiễu, chống cháy..." value={description} onChange={(event) => setDescription(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
@@ -768,6 +964,8 @@ export const MaterialTrackingPage: React.FC = () => {
         confirmText={confirmConfig.confirmText}
         cancelText={confirmConfig.cancelText}
       />
+      
+      <LoadingSpinner loading={loading} message={loadingMessage} />
 
     </div>
   );

@@ -171,6 +171,7 @@ interface RealtimeStoreState {
   deleteTask: (id: string) => void;
 
   addMaterial: (mat: Omit<Material, 'id'>) => void;
+  addMaterialsBatch: (mats: Omit<Material, 'id'>[]) => Promise<void>;
   updateMaterial: (id: string, updatedFields: Partial<Material>) => void;
   updateMaterialStatus: (id: string, status: string) => void;
   deleteMaterial: (id: string) => void;
@@ -787,15 +788,69 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           ...matData,
           id: 'mat-' + Date.now(),
         };
-        const created = await api.materials.createTransaction ? await (api.materials as any).create(newMat) : newMat; // Temporary fallback if create doesn't exist
+        
+        let created = newMat;
+        if (api.materials && (api.materials as any).create) {
+           created = await (api.materials as any).create(newMat);
+        }
         
         set((state) => {
-          const nextMats = [created || newMat, ...state.materials];
+          const nextMats = [created, ...state.materials];
           persistAndNotify({ materials: nextMats });
           return { materials: nextMats };
         });
       } catch (e) {
         console.error('Failed to add material', e);
+      }
+    },
+
+    addMaterialsBatch: async (matsData) => {
+      try {
+        const newMats = matsData.map((mat, index) => ({
+          ...mat,
+          id: 'mat-' + Date.now() + '-' + index,
+        }));
+        
+        let createdMats = newMats;
+        if (api.materials) {
+          try {
+            if ((api.materials as any).createBatch) {
+              // Gửi mảng đúng thứ tự gốc (từ trên xuống dưới) cho backend.
+              const result = await (api.materials as any).createBatch(newMats);
+              if (Array.isArray(result) && result.length > 0) {
+                createdMats = result;
+              }
+            } else {
+              throw new Error("No createBatch method");
+            }
+          } catch (err) {
+            console.warn('Backend createBatch failed, falling back to individual creates.', err);
+            // Fallback to creating one by one from top to bottom
+            if ((api.materials as any).create) {
+              const results = [];
+              for (const mat of newMats) {
+                try {
+                  const res = await (api.materials as any).create(mat);
+                  results.push(res || mat);
+                } catch (singleErr) {
+                  console.error('Failed to create material individually', singleErr);
+                  results.push(mat);
+                }
+              }
+              createdMats = results;
+            }
+          }
+        }
+        
+        set((state) => {
+          // newMats are already in Top-To-Bottom order.
+          // By spreading newMats before state.materials, the whole batch is inserted at the top in the correct order!
+          const nextMats = [...createdMats, ...state.materials];
+          persistAndNotify({ materials: nextMats });
+          return { materials: nextMats };
+        });
+      } catch (e) {
+        console.error('Failed to add materials batch', e);
       }
     },
 
@@ -826,15 +881,16 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     deleteMaterial: async (id) => {
+      // Xóa ở local trước để UI mượt mà (Optimistic Update) và dọn dẹp các dữ liệu bị kẹt
+      set((state) => {
+        const nextMats = state.materials.filter((m) => m.id !== id);
+        persistAndNotify({ materials: nextMats });
+        return { materials: nextMats };
+      });
       try {
         await api.materials.delete(id);
-        set((state) => {
-          const nextMats = state.materials.filter((m) => m.id !== id);
-          persistAndNotify({ materials: nextMats });
-          return { materials: nextMats };
-        });
       } catch (e) {
-        console.error('Failed to delete material', e);
+        console.warn('Failed to delete material from DB (might only exist locally)', e);
       }
     },
 

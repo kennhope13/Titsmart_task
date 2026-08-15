@@ -25,6 +25,7 @@ const formatMaterial = (m: any) => ({
   category: m.category || '',
   specs: m.specs || '',
   notes: m.notes || '',
+  stt: m.stt,
 });
 
 const formatInventoryTransaction = (tx: any) => ({
@@ -67,7 +68,10 @@ export const getMaterials = async (req: Request, res: Response) => {
     
     const materials = await prisma.material.findMany({
       where,
-      orderBy: { created_at: 'desc' },
+      orderBy: [
+        { stt: 'asc' },
+        { created_at: 'desc' }
+      ],
       include: {
         project: { select: { name: true, code: true } }
       }
@@ -105,6 +109,7 @@ export const createMaterial = async (req: Request, res: Response) => {
         category: data.category || '',
         specs: data.specs || data.englishName || '',
         notes: data.notes || '',
+        stt: data.stt || null,
       },
       include: { project: true },
     });
@@ -112,6 +117,58 @@ export const createMaterial = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Lỗi khi tạo vật tư' });
+  }
+};
+
+export const createBatchMaterial = async (req: Request, res: Response) => {
+  try {
+    const dataList = req.body;
+    if (!Array.isArray(dataList)) {
+      return res.status(400).json({ error: 'Body must be an array' });
+    }
+
+    const companyProject = await getOrCreateCompanyProject(prisma);
+
+    const materialsToCreate = dataList.map((data, index) => {
+      return {
+        project_id: data.projectId || companyProject.id,
+        // Tạo code unique kết hợp với index để đảm bảo không bị lỗi Duplicate
+        code: data.code || `MAT-${Date.now()}-${index}`,
+        name: data.name,
+        english_name: data.englishName || data.specs || '',
+        volume: data.volume || 0,
+        unit: data.unit || 'Cái',
+        unit_price: data.unitPrice || 0,
+        status: data.status || 'Chưa đặt hàng',
+        construction_status: data.constrStatus || 'Chưa thi công',
+        supplier: data.supplier,
+        initial_stock: data.initialStock || 0,
+        current_stock: data.currentStock ?? data.initialStock ?? 0,
+        total_import: data.totalImport || 0,
+        total_export: data.totalExport || 0,
+        category: data.category || '',
+        specs: data.specs || data.englishName || '',
+        notes: data.notes || '',
+        stt: data.stt || null,
+      };
+    });
+
+    await prisma.material.createMany({
+      data: materialsToCreate,
+      skipDuplicates: true,
+    });
+
+    // Sau khi insert, fetch lại danh sách vừa tạo để trả về
+    const codes = materialsToCreate.map(m => m.code);
+    const createdMaterials = await prisma.material.findMany({
+      where: { code: { in: codes } },
+      orderBy: { stt: 'asc' },
+    });
+
+    res.status(201).json(createdMaterials.map(formatMaterial));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Lỗi khi tạo danh sách vật tư' });
   }
 };
 

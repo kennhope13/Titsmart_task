@@ -55,6 +55,7 @@ export interface Project {
 
 export interface Material {
   id: string;
+  stt?: number;
   code: string;
   name: string;
   englishName?: string;
@@ -75,6 +76,7 @@ export interface Material {
   category?: string;
   specs?: string;
   notes?: string;
+  systemGroup?: string;
 }
 
 export interface InventoryTransaction {

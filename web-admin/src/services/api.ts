@@ -43,6 +43,12 @@ export const api = {
       const url = projectId ? `${API_URL}/materials?projectId=${projectId}` : `${API_URL}/materials`;
       return (await axios.get(url)).data;
     },
+    create: async (data: any) => {
+      return (await axios.post(`${API_URL}/materials`, data)).data;
+    },
+    createBatch: async (data: any[]) => {
+      return (await axios.post(`${API_URL}/materials/batch`, data)).data;
+    },
     getTransactions: async () => {
       return (await axios.get(`${API_URL}/materials/transactions`)).data;
     },

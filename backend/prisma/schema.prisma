@@ -217,6 +217,7 @@ model Material {
   id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   project_id          String    @db.Uuid
   task_id             String?   @db.Uuid
+  stt                 Int?
   code                String    @unique @db.VarChar(100)
   name                String
   english_name        String?
