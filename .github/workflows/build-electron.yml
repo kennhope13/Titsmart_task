@@ -52,7 +52,8 @@ jobs:
         tag_name: v${{ env.VERSION }}
         body: |
           Phiên bản **v${{ env.VERSION }}** — TITSMART Project Manager
-          Build và phát hành tự động từ GitHub Actions.
+          Bản cập nhật này bao gồm các tính năng và bản vá lỗi mới nhất.
+        generate_release_notes: true
         files: |
           web-admin/release/*.exe
           web-admin/release/*.exe.blockmap
