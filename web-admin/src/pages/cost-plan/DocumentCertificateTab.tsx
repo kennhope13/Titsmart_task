@@ -188,7 +188,12 @@ const ModelBlock: React.FC<ModelBlockProps> = ({
               multiple={true}
               value={doc.fileUrls || []}
               onChange={(urls) => {
-                const urlArray = Array.isArray(urls) ? urls : [urls];
+                let urlArray: string[] = [];
+                if (Array.isArray(urls)) {
+                  urlArray = urls;
+                } else if (typeof urls === 'string' && urls.trim() !== '') {
+                  urlArray = urls.split(',').filter(Boolean);
+                }
                 onDocFilesChange(index, dIdx, urlArray);
               }}
             />
