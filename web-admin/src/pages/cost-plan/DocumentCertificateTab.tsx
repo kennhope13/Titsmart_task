@@ -63,9 +63,9 @@ const isDocTrack = (item: ProjectMaterialPlan) =>
 const cleanNotes = (value?: string) =>
   String(value || '').replace(/\s*\[doc-track\]\s*/gi, '').trim();
 
-const encodeModels = (models: ModelEntry[]): string => {
+export const encodeModels = (models: ModelEntry[]): string => {
   const nonEmpty = models.filter(m =>
-    m.model || m.manufacturer || m.origin || m.docs.some(d => d.text.trim())
+    m.model || m.manufacturer || m.origin || m.docs.some(d => d.text.trim() || (d.fileUrls && d.fileUrls.length > 0))
   );
   return nonEmpty.length ? JSON.stringify(nonEmpty) : '';
 };
