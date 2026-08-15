@@ -143,16 +143,27 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
   };
   const originalOrderMap = new Map<string, number>(data.map((r, i) => [r.id, orderTagValue(r.notes) ?? (1000000 - i)]));
 
+  const resolveParentId = (pur: ProjectPurchasing): string | undefined => {
+    if (pur.parentId) return pur.parentId;
+    if (!pur.stt || !pur.stt.includes('.')) return undefined;
+    const parts = pur.stt.split('.');
+    parts.pop();
+    const parentStt = parts.join('.');
+    const parentItem = data.find(r => r.stt === parentStt);
+    return parentItem?.id;
+  };
+
   const getSectionIndexForItem = (pur: ProjectPurchasing, visited = new Set<string>()): number => {
     if (visited.has(pur.id)) return Infinity;
     visited.add(pur.id);
 
     if (isSectionRow(pur)) return sectionOrder.get(pur.id) ?? Infinity;
     
-    if (pur.parentId) {
-      if (sectionOrder.has(pur.parentId)) return sectionOrder.get(pur.parentId)!;
+    const resolvedParentId = resolveParentId(pur);
+    if (resolvedParentId) {
+      if (sectionOrder.has(resolvedParentId)) return sectionOrder.get(resolvedParentId)!;
       
-      const parentItem = data.find(r => r.id === pur.parentId);
+      const parentItem = data.find(r => r.id === resolvedParentId);
       if (parentItem) {
         const parentSecIdx = getSectionIndexForItem(parentItem, visited);
         if (parentSecIdx !== -1) return parentSecIdx;
@@ -320,16 +331,25 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   }
                   groups[currentSectionKey].unshift({ ...t, _isHeader: true });
                 } else {
-                  let targetSection = currentSectionKey;
-                  if (t.parentId && groups[t.parentId]) {
-                    targetSection = t.parentId;
+                  let targetSection: string | null = null;
+                  const resolvedParentId = resolveParentId(t);
+                  if (resolvedParentId && groups[resolvedParentId]) {
+                    targetSection = resolvedParentId;
+                  } else if (getSectionIndexForItem(t) !== Infinity) {
+                    targetSection = currentSectionKey;
                   }
                   
-                  if (!groups[targetSection]) {
+                  if (targetSection && !groups[targetSection]) {
                     groups[targetSection] = [];
                     order.push(targetSection);
                   }
-                  groups[targetSection].push({ ...t, _isHeader: false });
+                  
+                  const finalSection = targetSection || '__orphaned__';
+                  if (!groups[finalSection]) {
+                    groups[finalSection] = [];
+                    order.push(finalSection);
+                  }
+                  groups[finalSection].push({ ...t, _isHeader: false });
                 }
               });
 
@@ -359,8 +379,9 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 const roots: any[] = [];
                 items.forEach((t: any) => map.set(t.id, { ...t, children: [] }));
                 items.forEach((t: any) => {
-                  if (t.parentId && t.parentId !== secKey && map.has(t.parentId)) {
-                    map.get(t.parentId)!.children.push(map.get(t.id));
+                  const resolvedParentId = resolveParentId(t);
+                  if (resolvedParentId && resolvedParentId !== secKey && map.has(resolvedParentId)) {
+                    map.get(resolvedParentId)!.children.push(map.get(t.id));
                   } else {
                     roots.push(map.get(t.id));
                   }
@@ -392,15 +413,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 const depth = pur.depth || 0;
                 
                 const realIndex = flattened.indexOf(pur);
-                let nextNum = 1;
-                for (let i = realIndex + 1; i < flattened.length; i++) {
-                  const nextItem = flattened[i];
-                  if (nextItem.depth <= depth) break;
-                  if (nextItem.depth === depth + 1) {
-                    nextNum++;
-                  }
-                }
-                const suggestedStt = depth === 0 ? String(nextNum) : `${pur.computedStt}.${nextNum}`;
+                const suggestedStt = '';
 
                 if (parent) {
                   const isCollapsed = collapsedSections.has(pur._sectionKey || '');

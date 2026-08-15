@@ -4,10 +4,11 @@ import type { UpdateStatusPayload } from '@/types/electron';
 
 type UiState = {
   visible: boolean;
-  status: 'available' | 'downloading' | 'downloaded';
+  status: 'available' | 'downloading' | 'downloaded' | 'error';
   version?: string;
   releaseNotes?: string;
   percent?: number;
+  message?: string;
 };
 
 const initialState: UiState = { visible: false, status: 'available' };

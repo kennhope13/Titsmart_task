@@ -385,16 +385,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       const parent = plan.isSec;
                       const depth = plan.depth || 0;
                       
-                      const realIndex = flattened.indexOf(plan);
-                      let nextNum = 1;
-                      for (let i = realIndex + 1; i < flattened.length; i++) {
-                        const nextItem = flattened[i];
-                        if (nextItem.depth <= depth) break;
-                        if (nextItem.depth === depth + 1) {
-                          nextNum++;
-                        }
-                      }
-                      const suggestedStt = depth === 0 ? String(nextNum) : `${plan.computedStt}.${nextNum}`;
+                      const suggestedStt = '';
 
                       if (parent) {
                         const isCollapsed = collapsedSections.has(plan._sectionKey || '');

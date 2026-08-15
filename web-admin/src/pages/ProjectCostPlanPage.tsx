@@ -1668,20 +1668,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           const parentId = isCreatingSectionHeader ? null : (parentPlanIdForNew || sectionPlanIdForNew || null);
           
           // Auto STT: La Mã cho đầu mục lớn, số thứ tự cho hạng mục nhỏ
-          const autoStt = (() => {
-            if (newPlanData.stt) return newPlanData.stt;
-            if (isCreatingSectionHeader) {
-              const sectionCount = currentProjMaterialPlans.filter(p => isSectionMarker(p.stt, p.notes)).length;
-              return toRoman(sectionCount + 1);
-            }
-            if (parentId) {
-              const parentObj = currentProjMaterialPlans.find(p => p.id === parentId);
-              const siblings = currentProjMaterialPlans.filter(p => p.parentId === parentId);
-              const nextIndex = siblings.length + 1;
-              return parentObj?.stt ? `${parentObj.stt}.${nextIndex}` : String(nextIndex);
-            }
-            return String(currentProjMaterialPlans.filter(p => !p.parentId).length + 1);
-          })();
+          const autoStt = newPlanData.stt || '';
 
           const isContractor = !!newPlanData.isContractor;
           const baseNote = (() => {
@@ -1919,18 +1906,33 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
           )}
 
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">
-              {isCreatingSectionHeader ? 'Tên Đầu mục lớn *' : 'Tên vật tư / hạng mục *'}
-            </label>
-            <input
-              type="text"
-              required
-              placeholder={isCreatingSectionHeader ? 'VD: HỆ THỐNG ĐIỆN CHIẾU SÁNG' : 'VD: Máy bơm điện Q=54m3/h; H=30mH2O'}
-              value={newPlanData.jobContent}
-              onChange={(e) => setNewPlanData({...newPlanData, jobContent: e.target.value})}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold bg-white focus:ring-2 focus:ring-primary focus:outline-none"
-            />
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                STT
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Nhập STT"
+                value={newPlanData.stt || ''}
+                onChange={(e) => setNewPlanData({...newPlanData, stt: e.target.value})}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-primary focus:outline-none font-mono"
+              />
+            </div>
+            <div className="col-span-3">
+              <label className="block font-bold text-slate-700 mb-1">
+                {isCreatingSectionHeader ? 'Tên Đầu mục lớn *' : 'Tên vật tư / hạng mục *'}
+              </label>
+              <input
+                type="text"
+                required
+                placeholder={isCreatingSectionHeader ? 'VD: HỆ THỐNG ĐIỆN CHIẾU SÁNG' : 'VD: Máy bơm điện Q=54m3/h; H=30mH2O'}
+                value={newPlanData.jobContent}
+                onChange={(e) => setNewPlanData({...newPlanData, jobContent: e.target.value})}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+              />
+            </div>
           </div>
           {!isCreatingSectionHeader && (
             <>
@@ -2154,20 +2156,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           const remainingAmt = totalAmt - prepayAmt;
 
           // Auto STT: La Mã cho đầu mục lớn, số thứ tự cho hạng mục nhỏ
-          const autoStt = (() => {
-            if (newPurchasingData.stt) return newPurchasingData.stt;
-            if (isCreatingSectionHeader) {
-              const sectionCount = currentProjMaterialPlans.filter(p => isSectionMarker(p.stt, p.notes)).length;
-              return toRoman(sectionCount + 1);
-            }
-            if (parentId) {
-              const parentObj = currentProjPurchasing.find(p => p.id === parentId);
-              const siblings = currentProjPurchasing.filter(p => p.parentId === parentId);
-              const nextIndex = siblings.length + 1;
-              return parentObj?.stt ? `${parentObj.stt}.${nextIndex}` : String(nextIndex);
-            }
-            return String(currentProjPurchasing.filter(p => !p.parentId).length + 1);
-          })();
+          const autoStt = newPurchasingData.stt || '';
 
           // Đồng bộ ngược lại sang tab Kế hoạch Vật tư (luôn là nhà thầu)
           let materialParentId = undefined;
@@ -2397,18 +2386,33 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
           )}
 
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">
-              {isCreatingSectionHeader ? 'Tên Đầu mục lớn *' : 'Tên Hàng hóa / Hợp đồng *'}
-            </label>
-            <input
-              type="text"
-              required
-              placeholder={isCreatingSectionHeader ? 'VD: HỆ THỐNG ĐIỆN CHIẾU SÁNG' : 'VD: Cáp điện 3x185mm2, hãng LS'}
-              value={newPurchasingData.content}
-              onChange={(e) => setNewPurchasingData({...newPurchasingData, content: e.target.value})}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold bg-white focus:ring-2 focus:ring-primary focus:outline-none"
-            />
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                STT
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Nhập STT"
+                value={newPurchasingData.stt || ''}
+                onChange={(e) => setNewPurchasingData({...newPurchasingData, stt: e.target.value})}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-primary focus:outline-none font-mono"
+              />
+            </div>
+            <div className="col-span-3">
+              <label className="block font-bold text-slate-700 mb-1">
+                {isCreatingSectionHeader ? 'Tên Đầu mục lớn *' : 'Tên Hàng hóa / Hợp đồng *'}
+              </label>
+              <input
+                type="text"
+                required
+                placeholder={isCreatingSectionHeader ? 'VD: HỆ THỐNG ĐIỆN CHIẾU SÁNG' : 'VD: Cáp điện 3x185mm2, hãng LS'}
+                value={newPurchasingData.content}
+                onChange={(e) => setNewPurchasingData({...newPurchasingData, content: e.target.value})}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+              />
+            </div>
           </div>
           {!isCreatingSectionHeader && (
             <>

@@ -365,36 +365,7 @@ export const TaskManagementPage: React.FC = () => {
     )
   );
 
-  // AUTO CALCULATE STT WHEN MODAL OPENS OR INPUTS CHANGE
-  useEffect(() => {
-    if (!isNewTaskModalOpen) return;
-
-    const projTasks = tasks.filter((t) => t.projectCode === projectCode);
-
-    if (isSectionHeader) {
-      // Calculate next Roman numeral for section headers
-      const sectionHeaderCount = projTasks.filter((t) => t.isSectionHeader).length;
-      setStt(toRoman(sectionHeaderCount + 1));
-    } else {
-      // Calculate next integer STT for items inside current section
-      const targetSec = sectionSelect !== 'default' && sectionSelect !== '__CUSTOM__'
-        ? sectionSelect
-        : uniqueSectionsForProj[0];
-
-      if (parentIdSelect && parentIdSelect !== 'default') {
-        const parentTask = projTasks.find(t => t.id === parentIdSelect);
-        if (parentTask) {
-          const children = projTasks.filter(t => t.parentId === parentTask.id);
-          const nextIndex = children.length + 1;
-          setStt(parentTask.stt ? `${parentTask.stt}.${nextIndex}` : String(nextIndex));
-          return;
-        }
-      }
-
-      const secItems = projTasks.filter((t) => !t.isSectionHeader && t.sectionName === targetSec && (!t.parentId || t.parentId === 'default'));
-      setStt(String(secItems.length + 1));
-    }
-  }, [isNewTaskModalOpen, isSectionHeader, projectCode, sectionSelect, parentIdSelect, tasks]);
+  // (Auto STT calculation removed per user request to force manual input)
 
   const handleAddSubtask = (parentTask: Task) => {
     if (selectedProjectCode !== 'all' && selectedProjectCode !== parentTask.projectCode) {
@@ -405,10 +376,7 @@ export const TaskManagementPage: React.FC = () => {
     setParentIdSelect(parentTask.id);
     setName('');
     
-    const children = tasks.filter(t => t.parentId === parentTask.id);
-    const nextIndex = children.length + 1;
-    const autoStt = parentTask.stt ? `${parentTask.stt}.${nextIndex}` : String(nextIndex);
-    setStt(autoStt);
+    setStt('');
     
     setOcrIssueDraft('');
     setIsNewTaskModalOpen(true);
@@ -877,7 +845,7 @@ export const TaskManagementPage: React.FC = () => {
     const nextStt = String(tasks.filter(t => t.projectCode === projectCode).length + 1);
     const nextProgress = isSectionHeader ? 0 : calculateAutoProgressRatio(purchaseStatus, constrStatus);
     const createdSectionName = finalSectionName;
-    const taskStt = isSectionHeader ? (stt || toRoman(tasks.filter(t => t.projectCode === projectCode && t.isSectionHeader).length + 1)) : (stt || nextStt);
+    const taskStt = stt || '';
     const taskParentId = parentIdSelect !== 'default' ? parentIdSelect : undefined;
     // Validate rằng parentId thực sự tồn tại trong tasks array (tránh FK error)
     const validatedParentId = taskParentId && tasks.find(t => t.id === taskParentId) ? taskParentId : undefined;
@@ -944,7 +912,7 @@ export const TaskManagementPage: React.FC = () => {
             t => t.projectCode === projectCode && t.isSectionHeader &&
                  (t.sectionName === finalSectionName || t.name === finalSectionName)
           );
-          const sectionStt = sectionTask?.stt || toRoman(sectionCount + 1);
+          const sectionStt = sectionTask?.stt || '';
           sectionMaterialId = await addMaterialPlan({
             projectCode,
             stt: sectionStt,
@@ -955,31 +923,28 @@ export const TaskManagementPage: React.FC = () => {
             orderedVolume: 0,
             orderedStatus: 'Chưa đặt hàng',
             supplyScope: 'unknown',
-            notes: '[section]',
+            notes: sectionIsOwner ? '[section][owner]' : '[section]',
           });
-          if (!sectionIsOwner) {
-            // Đồng bộ section header sang Mua hàng
-            sectionPurchasingId = await addPurchasingPlan({
-              projectCode,
-              stt: sectionStt,
-              content: finalSectionName,
-              unit: '',
-              volumeContract: 0,
-              volumeOrder: 0,
-              unitPrice: 0,
-              vatRate: 10,
-              vatAmount: 0,
-              totalAmount: 0,
-              prepayPercent: 0,
-              prepayAmount: 0,
-              remainingAmount: 0,
-              orderStatus: 'Chưa đặt hàng',
-              contractStatus: 'Chưa ký',
-              invoiceStatus: 'Chưa xuất',
-              notes: '[section]',
-              isSec: true,
-            });
-          }
+          
+          sectionPurchasingId = await addPurchasingPlan({
+            projectCode,
+            stt: sectionStt,
+            content: finalSectionName,
+            unit: '',
+            volumeContract: 0,
+            volumeOrder: 0,
+            unitPrice: 0,
+            vatRate: 10,
+            vatAmount: 0,
+            totalAmount: 0,
+            prepayPercent: 0,
+            prepayAmount: 0,
+            remainingAmount: 0,
+            orderStatus: 'Chưa đặt hàng',
+            contractStatus: 'Chưa ký',
+            invoiceStatus: 'Chưa xuất',
+            notes: sectionIsOwner ? '[section][owner]' : '[section]',
+          });
         }
 
         // Tìm section cha trong PurchasingPlan theo sectionName
@@ -1096,7 +1061,6 @@ export const TaskManagementPage: React.FC = () => {
           contractStatus: 'Chưa ký',
           invoiceStatus: 'Chưa xuất',
           notes: '[section]',
-          isSec: true,
         });
       }
       setIsSectionHeader(false);
@@ -1259,7 +1223,7 @@ export const TaskManagementPage: React.FC = () => {
       };
       
       if (sectionHeader) {
-        flattened.push({ ...sectionHeader, depth: 0, computedStt: sectionHeader.stt || toRoman(groupIndex + 1), _sectionKey: sec });
+        flattened.push({ ...sectionHeader, depth: 0, computedStt: sectionHeader.stt || '', _sectionKey: sec });
       }
       flattenTree(roots, sectionHeader ? 1 : 0, '', sec);
     });
@@ -1487,7 +1451,7 @@ export const TaskManagementPage: React.FC = () => {
                 <th className="py-2 px-1 w-[115px] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
                 <th className="py-2 px-1 w-[82px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
                 <th className="py-2 px-1 w-[58px] text-center border-b border-slate-200 whitespace-nowrap">XONG</th>
-                <th className="py-2 px-1 w-full min-w-[120px] border-b border-slate-200 whitespace-nowrap">GHI CHÚ</th>
+                <th className="sticky right-0 z-20 bg-slate-50 bg-clip-padding py-2 px-1 w-full min-w-[120px] border-b border-l border-slate-200 whitespace-nowrap shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">GHI CHÚ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -1501,7 +1465,7 @@ export const TaskManagementPage: React.FC = () => {
                     return (
                       <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
                         <td onClick={() => handleOpenEditModal(t)} className="sticky left-0 z-10 py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{t.computedStt || t.stt}</td>
-                        <td colSpan={11} className="sticky left-[42px] z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap">
+                        <td colSpan={10} className="sticky left-[42px] z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap">
                           <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}
@@ -1515,6 +1479,9 @@ export const TaskManagementPage: React.FC = () => {
                             <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-base">add_circle</span></button>
                             <button onClick={(e) => { e.stopPropagation(); handleDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-base">delete</span></button>
                           </div>
+                        </td>
+                        <td className="sticky right-0 z-10 bg-blue-50/90 border-l border-blue-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] py-2 px-1 text-slate-500 truncate" title={cleanNotes(t.notes)}>
+                          {cleanNotes(t.notes)}
                         </td>
                       </tr>
                     );
@@ -1609,7 +1576,7 @@ export const TaskManagementPage: React.FC = () => {
                         )}
                       </td>
                       <td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-center cursor-pointer"><span className={'material-symbols-outlined text-sm ' + (isFinished ? 'text-emerald-600' : 'text-slate-300')}>{isFinished ? 'check_circle' : 'radio_button_unchecked'}</span></td>
-                      <td className="py-1.5 px-1 text-slate-500 truncate" title={cleanNotes(t.notes)}>
+                      <td className={`sticky right-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-l border-slate-100 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-slate-500 truncate`} title={cleanNotes(t.notes)}>
                         {editingCell?.id === t.id && editingCell?.field === 'notes' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-700 font-bold focus:outline-primary text-[10px]" />
                         ) : (
@@ -1720,16 +1687,29 @@ export const TaskManagementPage: React.FC = () => {
             </div>
           )}
 
-          <div className={!isSectionHeader ? "mt-3" : ""}>
-            <label className="block font-bold text-slate-700 mb-1">{isSectionHeader ? 'T\u00ean \u0110\u1ea7u m\u1ee5c cha *' : 'T\u00ean H\u1ea1ng m\u1ee5c / Thi\u1ebft b\u1ecb *'}</label>
-            <input
-              type="text"
-              required
-              placeholder={isSectionHeader ? 'VD: H\u1ec6 TH\u1ed0NG \u0110I\u1ec6N CHI\u1ebeU S\u00c1NG' : 'VD: May bom dien Q=54m3/h; H=30mH2O'}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold"
-            />
+          <div className={`grid grid-cols-4 gap-3 ${!isSectionHeader ? "mt-3" : ""}`}>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">STT</label>
+              <input
+                type="text"
+                required
+                placeholder="Nhập STT"
+                value={stt}
+                onChange={(e) => setStt(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono"
+              />
+            </div>
+            <div className="col-span-3">
+              <label className="block font-bold text-slate-700 mb-1">{isSectionHeader ? 'T\u00ean \u0110\u1ea7u m\u1ee5c cha *' : 'T\u00ean H\u1ea1ng m\u1ee5c / Thi\u1ebft b\u1ecb *'}</label>
+              <input
+                type="text"
+                required
+                placeholder={isSectionHeader ? 'VD: H\u1ec6 TH\u1ed0NG \u0110I\u1ec6N CHI\u1ebeU S\u00c1NG' : 'VD: May bom dien Q=54m3/h; H=30mH2O'}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold"
+              />
+            </div>
           </div>
 
           {!isSectionHeader && (
