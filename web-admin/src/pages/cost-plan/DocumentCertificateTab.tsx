@@ -124,10 +124,11 @@ interface ModelBlockProps {
   onAddDoc: (mIdx: number) => void;
   onRemoveDoc: (mIdx: number, dIdx: number) => void;
   onDocFilesChange: (mIdx: number, dIdx: number, urls: string[]) => void;
+  onUploadStateChange?: (isUploading: boolean) => void;
 }
 
 const ModelBlock: React.FC<ModelBlockProps> = ({
-  index, entry, total, onChange, onRemoveModel, onDocChange, onAddDoc, onRemoveDoc, onDocFilesChange
+  index, entry, total, onChange, onRemoveModel, onDocChange, onAddDoc, onRemoveDoc, onDocFilesChange, onUploadStateChange
 }) => (
   <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
     {/* Block header */}
@@ -196,6 +197,7 @@ const ModelBlock: React.FC<ModelBlockProps> = ({
                 }
                 onDocFilesChange(index, dIdx, urlArray);
               }}
+              onUploadStateChange={onUploadStateChange}
             />
           </div>
         </div>
@@ -275,9 +277,10 @@ const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onClose, on
       ),
     }));
 
+  const [isUploading, setIsUploading] = useState(false);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.jobContent.trim()) return;
+    if (!form.jobContent.trim() || isUploading) return;
     onSubmit(form);
   };
 
@@ -339,7 +342,8 @@ const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onClose, on
                   <ModelBlock key={i} index={i} entry={entry} total={form.models.length}
                     onChange={updateModel} onRemoveModel={removeModel}
                     onDocChange={updateDoc} onAddDoc={addDoc} onRemoveDoc={removeDoc}
-                    onDocFilesChange={updateDocFiles} />
+                    onDocFilesChange={updateDocFiles}
+                    onUploadStateChange={setIsUploading} />
                 ))}
               </div>
             </div>
@@ -355,8 +359,10 @@ const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onClose, on
           <div className="flex flex-shrink-0 justify-end gap-2 border-t border-slate-100 px-5 py-4">
             <button type="button" onClick={onClose}
               className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
-            <button type="submit"
-              className="rounded-lg bg-primary px-5 py-2 text-xs font-bold text-white hover:opacity-90 active:scale-95 shadow-sm">Lưu</button>
+            <button type="submit" disabled={isUploading}
+              className="rounded-lg bg-primary px-5 py-2 text-xs font-bold text-white hover:opacity-90 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+              {isUploading ? 'Đang tải file...' : 'Lưu'}
+            </button>
           </div>
         </form>
       </div>

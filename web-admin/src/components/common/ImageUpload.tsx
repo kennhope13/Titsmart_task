@@ -8,9 +8,10 @@ interface ImageUploadProps {
   onChange?: (urls: string | string[]) => void;
   className?: string;
   multiple?: boolean;
+  onUploadStateChange?: (isUploading: boolean) => void;
 }
 
-export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: initialValue, onChange, className = '', multiple = false }) => {
+export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: initialValue, onChange, className = '', multiple = false, onUploadStateChange }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   
@@ -27,18 +28,16 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
     setLocalValues(getInitialArray());
   }, [initialValue]);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setIsUploading(true);
-    setError('');
-    
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      const uploadedUrls: string[] = [];
+      if (!event.target.files || event.target.files.length === 0) return;
+      setIsUploading(true);
+      if (onUploadStateChange) onUploadStateChange(true);
       
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      const newUrls: string[] = [];
+      const filesToUpload = multiple ? Array.from(event.target.files) : [event.target.files[0]];
+      
+      for (const file of filesToUpload) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
         const filePath = `cccd/${fileName}`;
@@ -47,26 +46,35 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
           .from('titsmart-images')
           .upload(filePath, file);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          alert(`Lỗi tải ảnh. Vui lòng đảm bảo bạn đã tạo Storage Bucket tên "titsmart-images" trên Supabase và bật Public.`);
+          continue;
+        }
 
         const { data } = supabase.storage
           .from('titsmart-images')
           .getPublicUrl(filePath);
           
-        uploadedUrls.push(data.publicUrl);
+        newUrls.push(data.publicUrl);
       }
-
-      const newValues = multiple ? [...localValues, ...uploadedUrls] : [uploadedUrls[0]];
-      setLocalValues(newValues);
+      
+      const updatedValues = multiple ? [...localValues, ...newUrls] : [newUrls[0]];
+      setLocalValues(updatedValues);
       
       if (onChange) {
-        onChange(multiple ? newValues : newValues[0]);
+        if (multiple) {
+          onChange(updatedValues);
+        } else {
+          onChange(newUrls[0]);
+        }
       }
-    } catch (err: any) {
-      console.error('Upload error:', err);
-      setError('Lỗi tải ảnh. Vui lòng đảm bảo bạn đã tạo Storage Bucket tên "titsmart-images" trên Supabase và bật Public.');
+    } catch (error) {
+      console.error('Lỗi khi tải ảnh:', error);
+      alert('Đã xảy ra lỗi khi tải ảnh lên.');
     } finally {
       setIsUploading(false);
+      if (onUploadStateChange) onUploadStateChange(false);
     }
   };
 
