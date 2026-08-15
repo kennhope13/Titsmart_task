@@ -542,7 +542,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white text-xs text-slate-700">
             {rows.map((item, index) => (
-              <tr key={item.id} className="group align-top hover:bg-slate-50/60">
+              <tr key={item.id} onDoubleClick={() => openEdit(item)} className="group align-top hover:bg-slate-50/60 cursor-pointer">
                 <td className="sticky left-0 z-10 w-10 min-w-[40px] bg-white group-hover:bg-slate-50/60 border-r border-slate-100 px-2 py-2.5 text-center font-mono font-bold text-slate-400">{index + 1}</td>
                 <td className="sticky left-[40px] z-10 bg-white group-hover:bg-slate-50/60 border-r border-slate-100 px-2 py-2.5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] font-bold text-slate-900">
                   <div className="w-[165px] line-clamp-3 break-words leading-snug" title={item.jobContent}>{item.jobContent}</div>
@@ -556,12 +556,8 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
                 <td className="px-2 py-2.5">{renderFilesCell(item)}</td>
                 <td className="px-2 py-2.5 text-[11px] text-slate-500 break-words">{cleanNotes(item.notes) || '-'}</td>
                 <td className="px-2 py-2.5 text-center whitespace-nowrap">
-                  <div className="flex items-center justify-center gap-1 transition-opacity">
-                    <button onClick={() => openEdit(item)} title="Sửa"
-                      className="rounded p-1 text-slate-400 hover:bg-blue-50 hover:text-primary transition">
-                      <span className="material-symbols-outlined text-base">edit</span>
-                    </button>
-                    <button onClick={() => setDeletingId(item.id)} title="Xóa"
+                  <div className="flex items-center justify-center gap-1 transition-opacity opacity-0 group-hover:opacity-100">
+                    <button onClick={(e) => { e.stopPropagation(); setDeletingId(item.id); }} title="Xóa"
                       className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition">
                       <span className="material-symbols-outlined text-base">delete</span>
                     </button>
