@@ -213,6 +213,7 @@ export const MaterialTrackingPage: React.FC = () => {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
 
   // New Material form state
+  const [newMatCode, setNewMatCode] = useState('');
   const [matName, setMatName] = useState('');
   const [description, setDescription] = useState('');
   const [volume, setVolume] = useState(1);
@@ -375,7 +376,7 @@ export const MaterialTrackingPage: React.FC = () => {
     if (!matName.trim()) return;
 
     addMaterial({
-      code: `MAT-${Math.floor(100 + Math.random() * 900)}`,
+      code: newMatCode.trim() || `MAT-${Math.floor(100 + Math.random() * 900)}`,
       name: matName.trim(),
       englishName: description.trim() || matName.trim(),
       projectCode: 'COMPANY',
@@ -692,6 +693,7 @@ export const MaterialTrackingPage: React.FC = () => {
       {/* MODAL TẠO VẬT TƯ MỚI */}
       <Modal isOpen={isPlaceOrderModalOpen} onClose={() => setIsPlaceOrderModalOpen(false)} title="Thêm Vật Tư Mới (Tồn đầu kỳ)">
         <form onSubmit={handleCreateOrder} className="space-y-3 text-xs">
+          <div><label className="block font-bold text-slate-700 mb-1">Mã vật tư (Tùy chọn)</label><input type="text" placeholder="Bỏ trống để tự động tạo (VD: MAT-186)" value={newMatCode} onChange={(event) => setNewMatCode(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Tên vật tư / thiết bị *</label><input type="text" required placeholder="VD: Cáp Cu/XLPE/PVC 2x2.5mm2" value={matName} onChange={(event) => setMatName(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Mô tả / quy cách</label><input type="text" placeholder="VD: chống nhiễu, chống cháy..." value={description} onChange={(event) => setDescription(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Nhà cung cấp mặc định</label><input type="text" placeholder="VD: Kho công ty" value={supplier} onChange={(event) => setSupplier(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
@@ -704,7 +706,22 @@ export const MaterialTrackingPage: React.FC = () => {
       <Modal isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} title={transactionType === 'IMPORT' ? 'Tạo Phiếu Nhập Kho' : 'Tạo Phiếu Xuất Kho'}>
         <form onSubmit={handleSubmitTransaction} className="space-y-3 text-xs">
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Chọn Vật tư *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-bold text-slate-700">Chọn Vật tư *</label>
+              <button 
+                type="button" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsTransactionModalOpen(false);
+                  setIsPlaceOrderModalOpen(true);
+                }} 
+                className="text-xs text-primary font-bold hover:underline flex items-center gap-0.5"
+                title="Tạo mã vật tư mới vào danh mục kho"
+              >
+                <span className="material-symbols-outlined text-[14px]">add_circle</span>
+                Thêm vật tư mới
+              </button>
+            </div>
             <select required value={txMaterialId} onChange={(e) => setTxMaterialId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
               <option value="" disabled>-- Chọn vật tư --</option>
               {materials.map(m => (
