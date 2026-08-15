@@ -87,7 +87,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
         <div className="flex items-center gap-3">
           <input 
             type="file" 
-            accept="image/*"
+            accept="image/*,application/pdf"
             multiple={multiple}
             onChange={handleUpload}
             disabled={isUploading}
@@ -103,21 +103,31 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
         
         {localValues.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {localValues.map((url, idx) => (
-              <div key={idx} className="relative group shrink-0 w-16 h-16 rounded border bg-slate-100 overflow-hidden">
-                <a href={url} target="_blank" rel="noreferrer" className="block w-full h-full">
-                  <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover group-hover:opacity-60 transition-opacity" />
-                </a>
-                <button 
-                  type="button"
-                  onClick={() => handleRemove(idx)}
-                  className="absolute top-0.5 right-0.5 bg-white rounded-full p-0.5 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity text-rose-500 hover:text-rose-700"
-                  title="Xóa ảnh"
-                >
-                  <span className="material-symbols-outlined text-[14px] block">close</span>
-                </button>
-              </div>
-            ))}
+            {localValues.map((url, idx) => {
+              const isPdf = url.toLowerCase().endsWith('.pdf');
+              return (
+                <div key={idx} className="relative group shrink-0 w-16 h-16 rounded border bg-slate-100 overflow-hidden flex items-center justify-center">
+                  <a href={url} target="_blank" rel="noreferrer" className="block w-full h-full">
+                    {isPdf ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-rose-500 bg-white group-hover:bg-slate-50 transition-colors">
+                        <span className="material-symbols-outlined text-2xl">picture_as_pdf</span>
+                        <span className="text-[8px] font-bold mt-1">PDF</span>
+                      </div>
+                    ) : (
+                      <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover group-hover:opacity-60 transition-opacity" />
+                    )}
+                  </a>
+                  <button 
+                    type="button"
+                    onClick={() => handleRemove(idx)}
+                    className="absolute top-0.5 right-0.5 bg-white rounded-full p-0.5 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity text-rose-500 hover:text-rose-700"
+                    title="Xóa tệp"
+                  >
+                    <span className="material-symbols-outlined text-[14px] block">close</span>
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

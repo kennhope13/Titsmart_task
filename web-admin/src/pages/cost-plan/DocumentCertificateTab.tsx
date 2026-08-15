@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ProjectMaterialPlan } from '../../types';
+import { ImageUpload } from '../../components/common/ImageUpload';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ interface DocumentCertificateTabProps {
 // Một dòng chứng từ do người dùng tự đặt tên
 interface DocItem {
   text: string; // VD: "C/O số: E267049658120001 cấp ngày 22/02/2025"
+  fileUrls?: string[]; // Array of uploaded URLs (PDF/Image)
 }
 
 // Mỗi model/xuất xứ có danh sách chứng từ động
@@ -121,10 +123,11 @@ interface ModelBlockProps {
   onDocChange: (mIdx: number, dIdx: number, value: string) => void;
   onAddDoc: (mIdx: number) => void;
   onRemoveDoc: (mIdx: number, dIdx: number) => void;
+  onDocFilesChange: (mIdx: number, dIdx: number, urls: string[]) => void;
 }
 
 const ModelBlock: React.FC<ModelBlockProps> = ({
-  index, entry, total, onChange, onRemoveModel, onDocChange, onAddDoc, onRemoveDoc,
+  index, entry, total, onChange, onRemoveModel, onDocChange, onAddDoc, onRemoveDoc, onDocFilesChange
 }) => (
   <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
     {/* Block header */}
@@ -155,7 +158,7 @@ const ModelBlock: React.FC<ModelBlockProps> = ({
     </div>
 
     {/* Chứng từ động */}
-    <div className="space-y-1.5 pt-2 border-t border-slate-200">
+    <div className="space-y-3 pt-2 border-t border-slate-200">
       <div className="flex items-center justify-between">
         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Chứng từ đi kèm</p>
         <button type="button" onClick={() => onAddDoc(index)}
@@ -166,19 +169,30 @@ const ModelBlock: React.FC<ModelBlockProps> = ({
       </div>
 
       {entry.docs.map((doc, dIdx) => (
-        <div key={dIdx} className="flex items-center gap-2">
-          {/* Chứng từ */}
-          <input type="text" className={`flex-1 ${inp}`}
-            value={doc.text}
-            onChange={e => onDocChange(index, dIdx, e.target.value)}
-            placeholder="VD: C/O số E267049658120001 cấp ngày 22/02/2025" />
-          {/* Xóa dòng */}
-          {entry.docs.length > 1 && (
-            <button type="button" onClick={() => onRemoveDoc(index, dIdx)}
-              className="flex-shrink-0 rounded p-0.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
-              <span className="material-symbols-outlined text-base">close</span>
-            </button>
-          )}
+        <div key={dIdx} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
+          <div className="flex items-center gap-2">
+            <input type="text" className={`flex-1 ${inp}`}
+              value={doc.text}
+              onChange={e => onDocChange(index, dIdx, e.target.value)}
+              placeholder="VD: C/O số E267049658120001 cấp ngày 22/02/2025" />
+            {entry.docs.length > 1 && (
+              <button type="button" onClick={() => onRemoveDoc(index, dIdx)}
+                className="flex-shrink-0 rounded p-0.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            )}
+          </div>
+          <div>
+            <ImageUpload 
+              label="Đính kèm file (Ảnh/PDF)"
+              multiple={true}
+              value={doc.fileUrls || []}
+              onChange={(urls) => {
+                const urlArray = Array.isArray(urls) ? urls : [urls];
+                onDocFilesChange(index, dIdx, urlArray);
+              }}
+            />
+          </div>
         </div>
       ))}
     </div>
@@ -225,6 +239,17 @@ const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onClose, on
         i !== mIdx ? m : {
           ...m,
           docs: m.docs.map((d, j) => j === dIdx ? { ...d, text: value } : d),
+        }
+      ),
+    }));
+
+  const updateDocFiles = (mIdx: number, dIdx: number, urls: string[]) =>
+    setForm(prev => ({
+      ...prev,
+      models: prev.models.map((m, i) =>
+        i !== mIdx ? m : {
+          ...m,
+          docs: m.docs.map((d, j) => j === dIdx ? { ...d, fileUrls: urls } : d),
         }
       ),
     }));
@@ -308,7 +333,8 @@ const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onClose, on
                 {form.models.map((entry, i) => (
                   <ModelBlock key={i} index={i} entry={entry} total={form.models.length}
                     onChange={updateModel} onRemoveModel={removeModel}
-                    onDocChange={updateDoc} onAddDoc={addDoc} onRemoveDoc={removeDoc} />
+                    onDocChange={updateDoc} onAddDoc={addDoc} onRemoveDoc={removeDoc}
+                    onDocFilesChange={updateDocFiles} />
                 ))}
               </div>
             </div>
@@ -424,8 +450,28 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
             {models.length > 1 && m.model && (
               <p className="text-[10px] font-extrabold text-slate-400 uppercase mb-0.5">{m.model}</p>
             )}
-            <div className="space-y-0.5">
-              {m.docs.map((d, j) => <DocLine key={j} text={d.text} />)}
+            <div className="space-y-1">
+              {m.docs.map((d, j) => (
+                <div key={j} className="flex flex-col gap-0.5">
+                  <DocLine text={d.text} />
+                  {d.fileUrls && d.fileUrls.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 ml-3 mt-0.5">
+                      {d.fileUrls.map((url, uIdx) => {
+                        const isPdf = url.toLowerCase().endsWith('.pdf');
+                        return (
+                          <a key={uIdx} href={url} target="_blank" rel="noreferrer" 
+                            className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 hover:bg-slate-200 hover:text-primary transition"
+                            title="Xem tệp đính kèm"
+                          >
+                            <span className="material-symbols-outlined text-[12px]">{isPdf ? 'picture_as_pdf' : 'image'}</span>
+                            Đính kèm {uIdx + 1}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         ))}
