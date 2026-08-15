@@ -454,27 +454,55 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
               {m.docs.map((d, j) => (
                 <div key={j} className="flex flex-col gap-0.5">
                   <DocLine text={d.text} />
-                  {d.fileUrls && d.fileUrls.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 ml-3 mt-0.5">
-                      {d.fileUrls.map((url, uIdx) => {
-                        const isPdf = url.toLowerCase().endsWith('.pdf');
-                        return (
-                          <a key={uIdx} href={url} target="_blank" rel="noreferrer" 
-                            className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 hover:bg-slate-200 hover:text-primary transition"
-                            title="Xem tệp đính kèm"
-                          >
-                            <span className="material-symbols-outlined text-[12px]">{isPdf ? 'picture_as_pdf' : 'image'}</span>
-                            Đính kèm {uIdx + 1}
-                          </a>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
           </div>
         ))}
+      </div>
+    );
+  };
+
+  const renderFilesCell = (item: ProjectMaterialPlan) => {
+    const models = decodeModels(item.issueContent);
+    const hasAnyFile = models.some(m => m.docs.some(d => d.fileUrls && d.fileUrls.length > 0));
+    if (!hasAnyFile) return <span className="text-[11px] text-slate-400 italic text-center block">-</span>;
+    
+    return (
+      <div className="space-y-2">
+        {models.map((m, i) => {
+          const hasFiles = m.docs.some(d => d.fileUrls && d.fileUrls.length > 0);
+          if (!hasFiles) return null;
+          
+          return (
+            <div key={i} className={i > 0 ? 'pt-2 border-t border-slate-100' : ''}>
+              {models.length > 1 && m.model && (
+                <p className="text-[10px] font-extrabold text-slate-400 uppercase mb-0.5">{m.model}</p>
+              )}
+              <div className="space-y-1">
+                {m.docs.map((d, j) => {
+                  if (!d.fileUrls || d.fileUrls.length === 0) return null;
+                  return (
+                    <div key={j} className="flex flex-wrap gap-1.5">
+                      {d.fileUrls.map((url, uIdx) => {
+                        const isPdf = url.toLowerCase().endsWith('.pdf');
+                        return (
+                          <a key={uIdx} href={url} target="_blank" rel="noreferrer" 
+                            className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-200 hover:text-primary transition"
+                            title="Xem tệp đính kèm"
+                          >
+                            <span className="material-symbols-outlined text-[12px] text-rose-500">{isPdf ? 'picture_as_pdf' : 'image'}</span>
+                            File {uIdx + 1}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -485,8 +513,8 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
         <table className="w-max min-w-full border-collapse text-left">
           <colgroup>
             <col className="w-10" /><col className="w-[180px]" /><col className="w-12" />
-            <col className="w-12" /><col className="w-[200px]" /><col className="w-[280px]" />
-            <col className="w-[140px]" /><col className="w-20" />
+            <col className="w-12" /><col className="w-[200px]" /><col className="w-[220px]" />
+            <col className="w-[160px]" /><col className="w-[140px]" /><col className="w-20" />
           </colgroup>
           <thead className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr>
@@ -496,6 +524,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
               <th className="px-2 py-3 text-right">SL</th>
               <th className="px-2 py-3">Model / Xuất xứ</th>
               <th className="px-2 py-3">Chứng từ</th>
+              <th className="px-2 py-3">File đính kèm</th>
               <th className="px-2 py-3">Ghi chú</th>
               <th className="px-2 py-3 text-center">Thao tác</th>
             </tr>
@@ -513,6 +542,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
                 </td>
                 <td className="px-2 py-2.5">{renderModelCell(item)}</td>
                 <td className="px-2 py-2.5">{renderDocsCell(item)}</td>
+                <td className="px-2 py-2.5">{renderFilesCell(item)}</td>
                 <td className="px-2 py-2.5 text-[11px] text-slate-500 break-words">{cleanNotes(item.notes) || '-'}</td>
                 <td className="px-2 py-2.5 text-center whitespace-nowrap">
                   <div className="flex items-center justify-center gap-1 transition-opacity">
