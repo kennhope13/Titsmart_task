@@ -2830,19 +2830,16 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div><label className="block font-bold mb-1">Số tài khoản ngân hàng</label><input type="text" placeholder="0919996466 - BIDV" value={newLaborData.bankAccount} onChange={(e) => setNewLaborData({...newLaborData, bankAccount: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Tên chủ tài khoản *</label><input type="text" placeholder="VD: Nguyễn Chí Công" value={newLaborData.bankInfo} onChange={(e) => setNewLaborData({...newLaborData, bankInfo: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <div>
               <ImageUpload 
-                label="Mặt trước CCCD"
-                value={newLaborData.idCardFrontUrl}
-                onChange={(url) => setNewLaborData({...newLaborData, idCardFrontUrl: url})}
-              />
-            </div>
-            <div>
-              <ImageUpload 
-                label="Mặt sau CCCD"
-                value={newLaborData.idCardBackUrl}
-                onChange={(url) => setNewLaborData({...newLaborData, idCardBackUrl: url})}
+                label="Ảnh CCCD (Tải lên cả 2 mặt)"
+                multiple={true}
+                value={[newLaborData.idCardFrontUrl, newLaborData.idCardBackUrl].filter(Boolean) as string[]}
+                onChange={(urls) => {
+                  const urlArray = Array.isArray(urls) ? urls : [urls];
+                  setNewLaborData({...newLaborData, idCardFrontUrl: urlArray[0] || '', idCardBackUrl: urlArray[1] || ''});
+                }}
               />
             </div>
           </div>
@@ -2889,19 +2886,16 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div><label className="block font-bold mb-1">Số tài khoản</label><input type="text" value={editingLabor.bankAccount} onChange={(e) => setEditingLabor({...editingLabor, bankAccount: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Người nhận *</label><input type="text" required value={editingLabor.bankInfo} onChange={(e) => setEditingLabor({...editingLabor, bankInfo: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div>
                 <ImageUpload 
-                  label="Mặt trước CCCD"
-                  value={editingLabor.idCardFrontUrl || ''}
-                  onChange={(url) => setEditingLabor({...editingLabor, idCardFrontUrl: url})}
-                />
-              </div>
-              <div>
-                <ImageUpload 
-                  label="Mặt sau CCCD"
-                  value={editingLabor.idCardBackUrl || ''}
-                  onChange={(url) => setEditingLabor({...editingLabor, idCardBackUrl: url})}
+                  label="Ảnh CCCD (Tải lên cả 2 mặt)"
+                  multiple={true}
+                  value={[editingLabor.idCardFrontUrl, editingLabor.idCardBackUrl].filter(Boolean) as string[]}
+                  onChange={(urls) => {
+                    const urlArray = Array.isArray(urls) ? urls : [urls];
+                    setEditingLabor({...editingLabor, idCardFrontUrl: urlArray[0] || '', idCardBackUrl: urlArray[1] || ''});
+                  }}
                 />
               </div>
             </div>

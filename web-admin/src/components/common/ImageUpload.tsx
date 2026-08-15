@@ -4,50 +4,64 @@ import { supabase } from '../../lib/supabase';
 interface ImageUploadProps {
   label: string;
   name?: string;
-  value?: string;
-  onChange?: (url: string) => void;
+  value?: string | string[];
+  onChange?: (urls: string | string[]) => void;
   className?: string;
+  multiple?: boolean;
 }
 
-export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: initialValue, onChange, className = '' }) => {
+export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: initialValue, onChange, className = '', multiple = false }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
-  const [localValue, setLocalValue] = useState(initialValue || '');
+  
+  // Normalize initialValue to array for internal state
+  const getInitialArray = () => {
+    if (!initialValue) return [];
+    if (Array.isArray(initialValue)) return initialValue;
+    return [initialValue];
+  };
+  
+  const [localValues, setLocalValues] = useState<string[]>(getInitialArray());
 
-  // Synchronize external value changes if provided
   React.useEffect(() => {
-    if (initialValue !== undefined) {
-      setLocalValue(initialValue);
-    }
+    setLocalValues(getInitialArray());
   }, [initialValue]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    // Check if bucket exists, we assume 'titsmart-images' bucket is created in Supabase
     setIsUploading(true);
     setError('');
     
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `cccd/${fileName}`;
+      const uploadedUrls: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `cccd/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('titsmart-images')
-        .upload(filePath, file);
+        const { error: uploadError } = await supabase.storage
+          .from('titsmart-images')
+          .upload(filePath, file);
 
-      if (uploadError) {
-        throw uploadError;
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage
+          .from('titsmart-images')
+          .getPublicUrl(filePath);
+          
+        uploadedUrls.push(data.publicUrl);
       }
 
-      const { data } = supabase.storage
-        .from('titsmart-images')
-        .getPublicUrl(filePath);
-
-      setLocalValue(data.publicUrl);
-      if (onChange) onChange(data.publicUrl);
+      const newValues = multiple ? [...localValues, ...uploadedUrls] : [uploadedUrls[0]];
+      setLocalValues(newValues);
+      
+      if (onChange) {
+        onChange(multiple ? newValues : newValues[0]);
+      }
     } catch (err: any) {
       console.error('Upload error:', err);
       setError('Lỗi tải ảnh. Vui lòng đảm bảo bạn đã tạo Storage Bucket tên "titsmart-images" trên Supabase và bật Public.');
@@ -56,20 +70,25 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
     }
   };
 
+  const handleRemove = (indexToRemove: number) => {
+    const newValues = localValues.filter((_, idx) => idx !== indexToRemove);
+    setLocalValues(newValues);
+    if (onChange) {
+      onChange(multiple ? newValues : newValues[0] || '');
+    }
+  };
+
   return (
     <div className={className}>
       <label className="block text-xs font-bold text-slate-700 mb-1">{label}</label>
-      {name && <input type="hidden" name={name} value={localValue} />}
-      <div className="flex items-center gap-3">
-        {localValue && (
-          <a href={localValue} target="_blank" rel="noreferrer" className="shrink-0 w-12 h-12 rounded border bg-slate-100 flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity">
-            <img src={localValue} alt="Preview" className="w-full h-full object-cover" />
-          </a>
-        )}
-        <div className="flex-1">
+      {name && <input type="hidden" name={name} value={multiple ? localValues.join(',') : localValues[0] || ''} />}
+      
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-3">
           <input 
             type="file" 
             accept="image/*"
+            multiple={multiple}
             onChange={handleUpload}
             disabled={isUploading}
             className="block w-full text-sm text-slate-500
@@ -81,7 +100,28 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
               disabled:opacity-50 cursor-pointer"
           />
         </div>
+        
+        {localValues.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {localValues.map((url, idx) => (
+              <div key={idx} className="relative group shrink-0 w-16 h-16 rounded border bg-slate-100 overflow-hidden">
+                <a href={url} target="_blank" rel="noreferrer" className="block w-full h-full">
+                  <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover group-hover:opacity-60 transition-opacity" />
+                </a>
+                <button 
+                  type="button"
+                  onClick={() => handleRemove(idx)}
+                  className="absolute top-0.5 right-0.5 bg-white rounded-full p-0.5 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity text-rose-500 hover:text-rose-700"
+                  title="Xóa ảnh"
+                >
+                  <span className="material-symbols-outlined text-[14px] block">close</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+      
       {isUploading && <p className="text-xs text-blue-600 mt-1">Đang tải ảnh lên...</p>}
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
