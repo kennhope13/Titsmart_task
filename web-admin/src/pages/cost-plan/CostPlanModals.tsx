@@ -1,6 +1,7 @@
 import React from 'react';
 import { ProjectMaterialPlan, ProjectPurchasing, ProjectExpense, LaborPayroll } from '../../types';
 import { Modal } from '../../components/common/Modal';
+import { ImageUpload } from '../../components/common/ImageUpload';
 
 interface ModalsProps {
   // Plan Modal
@@ -290,8 +291,8 @@ export const CostPlanModals: React.FC<ModalsProps> = ({
               </div>
               
               <div className="md:col-span-2 border-t pt-4 mt-2"><h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><span className="material-symbols-outlined text-lg">badge</span> Căn cước Công dân & Ghi chú</h4></div>
-              <div><label className="block text-xs font-bold text-slate-700 mb-1">Link Ảnh CCCD (Mặt trước)</label><input type="text" name="idCardFrontUrl" defaultValue={editingLabor?.idCardFrontUrl} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-              <div><label className="block text-xs font-bold text-slate-700 mb-1">Link Ảnh CCCD (Mặt sau)</label><input type="text" name="idCardBackUrl" defaultValue={editingLabor?.idCardBackUrl} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
+              <div><ImageUpload label="Ảnh CCCD (Mặt trước)" name="idCardFrontUrl" value={editingLabor?.idCardFrontUrl} /></div>
+              <div><ImageUpload label="Ảnh CCCD (Mặt sau)" name="idCardBackUrl" value={editingLabor?.idCardBackUrl} /></div>
               <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" name="notes" defaultValue={editingLabor?.notes} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
             </div>
             <div className="flex justify-end gap-3 mt-6">

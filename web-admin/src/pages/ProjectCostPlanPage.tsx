@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
+import { ImageUpload } from '../components/common/ImageUpload';
 import { ProjectMaterialPlan, ProjectPurchasing, ProjectExpense, LaborPayroll } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { MaterialPlanTab } from './cost-plan/MaterialPlanTab';
@@ -2830,8 +2831,20 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div><label className="block font-bold mb-1">Tên chủ tài khoản *</label><input type="text" placeholder="VD: Nguyễn Chí Công" value={newLaborData.bankInfo} onChange={(e) => setNewLaborData({...newLaborData, bankInfo: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block font-bold mb-1">Mặt trước CCCD (Link Drive)</label><input type="text" placeholder="https://drive.google.com/..." value={newLaborData.idCardFrontUrl} onChange={(e) => setNewLaborData({...newLaborData, idCardFrontUrl: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Mặt sau CCCD (Link Drive)</label><input type="text" placeholder="https://drive.google.com/..." value={newLaborData.idCardBackUrl} onChange={(e) => setNewLaborData({...newLaborData, idCardBackUrl: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div>
+              <ImageUpload 
+                label="Mặt trước CCCD"
+                value={newLaborData.idCardFrontUrl}
+                onChange={(url) => setNewLaborData({...newLaborData, idCardFrontUrl: url})}
+              />
+            </div>
+            <div>
+              <ImageUpload 
+                label="Mặt sau CCCD"
+                value={newLaborData.idCardBackUrl}
+                onChange={(url) => setNewLaborData({...newLaborData, idCardBackUrl: url})}
+              />
+            </div>
           </div>
           <div>
             <label className="block font-bold mb-1">Tình trạng thanh toán</label>
@@ -2877,8 +2890,20 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div><label className="block font-bold mb-1">Người nhận *</label><input type="text" required value={editingLabor.bankInfo} onChange={(e) => setEditingLabor({...editingLabor, bankInfo: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold mb-1">Mặt trước CCCD</label><input type="text" value={editingLabor.idCardFrontUrl || ''} onChange={(e) => setEditingLabor({...editingLabor, idCardFrontUrl: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Mặt sau CCCD</label><input type="text" value={editingLabor.idCardBackUrl || ''} onChange={(e) => setEditingLabor({...editingLabor, idCardBackUrl: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div>
+                <ImageUpload 
+                  label="Mặt trước CCCD"
+                  value={editingLabor.idCardFrontUrl || ''}
+                  onChange={(url) => setEditingLabor({...editingLabor, idCardFrontUrl: url})}
+                />
+              </div>
+              <div>
+                <ImageUpload 
+                  label="Mặt sau CCCD"
+                  value={editingLabor.idCardBackUrl || ''}
+                  onChange={(url) => setEditingLabor({...editingLabor, idCardBackUrl: url})}
+                />
+              </div>
             </div>
             <div>
               <label className="block font-bold mb-1">Tình trạng thanh toán</label>
