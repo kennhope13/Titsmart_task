@@ -1,8 +1,0 @@
-{
-  "version": "1.0.20",
-  "date": "17/08/2026",
-  "notes": [
-    "Sửa lỗi hiển thị ảnh (hóa đơn/chứng từ) trên ứng dụng Desktop",
-    "Thêm tính năng tự động mở ảnh trên trình duyệt mặc định"
-  ]
-}
