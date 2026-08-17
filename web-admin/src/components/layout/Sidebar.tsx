@@ -75,7 +75,7 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside ref={sidebarRef} className="fixed left-0 top-0 h-screen w-[64px] hover:w-[260px] transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 group shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden">
+    <aside ref={sidebarRef} className={`fixed left-0 top-0 h-screen w-[64px] hover:w-[260px] transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 group shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${(showNotifPopover || showUserPopover) ? '!w-[260px]' : ''}`}>
       <div className="relative h-[72px] px-3 flex items-center gap-3 border-b border-slate-100 min-w-[260px]">
         <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
           <img src="./logo.png" alt="TITSMART" className="w-10 h-10 object-contain" />
