@@ -19,6 +19,7 @@ import { FieldLogsPage } from './pages/FieldLogsPage';
 import { ProjectCostPlanPage } from './pages/ProjectCostPlanPage';
 
 import { UpdateNotifier } from './components/common/UpdateNotifier';
+import { WebUpdateNotification } from './components/common/WebUpdateNotification';
 
 const ProtectedLayout: React.FC = () => {
   const user = useAuthStore((state) => state.user);
@@ -64,6 +65,7 @@ export const App: React.FC = () => {
   return (
     <>
       <UpdateNotifier />
+      <WebUpdateNotification />
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : renderLogin()} />
         <Route element={<ProtectedLayout />}>

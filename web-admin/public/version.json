@@ -1,10 +1,9 @@
 {
   "version": "1.0.31",
-  "date": "17/08/2026",
+  "date": "17/8/2026",
   "notes": [
-    "Khắc phục lỗi cuộn trang ở tab Theo dõi Hồ sơ gửi đi",
-    "Tự động ghi nhận Nhập Kho khi thêm vật tư từ Excel",
-    "Tự động bắt mọi thao tác của người dùng và lưu vào Nhật ký hoạt động",
-    "Bấm vào dòng Nhật ký hoạt động để xem thông tin chi tiết"
+    "Căn chỉnh lại chiều cao thanh tiêu đề đồng nhất 72px trên toàn hệ thống.",
+    "Khóa thanh Sidebar không bị thu gọn khi đang mở bảng thông báo.",
+    "Tự động phát hiện phiên bản mới để yêu cầu người dùng cập nhật (F5)."
   ]
 }
