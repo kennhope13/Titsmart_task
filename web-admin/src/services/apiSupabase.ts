@@ -357,6 +357,7 @@ export const api = {
     },
     createDocumentTrack: async (data: any) => {
       const payload = toSnakeCase(data);
+      if (!payload.receive_date) payload.receive_date = null;
       if (payload.project_code) {
         const { data: proj } = await supabase.from('projects').select('id').eq('code', payload.project_code).single();
         if (proj) payload.project_id = proj.id;
@@ -368,6 +369,7 @@ export const api = {
     },
     updateDocumentTrack: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
+      if (payload.receive_date === '') payload.receive_date = null;
       if (payload.project_code !== undefined) {
         if (payload.project_code) {
           const { data: proj } = await supabase.from('projects').select('id').eq('code', payload.project_code).single();
