@@ -68,6 +68,13 @@ function setupAutoUpdater() {
     sendToRenderer('update:status', { status: 'checking' });
   });
 
+  // Listener for manual open external
+  ipcMain.on('open-external', (event, url) => {
+    if (url && typeof url === 'string') {
+      shell.openExternal(url);
+    }
+  });
+
   autoUpdater.on('update-available', (info) => {
     sendToRenderer('update:status', {
       status: 'available',

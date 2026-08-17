@@ -16,6 +16,7 @@ export interface ElectronAPI {
   checkForUpdates: () => void;
   downloadUpdate: () => void;
   installUpdate: () => void;
+  openExternal: (url: string) => void;
 }
 
 declare global {

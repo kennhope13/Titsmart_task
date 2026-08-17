@@ -26,4 +26,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkForUpdates: () => ipcRenderer.send('update:check'),
   downloadUpdate: () => ipcRenderer.send('update:download'),
   installUpdate: () => ipcRenderer.send('update:install'),
+  openExternal: (url: string) => ipcRenderer.send('open-external', url),
 });
