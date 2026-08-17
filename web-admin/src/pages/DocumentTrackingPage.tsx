@@ -221,7 +221,7 @@ export const DocumentTrackingPage: React.FC = () => {
       <div className="doc-tracking-page flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
       
       {/* HEADER SECTION */}
-      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 pr-[140px] py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">drafts</span>
@@ -482,11 +482,12 @@ export const DocumentTrackingPage: React.FC = () => {
               stt: newDoc.stt || String(documentTracks.length + 1),
               contractNo: newDoc.contractNo || '',
               contractName: newDoc.contractName || '',
+              projectCode: newDoc.projectCode || 'NĂM CĂN',
               company: newDoc.company || '',
               receiverName: newDoc.receiverName || '',
               phone: newDoc.phone || '',
               address: newDoc.address || '',
-              sendDate: newDoc.sendDate || '',
+              sendDate: newDoc.sendDate || new Date().toISOString().split('T')[0],
               receiveDate: newDoc.receiveDate || '',
               docStatus: newDoc.docStatus || 'Chưa ký',
               side: newDoc.side || 'Bên trả',

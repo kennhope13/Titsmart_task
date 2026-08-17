@@ -7,6 +7,7 @@ dotenv.config();
 
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
+pool.on('error', (err) => console.error('Unexpected error on idle client', err));
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 

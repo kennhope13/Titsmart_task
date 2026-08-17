@@ -1,0 +1,24 @@
+PrismaClientKnownRequestError: 
+Invalid `prisma.documentTrack.create()` invocation in
+D:\HỆ THỐNG QUẢN LÝ CÔNG VIỆC-web-app-titsmart\backend\src\controllers\accounting.controller.ts:506:42
+
+  503 const { projectCode, sendDate, receiveDate, contractValue, prepayPercent, prepayAmount, isCompleted, contractNo, contractName, receiverName, paymentStatus, ...data } = req.body;
+  504 const project_id = projectCode ? await resolveProjectId(projectCode) : null;
+  505 
+→ 506 const p = await prisma.documentTrack.create(
+The column `projects.updated_at` does not exist in the current database.
+PrismaClientKnownRequestError: 
+Invalid `prisma.documentTrack.create()` invocation in
+D:\HỆ THỐNG QUẢN LÝ CÔNG VIỆC-web-app-titsmart\backend\src\controllers\accounting.controller.ts:506:42
+
+  503 const { projectCode, sendDate, receiveDate, contractValue, prepayPercent, prepayAmount, isCompleted, contractNo, contractName, receiverName, paymentStatus, ...data } = req.body;
+  504 const project_id = projectCode ? await resolveProjectId(projectCode) : null;
+  505 
+→ 506 const p = await prisma.documentTrack.create(
+The column `projects.updated_at` does not exist in the current database.
+    at Jr.handleRequestError (D:\HỆ THỐNG QUẢN LÝ CÔNG VIỆC-web-app-titsmart\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:237:13)
+    at Jr.handleAndLogRequestError (D:\HỆ THỐNG QUẢN LÝ CÔNG VIỆC-web-app-titsmart\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:183:12)
+    at Jr.request (D:\HỆ THỐNG QUẢN LÝ CÔNG VIỆC-web-app-titsmart\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:152:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async a (D:\HỆ THỐNG QUẢN LÝ CÔNG VIỆC-web-app-titsmart\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:1014:24)
+    at async createDocumentTrack (D:\HỆ THỐNG QUẢN LÝ CÔNG VIỆC-web-app-titsmart\backend\src\controllers\accounting.controller.ts:506:15)

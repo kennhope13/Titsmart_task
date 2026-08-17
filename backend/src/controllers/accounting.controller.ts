@@ -498,6 +498,7 @@ export const getDocumentTracks = async (req: Request, res: Response) => {
 };
 
 export const createDocumentTrack = async (req: Request, res: Response) => {
+  console.log('API HIT: /api/accounting/document-tracks');
   try {
     const { projectCode, sendDate, receiveDate, contractValue, prepayPercent, prepayAmount, isCompleted, contractNo, contractName, receiverName, paymentStatus, ...data } = req.body;
     const project_id = projectCode ? await resolveProjectId(projectCode) : null;
@@ -526,7 +527,7 @@ export const createDocumentTrack = async (req: Request, res: Response) => {
       include: { project: true }
     });
     res.status(201).json(formatDocumentTrack(p));
-  } catch (error) { res.status(500).json({ error: 'Failed to create document track' }); }
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create document track' }); }
 };
 
 export const updateDocumentTrack = async (req: Request, res: Response) => {
