@@ -378,7 +378,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
 }) => {
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
   const [editingItem, setEditingItem] = useState<ProjectMaterialPlan | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Khi page bấm nút "Thêm Mới" ở tab DOCUMENTS, triggerAdd = true → mở modal
@@ -578,7 +578,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
                 <td className="px-2 py-2.5 text-[11px] text-slate-500 break-words">{cleanNotes(item.notes) || '-'}</td>
                 <td className="px-2 py-2.5 text-center whitespace-nowrap">
                   <div className="flex items-center justify-center gap-1 transition-opacity opacity-0 group-hover:opacity-100">
-                    <button onClick={(e) => { e.stopPropagation(); setDeletingId(item.id); }} title="Xóa"
+                    <button onClick={(e) => { e.stopPropagation(); onDelete(item.id); }} title="Xóa"
                       className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition">
                       <span className="material-symbols-outlined text-base">delete</span>
                     </button>
@@ -620,22 +620,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
           onClose={closeModal} onSubmit={handleSubmit} />
       </Modal>
 
-      {deletingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeletingId(null)} />
-          <div className="relative rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 p-6 w-full max-w-sm text-center space-y-4">
-            <span className="material-symbols-outlined text-4xl text-rose-500">delete_forever</span>
-            <p className="text-sm font-bold text-slate-800">Xác nhận xóa hàng hóa này?</p>
-            <p className="text-xs text-slate-500">Hành động này không thể hoàn tác.</p>
-            <div className="flex justify-center gap-3 pt-1">
-              <button onClick={() => setDeletingId(null)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
-              <button onClick={() => { onDelete(deletingId); setDeletingId(null); }}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 active:scale-95">Xóa</button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
