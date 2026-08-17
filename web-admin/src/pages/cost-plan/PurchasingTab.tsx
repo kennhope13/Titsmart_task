@@ -670,25 +670,16 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       </td>
 
                       {/* TT HỢP ĐỒNG */}
-                      <td className="border-r border-slate-100 px-1.5 py-1 text-center font-semibold text-slate-700 whitespace-nowrap overflow-hidden">
-                        {editingCell?.id === pur.id && editingCell?.field === 'contractStatus' ? (
-                          <CustomSelect
-                            value={tempValue}
-                            onChange={(e) => {
-                              onUpdate(pur.id, { ...pur, contractStatus: e.target.value });
-                              setEditingCell(null);
-                            }}
-                            onBlur={() => setEditingCell(null)}
-                            autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-900 text-[10px]"
+                      <td className="border-r border-slate-100 px-0 py-0 text-center font-semibold text-slate-700">
+                        <div className="p-[3px]"><CustomSelect
+                            value={pur.contractStatus || 'Chưa ký'}
+                            onChange={(e) => { onUpdate(pur.id, { ...pur, contractStatus: e.target.value }); }}
+                            className="w-full bg-white text-slate-700 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
                           >
                             <option value="Chưa ký">Chưa ký</option>
                             <option value="Đang trình duyệt">Đang trình duyệt</option>
                             <option value="Đã ký">Đã ký</option>
-                          </CustomSelect>
-                        ) : (
-                          <span onClick={() => startEditing(pur.id, 'contractStatus', pur.contractStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate">{pur.contractStatus || '-'}</span>
-                        )}
+                          </CustomSelect></div>
                       </td>
                     </>
                   ) : (
