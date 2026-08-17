@@ -902,8 +902,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     setMaterials: (materialsList) => {
       set({ materials: materialsList });
-      get().logActivity('Xóa vật tư', 'COMPANY');
-          persistAndNotify({ materials: materialsList });
+      persistAndNotify({ materials: materialsList });
     },
 
     addInventoryTransaction: async (transactionData) => {
@@ -1047,7 +1046,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const createdProj = await api.projects.create(projData);
         set((state) => {
           const nextProjs = [createdProj, ...state.projects];
-          get().logActivity('Thêm mới dự án', 'COMPANY');
           persistAndNotify({ projects: nextProjs });
           return { projects: nextProjs };
         });
@@ -1077,7 +1075,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const nextLaborPayrolls = state.laborPayrolls.filter((p) => p.projectCode !== projectCode);
           const nextFieldLogs = state.fieldLogs.filter((l) => l.projectCode !== projectCode);
 
-          get().logActivity('Xóa dự án', 'COMPANY');
           persistAndNotify({
             projects: nextProjects,
             tasks: nextTasks,
