@@ -4,6 +4,7 @@ import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { DocumentTrack } from '../types';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 export const DocumentTrackingPage: React.FC = () => {
   const {
@@ -14,6 +15,15 @@ export const DocumentTrackingPage: React.FC = () => {
   } = useRealtimeStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    isDestructive: false,
+    confirmText: 'Xác nhận'
+  });
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -328,7 +338,19 @@ export const DocumentTrackingPage: React.FC = () => {
                     <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
                     <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.paymentStatus?.includes('Đã') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
                     <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}><button onClick={() => updateDocumentTrack(track.id, { isCompleted: !track.isCompleted })} className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${track.isCompleted ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-300 border border-slate-200 hover:text-slate-500'}`}><span className="material-symbols-outlined text-base">task_alt</span></button></td>
-                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}><button onClick={() => { if(window.confirm('Xóa thông tin theo dõi hồ sơ này?')) deleteDocumentTrack(track.id) }} className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg"><span className="material-symbols-outlined text-base">delete</span></button></td>
+                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}><button onClick={() => {
+                      setConfirmConfig({
+                        isOpen: true,
+                        title: 'Xóa thông tin theo dõi hồ sơ',
+                        message: `Bạn chắc chắn muốn xóa hồ sơ hợp đồng "${track.contractNo || track.contractName || 'này'}"?`,
+                        onConfirm: () => {
+                          deleteDocumentTrack(track.id);
+                          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                        },
+                        isDestructive: true,
+                        confirmText: 'Xóa'
+                      });
+                    }} className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg"><span className="material-symbols-outlined text-base">delete</span></button></td>
                   </tr>
                 ))}
               </tbody>
@@ -607,6 +629,16 @@ export const DocumentTrackingPage: React.FC = () => {
           </form>
         )}
       </Modal>
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        isDestructive={confirmConfig.isDestructive}
+        confirmText={confirmConfig.confirmText}
+      />
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
     </div>
     </>
