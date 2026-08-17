@@ -308,19 +308,21 @@ export const DocumentTrackingPage: React.FC = () => {
           {activeTab === 'overview' && (
             <table className="doc-fit-table w-full table-fixed text-left border-collapse">
               <colgroup>
-                <col style={{ width: '5%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '28%' }} />
-                <col style={{ width: '18%' }} />
-                <col style={{ width: '11%' }} />
-                <col style={{ width: '12%' }} />
-                <col style={{ width: '7%' }} />
+                <col style={{ width: '4%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '8%' }} />
                 <col style={{ width: '5%' }} />
               </colgroup>
                <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>
+                   <th className="px-2 py-2">Dự án</th>
                    <th className="px-2 py-2">Tên hợp đồng</th>
                    <th className="px-2 py-2">Công ty</th>
                    <th className="px-2 py-2 text-center">Hồ sơ</th>
@@ -334,6 +336,7 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
+                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2 font-bold text-slate-800">{track.company || '-'}</td>
                     <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
@@ -363,10 +366,11 @@ export const DocumentTrackingPage: React.FC = () => {
               <colgroup>
                 <col style={{ width: '4%' }} />
                 <col style={{ width: '11%' }} />
-                <col style={{ width: '14%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '10%' }} />
                 <col style={{ width: '10%' }} />
                 <col style={{ width: '8%' }} />
-                <col style={{ width: '20%' }} />
+                <col style={{ width: '14%' }} />
                 <col style={{ width: '8%' }} />
                 <col style={{ width: '8%' }} />
                 <col style={{ width: '9%' }} />
@@ -376,6 +380,7 @@ export const DocumentTrackingPage: React.FC = () => {
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>
+                   <th className="px-2 py-2">Dự án</th>
                    <th className="px-2 py-2">Công ty</th>
                    <th className="px-2 py-2">Người nhận</th>
                    <th className="px-2 py-2">SĐT</th>
@@ -391,6 +396,7 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
+                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
                     <td className="px-2 py-2 font-bold text-slate-800">{track.company || '-'}</td>
                     <td className="px-2 py-2">{track.receiverName || '-'}</td>
                     <td className="px-2 py-2 font-mono">{track.phone || '-'}</td>
@@ -410,7 +416,8 @@ export const DocumentTrackingPage: React.FC = () => {
               <colgroup>
                 <col style={{ width: '5%' }} />
                 <col style={{ width: '14%' }} />
-                <col style={{ width: '28%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '15%' }} />
                 <col style={{ width: '10%' }} />
                 <col style={{ width: '13%' }} />
                 <col style={{ width: '9%' }} />
@@ -421,6 +428,7 @@ export const DocumentTrackingPage: React.FC = () => {
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>
+                   <th className="px-2 py-2">Dự án</th>
                    <th className="px-2 py-2">Tên hợp đồng</th>
                    <th className="px-2 py-2">Bên</th>
                    <th className="px-2 py-2 text-right">Giá trị HĐ</th>
@@ -434,6 +442,7 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
+                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2">{track.side || '-'}</td>
                     <td className="px-2 py-2 text-right font-bold text-slate-950">{(track.contractValue || 0).toLocaleString('vi-VN')}</td>
@@ -451,7 +460,8 @@ export const DocumentTrackingPage: React.FC = () => {
               <colgroup>
                 <col style={{ width: '5%' }} />
                 <col style={{ width: '14%' }} />
-                <col style={{ width: '27%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '15%' }} />
                 <col style={{ width: '11%' }} />
                 <col style={{ width: '12%' }} />
                 <col style={{ width: '8%' }} />
@@ -461,6 +471,7 @@ export const DocumentTrackingPage: React.FC = () => {
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>
+                   <th className="px-2 py-2">Dự án</th>
                    <th className="px-2 py-2">Tên hợp đồng</th>
                    <th className="px-2 py-2 text-center">Hồ sơ</th>
                    <th className="px-2 py-2 text-center">Thanh toán</th>
@@ -473,6 +484,7 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
+                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
                     <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.paymentStatus?.includes('Đã') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
