@@ -21,6 +21,8 @@ export const PersonnelPage: React.FC = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState('Nhân viên/Thợ');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [selectedProjectCodes, setSelectedProjectCodes] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -55,8 +57,14 @@ export const PersonnelPage: React.FC = () => {
     XLSX.writeFile(wb, `Danh_Sach_Nhan_Su_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  const toggleLock = (id: string) => {
-    setLockedIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+  const toggleLock = async (person: any) => {
+    try {
+      const newStatus = !person.locked;
+      await updateEngineer(person.id, { isLocked: newStatus } as any);
+      triggerToast(`Đã ${newStatus ? 'khóa' : 'mở khóa'} tài khoản ${person.name}`, 'success');
+    } catch (e: any) {
+      triggerToast(`Lỗi: ${e?.message}`, 'warning');
+    }
   };
 
   const resetForm = () => {
@@ -64,6 +72,8 @@ export const PersonnelPage: React.FC = () => {
     setName('');
     setPhone('');
     setRole('Nhân viên/Thợ');
+    setUsername('');
+    setPassword('');
     setSelectedProjectCodes([]);
   };
 
@@ -82,9 +92,11 @@ export const PersonnelPage: React.FC = () => {
       ...engineer,
       assignedProjects,
       code: engineer.code || `NV-${String(index + 1).padStart(3, '0')}`,
-      role: engineer.title?.trim() || 'Nhân viên/Thợ',
+      
       team: assignedProjects[0]?.name || 'Chưa gán dự án',
-      locked: lockedIds.includes(engineer.id),
+      locked: (engineer as any).isLocked || false,
+      username: (engineer as any).username || '',
+      role: (engineer as any).role || engineer.title?.trim() || 'Nhân viên/Thợ',
     };
   }).filter((person) => {
     const term = searchTerm.toLowerCase();
@@ -100,7 +112,7 @@ export const PersonnelPage: React.FC = () => {
       || (filter === 'active' && !person.locked)
       || (filter === 'locked' && person.locked);
     return matchFilter && matchSearch;
-  }), [engineers, filter, lockedIds, searchTerm]);
+  }), [engineers, filter, searchTerm]);
 
   const openCreateModal = () => {
     resetForm();
@@ -112,6 +124,8 @@ export const PersonnelPage: React.FC = () => {
     setName(person.name || '');
     setPhone(person.phone || '');
     setRole(person.role || 'Nhân viên/Thợ');
+    setUsername((person as any).username || '');
+    setPassword('');
     setSelectedProjectCodes(person.assignedProjects.map((project) => project.code));
     setIsFormOpen(true);
   };
@@ -130,6 +144,9 @@ export const PersonnelPage: React.FC = () => {
           name: name.trim(),
           phone,
           title: role,
+          role,
+          ...(username ? { username: username.trim() } : {}),
+          ...(password ? { password } : {}),
           projectCodes: selectedProjectCodes,
         });
         triggerToast(`Đã cập nhật nhân sự "${name.trim()}" thành công!`, 'success');
@@ -138,6 +155,9 @@ export const PersonnelPage: React.FC = () => {
           name: name.trim(),
           phone,
           title: role,
+          role,
+          username: username.trim(),
+          password,
           projectCodes: selectedProjectCodes,
         });
         triggerToast(`Đã thêm nhân sự "${name.trim()}" và gán ${selectedProjectCodes.length} dự án!`, 'success');
@@ -166,7 +186,7 @@ export const PersonnelPage: React.FC = () => {
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-hidden">
       <section className="border-b border-slate-200 bg-white pl-6 pr-[140px] py-4 md:py-0 md:h-[72px] flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div><h2 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">NHÂN SỰ</h2></div>
+          <div><h2 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">TÀI KHOẢN & NHÂN SỰ</h2></div>
         </div>
         <div className="flex items-center gap-3">
           <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100">{engineers.length} nhân sự</span>
@@ -206,7 +226,7 @@ export const PersonnelPage: React.FC = () => {
             </div>
           <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative">
             <table className="w-full text-xs text-left border-collapse">
-              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-3 bg-slate-50 w-10">STT</th><th className="text-left p-3 bg-slate-50">Họ tên</th><th className="text-left p-3 bg-slate-50">Mã NV</th><th className="text-left p-3 bg-slate-50">Vai trò</th><th className="text-left p-3 bg-slate-50">Dự án</th><th className="text-left p-3 bg-slate-50">SĐT</th><th className="text-left p-3 bg-slate-50">Trạng thái</th><th className="text-left p-3 bg-slate-50">Chức năng</th></tr></thead>
+              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-3 bg-slate-50 w-10">STT</th><th className="text-left p-3 bg-slate-50">Họ tên</th><th className="text-left p-3 bg-slate-50">Mã NV</th><th className="text-left p-3 bg-slate-50">Tài khoản</th><th className="text-left p-3 bg-slate-50">Vai trò</th><th className="text-left p-3 bg-slate-50">Dự án</th><th className="text-left p-3 bg-slate-50">SĐT</th><th className="text-left p-3 bg-slate-50">Trạng thái</th><th className="text-left p-3 bg-slate-50">Chức năng</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {people.map((person, index) => (
                   <tr
@@ -219,7 +239,17 @@ export const PersonnelPage: React.FC = () => {
                       <div className="truncate">{person.name}</div>
                     </td>
                     <td className="p-3 font-mono font-bold text-primary whitespace-nowrap">{person.code}</td>
-                    <td className="p-3 font-semibold text-slate-700 whitespace-nowrap">{person.role}</td>
+                    <td className="p-3 text-slate-700 font-semibold whitespace-nowrap">{person.username || '-'}</td>
+                    <td className="p-3 whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                        person.role === 'Quản trị viên' ? 'bg-purple-100 text-purple-700' :
+                        person.role === 'Quản lý dự án' ? 'bg-blue-100 text-blue-700' :
+                        person.role === 'Kỹ sư hiện trường' ? 'bg-orange-100 text-orange-700' :
+                        'bg-slate-100 text-slate-700'
+                      }`}>
+                        {person.role}
+                      </span>
+                    </td>
                     <td className="p-3">
                       {person.assignedProjects.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
@@ -238,7 +268,7 @@ export const PersonnelPage: React.FC = () => {
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
-                            toggleLock(person.id);
+                            toggleLock(person);
                           }}
                           className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border text-[11px] font-bold active:scale-95 transition-all ${person.locked ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10'}`}
                         >

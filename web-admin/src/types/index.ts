@@ -126,6 +126,10 @@ export interface Engineer {
   code?: string;
   name: string;
   title: string;
+  role?: string;
+  username?: string;
+  password?: string;
+  isLocked?: boolean;
   avatar: string;
   phone: string;
   email: string;

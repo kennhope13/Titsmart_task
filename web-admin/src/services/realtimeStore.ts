@@ -165,8 +165,8 @@ interface RealtimeStoreState {
   updateTaskProgress: (id: string, progress: number, isDone: boolean) => void;
   assignEngineer: (taskId: string, engineerId: string, engineerName: string) => void;
   addEngineer: (engineer: Omit<Engineer, 'id'>) => Engineer;
-  createEngineer: (input: { name: string; phone?: string; email?: string; title?: string; projectCodes?: string[] }) => Promise<Engineer>;
-  updateEngineer: (id: string, input: { name: string; phone?: string; title?: string; projectCodes?: string[] }) => Promise<Engineer>;
+  createEngineer: (input: { name: string; phone?: string; email?: string; title?: string; role?: string; username?: string; password?: string; isLocked?: boolean; projectCodes?: string[] }) => Promise<Engineer>;
+  updateEngineer: (id: string, input: { name: string; phone?: string; title?: string; role?: string; username?: string; password?: string; isLocked?: boolean; projectCodes?: string[] }) => Promise<Engineer>;
   deleteEngineer: (id: string) => Promise<void>;
   deleteTask: (id: string) => void;
 
@@ -719,6 +719,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     createEngineer: async (input) => {
       const created = await api.engineers.create({
+          role: input.role,
+          username: input.username,
+          password: input.password,
+          isLocked: input.isLocked,
         fullName: input.name,
         phone: input.phone,
         email: input.email,
@@ -737,6 +741,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateEngineer: async (id, input) => {
       const updated = await api.engineers.update(id, {
+          role: input.role,
+          username: input.username,
+          password: input.password,
+          isLocked: input.isLocked,
         fullName: input.name,
         phone: input.phone,
         title: input.title,
