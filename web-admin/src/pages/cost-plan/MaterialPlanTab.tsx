@@ -455,7 +455,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         onBlur={() => saveEditing(plan)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                         autoFocus
-                        className="w-full text-center bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                        className="w-full text-center bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                       />
                     ) : (
                       <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block w-full">{depth > 0 ? plan.computedStt : plan.stt}</span>
@@ -471,7 +471,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         onBlur={() => saveEditing(plan)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                         autoFocus
-                        className="w-full bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                        className="w-full bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                       />
                     ) : (
                       <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
@@ -509,7 +509,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         onBlur={() => saveEditing(plan)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                         autoFocus
-                        className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                        className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                       />
                     ) : (
                       <span onClick={() => startEditing(plan.id, 'unit', plan.unit)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.unit || ''}>{plan.unit || ''}</span>
@@ -525,7 +525,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         onBlur={() => saveEditing(plan)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                         autoFocus
-                        className="w-full text-right bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                        className="w-full text-right bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                       />
                     ) : (
                       <span onClick={() => startEditing(plan.id, 'contractVolume', plan.contractVolume)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={showNumber(plan.contractVolume)}>{showNumber(plan.contractVolume)}</span>
@@ -544,7 +544,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           />
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.techSpecModel || ''}>{plan.techSpecModel || ''}</span>
@@ -560,7 +560,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           />
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'techSpecOrigin', plan.techSpecOrigin)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.techSpecOrigin || ''}>{plan.techSpecOrigin || ''}</span>
@@ -571,7 +571,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <div className="p-[3px]"><CustomSelect
                             value={plan.techSpecStatus || ''}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, techSpecStatus: e.target.value }) }}
-                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           >
                             <option value="">Chưa xác định</option>
                             <option value="Đáp ứng">Đáp ứng</option>
@@ -584,7 +584,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <div className="p-[3px]"><CustomSelect
                             value={plan.progressStatus || ''}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, progressStatus: e.target.value }) }}
-                            className="w-full text-center bg-white text-slate-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full text-center bg-white text-slate-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           >
                             <option value="Chưa thi công">Chưa thi công</option>
                             <option value="Đang thi công">Đang thi công</option>
@@ -606,7 +606,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full text-right bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full text-right bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           />
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'orderedVolume', plan.orderedVolume)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={showNumber(plan.orderedVolume)}>{showNumber(plan.orderedVolume)}</span>
@@ -617,7 +617,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <div className="p-[3px]"><CustomSelect
                             value={plan.orderedStatus || ''}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, orderedStatus: e.target.value }) }}
-                            className="w-full bg-white text-slate-700 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full bg-white text-slate-700 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           >
                             <option value="">Chưa đặt hàng</option>
                             <option value="Đã đặt hàng">Đã đặt hàng</option>
@@ -635,7 +635,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full text-center bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full text-center bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           />
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'expectedDate', plan.expectedDate)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{plan.expectedDate || ''}</span>
@@ -651,7 +651,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full bg-white text-red-600 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full bg-white text-red-600 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           />
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.issueContent || ''}>{plan.issueContent || ''}</span>
@@ -667,7 +667,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           />
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'issueStatus', plan.issueStatus)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.issueStatus || ''}>{plan.issueStatus || ''}</span>
@@ -683,7 +683,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <div className="p-[3px]"><CustomSelect
                             value={plan.docCo ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, docCo: e.target.value === 'true' }) }}
-                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
@@ -694,7 +694,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <div className="p-[3px]"><CustomSelect
                             value={plan.docCq ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, docCq: e.target.value === 'true' }) }}
-                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
@@ -705,7 +705,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <div className="p-[3px]"><CustomSelect
                             value={plan.docFireInspection ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, docFireInspection: e.target.value === 'true' }) }}
-                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
@@ -716,7 +716,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <div className="p-[3px]"><CustomSelect
                             value={plan.dispatchToSite ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, dispatchToSite: e.target.value === 'true' }) }}
-                            className="w-full bg-white text-slate-700 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full bg-white text-slate-700 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
@@ -732,7 +732,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full text-center bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                            className="w-full text-center bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           />
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'dispatchDate', plan.dispatchDate)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{plan.dispatchDate || ''}</span>
@@ -751,7 +751,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         onBlur={() => saveEditing(plan)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                         autoFocus
-                        className="w-full bg-white text-slate-500 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border border-slate-300 rounded"
+                        className="w-full bg-white text-slate-500 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                       />
                     ) : (
                       <div onClick={() => startEditing(plan.id, 'notes', plan.notes)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={cleanNotes(plan.notes)}>
