@@ -1109,12 +1109,12 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
-    addMaterialPlan: async (planData) => {
+    addMaterialPlan: async (planData, skipLog?: boolean) => {
       try {
         const created = normalizeMaterialPlan(await api.accounting.createMaterialPlan(planData));
         set((state) => {
           const nextPlans = [created, ...state.materialPlans];
-          get().logActivity('Thêm mới kế hoạch vật tư', 'COMPANY');
+          if (!skipLog) get().logActivity('Thêm mới kế hoạch vật tư', 'COMPANY');
           persistAndNotify({ materialPlans: nextPlans });
           return { materialPlans: nextPlans };
         });
@@ -1154,12 +1154,12 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
-    addPurchasingPlan: async (purData) => {
+    addPurchasingPlan: async (purData, skipLog?: boolean) => {
       try {
         const created = normalizePurchasingPlan(await api.accounting.createPurchasing(purData));
         set((state) => {
           const nextPurs = [created, ...state.purchasingPlans];
-          get().logActivity('Thêm mới kế hoạch mua sắm', 'COMPANY');
+          if (!skipLog) get().logActivity('Thêm mới kế hoạch mua sắm', 'COMPANY');
           persistAndNotify({ purchasingPlans: nextPurs });
           return { purchasingPlans: nextPurs };
         });

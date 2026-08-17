@@ -924,7 +924,7 @@ export const TaskManagementPage: React.FC = () => {
             orderedStatus: 'Chưa đặt hàng',
             supplyScope: 'unknown',
             notes: sectionIsOwner ? '[section][owner]' : '[section]',
-          });
+          }, true);
           
           sectionPurchasingId = await addPurchasingPlan({
             projectCode,
@@ -944,7 +944,7 @@ export const TaskManagementPage: React.FC = () => {
             contractStatus: 'Chưa ký',
             invoiceStatus: 'Chưa xuất',
             notes: sectionIsOwner ? '[section][owner]' : '[section]',
-          });
+          }, true);
         }
 
         // Tìm section cha trong PurchasingPlan theo sectionName
@@ -989,7 +989,7 @@ export const TaskManagementPage: React.FC = () => {
           supplyScope: itemSupplyScope,
           notes: itemNotes,
           parentId: parentMaterialPlan?.id || sectionMaterialId,
-        });
+        }, true); // skipLog = true
 
         if (!sectionIsOwner) {
           // Tạo PurchasingPlan cho mọi hạng mục (trừ hạng mục của chủ đầu tư)
@@ -1012,7 +1012,7 @@ export const TaskManagementPage: React.FC = () => {
             invoiceStatus: 'Chưa xuất',
             notes: itemNotes,
             parentId: parentPurchasingPlan?.id || sectionInPurchasing?.id,
-          });
+          }, true); // skipLog = true
         }
       }
     }
