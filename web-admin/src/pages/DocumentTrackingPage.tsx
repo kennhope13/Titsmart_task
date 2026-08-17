@@ -336,7 +336,7 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
-                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
+                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2 font-bold text-slate-800">{track.company || '-'}</td>
                     <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
@@ -396,7 +396,7 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
-                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
+                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
                     <td className="px-2 py-2 font-bold text-slate-800">{track.company || '-'}</td>
                     <td className="px-2 py-2">{track.receiverName || '-'}</td>
                     <td className="px-2 py-2 font-mono">{track.phone || '-'}</td>
@@ -442,7 +442,7 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
-                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
+                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2">{track.side || '-'}</td>
                     <td className="px-2 py-2 text-right font-bold text-slate-950">{(track.contractValue || 0).toLocaleString('vi-VN')}</td>
@@ -484,7 +484,7 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
-                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
+                    <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
                     <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.paymentStatus?.includes('Đã') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
@@ -611,10 +611,21 @@ export const DocumentTrackingPage: React.FC = () => {
             setEditingDoc(null);
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gapx-2 py-2">
-              <div><label className="block font-bold mb-1">Số HĐ</label><input type="text" value={editingDoc.contractNo} onChange={(e) => setEditingDoc({...editingDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div className="min-w-0">
+                <label className="block font-bold mb-1 truncate">Dự án *</label>
+                <select required value={editingDoc.projectCode || projects.find(p => p.id === (editingDoc as any).projectId)?.code || ''} onChange={(e) => setEditingDoc({...editingDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold truncate">
+                  <option value="">-- Chọn dự án --</option>
+                  {projects.map(p => (
+                    <option key={p.code} value={p.code}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
               <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={editingDoc.contractName} onChange={(e) => setEditingDoc({...editingDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
+            <div className="grid grid-cols-2 gapx-2 py-2">
+              <div><label className="block font-bold mb-1">Số HĐ</label><input type="text" value={editingDoc.contractNo} onChange={(e) => setEditingDoc({...editingDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Công ty nhận *</label><input type="text" required value={editingDoc.company} onChange={(e) => setEditingDoc({...editingDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            </div>
             <div className="grid grid-cols-3 gapx-2 py-2">
               <div><label className="block font-bold mb-1">Người nhận</label><input type="text" value={editingDoc.receiverName} onChange={(e) => setEditingDoc({...editingDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">SĐT nhận</label><input type="text" value={editingDoc.phone} onChange={(e) => setEditingDoc({...editingDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
