@@ -1617,10 +1617,10 @@ export const ProjectCostPlanPage: React.FC = () => {
                     <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex flex-col gap-0.5">
                         {lab.idCardFrontUrl ? (
-                          <a href={lab.idCardFrontUrl} target="_blank" rel="noreferrer" className="text-[10px] text-primary hover:underline font-bold">Mặt trước</a>
+                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardFrontUrl!); }} className="text-[10px] text-primary hover:underline font-bold">Mặt trước</button>
                         ) : null}
                         {lab.idCardBackUrl ? (
-                          <a href={lab.idCardBackUrl} target="_blank" rel="noreferrer" className="text-[10px] text-primary hover:underline font-bold">Mặt sau</a>
+                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardBackUrl!); }} className="text-[10px] text-primary hover:underline font-bold">Mặt sau</button>
                         ) : null}
                         {!lab.idCardFrontUrl && !lab.idCardBackUrl && <span className="text-slate-300">Không có</span>}
                       </div>

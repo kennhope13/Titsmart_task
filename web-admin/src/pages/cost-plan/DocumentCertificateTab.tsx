@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ProjectMaterialPlan } from '../../types';
 import { ImageUpload } from '../../components/common/ImageUpload';
+import { Modal } from '../../components/common/Modal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
