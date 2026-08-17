@@ -1,8 +1,8 @@
 {
-  "version": "1.0.33",
+  "version": "1.0.34",
   "date": "17/08/2026",
   "notes": [
-    "Gỡ bỏ trang Báo cáo theo cấu trúc mới.",
+    "Nâng cấp cấu trúc tab Nhân sự: Hỗ trợ Đăng nhập (Tài khoản/Mật khẩu) và Phân quyền.",
     "Khóa thanh Sidebar không bị thu gọn khi đang mở bảng thông báo.",
     "Tự động phát hiện phiên bản mới để yêu cầu người dùng cập nhật (F5)."
   ]
