@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Material } from '../../types';
 import { formatNumber, materialCurrentStock } from './inventoryUtils';
 
@@ -35,7 +35,7 @@ export const StockTab: React.FC<StockTabProps> = ({ materials, onEdit }) => {
           <button type="button" onClick={() => { setSearchTerm(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
         )}
       </div>
-      <div className="overflow-hidden">
+      <div className="overflow-x-auto custom-scrollbar">
         <table className="w-full table-fixed text-left border-collapse">
           <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
             <tr>

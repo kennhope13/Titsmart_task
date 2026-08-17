@@ -715,7 +715,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
         {activeTab === 'OVERVIEW' && (
           <>
-            <div className="w-full">
+            <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse">
                  <thead 
                    style={{ top: stickyHeight > 0 ? `${stickyHeight}px` : '102px' }}

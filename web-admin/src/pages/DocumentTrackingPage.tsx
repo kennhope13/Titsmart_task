@@ -304,7 +304,7 @@ export const DocumentTrackingPage: React.FC = () => {
             </div>
           </div>
 
-        <div className="overflow-hidden custom-scrollbar">
+        <div className="overflow-x-auto custom-scrollbar">
           {activeTab === 'overview' && (
             <table className="doc-fit-table w-full table-fixed text-left border-collapse">
               <colgroup>

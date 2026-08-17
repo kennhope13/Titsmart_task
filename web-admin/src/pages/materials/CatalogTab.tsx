@@ -36,7 +36,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
           <button type="button" onClick={() => { setSearchTerm(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
         )}
       </div>
-      <div className="overflow-hidden">
+      <div className="overflow-x-auto custom-scrollbar">
         <table className="w-full table-fixed text-left border-collapse">
           <colgroup>
             <col style={{ width: '4%' }} />
