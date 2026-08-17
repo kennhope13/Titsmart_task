@@ -357,12 +357,25 @@ export const api = {
     },
     createDocumentTrack: async (data: any) => {
       const payload = toSnakeCase(data);
+      if (payload.project_code) {
+        const { data: proj } = await supabase.from('projects').select('id').eq('code', payload.project_code).single();
+        if (proj) payload.project_id = proj.id;
+        delete payload.project_code;
+      }
       const { data: result, error } = await supabase.from('document_tracks').insert(payload).select().single();
       if (error) throw error;
       return toCamelCase(result);
     },
     updateDocumentTrack: async (id: string, data: any) => {
-      const { data: result, error } = await supabase.from('document_tracks').update(toSnakeCase(data)).eq('id', id).select().single();
+      const payload = toSnakeCase(data);
+      if (payload.project_code !== undefined) {
+        if (payload.project_code) {
+          const { data: proj } = await supabase.from('projects').select('id').eq('code', payload.project_code).single();
+          if (proj) payload.project_id = proj.id;
+        }
+        delete payload.project_code;
+      }
+      const { data: result, error } = await supabase.from('document_tracks').update(payload).eq('id', id).select().single();
       if (error) throw error;
       return toCamelCase(result);
     },
