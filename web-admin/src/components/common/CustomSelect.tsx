@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 
 interface CustomSelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
@@ -17,10 +18,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   ...rest
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
   const options: { value: string | number; label: React.ReactNode }[] = [];
-  
+
   const childrenArray = React.Children.toArray(children);
   childrenArray.forEach((child: any) => {
     if (React.isValidElement(child) && child.type === 'option') {
@@ -50,6 +52,36 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     };
   }, [isOpen]);
 
+  const handleOpen = () => {
+    if (disabled) return;
+    if (!isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const dropdownHeight = Math.min(options.length * 34 + 8, 240);
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+        // Open upward
+        setDropdownStyle({
+          position: 'fixed',
+          bottom: window.innerHeight - rect.top + 2,
+          left: rect.left,
+          width: Math.max(rect.width, 140),
+          zIndex: 9999,
+        });
+      } else {
+        // Open downward
+        setDropdownStyle({
+          position: 'fixed',
+          top: rect.bottom + 2,
+          left: rect.left,
+          width: Math.max(rect.width, 140),
+          zIndex: 9999,
+        });
+      }
+    }
+    setIsOpen((prev) => !prev);
+  };
+
   const handleSelect = (val: string | number) => {
     setIsOpen(false);
     if (onChange) {
@@ -61,11 +93,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const hasBg = className.includes('bg-');
   const hasBorder = className.includes('border');
   const hasRounded = className.includes('rounded');
-  
+
   const layoutClassesRegex = /(?<=^|\s)(flex-1|flex-auto|flex-initial|flex-none|w-[^\s]+|h-[^\s]+|min-w-[^\s]+|max-w-[^\s]+|min-h-[^\s]+|max-h-[^\s]+|hidden|block|inline-block)(?=\s|$)/g;
   const layoutClassesMatch = className.match(layoutClassesRegex);
   const layoutClasses = layoutClassesMatch ? layoutClassesMatch.join(' ') : 'inline-block w-full';
-  
+
   const fontSizeRegex = /(?<=^|\s)(text-(xs|sm|base|lg|xl|2xl|\[\d+px\]))(?=\s|$)/;
   const fontSizeMatch = className.match(fontSizeRegex);
   const fontSizeClass = fontSizeMatch ? fontSizeMatch[1] : '';
@@ -82,12 +114,37 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     isOpen ? 'ring-2 ring-primary/20 border-primary' : ''
   } ${innerClassName}`.replace(/focus:ring-[^\s]+/g, '');
 
+  const dropdownEl = isOpen && !disabled ? (
+    <div
+      style={dropdownStyle}
+      className="bg-white rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 py-1 max-h-60 overflow-auto custom-scrollbar text-left"
+    >
+      {options.length === 0 ? (
+        <div className={`px-3 py-2 text-slate-500 italic text-center ${fontSizeClass}`}>Trống</div>
+      ) : (
+        options.map((option, idx) => (
+          <div
+            key={String(option.value) + idx}
+            className={`px-3 py-1.5 cursor-pointer transition-colors ${fontSizeClass} ${
+              String(value) === String(option.value)
+                ? 'bg-blue-50 text-primary font-semibold'
+                : 'text-slate-700 hover:bg-slate-50'
+            }`}
+            onMouseDown={(e) => { e.preventDefault(); handleSelect(option.value); }}
+          >
+            {option.label}
+          </div>
+        ))
+      )}
+    </div>
+  ) : null;
+
   return (
     <div className={`relative ${layoutClasses} min-w-0`} ref={containerRef}>
       <button
         type="button"
         className={triggerClassName}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={handleOpen}
         disabled={disabled}
       >
         <span className="block truncate min-w-0 flex-1 pr-6" title={typeof displayLabel === 'string' ? displayLabel : ''}>{displayLabel || '\u00A0'}</span>
@@ -107,27 +164,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         />
       )}
 
-      {isOpen && !disabled && (
-        <div className="absolute z-[99] mt-1 w-full bg-white rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-slate-100 py-1 max-h-60 overflow-auto custom-scrollbar text-left">
-          {options.length === 0 ? (
-            <div className={`px-3 py-2 text-slate-500 italic text-center ${fontSizeClass}`}>Trống</div>
-          ) : (
-            options.map((option, idx) => (
-              <div
-                key={String(option.value) + idx}
-                className={`px-3 py-1.5 cursor-pointer transition-colors ${fontSizeClass} ${
-                  String(value) === String(option.value)
-                    ? 'bg-blue-50 text-primary font-semibold'
-                    : 'text-slate-700 hover:bg-slate-50'
-                }`}
-                onClick={() => handleSelect(option.value)}
-              >
-                {option.label}
-              </div>
-            ))
-          )}
-        </div>
-      )}
+      {typeof document !== 'undefined' && ReactDOM.createPortal(dropdownEl, document.body)}
     </div>
   );
 };
