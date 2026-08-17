@@ -255,14 +255,11 @@ export const FieldLogsPage: React.FC = () => {
     <div className="flex min-h-full flex-1 flex-col bg-slate-100">
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-6 py-4 md:py-0 md:h-[72px] shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between h-full">
           <div className="flex items-center gap-4">
 
             <div className="border-l-4 border-primary pl-4">
               <h1 className="text-2xl font-extrabold uppercase text-slate-900">NHẬT KÝ HIỆN TRƯỜNG</h1>
-              <p className="text-xs font-semibold text-slate-400 mt-1">
-                {visibleLogs.length} báo cáo · {totalImages} ảnh
-              </p>
             </div>
           </div>
 

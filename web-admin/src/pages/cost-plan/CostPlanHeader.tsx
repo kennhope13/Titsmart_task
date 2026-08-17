@@ -15,14 +15,11 @@ export const CostPlanHeader: React.FC<CostPlanHeaderProps> = ({
 
   return (
     <section className="border-b border-slate-200 bg-white px-6 py-4 md:py-0 md:h-[72px]">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between h-full">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-primary">
-              <span className="material-symbols-outlined text-[22px]">request_quote</span>
-            </div>
-            <div className="min-w-0">
-              <h1 className="page-title text-2xl font-extrabold text-slate-900">Kế hoạch & Chi phí Dự án</h1>
+            <div className="border-l-4 border-primary pl-4 min-w-0">
+              <h1 className="page-title text-2xl font-extrabold uppercase text-slate-900">KẾ HOẠCH & CHI PHÍ DỰ ÁN</h1>
               <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
                 {selectedProjectName}
               </p>
