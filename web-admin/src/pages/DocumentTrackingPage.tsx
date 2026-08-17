@@ -530,12 +530,12 @@ export const DocumentTrackingPage: React.FC = () => {
           }
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gapx-2 py-2">
-            <div>
-              <label className="block font-bold mb-1">Dự án *</label>
-              <select required value={newDoc.projectCode} onChange={(e) => setNewDoc({...newDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
+            <div className="min-w-0">
+              <label className="block font-bold mb-1 truncate">Dự án *</label>
+              <select required value={newDoc.projectCode} onChange={(e) => setNewDoc({...newDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold truncate">
                 <option value="">-- Chọn dự án --</option>
                 {projects.map(p => (
-                  <option key={p.code} value={p.code}>{p.name} ({p.code})</option>
+                  <option key={p.code} value={p.code}>{p.name}</option>
                 ))}
               </select>
             </div>
