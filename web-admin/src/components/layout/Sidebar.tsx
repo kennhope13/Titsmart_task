@@ -218,6 +218,12 @@ export const Sidebar: React.FC = () => {
                   <span className="material-symbols-outlined text-lg">logout</span>
                   Đăng xuất
                 </button>
+                <div className="h-px bg-slate-100 my-1 mx-2"></div>
+                <div className="px-3 py-1.5 text-center">
+                  <span className="text-[10px] font-mono text-slate-400 font-semibold">
+                    Phiên bản {import.meta.env.VITE_APP_VERSION || '1.0.0'}
+                  </span>
+                </div>
               </div>
             </div>
           )}
