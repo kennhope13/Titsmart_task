@@ -1,7 +1,7 @@
 {
     "name":  "buildcore-pro-web-admin",
     "private":  true,
-    "version":  "1.0.23",
+    "version":  "1.0.24",
     "description": "TITSMART Project Manager",
     "type":  "module",
     "main":  "dist-electron/main.js",

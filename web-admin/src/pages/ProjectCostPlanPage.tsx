@@ -164,6 +164,8 @@ export const ProjectCostPlanPage: React.FC = () => {
     itemName: string;
   } | null>(null);
 
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   const handleUpdatePurchasingPlanSync = (id: string, updates: Partial<ProjectPurchasing>) => {
     const existing = purchasingPlans.find(p => p.id === id);
     updatePurchasingPlan(id, updates);
@@ -1545,12 +1547,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                         <button onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          const url = encodeURI(exp.invoiceUrl!);
-                          if (window.electronAPI?.openExternal) {
-                            window.electronAPI.openExternal(url);
-                          } else {
-                            window.open(url, '_blank');
-                          }
+                          setPreviewImage(exp.invoiceUrl!);
                         }} className="inline-flex items-center gap-1 text-xs text-primary font-bold hover:underline">
                           <span className="material-symbols-outlined text-sm">image</span>
                           Xem ảnh
@@ -1660,6 +1657,13 @@ export const ProjectCostPlanPage: React.FC = () => {
       </div>
 
       {/* MODALS */}
+      {/* Xem ảnh Modal */}
+      <Modal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} title="Xem hình ảnh hóa đơn/chứng từ" size="xl" icon="image">
+        <div className="flex justify-center items-center bg-slate-50 rounded-lg overflow-hidden min-h-[400px] max-h-[80vh] relative p-4 border border-slate-200 m-4">
+          {previewImage && <img src={previewImage} alt="Hóa đơn" className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-100" />}
+        </div>
+      </Modal>
+
       {/* Confirm dialog: Xóa hạng mục */}
       <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title={deleteConfirm?.title || 'Xác nhận xóa'}>
         <div className="py-4">
