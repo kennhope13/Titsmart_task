@@ -1302,7 +1302,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
       {/* HEADER SECTION */}
-      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-black text-slate-900 border-l-4 border-primary pl-4 uppercase font-['Inter']">KẾ HOẠCH & CHI PHÍ DỰ ÁN</h1>
         </div>

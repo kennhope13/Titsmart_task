@@ -142,7 +142,7 @@ export const ReportExportPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
-      <section className="border-b border-slate-200 bg-white pl-6 pr-[140px] py-4 flex items-center justify-between gap-4">
+      <section className="border-b border-slate-200 bg-white pl-6 pr-[140px] py-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div><h2 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">BÁO CÁO</h2></div>
         </div>
