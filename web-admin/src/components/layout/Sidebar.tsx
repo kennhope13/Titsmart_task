@@ -62,56 +62,13 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-[64px] hover:w-[260px] transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 group shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden">
-      <div className="relative h-[72px] px-3 flex items-center gap-3 border-b border-slate-100 min-w-[260px]">
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-white">
-          <img src="./logo.png" alt="TITSMART" className="w-7 h-7 object-contain" />
+      <div className="relative h-[80px] px-2 flex items-center gap-4 border-b border-slate-100 min-w-[260px]">
+        <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-white">
+          <img src="./logo.png" alt="TITSMART" className="w-10 h-10 object-contain" />
         </div>
         <div className="min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-1">
-          <h1 className="font-bold text-base text-primary leading-tight truncate">TITSMART</h1>
-          <p className="text-[10px] text-slate-500 font-medium">Project Manager</p>
-        </div>
-
-        <div className="relative opacity-0 group-hover:opacity-100 transition-opacity duration-300 pr-3">
-          <button
-            onClick={() => setShowNotifPopover(!showNotifPopover)}
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-primary transition-colors relative"
-          >
-            <span className="material-symbols-outlined text-[20px]">notifications</span>
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
-            )}
-          </button>
-
-          {showNotifPopover && (
-            <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50">
-              <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
-                <button onClick={clearNotifications} className="text-[11px] text-primary font-bold hover:underline">Xóa tất cả</button>
-              </div>
-              <div className="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-100">
-                {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-slate-500 text-xs">Không có thông báo nào</div>
-                ) : (
-                  notifications.map(notification => (
-                    <div
-                      key={notification.id}
-                      onClick={() => markNotificationRead(notification.id)}
-                      className={`p-3 text-xs hover:bg-slate-50 cursor-pointer flex gap-3 ${!notification.read ? 'bg-blue-50/50 font-medium' : 'opacity-70'}`}
-                    >
-                      <span className="material-symbols-outlined text-primary text-base flex-shrink-0">{notification.icon || 'info'}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start gap-2 mb-0.5">
-                          <span className="font-bold text-slate-800 truncate">{notification.title}</span>
-                          <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">{notification.timestamp}</span>
-                        </div>
-                        <p className="text-slate-600 leading-tight">{notification.message}</p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+          <h1 className="font-extrabold text-2xl text-primary leading-tight truncate tracking-tight">TITSMART</h1>
+          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-0.5">Project Manager</p>
         </div>
       </div>
 
@@ -154,9 +111,71 @@ export const Sidebar: React.FC = () => {
           </div>
         ))}
 
-        <div className="pt-4 border-t border-slate-100 relative">
+        <div className="pt-4 border-t border-slate-100 relative flex flex-col gap-2">
+          {/* Notifications */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowNotifPopover(!showNotifPopover);
+                setShowUserPopover(false);
+              }}
+              className={`flex items-center gap-3 rounded-xl transition-all overflow-hidden whitespace-nowrap
+                h-10 w-10 group-hover:w-full group-hover:px-3
+                ${
+                showNotifPopover
+                  ? 'bg-blue-50 ring-1 ring-blue-100'
+                  : 'hover:bg-slate-50 text-slate-600'
+              }`}
+            >
+              <div className="w-10 h-10 rounded-full border border-transparent flex-shrink-0 flex items-center justify-center font-bold text-lg relative">
+                <span className="material-symbols-outlined text-xl">notifications</span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
+                )}
+              </div>
+              <div className="min-w-0 text-left leading-tight flex-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span className="block font-bold text-sm text-slate-800 truncate">Thông báo</span>
+              </div>
+            </button>
+
+            {showNotifPopover && (
+              <div className="absolute bottom-full left-3 mb-2 w-72 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50">
+                <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                  <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
+                  <button onClick={clearNotifications} className="text-[11px] text-primary font-bold hover:underline">Xóa tất cả</button>
+                </div>
+                <div className="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-100">
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center text-slate-500 text-xs">Không có thông báo nào</div>
+                  ) : (
+                    notifications.map(notification => (
+                      <div
+                        key={notification.id}
+                        onClick={() => markNotificationRead(notification.id)}
+                        className={`p-3 text-xs hover:bg-slate-50 cursor-pointer flex gap-3 ${!notification.read ? 'bg-blue-50/50 font-medium' : 'opacity-70'}`}
+                      >
+                        <span className="material-symbols-outlined text-primary text-base flex-shrink-0">{notification.icon || 'info'}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start gap-2 mb-0.5">
+                            <span className="font-bold text-slate-800 truncate">{notification.title}</span>
+                            <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">{notification.timestamp}</span>
+                          </div>
+                          <p className="text-slate-600 leading-tight">{notification.message}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User Profile */}
           <button
-            onClick={() => setShowUserPopover(!showUserPopover)}
+            onClick={() => {
+              setShowUserPopover(!showUserPopover);
+              setShowNotifPopover(false);
+            }}
             className={`flex items-center gap-3 rounded-xl transition-all overflow-hidden whitespace-nowrap
               h-10 w-10 group-hover:w-full group-hover:px-3 group-hover:py-3 group-hover:h-auto
               ${
