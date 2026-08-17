@@ -371,7 +371,6 @@ const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onClose, on
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
-
 export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
   data, searchQuery, setSearchQuery, selectedProject, onAdd, onUpdate, onDelete,
   triggerAdd, onTriggerHandled,
@@ -379,6 +378,13 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
   const [editingItem, setEditingItem] = useState<ProjectMaterialPlan | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { updateMaterialPlan } = useProjectStore();
+  const [editingPlan, setEditingPlan] = useState<ProjectMaterialPlan | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const handleSaveItem = (item: ProjectMaterialPlan) => {
+    updateMaterialPlan(item.id, item);
+  };
 
   // Khi page bấm nút "Thêm Mới" ở tab DOCUMENTS, triggerAdd = true → mở modal
   useEffect(() => {
@@ -502,14 +508,29 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
                     <div key={j} className="flex flex-wrap gap-1.5">
                       {cleanUrls.map((url, uIdx) => {
                         const isPdf = url.toLowerCase().endsWith('.pdf');
+                        if (isPdf) {
+                          return (
+                            <a key={uIdx} href={url} target="_blank" rel="noreferrer" 
+                              className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-200 hover:text-primary transition"
+                              title="Xem tệp đính kèm"
+                            >
+                              <span className="material-symbols-outlined text-[12px] text-rose-500">picture_as_pdf</span>
+                              File {uIdx + 1}
+                            </a>
+                          );
+                        }
                         return (
-                          <a key={uIdx} href={url} target="_blank" rel="noreferrer" 
+                          <button key={uIdx} onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setPreviewImage(url);
+                          }}
                             className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-200 hover:text-primary transition"
                             title="Xem tệp đính kèm"
                           >
-                            <span className="material-symbols-outlined text-[12px] text-rose-500">{isPdf ? 'picture_as_pdf' : 'image'}</span>
+                            <span className="material-symbols-outlined text-[12px] text-rose-500">image</span>
                             File {uIdx + 1}
-                          </a>
+                          </button>
                         );
                       })}
                     </div>
@@ -583,14 +604,26 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
         </table>
       </div>
 
-      {(modalMode === 'add' || modalMode === 'edit') && (
+      {/* Xem ảnh Modal */}
+      <Modal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} title="Xem hình ảnh chứng từ" size="xl" icon="image">
+        <div className="flex justify-center items-center bg-slate-50 rounded-lg overflow-hidden min-h-[400px] max-h-[80vh] relative p-4 border border-slate-200 m-4">
+          {previewImage && <img src={previewImage} alt="Chứng từ" className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-100" />}
+        </div>
+      </Modal>
+
+      {/* Modal Add/Edit */}
+      <Modal
+        isOpen={modalMode !== null}
+        onClose={closeModal}
+        title={modalMode === 'add' ? 'Thêm chứng từ mới' : 'Chỉnh sửa hàng hóa'}
+      >
         <DocFormModal
           title={modalMode === 'add' ? 'Thêm chứng từ mới' : 'Chỉnh sửa hàng hóa'}
           initial={modalMode === 'edit' && editingItem
             ? toFormState(editingItem)
             : { ...EMPTY_FORM, models: [{ ...EMPTY_MODEL, docs: [{ ...EMPTY_DOC }] }] }}
           onClose={closeModal} onSubmit={handleSubmit} />
-      )}
+      </Modal>
 
       {deletingId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
