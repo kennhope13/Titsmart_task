@@ -523,7 +523,7 @@ export const DocumentTrackingPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-3 gapx-2 py-2 bg-slate-50 p-2 rounded-lg border">
             <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" value={newDoc.contractValue} onChange={(e) => setNewDoc({...newDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
-            <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.05" min="0" max="1" value={newDoc.prepayPercent} onChange={(e) => setNewDoc({...newDoc, prepayPercent: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={(newDoc.prepayPercent || 0) * 100} onChange={(e) => setNewDoc({...newDoc, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
               <label className="block font-bold mb-1">Thanh toán</label>
               <select value={newDoc.paymentStatus} onChange={(e) => setNewDoc({...newDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
@@ -581,7 +581,7 @@ export const DocumentTrackingPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-3 gapx-2 py-2 bg-slate-50 p-2 rounded-lg border">
               <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" value={editingDoc.contractValue} onChange={(e) => setEditingDoc({...editingDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
-              <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.05" min="0" max="1" value={editingDoc.prepayPercent} onChange={(e) => setEditingDoc({...editingDoc, prepayPercent: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={(editingDoc.prepayPercent || 0) * 100} onChange={(e) => setEditingDoc({...editingDoc, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div>
                 <label className="block font-bold mb-1">Thanh toán</label>
                 <select value={editingDoc.paymentStatus} onChange={(e) => setEditingDoc({...editingDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
