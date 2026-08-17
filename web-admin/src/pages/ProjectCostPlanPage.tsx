@@ -2157,13 +2157,14 @@ export const ProjectCostPlanPage: React.FC = () => {
         <form onSubmit={async (e) => {
           e.preventDefault();
           const parentId = isCreatingSectionHeader ? null : (parentPurchasingIdForNew || sectionPurchasingIdForNew || null);
-          const contractVol = Number(newPurchasingData.volumeContract || 1);
+          const contractVol = Number(newPurchasingData.volumeContract || 0);
           const orderVol = Number(newPurchasingData.volumeOrder || 0);
           const unitPrice = Number(newPurchasingData.unitPrice || 0);
           const vat = Number(newPurchasingData.vatRate || 10);
           const prepayPct = Number(newPurchasingData.prepayPercent || 0);
           
-          const rawTotal = contractVol * unitPrice;
+          const effectiveVol = orderVol > 0 ? orderVol : contractVol;
+          const rawTotal = effectiveVol * unitPrice;
           const taxAmt = rawTotal * (vat / 100);
           const totalAmt = rawTotal + taxAmt;
           const prepayAmt = totalAmt * prepayPct;
@@ -2446,11 +2447,13 @@ export const ProjectCostPlanPage: React.FC = () => {
               </div>
               {(() => {
                 const liveContractVol = Number(newPurchasingData.volumeContract || 0);
+                const liveOrderVol = Number(newPurchasingData.volumeOrder || 0);
                 const liveUnitPrice = Number(newPurchasingData.unitPrice || 0);
                 const liveVatRate = Number(newPurchasingData.vatRate || 0);
                 const livePrepayPercent = Number(newPurchasingData.prepayPercent || 0);
 
-                const liveRawTotal = liveContractVol * liveUnitPrice;
+                const liveEffectiveVol = liveOrderVol > 0 ? liveOrderVol : liveContractVol;
+                const liveRawTotal = liveEffectiveVol * liveUnitPrice;
                 const liveVatAmount = liveRawTotal * (liveVatRate / 100);
                 const liveTotalAmount = liveRawTotal + liveVatAmount;
                 const livePrepayAmount = liveTotalAmount * livePrepayPercent;
@@ -2564,11 +2567,13 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
             {(() => {
               const editContractVol = Number(editingPurchasing.volumeContract || 0);
+              const editOrderVol = Number(editingPurchasing.volumeOrder || 0);
               const editUnitPrice = Number(editingPurchasing.unitPrice || 0);
               const editVatRate = Number(editingPurchasing.vatRate || 0);
               const editPrepayPercent = Number(editingPurchasing.prepayPercent || 0);
 
-              const editRawTotal = editContractVol * editUnitPrice;
+              const editEffectiveVol = editOrderVol > 0 ? editOrderVol : editContractVol;
+              const editRawTotal = editEffectiveVol * editUnitPrice;
               const editVatAmount = editRawTotal * (editVatRate / 100);
               const editTotalAmount = editRawTotal + editVatAmount;
               const editPrepayAmount = editTotalAmount * editPrepayPercent;
@@ -2836,8 +2841,8 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newLaborData.unit} onChange={(e) => setNewLaborData({...newLaborData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Số công/Số lượng</label><input type="number" step="0.5" value={newLaborData.quantity} onChange={(e) => setNewLaborData({...newLaborData, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Đơn giá công nhật (đ)</label><input type="number" value={newLaborData.unitPrice} onChange={(e) => setNewLaborData({...newLaborData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+            <div><label className="block font-bold mb-1">Số công/Số lượng</label><input type="number" step="0.5" value={newLaborData.quantity} onChange={(e) => setNewLaborData({...newLaborData, quantity: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Đơn giá công nhật (đ)</label><input type="text" value={newLaborData.unitPrice?.toLocaleString('vi-VN') || ''} onChange={(e) => setNewLaborData({...newLaborData, unitPrice: Number(e.target.value.replace(/[^0-9]/g, ''))})} className="w-full border rounded-lg p-2 font-bold bg-white text-right text-primary" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
             <div><label className="block font-bold mb-1">Số tài khoản ngân hàng</label><input type="text" placeholder="0919996466 - BIDV" value={newLaborData.bankAccount} onChange={(e) => setNewLaborData({...newLaborData, bankAccount: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -2892,8 +2897,8 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingLabor.unit} onChange={(e) => setEditingLabor({...editingLabor, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Số công</label><input type="number" step="0.5" value={editingLabor.quantity} onChange={(e) => setEditingLabor({...editingLabor, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" value={editingLabor.unitPrice} onChange={(e) => setEditingLabor({...editingLabor, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+              <div><label className="block font-bold mb-1">Số công</label><input type="number" step="0.5" value={editingLabor.quantity} onChange={(e) => setEditingLabor({...editingLabor, quantity: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Đơn giá</label><input type="text" value={editingLabor.unitPrice?.toLocaleString('vi-VN') || ''} onChange={(e) => setEditingLabor({...editingLabor, unitPrice: Number(e.target.value.replace(/[^0-9]/g, ''))})} className="w-full border rounded-lg p-2 font-bold bg-white text-right text-primary" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
               <div><label className="block font-bold mb-1">Số tài khoản</label><input type="text" value={editingLabor.bankAccount} onChange={(e) => setEditingLabor({...editingLabor, bankAccount: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
