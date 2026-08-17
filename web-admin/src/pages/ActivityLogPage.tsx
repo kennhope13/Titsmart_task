@@ -69,7 +69,7 @@ const renderActionText = (text: string) => {
     const variablePart = text.substring(splitIndex + 2);
     return (
       <>
-        {actionPart} <span className="font-extrabold text-slate-900">{variablePart}</span>
+        {actionPart} <span className="font-extrabold">{variablePart}</span>
       </>
     );
   }
