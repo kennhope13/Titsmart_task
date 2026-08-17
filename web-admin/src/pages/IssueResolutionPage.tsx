@@ -90,12 +90,9 @@ export const IssueResolutionPage: React.FC = () => {
   return (
     <div className="h-full overflow-hidden bg-slate-50 flex flex-col">
       <section className="bg-white border-b border-slate-200 shadow-xs px-5 py-4 flex items-center gap-4 flex-shrink-0">
-        <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
-          <span className="material-symbols-outlined text-xl">report_problem</span>
-        </div>
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="page-title text-2xl font-extrabold text-slate-900">Xử lý sự cố</h2>
+            <h2 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">Xử lý sự cố</h2>
           </div>
         </div>
       </section>

@@ -235,9 +235,6 @@ export const DocumentTrackingPage: React.FC = () => {
       {/* HEADER SECTION */}
       <section className="border-b border-slate-200 bg-white shadow-sm px-6 pr-[140px] py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
-            <span className="material-symbols-outlined text-2xl">drafts</span>
-          </div>
           <h1 className="page-header-title text-2xl text-slate-900 border-l-4 border-primary pl-4 uppercase">Theo dõi Hồ sơ gửi đi</h1>
         </div>
 

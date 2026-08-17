@@ -135,9 +135,6 @@ export const ActivityLogPage: React.FC = () => {
       {/* HEADER SECTION */}
       <section className="border-b border-slate-200 bg-white pl-6 pr-[140px] py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
-            <span className="material-symbols-outlined text-xl">history</span>
-          </div>
           <h1 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">NHẬT KÝ HOẠT ĐỘNG</h1>
         </div>
 

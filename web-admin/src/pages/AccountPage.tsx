@@ -18,9 +18,6 @@ export const AccountPage: React.FC = () => {
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
       <section className="bg-white px-6 py-4 flex items-center border-b border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center">
-            <span className="material-symbols-outlined text-[20px]">account_circle</span>
-          </div>
           <div className="h-6 w-[2px] bg-primary"></div>
           <h2 className="text-xl font-extrabold text-primary uppercase tracking-wide">TÀI KHOẢN</h2>
         </div>
