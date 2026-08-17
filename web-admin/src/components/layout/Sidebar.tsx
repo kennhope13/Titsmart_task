@@ -68,7 +68,6 @@ export const Sidebar: React.FC = () => {
       items: [
         { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
         { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' },
-        { label: 'Báo cáo', path: '/reports', icon: 'analytics' },
       ]
     },
 
