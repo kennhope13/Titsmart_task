@@ -379,13 +379,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
   const [editingItem, setEditingItem] = useState<ProjectMaterialPlan | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const { updateMaterialPlan } = useProjectStore();
-  const [editingPlan, setEditingPlan] = useState<ProjectMaterialPlan | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-
-  const handleSaveItem = (item: ProjectMaterialPlan) => {
-    updateMaterialPlan(item.id, item);
-  };
 
   // Khi page bấm nút "Thêm Mới" ở tab DOCUMENTS, triggerAdd = true → mở modal
   useEffect(() => {
