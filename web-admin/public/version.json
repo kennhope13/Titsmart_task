@@ -1,7 +1,10 @@
 {
-  "version": "1.0.30",
+  "version": "1.0.31",
   "date": "17/08/2026",
   "notes": [
-    "Cập nhật hệ thống lên phiên bản 1.0.30"
+    "Khắc phục lỗi cuộn trang ở tab Theo dõi Hồ sơ gửi đi",
+    "Tự động ghi nhận Nhập Kho khi thêm vật tư từ Excel",
+    "Tự động bắt mọi thao tác của người dùng và lưu vào Nhật ký hoạt động",
+    "Bấm vào dòng Nhật ký hoạt động để xem thông tin chi tiết"
   ]
 }

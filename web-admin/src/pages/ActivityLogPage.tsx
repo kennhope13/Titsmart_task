@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { Modal } from '../components/common/Modal';
 
 const parseDateKey = (timestamp: string): string => {
   const value = (timestamp || '').trim();
@@ -65,6 +66,7 @@ export const ActivityLogPage: React.FC = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLog, setSelectedLog] = useState<any>(null);
 
   const filteredLogs = useMemo(() => {
     return activityLogs.filter((log) => {
@@ -219,7 +221,7 @@ export const ActivityLogPage: React.FC = () => {
                           const actionInfo = getActionTypeInfo(log.action);
 
                           return (
-                            <tr key={log.id} className="hover:bg-slate-50 transition-colors border-t border-slate-100">
+                            <tr key={log.id} onClick={() => setSelectedLog(log)} className="cursor-pointer hover:bg-slate-50 transition-colors border-t border-slate-100">
                               <td className="p-3 text-center font-mono font-bold text-slate-400 whitespace-nowrap">
                                 {globalIndex}
                               </td>
@@ -258,6 +260,42 @@ export const ActivityLogPage: React.FC = () => {
           </div>
         </section>
       </div>
+
+      <Modal isOpen={!!selectedLog} onClose={() => setSelectedLog(null)} title="Chi tiết Nhật ký hoạt động">
+        {selectedLog && (
+          <div className="space-y-4 text-sm mt-2">
+            <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
+              <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Thời gian</span>
+              <span className="font-bold text-slate-800">{selectedLog.timestamp}</span>
+            </div>
+            <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
+              <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Nhân sự</span>
+              <span className="font-bold text-slate-800 flex items-center gap-2">
+                <span className="material-symbols-outlined text-base text-slate-400">person</span>
+                {selectedLog.user}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
+              <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Dự án</span>
+              <span className="font-bold text-slate-800 flex items-center gap-2">
+                <span className="material-symbols-outlined text-base text-primary">business_center</span>
+                {selectedLog.project || 'Hệ thống'}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Thao tác / Nội dung chi tiết</span>
+              <div className="mt-1 p-4 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 font-medium leading-relaxed">
+                {selectedLog.action}
+              </div>
+            </div>
+            <div className="pt-4 mt-4 border-t flex justify-end">
+              <button onClick={() => setSelectedLog(null)} className="px-5 py-2 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors">
+                Đóng
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

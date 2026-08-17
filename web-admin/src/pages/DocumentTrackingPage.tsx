@@ -13,6 +13,7 @@ export const DocumentTrackingPage: React.FC = () => {
     addDocumentTrack,
     updateDocumentTrack,
     deleteDocumentTrack,
+    logActivity
   } = useRealtimeStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -146,7 +147,7 @@ export const DocumentTrackingPage: React.FC = () => {
           });
           importCount++;
         });
-
+        logActivity(`Đã nhập ${importCount} hồ sơ gửi đi từ file Excel`, 'COMPANY');
         triggerToast(`Đã nhập thành công ${importCount} hồ sơ gửi đi từ file Excel!`, 'success');
         if (fileInputRef.current) fileInputRef.current.value = '';
       } catch (err: any) {
@@ -229,10 +230,10 @@ export const DocumentTrackingPage: React.FC = () => {
   return (
     <>
       <style>{`.doc-tracking-page .page-header-title { font-family: 'Inter', sans-serif !important; font-weight: 900 !important; }`}</style>
-      <div className="doc-tracking-page flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
+      <div className="doc-tracking-page flex flex-col flex-1 h-full bg-slate-50 relative overflow-hidden">
       
       {/* HEADER SECTION */}
-      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-6 pr-[140px] py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <section className="border-b border-slate-200 bg-white shadow-sm px-6 pr-[140px] py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-2xl">drafts</span>
@@ -272,10 +273,10 @@ export const DocumentTrackingPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="p-0 space-y-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden p-0 space-y-0">
       {/* TABS & TABLE */}
-      <section className="bg-white border-y border-slate-200 rounded-none shadow-none overflow-hidden">
-          <div className="w-full flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1 sticky top-0 z-10">
+      <section className="bg-white flex flex-col flex-1 min-w-0 min-h-0 border-y border-slate-200 rounded-none shadow-none overflow-hidden">
+          <div className="w-full flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1">
             <div className="flex items-center gap-4">
               {[
               { id: 'overview', label: 'Tổng quan', icon: 'dashboard', count: filteredTracks.length },
@@ -304,7 +305,7 @@ export const DocumentTrackingPage: React.FC = () => {
             </div>
           </div>
 
-        <div className="overflow-x-auto custom-scrollbar">
+        <div className="overflow-auto custom-scrollbar flex-1">
           {activeTab === 'overview' && (
             <table className="doc-fit-table w-full table-fixed text-left border-collapse">
               <colgroup>
@@ -318,7 +319,7 @@ export const DocumentTrackingPage: React.FC = () => {
                 <col style={{ width: '8%' }} />
                 <col style={{ width: '5%' }} />
               </colgroup>
-               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10">
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>
@@ -376,7 +377,7 @@ export const DocumentTrackingPage: React.FC = () => {
                 <col style={{ width: '9%' }} />
                 <col style={{ width: '8%' }} />
               </colgroup>
-               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10">
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>
@@ -424,7 +425,7 @@ export const DocumentTrackingPage: React.FC = () => {
                 <col style={{ width: '13%' }} />
                 <col style={{ width: '8%' }} />
               </colgroup>
-               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10">
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>
@@ -467,7 +468,7 @@ export const DocumentTrackingPage: React.FC = () => {
                 <col style={{ width: '8%' }} />
                 <col style={{ width: '23%' }} />
               </colgroup>
-               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10">
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>

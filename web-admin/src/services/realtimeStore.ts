@@ -171,7 +171,7 @@ interface RealtimeStoreState {
   deleteTask: (id: string) => void;
 
   addMaterial: (mat: Omit<Material, 'id'>) => void;
-  addMaterialsBatch: (mats: Omit<Material, 'id'>[]) => Promise<void>;
+  addMaterialsBatch: (mats: Omit<Material, 'id'>[]) => Promise<Material[]>;
   updateMaterial: (id: string, updatedFields: Partial<Material>) => void;
   updateMaterialStatus: (id: string, status: string) => void;
   deleteMaterial: (id: string) => void;
@@ -846,11 +846,14 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           // newMats are already in Top-To-Bottom order.
           // By spreading newMats before state.materials, the whole batch is inserted at the top in the correct order!
           const nextMats = [...createdMats, ...state.materials];
+          get().logActivity('Thêm mới vật tư', 'COMPANY');
           persistAndNotify({ materials: nextMats });
           return { materials: nextMats };
         });
+        return createdMats;
       } catch (e) {
-        console.error('Failed to add materials batch', e);
+        console.error('Failed to add batch of materials', e);
+        return [];
       }
     },
 
@@ -859,6 +862,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const updated = await api.materials.update(id, updatedFields);
         set((state) => {
           const nextMats = state.materials.map((m) => (m.id === id ? { ...m, ...updated } : m));
+          get().logActivity('Cập nhật vật tư', 'COMPANY');
           persistAndNotify({ materials: nextMats });
           return { materials: nextMats };
         });
@@ -872,6 +876,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const updated = await api.materials.update(id, { status });
         set((state) => {
           const nextMats = state.materials.map((m) => (m.id === id ? { ...m, ...updated } : m));
+          get().logActivity('Cập nhật trạng thái vật tư', 'COMPANY');
           persistAndNotify({ materials: nextMats });
           return { materials: nextMats };
         });
@@ -884,7 +889,8 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       // Xóa ở local trước để UI mượt mà (Optimistic Update) và dọn dẹp các dữ liệu bị kẹt
       set((state) => {
         const nextMats = state.materials.filter((m) => m.id !== id);
-        persistAndNotify({ materials: nextMats });
+        get().logActivity('Xóa vật tư', 'COMPANY');
+          persistAndNotify({ materials: nextMats });
         return { materials: nextMats };
       });
       try {
@@ -896,7 +902,8 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     setMaterials: (materialsList) => {
       set({ materials: materialsList });
-      persistAndNotify({ materials: materialsList });
+      get().logActivity('Xóa vật tư', 'COMPANY');
+          persistAndNotify({ materials: materialsList });
     },
 
     addInventoryTransaction: async (transactionData) => {
@@ -988,7 +995,8 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     updateIssueStatus: (id, status: IssueStatus) => {
       set((state) => {
         const nextIssues = state.issues.map((i) => (i.id === id ? { ...i, status } : i));
-        persistAndNotify({ issues: nextIssues });
+        get().logActivity('Cập nhật vấn đề', 'COMPANY');
+          persistAndNotify({ issues: nextIssues });
         return { issues: nextIssues };
       });
     },
@@ -1039,6 +1047,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const createdProj = await api.projects.create(projData);
         set((state) => {
           const nextProjs = [createdProj, ...state.projects];
+          get().logActivity('Thêm mới dự án', 'COMPANY');
           persistAndNotify({ projects: nextProjs });
           return { projects: nextProjs };
         });
@@ -1068,6 +1077,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const nextLaborPayrolls = state.laborPayrolls.filter((p) => p.projectCode !== projectCode);
           const nextFieldLogs = state.fieldLogs.filter((l) => l.projectCode !== projectCode);
 
+          get().logActivity('Xóa dự án', 'COMPANY');
           persistAndNotify({
             projects: nextProjects,
             tasks: nextTasks,
@@ -1104,6 +1114,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const created = normalizeMaterialPlan(await api.accounting.createMaterialPlan(planData));
         set((state) => {
           const nextPlans = [created, ...state.materialPlans];
+          get().logActivity('Thêm mới kế hoạch vật tư', 'COMPANY');
           persistAndNotify({ materialPlans: nextPlans });
           return { materialPlans: nextPlans };
         });
@@ -1119,6 +1130,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const updated = normalizeMaterialPlan(await api.accounting.updateMaterialPlan(id, fields));
         set((state) => {
           const nextPlans = state.materialPlans.map((p) => (p.id === id ? updated : p));
+          get().logActivity('Cập nhật kế hoạch vật tư', 'COMPANY');
           persistAndNotify({ materialPlans: nextPlans });
           return { materialPlans: nextPlans };
         });
@@ -1133,6 +1145,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         await api.accounting.deleteMaterialPlan(id);
         set((state) => {
           const nextPlans = state.materialPlans.filter((p) => p.id !== id);
+          get().logActivity('Xóa kế hoạch vật tư', 'COMPANY');
           persistAndNotify({ materialPlans: nextPlans });
           return { materialPlans: nextPlans };
         });
@@ -1146,6 +1159,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const created = normalizePurchasingPlan(await api.accounting.createPurchasing(purData));
         set((state) => {
           const nextPurs = [created, ...state.purchasingPlans];
+          get().logActivity('Thêm mới kế hoạch mua sắm', 'COMPANY');
           persistAndNotify({ purchasingPlans: nextPurs });
           return { purchasingPlans: nextPurs };
         });
@@ -1161,6 +1175,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const updated = normalizePurchasingPlan(await api.accounting.updatePurchasing(id, fields));
         set((state) => {
           const nextPurs = state.purchasingPlans.map((p) => (p.id === id ? updated : p));
+          get().logActivity('Cập nhật kế hoạch mua sắm', 'COMPANY');
           persistAndNotify({ purchasingPlans: nextPurs });
           return { purchasingPlans: nextPurs };
         });
@@ -1175,6 +1190,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         await api.accounting.deletePurchasing(id);
         set((state) => {
           const nextPurs = state.purchasingPlans.filter((p) => p.id !== id);
+          get().logActivity('Xóa kế hoạch mua sắm', 'COMPANY');
           persistAndNotify({ purchasingPlans: nextPurs });
           return { purchasingPlans: nextPurs };
         });
@@ -1188,6 +1204,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const created = normalizeExpense(await api.accounting.createExpense(expData));
         set((state) => {
           const nextExps = [created, ...state.expenses];
+          get().logActivity('Thêm mới chi phí', 'COMPANY');
           persistAndNotify({ expenses: nextExps });
           return { expenses: nextExps };
         });
@@ -1201,6 +1218,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const updated = normalizeExpense(await api.accounting.updateExpense(id, fields));
         set((state) => {
           const nextExps = state.expenses.map((e) => (e.id === id ? updated : e));
+          get().logActivity('Cập nhật chi phí', 'COMPANY');
           persistAndNotify({ expenses: nextExps });
           return { expenses: nextExps };
         });
@@ -1214,6 +1232,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         await api.accounting.deleteExpense(id);
         set((state) => {
           const nextExps = state.expenses.filter((e) => e.id !== id);
+          get().logActivity('Xóa chi phí', 'COMPANY');
           persistAndNotify({ expenses: nextExps });
           return { expenses: nextExps };
         });
@@ -1227,6 +1246,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const created = normalizeLaborPayroll(await api.accounting.createLaborPayroll(labData));
         set((state) => {
           const nextPayrolls = [created, ...state.laborPayrolls];
+          get().logActivity('Thêm mới bảng lương', 'COMPANY');
           persistAndNotify({ laborPayrolls: nextPayrolls });
           return { laborPayrolls: nextPayrolls };
         });
@@ -1240,6 +1260,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const updated = normalizeLaborPayroll(await api.accounting.updateLaborPayroll(id, fields));
         set((state) => {
           const nextPayrolls = state.laborPayrolls.map((l) => (l.id === id ? updated : l));
+          get().logActivity('Cập nhật bảng lương', 'COMPANY');
           persistAndNotify({ laborPayrolls: nextPayrolls });
           return { laborPayrolls: nextPayrolls };
         });
@@ -1253,6 +1274,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         await api.accounting.deleteLaborPayroll(id);
         set((state) => {
           const nextPayrolls = state.laborPayrolls.filter((l) => l.id !== id);
+          get().logActivity('Xóa bảng lương', 'COMPANY');
           persistAndNotify({ laborPayrolls: nextPayrolls });
           return { laborPayrolls: nextPayrolls };
         });
@@ -1266,6 +1288,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const created = normalizeDocumentTrack(await api.accounting.createDocumentTrack(trackData));
         set((state) => {
           const nextTracks = [created, ...state.documentTracks];
+          get().logActivity('Thêm mới hồ sơ gửi đi', 'COMPANY');
           persistAndNotify({ documentTracks: nextTracks });
           return { documentTracks: nextTracks };
         });
@@ -1279,6 +1302,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const updated = normalizeDocumentTrack(await api.accounting.updateDocumentTrack(id, fields));
         set((state) => {
           const nextTracks = state.documentTracks.map((d) => (d.id === id ? updated : d));
+          get().logActivity('Cập nhật hồ sơ gửi đi', 'COMPANY');
           persistAndNotify({ documentTracks: nextTracks });
           return { documentTracks: nextTracks };
         });
@@ -1292,6 +1316,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         await api.accounting.deleteDocumentTrack(id);
         set((state) => {
           const nextTracks = state.documentTracks.filter((d) => d.id !== id);
+          get().logActivity('Xóa hồ sơ gửi đi', 'COMPANY');
           persistAndNotify({ documentTracks: nextTracks });
           return { documentTracks: nextTracks };
         });
@@ -1305,6 +1330,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const created = await api.fieldLogs.create(input);
         set((state) => {
           const nextLogs = [created, ...state.fieldLogs];
+          get().logActivity('Thêm mới nhật ký hiện trường', 'COMPANY');
           persistAndNotify({ fieldLogs: nextLogs });
           return { fieldLogs: nextLogs };
         });
@@ -1319,6 +1345,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         await api.fieldLogs.delete(id);
         set((state) => {
           const nextLogs = state.fieldLogs.filter((l) => l.id !== id);
+          get().logActivity('Xóa nhật ký hiện trường', 'COMPANY');
           persistAndNotify({ fieldLogs: nextLogs });
           return { fieldLogs: nextLogs };
         });

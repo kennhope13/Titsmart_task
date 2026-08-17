@@ -53,7 +53,7 @@ const constructionBadgeClass = (status: string) => {
 };
 
 export const MaterialTrackingPage: React.FC = () => {
-  const { materials, projects, inventoryTransactions, addMaterial, addMaterialsBatch, updateMaterial, deleteMaterial, addInventoryTransaction } = useRealtimeStore();
+  const { materials, projects, inventoryTransactions, addMaterial, addMaterialsBatch, updateMaterial, deleteMaterial, addInventoryTransaction, addInventoryTransactionsBatch, logActivity } = useRealtimeStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -221,7 +221,29 @@ export const MaterialTrackingPage: React.FC = () => {
             setLoading(true);
             setLoadingMessage('Đang nhập dữ liệu vào kho, vui lòng chờ...');
             try {
-              await addMaterialsBatch(materialsToAdd);
+              const createdMats = await addMaterialsBatch(materialsToAdd);
+              
+              if (createdMats && createdMats.length > 0) {
+                const importTransactions = createdMats
+                  .filter(m => (m.currentStock || m.initialStock || 0) > 0)
+                  .map(m => ({
+                    type: 'IMPORT' as 'IMPORT',
+                    date: new Date().toISOString().split('T')[0],
+                    materialId: m.id,
+                    materialCode: m.code,
+                    materialName: m.name,
+                    specs: m.specs || '',
+                    quantity: m.currentStock || m.initialStock || 0,
+                    unit: m.unit || 'Cái',
+                    sourceOrProject: 'Tồn đầu kỳ / Import',
+                    notes: 'Nhập tự động từ file Tồn Kho Tổng Hợp'
+                  }));
+                
+                if (importTransactions.length > 0) {
+                  await addInventoryTransactionsBatch(importTransactions);
+                }
+              }
+
               importCount += materialsToAdd.length;
               triggerToast(`Đã nhập thành công ${importCount} vật tư vào Tồn Kho!`, 'success');
               if (fileInputRef.current) fileInputRef.current.value = '';
@@ -609,7 +631,7 @@ export const MaterialTrackingPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
+    <div className="flex flex-col flex-1 h-full bg-slate-50 relative overflow-hidden">
       <section className="border-b border-slate-200 bg-white pl-6 pr-[140px] py-4 flex flex-col xl:flex-row justify-between xl:items-center gap-3">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-primary flex items-center justify-center flex-shrink-0">
@@ -651,11 +673,11 @@ export const MaterialTrackingPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <section className="bg-white flex flex-col h-full min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+        <section className="bg-white flex flex-col flex-1 min-w-0 min-h-0">
 
         {/* TABS & FILTERS */}
-        <div ref={stickyHeaderRef} className="flex flex-col border-b border-slate-200 bg-white sticky top-0 z-20">
+        <div ref={stickyHeaderRef} className="flex flex-col border-b border-slate-200 bg-white z-20">
           <div className="flex items-center gap-4 px-4 pt-1">
             {[
               { id: 'OVERVIEW', label: 'Tồn Kho Tổng Hợp', icon: 'inventory' },
@@ -715,10 +737,10 @@ export const MaterialTrackingPage: React.FC = () => {
 
         {activeTab === 'OVERVIEW' && (
           <>
-            <div className="overflow-x-auto custom-scrollbar">
+            <div className="overflow-auto custom-scrollbar flex-1">
               <table className="w-full text-left border-collapse">
                  <thead 
-                   style={{ top: stickyHeight > 0 ? `${stickyHeight}px` : '102px' }}
+                   style={{ top: 0 }}
                    className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
                  >
                  <tr>
@@ -782,10 +804,10 @@ export const MaterialTrackingPage: React.FC = () => {
         )}
 
         {activeTab === 'IMPORT' && (
-          <div className="w-full">
+          <div className="w-full overflow-auto custom-scrollbar flex-1">
             <table className="w-full text-left border-collapse">
               <thead 
-                style={{ top: stickyHeight > 0 ? `${stickyHeight}px` : '102px' }}
+                style={{ top: 0 }}
                 className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
               >
                 <tr>
@@ -821,10 +843,10 @@ export const MaterialTrackingPage: React.FC = () => {
         )}
 
         {activeTab === 'EXPORT' && (
-          <div className="w-full">
+          <div className="w-full overflow-auto custom-scrollbar flex-1">
             <table className="w-full text-left border-collapse">
               <thead 
-                style={{ top: stickyHeight > 0 ? `${stickyHeight}px` : '102px' }}
+                style={{ top: 0 }}
                 className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
               >
                 <tr>
