@@ -69,9 +69,13 @@ function setupAutoUpdater() {
   });
 
   // Listener for manual open external
-  ipcMain.on('open-external', (event, url) => {
+  ipcMain.on('open-external', async (event, url) => {
     if (url && typeof url === 'string') {
-      shell.openExternal(url);
+      try {
+        await shell.openExternal(url);
+      } catch (error: any) {
+        require('electron').dialog.showErrorBox('Lỗi mở ảnh', `Không thể mở đường dẫn: ${url}\nLý do: ${error.message}`);
+      }
     }
   });
 

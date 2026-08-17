@@ -1542,11 +1542,14 @@ export const ProjectCostPlanPage: React.FC = () => {
                     <td className="p-3 text-slate-500 italic">{exp.notes || '-'}</td>
                     <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
                       {exp.invoiceUrl ? (
-                        <button onClick={() => {
+                        <button onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const url = encodeURI(exp.invoiceUrl!);
                           if (window.electronAPI?.openExternal) {
-                            window.electronAPI.openExternal(exp.invoiceUrl!);
+                            window.electronAPI.openExternal(url);
                           } else {
-                            window.open(exp.invoiceUrl, '_blank');
+                            window.open(url, '_blank');
                           }
                         }} className="inline-flex items-center gap-1 text-xs text-primary font-bold hover:underline">
                           <span className="material-symbols-outlined text-sm">image</span>
