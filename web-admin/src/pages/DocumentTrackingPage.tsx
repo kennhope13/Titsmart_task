@@ -9,6 +9,7 @@ import { ConfirmModal } from '../components/common/ConfirmModal';
 export const DocumentTrackingPage: React.FC = () => {
   const {
     documentTracks,
+    projects,
     addDocumentTrack,
     updateDocumentTrack,
     deleteDocumentTrack,
@@ -163,7 +164,7 @@ export const DocumentTrackingPage: React.FC = () => {
 
   // Forms state
   const [newDoc, setNewDoc] = useState<Partial<DocumentTrack>>({
-    stt: '', contractNo: '', contractName: '', projectCode: 'NĂM CĂN', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: ''
+    stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: ''
   });
 
   // Helper utilities
@@ -504,7 +505,7 @@ export const DocumentTrackingPage: React.FC = () => {
               stt: newDoc.stt || String(documentTracks.length + 1),
               contractNo: newDoc.contractNo || '',
               contractName: newDoc.contractName || '',
-              projectCode: newDoc.projectCode || 'NĂM CĂN',
+              projectCode: newDoc.projectCode || '',
               company: newDoc.company || '',
               receiverName: newDoc.receiverName || '',
               phone: newDoc.phone || '',
@@ -522,18 +523,28 @@ export const DocumentTrackingPage: React.FC = () => {
             });
             triggerToast('Thêm hồ sơ mới thành công', 'success');
             setIsNewDocOpen(false);
-            setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: 'NĂM CĂN', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: ''});
+            setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: ''});
           } catch (err) {
             console.error(err);
             triggerToast('Lỗi khi thêm hồ sơ mới', 'warning');
           }
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gapx-2 py-2">
-            <div><label className="block font-bold mb-1">Mã/Số Hợp đồng</label><input type="text" value={newDoc.contractNo} onChange={(e) => setNewDoc({...newDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div>
+              <label className="block font-bold mb-1">Dự án *</label>
+              <select required value={newDoc.projectCode} onChange={(e) => setNewDoc({...newDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
+                <option value="">-- Chọn dự án --</option>
+                {projects.map(p => (
+                  <option key={p.code} value={p.code}>{p.name} ({p.code})</option>
+                ))}
+              </select>
+            </div>
             <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={newDoc.contractName} onChange={(e) => setNewDoc({...newDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
+          <div className="grid grid-cols-2 gapx-2 py-2">
+            <div><label className="block font-bold mb-1">Mã/Số Hợp đồng</label><input type="text" value={newDoc.contractNo} onChange={(e) => setNewDoc({...newDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Công ty / Đối tác nhận *</label><input type="text" required value={newDoc.company} onChange={(e) => setNewDoc({...newDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="grid grid-cols-3 gapx-2 py-2">
+          </div>
             <div><label className="block font-bold mb-1">Người nhận trực tiếp</label><input type="text" value={newDoc.receiverName} onChange={(e) => setNewDoc({...newDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">SĐT người nhận</label><input type="text" value={newDoc.phone} onChange={(e) => setNewDoc({...newDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Bên (Ví dụ: Bên trả)</label><input type="text" value={newDoc.side} onChange={(e) => setNewDoc({...newDoc, side: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
