@@ -61,6 +61,21 @@ const getActionTypeInfo = (action: string) => {
   return { color: 'text-slate-700', bg: 'bg-slate-100' };
 };
 
+const renderActionText = (text: string) => {
+  if (!text) return text;
+  const splitIndex = text.indexOf(': ');
+  if (splitIndex !== -1) {
+    const actionPart = text.substring(0, splitIndex + 1);
+    const variablePart = text.substring(splitIndex + 2);
+    return (
+      <>
+        {actionPart} <span className="font-extrabold text-slate-900">{variablePart}</span>
+      </>
+    );
+  }
+  return text;
+};
+
 export const ActivityLogPage: React.FC = () => {
   const { activityLogs } = useRealtimeStore();
   const [dateFrom, setDateFrom] = useState('');
@@ -245,7 +260,7 @@ export const ActivityLogPage: React.FC = () => {
                               </td>
                               <td className="p-3">
                                 <span className={`inline-block px-3 py-1.5 rounded-lg text-xs font-semibold ${actionInfo.bg} ${actionInfo.color} border border-white leading-relaxed`}>
-                                  {log.action}
+                                  {renderActionText(log.action)}
                                 </span>
                               </td>
                             </tr>
@@ -285,7 +300,7 @@ export const ActivityLogPage: React.FC = () => {
             <div className="flex flex-col gap-1">
               <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Thao tác / Nội dung chi tiết</span>
               <div className="mt-1 p-4 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 font-medium leading-relaxed">
-                {selectedLog.action}
+                {renderActionText(selectedLog.action)}
               </div>
             </div>
             <div className="pt-4 mt-4 border-t flex justify-end">
