@@ -62,13 +62,13 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-[64px] hover:w-[260px] transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 group shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden">
-      <div className="relative h-[80px] px-2 flex items-center gap-4 border-b border-slate-100 min-w-[260px]">
-        <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-white">
+      <div className="relative h-[80px] px-3 flex items-center gap-4 border-b border-slate-100 min-w-[260px]">
+        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
           <img src="./logo.png" alt="TITSMART" className="w-10 h-10 object-contain" />
         </div>
-        <div className="min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-1">
-          <h1 className="font-extrabold text-2xl text-primary leading-tight truncate tracking-tight">TITSMART</h1>
-          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-0.5">Project Manager</p>
+        <div className="min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-1 flex flex-col justify-center">
+          <h1 className="font-extrabold text-[22px] text-blue-900 leading-none tracking-tight">TITSMART</h1>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1.5">Project Manager</p>
         </div>
       </div>
 
@@ -119,23 +119,21 @@ export const Sidebar: React.FC = () => {
                 setShowNotifPopover(!showNotifPopover);
                 setShowUserPopover(false);
               }}
-              className={`flex items-center gap-3 rounded-xl transition-all overflow-hidden whitespace-nowrap
+              className={`flex items-center gap-3 rounded-lg text-xs font-semibold transition-all overflow-hidden whitespace-nowrap
                 h-10 w-10 group-hover:w-full group-hover:px-3
                 ${
                 showNotifPopover
-                  ? 'bg-blue-50 ring-1 ring-blue-100'
-                  : 'hover:bg-slate-50 text-slate-600'
+                  ? 'text-primary bg-blue-50'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              <div className="w-10 h-10 rounded-full border border-transparent flex-shrink-0 flex items-center justify-center font-bold text-lg relative">
-                <span className="material-symbols-outlined text-xl">notifications</span>
+              <span className="material-symbols-outlined text-lg w-10 flex flex-shrink-0 items-center justify-center group-hover:w-auto group-hover:justify-start relative">
+                notifications
                 {unreadCount > 0 && (
-                  <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
+                  <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                 )}
-              </div>
-              <div className="min-w-0 text-left leading-tight flex-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span className="block font-bold text-sm text-slate-800 truncate">Thông báo</span>
-              </div>
+              </span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">Thông báo</span>
             </button>
 
             {showNotifPopover && (
@@ -184,7 +182,7 @@ export const Sidebar: React.FC = () => {
                 : 'hover:bg-slate-50'
             }`}
           >
-            <div className="w-10 h-10 rounded-full border border-slate-200 flex-shrink-0 flex items-center justify-center font-bold text-sm text-white bg-blue-600 uppercase shadow-sm">
+            <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-bold text-sm text-white bg-blue-600 uppercase shadow-sm">
               {(user?.name || 'A').charAt(0)}
             </div>
             <div className="min-w-0 text-left leading-tight flex-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
