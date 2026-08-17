@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ActivityLog } from '../../types';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface ActivityLogTabProps {
   data: ActivityLog[];
@@ -195,7 +196,7 @@ export const ActivityLogTab: React.FC<ActivityLogTabProps> = ({
           />
         </div>
 
-        <select
+        <CustomSelect
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
           className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
@@ -203,9 +204,9 @@ export const ActivityLogTab: React.FC<ActivityLogTabProps> = ({
           {ACTION_TYPES.map((t) => (
             <option key={t.value} value={t.value}>{t.label}</option>
           ))}
-        </select>
+        </CustomSelect>
 
-        <select
+        <CustomSelect
           value={userFilter}
           onChange={(e) => setUserFilter(e.target.value)}
           className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
@@ -214,7 +215,7 @@ export const ActivityLogTab: React.FC<ActivityLogTabProps> = ({
           {uniqueUsers.map((u) => (
             <option key={u} value={u}>{u}</option>
           ))}
-        </select>
+        </CustomSelect>
 
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[11px] font-bold text-slate-400">Từ</span>

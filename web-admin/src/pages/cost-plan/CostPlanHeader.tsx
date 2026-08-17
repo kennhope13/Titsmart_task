@@ -1,4 +1,5 @@
 import React from 'react';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface CostPlanHeaderProps {
   selectedProject: string;
@@ -30,7 +31,7 @@ export const CostPlanHeader: React.FC<CostPlanHeaderProps> = ({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
             <span className="material-symbols-outlined text-[18px] text-slate-400">business_center</span>
-            <select
+            <CustomSelect
               value={selectedProject}
               onChange={(event) => setSelectedProject(event.target.value)}
               className="w-full min-w-[220px] bg-transparent text-sm font-bold text-slate-800 outline-none sm:w-72"
@@ -43,7 +44,7 @@ export const CostPlanHeader: React.FC<CostPlanHeaderProps> = ({
                   return <option key={code} value={code}>{project?.name || code}</option>;
                 })
               )}
-            </select>
+            </CustomSelect>
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ProjectMaterialPlan } from '../../types';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface MaterialPlanTabProps {
   data: ProjectMaterialPlan[];
@@ -568,7 +569,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       {/* TÌNH TRẠNG */}
                       <td className="overflow-hidden truncate p-0 align-top text-slate-600">
                         {editingCell?.id === plan.id && editingCell?.field === 'techSpecStatus' ? (
-                          <select
+                          <CustomSelect
                             value={tempValue}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, techSpecStatus: e.target.value }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
@@ -579,7 +580,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <option value="Đáp ứng">Đáp ứng</option>
                             <option value="Chưa đáp ứng">Chưa đáp ứng</option>
                             <option value="Đang xem xét">Đang xem xét</option>
-                          </select>
+                          </CustomSelect>
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'techSpecStatus', plan.techSpecStatus)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{plan.techSpecStatus || ''}</span>
                         )}
@@ -587,7 +588,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       {/* TIẾN ĐỘ */}
                       <td className="overflow-hidden p-0 align-top text-center font-mono font-bold text-slate-700 whitespace-nowrap">
                         {editingCell?.id === plan.id && editingCell?.field === 'progressStatus' ? (
-                          <select
+                          <CustomSelect
                             value={tempValue as string}
                             onChange={(e) => {
                               onUpdate(plan.id, { ...plan, progressStatus: e.target.value });
@@ -600,7 +601,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <option value="Chưa thi công">Chưa thi công</option>
                             <option value="Đang thi công">Đang thi công</option>
                             <option value="Đã hoàn thành">Đã hoàn thành</option>
-                          </select>
+                          </CustomSelect>
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'progressStatus', plan.progressStatus)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{showProgress(plan.progressStatus)}</span>
                         )}
@@ -629,7 +630,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       {/* TT ĐẶT HÀNG */}
                       <td className="overflow-hidden truncate p-0 align-top text-center font-semibold text-slate-700">
                         {editingCell?.id === plan.id && editingCell?.field === 'orderedStatus' ? (
-                          <select
+                          <CustomSelect
                             value={tempValue}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, orderedStatus: e.target.value }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
@@ -640,7 +641,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             <option value="Đã đặt hàng">Đã đặt hàng</option>
                             <option value="Đang giao hàng">Đang giao hàng</option>
                             <option value="Đã nhận hàng">Đã nhận hàng</option>
-                          </select>
+                          </CustomSelect>
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'orderedStatus', plan.orderedStatus)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center truncate px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={plan.orderedStatus || ''}>{plan.orderedStatus || ''}</span>
                         )}
@@ -701,7 +702,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       {/* CO */}
                       <td className="overflow-hidden p-0 align-top text-center font-bold text-emerald-700">
                         {editingCell?.id === plan.id && editingCell?.field === 'docCo' ? (
-                          <select
+                          <CustomSelect
                             value={tempValue ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, docCo: e.target.value === 'true' }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
@@ -710,7 +711,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
-                          </select>
+                          </CustomSelect>
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'docCo', plan.docCo)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{yesNo(plan.docCo)}</span>
                         )}
@@ -718,7 +719,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       {/* CQ */}
                       <td className="overflow-hidden p-0 align-top text-center font-bold text-emerald-700">
                         {editingCell?.id === plan.id && editingCell?.field === 'docCq' ? (
-                          <select
+                          <CustomSelect
                             value={tempValue ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, docCq: e.target.value === 'true' }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
@@ -727,7 +728,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
-                          </select>
+                          </CustomSelect>
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'docCq', plan.docCq)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{yesNo(plan.docCq)}</span>
                         )}
@@ -735,7 +736,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       {/* KIỂM ĐỊNH PCCC */}
                       <td className="overflow-hidden p-0 align-top text-center font-bold text-emerald-700">
                         {editingCell?.id === plan.id && editingCell?.field === 'docFireInspection' ? (
-                          <select
+                          <CustomSelect
                             value={tempValue ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, docFireInspection: e.target.value === 'true' }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
@@ -744,7 +745,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
-                          </select>
+                          </CustomSelect>
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'docFireInspection', plan.docFireInspection)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{yesNo(plan.docFireInspection)}</span>
                         )}
@@ -752,7 +753,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       {/* ĐÃ GỬI TỚI CT */}
                       <td className="overflow-hidden p-0 align-top text-center font-semibold text-slate-700">
                         {editingCell?.id === plan.id && editingCell?.field === 'dispatchToSite' ? (
-                          <select
+                          <CustomSelect
                             value={tempValue ? 'true' : 'false'}
                             onChange={(e) => { onUpdate(plan.id, { ...plan, dispatchToSite: e.target.value === 'true' }); setEditingCell(null); }}
                             onBlur={() => setEditingCell(null)}
@@ -761,7 +762,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                           >
                             <option value="false">Không</option>
                             <option value="true">Có</option>
-                          </select>
+                          </CustomSelect>
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'dispatchToSite', plan.dispatchToSite)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center">{yesNo(plan.dispatchToSite)}</span>
                         )}

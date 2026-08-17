@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { LaborPayroll } from '../../types';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface LaborTabProps {
   data: LaborPayroll[];
@@ -57,7 +58,7 @@ export const LaborTab: React.FC<LaborTabProps> = ({
         )}
         <div className="flex items-center gap-2 w-full md:w-auto">
           <span className="text-xs font-bold text-slate-500 whitespace-nowrap">Lọc thanh toán:</span>
-          <select 
+          <CustomSelect 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm min-w-[150px]"
@@ -65,7 +66,7 @@ export const LaborTab: React.FC<LaborTabProps> = ({
             <option value="ALL">Tất cả</option>
             <option value="Chưa thanh toán">Chưa thanh toán</option>
             <option value="Đã thanh toán">Đã thanh toán</option>
-          </select>
+          </CustomSelect>
         </div>
       </div>
 

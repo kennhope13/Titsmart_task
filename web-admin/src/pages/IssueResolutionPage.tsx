@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 const cleanText = (value?: string) => {
   if (!value) return '';
@@ -108,18 +109,18 @@ export const IssueResolutionPage: React.FC = () => {
             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
           />
           <div className="flex gap-2">
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="flex-1 border border-slate-200 px-2 py-1.5 rounded-md text-[11px] font-bold text-slate-700 focus:outline-none bg-white">
+            <CustomSelect value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="flex-1 border border-slate-200 px-2 py-1.5 rounded-md text-[11px] font-bold text-slate-700 focus:outline-none bg-white">
               <option value="all">Tất cả trạng thái</option>
               <option value="OPEN">Mới ghi nhận</option>
               <option value="PROCESSING">Đang xử lý</option>
               <option value="RESOLVED">Đã giải quyết</option>
-            </select>
-            <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="flex-1 border border-slate-200 px-2 py-1.5 rounded-md text-[11px] font-bold text-slate-700 focus:outline-none bg-white">
+            </CustomSelect>
+            <CustomSelect value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="flex-1 border border-slate-200 px-2 py-1.5 rounded-md text-[11px] font-bold text-slate-700 focus:outline-none bg-white">
               <option value="all">Tất cả mức độ</option>
               <option value="CRITICAL">Critical</option>
               <option value="WARNING">Warning</option>
               <option value="STANDARD">Standard</option>
-            </select>
+            </CustomSelect>
           </div>
         </div>
 

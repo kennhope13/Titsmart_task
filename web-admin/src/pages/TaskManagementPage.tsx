@@ -8,6 +8,7 @@ import { Toast } from '../components/common/Toast';
 import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
 import { WebOcrExtractedData } from '../services/webOcrService';
 import { Task } from '../types';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 // Convert integer to Roman numeral
 const toRoman = (num: number): string => {
@@ -1332,7 +1333,7 @@ export const TaskManagementPage: React.FC = () => {
 
 
 
-            <select
+            <CustomSelect
               value={filterSection}
               onChange={(e) => setFilterSection(e.target.value)}
               className="h-8 w-44 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
@@ -1341,9 +1342,9 @@ export const TaskManagementPage: React.FC = () => {
               {columnSections.map((value) => (
                 <option key={value} value={value}>{truncateText(value, 42)}</option>
               ))}
-            </select>
+            </CustomSelect>
 
-            <select
+            <CustomSelect
               value={filterUnit}
               onChange={(e) => setFilterUnit(e.target.value)}
               className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
@@ -1352,9 +1353,9 @@ export const TaskManagementPage: React.FC = () => {
               {columnUnits.map((value) => (
                 <option key={value} value={value}>{value}</option>
               ))}
-            </select>
+            </CustomSelect>
 
-            <select
+            <CustomSelect
               value={filterProgress}
               onChange={(e) => setFilterProgress(e.target.value)}
               className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
@@ -1364,9 +1365,9 @@ export const TaskManagementPage: React.FC = () => {
               <option value="1-49">1% - 49%</option>
               <option value="50-99">50% - 99%</option>
               <option value="100">100%</option>
-            </select>
+            </CustomSelect>
 
-            <select
+            <CustomSelect
               value={filterPurchase}
               onChange={(e) => setFilterPurchase(e.target.value)}
               className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
@@ -1375,9 +1376,9 @@ export const TaskManagementPage: React.FC = () => {
               {columnPurchaseStatuses.map((value) => (
                 <option key={value} value={value}>{value}</option>
               ))}
-            </select>
+            </CustomSelect>
 
-            <select
+            <CustomSelect
               value={filterConstr}
               onChange={(e) => setFilterConstr(e.target.value)}
               className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
@@ -1386,7 +1387,7 @@ export const TaskManagementPage: React.FC = () => {
               {columnConstrStatuses.map((value) => (
                 <option key={value} value={value}>{value}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
             <div className="relative flex-shrink-0">
@@ -1557,8 +1558,8 @@ export const TaskManagementPage: React.FC = () => {
                       <td className="py-1.5 px-1 text-center whitespace-nowrap">
                         <span className={'inline-flex min-w-10 items-center justify-center px-1.5 py-0.5 font-mono font-bold text-[10px] rounded border ' + (isFinished ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : pct > 0 ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600')}>{pct}%</span>
                       </td>
-                      <td className="py-1.5 px-1 text-center whitespace-nowrap"><select value={t.purchaseStatus || 'Chưa đặt hàng'} onChange={(e) => { const nextPurchaseStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(nextPurchaseStatus, t.constrStatus); updateTask(t.id, { purchaseStatus: nextPurchaseStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-transparent px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></td>
-                      <td className="py-1.5 px-1 text-center whitespace-nowrap"><select value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); updateTask(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-transparent px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></td>
+                      <td className="py-1.5 px-1 text-center whitespace-nowrap"><CustomSelect value={t.purchaseStatus || 'Chưa đặt hàng'} onChange={(e) => { const nextPurchaseStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(nextPurchaseStatus, t.constrStatus); updateTask(t.id, { purchaseStatus: nextPurchaseStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-transparent px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></td>
+                      <td className="py-1.5 px-1 text-center whitespace-nowrap"><CustomSelect value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); updateTask(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className="w-full min-w-0 rounded border border-slate-200 bg-transparent px-1 py-0.5 text-[10px] font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></td>
                       <td className="py-1.5 px-1 font-semibold text-red-600 truncate" title={t.issue || ''}>
                         {editingCell?.id === t.id && editingCell?.field === 'issue' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-red-600 font-bold focus:outline-primary text-[10px]" />
@@ -1610,16 +1611,16 @@ export const TaskManagementPage: React.FC = () => {
           </div>
           {editingTask && !editingTask.isSectionHeader && (
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label><select value={editSectionName} onChange={(e) => setEditSectionName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/50 font-bold text-primary">{uniqueSectionsForProj.map((sec) => (<option key={sec} value={sec}>{truncateText(sec, 55)}</option>))}<option value="__CUSTOM__">+ Nhập Đầu mục cha mới...</option></select>{editSectionName === '__CUSTOM__' && (<input type="text" required placeholder="VD: XIII. HỆ THỐNG ĐIỆN CHIẾU SÁNG" value={editCustomSection} onChange={(e) => setEditCustomSection(e.target.value)} className="w-full mt-2 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" />)}</div>
-              <div><label className="block font-bold text-slate-700 mb-1">Thuộc Hạng mục cha (tuỳ chọn)</label><select value={editParentId} onChange={(e) => setEditParentId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold"><option value="">-- Không có --</option>{tasks.filter(t => t.projectCode === editingTask.projectCode && !t.isSectionHeader && t.sectionName === editSectionName && t.id !== editingTask.id).map(t => (<option key={t.id} value={t.id}>{truncateText(t.name, 40)}</option>))}</select></div>
+              <div><label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label><CustomSelect value={editSectionName} onChange={(e) => setEditSectionName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/50 font-bold text-primary">{uniqueSectionsForProj.map((sec) => (<option key={sec} value={sec}>{truncateText(sec, 55)}</option>))}<option value="__CUSTOM__">+ Nhập Đầu mục cha mới...</option></CustomSelect>{editSectionName === '__CUSTOM__' && (<input type="text" required placeholder="VD: XIII. HỆ THỐNG ĐIỆN CHIẾU SÁNG" value={editCustomSection} onChange={(e) => setEditCustomSection(e.target.value)} className="w-full mt-2 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" />)}</div>
+              <div><label className="block font-bold text-slate-700 mb-1">Thuộc Hạng mục cha (tuỳ chọn)</label><CustomSelect value={editParentId} onChange={(e) => setEditParentId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold"><option value="">-- Không có --</option>{tasks.filter(t => t.projectCode === editingTask.projectCode && !t.isSectionHeader && t.sectionName === editSectionName && t.id !== editingTask.id).map(t => (<option key={t.id} value={t.id}>{truncateText(t.name, 40)}</option>))}</CustomSelect></div>
             </div>
           )}
           <div><label className="block font-bold text-slate-700 mb-1">Nội dung Công việc *</label><textarea required rows={4} value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
           {editingTask && !editingTask.isSectionHeader && (<>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Khối lượng</label><input type="number" value={editVolume} onChange={(e) => setEditVolume(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị tính (ĐVT)</label><input type="text" value={editUnit} onChange={(e) => setEditUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div></div>
-            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tình trạng mua hàng</label><select value={editPurchaseStatus} onChange={(e) => setEditPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></div><div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><select value={editConstrStatus} onChange={(e) => setEditConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</select></div></div>
+            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tình trạng mua hàng</label><CustomSelect value={editPurchaseStatus} onChange={(e) => setEditPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div><div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><CustomSelect value={editConstrStatus} onChange={(e) => setEditConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-red-600 mb-1">Vướng mắc / Tồn đọng</label><input type="text" placeholder="VD: Thiếu vật tư cáp..." value={editIssue} onChange={(e) => setEditIssue(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none bg-red-50/30 text-red-700 font-medium" /></div><div><label className="block font-bold text-slate-700 mb-1">Trạng thái xử lý</label><input type="text" placeholder="VD: Yêu cầu cấp bổ sung..." value={editIssueStatus} onChange={(e) => setEditIssueStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div></div>
-            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Ghi chú thêm cho dòng công việc" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Kỹ sư phụ trách</label><select value={editEngineerId} onChange={(e) => setEditEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{engineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}</select></div></div>
+            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Ghi chú thêm cho dòng công việc" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Kỹ sư phụ trách</label><CustomSelect value={editEngineerId} onChange={(e) => setEditEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{engineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}</CustomSelect></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tiến độ tự tính (%)</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">{calculateAutoProgressPercent(editPurchaseStatus, editConstrStatus)}%</div></div><div><label className="block font-bold text-slate-700 mb-1">Hoàn thành</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-bold text-slate-800">{calculateAutoProgressRatio(editPurchaseStatus, editConstrStatus) >= 1 ? 'Đã hoàn thành' : 'Chưa hoàn thành'}</div></div></div>
           </>)}
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setIsEditTaskModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">Lưu Thay Đổi</button></div>
@@ -1640,7 +1641,7 @@ export const TaskManagementPage: React.FC = () => {
               <div>
                 <label className="block font-bold text-slate-700 mb-1">{'Thu\u1ed9c \u0110\u1ea7u m\u1ee5c cha'}</label>
                 <div className="flex items-center gap-1.5">
-                  <select
+                  <CustomSelect
                     value={sectionSelect}
                     onChange={(e) => setSectionSelect(e.target.value)}
                     className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
@@ -1651,7 +1652,7 @@ export const TaskManagementPage: React.FC = () => {
                         {truncateText(sec, 40)}
                       </option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   <button
                     type="button"
                     onClick={handleStartCustomSection}
@@ -1669,7 +1670,7 @@ export const TaskManagementPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">{'Thuộc Hạng mục cha (tuỳ chọn)'}</label>
-                <select
+                <CustomSelect
                   value={parentIdSelect}
                   onChange={(e) => setParentIdSelect(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold truncate"
@@ -1682,7 +1683,7 @@ export const TaskManagementPage: React.FC = () => {
                         {truncateText(t.name, 60)}
                       </option>
                     ))}
-                </select>
+                </CustomSelect>
               </div>
             </div>
           )}
@@ -1728,24 +1729,24 @@ export const TaskManagementPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">{'T\u00ecnh tr\u1ea1ng mua h\u00e0ng'}</label>
-                  <select value={purchaseStatus} onChange={(e) => setPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                  <CustomSelect value={purchaseStatus} onChange={(e) => setPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
                     {PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
-                  </select>
+                  </CustomSelect>
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">{'T\u00ecnh tr\u1ea1ng thi c\u00f4ng'}</label>
-                  <select value={constrStatus} onChange={(e) => setConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                  <CustomSelect value={constrStatus} onChange={(e) => setConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
                     {CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">{'K\u1ef9 s\u01b0 Ph\u1ee5 tr\u00e1ch'}</label>
-                  <select value={engineerId} onChange={(e) => setEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                  <CustomSelect value={engineerId} onChange={(e) => setEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
                     {engineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}
-                  </select>
+                  </CustomSelect>
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">{'Ti\u1ebfn \u0111\u1ed9 t\u1ef1 t\u00ednh (%)'}</label>
@@ -1820,7 +1821,7 @@ export const TaskManagementPage: React.FC = () => {
 
           <div>
             <label className="block font-bold text-slate-700 mb-1">Chỉ huy trưởng</label>
-            <select
+            <CustomSelect
               value={newProjManagerId}
               onChange={(e) => setNewProjManagerId(e.target.value)}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
@@ -1831,7 +1832,7 @@ export const TaskManagementPage: React.FC = () => {
                 </option>
               ))}
               <option value="__NEW__">+ Thm người mới...</option>
-            </select>
+            </CustomSelect>
 
             {newProjManagerId === '__NEW__' && (
               <div className="grid grid-cols-2 gap-3 mt-2">

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ProjectPurchasing } from '../../types';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface PurchasingTabProps {
   data: ProjectPurchasing[];
@@ -640,7 +641,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       {/* TT ĐẶT HÀNG */}
                       <td className="border-r border-slate-100 px-1.5 py-1 text-center overflow-hidden">
                         {editingCell?.id === pur.id && editingCell?.field === 'orderStatus' ? (
-                          <select
+                          <CustomSelect
                             value={tempValue}
                             onChange={(e) => {
                               onUpdate(pur.id, { ...pur, orderStatus: e.target.value });
@@ -654,7 +655,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             <option value="Đã đặt hàng">Đã đặt hàng</option>
                             <option value="Đang giao hàng">Đang giao hàng</option>
                             <option value="Đã nhận hàng">Đã nhận hàng</option>
-                          </select>
+                          </CustomSelect>
                         ) : (
                           <span onClick={() => startEditing(pur.id, 'orderStatus', pur.orderStatus)} className="cursor-pointer">
                             <span className={`inline-flex justify-center rounded-md border px-1.5 py-0.5 text-[9px] font-bold ${
@@ -671,7 +672,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       {/* TT HỢP ĐỒNG */}
                       <td className="border-r border-slate-100 px-1.5 py-1 text-center font-semibold text-slate-700 whitespace-nowrap overflow-hidden">
                         {editingCell?.id === pur.id && editingCell?.field === 'contractStatus' ? (
-                          <select
+                          <CustomSelect
                             value={tempValue}
                             onChange={(e) => {
                               onUpdate(pur.id, { ...pur, contractStatus: e.target.value });
@@ -684,7 +685,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             <option value="Chưa ký">Chưa ký</option>
                             <option value="Đang trình duyệt">Đang trình duyệt</option>
                             <option value="Đã ký">Đã ký</option>
-                          </select>
+                          </CustomSelect>
                         ) : (
                           <span onClick={() => startEditing(pur.id, 'contractStatus', pur.contractStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate">{pur.contractStatus || '-'}</span>
                         )}
@@ -743,7 +744,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       {/* HÓA ĐƠN */}
                       <td className="w-[70px] border-r border-slate-100 px-1.5 py-1 text-center font-semibold text-slate-700 whitespace-nowrap">
                         {editingCell?.id === pur.id && editingCell?.field === 'invoiceStatus' ? (
-                          <select
+                          <CustomSelect
                             value={tempValue}
                             onChange={(e) => {
                               onUpdate(pur.id, { ...pur, invoiceStatus: e.target.value });
@@ -756,7 +757,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             <option value="Chưa xuất">Chưa xuất</option>
                             <option value="Đang kiểm tra">Đang kiểm tra</option>
                             <option value="Đã xuất">Đã xuất</option>
-                          </select>
+                          </CustomSelect>
                         ) : (
                           <span onClick={() => startEditing(pur.id, 'invoiceStatus', pur.invoiceStatus)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center truncate">{pur.invoiceStatus || ''}</span>
                         )}

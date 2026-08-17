@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Toast } from '../components/common/Toast';
 import { Modal } from '../components/common/Modal';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 const filters = [
   { key: 'all', label: 'Tất cả' },
@@ -311,9 +312,9 @@ export const PersonnelPage: React.FC = () => {
             <form onSubmit={handleSavePerson} className="p-5 space-y-4">
               <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Họ tên" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
               <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Số điện thoại" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
-              <select value={role} onChange={(event) => setRole(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+              <CustomSelect value={role} onChange={(event) => setRole(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                 <option>Quản lý</option><option>Nhân viên/Thợ</option>
-              </select>
+              </CustomSelect>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">
                   Dự án <span className="text-red-500">*</span> <span className="font-normal text-slate-400">(chọn 1 hoặc nhiều)</span>

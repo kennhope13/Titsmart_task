@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { MaterialPlanTab } from './cost-plan/MaterialPlanTab';
 import { PurchasingTab } from './cost-plan/PurchasingTab';
 import { DocumentCertificateTab } from './cost-plan/DocumentCertificateTab';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 
 const romanToNumber = (value?: string) => {
@@ -1319,7 +1320,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
           <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200">
             <span className="text-xs font-bold text-slate-500 uppercase px-2">Dự án:</span>
-          <select 
+          <CustomSelect 
             value={selectedProject} 
             onChange={(e) => setSelectedProject(e.target.value)} 
             className="bg-white border border-slate-200 px-3 py-1.5 rounded-md text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
@@ -1332,7 +1333,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 return <option key={code} value={code}>{proj?.name || code}</option>;
               })
             )}
-          </select>
+          </CustomSelect>
           </div>
         </div>
       </section>
@@ -1869,7 +1870,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
                 <div className="flex items-center gap-1.5 w-full">
-                  <select
+                  <CustomSelect
                     value={sectionPlanIdForNew || ''}
                     onChange={(e) => {
                       setSectionPlanIdForNew(e.target.value || null);
@@ -1884,7 +1885,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                         {sec.stt ? `${sec.stt}. ` : ''}{sec.jobContent}
                       </option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   <button
                     type="button"
                     onClick={() => { setIsCreatingSectionHeader(true); setSectionPlanIdForNew(null); setParentPlanIdForNew(null); setNewPlanData(prev => ({ ...prev, stt: '' })); }}
@@ -1898,7 +1899,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Thuộc Hạng mục cha (tuỳ chọn)</label>
-                <select
+                <CustomSelect
                   value={parentPlanIdForNew || ''}
                   onChange={(e) => setParentPlanIdForNew(e.target.value || null)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold truncate"
@@ -1912,7 +1913,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                         {t.stt ? `${t.stt}. ` : ''}{t.jobContent}
                       </option>
                     ))}
-                </select>
+                </CustomSelect>
               </div>
             </div>
           )}
@@ -1958,19 +1959,19 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold mb-1">Tiến độ thi công</label>
-                  <select value={newPlanData.progressStatus} onChange={(e) => setNewPlanData({...newPlanData, progressStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                  <CustomSelect value={newPlanData.progressStatus} onChange={(e) => setNewPlanData({...newPlanData, progressStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                     <option value="Chưa thi công">Chưa thi công</option>
                     <option value="Đang thi công">Đang thi công</option>
                     <option value="Đã hoàn thành">Đã hoàn thành</option>
-                  </select>
+                  </CustomSelect>
                 </div>
                 <div>
                   <label className="block font-bold mb-1">Trạng thái đặt hàng</label>
-                  <select value={newPlanData.orderedStatus} onChange={(e) => setNewPlanData({...newPlanData, orderedStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                  <CustomSelect value={newPlanData.orderedStatus} onChange={(e) => setNewPlanData({...newPlanData, orderedStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                     <option value="Chưa đặt hàng">Chưa đặt hàng</option>
                     <option value="Đã đặt hàng">Đã đặt hàng</option>
                     <option value="Đã nhận đủ">Đã nhận đủ</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
               <div>
@@ -2101,19 +2102,19 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold mb-1">Tiến độ</label>
-                    <select value={editingPlan.progressStatus} onChange={(e) => setEditingPlan({...editingPlan, progressStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <CustomSelect value={editingPlan.progressStatus} onChange={(e) => setEditingPlan({...editingPlan, progressStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                       <option value="Chưa thi công">Chưa thi công</option>
                       <option value="Đang thi công">Đang thi công</option>
                       <option value="Đã hoàn thành">Đã hoàn thành</option>
-                    </select>
+                    </CustomSelect>
                   </div>
                   <div>
                     <label className="block font-bold mb-1">Trạng thái đặt</label>
-                    <select value={editingPlan.orderedStatus} onChange={(e) => setEditingPlan({...editingPlan, orderedStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <CustomSelect value={editingPlan.orderedStatus} onChange={(e) => setEditingPlan({...editingPlan, orderedStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                       <option value="Chưa đặt hàng">Chưa đặt hàng</option>
                       <option value="Đã đặt hàng">Đã đặt hàng</option>
                       <option value="Đã nhận đủ">Đã nhận đủ</option>
-                    </select>
+                    </CustomSelect>
                   </div>
                 </div>
                 <div>
@@ -2350,7 +2351,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
                 <div className="flex items-center gap-1.5 w-full">
-                  <select
+                  <CustomSelect
                     value={sectionPurchasingIdForNew || ''}
                     onChange={(e) => {
                       setSectionPurchasingIdForNew(e.target.value || null);
@@ -2365,7 +2366,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                         {sec.stt ? `${sec.stt}. ` : ''}{sec.content}
                       </option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   <button
                     type="button"
                     onClick={() => { setIsCreatingSectionHeader(true); setSectionPurchasingIdForNew(null); setParentPurchasingIdForNew(null); setNewPurchasingData(prev => ({ ...prev, stt: '' })); }}
@@ -2379,7 +2380,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Thuộc Hạng mục cha (tuỳ chọn)</label>
-                <select
+                <CustomSelect
                   value={parentPurchasingIdForNew || ''}
                   onChange={(e) => setParentPurchasingIdForNew(e.target.value || null)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold truncate"
@@ -2393,7 +2394,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                         {t.stt ? `${t.stt}. ` : ''}{t.content}
                       </option>
                     ))}
-                </select>
+                </CustomSelect>
               </div>
             </div>
           )}
@@ -2484,28 +2485,28 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block font-bold mb-1">TT Đặt hàng</label>
-                  <select value={newPurchasingData.orderStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, orderStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                  <CustomSelect value={newPurchasingData.orderStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, orderStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                     <option value="Chưa đặt hàng">Chưa đặt hàng</option>
                     <option value="Đã đặt hàng">Đã đặt hàng</option>
                     <option value="Đang giao hàng">Đang giao hàng</option>
                     <option value="Đã nhận hàng">Đã nhận hàng</option>
-                  </select>
+                  </CustomSelect>
                 </div>
                 <div>
                   <label className="block font-bold mb-1">Hợp đồng</label>
-                  <select value={newPurchasingData.contractStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, contractStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                  <CustomSelect value={newPurchasingData.contractStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, contractStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                     <option value="Chưa ký">Chưa ký</option>
                     <option value="Đang trình duyệt">Đang trình duyệt</option>
                     <option value="Đã ký">Đã ký</option>
-                  </select>
+                  </CustomSelect>
                 </div>
                 <div>
                   <label className="block font-bold mb-1">Hóa đơn</label>
-                  <select value={newPurchasingData.invoiceStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, invoiceStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                  <CustomSelect value={newPurchasingData.invoiceStatus} onChange={(e) => setNewPurchasingData({...newPurchasingData, invoiceStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                     <option value="Chưa xuất">Chưa xuất</option>
                     <option value="Đang kiểm tra">Đang kiểm tra</option>
                     <option value="Đã xuất">Đã xuất</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
             </>
@@ -2604,28 +2605,28 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block font-bold mb-1">TT Đặt hàng</label>
-                <select value={editingPurchasing.orderStatus} onChange={(e) => setEditingPurchasing({...editingPurchasing, orderStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                <CustomSelect value={editingPurchasing.orderStatus} onChange={(e) => setEditingPurchasing({...editingPurchasing, orderStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                   <option value="Chưa đặt hàng">Chưa đặt hàng</option>
                   <option value="Đã đặt hàng">Đã đặt hàng</option>
                   <option value="Đang giao hàng">Đang giao hàng</option>
                   <option value="Đã nhận hàng">Đã nhận hàng</option>
-                </select>
+                </CustomSelect>
               </div>
               <div>
                 <label className="block font-bold mb-1">Hợp đồng</label>
-                <select value={editingPurchasing.contractStatus} onChange={(e) => setEditingPurchasing({...editingPurchasing, contractStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                <CustomSelect value={editingPurchasing.contractStatus} onChange={(e) => setEditingPurchasing({...editingPurchasing, contractStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                   <option value="Chưa ký">Chưa ký</option>
                   <option value="Đang trình duyệt">Đang trình duyệt</option>
                   <option value="Đã ký">Đã ký</option>
-                </select>
+                </CustomSelect>
               </div>
               <div>
                 <label className="block font-bold mb-1">Hóa đơn</label>
-                <select value={editingPurchasing.invoiceStatus} onChange={(e) => setEditingPurchasing({...editingPurchasing, invoiceStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                <CustomSelect value={editingPurchasing.invoiceStatus} onChange={(e) => setEditingPurchasing({...editingPurchasing, invoiceStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                   <option value="Chưa xuất">Chưa xuất</option>
                   <option value="Đang kiểm tra">Đang kiểm tra</option>
                   <option value="Đã xuất">Đã xuất</option>
-                </select>
+                </CustomSelect>
               </div>
             </div>
             <div>
@@ -2860,10 +2861,10 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
           <div>
             <label className="block font-bold mb-1">Tình trạng thanh toán</label>
-            <select value={newLaborData.paymentStatus} onChange={(e) => setNewLaborData({...newLaborData, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+            <CustomSelect value={newLaborData.paymentStatus} onChange={(e) => setNewLaborData({...newLaborData, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
               <option value="Chưa thanh toán">Chưa thanh toán</option>
               <option value="Đã thanh toán">Đã thanh toán</option>
-            </select>
+            </CustomSelect>
           </div>
           <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewLaborOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu</button></div>
         </form>
@@ -2916,10 +2917,10 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
             <div>
               <label className="block font-bold mb-1">Tình trạng thanh toán</label>
-              <select value={editingLabor.paymentStatus} onChange={(e) => setEditingLabor({...editingLabor, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+              <CustomSelect value={editingLabor.paymentStatus} onChange={(e) => setEditingLabor({...editingLabor, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                 <option value="Chưa thanh toán">Chưa thanh toán</option>
                 <option value="Đã thanh toán">Đã thanh toán</option>
-              </select>
+              </CustomSelect>
             </div>
             <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingLabor(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu cập nhật</button></div>
           </form>

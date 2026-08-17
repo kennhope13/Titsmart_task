@@ -5,6 +5,7 @@ import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { DocumentTrack } from '../types';
 import { ConfirmModal } from '../components/common/ConfirmModal';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 export const DocumentTrackingPage: React.FC = () => {
   const {
@@ -542,12 +543,12 @@ export const DocumentTrackingPage: React.FC = () => {
           <div className="grid grid-cols-2 gapx-2 py-2">
             <div className="min-w-0">
               <label className="block font-bold mb-1 truncate">Dự án *</label>
-              <select required value={newDoc.projectCode} onChange={(e) => setNewDoc({...newDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold truncate">
+              <CustomSelect required value={newDoc.projectCode} onChange={(e) => setNewDoc({...newDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold truncate">
                 <option value="">-- Chọn dự án --</option>
                 {projects.map(p => (
                   <option key={p.code} value={p.code}>{p.name}</option>
                 ))}
-              </select>
+              </CustomSelect>
             </div>
             <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={newDoc.contractName} onChange={(e) => setNewDoc({...newDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
@@ -570,21 +571,21 @@ export const DocumentTrackingPage: React.FC = () => {
             <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={(newDoc.prepayPercent || 0) * 100} onChange={(e) => setNewDoc({...newDoc, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
               <label className="block font-bold mb-1">Thanh toán</label>
-              <select value={newDoc.paymentStatus} onChange={(e) => setNewDoc({...newDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
+              <CustomSelect value={newDoc.paymentStatus} onChange={(e) => setNewDoc({...newDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
                 <option value="Chưa thanh toán">Chưa thanh toán</option>
                 <option value="Đã thanh toán">Đã thanh toán</option>
-              </select>
+              </CustomSelect>
             </div>
           </div>
           <div className="grid grid-cols-2 gapx-2 py-2">
             <div>
               <label className="block font-bold mb-1">Trạng thái hồ sơ</label>
-              <select value={newDoc.docStatus} onChange={(e) => setNewDoc({...newDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+              <CustomSelect value={newDoc.docStatus} onChange={(e) => setNewDoc({...newDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                 <option value="Chưa nhận">Chưa nhận</option>
                 <option value="Đã nhận đủ">Đã nhận đủ</option>
                 <option value="Đã ký">Đã ký</option>
                 <option value="Đã đổi gửi lại">Đã đổi gửi lại</option>
-              </select>
+              </CustomSelect>
             </div>
             <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={newDoc.isCompleted} onChange={(e) => setNewDoc({...newDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
           </div>
@@ -611,12 +612,12 @@ export const DocumentTrackingPage: React.FC = () => {
             <div className="grid grid-cols-2 gapx-2 py-2">
               <div className="min-w-0">
                 <label className="block font-bold mb-1 truncate">Dự án *</label>
-                <select required value={editingDoc.projectCode || projects.find(p => p.id === (editingDoc as any).projectId)?.code || ''} onChange={(e) => setEditingDoc({...editingDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold truncate">
+                <CustomSelect required value={editingDoc.projectCode || projects.find(p => p.id === (editingDoc as any).projectId)?.code || ''} onChange={(e) => setEditingDoc({...editingDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold truncate">
                   <option value="">-- Chọn dự án --</option>
                   {projects.map(p => (
                     <option key={p.code} value={p.code}>{p.name}</option>
                   ))}
-                </select>
+                </CustomSelect>
               </div>
               <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={editingDoc.contractName} onChange={(e) => setEditingDoc({...editingDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
@@ -639,21 +640,21 @@ export const DocumentTrackingPage: React.FC = () => {
               <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={(editingDoc.prepayPercent || 0) * 100} onChange={(e) => setEditingDoc({...editingDoc, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div>
                 <label className="block font-bold mb-1">Thanh toán</label>
-                <select value={editingDoc.paymentStatus} onChange={(e) => setEditingDoc({...editingDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
+                <CustomSelect value={editingDoc.paymentStatus} onChange={(e) => setEditingDoc({...editingDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
                   <option value="Chưa thanh toán">Chưa thanh toán</option>
                   <option value="Đã thanh toán">Đã thanh toán</option>
-                </select>
+                </CustomSelect>
               </div>
             </div>
             <div className="grid grid-cols-2 gapx-2 py-2">
               <div>
                 <label className="block font-bold mb-1">Trạng thái hồ sơ</label>
-                <select value={editingDoc.docStatus} onChange={(e) => setEditingDoc({...editingDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                <CustomSelect value={editingDoc.docStatus} onChange={(e) => setEditingDoc({...editingDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                   <option value="Chưa nhận">Chưa nhận</option>
                   <option value="Đã nhận đủ">Đã nhận đủ</option>
                   <option value="Đã ký">Đã ký</option>
                   <option value="Đã đổi gửi lại">Đã đổi gửi lại</option>
-                </select>
+                </CustomSelect>
               </div>
               <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={editingDoc.isCompleted} onChange={(e) => setEditingDoc({...editingDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
             </div>

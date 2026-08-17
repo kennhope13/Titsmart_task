@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal } from '../../components/common/Modal';
 import { Material } from '../../types';
 import { CONSTRUCTION_STATUSES, normalizeConstructionStatus, normalizePurchaseStatus, PURCHASE_STATUSES, generateMaterialCode } from './inventoryUtils';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface MaterialModalProps {
   isOpen: boolean;
@@ -89,8 +90,8 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({ isOpen, material, 
           <Field label="Đơn giá"><input type="number" value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className={inputClass} /></Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Tình trạng mua hàng"><select value={purchaseStatus} onChange={(event) => setPurchaseStatus(event.target.value)} className={inputClass}>{PURCHASE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</select></Field>
-          <Field label="Tình trạng thi công"><select value={constructionStatus} onChange={(event) => setConstructionStatus(event.target.value)} className={inputClass}>{CONSTRUCTION_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</select></Field>
+          <Field label="Tình trạng mua hàng"><CustomSelect value={purchaseStatus} onChange={(event) => setPurchaseStatus(event.target.value)} className={inputClass}>{PURCHASE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</CustomSelect></Field>
+          <Field label="Tình trạng thi công"><CustomSelect value={constructionStatus} onChange={(event) => setConstructionStatus(event.target.value)} className={inputClass}>{CONSTRUCTION_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</CustomSelect></Field>
         </div>
         <Field label="Nguồn/NCC mặc định"><input value={supplier} onChange={(event) => setSupplier(event.target.value)} className={inputClass} /></Field>
         <Field label="Ghi Chú"><input value={notes} onChange={(event) => setNotes(event.target.value)} className={inputClass} /></Field>

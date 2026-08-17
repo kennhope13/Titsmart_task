@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { FieldLog } from '../types';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -131,12 +132,12 @@ const UploadModal: React.FC<{
               <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">
                 Dự án <span className="text-rose-500 normal-case font-normal">*</span>
               </label>
-              <select required value={projectCode}
+              <CustomSelect required value={projectCode}
                 onChange={e => setProjectCode(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
                 <option value="">-- Chọn dự án --</option>
                 {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
-              </select>
+              </CustomSelect>
             </div>
 
             {/* Ảnh */}
@@ -264,11 +265,11 @@ export const FieldLogsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <select value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
+            <CustomSelect value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
               className="max-w-xs flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 md:w-64">
               <option value="">Tất cả dự án</option>
               {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
-            </select>
+            </CustomSelect>
             <button onClick={() => setIsUploadOpen(true)}
               className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-95">
               <span className="material-symbols-outlined text-lg">add_a_photo</span>

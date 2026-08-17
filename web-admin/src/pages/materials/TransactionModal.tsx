@@ -2,6 +2,7 @@
 import { Modal } from '../../components/common/Modal';
 import { InventoryTransaction, Material } from '../../types';
 import { formatNumber, materialCurrentStock } from './inventoryUtils';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -63,12 +64,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, type
     <Modal isOpen={isOpen} onClose={onClose} title={type === 'IMPORT' ? 'Tạo Phiếu Nhập Kho' : 'Tạo Phiếu Xuất Kho'}>
       <form onSubmit={handleSubmit} className="space-y-3 text-xs">
         <Field label="Chọn Vật tư *">
-          <select required value={materialId} onChange={(event) => setMaterialId(event.target.value)} className={inputClass}>
+          <CustomSelect required value={materialId} onChange={(event) => setMaterialId(event.target.value)} className={inputClass}>
             <option value="" disabled>-- Chọn vật tư --</option>
             {materials.map((material) => (
               <option key={material.id} value={material.id}>[{material.code}] {material.name} (Tồn: {formatNumber(materialCurrentStock(material))} {material.unit})</option>
             ))}
-          </select>
+          </CustomSelect>
         </Field>
         {selectedMaterial && (
           <div className="grid grid-cols-3 gap-2 bg-slate-50 border border-slate-200 rounded-lg p-3 text-[11px] text-slate-600">

@@ -6,6 +6,7 @@ import { ConfirmModal } from '../components/common/ConfirmModal';
 import { Toast } from '../components/common/Toast';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Material, InventoryTransaction } from '../types';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 const PURCHASE_STATUSES = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã có hàng', 'Hàng gia công'];
 const CONSTRUCTION_STATUSES = ['Chưa thi công', 'Đang thi công', 'Đã thi công', 'VƯỚNG MẮC'];
@@ -703,32 +704,32 @@ export const MaterialTrackingPage: React.FC = () => {
               Lọc chi tiết:
             </div>
             
-            <select 
+            <CustomSelect 
               className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[180px] max-w-[250px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
             >
               <option value="">Danh mục: Tất cả</option>
               {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            </CustomSelect>
 
-            <select 
+            <CustomSelect 
               className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[200px] max-w-[300px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
               value={filterName}
               onChange={(e) => setFilterName(e.target.value)}
             >
               <option value="">Tên Vật Tư: Tất cả</option>
               {uniqueNames.map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
+            </CustomSelect>
 
-            <select 
+            <CustomSelect 
               className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[120px] max-w-[180px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
               value={filterUnit}
               onChange={(e) => setFilterUnit(e.target.value)}
             >
               <option value="">ĐVT: Tất cả</option>
               {uniqueUnits.map(u => <option key={u} value={u}>{u}</option>)}
-            </select>
+            </CustomSelect>
           </div>
         </div>
 
@@ -891,8 +892,8 @@ export const MaterialTrackingPage: React.FC = () => {
               <div className="text-[11px] text-slate-500 mt-1">{editingMaterial.code}</div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold text-slate-700 mb-1">Tình trạng mua hàng</label><select value={editPurchaseStatus} onChange={(event) => setEditPurchaseStatus(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{PURCHASE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</select></div>
-              <div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><select value={editConstrStatus} onChange={(event) => setEditConstrStatus(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{CONSTRUCTION_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</select></div>
+              <div><label className="block font-bold text-slate-700 mb-1">Tình trạng mua hàng</label><CustomSelect value={editPurchaseStatus} onChange={(event) => setEditPurchaseStatus(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{PURCHASE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</CustomSelect></div>
+              <div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><CustomSelect value={editConstrStatus} onChange={(event) => setEditConstrStatus(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{CONSTRUCTION_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</CustomSelect></div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold text-slate-700 mb-1">Tồn đầu kỳ</label><input type="number" value={editInitialStock} onChange={(event) => setEditInitialStock(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
@@ -937,12 +938,12 @@ export const MaterialTrackingPage: React.FC = () => {
                 Thêm vật tư mới
               </button>
             </div>
-            <select required value={txMaterialId} onChange={(e) => setTxMaterialId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+            <CustomSelect required value={txMaterialId} onChange={(e) => setTxMaterialId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
               <option value="" disabled>-- Chọn vật tư --</option>
               {materials.map(m => (
                 <option key={m.id} value={m.id}>[{m.code}] {m.name} (Tồn: {m.currentStock ?? (m.initialStock || 0)} {m.unit})</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block font-bold text-slate-700 mb-1">Ngày {transactionType === 'IMPORT' ? 'nhập' : 'xuất'} *</label><input type="date" required value={txDate} onChange={(e) => setTxDate(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>

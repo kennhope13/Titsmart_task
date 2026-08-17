@@ -2,6 +2,7 @@ import React from 'react';
 import { ProjectMaterialPlan, ProjectPurchasing, ProjectExpense, LaborPayroll } from '../../types';
 import { Modal } from '../../components/common/Modal';
 import { ImageUpload } from '../../components/common/ImageUpload';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface ModalsProps {
   // Plan Modal
@@ -151,15 +152,15 @@ export const CostPlanModals: React.FC<ModalsProps> = ({
               <div><label className="block text-xs font-bold text-slate-700 mb-1">Khối lượng Đặt hàng</label><input type="number" step="any" name="orderedVolume" defaultValue={editingPlan?.orderedVolume} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Trạng thái đặt</label>
-                <select name="orderedStatus" defaultValue={editingPlan?.orderedStatus || 'Chưa đặt'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
+                <CustomSelect name="orderedStatus" defaultValue={editingPlan?.orderedStatus || 'Chưa đặt'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
                   <option>Chưa đặt</option><option>Đã đặt hàng</option><option>Đã nhận đủ</option>
-                </select>
+                </CustomSelect>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Tình trạng thi công</label>
-                <select name="progressStatus" defaultValue={editingPlan?.progressStatus || 'Chưa thi công'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
+                <CustomSelect name="progressStatus" defaultValue={editingPlan?.progressStatus || 'Chưa thi công'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
                   <option>Chưa thi công</option><option>Đang thi công</option><option>Đã hoàn thành</option>
-                </select>
+                </CustomSelect>
               </div>
               <div><label className="block text-xs font-bold text-slate-700 mb-1">Ngày cấp hàng DK</label><input type="date" name="expectedDate" defaultValue={editingPlan?.expectedDate} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
               
@@ -208,15 +209,15 @@ export const CostPlanModals: React.FC<ModalsProps> = ({
               <div className="md:col-span-3 border-t pt-4 mt-2"><h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><span className="material-symbols-outlined text-lg">local_shipping</span> Trạng thái</h4></div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Trạng thái đặt hàng</label>
-                <select name="orderStatus" defaultValue={editingPurchasing?.orderStatus || 'Chưa đặt hàng'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
+                <CustomSelect name="orderStatus" defaultValue={editingPurchasing?.orderStatus || 'Chưa đặt hàng'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
                   <option>Chưa đặt hàng</option><option>Đã đặt hàng</option><option>Đang giao hàng</option><option>Đã nhận hàng</option>
-                </select>
+                </CustomSelect>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Trạng thái Hóa đơn</label>
-                <select name="invoiceStatus" defaultValue={editingPurchasing?.invoiceStatus || 'Chưa nhận'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
+                <CustomSelect name="invoiceStatus" defaultValue={editingPurchasing?.invoiceStatus || 'Chưa nhận'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
                   <option>Chưa nhận</option><option>Đã nhận</option>
-                </select>
+                </CustomSelect>
               </div>
               <div className="md:col-span-3"><label className="block text-xs font-bold text-slate-700 mb-1">Ghi chú</label><textarea name="notes" defaultValue={editingPurchasing?.notes} rows={2} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
             </div>
@@ -293,9 +294,9 @@ export const CostPlanModals: React.FC<ModalsProps> = ({
               <div><label className="block text-xs font-bold text-slate-700 mb-1">Số Tài khoản</label><input type="text" name="bankAccount" defaultValue={editingLabor?.bankAccount} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none font-mono" /></div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Tình trạng thanh toán</label>
-                <select name="paymentStatus" defaultValue={editingLabor?.paymentStatus || 'Chưa thanh toán'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
+                <CustomSelect name="paymentStatus" defaultValue={editingLabor?.paymentStatus || 'Chưa thanh toán'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
                   <option>Chưa thanh toán</option><option>Đã thanh toán</option>
-                </select>
+                </CustomSelect>
               </div>
               
               <div className="md:col-span-2 border-t pt-4 mt-2"><h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><span className="material-symbols-outlined text-lg">badge</span> Căn cước Công dân & Ghi chú</h4></div>
