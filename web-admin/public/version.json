@@ -1,6 +1,6 @@
 {
-  "version": "1.0.31",
-  "date": "17/8/2026",
+  "version": "1.0.32",
+  "date": "17/08/2026",
   "notes": [
     "Căn chỉnh lại chiều cao thanh tiêu đề đồng nhất 72px trên toàn hệ thống.",
     "Khóa thanh Sidebar không bị thu gọn khi đang mở bảng thông báo.",
