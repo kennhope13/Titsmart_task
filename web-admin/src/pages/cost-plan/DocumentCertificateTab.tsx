@@ -579,7 +579,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
                 <td className="px-2 py-2.5 text-center whitespace-nowrap">
                   <div className="flex items-center justify-center gap-1">
                     <button onClick={(e) => { e.stopPropagation(); onDelete(item.id); }} title="Xóa"
-                      className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition">
+                      className="rounded p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition">
                       <span className="material-symbols-outlined text-base">delete</span>
                     </button>
                   </div>
