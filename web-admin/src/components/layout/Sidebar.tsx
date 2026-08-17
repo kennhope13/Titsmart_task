@@ -61,19 +61,17 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-60 flex flex-col border-r border-slate-200 bg-white z-40">
-      <div className="relative p-5 flex items-center justify-between gap-3 border-b border-slate-100">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-xs flex-shrink-0 overflow-hidden bg-white">
-            <img src="./logo.png" alt="TITSMART" className="w-full h-full object-contain p-0.5" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="font-bold text-base text-primary leading-tight truncate">TITSMART</h1>
-            <p className="text-[10px] text-slate-500 font-medium">Project Manager</p>
-          </div>
+    <aside className="fixed left-0 top-0 h-screen w-[76px] hover:w-[260px] transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 group shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden">
+      <div className="relative h-[88px] p-3 flex items-center gap-3 border-b border-slate-100 min-w-[260px]">
+        <div className="w-[50px] h-[50px] rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-white">
+          <img src="./logo.png" alt="TITSMART" className="w-10 h-10 object-contain" />
+        </div>
+        <div className="min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-1">
+          <h1 className="font-bold text-base text-primary leading-tight truncate">TITSMART</h1>
+          <p className="text-[10px] text-slate-500 font-medium">Project Manager</p>
         </div>
 
-        <div className="relative">
+        <div className="relative opacity-0 group-hover:opacity-100 transition-opacity duration-300 pr-3">
           <button
             onClick={() => setShowNotifPopover(!showNotifPopover)}
             className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-primary transition-colors relative"
@@ -117,16 +115,16 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      <nav className="flex-1 px-3 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 w-[260px] px-3 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">
         {navGroups.map((group) => (
           <div key={group.title} className="space-y-1">
             <div
-              className={`flex items-center justify-between px-3 mb-2 select-none ${group.collapsible !== false ? 'cursor-pointer group' : ''}`}
+              className={`flex items-center justify-between px-3 mb-2 select-none ${group.collapsible !== false ? 'cursor-pointer group/item' : ''}`}
               onClick={() => group.collapsible !== false && toggleGroup(group.title)}
             >
-              <h3 className={`text-[10px] font-extrabold text-slate-400 uppercase tracking-wider transition-colors ${group.collapsible !== false ? 'group-hover:text-primary' : ''}`}>{group.title}</h3>
+              <h3 className={`text-[10px] font-extrabold text-slate-400 uppercase tracking-wider transition-opacity duration-300 opacity-0 group-hover:opacity-100 ${group.collapsible !== false ? 'group-hover/item:text-primary' : ''}`}>{group.title}</h3>
               {group.collapsible !== false && (
-                <span className="material-symbols-outlined text-[14px] text-slate-400 group-hover:text-primary transition-colors">
+                <span className="material-symbols-outlined text-[14px] text-slate-400 transition-opacity duration-300 opacity-0 group-hover:opacity-100 group-hover/item:text-primary">
                   {collapsedGroups[group.title] ? 'expand_more' : 'expand_less'}
                 </span>
               )}
@@ -147,7 +145,7 @@ export const Sidebar: React.FC = () => {
                   }
                 >
                   <span className="material-symbols-outlined text-lg">{item.icon}</span>
-                  <span>{item.label}</span>
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">{item.label}</span>
                 </NavLink>
               ))}
             </div>
@@ -157,7 +155,7 @@ export const Sidebar: React.FC = () => {
         <div className="pt-4 border-t border-slate-100 relative">
           <button
             onClick={() => setShowUserPopover(!showUserPopover)}
-            className={`w-full flex items-center gap-2.5 px-3 py-3 rounded-xl transition-all ${
+            className={`w-[236px] flex items-center gap-2.5 px-3 py-3 rounded-xl transition-all ${
               showUserPopover
                 ? 'bg-blue-50 ring-1 ring-blue-100'
                 : 'hover:bg-slate-50'
@@ -166,11 +164,11 @@ export const Sidebar: React.FC = () => {
             <div className="w-10 h-10 rounded-full border border-slate-200 flex-shrink-0 flex items-center justify-center font-bold text-lg text-white bg-blue-600 uppercase shadow-sm">
               {(user?.name || 'A').charAt(0)}
             </div>
-            <div className="min-w-0 text-left leading-tight flex-1">
+            <div className="min-w-0 text-left leading-tight flex-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <span className="block font-bold text-xs text-slate-800 truncate">{user?.name || 'Admin'}</span>
               <span className="block text-[10px] text-slate-500 truncate">{user?.title || 'Quản trị viên'}</span>
             </div>
-            <span className="material-symbols-outlined text-base text-slate-400 flex-shrink-0">settings</span>
+            <span className="material-symbols-outlined text-base text-slate-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">settings</span>
           </button>
 
           {showUserPopover && (
