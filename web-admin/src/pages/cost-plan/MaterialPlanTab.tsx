@@ -247,8 +247,9 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
 
               {subTab === 'TECH' && (
                 <>
-                  <th colSpan={3} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIÊU CHUẨN KỸ THUẬT</th>
-                  <th rowSpan={2} style={{ width: 130, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIẾN ĐỘ</th>
+                  <th colSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIÊU CHUẨN KỸ THUẬT</th>
+                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TÌNH TRẠNG</th>
+                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIẾN ĐỘ</th>
                 </>
               )}
 
@@ -567,29 +568,50 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         )}
                       </td>
                       {/* TÌNH TRẠNG */}
-                      <td className="p-0 align-top text-slate-600">
-                        <div className="p-[3px]"><CustomSelect
-                            value={plan.techSpecStatus || ''}
-                            onChange={(e) => { onUpdate(plan.id, { ...plan, techSpecStatus: e.target.value }) }}
-                            className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
-                          >
-                            <option value="">Chưa xác định</option>
-                            <option value="Đáp ứng">Đáp ứng</option>
-                            <option value="Chưa đáp ứng">Chưa đáp ứng</option>
-                            <option value="Đang xem xét">Đang xem xét</option>
-                          </CustomSelect></div>
+                      <td className="w-[125px] p-0 align-middle text-slate-600">
+                        <div className="p-1">
+                          {(() => {
+                            const status = plan.techSpecStatus || '';
+                            let style = 'border-slate-200 bg-slate-50 text-slate-500';
+                            if (status === 'Đáp ứng') style = 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                            else if (status === 'Chưa đáp ứng') style = 'border-red-200 bg-red-50 text-red-700';
+                            else if (status === 'Đang xem xét') style = 'border-amber-200 bg-amber-50 text-amber-700';
+                            return (
+                              <CustomSelect
+                                value={status}
+                                onChange={(e) => { onUpdate(plan.id, { ...plan, techSpecStatus: e.target.value }) }}
+                                className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${style}`}
+                              >
+                                <option value="">Chưa xác định</option>
+                                <option value="Đáp ứng">Đáp ứng</option>
+                                <option value="Chưa đáp ứng">Chưa đáp ứng</option>
+                                <option value="Đang xem xét">Đang xem xét</option>
+                              </CustomSelect>
+                            );
+                          })()}
+                        </div>
                       </td>
                       {/* TIẾN ĐỘ */}
-                      <td className="p-0 align-top text-center font-mono font-bold text-slate-700 whitespace-nowrap">
-                        <div className="p-[3px]"><CustomSelect
-                            value={plan.progressStatus || ''}
-                            onChange={(e) => { onUpdate(plan.id, { ...plan, progressStatus: e.target.value }) }}
-                            className="w-full text-center bg-white text-slate-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
-                          >
-                            <option value="Chưa thi công">Chưa thi công</option>
-                            <option value="Đang thi công">Đang thi công</option>
-                            <option value="Đã hoàn thành">Đã hoàn thành</option>
-                          </CustomSelect></div>
+                      <td className="w-[125px] p-0 align-middle text-center font-mono font-bold text-slate-700 whitespace-nowrap">
+                        <div className="p-1">
+                          {(() => {
+                            const status = plan.progressStatus || '';
+                            let style = 'border-slate-200 bg-slate-50 text-slate-500';
+                            if (status === 'Đã hoàn thành') style = 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                            else if (status === 'Đang thi công') style = 'border-blue-200 bg-blue-50 text-blue-700';
+                            return (
+                              <CustomSelect
+                                value={status}
+                                onChange={(e) => { onUpdate(plan.id, { ...plan, progressStatus: e.target.value }) }}
+                                className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${style}`}
+                              >
+                                <option value="Chưa thi công">Chưa thi công</option>
+                                <option value="Đang thi công">Đang thi công</option>
+                                <option value="Đã hoàn thành">Đã hoàn thành</option>
+                              </CustomSelect>
+                            );
+                          })()}
+                        </div>
                       </td>
                     </>
                   )}

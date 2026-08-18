@@ -311,7 +311,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.prepayPercent}</th>
                 <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.payment}</th>
                 <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.paymentDate}</th>
-                <th style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.invoice}</th>
+                <th style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.invoice}</th>
                 <th style={{ width: 119, borderBottom: '1px solid #94a3b8' }} className="sticky right-0 z-20 bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.note}</th>
               </tr>
             )}
@@ -744,16 +744,26 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       </td>
 
                       {/* HÓA ĐƠN */}
-                      <td className="border-r border-slate-100 px-0 py-0 text-center font-semibold text-slate-700">
-                        <div className="p-[3px]"><CustomSelect
-                            value={pur.invoiceStatus || 'Chưa xuất'}
-                            onChange={(e) => { onUpdate(pur.id, { ...pur, invoiceStatus: e.target.value }); }}
-                            className="w-full bg-white text-slate-700 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                          >
-                            <option value="Chưa xuất">Chưa xuất</option>
-                            <option value="Đang kiểm tra">Đang kiểm tra</option>
-                            <option value="Đã xuất">Đã xuất</option>
-                          </CustomSelect></div>
+                      <td className="w-[120px] border-r border-slate-100 px-0 py-0 text-center font-semibold text-slate-700">
+                        <div className="p-1">
+                          {(() => {
+                            const status = pur.invoiceStatus || 'Chưa xuất';
+                            let style = 'border-slate-200 bg-slate-50 text-slate-500';
+                            if (status === 'Đã xuất') style = 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                            else if (status === 'Đang kiểm tra') style = 'border-amber-200 bg-amber-50 text-amber-700';
+                            return (
+                              <CustomSelect
+                                value={status}
+                                onChange={(e) => { onUpdate(pur.id, { ...pur, invoiceStatus: e.target.value }); }}
+                                className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${style}`}
+                              >
+                                <option value="Chưa xuất">Chưa xuất</option>
+                                <option value="Đang kiểm tra">Đang kiểm tra</option>
+                                <option value="Đã xuất">Đã xuất</option>
+                              </CustomSelect>
+                            );
+                          })()}
+                        </div>
                       </td>
                     </>
                   )}
