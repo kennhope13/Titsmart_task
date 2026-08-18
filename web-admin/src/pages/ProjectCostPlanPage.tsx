@@ -937,6 +937,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   }, [projectOptions, selectedProject]);
 
   const [activeTab, setActiveTab] = useState<'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('MATERIAL_PLAN');
+  const [expenseSubTab, setExpenseSubTab] = useState<'SUMMARY' | 'DETAIL'>('SUMMARY');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
   const isSubmittingPlanRef = useRef(false);
@@ -1116,6 +1117,23 @@ export const ProjectCostPlanPage: React.FC = () => {
     laborPayrolls.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
     [laborPayrolls, selectedProject]
   );
+
+  const expenseSpenderNames = useMemo(() => {
+    const names = new Set<string>();
+    expenses.forEach(exp => {
+      if (exp.spenderName?.trim()) names.add(exp.spenderName.trim());
+    });
+    return Array.from(names);
+  }, [expenses]);
+
+  const expenseContentTypes = useMemo(() => {
+    const contents = new Set<string>();
+    expenses.forEach(exp => {
+      if (exp.content?.trim()) contents.add(exp.content.trim());
+    });
+    ['Vật tư/ thiết bị', 'Tạm ứng', 'Tiền xe', 'Tiền ăn', 'Tiền xăng', 'Mời thợ/vận hành ăn uống', 'Khác'].forEach(t => contents.add(t));
+    return Array.from(contents);
+  }, [expenses]);
 
   // ----------------------------------------------------
   // COMPUTED METRICS
@@ -1320,7 +1338,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           />
 
           <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200">
-            <span className="text-xs font-bold text-slate-500 uppercase px-2">Dự án:</span>
+            <span className="text-xs font-bold text-slate-500 uppercase px-2 whitespace-nowrap">Dự án:</span>
           <CustomSelect 
             value={selectedProject} 
             onChange={(e) => setSelectedProject(e.target.value)} 
@@ -1346,7 +1364,6 @@ export const ProjectCostPlanPage: React.FC = () => {
             { id: 'MATERIAL_PLAN', label: 'Kế Hoạch Vật Tư', icon: 'list_alt' },
             { id: 'PURCHASING', label: 'Mua hàng (nhà thầu)', icon: 'shopping_bag' },
             { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long' },
-            { id: 'LABOR', label: 'Lương Công Nhật', icon: 'engineering' },
             { id: 'DOCUMENTS', label: 'Theo dõi chứng từ', icon: 'description' },
           ].map(tab => (
             <button 
@@ -1400,7 +1417,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               Xuất Excel
             </button>
 
-            {activeTab !== 'MATERIAL_PLAN' && activeTab !== 'PURCHASING' && (
+            {activeTab !== 'MATERIAL_PLAN' && activeTab !== 'PURCHASING' && !(activeTab === 'EXPENSE' && expenseSubTab === 'SUMMARY') && (
               <button 
                 onClick={() => {
                   if (!selectedProject) {
@@ -1408,8 +1425,10 @@ export const ProjectCostPlanPage: React.FC = () => {
                     return;
                   }
                   setIsCreatingSectionHeader(false);
-                  if (activeTab === 'EXPENSE') setIsNewExpenseOpen(true);
-                  else if (activeTab === 'LABOR') setIsNewLaborOpen(true);
+                  if (activeTab === 'EXPENSE') {
+                    if (expenseSubTab === 'LABOR') setIsNewLaborOpen(true);
+                    else setIsNewExpenseOpen(true);
+                  }
                   else if (activeTab === 'DOCUMENTS') setTriggerAddDoc(true);
                 }} 
                 className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
@@ -1505,10 +1524,108 @@ export const ProjectCostPlanPage: React.FC = () => {
 
         {/* EXPENSE TAB */}
         {activeTab === 'EXPENSE' && (
-          <div className="flex-1 min-h-0 flex flex-col">
-            <CostPlanSummaryTable expenses={currentProjExpenses} labors={currentProjLabor} />
-            <div className="flex-1 min-h-0 overflow-auto custom-scrollbar relative">
-              <table className="w-full text-left border-collapse">
+          <div className="h-full flex flex-col min-h-0">
+            <div className="flex border-b border-slate-200 shrink-0 bg-white sticky top-0 z-20 px-4 gap-2">
+              <button
+                onClick={() => setExpenseSubTab('SUMMARY')}
+                className={`app-tab-button flex items-center gap-1.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'SUMMARY' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+              >
+                Tổng hợp quỹ
+              </button>
+              <button
+                onClick={() => setExpenseSubTab('DETAIL')}
+                className={`app-tab-button flex items-center gap-1.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'DETAIL' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+              >
+                Chi tiết phiếu chi
+              </button>
+              <button
+                onClick={() => setExpenseSubTab('LABOR')}
+                className={`app-tab-button flex items-center gap-1.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'LABOR' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+              >
+                Lương công nhật
+              </button>
+            </div>
+            
+            {expenseSubTab === 'SUMMARY' && (
+              <div className="p-4 flex-1 overflow-auto custom-scrollbar">
+                <CostPlanSummaryTable 
+                  expenses={currentProjExpenses} 
+                  labors={currentProjLabor} 
+                  onAllocateFund={(name, amount) => {
+                    if (name === 'KHÁC') return;
+                    
+                    let targetName = name;
+                    let currentTotalFund = 0;
+                    let personExpenses: any[] = [];
+                    let title = '';
+                    
+                    if (name === '__PROJECT__') {
+                      personExpenses = currentProjExpenses.filter(e => e.spenderName === 'DỰ ÁN' && e.content === 'Quỹ Công Trình');
+                      currentTotalFund = currentProjExpenses.reduce((acc, curr) => acc + (curr.incomeAmount || 0), 0);
+                      title = 'Quỹ Tổng Công Trình';
+                      targetName = 'DỰ ÁN';
+                    } else {
+                      if (!targetName) {
+                        const inputName = window.prompt('Nhập tên người muốn cấp quỹ:');
+                        if (!inputName || !inputName.trim()) return;
+                        targetName = inputName.trim();
+                      }
+                      personExpenses = currentProjExpenses.filter(e => e.spenderName === targetName);
+                      currentTotalFund = personExpenses.reduce((acc, curr) => acc + (curr.incomeAmount || 0), 0);
+                      title = `Tổng Quỹ cho [${targetName.toUpperCase()}]`;
+                    }
+                    
+                    let newTotal = 0;
+                    
+                    if (amount !== undefined) {
+                      newTotal = amount;
+                    } else {
+                      const input = window.prompt(`Cập nhật ${title}:\n(Nhập số tiền, hiện tại là: ${currentTotalFund.toLocaleString('vi-VN')})`, currentTotalFund.toString());
+                      if (input === null) return;
+                      
+                      newTotal = parseInt(input.replace(/[,.]/g, ''), 10);
+                      if (isNaN(newTotal)) {
+                        triggerToast('Số tiền không hợp lệ', 'error');
+                        return;
+                      }
+                    }
+                    
+                    const diff = newTotal - currentTotalFund;
+                    if (diff === 0) return;
+                    
+                    const adjustmentContent = name === '__PROJECT__' ? 'Quỹ Công Trình' : 'Cấp quỹ';
+                    const adjustmentRecord = personExpenses.find(e => e.content === adjustmentContent && (e.totalAmount || 0) === 0);
+                    
+                    if (adjustmentRecord) {
+                      updateExpense(adjustmentRecord.id, {
+                        ...adjustmentRecord,
+                        incomeAmount: (adjustmentRecord.incomeAmount || 0) + diff,
+                        balanceFund: (adjustmentRecord.balanceFund || 0) + diff
+                      });
+                    } else {
+                      addExpense({
+                        projectCode: selectedProject,
+                        spenderName: targetName,
+                        content: adjustmentContent,
+                        description: name === '__PROJECT__' ? 'Khởi tạo Quỹ Công Trình' : `Cấp quỹ cho ${targetName}`,
+                        date: new Date().toISOString().split('T')[0],
+                        quantity: 0,
+                        unitPrice: 0,
+                        taxAmount: 0,
+                        totalAmount: 0,
+                        incomeAmount: diff,
+                        balanceFund: diff
+                      } as any);
+                    }
+                    triggerToast(`Đã cập nhật ${title.toLowerCase()}`, 'success');
+                  }}
+                />
+              </div>
+            )}
+            
+            {expenseSubTab === 'DETAIL' && (
+              <div className="flex-1 min-h-0 overflow-auto custom-scrollbar relative">
+                <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   <tr>
                     <th className="p-3 w-12 text-center">STT</th>
@@ -1577,12 +1694,11 @@ export const ProjectCostPlanPage: React.FC = () => {
               </tbody>
             </table>
             </div>
-          </div>
-        )}
+          )}
 
         {/* LABOR TAB */}
-        {activeTab === 'LABOR' && (
-          <div className="overflow-x-auto custom-scrollbar">
+        {expenseSubTab === 'LABOR' && (
+          <div className="flex-1 min-h-0 overflow-auto custom-scrollbar relative">
             <table className="w-full text-left border-collapse">
               <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 <tr>
@@ -1653,6 +1769,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        )}
           </div>
         )}
 
@@ -2676,10 +2794,25 @@ export const ProjectCostPlanPage: React.FC = () => {
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={newExpenseData.date} onChange={(e) => setNewExpenseData({...newExpenseData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Người phụ trách / Nguồn quỹ</label><input type="text" placeholder="VD: A Dân, A Tân..." value={newExpenseData.spenderName || ''} onChange={(e) => setNewExpenseData({...newExpenseData, spenderName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" list="spender-names" /></div>
+            <div>
+              <label className="block font-bold mb-1">Người phụ trách / Nguồn quỹ</label>
+              <CustomSelect value={newExpenseData.spenderName || ''} onChange={(e) => setNewExpenseData({...newExpenseData, spenderName: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs">
+                <option value="">Chọn người phụ trách...</option>
+                {Array.from(new Set(currentProjExpenses.map(e => e.spenderName).filter(Boolean))).map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </CustomSelect>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block font-bold mb-1">Loại nội dung</label><input type="text" value={newExpenseData.content} onChange={(e) => setNewExpenseData({...newExpenseData, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div>
+              <label className="block font-bold mb-1">Loại nội dung</label>
+              <CustomSelect value={newExpenseData.content} onChange={(e) => setNewExpenseData({...newExpenseData, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs">
+                {expenseContentTypes.map((type, i) => (
+                  <option key={i} value={type}>{type}</option>
+                ))}
+              </CustomSelect>
+            </div>
             <div><label className="block font-bold mb-1">Diễn giải/ Chi tiết *</label><input type="text" required placeholder="VD: Mua keo non, tắc kê đan..." value={newExpenseData.description} onChange={(e) => setNewExpenseData({...newExpenseData, description: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -2753,10 +2886,25 @@ export const ProjectCostPlanPage: React.FC = () => {
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={editingExpense.date} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Người phụ trách / Nguồn quỹ</label><input type="text" placeholder="VD: A Dân, A Tân..." value={editingExpense.spenderName || ''} onChange={(e) => setEditingExpense({...editingExpense, spenderName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" list="spender-names" /></div>
+              <div>
+                <label className="block font-bold mb-1">Người phụ trách / Nguồn quỹ</label>
+                <CustomSelect value={editingExpense.spenderName || ''} onChange={(e) => setEditingExpense({...editingExpense, spenderName: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs">
+                  <option value="">Chọn người phụ trách...</option>
+                  {Array.from(new Set(currentProjExpenses.map(e => e.spenderName).filter(Boolean))).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </CustomSelect>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold mb-1">Loại nội dung</label><input type="text" value={editingExpense.content} onChange={(e) => setEditingExpense({...editingExpense, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div>
+                <label className="block font-bold mb-1">Loại nội dung</label>
+                <CustomSelect value={editingExpense.content} onChange={(e) => setEditingExpense({...editingExpense, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs">
+                  {expenseContentTypes.map((type, i) => (
+                    <option key={i} value={type}>{type}</option>
+                  ))}
+                </CustomSelect>
+              </div>
               <div><label className="block font-bold mb-1">Diễn giải/ Chi tiết *</label><input type="text" required value={editingExpense.description} onChange={(e) => setEditingExpense({...editingExpense, description: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -2994,6 +3142,18 @@ export const ProjectCostPlanPage: React.FC = () => {
 
         </div>
       )}
+
+      <datalist id="expense-content-types">
+        {expenseContentTypes.map((type, i) => (
+          <option key={i} value={type} />
+        ))}
+      </datalist>
+
+      <datalist id="spender-names">
+        {expenseSpenderNames.map((name, i) => (
+          <option key={i} value={name} />
+        ))}
+      </datalist>
     </div>
   );
 };

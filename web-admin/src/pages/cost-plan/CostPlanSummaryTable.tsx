@@ -1,17 +1,19 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ProjectExpense, LaborPayroll } from '../../types';
 
 interface CostPlanSummaryTableProps {
   expenses: ProjectExpense[];
   labors: LaborPayroll[];
+  onAllocateFund?: (spenderName: string, amount?: number) => void;
 }
 
 const money = (value: number) => value.toLocaleString('vi-VN');
 
-export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expenses, labors }) => {
+export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expenses, labors, onAllocateFund }) => {
+  const [editingProjectFund, setEditingProjectFund] = useState(false);
+  const [projectFundInput, setProjectFundInput] = useState('');
+
   const summary = useMemo(() => {
-    const totalLabor = labors.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
-    
     const bySpender: Record<string, { chi: number; quy: number }> = {};
     let totalProjectExpense = 0;
     let totalProjectFund = 0;
@@ -32,27 +34,26 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
       totalProjectFund += quy;
     });
 
-    const totalChi = totalProjectExpense + totalLabor;
+    const totalChi = totalProjectExpense;
     const tonCuoiKy = totalProjectFund - totalProjectExpense;
 
+    const totalLabor = labors.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
+
     return {
-      totalLabor,
+      bySpender,
+      totalProjectExpense,
+      totalProjectFund,
       totalChi,
       tonCuoiKy,
-      totalProjectFund,
-      totalProjectExpense,
-      bySpender
+      totalLabor
     };
   }, [expenses, labors]);
 
   const spenderNames = Object.keys(summary.bySpender).filter(n => n !== 'KHÁC' || summary.bySpender[n].chi > 0 || summary.bySpender[n].quy > 0);
 
   return (
-    <div className="w-full bg-white border border-slate-200 rounded-lg shadow-sm mb-4 overflow-hidden">
-      <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 text-center font-bold text-slate-700 uppercase tracking-wider text-sm">
-        BẢNG THEO DÕI CHI PHÍ CÔNG TRÌNH
-      </div>
-      <div className="p-4 overflow-x-auto">
+    <div className="w-full bg-white mb-4">
+      <div className="overflow-x-auto">
         <table className="w-full min-w-[800px] border-collapse text-sm">
           <tbody>
             <tr>
@@ -60,12 +61,48 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-center">CT TT CÔNG NHẬT</th>
+                      <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-center">QUỸ CÔNG TRÌNH</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="border border-slate-300 text-center py-1 font-semibold text-slate-800">{money(summary.totalLabor)}</td>
+                      <td 
+                        className="border border-slate-300 text-center py-1 font-semibold text-slate-800 cursor-pointer hover:bg-slate-50 transition-colors"
+                        onClick={() => {
+                          if (!editingProjectFund) {
+                            setProjectFundInput(summary.totalProjectFund.toString());
+                            setEditingProjectFund(true);
+                          }
+                        }}
+                      >
+                        {editingProjectFund ? (
+                          <input
+                            autoFocus
+                            type="number"
+                            className="w-full text-center border-2 border-primary rounded outline-none px-1 text-slate-900"
+                            value={projectFundInput}
+                            onChange={e => setProjectFundInput(e.target.value)}
+                            onBlur={() => {
+                              setEditingProjectFund(false);
+                              if (onAllocateFund && projectFundInput.trim() !== '') {
+                                const val = Number(projectFundInput);
+                                if (!isNaN(val) && val !== summary.totalProjectFund) {
+                                  onAllocateFund('__PROJECT__', val);
+                                }
+                              }
+                            }}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.currentTarget.blur();
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center gap-1 group">
+                            <span>{money(summary.totalProjectFund)}</span>
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -79,7 +116,9 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="border border-slate-300 text-center py-1 font-semibold text-slate-800">{money(summary.totalChi)}</td>
+                      <td className="border border-slate-300 text-center py-1 font-semibold text-slate-800">
+                        {money(summary.totalChi)}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -93,7 +132,9 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="border border-slate-300 text-center py-1 font-semibold text-slate-800">{money(summary.tonCuoiKy)}</td>
+                      <td className="border border-slate-300 text-center py-1 font-semibold text-slate-800">
+                        {money(summary.tonCuoiKy)}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -102,12 +143,14 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-center">QUỸ CÔNG TRÌNH</th>
+                      <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-center">CT TT CÔNG NHẬT</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="border border-slate-300 text-center py-1 font-semibold text-slate-800">{money(summary.totalProjectFund)}</td>
+                      <td className="border border-slate-300 text-center py-1 font-semibold text-slate-800">
+                        {money(summary.totalLabor)}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -122,7 +165,12 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                   <tbody>
                     <tr>
                       <td className="border border-slate-300 bg-orange-200 text-orange-900 font-bold py-1 px-2 text-center w-1/2">TRÌNH</td>
-                      <td className="border border-slate-300 text-center py-1 px-2 font-semibold text-slate-800 w-1/2">{money(summary.totalProjectExpense)}</td>
+                      <td className="border border-slate-300 text-center py-1 px-2 font-semibold text-slate-800 w-1/2">
+                        {money(summary.totalProjectExpense)}
+                        <div className="w-full h-1 bg-slate-100 mt-1">
+                          <div className="h-full bg-orange-400" style={{ width: summary.totalProjectFund > 0 ? `${Math.min(100, (summary.totalProjectExpense / summary.totalProjectFund) * 100)}%` : '0%' }}></div>
+                        </div>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -138,6 +186,9 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                           </td>
                           <td className="border border-slate-300 text-center py-1 px-2 font-semibold text-slate-800 w-1/2">
                             {money(summary.bySpender[name].chi)}
+                            <div className="w-full h-1 bg-slate-100 mt-1">
+                              <div className="h-full bg-rose-400" style={{ width: summary.bySpender[name].quy > 0 ? `${Math.min(100, (summary.bySpender[name].chi / summary.bySpender[name].quy) * 100)}%` : '0%' }}></div>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -167,8 +218,15 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                           <td className={"border border-slate-300 py-1 px-2 font-bold text-center w-1/2 " + (idx % 3 === 0 ? 'bg-red-100 text-red-800' : idx % 3 === 1 ? 'bg-teal-100 text-teal-800' : 'bg-indigo-100 text-indigo-800')}>
                             TỔNG QUỸ ({name.toUpperCase()})
                           </td>
-                          <td className="border border-slate-300 text-center py-1 px-2 font-semibold text-slate-800 w-1/2">
-                            {money(summary.bySpender[name].quy)}
+                          <td 
+                            className="border border-slate-300 text-center py-1 px-2 font-semibold text-slate-800 w-1/2 cursor-pointer hover:bg-slate-50 transition-colors"
+                            onClick={() => {
+                              if (onAllocateFund) onAllocateFund(name);
+                            }}
+                          >
+                            <div className="flex items-center justify-center gap-1 group">
+                              <span>{money(summary.bySpender[name].quy)}</span>
+                            </div>
                           </td>
                         </tr>
                       ))}
