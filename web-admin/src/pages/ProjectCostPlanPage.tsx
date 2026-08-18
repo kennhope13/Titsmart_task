@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { CostPlanSummaryTable } from './cost-plan/CostPlanSummaryTable';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { ImageUpload } from '../components/common/ImageUpload';
@@ -1504,13 +1505,16 @@ export const ProjectCostPlanPage: React.FC = () => {
 
         {/* EXPENSE TAB */}
         {activeTab === 'EXPENSE' && (
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                <tr>
-                  <th className="p-3 w-12 text-center">STT</th>
-                  <th className="p-3">Ngày chi</th>
-                  <th className="p-3 min-w-56">Nội dung / Diễn giải</th>
+          <div className="flex-1 min-h-0 flex flex-col">
+            <CostPlanSummaryTable expenses={currentProjExpenses} labors={currentProjLabor} />
+            <div className="flex-1 min-h-0 overflow-auto custom-scrollbar relative">
+              <table className="w-full text-left border-collapse">
+                <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <tr>
+                    <th className="p-3 w-12 text-center">STT</th>
+                    <th className="p-3">Ngày chi</th>
+                    <th className="p-3">Người phụ trách</th>
+                    <th className="p-3 min-w-56">Nội dung / Diễn giải</th>
                   <th className="p-3 w-16 text-left">ĐVT</th>
                   <th className="p-3 text-right">Số lượng</th>
                   <th className="p-3 text-right">Đơn giá (đ)</th>
@@ -1528,6 +1532,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   <tr key={exp.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingExpense(exp)}>
                     <td className="p-3 text-center font-bold text-slate-400">{exp.stt || '-'}</td>
                     <td className="p-3 font-semibold text-slate-900">{exp.date}</td>
+                    <td className="p-3">{exp.spenderName || '-'}</td>
                     <td className="p-3">
                       <div className="font-bold text-slate-900">{exp.content}</div>
                       <div className="text-[10px] text-slate-500 mt-0.5">{exp.description}</div>
@@ -1571,6 +1576,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 
@@ -2653,6 +2659,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             date: newExpenseData.date || new Date().toISOString().split('T')[0],
             content: newExpenseData.content || 'Vật tư/ thiết bị',
             description: newExpenseData.description || '',
+            spenderName: newExpenseData.spenderName || '',
             unit: newExpenseData.unit || 'cái',
             quantity: qty,
             unitPrice: price,
@@ -2664,14 +2671,17 @@ export const ProjectCostPlanPage: React.FC = () => {
             invoiceUrl: newExpenseData.invoiceUrl || ''
           });
           setIsNewExpenseOpen(false);
-          setNewExpenseData({stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''});
+          setNewExpenseData({stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', spenderName: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''});
           triggerToast('Đã thêm Chi phí thành công!', 'success');
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={newExpenseData.date} onChange={(e) => setNewExpenseData({...newExpenseData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Loại nội dung</label><input type="text" value={newExpenseData.content} onChange={(e) => setNewExpenseData({...newExpenseData, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Người phụ trách / Nguồn quỹ</label><input type="text" placeholder="VD: A Dân, A Tân..." value={newExpenseData.spenderName || ''} onChange={(e) => setNewExpenseData({...newExpenseData, spenderName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" list="spender-names" /></div>
           </div>
-          <div><label className="block font-bold mb-1">Diễn giải/ Chi tiết *</label><input type="text" required placeholder="VD: Mua keo non, tắc kê đan..." value={newExpenseData.description} onChange={(e) => setNewExpenseData({...newExpenseData, description: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block font-bold mb-1">Loại nội dung</label><input type="text" value={newExpenseData.content} onChange={(e) => setNewExpenseData({...newExpenseData, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Diễn giải/ Chi tiết *</label><input type="text" required placeholder="VD: Mua keo non, tắc kê đan..." value={newExpenseData.description} onChange={(e) => setNewExpenseData({...newExpenseData, description: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+          </div>
           <div className="grid grid-cols-3 gap-3">
             <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newExpenseData.unit} onChange={(e) => setNewExpenseData({...newExpenseData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Số lượng</label><input type="number" value={String(newExpenseData.quantity)} onChange={(e) => setNewExpenseData({...newExpenseData, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -2743,9 +2753,12 @@ export const ProjectCostPlanPage: React.FC = () => {
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={editingExpense.date} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Loại nội dung</label><input type="text" value={editingExpense.content} onChange={(e) => setEditingExpense({...editingExpense, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Người phụ trách / Nguồn quỹ</label><input type="text" placeholder="VD: A Dân, A Tân..." value={editingExpense.spenderName || ''} onChange={(e) => setEditingExpense({...editingExpense, spenderName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" list="spender-names" /></div>
             </div>
-            <div><label className="block font-bold mb-1">Diễn giải/ Chi tiết *</label><input type="text" required value={editingExpense.description} onChange={(e) => setEditingExpense({...editingExpense, description: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block font-bold mb-1">Loại nội dung</label><input type="text" value={editingExpense.content} onChange={(e) => setEditingExpense({...editingExpense, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Diễn giải/ Chi tiết *</label><input type="text" required value={editingExpense.description} onChange={(e) => setEditingExpense({...editingExpense, description: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+            </div>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingExpense.unit} onChange={(e) => setEditingExpense({...editingExpense, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Số lượng</label><input type="number" value={String(editingExpense.quantity)} onChange={(e) => setEditingExpense({...editingExpense, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>

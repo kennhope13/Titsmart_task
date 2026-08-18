@@ -215,6 +215,7 @@ export interface ProjectExpense {
   date: string;
   content: string;
   description: string;
+  spenderName?: string;
   unit: string;
   quantity: number;
   unitPrice: number;
