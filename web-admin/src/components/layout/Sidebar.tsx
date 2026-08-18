@@ -40,38 +40,95 @@ export const Sidebar: React.FC = () => {
     }));
   };
 
-  const navGroups = [
-    {
-      title: 'Bảng điều khiển',
-      collapsible: false,
-      items: [
-        { label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' },
-      ]
-    },
-    {
-      title: 'Quản lý dự án',
-      items: [
-        { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
-        { label: 'Kế hoạch & Chi phí', path: '/cost-plan', icon: 'request_quote' },
-        { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
-        { label: 'Theo dõi Hồ sơ', path: '/document-tracking', icon: 'drafts' },
-      ]
-    },
-    {
-      title: 'Kho công ty',
-      items: [
-        { label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' },
-      ]
-    },
-    {
-      title: 'Hệ thống & Nội bộ',
-      items: [
-        { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
-        { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' },
-      ]
-    },
+  const getNavGroups = () => {
+    const role = user?.role || 'staff';
+    
+    // Admin sees everything
+    if (role === 'admin') {
+      return [
+        {
+          title: 'Bảng điều khiển',
+          collapsible: false,
+          items: [{ label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' }]
+        },
+        {
+          title: 'Quản lý dự án',
+          items: [
+            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
+            { label: 'Kế hoạch & Chi phí', path: '/cost-plan', icon: 'request_quote' },
+            { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
+            { label: 'Theo dõi Hồ sơ', path: '/document-tracking', icon: 'drafts' },
+          ]
+        },
+        {
+          title: 'Kho công ty',
+          items: [{ label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }]
+        },
+        {
+          title: 'Hệ thống & Nội bộ',
+          items: [
+            { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
+            { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' },
+          ]
+        },
+      ];
+    }
 
-  ];
+    // PM sees Dashboard, Projects, Cost Plan, Field Logs, Document Tracking, Materials, but NOT Personnel/System
+    if (role === 'pm') {
+      return [
+        {
+          title: 'Bảng điều khiển',
+          collapsible: false,
+          items: [{ label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' }]
+        },
+        {
+          title: 'Quản lý dự án',
+          items: [
+            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
+            { label: 'Kế hoạch & Chi phí', path: '/cost-plan', icon: 'request_quote' },
+            { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
+            { label: 'Theo dõi Hồ sơ', path: '/document-tracking', icon: 'drafts' },
+          ]
+        },
+        {
+          title: 'Kho công ty',
+          items: [{ label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }]
+        }
+      ];
+    }
+
+    // Engineer sees Projects, Cost Plan (Materials only), Field Logs, Materials
+    if (role === 'engineer') {
+      return [
+        {
+          title: 'Quản lý dự án',
+          items: [
+            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
+            { label: 'Kế hoạch Vật tư', path: '/cost-plan', icon: 'view_list' },
+            { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
+          ]
+        },
+        {
+          title: 'Kho công ty',
+          items: [{ label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }]
+        }
+      ];
+    }
+
+    // Staff only sees Projects and Field Logs
+    return [
+      {
+        title: 'Quản lý dự án',
+        items: [
+          { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
+          { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
+        ]
+      }
+    ];
+  };
+
+  const navGroups = getNavGroups();
 
   return (
     <aside ref={sidebarRef} className={`fixed left-0 top-0 h-screen w-[64px] hover:w-[280px] transition-all duration-300 ease-in-out delay-200 hover:delay-0 flex flex-col border-r border-slate-200 bg-white z-40 group shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${(showNotifPopover || showUserPopover) ? '!w-[280px]' : ''}`}>

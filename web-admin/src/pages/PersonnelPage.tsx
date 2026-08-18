@@ -296,59 +296,70 @@ export const PersonnelPage: React.FC = () => {
       </section>
       </div>
 
-      {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-md shadow-xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-extrabold text-lg text-slate-900">{editingPersonId ? 'Chỉnh sửa nhân sự' : 'Thêm nhân sự'}</h3>
-              <button
-                type="button"
-                onClick={closeForm}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
+      <Modal isOpen={isFormOpen} onClose={closeForm} title={editingPersonId ? 'Chỉnh sửa nhân sự' : 'Thêm nhân sự'}>
+        <form onSubmit={handleSavePerson} className="p-2 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Họ tên <span className="text-red-500">*</span></label>
+              <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nhập họ tên" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" required />
             </div>
-            <form onSubmit={handleSavePerson} className="p-5 space-y-4">
-              <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Họ tên" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
-              <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Số điện thoại" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
-              <CustomSelect value={role} onChange={(event) => setRole(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
-                <option>Quản lý</option><option>Nhân viên/Thợ</option>
-              </CustomSelect>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">
-                  Dự án <span className="text-red-500">*</span> <span className="font-normal text-slate-400">(chọn 1 hoặc nhiều)</span>
-                </label>
-                <div className={`max-h-36 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 ${selectedProjectCodes.length === 0 ? 'border-red-200' : 'border-slate-200'}`}>
-                  {projects.length === 0 && <p className="text-[11px] text-slate-400">Chưa có dự án nào.</p>}
-                  {projects.map((p) => (
-                    <label key={p.code} className="flex items-center gap-2 text-xs cursor-pointer">
-                      <input type="checkbox" checked={selectedProjectCodes.includes(p.code)} onChange={() => toggleProjectCode(p.code)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
-                      <span className="font-semibold text-slate-700">{p.name}</span>
-                      <span className="text-slate-400">({p.code})</span>
-                    </label>
-                  ))}
-                </div>
-                <p className={`mt-1 text-[11px] ${selectedProjectCodes.length > 0 ? 'text-primary' : 'text-red-500'}`}>
-                  {selectedProjectCodes.length > 0
-                    ? `Đã chọn ${selectedProjectCodes.length} dự án cho nhân sự này.`
-                    : 'Bắt buộc chọn ít nhất 1 dự án khi tạo nhân sự.'}
-                </p>
-              </div>
-              <div className="pt-2 flex gap-3">
-                <button type="button" onClick={closeForm} className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200">Hủy</button>
-                <button
-                  type="submit"
-                  disabled={submitting || projects.length === 0}
-                  className="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 disabled:opacity-50"
-                >
-                  {submitting ? (editingPersonId ? 'Đang lưu...' : 'Đang thêm...') : (editingPersonId ? 'Lưu thay đổi' : 'Thêm nhân sự')}
-                </button>
-              </div>
-            </form>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Số điện thoại</label>
+              <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Nhập SĐT" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
+            </div>
           </div>
-        </div>
-      )}
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Vai trò</label>
+              <CustomSelect value={role} onChange={(event) => setRole(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+                <option value="Quản trị viên">Quản trị viên</option>
+                <option value="Quản lý dự án">Quản lý dự án</option>
+                <option value="Kỹ sư hiện trường">Kỹ sư hiện trường</option>
+                <option value="Nhân viên/Thợ">Nhân viên/Thợ</option>
+              </CustomSelect>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Tên đăng nhập</label>
+              <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Nhập tên đăng nhập" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-700">Mật khẩu {editingPersonId && <span className="text-slate-400 font-normal">(Bỏ trống nếu không đổi)</span>}</label>
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={editingPersonId ? "••••••••" : "Nhập mật khẩu"} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Phân quyền Dự án <span className="text-red-500">*</span>
+            </label>
+            <div className={`max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 custom-scrollbar ${selectedProjectCodes.length === 0 ? 'border-red-300' : 'border-slate-200'}`}>
+              {projects.length === 0 && <p className="text-[11px] text-slate-400 p-2">Chưa có dự án nào trong hệ thống.</p>}
+              {projects.map((p) => (
+                <label key={p.code} className="flex items-center gap-2 text-sm p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors">
+                  <input type="checkbox" checked={selectedProjectCodes.includes(p.code)} onChange={() => toggleProjectCode(p.code)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
+                  <span className="font-semibold text-slate-700">{p.name}</span>
+                  <span className="text-slate-400 text-xs">({p.code})</span>
+                </label>
+              ))}
+            </div>
+            {selectedProjectCodes.length === 0 && (
+              <p className="mt-1 text-[11px] text-red-500">Bắt buộc chọn ít nhất 1 dự án để nhân sự có quyền truy cập.</p>
+            )}
+          </div>
+          <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+            <button type="button" onClick={closeForm} className="px-5 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-colors">Hủy</button>
+            <button
+              type="submit"
+              disabled={submitting || projects.length === 0 || !name.trim()}
+              className="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:opacity-90 disabled:opacity-50 shadow-sm transition-all"
+            >
+              {submitting ? 'Đang xử lý...' : (editingPersonId ? 'Lưu thay đổi' : 'Thêm nhân sự')}
+            </button>
+          </div>
+        </form>
+      </Modal>
       {deletingPerson && (
         <Modal isOpen={!!deletingPerson} onClose={() => setDeletingPerson(null)} title="Xác nhận xóa">
           <div className="py-4">

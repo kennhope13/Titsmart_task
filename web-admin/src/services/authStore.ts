@@ -9,6 +9,7 @@ export interface AuthUser {
   email: string;
   phone: string;
   avatar?: string;
+  projectCodes?: string[];
 }
 
 export interface DemoAccount {
@@ -126,16 +127,31 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
     }
 
     if (data.user) {
+      // Query the engineers table to get the actual role and projectCodes
+      const { data: engineerData } = await supabase
+        .from('engineers')
+        .select('*')
+        .or(`email.eq.${email},username.eq.${usernameOrEmail.trim()}`)
+        .maybeSingle();
+
       const account = DEMO_ACCOUNTS.find((acc) => acc.email.toLowerCase() === email.toLowerCase());
       
+      let rawRole = engineerData?.role || account?.role || 'staff';
+      let englishRole = rawRole;
+      if (rawRole === 'Quản trị viên') englishRole = 'admin';
+      if (rawRole === 'Quản lý dự án') englishRole = 'pm';
+      if (rawRole === 'Kỹ sư hiện trường') englishRole = 'engineer';
+      if (rawRole === 'Nhân viên/Thợ') englishRole = 'staff';
+
       const user: AuthUser = {
         id: data.user.id,
-        username: account?.username || usernameOrEmail.trim(),
-        name: account?.name || usernameOrEmail.trim(),
-        role: account?.role || 'staff',
-        title: account?.title || 'Nhân viên',
+        username: engineerData?.username || account?.username || usernameOrEmail.trim(),
+        name: engineerData?.name || account?.name || usernameOrEmail.trim(),
+        role: englishRole,
+        title: engineerData?.title || account?.title || 'Nhân viên',
         email: data.user.email || email,
-        phone: account?.phone || '',
+        phone: engineerData?.phone || account?.phone || '',
+        projectCodes: engineerData?.project_codes || [],
       };
       localStorage.setItem(SESSION_KEY, JSON.stringify(user));
       set({ user });

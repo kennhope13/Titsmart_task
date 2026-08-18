@@ -18,6 +18,23 @@ import {
   FieldLog
 } from '../types';
 import { api } from './apiSupabase';
+import { AuthUser } from './authStore';
+
+const getAuthUser = () => {
+  try {
+    const raw = localStorage.getItem('titsmart_auth_session');
+    return raw ? JSON.parse(raw) as AuthUser : null;
+  } catch {
+    return null;
+  }
+};
+
+const filterByProject = (items: any[], codeField: string) => {
+  const user = getAuthUser();
+  if (!user || user.role === 'admin' || !Array.isArray(items)) return items;
+  const assigned = user.projectCodes || [];
+  return items.filter(item => assigned.includes(item[codeField]));
+};
 import { supabase } from '../lib/supabase';
 import inventorySeedData from './inventorySeedData.json';
 
@@ -492,9 +509,11 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       try {
         const projects = await api.projects.getAll();
         // Lọc bỏ project nội bộ "Kho Công Ty" khỏi danh sách dự án
-        const filtered = Array.isArray(projects)
+        let filtered = Array.isArray(projects)
           ? projects.filter((p: any) => p.code !== 'COMPANY')
           : projects;
+        
+        filtered = filterByProject(filtered, 'code');
         set({ projects: filtered });
       } catch (e) {
         console.error('Failed to fetch projects', e);
@@ -504,7 +523,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     fetchTasks: async (projectId) => {
       try {
         const tasks = await api.tasks.getAll(projectId);
-        set({ tasks });
+        set({ tasks: filterByProject(tasks, 'projectCode') });
       } catch (e) {
         console.error('Failed to fetch tasks', e);
       }
@@ -516,8 +535,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           api.materials.getAll(projectId),
           api.materials.getTransactions(),
         ]);
+        let mats = mergeMaterialsWithSeed(Array.isArray(materials) ? materials : [], projectId);
+        mats = filterByProject(mats, 'projectCode');
         set({
-          materials: mergeMaterialsWithSeed(Array.isArray(materials) ? materials : [], projectId),
+          materials: mats,
           inventoryTransactions: Array.isArray(inventoryTransactions) ? inventoryTransactions : get().inventoryTransactions,
         });
       } catch (e) {
@@ -529,7 +550,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     fetchIssues: async (projectId) => {
       try {
         const issues = await api.issues.getAll(projectId);
-        set({ issues });
+        set({ issues: filterByProject(issues, 'projectCode') });
       } catch (e) {
         console.error('Failed to fetch issues', e);
       }
@@ -556,7 +577,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     fetchFieldLogs: async () => {
       try {
         const fieldLogs = await api.fieldLogs.getAll();
-        set({ fieldLogs });
+        set({ fieldLogs: filterByProject(fieldLogs, 'projectCode') });
       } catch (e) {
         console.error('Failed to fetch field logs', e);
       }
@@ -568,29 +589,29 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       // Tải từng bảng độc lập — 1 bảng lỗi không ảnh hưởng bảng khác
       try {
         const materialPlans = await api.accounting.getMaterialPlans();
-        if (Array.isArray(materialPlans)) nextState.materialPlans = materialPlans.map(normalizeMaterialPlan);
+        if (Array.isArray(materialPlans)) nextState.materialPlans = filterByProject(materialPlans.map(normalizeMaterialPlan), 'projectCode');
         console.log('[Accounting] Loaded material_plans:', materialPlans?.length || 0);
       } catch (e) { console.error('[Accounting] Failed material_plans', e); }
 
       try {
         const purchasingPlans = await api.accounting.getPurchasings();
-        if (Array.isArray(purchasingPlans)) nextState.purchasingPlans = purchasingPlans.map(normalizePurchasingPlan);
+        if (Array.isArray(purchasingPlans)) nextState.purchasingPlans = filterByProject(purchasingPlans.map(normalizePurchasingPlan), 'projectCode');
         console.log('[Accounting] Loaded purchasing_plans:', purchasingPlans?.length || 0);
       } catch (e) { console.error('[Accounting] Failed purchasing_plans', e); }
 
       try {
         const expenses = await api.accounting.getExpenses();
-        if (Array.isArray(expenses)) nextState.expenses = expenses;
+        if (Array.isArray(expenses)) nextState.expenses = filterByProject(expenses, 'projectCode');
       } catch (e) { console.error('[Accounting] Failed expenses', e); }
 
       try {
         const laborPayrolls = await api.accounting.getLaborPayrolls();
-        if (Array.isArray(laborPayrolls)) nextState.laborPayrolls = laborPayrolls;
+        if (Array.isArray(laborPayrolls)) nextState.laborPayrolls = filterByProject(laborPayrolls, 'projectCode');
       } catch (e) { console.error('[Accounting] Failed labor_payrolls', e); }
 
       try {
         const documentTracks = await api.accounting.getDocumentTracks();
-        if (Array.isArray(documentTracks)) nextState.documentTracks = documentTracks;
+        if (Array.isArray(documentTracks)) nextState.documentTracks = filterByProject(documentTracks, 'projectCode');
       } catch (e) { console.error('[Accounting] Failed document_tracks', e); }
 
       if (Object.keys(nextState).length > 0) {
@@ -724,7 +745,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           username: input.username,
           password: input.password,
           isLocked: input.isLocked,
-        fullName: input.name,
+        name: input.name,
         phone: input.phone,
         email: input.email,
         title: input.title,
@@ -746,7 +767,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           username: input.username,
           password: input.password,
           isLocked: input.isLocked,
-        fullName: input.name,
+        name: input.name,
         phone: input.phone,
         title: input.title,
         projectCodes: input.projectCodes,
@@ -1465,3 +1486,4 @@ export function setupRealtimeSync() {
 
   console.log('[Realtime] Đã bật đồng bộ tức thì cho tất cả bảng dữ liệu.');
 }
+

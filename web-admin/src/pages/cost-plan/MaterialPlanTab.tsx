@@ -12,6 +12,7 @@ interface MaterialPlanTabProps {
   setSearchQuery: (q: string) => void;
   statusFilter: string;
   setStatusFilter: (s: string) => void;
+  userRole?: string;
 }
 
 const TEXT = {
@@ -65,7 +66,7 @@ const showProgress = (value?: string) => {
 const yesNo = (value?: boolean) => value ? 'Có' : '';
 
 export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
-  data, onEdit, onDelete, onUpdate, onAddSubtask, searchQuery, setSearchQuery, statusFilter, setStatusFilter
+  data, onEdit, onDelete, onUpdate, onAddSubtask, searchQuery, setSearchQuery, statusFilter, setStatusFilter, userRole
 }) => {
   const [subTab, setSubTab] = useState<'TECH' | 'ORDER' | 'DOCS'>('TECH');
   const [editingCell, setEditingCell] = useState<{ id: string; field: keyof ProjectMaterialPlan } | null>(null);
@@ -188,6 +189,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
   }, [data, searchQuery, statusFilter]);
 
   const startEditing = (id: string, field: keyof ProjectMaterialPlan, value: any) => {
+    if (userRole === 'engineer') return;
     setEditingCell({ id, field });
     if (field === 'progressStatus' || field === 'orderedStatus') {
       setTempValue(value || '');
@@ -247,8 +249,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
 
               {subTab === 'TECH' && (
                 <>
-                  <th colSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIÊU CHUẨN KỸ THUẬT</th>
-                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TÌNH TRẠNG</th>
+                  <th colSpan={3} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIÊU CHUẨN KỸ THUẬT</th>
                   <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIẾN ĐỘ</th>
                 </>
               )}
@@ -273,9 +274,9 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
             <tr className="bg-slate-50">
               {subTab === 'TECH' && (
                 <>
-                  <th style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">CHÀO HÀNG</th>
-                  <th style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">ĐÁP ỨNG KỸ THUẬT</th>
-                  <th style={{ width: 60, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">TÌNH TRẠNG</th>
+                  <th style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">CHÀO HÀNG</th>
+                  <th style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">ĐÁP ỨNG KỸ THUẬT</th>
+                  <th style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">TÌNH TRẠNG</th>
                 </>
               )}
               {subTab === 'ORDER' && (

@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore } from '../services/authStore';
 import { CostPlanSummaryTable } from './cost-plan/CostPlanSummaryTable';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
@@ -146,6 +147,8 @@ export const ProjectCostPlanPage: React.FC = () => {
     deleteTask,
     updateTask,
   } = useRealtimeStore();
+
+  const user = useAuthStore(state => state.user);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const syncingIdsRef = useRef<Set<string>>(new Set());
@@ -1361,11 +1364,11 @@ export const ProjectCostPlanPage: React.FC = () => {
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1 shadow-xs border-x">
         <div className="flex items-center gap-4">
           {[
-            { id: 'MATERIAL_PLAN', label: 'Kế Hoạch Vật Tư', icon: 'list_alt' },
-            { id: 'PURCHASING', label: 'Mua hàng (nhà thầu)', icon: 'shopping_bag' },
-            { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long' },
-            { id: 'DOCUMENTS', label: 'Theo dõi chứng từ', icon: 'description' },
-          ].map(tab => (
+            { id: 'MATERIAL_PLAN', label: 'Kế Hoạch Vật Tư', icon: 'list_alt', show: true },
+            { id: 'PURCHASING', label: 'Mua hàng (nhà thầu)', icon: 'shopping_bag', show: user?.role !== 'engineer' },
+            { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long', show: user?.role !== 'engineer' },
+            { id: 'DOCUMENTS', label: 'Theo dõi chứng từ', icon: 'description', show: user?.role !== 'engineer' },
+          ].filter(t => t.show).map(tab => (
             <button 
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
