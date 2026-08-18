@@ -255,7 +255,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               {subTab === 'ORDER' && (
                 <>
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐẶT HÀNG</th>
-                  <th rowSpan={2} style={{ width: 130, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
+                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">NGÀY CÓ HÀNG</th>
                   <th colSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">VƯỚNG MẮC/ TỒN ĐỌNG</th>
                 </>
@@ -613,17 +613,32 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         )}
                       </td>
                       {/* TT ĐẶT HÀNG */}
-                      <td className="p-0 align-top text-center font-semibold text-slate-700">
-                        <div className="p-[3px]"><CustomSelect
-                            value={plan.orderedStatus || ''}
-                            onChange={(e) => { onUpdate(plan.id, { ...plan, orderedStatus: e.target.value }) }}
-                            className="w-full bg-white text-slate-700 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
-                          >
-                            <option value="">Chưa đặt hàng</option>
-                            <option value="Đã đặt hàng">Đã đặt hàng</option>
-                            <option value="Đang giao hàng">Đang giao hàng</option>
-                            <option value="Đã nhận hàng">Đã nhận hàng</option>
-                          </CustomSelect></div>
+                      <td className="p-0 align-middle text-center">
+                        <div className="p-1">
+                          {(() => {
+                            const currentStatus = plan.orderedStatus || '';
+                            let btnStyle = 'border-slate-200 bg-slate-50 text-slate-500';
+                            if (currentStatus === 'Đã nhận hàng') {
+                              btnStyle = 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                            } else if (currentStatus === 'Đang giao hàng') {
+                              btnStyle = 'border-amber-200 bg-amber-50 text-amber-700';
+                            } else if (currentStatus === 'Đã đặt hàng') {
+                              btnStyle = 'border-blue-200 bg-blue-50 text-blue-700';
+                            }
+                            return (
+                              <CustomSelect
+                                value={currentStatus}
+                                onChange={(e) => { onUpdate(plan.id, { ...plan, orderedStatus: e.target.value }) }}
+                                className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${btnStyle}`}
+                              >
+                                <option value="">Chưa đặt hàng</option>
+                                <option value="Đã đặt hàng">Đã đặt hàng</option>
+                                <option value="Đang giao hàng">Đang giao hàng</option>
+                                <option value="Đã nhận hàng">Đã nhận hàng</option>
+                              </CustomSelect>
+                            );
+                          })()}
+                        </div>
                       </td>
                       {/* NGÀY CÓ HÀNG */}
                       <td className="p-0 align-top text-center font-mono text-slate-600 truncate">

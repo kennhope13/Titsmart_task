@@ -298,8 +298,8 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 <th style={{ width: 42, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.vatRate}</th>
                 <th style={{ width: 72, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.vatAmount}</th>
                 <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.total}</th>
-                <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.orderStatus}</th>
-                <th style={{ width: 75, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.contractStatus}</th>
+                <th style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.orderStatus}</th>
+                <th style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.contractStatus}</th>
                 <th style={{ width: 119, borderBottom: '1px solid #94a3b8' }} className="sticky right-0 z-20 bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.note}</th>
               </tr>
             ) : (
@@ -640,46 +640,57 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
 
                       {/* TT ĐẶT HÀNG */}
                       <td className="border-r border-slate-100 px-1.5 py-1 text-center overflow-hidden">
-                        {editingCell?.id === pur.id && editingCell?.field === 'orderStatus' ? (
-                          <CustomSelect
-                            value={tempValue}
-                            onChange={(e) => {
-                              onUpdate(pur.id, { ...pur, orderStatus: e.target.value });
-                              setEditingCell(null);
-                            }}
-                            onBlur={() => setEditingCell(null)}
-                            autoFocus
-                            className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-900 text-[10px]"
-                          >
-                            <option value="Chưa đặt hàng">Chưa đặt hàng</option>
-                            <option value="Đã đặt hàng">Đã đặt hàng</option>
-                            <option value="Đang giao hàng">Đang giao hàng</option>
-                            <option value="Đã nhận hàng">Đã nhận hàng</option>
-                          </CustomSelect>
-                        ) : (
-                          <span onClick={() => startEditing(pur.id, 'orderStatus', pur.orderStatus)} className="cursor-pointer">
-                            <span className={`inline-flex justify-center rounded-md border px-1.5 py-0.5 text-[9px] font-bold ${
-                              pur.orderStatus === TEXT.received ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
-                              pur.orderStatus === TEXT.delivering ? 'border-amber-200 bg-amber-50 text-amber-700' :
-                              pur.orderStatus === TEXT.ordered ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-500'
-                            }`}>
-                              {pur.orderStatus || TEXT.notOrdered}
-                            </span>
-                          </span>
-                        )}
+                        <div className="p-1 flex justify-center">
+                          {(() => {
+                            const currentStatus = pur.orderStatus || 'Chưa đặt hàng';
+                            let btnStyle = 'border-slate-200 bg-slate-50 text-slate-500';
+                            if (currentStatus === 'Đã nhận hàng' || currentStatus === TEXT.received) {
+                              btnStyle = 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                            } else if (currentStatus === 'Đang giao hàng' || currentStatus === TEXT.delivering) {
+                              btnStyle = 'border-amber-200 bg-amber-50 text-amber-700';
+                            } else if (currentStatus === 'Đã đặt hàng' || currentStatus === TEXT.ordered) {
+                              btnStyle = 'border-blue-200 bg-blue-50 text-blue-700';
+                            }
+                            return (
+                              <CustomSelect
+                                value={currentStatus}
+                                onChange={(e) => { onUpdate(pur.id, { ...pur, orderStatus: e.target.value }); }}
+                                className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${btnStyle}`}
+                              >
+                                <option value="Chưa đặt hàng">Chưa đặt hàng</option>
+                                <option value="Đã đặt hàng">Đã đặt hàng</option>
+                                <option value="Đang giao hàng">Đang giao hàng</option>
+                                <option value="Đã nhận hàng">Đã nhận hàng</option>
+                              </CustomSelect>
+                            );
+                          })()}
+                        </div>
                       </td>
 
                       {/* TT HỢP ĐỒNG */}
-                      <td className="border-r border-slate-100 px-0 py-0 text-center font-semibold text-slate-700">
-                        <div className="p-[3px]"><CustomSelect
-                            value={pur.contractStatus || 'Chưa ký'}
-                            onChange={(e) => { onUpdate(pur.id, { ...pur, contractStatus: e.target.value }); }}
-                            className="w-full bg-white text-slate-700 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                          >
-                            <option value="Chưa ký">Chưa ký</option>
-                            <option value="Đang trình duyệt">Đang trình duyệt</option>
-                            <option value="Đã ký">Đã ký</option>
-                          </CustomSelect></div>
+                      <td className="w-[125px] border-r border-slate-100 px-0 py-0 text-center font-semibold text-slate-700">
+                        <div className="p-1">
+                          {(() => {
+                            const currentContractStatus = pur.contractStatus || 'Chưa ký';
+                            let contractBtnStyle = 'border-slate-200 bg-slate-50 text-slate-500';
+                            if (currentContractStatus === 'Đã ký') {
+                              contractBtnStyle = 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                            } else if (currentContractStatus === 'Đang trình duyệt') {
+                              contractBtnStyle = 'border-amber-200 bg-amber-50 text-amber-700';
+                            }
+                            return (
+                              <CustomSelect
+                                value={currentContractStatus}
+                                onChange={(e) => { onUpdate(pur.id, { ...pur, contractStatus: e.target.value }); }}
+                                className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${contractBtnStyle}`}
+                              >
+                                <option value="Chưa ký">Chưa ký</option>
+                                <option value="Đang trình duyệt">Đang trình duyệt</option>
+                                <option value="Đã ký">Đã ký</option>
+                              </CustomSelect>
+                            );
+                          })()}
+                        </div>
                       </td>
                     </>
                   ) : (
