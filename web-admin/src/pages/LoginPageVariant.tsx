@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore, DEMO_ACCOUNTS } from '../services/authStore';
+import { useAuthStore } from '../services/authStore';
 
 export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchStyle }) => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('admin');
+  const [password, setPassword] = useState('admin123');
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -29,11 +29,7 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
     }
   };
 
-  const fillAccount = (account: (typeof DEMO_ACCOUNTS)[number]) => {
-    setUsername(account.username);
-    setPassword(account.password);
-    setError('');
-  };
+
 
   return (
     <div className="h-screen w-full flex items-center justify-center relative overflow-hidden bg-slate-50">
@@ -140,27 +136,7 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
               </button>
             </form>
 
-            <div className="mt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-slate-200"></div>
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Tài khoản demo</span>
-                <div className="flex-1 h-px bg-slate-200"></div>
-              </div>
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {DEMO_ACCOUNTS.map((acc) => (
-                  <button
-                    key={acc.username}
-                    type="button"
-                    onClick={() => fillAccount(acc)}
-                    className="px-2 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-200 transition-colors text-center group"
-                    title={`${acc.username} / ${acc.password}`}
-                  >
-                    <div className="text-[11px] font-extrabold text-slate-700 truncate">{acc.name.split(' ').pop()}</div>
-                    <div className="text-[10px] font-mono text-slate-400 truncate group-hover:text-primary">{acc.username}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
+
           </div>
 
           <div className="px-8 py-4 border-t border-slate-100 bg-slate-50/60 text-center">

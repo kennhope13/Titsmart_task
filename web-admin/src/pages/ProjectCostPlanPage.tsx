@@ -940,7 +940,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   }, [projectOptions, selectedProject]);
 
   const [activeTab, setActiveTab] = useState<'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('MATERIAL_PLAN');
-  const [expenseSubTab, setExpenseSubTab] = useState<'SUMMARY' | 'DETAIL'>('SUMMARY');
+  const [expenseSubTab, setExpenseSubTab] = useState<'SUMMARY' | 'DETAIL' | 'LABOR'>('SUMMARY');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
   const isSubmittingPlanRef = useRef(false);
@@ -1588,7 +1588,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                       
                       newTotal = parseInt(input.replace(/[,.]/g, ''), 10);
                       if (isNaN(newTotal)) {
-                        triggerToast('Số tiền không hợp lệ', 'error');
+                        triggerToast('Số tiền không hợp lệ', 'warning');
                         return;
                       }
                     }

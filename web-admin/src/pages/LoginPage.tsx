@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore, DEMO_ACCOUNTS } from '../services/authStore';
+import { useAuthStore } from '../services/authStore';
 import { User, Key, Eye, EyeOff, Lock, ArrowRight, Shield, Zap, Boxes, BarChart3 } from 'lucide-react';
 
 export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchStyle }) => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('admin');
+  const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,12 +34,6 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
         setError(result.error || 'Đăng nhập thất bại.');
       }
     }, 600);
-  };
-
-  const fillAccount = (account: (typeof DEMO_ACCOUNTS)[number]) => {
-    setUsername(account.username);
-    setPassword(account.password);
-    setError('');
   };
 
   return (
@@ -75,33 +69,7 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
                     <p className="text-slate-500 text-sm font-medium">Chào mừng bạn! Vui lòng nhập thông tin để tiếp tục.</p>
                   </div>
 
-                  <div className="mt-8 pt-8 border-t border-slate-100 hidden md:block">
-                    <div className="mb-4">
-                      <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Tài khoản trải nghiệm</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2">
-                      {DEMO_ACCOUNTS.map((acc, idx) => (
-                        <button
-                          key={acc.username}
-                          type="button"
-                          onClick={() => fillAccount(acc)}
-                          className="group flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-primary/5 hover:border-primary/20 transition-all duration-300 text-left"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-full group-hover:border-primary/20 group-hover:bg-primary/5 transition-colors">
-                              {acc.title}
-                            </span>
-                            <span className="text-[11px] text-slate-500 font-mono">
-                              <strong className="text-slate-400 font-sans text-[9px] uppercase">ID:</strong> {acc.username}
-                            </span>
-                          </div>
-                          <div className="text-slate-300 group-hover:text-primary transition-colors shrink-0 ml-2">
-                            <ArrowRight size={14} strokeWidth={2.5} />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+
                 </div>
 
                 {/* Right Column: Login Form */}
@@ -180,25 +148,7 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
                     </button>
                   </form>
                   
-                  {/* Mobile demo accounts (visible only on small screens) */}
-                  <div className="mt-8 pt-6 border-t border-slate-100 md:hidden">
-                    <div className="mb-4">
-                      <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Tài khoản trải nghiệm</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2">
-                      {DEMO_ACCOUNTS.map((acc, idx) => (
-                        <button
-                          key={acc.username}
-                          type="button"
-                          onClick={() => fillAccount(acc)}
-                          className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 text-left"
-                        >
-                          <span className="text-[11px] font-bold text-slate-700">{acc.title}</span>
-                          <span className="text-[11px] text-slate-500 font-mono">ID: {acc.username}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+
 
                 {onSwitchStyle && (
                   <button
