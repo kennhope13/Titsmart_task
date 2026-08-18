@@ -1,8 +1,10 @@
 {
-  "version": "1.0.39",
+  "version": "1.0.41",
   "date": "18/08/2026",
   "notes": [
-    "Cập nhật giao diện nút trạng thái (CustomSelect) sang dạng pill có màu",
-    "Căn chỉnh độ rộng cột Tình Trạng, Tiến Độ, Hoá Đơn để không bị mất chữ"
+    "Tách Lương công nhật thành tab con riêng biệt bên trong mục Chi phí công trình",
+    "Bổ sung thanh tiến độ trực quan vào bảng Tổng hợp quỹ, giữ nguyên cấu trúc bảng quen thuộc",
+    "Đồng bộ hóa giao diện menu chọn 'Người phụ trách' (dropdown CustomSelect)",
+    "Tinh chỉnh logic nút 'Thêm mới' để mở đúng form theo từng tab con tương ứng"
   ]
 }
