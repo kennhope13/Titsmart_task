@@ -1,9 +1,11 @@
 {
-  "version": "1.0.34",
+  "version": "1.0.36",
   "date": "17/08/2026",
   "notes": [
-    "Nâng cấp cấu trúc tab Nhân sự: Hỗ trợ Đăng nhập (Tài khoản/Mật khẩu) và Phân quyền.",
-    "Khóa thanh Sidebar không bị thu gọn khi đang mở bảng thông báo.",
-    "Tự động phát hiện phiên bản mới để yêu cầu người dùng cập nhật (F5)."
+    "Dropdown chọn 1 lần: Các cột trạng thái trong bảng kế hoạch vật tư, mua sắm nay chọn ngay không cần click 2 lần.",
+    "Dropdown thoát khỏi vùng cuộn: Menu xổ xuống không còn bị cắt bởi bảng, hiển thị đúng vị trí trên màn hình.",
+    "Cột chứng từ: CO, CQ, Kiểm định PCCC, Đã gửi tới CT chuyển sang nút dấu tích — xanh khi đã có, xám khi chưa.",
+    "Giao diện bảng gọn hơn: Điều chỉnh độ rộng cột Tiêu chuẩn kỹ thuật, Tiến độ, TT Đặt hàng tối ưu hơn.",
+    "Sửa lỗi viền đôi khi nhấn vào ô chọn."
   ]
 }

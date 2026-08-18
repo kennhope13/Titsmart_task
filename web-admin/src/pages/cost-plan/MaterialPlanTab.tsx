@@ -679,48 +679,56 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   {subTab === 'DOCS' && (
                     <>
                       {/* CO */}
-                      <td className="p-0 align-top text-center font-bold text-emerald-700">
-                        <div className="p-[3px]"><CustomSelect
-                            value={plan.docCo ? 'true' : 'false'}
-                            onChange={(e) => { onUpdate(plan.id, { ...plan, docCo: e.target.value === 'true' }) }}
-                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
-                          >
-                            <option value="false">Không</option>
-                            <option value="true">Có</option>
-                          </CustomSelect></div>
+                      <td className="p-0 align-top text-center">
+                        <button
+                          type="button"
+                          onClick={() => onUpdate(plan.id, { ...plan, docCo: !plan.docCo })}
+                          className="flex items-center justify-center w-full h-[34px] transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.docCo ? '#10b981' : '#cbd5e1'} strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" fill={plan.docCo ? '#d1fae5' : '#f8fafc'} />
+                            <path d="M8 12l3 3 5-5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
                       </td>
                       {/* CQ */}
-                      <td className="p-0 align-top text-center font-bold text-emerald-700">
-                        <div className="p-[3px]"><CustomSelect
-                            value={plan.docCq ? 'true' : 'false'}
-                            onChange={(e) => { onUpdate(plan.id, { ...plan, docCq: e.target.value === 'true' }) }}
-                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
-                          >
-                            <option value="false">Không</option>
-                            <option value="true">Có</option>
-                          </CustomSelect></div>
+                      <td className="p-0 align-top text-center">
+                        <button
+                          type="button"
+                          onClick={() => onUpdate(plan.id, { ...plan, docCq: !plan.docCq })}
+                          className="flex items-center justify-center w-full h-[34px] transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.docCq ? '#10b981' : '#cbd5e1'} strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" fill={plan.docCq ? '#d1fae5' : '#f8fafc'} />
+                            <path d="M8 12l3 3 5-5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
                       </td>
                       {/* KIỂM ĐỊNH PCCC */}
-                      <td className="p-0 align-top text-center font-bold text-emerald-700">
-                        <div className="p-[3px]"><CustomSelect
-                            value={plan.docFireInspection ? 'true' : 'false'}
-                            onChange={(e) => { onUpdate(plan.id, { ...plan, docFireInspection: e.target.value === 'true' }) }}
-                            className="w-full bg-white text-emerald-700 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
-                          >
-                            <option value="false">Không</option>
-                            <option value="true">Có</option>
-                          </CustomSelect></div>
+                      <td className="p-0 align-top text-center">
+                        <button
+                          type="button"
+                          onClick={() => onUpdate(plan.id, { ...plan, docFireInspection: !plan.docFireInspection })}
+                          className="flex items-center justify-center w-full h-[34px] transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.docFireInspection ? '#10b981' : '#cbd5e1'} strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" fill={plan.docFireInspection ? '#d1fae5' : '#f8fafc'} />
+                            <path d="M8 12l3 3 5-5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
                       </td>
                       {/* ĐÃ GỬI TỚI CT */}
-                      <td className="p-0 align-top text-center font-semibold text-slate-700">
-                        <div className="p-[3px]"><CustomSelect
-                            value={plan.dispatchToSite ? 'true' : 'false'}
-                            onChange={(e) => { onUpdate(plan.id, { ...plan, dispatchToSite: e.target.value === 'true' }) }}
-                            className="w-full bg-white text-slate-700 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
-                          >
-                            <option value="false">Không</option>
-                            <option value="true">Có</option>
-                          </CustomSelect></div>
+                      <td className="p-0 align-top text-center">
+                        <button
+                          type="button"
+                          onClick={() => onUpdate(plan.id, { ...plan, dispatchToSite: !plan.dispatchToSite })}
+                          className="flex items-center justify-center w-full h-[34px] transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.dispatchToSite ? '#10b981' : '#cbd5e1'} strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" fill={plan.dispatchToSite ? '#d1fae5' : '#f8fafc'} />
+                            <path d="M8 12l3 3 5-5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
                       </td>
                       {/* NGÀY */}
                       <td className="p-0 align-top text-center font-mono text-slate-600 truncate">
