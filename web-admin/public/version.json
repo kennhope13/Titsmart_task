@@ -1,11 +1,8 @@
 {
-  "version": "1.0.36",
-  "date": "17/08/2026",
+  "version": "1.0.39",
+  "date": "18/08/2026",
   "notes": [
-    "Dropdown chọn 1 lần: Các cột trạng thái trong bảng kế hoạch vật tư, mua sắm nay chọn ngay không cần click 2 lần.",
-    "Dropdown thoát khỏi vùng cuộn: Menu xổ xuống không còn bị cắt bởi bảng, hiển thị đúng vị trí trên màn hình.",
-    "Cột chứng từ: CO, CQ, Kiểm định PCCC, Đã gửi tới CT chuyển sang nút dấu tích — xanh khi đã có, xám khi chưa.",
-    "Giao diện bảng gọn hơn: Điều chỉnh độ rộng cột Tiêu chuẩn kỹ thuật, Tiến độ, TT Đặt hàng tối ưu hơn.",
-    "Sửa lỗi viền đôi khi nhấn vào ô chọn."
+    "Cập nhật giao diện nút trạng thái (CustomSelect) sang dạng pill có màu",
+    "Căn chỉnh độ rộng cột Tình Trạng, Tiến Độ, Hoá Đơn để không bị mất chữ"
   ]
 }
