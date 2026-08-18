@@ -372,6 +372,7 @@ const normalizeExpense = (exp: any): ProjectExpense => ({
   date: exp.date ?? exp.expenseDate ?? exp.expense_date ?? '',
   content: exp.content || '',
   description: exp.description || '',
+  spenderName: exp.spenderName ?? exp.spender_name ?? '',
   unit: exp.unit || '',
   quantity: Number(exp.quantity || 0),
   unitPrice: Number(exp.unitPrice ?? exp.unit_price ?? 0),
