@@ -146,7 +146,7 @@ export const PersonnelPage: React.FC = () => {
   const handleSavePerson = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim() || submitting) return;
-    if (selectedProjectCodes.length === 0) {
+    if (role !== 'Quản lý dự án' && selectedProjectCodes.length === 0) {
       triggerToast('Vui lòng chọn ít nhất 1 dự án cho nhân sự!', 'warning');
       return;
     }
@@ -341,24 +341,26 @@ export const PersonnelPage: React.FC = () => {
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={editingPersonId ? "••••••••" : "Nhập mật khẩu"} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Phân quyền Dự án <span className="text-red-500">*</span>
-            </label>
-            <div className={`max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 custom-scrollbar ${selectedProjectCodes.length === 0 ? 'border-red-300' : 'border-slate-200'}`}>
-              {projects.length === 0 && <p className="text-[11px] text-slate-400 p-2">Chưa có dự án nào trong hệ thống.</p>}
-              {projects.map((p) => (
-                <label key={p.code} className="flex items-center gap-2 text-sm p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors">
-                  <input type="checkbox" checked={selectedProjectCodes.includes(p.code)} onChange={() => toggleProjectCode(p.code)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
-                  <span className="font-semibold text-slate-700">{p.name}</span>
-                  <span className="text-slate-400 text-xs">({p.code})</span>
-                </label>
-              ))}
+          {role !== 'Quản lý dự án' && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Phân quyền Dự án <span className="text-red-500">*</span>
+              </label>
+              <div className={`max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 custom-scrollbar ${selectedProjectCodes.length === 0 ? 'border-red-300' : 'border-slate-200'}`}>
+                {projects.length === 0 && <p className="text-[11px] text-slate-400 p-2">Chưa có dự án nào trong hệ thống.</p>}
+                {projects.map((p) => (
+                  <label key={p.code} className="flex items-center gap-2 text-sm p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors">
+                    <input type="checkbox" checked={selectedProjectCodes.includes(p.code)} onChange={() => toggleProjectCode(p.code)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
+                    <span className="font-semibold text-slate-700">{p.name}</span>
+                    <span className="text-slate-400 text-xs">({p.code})</span>
+                  </label>
+                ))}
+              </div>
+              {selectedProjectCodes.length === 0 && (
+                <p className="mt-1 text-[11px] text-red-500">Bắt buộc chọn ít nhất 1 dự án để nhân sự có quyền truy cập.</p>
+              )}
             </div>
-            {selectedProjectCodes.length === 0 && (
-              <p className="mt-1 text-[11px] text-red-500">Bắt buộc chọn ít nhất 1 dự án để nhân sự có quyền truy cập.</p>
-            )}
-          </div>
+          )}
           <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
             <button type="button" onClick={closeForm} className="px-5 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-colors">Hủy</button>
             <button

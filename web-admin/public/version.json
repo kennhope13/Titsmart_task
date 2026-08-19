@@ -1,9 +1,10 @@
 {
-  "version": "1.0.45",
+  "version": "1.0.46",
   "date": "19/08/2026",
   "notes": [
-    "Cơ chế Realtime (thời gian thực): Tự động đồng bộ quyền dự án và chức vụ cho phiên đăng nhập hiện tại mà không cần tải lại trang",
-    "Ẩn tài khoản Quản trị viên (Admin) khỏi danh sách quản lý nhân sự để tăng tính bảo mật",
-    "Bổ sung nội dung chi tiết và link tải xuống tự động vào email thông báo khi có phiên bản mới"
+    "Thay đổi định dạng Mã nhân viên tự động: TSM-VAI TRÒ-TÊN NHÂN VIÊN",
+    "Bảo mật quyền quản trị: Không cho phép tạo thêm tài khoản Quản trị viên mới",
+    "Tối ưu giao diện: Ẩn bảng chọn dự án đối với Quản lý dự án (vì đã có quyền quản lý toàn bộ)",
+    "Bảo mật tài khoản: Ép đăng xuất lập tức những nhân viên đã bị xóa hoặc bị khóa khỏi hệ thống"
   ]
 }
