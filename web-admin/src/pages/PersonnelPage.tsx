@@ -108,6 +108,8 @@ export const PersonnelPage: React.FC = () => {
       role: (engineer as any).role || engineer.title?.trim() || 'Nhân viên/Thợ',
     };
   }).filter((person) => {
+    if (person.role === 'Quản trị viên' || person.username === 'admin') return false;
+    
     const term = searchTerm.toLowerCase();
     const matchSearch = !term 
       || person.name.toLowerCase().includes(term)
