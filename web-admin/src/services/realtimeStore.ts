@@ -31,7 +31,7 @@ const getAuthUser = () => {
 
 const filterByProject = (items: any[], codeField: string) => {
   const user = getAuthUser();
-  if (!user || user.role === 'admin' || !Array.isArray(items)) return items;
+  if (!user || user.role === 'admin' || user.role === 'pm' || !Array.isArray(items)) return items;
   const assigned = user.projectCodes || [];
   return items.filter(item => assigned.includes(item[codeField]));
 };
