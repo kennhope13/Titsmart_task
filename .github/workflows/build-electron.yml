@@ -61,6 +61,11 @@ jobs:
         update_release: true
         fail_on_unmatched_files: false
 
+    - name: Generate Email Body
+      if: success()
+      run: |
+        node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync('./web-admin/public/version.json', 'utf8')); const version = data.version; const notes = data.notes.map(n => '<li>' + n + '</li>').join(''); const repo = process.env.GITHUB_REPOSITORY; const downloadLink = 'https://github.com/' + repo + '/releases/tag/v' + version; const html = '<h2>TITSMART Project Manager - Thông báo cập nhật phần mềm</h2><p>Chào bạn,</p><p>Hệ thống đã phát hành thành công phiên bản <strong>v' + version + '</strong>.</p><h3>Nội dung cập nhật / Fix lỗi:</h3><ul>' + notes + '</ul><p><strong>🔗 Link tải xuống phiên bản mới:</strong> <a href=\"' + downloadLink + '\">' + downloadLink + '</a></p><br><p>Trân trọng,<br>Hệ thống tự động TITSMART</p>'; fs.writeFileSync('mail_body.html', html);"
+
     - name: Send Notification Email
       if: success()
       uses: dawidd6/action-send-mail@v3
@@ -70,13 +75,7 @@ jobs:
         secure: true
         username: "kythuat@titsmart.vn"
         password: "Vcuong1@"
-        subject: "[TITSMART] Đã có bản cập nhật mới v${{ env.version }}"
+        subject: "[TITSMART] Phần mềm quản lý dự án đã có bản cập nhật mới v${{ env.version }}"
         to: kythuat@titsmart.vn
         from: Hệ thống TITSMART <kythuat@titsmart.vn>
-        body: |
-          Chào bạn,
-          
-          Hệ thống vừa tự động xây dựng và xuất bản thành công phiên bản mới: v${{ env.version }}.
-          Các thay đổi mới nhất đã được phát hành.
-          
-          Vui lòng tải lại ứng dụng hoặc kiểm tra trên hệ thống.
+        html_body: file://mail_body.html
