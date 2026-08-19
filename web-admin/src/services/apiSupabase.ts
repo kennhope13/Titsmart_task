@@ -231,7 +231,8 @@ export const api = {
     getAll: async () => {
       const { data, error } = await supabase.from('activity_logs').select('*');
       if (error) throw error;
-      return mapArray(data || []);
+      // Reverse so that newest items (appended last) appear first
+      return mapArray(data || []).reverse();
     },
     create: async (data: any) => {
       const payload = toSnakeCase(data);
