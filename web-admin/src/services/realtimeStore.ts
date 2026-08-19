@@ -571,6 +571,13 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
               (e.username && e.username.toLowerCase() === currentUser.username?.toLowerCase())
           );
           if (matchedEngineer) {
+            // Log the user out immediately if their account was locked by an Admin
+            if (matchedEngineer.isLocked || matchedEngineer.is_locked) {
+              authStore.logout();
+              window.location.href = '/login';
+              return;
+            }
+
             const updatedUser = {
               ...currentUser,
               projectCodes: matchedEngineer.projectCodes || [],

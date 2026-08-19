@@ -139,6 +139,11 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
         .or(`email.eq.${email},username.eq.${usernameOrEmail.trim()}`)
         .maybeSingle();
 
+      if (engineerData && (engineerData.is_locked || engineerData.isLocked)) {
+        await supabase.auth.signOut();
+        return { ok: false, error: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.' };
+      }
+
       const account = DEMO_ACCOUNTS.find((acc) => acc.email.toLowerCase() === email.toLowerCase());
       
       let rawRole = engineerData?.role || account?.role || 'staff';
