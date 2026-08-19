@@ -540,7 +540,7 @@ export const ProjectManagementPage: React.FC = () => {
           >
             <span className="material-symbols-outlined text-sm">add</span>
             {TEXT.createProject}
-          </button>
+          </button> : null}
         </div>
       </section>
 
