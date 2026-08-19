@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../services/authStore';
+import { useRealtimeStore } from '../services/realtimeStore';
 import { User, Key, Eye, EyeOff, Lock, ArrowRight, Shield, Zap, Boxes, BarChart3 } from 'lucide-react';
 
 export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchStyle }) => {
@@ -29,6 +30,7 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
       const result = await login(username, password);
       setLoading(false);
       if (result.ok) {
+        useRealtimeStore.getState().logActivity('Đăng nhập vào hệ thống', 'Hệ thống');
         navigate('/', { replace: true });
       } else {
         setError(result.error || 'Đăng nhập thất bại.');

@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore } from '../services/authStore';
 import { Project, Task } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
@@ -98,6 +99,7 @@ const deriveProjectsFromTasks = (tasks: Task[]): Project[] => {
 
 export const ProjectManagementPage: React.FC = () => {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const {
     projects,
     tasks,
@@ -647,15 +649,17 @@ export const ProjectManagementPage: React.FC = () => {
                   </div>
 
                   {/* Nút xóa — hiện khi hover */}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
-                    title={TEXT.deleteProject}
-                    aria-label="Xóa dự án"
-                    className="absolute top-2 right-2 rounded p-1 text-slate-400 hover:text-rose-500 transition z-20"
-                  >
-                    <span className="material-symbols-outlined text-base">delete</span>
-                  </button>
+                  {user?.role === 'admin' && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
+                      title={TEXT.deleteProject}
+                      aria-label="Xóa dự án"
+                      className="absolute top-2 right-2 rounded p-1 text-slate-400 hover:text-rose-500 transition z-20"
+                    >
+                      <span className="material-symbols-outlined text-lg">delete</span>
+                    </button>
+                  )}
                 </div>
               );
             })}

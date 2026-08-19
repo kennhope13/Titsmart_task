@@ -1503,6 +1503,7 @@ export function setupRealtimeSync() {
       store.fetchTasks(undefined);
       store.fetchIssues(undefined);
       store.fetchEngineers();
+      store.fetchActivityLogs();
     }, 2000);
   };
 
