@@ -84,10 +84,18 @@ export const PersonnelPage: React.FC = () => {
   };
 
   const people = useMemo(() => engineers.map((engineer, index) => {
-    const assignedProjects = [
-      ...(engineer.managedProjects || []),
-      ...(engineer.memberProjects || []),
-    ].filter((value, assignedIndex, self) => self.findIndex((item) => item.code === value.code) === assignedIndex);
+    let assignedProjects = [];
+    if (engineer.projectCodes && Array.isArray(engineer.projectCodes)) {
+      assignedProjects = engineer.projectCodes.map((code: string) => {
+        const found = projects.find(p => p.code === code);
+        return found ? { code: found.code, name: found.name } : { code, name: code };
+      });
+    } else {
+      assignedProjects = [
+        ...(engineer.managedProjects || []),
+        ...(engineer.memberProjects || []),
+      ].filter((value, assignedIndex, self) => self.findIndex((item) => item.code === value.code) === assignedIndex);
+    }
 
     return {
       ...engineer,

@@ -5,8 +5,8 @@ import { useAuthStore } from '../services/authStore';
 export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchStyle }) => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');

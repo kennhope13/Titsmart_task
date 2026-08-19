@@ -6,8 +6,8 @@ import { User, Key, Eye, EyeOff, Lock, ArrowRight, Shield, Zap, Boxes, BarChart3
 export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchStyle }) => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

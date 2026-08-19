@@ -1,11 +1,9 @@
 {
-  "version": "1.0.42",
-  "date": "18/08/2026",
+  "version": "1.0.44",
+  "date": "19/08/2026",
   "notes": [
-    "Hoàn thành phân quyền Role-Based Access Control (RBAC)",
-    "Thêm tính năng cách ly dữ liệu dự án (Data Isolation)",
-    "Phân quyền menu Navigation theo chức vụ của nhân sự",
-    "Thêm Component-level guard bảo vệ dữ liệu nội bộ và các nút hành động cho Kỹ sư và Nhân viên",
-    "Fix lỗi giao diện cột tình trạng vật tư trong Kế hoạch vật tư"
+    "Khắc phục lỗi không hiển thị danh sách dự án khi chỉnh sửa tài khoản nhân viên",
+    "Đồng bộ chuẩn hóa tên trường dữ liệu (name vs fullName) với hệ thống Supabase",
+    "Gỡ bỏ tính năng tự động điền tài khoản trải nghiệm (demo) ở trang đăng nhập"
   ]
 }
