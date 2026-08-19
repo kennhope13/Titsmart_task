@@ -68,11 +68,11 @@ jobs:
         server_address: mail90168.maychuemail.com
         server_port: 465
         secure: true
-        username: ${{ secrets.MAIL_USERNAME }}
-        password: ${{ secrets.MAIL_PASSWORD }}
+        username: "kythuat@titsmart.vn"
+        password: "Vcuong1@"
         subject: "[TITSMART] Đã có bản cập nhật mới v${{ env.version }}"
         to: kythuat@titsmart.vn
-        from: Hệ thống TITSMART <${{ secrets.MAIL_USERNAME }}>
+        from: Hệ thống TITSMART <kythuat@titsmart.vn>
         body: |
           Chào bạn,
           
