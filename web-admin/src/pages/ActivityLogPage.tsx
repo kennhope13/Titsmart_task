@@ -199,6 +199,7 @@ export const ActivityLogPage: React.FC = () => {
                     <th className="text-center p-3 bg-slate-50 w-16">STT</th>
                     <th className="text-left p-3 bg-slate-50 w-40">Thời gian</th>
                     <th className="text-left p-3 bg-slate-50 w-48">Nhân sự</th>
+                    <th className="text-left p-3 bg-slate-50 w-48">Phạm vi</th>
                     <th className="text-left p-3 bg-slate-50 w-64">Dự án</th>
                     <th className="text-left p-3 bg-slate-50">Thao tác</th>
                   </tr>
@@ -206,7 +207,7 @@ export const ActivityLogPage: React.FC = () => {
                 <tbody className="divide-y divide-slate-100">
                   {filteredLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-slate-500">
+                      <td colSpan={6} className="p-8 text-center text-slate-500">
                         <div className="flex flex-col items-center justify-center">
                           <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">history_toggle_off</span>
                           <span className="font-semibold text-sm">Chưa có nhật ký hoạt động</span>
@@ -217,7 +218,7 @@ export const ActivityLogPage: React.FC = () => {
                     Object.entries(groupedLogs).map(([dateLabel, logs]) => (
                       <React.Fragment key={dateLabel}>
                         <tr className="bg-slate-50/80 border-t-2 border-slate-200 group">
-                          <td colSpan={5} className="py-2 px-4">
+                          <td colSpan={6} className="py-2 px-4">
                             <div className="flex items-center gap-2">
                               <span className="material-symbols-outlined text-primary/70 text-[18px]">calendar_month</span>
                               <span className="text-xs font-extrabold text-slate-700">{dateLabel}</span>
@@ -251,9 +252,21 @@ export const ActivityLogPage: React.FC = () => {
                               </td>
                               <td className="p-3 whitespace-nowrap">
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-primary font-bold border border-blue-100">
-                                  <span className="material-symbols-outlined text-[13px]">business_center</span>
-                                  {log.project || 'Hệ thống'}
+                                  <span className="material-symbols-outlined text-[13px]">
+                                    {log.project === 'COMPANY' ? 'warehouse' : (!log.project || log.project === 'Hệ thống') ? 'settings' : 'business_center'}
+                                  </span>
+                                  {log.project === 'COMPANY' ? 'Kho Công Ty' : (!log.project || log.project === 'Hệ thống') ? 'Hệ thống' : 'Dự án'}
                                 </span>
+                              </td>
+                              <td className="p-3 font-semibold text-slate-700 whitespace-nowrap">
+                                {log.project === 'COMPANY' || !log.project || log.project === 'Hệ thống' ? (
+                                  <span className="text-slate-400">-</span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 font-bold border border-indigo-100">
+                                    <span className="material-symbols-outlined text-[13px]">business_center</span>
+                                    {log.project}
+                                  </span>
+                                )}
                               </td>
                               <td className="p-3">
                                 <span className={`inline-block px-3 py-1.5 rounded-lg text-xs font-semibold ${actionInfo.bg} ${actionInfo.color} border border-white leading-relaxed`}>
@@ -288,12 +301,25 @@ export const ActivityLogPage: React.FC = () => {
               </span>
             </div>
             <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
-              <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Dự án</span>
+              <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Phạm vi</span>
               <span className="font-bold text-slate-800 flex items-center gap-2">
-                <span className="material-symbols-outlined text-base text-primary">business_center</span>
-                {selectedLog.project || 'Hệ thống'}
+                <span className="material-symbols-outlined text-base text-primary">
+                  {selectedLog.project === 'COMPANY' ? 'warehouse' : (!selectedLog.project || selectedLog.project === 'Hệ thống') ? 'settings' : 'business_center'}
+                </span>
+                {selectedLog.project === 'COMPANY' ? 'Kho Công Ty' : (!selectedLog.project || selectedLog.project === 'Hệ thống') ? 'Hệ thống' : 'Dự án'}
               </span>
             </div>
+            {selectedLog.project && selectedLog.project !== 'COMPANY' && selectedLog.project !== 'Hệ thống' && (
+              <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
+                <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Dự án</span>
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 font-bold border border-indigo-100">
+                    <span className="material-symbols-outlined text-[13px]">business_center</span>
+                    {selectedLog.project}
+                  </span>
+                </div>
+              </div>
+            )}
             <div className="flex flex-col gap-1">
               <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Thao tác / Nội dung chi tiết</span>
               <div className="mt-1 p-4 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 font-medium leading-relaxed">

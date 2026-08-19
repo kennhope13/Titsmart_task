@@ -1,8 +1,11 @@
 {
-  "version": "1.0.47",
+  "version": "1.0.50",
   "date": "19/08/2026",
   "notes": [
-    "Cải thiện giao diện: Chống bẻ dòng cho các cột tiêu đề trong bảng Nhân sự, giúp bảng hiển thị đẹp mắt hơn",
-    "Logic hiển thị: Sửa lỗi đếm dư tổng số lượng nhân sự (đã loại trừ tài khoản Quản trị viên ẩn khỏi tổng số đếm)"
+    "Cải thiện giao diện: Xóa bỏ nút chuyển đổi Giao diện Classic ở trang đăng nhập để tối ưu hóa trải nghiệm",
+    "Nhật ký hoạt động: Fix lỗi hiển thị tên người dùng tĩnh. Hệ thống giờ đây đã tự động ghi nhận chính xác tên nhân sự thực hiện thao tác",
+    "Nhật ký hoạt động: Tự động dịch mã dự án kho nội bộ (COMPANY) sang hiển thị thành 'Kho Công Ty' để dễ hiểu hơn",
+    "Nhật ký hoạt động: Gắn thêm chi tiết tên mục (ví dụ: Tên vật tư, Tên hồ sơ...) vào nội dung thao tác để dễ dàng tra cứu",
+    "Nhật ký hoạt động: Tách cột Dự án thành 2 cột: 'Phạm vi' (Hệ thống/Kho/Dự án) và 'Dự án' (Tên dự án cụ thể) giúp hiển thị logic và chuyên nghiệp hơn"
   ]
 }

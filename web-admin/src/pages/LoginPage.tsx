@@ -149,16 +149,6 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
                   </form>
                   
 
-
-                {onSwitchStyle && (
-                  <button
-                    onClick={onSwitchStyle}
-                    className="mt-6 w-full flex items-center justify-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-primary transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">style</span>
-                    Xem giao diện Classic
-                  </button>
-                )}
               </div>
             </div>
             
