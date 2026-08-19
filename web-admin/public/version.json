@@ -1,9 +1,9 @@
 {
-  "version": "1.0.44",
+  "version": "1.0.45",
   "date": "19/08/2026",
   "notes": [
-    "Khắc phục lỗi không hiển thị danh sách dự án khi chỉnh sửa tài khoản nhân viên",
-    "Đồng bộ chuẩn hóa tên trường dữ liệu (name vs fullName) với hệ thống Supabase",
-    "Gỡ bỏ tính năng tự động điền tài khoản trải nghiệm (demo) ở trang đăng nhập"
+    "Cơ chế Realtime (thời gian thực): Tự động đồng bộ quyền dự án và chức vụ cho phiên đăng nhập hiện tại mà không cần tải lại trang",
+    "Ẩn tài khoản Quản trị viên (Admin) khỏi danh sách quản lý nhân sự để tăng tính bảo mật",
+    "Bổ sung nội dung chi tiết và link tải xuống tự động vào email thông báo khi có phiên bản mới"
   ]
 }
