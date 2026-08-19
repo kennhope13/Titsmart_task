@@ -209,7 +209,7 @@ export const PersonnelPage: React.FC = () => {
           <div><h2 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">TÀI KHOẢN & NHÂN SỰ</h2></div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100">{engineers.length} nhân sự</span>
+          <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100">{engineers.filter(e => e.role !== 'Quản trị viên' && e.username !== 'admin').length} nhân sự</span>
           <button 
             onClick={handleExportExcel} 
             className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
@@ -246,7 +246,7 @@ export const PersonnelPage: React.FC = () => {
             </div>
           <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative">
             <table className="w-full text-xs text-left border-collapse">
-              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-3 bg-slate-50 w-10">STT</th><th className="text-left p-3 bg-slate-50">Họ tên</th><th className="text-left p-3 bg-slate-50">Mã NV</th><th className="text-left p-3 bg-slate-50">Tài khoản</th><th className="text-left p-3 bg-slate-50">Vai trò</th><th className="text-left p-3 bg-slate-50">Dự án</th><th className="text-left p-3 bg-slate-50">SĐT</th><th className="text-left p-3 bg-slate-50">Trạng thái</th><th className="text-left p-3 bg-slate-50">Chức năng</th></tr></thead>
+              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Họ tên</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Mã NV</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Vai trò</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Dự án</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">SĐT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Chức năng</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {people.map((person, index) => (
                   <tr

@@ -1,10 +1,8 @@
 {
-  "version": "1.0.46",
+  "version": "1.0.47",
   "date": "19/08/2026",
   "notes": [
-    "Thay đổi định dạng Mã nhân viên tự động: TSM-VAI TRÒ-TÊN NHÂN VIÊN",
-    "Bảo mật quyền quản trị: Không cho phép tạo thêm tài khoản Quản trị viên mới",
-    "Tối ưu giao diện: Ẩn bảng chọn dự án đối với Quản lý dự án (vì đã có quyền quản lý toàn bộ)",
-    "Bảo mật tài khoản: Ép đăng xuất lập tức những nhân viên đã bị xóa hoặc bị khóa khỏi hệ thống"
+    "Cải thiện giao diện: Chống bẻ dòng cho các cột tiêu đề trong bảng Nhân sự, giúp bảng hiển thị đẹp mắt hơn",
+    "Logic hiển thị: Sửa lỗi đếm dư tổng số lượng nhân sự (đã loại trừ tài khoản Quản trị viên ẩn khỏi tổng số đếm)"
   ]
 }
