@@ -245,13 +245,13 @@ export const ActivityLogPage: React.FC = () => {
                                 </span>
                               </td>
                               <td className="p-3 whitespace-nowrap">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                                <span className="inline-flex items-center gap-1.5 text-slate-700 font-bold">
                                   <span className="material-symbols-outlined text-[13px] text-slate-500">person</span>
                                   {log.user}
                                 </span>
                               </td>
                               <td className="p-3 whitespace-nowrap">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-primary font-bold border border-blue-100">
+                                <span className="inline-flex items-center gap-1.5 text-primary font-bold">
                                   <span className="material-symbols-outlined text-[13px]">
                                     {log.project === 'COMPANY' ? 'warehouse' : (!log.project || log.project === 'Hệ thống') ? 'settings' : 'business_center'}
                                   </span>
@@ -262,14 +262,14 @@ export const ActivityLogPage: React.FC = () => {
                                 {log.project === 'COMPANY' || !log.project || log.project === 'Hệ thống' ? (
                                   <span className="text-slate-400">-</span>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 font-bold border border-indigo-100">
+                                  <span className="inline-flex items-center gap-1.5 text-indigo-700 font-bold">
                                     <span className="material-symbols-outlined text-[13px]">business_center</span>
                                     {log.project}
                                   </span>
                                 )}
                               </td>
                               <td className="p-3">
-                                <span className={`inline-block px-3 py-1.5 rounded-lg text-xs font-semibold ${actionInfo.bg} ${actionInfo.color} border border-white leading-relaxed`}>
+                                <span className={`inline-block text-xs font-semibold ${actionInfo.color} leading-relaxed`}>
                                   {renderActionText(log.action)}
                                 </span>
                               </td>
@@ -313,7 +313,7 @@ export const ActivityLogPage: React.FC = () => {
               <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
                 <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Dự án</span>
                 <div className="mt-1">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 font-bold border border-indigo-100">
+                  <span className="inline-flex items-center gap-1.5 text-indigo-700 font-bold">
                     <span className="material-symbols-outlined text-[13px]">business_center</span>
                     {selectedLog.project}
                   </span>
