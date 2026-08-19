@@ -325,7 +325,6 @@ export const PersonnelPage: React.FC = () => {
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700">Vai trò</label>
               <CustomSelect value={role} onChange={(event) => setRole(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
-                <option value="Quản trị viên">Quản trị viên</option>
                 <option value="Quản lý dự án">Quản lý dự án</option>
                 <option value="Kỹ sư hiện trường">Kỹ sư hiện trường</option>
                 <option value="Nhân viên/Thợ">Nhân viên/Thợ</option>
