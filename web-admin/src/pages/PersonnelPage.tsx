@@ -97,15 +97,17 @@ export const PersonnelPage: React.FC = () => {
       ].filter((value, assignedIndex, self) => self.findIndex((item) => item.code === value.code) === assignedIndex);
     }
 
+    const rawRole = (engineer as any).role || engineer.title?.trim() || 'Nhân viên';
+    
     return {
       ...engineer,
       assignedProjects,
-      code: engineer.code || `NV-${String(index + 1).padStart(3, '0')}`,
+      code: engineer.code || `TSM-${rawRole.toUpperCase()}-${engineer.name.toUpperCase()}`,
       
       team: assignedProjects[0]?.name || 'Chưa gán dự án',
       locked: (engineer as any).isLocked || false,
       username: (engineer as any).username || '',
-      role: (engineer as any).role || engineer.title?.trim() || 'Nhân viên/Thợ',
+      role: rawRole,
     };
   }).filter((person) => {
     if (person.role === 'Quản trị viên' || person.username === 'admin') return false;
