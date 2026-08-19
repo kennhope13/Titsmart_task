@@ -99,10 +99,17 @@ export const PersonnelPage: React.FC = () => {
 
     const rawRole = (engineer as any).role || engineer.title?.trim() || 'Nhân viên';
     
+    const removeAccents = (str: string) => {
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
+    };
+    
+    const cleanRole = removeAccents(rawRole).toUpperCase().replace(/\s+/g, '-');
+    const cleanName = removeAccents(engineer.name).toUpperCase().replace(/\s+/g, '-');
+
     return {
       ...engineer,
       assignedProjects,
-      code: engineer.code || `TSM-${rawRole.toUpperCase()}-${engineer.name.toUpperCase()}`,
+      code: engineer.code || `TSM-${cleanRole}-${cleanName}`,
       
       team: assignedProjects[0]?.name || 'Chưa gán dự án',
       locked: (engineer as any).isLocked || false,
@@ -264,7 +271,9 @@ export const PersonnelPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-3">
-                      {person.assignedProjects.length > 0 ? (
+                      {person.role === 'Quản lý dự án' ? (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200 whitespace-nowrap">Tất cả dự án</span>
+                      ) : person.assignedProjects.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {person.assignedProjects.map((mp: any) => (
                             <span key={mp.code} className="px-2 py-0.5 rounded-full bg-blue-50 text-primary text-[11px] font-bold border border-blue-100 whitespace-nowrap">{mp.name}</span>
