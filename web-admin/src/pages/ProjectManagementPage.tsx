@@ -533,6 +533,7 @@ export const ProjectManagementPage: React.FC = () => {
               className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
             />
           </div>
+          { (user?.role === 'admin' || user?.role === 'pm') ? (
           <button
             type="button"
             onClick={() => setIsNewProjectModalOpen(true)}
@@ -541,7 +542,7 @@ export const ProjectManagementPage: React.FC = () => {
             <span className="material-symbols-outlined text-sm">add</span>
             {TEXT.createProject}
           </button>
-          ) : null} : null}
+          ) : null}
         </div>
       </section>
 
