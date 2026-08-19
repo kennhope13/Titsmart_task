@@ -135,6 +135,7 @@ export interface Engineer {
   email: string;
   managedProjects?: { code: string; name: string }[];
   memberProjects?: { code: string; name: string }[];
+  projectCodes?: string[];
 }
 
 export interface NotificationItem {

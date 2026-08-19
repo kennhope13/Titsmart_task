@@ -135,7 +135,7 @@ export const PersonnelPage: React.FC = () => {
     setRole(person.role || 'Nhân viên/Thợ');
     setUsername((person as any).username || '');
     setPassword('');
-    setSelectedProjectCodes(person.assignedProjects.map((project) => project.code));
+    setSelectedProjectCodes(person.assignedProjects.map((project: any) => project.code));
     setIsFormOpen(true);
   };
 
@@ -262,7 +262,7 @@ export const PersonnelPage: React.FC = () => {
                     <td className="p-3">
                       {person.assignedProjects.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
-                          {person.assignedProjects.map((mp) => (
+                          {person.assignedProjects.map((mp: any) => (
                             <span key={mp.code} className="px-2 py-0.5 rounded-full bg-blue-50 text-primary text-[11px] font-bold border border-blue-100 whitespace-nowrap">{mp.name}</span>
                           ))}
                         </div>
