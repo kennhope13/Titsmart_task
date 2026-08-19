@@ -67,12 +67,17 @@ const loadSession = (): AuthUser | null => {
 
 interface AuthStoreState {
   user: AuthUser | null;
+  updateUser: (user: AuthUser) => void;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStoreState>((set) => ({
   user: loadSession(),
+  updateUser: (user) => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    set({ user });
+  },
   login: async (usernameOrEmail, password) => {
     let email = usernameOrEmail.trim();
     if (!email.includes('@')) {

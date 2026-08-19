@@ -18,7 +18,7 @@ import {
   FieldLog
 } from '../types';
 import { api } from './apiSupabase';
-import { AuthUser } from './authStore';
+import { AuthUser, useAuthStore } from './authStore';
 
 const getAuthUser = () => {
   try {
@@ -560,6 +560,34 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       try {
         const engineers = await api.engineers.getAll();
         set({ engineers });
+
+        // Sync authStore if the logged-in user is updated
+        const authStore = useAuthStore.getState();
+        const currentUser = authStore.user;
+        if (currentUser) {
+          const matchedEngineer = engineers.find(
+            (e: any) =>
+              (e.email && e.email.toLowerCase() === currentUser.email?.toLowerCase()) ||
+              (e.username && e.username.toLowerCase() === currentUser.username?.toLowerCase())
+          );
+          if (matchedEngineer) {
+            const updatedUser = {
+              ...currentUser,
+              projectCodes: matchedEngineer.projectCodes || [],
+              role: matchedEngineer.role === 'Quản trị viên' ? 'admin' :
+                    matchedEngineer.role === 'Quản lý dự án' ? 'pm' :
+                    matchedEngineer.role === 'Kỹ sư hiện trường' ? 'engineer' : 'staff',
+              name: matchedEngineer.name || currentUser.name,
+              title: matchedEngineer.title || currentUser.title,
+            };
+            
+            // Only update if there's an actual change in projectCodes or role to avoid infinite loops
+            if (JSON.stringify(currentUser.projectCodes) !== JSON.stringify(updatedUser.projectCodes) ||
+                currentUser.role !== updatedUser.role) {
+              authStore.updateUser(updatedUser);
+            }
+          }
+        }
       } catch (e) {
         console.error('Failed to fetch engineers', e);
       }
