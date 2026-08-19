@@ -48,10 +48,10 @@ jobs:
     - name: Publish to GitHub Releases
       uses: softprops/action-gh-release@v2
       with:
-        name: TITSMART Project Manager v${{ env.VERSION }}
-        tag_name: v${{ env.VERSION }}
+        name: TITSMART Project Manager v${{ env.version }}
+        tag_name: v${{ env.version }}
         body: |
-          Phiên bản **v${{ env.VERSION }}** — TITSMART Project Manager
+          Phiên bản **v${{ env.version }}** của TITSMART Project Manager
           Bản cập nhật này bao gồm các tính năng và bản vá lỗi mới nhất.
         generate_release_notes: true
         files: |
@@ -60,3 +60,23 @@ jobs:
           web-admin/release/latest.yml
         update_release: true
         fail_on_unmatched_files: false
+
+    - name: Send Notification Email
+      if: success()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: mail90168.maychuemail.com
+        server_port: 465
+        secure: true
+        username: ${{ secrets.MAIL_USERNAME }}
+        password: ${{ secrets.MAIL_PASSWORD }}
+        subject: "[TITSMART] Đã có bản cập nhật mới v${{ env.version }}"
+        to: kythuat@titsmart.vn
+        from: Hệ thống TITSMART <${{ secrets.MAIL_USERNAME }}>
+        body: |
+          Chào bạn,
+          
+          Hệ thống vừa tự động xây dựng và xuất bản thành công phiên bản mới: v${{ env.version }}.
+          Các thay đổi mới nhất đã được phát hành.
+          
+          Vui lòng tải lại ứng dụng hoặc kiểm tra trên hệ thống.
