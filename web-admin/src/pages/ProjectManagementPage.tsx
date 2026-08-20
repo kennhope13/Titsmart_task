@@ -698,7 +698,7 @@ export const ProjectManagementPage: React.FC = () => {
             <label className="block font-bold text-slate-700 mb-1">Nhân sự / Quản lý dự án</label>
             <div className={`max-h-36 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 ${selectedEngineerIds.length === 0 ? 'border-red-200' : 'border-slate-200'}`}>
               {engineers.length === 0 && <p className="text-[11px] text-slate-400">Chưa có nhân sự nào.</p>}
-              {engineers.map((eng) => (
+              {engineers.filter(eng => eng.title !== 'Quản trị viên' && eng.title !== 'Quản lý dự án').map((eng) => (
                 <label key={eng.id} className="flex items-center gap-2 text-xs cursor-pointer">
                   <input type="checkbox" checked={selectedEngineerIds.includes(eng.id)} onChange={() => toggleEngineerId(eng.id)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
                   <span className="font-semibold text-slate-700">{eng.name}</span>
