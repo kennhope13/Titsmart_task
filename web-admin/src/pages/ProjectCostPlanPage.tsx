@@ -68,8 +68,13 @@ const isAutoSyncedMaterialPlan = (plan?: ProjectMaterialPlan) => {
 
 const isContractorMaterialPlan = (plan: ProjectMaterialPlan) => {
   const notes = String(plan.notes || '').toLowerCase();
-  const content = String(plan.jobContent || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return plan.supplyScope === 'contractor' || notes.includes('[contractor]') || notes.includes('nha thau') || content.includes('nha thau cung cap');
+  const content = String(plan.jobContent || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/\u0111/g, 'd');
+  
+  if (plan.supplyScope === 'owner' || notes.includes('[owner]') || content.includes('chu dau tu') || content.includes('nha dau tu') || content.includes('ben a') || content.includes('ban a')) {
+    return false;
+  }
+  
+  return true;
 };
 
 const getSectionForMaterialPlan = (plan: ProjectMaterialPlan, allPlans: ProjectMaterialPlan[], visited = new Set<string>()) => {
@@ -532,10 +537,10 @@ export const ProjectCostPlanPage: React.FC = () => {
 
               let effectiveStt = stt;
               if (isSection) {
-                currentSectionSupplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
+                currentSectionSupplyScope = (normalizeImportText(content).includes('nha thau') || normalizeImportText(content).includes('ben b')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu') || normalizeImportText(content).includes('nha dau tu') || normalizeImportText(content).includes('ben a') || normalizeImportText(content).includes('ban a')) ? 'owner' : 'unknown';
               }
               
-              const rowSupplyScope = (normalizeImportText(content).includes('nha thau cung cap') || normalizeImportText(content).includes('ben b cung cap')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu cung cap') || normalizeImportText(content).includes('ben a cung cap')) ? 'owner' : 'unknown';
+              const rowSupplyScope = (normalizeImportText(content).includes('nha thau') || normalizeImportText(content).includes('ben b')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu') || normalizeImportText(content).includes('nha dau tu') || normalizeImportText(content).includes('ben a') || normalizeImportText(content).includes('ban a')) ? 'owner' : 'unknown';
               const supplyScope = isSection ? currentSectionSupplyScope : (rowSupplyScope !== 'unknown' ? rowSupplyScope : currentSectionSupplyScope);
 
               const rowId = crypto.randomUUID();
@@ -1020,8 +1025,8 @@ export const ProjectCostPlanPage: React.FC = () => {
           : currentProjMaterialPlans.find(m => normalizePlanKey(m.stt, m.jobContent) === normalizePlanKey(plan.stt, plan.content));
         
         if (!matPlan) {
-          const content = String(plan.content || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-          if (content.includes('chu dau tu cung cap') || content.includes('ben a cung cap')) {
+          const content = String(plan.content || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/\u0111/g, 'd');
+          if (content.includes('chu dau tu') || content.includes('nha dau tu') || content.includes('ben a') || content.includes('ban a')) {
              const hasValidChild = projectPurchasing.some(p => p.parentId === plan.id && validIds.has(p.id));
              if (!hasValidChild) {
                 validIds.delete(plan.id);
@@ -1146,7 +1151,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     const purchasingRows = currentProjPurchasing.filter((p) => !isSectionMarker(p.stt, p.notes));
   console.log("ALL PURCHASING ITEMS:", currentProjPurchasing.length);
   console.log("CONTRACTOR PURCHASING ITEMS:", currentProjPurchasing.filter(p => !isSectionMarker(p.stt, p.notes)).length);
-    const normalizeStatusText = (value?: string) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+    const normalizeStatusText = (value?: string) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/\u0111/g, 'd').replace(/đ/g, 'd');
     const calcPurchasingTotal = (p: ProjectPurchasing) => {
       const vatAmount = Number(p.vatAmount || 0) || (Number(p.volumeOrder || 0) * Number(p.unitPrice || 0) * Number(p.vatRate || 0)) / 100;
       return Number(p.totalAmount || 0) || (Number(p.volumeOrder || 0) * Number(p.unitPrice || 0)) + vatAmount;

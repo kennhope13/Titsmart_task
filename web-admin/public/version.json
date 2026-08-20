@@ -1,10 +1,5 @@
 {
-  "version": "1.0.55",
-  "date": "19/08/2026",
-  "notes": [
-    "Hệ thống thông báo: Triệt tiêu tình trạng thông báo spam (người dùng tự nhận thông báo của chính mình khi thao tác).",
-    "Thông báo Popup: Hiển thị popup góc trái, bỏ tiền tố [Hệ thống], và chỉ thông báo đến cấp quản lý liên quan (dựa theo chức vụ).",
-    "Phân quyền: Chỉ có Admin và Quản lý dự án (PM) mới có quyền Tạo dự án mới (các cấp khác bị ẩn nút tạo).",
-    "Giao diện: Tối giản màu sắc trong bảng Nhật ký hoạt động (bỏ nền các cột Phạm vi, Dự án, Nhân sự, Thao tác, chỉ giữ màu chữ)."
-  ]
+  "version": "1.0.61",
+  "forceUpdate": false,
+  "message": "Fix tree grouping logic in task management page"
 }

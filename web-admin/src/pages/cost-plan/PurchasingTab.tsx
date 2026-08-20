@@ -145,36 +145,53 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
   const originalOrderMap = new Map<string, number>(data.map((r, i) => [r.id, orderTagValue(r.notes) ?? (1000000 - i)]));
 
   const resolveParentId = (pur: ProjectPurchasing): string | undefined => {
-    if (pur.parentId) return pur.parentId;
-    if (!pur.stt || !pur.stt.includes('.')) return undefined;
-    const parts = pur.stt.split('.');
-    parts.pop();
-    const parentStt = parts.join('.');
-    const parentItem = data.find(r => r.stt === parentStt);
-    return parentItem?.id;
+    if (pur.stt && pur.stt.includes('.')) {
+      const parts = pur.stt.split('.');
+      parts.pop();
+      const parentStt = parts.join('.');
+      const parentItem = data.find(r => r.stt === parentStt);
+      if (parentItem) return parentItem.id;
+    }
+    return pur.parentId;
   };
 
+  const sectionIndexCache = new Map<string, number>();
   const getSectionIndexForItem = (pur: ProjectPurchasing, visited = new Set<string>()): number => {
+    if (sectionIndexCache.has(pur.id)) return sectionIndexCache.get(pur.id)!;
     if (visited.has(pur.id)) return Infinity;
     visited.add(pur.id);
 
-    if (isSectionRow(pur)) return sectionOrder.get(pur.id) ?? Infinity;
+    if (isSectionRow(pur)) {
+      const res = sectionOrder.get(pur.id) ?? Infinity;
+      sectionIndexCache.set(pur.id, res);
+      return res;
+    }
     
     const resolvedParentId = resolveParentId(pur);
     if (resolvedParentId) {
-      if (sectionOrder.has(resolvedParentId)) return sectionOrder.get(resolvedParentId)!;
+      if (sectionOrder.has(resolvedParentId)) {
+        const res = sectionOrder.get(resolvedParentId)!;
+        sectionIndexCache.set(pur.id, res);
+        return res;
+      }
       
       const parentItem = data.find(r => r.id === resolvedParentId);
       if (parentItem) {
         const parentSecIdx = getSectionIndexForItem(parentItem, visited);
-        if (parentSecIdx !== -1) return parentSecIdx;
+        if (parentSecIdx !== -1) {
+          sectionIndexCache.set(pur.id, parentSecIdx);
+          return parentSecIdx;
+        }
       }
     }
 
     // Use originalOrderMap to find the closest preceding section
     // If it's a manually added item (no order tag), it stays at root (-1)
     const hasOrderTag = /\[order:([\d.]+)\]/.test(String(pur.notes || ''));
-    if (!hasOrderTag) return Infinity;
+    if (!hasOrderTag) {
+      sectionIndexCache.set(pur.id, Infinity);
+      return Infinity;
+    }
 
     const myPos = originalOrderMap.get(pur.id) ?? Infinity;
     let bestSecIdx = Infinity;
@@ -188,7 +205,9 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
         }
       }
     });
-    return bestSecIdx === -1 ? Infinity : bestSecIdx;
+    const finalRes = bestSecIdx === -1 ? Infinity : bestSecIdx;
+    sectionIndexCache.set(pur.id, finalRes);
+    return finalRes;
   };
 
   const filteredData = [...data].sort((a, b) => {

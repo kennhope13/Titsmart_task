@@ -890,14 +890,14 @@ export const TaskManagementPage: React.FC = () => {
                m.jobContent?.trim().toLowerCase() === finalSectionName.trim().toLowerCase()
         );
 
-        const normalizeVn = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
+        const normalizeVn = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/\u0111/g, 'd').replace(/đ/g,'d');
         const sectionIsContractor =
           (sectionInMaterial && (sectionInMaterial.supplyScope === 'contractor' || normalizeVn(sectionInMaterial.jobContent || '').includes('nha thau cung cap') || normalizeVn(sectionInMaterial.jobContent || '').includes('ben b cung cap'))) ||
           normalizeVn(finalSectionName).includes('nha thau cung cap') || normalizeVn(finalSectionName).includes('ben b cung cap');
 
         const sectionIsOwner =
-          (sectionInMaterial && (sectionInMaterial.supplyScope === 'owner' || normalizeVn(sectionInMaterial.jobContent || '').includes('chu dau tu cung cap') || normalizeVn(sectionInMaterial.jobContent || '').includes('ben a cung cap'))) ||
-          normalizeVn(finalSectionName).includes('chu dau tu cung cap') || normalizeVn(finalSectionName).includes('ben a cung cap');
+          (sectionInMaterial && (sectionInMaterial.supplyScope === 'owner' || normalizeVn(sectionInMaterial.jobContent || '').includes('chu dau tu') || normalizeVn(sectionInMaterial.jobContent || '').includes('nha dau tu') || normalizeVn(sectionInMaterial.jobContent || '').includes('ben a') || normalizeVn(sectionInMaterial.jobContent || '').includes('ban a'))) ||
+          normalizeVn(finalSectionName).includes('chu dau tu') || normalizeVn(finalSectionName).includes('nha dau tu') || normalizeVn(finalSectionName).includes('ben a') || normalizeVn(finalSectionName).includes('ban a');
 
         // Nếu chưa có section này trong MaterialPlan, tạo section trước
         let sectionMaterialId = sectionInMaterial?.id;
@@ -1198,16 +1198,28 @@ export const TaskManagementPage: React.FC = () => {
       const sectionHeader = groups[sec].find(t => t.isSectionHeader);
       const items = groups[sec].filter(t => !t.isSectionHeader);
       
-      const map = new Map<string, any>();
-      const roots: any[] = [];
-      items.forEach(t => map.set(t.id, { ...t, children: [] }));
-      items.forEach(t => {
-        if (t.parentId && map.has(t.parentId)) {
-          map.get(t.parentId)!.children.push(map.get(t.id));
-        } else {
-          roots.push(map.get(t.id));
-        }
-      });
+      const resolveParentId = (item: any) => {
+          if (item.stt && item.stt.includes('.')) {
+            const parts = item.stt.split('.');
+            parts.pop();
+            const parentStt = parts.join('.');
+            const parentItem = items.find((r: any) => r.stt === parentStt);
+            if (parentItem) return parentItem.id;
+          }
+          return item.parentId;
+        };
+
+        const map = new Map<string, any>();
+        const roots: any[] = [];
+        items.forEach(t => map.set(t.id, { ...t, children: [] }));
+        items.forEach(t => {
+          const resolvedParentId = resolveParentId(t);
+          if (resolvedParentId && map.has(resolvedParentId)) {
+            map.get(resolvedParentId)!.children.push(map.get(t.id));
+          } else {
+            roots.push(map.get(t.id));
+          }
+        });
       
       const flattenTree = (nodes: any[], depth: number = 0, prefix: string = '', sectionKey: string = '') => {
         nodes.sort((a, b) => {
@@ -1390,6 +1402,13 @@ export const TaskManagementPage: React.FC = () => {
             </CustomSelect>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
+            <button
+              onClick={openNewTaskModal}
+              className="flex items-center gap-1.5 bg-primary text-white px-3.5 py-2 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap"
+            >
+              <span className="material-symbols-outlined text-sm">add</span>
+              <span>Thêm đầu mục</span>
+            </button>
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}

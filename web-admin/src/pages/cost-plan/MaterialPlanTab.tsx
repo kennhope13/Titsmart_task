@@ -81,7 +81,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
     });
   };
 
-  const filteredData = useMemo(() => {
+  const { filteredData, resolveParentId, getSectionIndexForItem } = useMemo(() => {
     let filtered = [...data];
     if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -140,19 +140,44 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
     };
     const originalOrderMap = new Map<string, number>(filtered.map((r, i) => [r.id, orderTagValue(r.notes) ?? (1000000 - i)]));
 
+    const resolveParentId = (plan: ProjectMaterialPlan): string | undefined => {
+      if (plan.stt && plan.stt.includes('.')) {
+        const parts = plan.stt.split('.');
+        parts.pop();
+        const parentStt = parts.join('.');
+        const parentItem = filtered.find(r => r.stt === parentStt);
+        if (parentItem) return parentItem.id;
+      }
+      return plan.parentId;
+    };
+
+    const sectionIndexCache = new Map<string, number>();
     const getSectionIndexForItem = (plan: ProjectMaterialPlan, visited = new Set<string>()): number => {
+      if (sectionIndexCache.has(plan.id)) return sectionIndexCache.get(plan.id)!;
       if (visited.has(plan.id)) return Infinity;
       visited.add(plan.id);
 
-      if (isParentRow(plan)) return sectionOrder.get(plan.id) ?? Infinity;
+      if (isParentRow(plan)) {
+        const res = sectionOrder.get(plan.id) ?? Infinity;
+        sectionIndexCache.set(plan.id, res);
+        return res;
+      }
       
-      if (plan.parentId) {
-        if (sectionOrder.has(plan.parentId)) return sectionOrder.get(plan.parentId)!;
+      const resolvedParentId = resolveParentId(plan);
+      if (resolvedParentId) {
+        if (sectionOrder.has(resolvedParentId)) {
+          const res = sectionOrder.get(resolvedParentId)!;
+          sectionIndexCache.set(plan.id, res);
+          return res;
+        }
         
-        const parentItem = filtered.find(r => r.id === plan.parentId);
+        const parentItem = filtered.find(r => r.id === resolvedParentId);
         if (parentItem) {
           const parentSecIdx = getSectionIndexForItem(parentItem, visited);
-          if (parentSecIdx !== -1) return parentSecIdx;
+          if (parentSecIdx !== -1) {
+            sectionIndexCache.set(plan.id, parentSecIdx);
+            return parentSecIdx;
+          }
         }
       }
 
@@ -168,10 +193,12 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
           }
         }
       });
-      return bestSecIdx === -1 ? Infinity : bestSecIdx;
+      const finalRes = bestSecIdx === -1 ? Infinity : bestSecIdx;
+      sectionIndexCache.set(plan.id, finalRes);
+      return finalRes;
     };
 
-    return filtered.sort((a, b) => {
+    const sortedFiltered = filtered.sort((a, b) => {
       const secA = getSectionIndexForItem(a);
       const secB = getSectionIndexForItem(b);
       if (secA !== secB) return secA - secB;
@@ -186,6 +213,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
       }
       return 0;
     });
+    return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
   }, [data, searchQuery, statusFilter]);
 
   const startEditing = (id: string, field: keyof ProjectMaterialPlan, value: any) => {
@@ -313,8 +341,11 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   groups[currentSectionKey].unshift({ ...t, _isHeader: true });
                 } else {
                   let targetSection = currentSectionKey;
-                  if (t.parentId && groups[t.parentId]) {
-                    targetSection = t.parentId;
+                  const resolvedParentId = resolveParentId(t);
+                  if (resolvedParentId && groups[resolvedParentId]) {
+                    targetSection = resolvedParentId;
+                  } else if (getSectionIndexForItem(t) !== Infinity) {
+                    targetSection = currentSectionKey;
                   }
 
                   if (!groups[targetSection]) {
@@ -352,8 +383,9 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                 const roots: any[] = [];
                 items.forEach((t: any) => map.set(t.id, { ...t, children: [] }));
                 items.forEach((t: any) => {
-                  if (t.parentId && t.parentId !== secKey && map.has(t.parentId)) {
-                    map.get(t.parentId)!.children.push(map.get(t.id));
+                  const resolvedParentId = resolveParentId(t);
+                  if (resolvedParentId && resolvedParentId !== secKey && map.has(resolvedParentId)) {
+                    map.get(resolvedParentId)!.children.push(map.get(t.id));
                   } else {
                     roots.push(map.get(t.id));
                   }
