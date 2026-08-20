@@ -2,6 +2,9 @@
   "version": "1.0.72",
   "date": "20/08/2026",
   "notes": [
-    "Sửa triệt để lỗi tự sinh thêm bản ghi rác khi chỉnh sửa dữ liệu cũ/dữ liệu Excel tại cả 3 tab (Vật tư, Mua hàng, Công việc) bằng cách khóa theo STT + Tên công việc từ trước khi thực thi lệnh lưu."
+    "Sửa triệt để lỗi tự sinh thêm bản ghi rác khi chỉnh sửa dữ liệu cũ/dữ liệu Excel tại cả 3 tab (Vật tư, Mua hàng, Công việc) bằng cách khóa theo STT + Tên công việc từ trước khi thực thi lệnh lưu.",
+    "Chuyển đổi toàn bộ quy trình đồng bộ liên kết giữa các tab sang cơ chế khóa bất đồng bộ nghiêm ngặt (strict async/await), loại bỏ hoàn toàn độ trễ lưu trữ (race condition) gây nhân bản dòng.",
+    "Bổ sung thuật toán tự động nhận diện và ánh xạ liên kết ngược cho các dòng dữ liệu cũ nhập từ Excel (dữ liệu thiếu ID liên kết trực tiếp) dựa theo cấu trúc STT và Tên công việc.",
+    "Đảm bảo việc chỉnh sửa trên bất kỳ tab nào cũng được cập nhật chéo sang các tab còn lại một cách an toàn."
   ]
 }
