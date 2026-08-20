@@ -18,6 +18,7 @@ import { FieldLogsPage } from './pages/FieldLogsPage';
 import { ProjectCostPlanPage } from './pages/ProjectCostPlanPage';
 
 import { UpdateNotifier } from './components/common/UpdateNotifier';
+import { GlobalNotificationToast } from './components/common/GlobalNotificationToast';
 
 
 const ProtectedLayout: React.FC = () => {
@@ -64,6 +65,7 @@ export const App: React.FC = () => {
   return (
     <>
       <UpdateNotifier />
+      <GlobalNotificationToast />
 
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : renderLogin()} />

@@ -1172,10 +1172,23 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateMaterialPlan: async (id, fields) => {
       try {
+        const oldPlan = get().materialPlans.find((p) => p.id === id);
         const updated = normalizeMaterialPlan(await api.accounting.updateMaterialPlan(id, fields));
         set((state) => {
           const nextPlans = state.materialPlans.map((p) => (p.id === id ? updated : p));
-          get().logActivity('Cập nhật kế hoạch vật tư: ' + (updated.jobContent || id), 'COMPANY');
+          
+          let changes = [];
+          if (oldPlan) {
+            if (oldPlan.stt !== updated.stt) changes.push(`STT: "${oldPlan.stt || ''}" -> "${updated.stt || ''}"`);
+            if (oldPlan.jobContent !== updated.jobContent) changes.push(`Nội dung: "${oldPlan.jobContent || ''}" -> "${updated.jobContent || ''}"`);
+            if (oldPlan.contractVolume !== updated.contractVolume) changes.push(`Khối lượng: "${oldPlan.contractVolume || ''}" -> "${updated.contractVolume || ''}"`);
+            if (oldPlan.unit !== updated.unit) changes.push(`ĐVT: "${oldPlan.unit || ''}" -> "${updated.unit || ''}"`);
+            if (oldPlan.supplyScope !== updated.supplyScope) changes.push(`Phạm vi: "${oldPlan.supplyScope || ''}" -> "${updated.supplyScope || ''}"`);
+            if (oldPlan.notes !== updated.notes) changes.push(`Ghi chú: "${oldPlan.notes || ''}" -> "${updated.notes || ''}"`);
+          }
+          const detailStr = changes.length > 0 ? ` |Detail:Dự án ${updated.projectCode}, Đầu mục ${updated.stt}: ${changes.join(', ')}` : '';
+          
+          get().logActivity('Cập nhật Kế hoạch vật tư: ' + (updated.jobContent || id) + detailStr, updated.projectCode || 'COMPANY');
           persistAndNotify({ materialPlans: nextPlans });
           return { materialPlans: nextPlans };
         });
@@ -1217,10 +1230,23 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updatePurchasingPlan: async (id, fields) => {
       try {
+        const oldPlan = get().purchasingPlans.find((p) => p.id === id);
         const updated = normalizePurchasingPlan(await api.accounting.updatePurchasing(id, fields));
         set((state) => {
           const nextPurs = state.purchasingPlans.map((p) => (p.id === id ? updated : p));
-          get().logActivity('Cập nhật kế hoạch mua sắm: ' + (updated.content || id), 'COMPANY');
+          
+          let changes = [];
+          if (oldPlan) {
+            if (oldPlan.stt !== updated.stt) changes.push(`STT: "${oldPlan.stt || ''}" -> "${updated.stt || ''}"`);
+            if (oldPlan.content !== updated.content) changes.push(`Nội dung: "${oldPlan.content || ''}" -> "${updated.content || ''}"`);
+            if (oldPlan.volumeContract !== updated.volumeContract) changes.push(`KL: "${oldPlan.volumeContract || ''}" -> "${updated.volumeContract || ''}"`);
+            if (oldPlan.unit !== updated.unit) changes.push(`ĐVT: "${oldPlan.unit || ''}" -> "${updated.unit || ''}"`);
+            if (oldPlan.unitPrice !== updated.unitPrice) changes.push(`Đơn giá: "${oldPlan.unitPrice || ''}" -> "${updated.unitPrice || ''}"`);
+            if (oldPlan.notes !== updated.notes) changes.push(`Ghi chú: "${oldPlan.notes || ''}" -> "${updated.notes || ''}"`);
+          }
+          const detailStr = changes.length > 0 ? ` |Detail:Dự án ${updated.projectCode}, Đầu mục ${updated.stt}: ${changes.join(', ')}` : '';
+          
+          get().logActivity('Cập nhật Mua hàng nhà thầu: ' + (updated.content || id) + detailStr, updated.projectCode || 'COMPANY');
           persistAndNotify({ purchasingPlans: nextPurs });
           return { purchasingPlans: nextPurs };
         });

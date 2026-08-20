@@ -61,23 +61,53 @@ const getActionTypeInfo = (action: string) => {
   return { color: 'text-slate-700', bg: 'bg-slate-100' };
 };
 
-const renderActionText = (text: string) => {
-  if (!text) return text;
-  const splitIndex = text.indexOf(': ');
-  if (splitIndex !== -1) {
-    const actionPart = text.substring(0, splitIndex + 1);
-    const variablePart = text.substring(splitIndex + 2);
-    return (
-      <>
-        {actionPart} <span className="font-extrabold">{variablePart}</span>
-      </>
-    );
-  }
-  return text;
-};
+const renderActionText = (text: string, fullDetail: boolean = false) => {
+    if (!text) return text;
+    
+    // Check if it has |Detail:
+    let mainText = text;
+    let detailText = '';
+    const detailIndex = text.indexOf(' |Detail:');
+    if (detailIndex !== -1) {
+      mainText = text.substring(0, detailIndex);
+      detailText = text.substring(detailIndex + 9);
+    }
+
+    const splitIndex = mainText.indexOf(': ');
+    let renderedMain;
+    if (splitIndex !== -1) {
+      const actionPart = mainText.substring(0, splitIndex + 1);
+      const variablePart = mainText.substring(splitIndex + 2);
+      renderedMain = (
+        <>
+          {actionPart} <span className="font-extrabold">{variablePart}</span>
+        </>
+      );
+    } else {
+      renderedMain = <>{mainText}</>;
+    }
+
+    if (fullDetail && detailText) {
+      return (
+        <div className="flex flex-col gap-2">
+          <div>{renderedMain}</div>
+          <div className="text-xs text-slate-600 bg-white p-3 rounded-lg border border-slate-200 italic shadow-sm whitespace-pre-wrap">
+            {detailText}
+          </div>
+        </div>
+      );
+    }
+    return renderedMain;
+  };
 
 export const ActivityLogPage: React.FC = () => {
-  const { activityLogs } = useRealtimeStore();
+  const { activityLogs, projects } = useRealtimeStore();
+
+  const getProjectName = (projCodeOrName: string) => {
+    if (!projCodeOrName) return projCodeOrName;
+    const proj = projects.find(p => p.code === projCodeOrName || p.name === projCodeOrName);
+    return proj ? proj.name : projCodeOrName;
+  };
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -199,7 +229,7 @@ export const ActivityLogPage: React.FC = () => {
                     <th className="text-center p-3 bg-slate-50 w-16">STT</th>
                     <th className="text-left p-3 bg-slate-50 w-40">Thời gian</th>
                     <th className="text-left p-3 bg-slate-50 w-48">Nhân sự</th>
-                    <th className="text-left p-3 bg-slate-50 w-48">Phạm vi</th>
+                    
                     <th className="text-left p-3 bg-slate-50 w-64">Dự án</th>
                     <th className="text-left p-3 bg-slate-50">Thao tác</th>
                   </tr>
@@ -207,7 +237,7 @@ export const ActivityLogPage: React.FC = () => {
                 <tbody className="divide-y divide-slate-100">
                   {filteredLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-slate-500">
+                      <td colSpan={5} className="p-8 text-center text-slate-500">
                         <div className="flex flex-col items-center justify-center">
                           <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">history_toggle_off</span>
                           <span className="font-semibold text-sm">Chưa có nhật ký hoạt động</span>
@@ -218,7 +248,7 @@ export const ActivityLogPage: React.FC = () => {
                     Object.entries(groupedLogs).map(([dateLabel, logs]) => (
                       <React.Fragment key={dateLabel}>
                         <tr className="bg-slate-50/80 border-t-2 border-slate-200 group">
-                          <td colSpan={6} className="py-2 px-4">
+                          <td colSpan={5} className="py-2 px-4">
                             <div className="flex items-center gap-2">
                               <span className="material-symbols-outlined text-primary/70 text-[18px]">calendar_month</span>
                               <span className="text-xs font-extrabold text-slate-700">{dateLabel}</span>
@@ -250,21 +280,14 @@ export const ActivityLogPage: React.FC = () => {
                                   {log.user}
                                 </span>
                               </td>
-                              <td className="p-3 whitespace-nowrap">
-                                <span className="inline-flex items-center gap-1.5 text-primary font-bold">
-                                  <span className="material-symbols-outlined text-[13px]">
-                                    {log.project === 'COMPANY' ? 'warehouse' : (!log.project || log.project === 'Hệ thống') ? 'settings' : 'business_center'}
-                                  </span>
-                                  {log.project === 'COMPANY' ? 'Kho Công Ty' : (!log.project || log.project === 'Hệ thống') ? 'Hệ thống' : 'Dự án'}
-                                </span>
-                              </td>
+                              
                               <td className="p-3 font-semibold text-slate-700 whitespace-nowrap">
                                 {log.project === 'COMPANY' || !log.project || log.project === 'Hệ thống' ? (
                                   <span className="text-slate-400">-</span>
                                 ) : (
                                   <span className="inline-flex items-center gap-1.5 text-indigo-700 font-bold">
                                     <span className="material-symbols-outlined text-[13px]">business_center</span>
-                                    {log.project}
+                                    {getProjectName(log.project || "")}
                                   </span>
                                 )}
                               </td>
@@ -300,22 +323,14 @@ export const ActivityLogPage: React.FC = () => {
                 {selectedLog.user}
               </span>
             </div>
-            <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
-              <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Phạm vi</span>
-              <span className="font-bold text-slate-800 flex items-center gap-2">
-                <span className="material-symbols-outlined text-base text-primary">
-                  {selectedLog.project === 'COMPANY' ? 'warehouse' : (!selectedLog.project || selectedLog.project === 'Hệ thống') ? 'settings' : 'business_center'}
-                </span>
-                {selectedLog.project === 'COMPANY' ? 'Kho Công Ty' : (!selectedLog.project || selectedLog.project === 'Hệ thống') ? 'Hệ thống' : 'Dự án'}
-              </span>
-            </div>
+            
             {selectedLog.project && selectedLog.project !== 'COMPANY' && selectedLog.project !== 'Hệ thống' && (
               <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
                 <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Dự án</span>
                 <div className="mt-1">
                   <span className="inline-flex items-center gap-1.5 text-indigo-700 font-bold">
                     <span className="material-symbols-outlined text-[13px]">business_center</span>
-                    {selectedLog.project}
+                    {getProjectName(selectedLog.project || "")}
                   </span>
                 </div>
               </div>
@@ -323,7 +338,7 @@ export const ActivityLogPage: React.FC = () => {
             <div className="flex flex-col gap-1">
               <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Thao tác / Nội dung chi tiết</span>
               <div className="mt-1 p-4 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 font-medium leading-relaxed">
-                {renderActionText(selectedLog.action)}
+                {renderActionText(selectedLog.action, true)}
               </div>
             </div>
             <div className="pt-4 mt-4 border-t flex justify-end">

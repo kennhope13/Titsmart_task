@@ -1,0 +1,50 @@
+import React, { useEffect, useState } from 'react';
+import { useRealtimeStore } from '../../services/realtimeStore';
+
+export const GlobalNotificationToast: React.FC = () => {
+  const notifications = useRealtimeStore((state) => state.notifications);
+  const [toast, setToast] = useState<{ show: boolean, message: string }>({ show: false, message: '' });
+
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const latest = notifications[0];
+      // Only show toast if the notification was created within the last 5 seconds (avoid popup spam on page load)
+      const parts = latest.id.split('-');
+      const timestampPart = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+      const isRecent = Date.now() - timestampPart < 5000;
+
+      if (!latest.read && isRecent) {
+        setToast({ show: true, message: `${latest.title}: ${latest.message}` });
+        const timer = setTimeout(() => setToast({ show: false, message: '' }), 5000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [notifications]);
+
+  if (!toast.show) return null;
+
+  return (
+    <div
+      className="fixed top-20 left-6 lg:left-24 z-[9999] flex flex-col gap-1 bg-white px-5 py-4 rounded-xl shadow-2xl transition-all duration-300 opacity-100 border border-slate-100 min-w-[300px]"
+      style={{ animation: 'slideIn 0.3s ease-out' }}
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
+          <span className="material-symbols-outlined text-[20px]">notifications_active</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="font-sans text-sm font-bold text-slate-800 line-clamp-1">Có thông báo mới</span>
+          <span className="font-sans text-[13px] font-medium text-slate-600 leading-snug break-words">
+            {toast.message}
+          </span>
+        </div>
+      </div>
+      <style>{`
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+};

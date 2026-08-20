@@ -145,6 +145,12 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
       }
 
       const account = DEMO_ACCOUNTS.find((acc) => acc.email.toLowerCase() === email.toLowerCase());
+
+      // If user is not found in engineers table and is not the built-in admin, reject them
+      if (!engineerData && usernameOrEmail.trim() !== 'admin' && email !== 'admin@titsmart.vn') {
+        await supabase.auth.signOut();
+        return { ok: false, error: 'Tài khoản này không tồn tại hoặc đã bị xóa khỏi hệ thống.' };
+      }
       
       let rawRole = engineerData?.role || account?.role || 'staff';
       let englishRole = rawRole;
