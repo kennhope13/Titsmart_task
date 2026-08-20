@@ -1322,7 +1322,7 @@ export const TaskManagementPage: React.FC = () => {
             </button>
           )}
           <div className="min-w-0 flex-1 flex items-center gap-3">
-            <h2 className="text-xl font-extrabold leading-tight tracking-tight text-slate-900 whitespace-nowrap flex-shrink-0 uppercase">QUẢN LÝ TIẾN ĐỘ CÔNG VIỆC</h2>
+            <h2 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase whitespace-nowrap flex-shrink-0">QUẢN LÝ TIẾN ĐỘ CÔNG VIỆC</h2>
             {selectedProjectFromUrl && (
               <div className="inline-flex min-w-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
                 <span className="truncate">Dự án: {currentProject?.name || selectedProjectFromUrl}</span>
