@@ -1,7 +1,7 @@
 {
-  "version": "1.0.66",
+  "version": "1.0.72",
   "date": "20/08/2026",
   "notes": [
-    "Đồng bộ hóa tên Dự án ở tab Nhật ký hoạt động: Thay vì hiện Mã Dự án (VD: BAC_NINH), hệ thống sẽ luôn truy xuất và hiển thị chính xác Tên Dự án (VD: Bắc Ninh) cho dễ đọc."
+    "Sửa triệt để lỗi tự sinh thêm bản ghi rác khi chỉnh sửa dữ liệu cũ/dữ liệu Excel tại cả 3 tab (Vật tư, Mua hàng, Công việc) bằng cách khóa theo STT + Tên công việc từ trước khi thực thi lệnh lưu."
   ]
 }

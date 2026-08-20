@@ -176,81 +176,99 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const handleUpdatePurchasingPlanSync = (id: string, updates: Partial<ProjectPurchasing>) => {
+  const handleUpdatePurchasingPlanSync = async (id: string, updates: Partial<ProjectPurchasing>) => {
     const existing = purchasingPlans.find(p => p.id === id);
-    updatePurchasingPlan(id, updates);
     if (!existing) return;
 
-    if (updates.stt !== undefined || updates.content !== undefined || updates.unit !== undefined || updates.volumeContract !== undefined) {
-      const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-      
-      const matchingMaterial = materialPlans.find(m => 
-        (existing.materialPlanId && m.id === existing.materialPlanId) ||
-        (m.projectCode === existing.projectCode && norm(m.stt) === norm(existing.stt) && norm(m.jobContent) === norm(existing.content))
-      );
+    const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const matchingMaterial = materialPlans.find(m => 
+      (existing.materialPlanId && m.id === existing.materialPlanId) ||
+      (m.projectCode === existing.projectCode && norm(m.stt) === norm(existing.stt) && norm(m.jobContent) === norm(existing.content))
+    );
+
+    if (matchingMaterial) {
+      syncingIdsRef.current.add(matchingMaterial.id);
+    }
+
+    try {
+      await updatePurchasingPlan(id, updates);
+
+      if (updates.stt !== undefined || updates.content !== undefined || updates.unit !== undefined || updates.volumeContract !== undefined) {
+        if (matchingMaterial) {
+          triggerToast(`Đã đồng bộ sang Kế hoạch vật tư: ${matchingMaterial.jobContent}`, 'success');
+          await updateMaterialPlan(matchingMaterial.id, {
+            stt: updates.stt !== undefined ? updates.stt : matchingMaterial.stt,
+            jobContent: updates.content !== undefined ? updates.content : matchingMaterial.jobContent,
+            unit: updates.unit !== undefined ? updates.unit : matchingMaterial.unit,
+            contractVolume: updates.volumeContract !== undefined ? updates.volumeContract : matchingMaterial.contractVolume
+          });
+        } else {
+          triggerToast(`Không tìm thấy mục tương ứng trong Kế hoạch vật tư! (STT: ${existing.stt}, Nội dung: ${existing.content})`, 'warning');
+        }
+
+        const matchingTask = tasks.find(t => 
+          t.projectCode === existing.projectCode && 
+          norm(t.stt) === norm(existing.stt) && 
+          norm(t.name) === norm(existing.content)
+        );
+        if (matchingTask) {
+          updateTask(matchingTask.id, {
+            stt: updates.stt !== undefined ? updates.stt : matchingTask.stt,
+            name: updates.content !== undefined ? updates.content : matchingTask.name,
+            unit: updates.unit !== undefined ? updates.unit : matchingTask.unit,
+            volume: updates.volumeContract !== undefined ? updates.volumeContract : matchingTask.volume
+          });
+        }
+      }
+    } finally {
       if (matchingMaterial) {
-        triggerToast(`Đã đồng bộ sang Kế hoạch vật tư: ${matchingMaterial.jobContent}`, 'success');
-        updateMaterialPlan(matchingMaterial.id, {
-          stt: updates.stt !== undefined ? updates.stt : matchingMaterial.stt,
-          jobContent: updates.content !== undefined ? updates.content : matchingMaterial.jobContent,
-          unit: updates.unit !== undefined ? updates.unit : matchingMaterial.unit,
-          contractVolume: updates.volumeContract !== undefined ? updates.volumeContract : matchingMaterial.contractVolume
-        });
-      } else {
-        triggerToast(`Không tìm thấy mục tương ứng trong Kế hoạch vật tư! (STT: ${existing.stt}, Nội dung: ${existing.content})`, 'warning');
-      }
-
-      const matchingTask = tasks.find(t => 
-        t.projectCode === existing.projectCode && 
-        norm(t.stt) === norm(existing.stt) && 
-        norm(t.name) === norm(existing.content)
-      );
-      if (matchingTask) {
-        updateTask(matchingTask.id, {
-          stt: updates.stt !== undefined ? updates.stt : matchingTask.stt,
-          name: updates.content !== undefined ? updates.content : matchingTask.name
-        });
+        syncingIdsRef.current.delete(matchingMaterial.id);
       }
     }
   };
 
-  const handleUpdateMaterialPlanSync = (id: string, updates: Partial<ProjectMaterialPlan>) => {
+  const handleUpdateMaterialPlanSync = async (id: string, updates: Partial<ProjectMaterialPlan>) => {
+    syncingIdsRef.current.add(id);
     const existing = materialPlans.find(p => p.id === id);
-    updateMaterialPlan(id, updates);
-    if (!existing) return;
+    try {
+      await updateMaterialPlan(id, updates);
+      if (!existing) return;
 
-    if (updates.stt !== undefined || updates.jobContent !== undefined || updates.unit !== undefined || updates.contractVolume !== undefined) {
-      const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      if (updates.stt !== undefined || updates.jobContent !== undefined || updates.unit !== undefined || updates.contractVolume !== undefined) {
+        const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
-      const matchingPurchasing = purchasingPlans.find(p => 
-        p.projectCode === existing.projectCode && 
-        norm(p.stt) === norm(existing.stt) && 
-        norm(p.content) === norm(existing.jobContent)
-      );
-      if (matchingPurchasing) {
-        updatePurchasingPlan(matchingPurchasing.id, {
-          stt: updates.stt !== undefined ? updates.stt : matchingPurchasing.stt,
-          content: updates.jobContent !== undefined ? updates.jobContent : matchingPurchasing.content,
-          unit: updates.unit !== undefined ? updates.unit : matchingPurchasing.unit,
-          volumeContract: updates.contractVolume !== undefined ? updates.contractVolume : matchingPurchasing.volumeContract
-        });
+        const matchingPurchasing = purchasingPlans.find(p => 
+          p.projectCode === existing.projectCode && 
+          norm(p.stt) === norm(existing.stt) && 
+          norm(p.content) === norm(existing.jobContent)
+        );
+        if (matchingPurchasing) {
+          await updatePurchasingPlan(matchingPurchasing.id, {
+            stt: updates.stt !== undefined ? updates.stt : matchingPurchasing.stt,
+            content: updates.jobContent !== undefined ? updates.jobContent : matchingPurchasing.content,
+            unit: updates.unit !== undefined ? updates.unit : matchingPurchasing.unit,
+            volumeContract: updates.contractVolume !== undefined ? updates.contractVolume : matchingPurchasing.volumeContract
+          });
+        }
+
+        const matchingTask = tasks.find(t => 
+          t.projectCode === existing.projectCode && 
+          norm(t.stt) === norm(existing.stt) && 
+          norm(t.name) === norm(existing.jobContent)
+        );
+        if (matchingTask) {
+          updateTask(matchingTask.id, {
+            stt: updates.stt !== undefined ? updates.stt : matchingTask.stt,
+            name: updates.jobContent !== undefined ? updates.jobContent : matchingTask.name,
+            unit: updates.unit !== undefined ? updates.unit : matchingTask.unit,
+            volume: updates.contractVolume !== undefined ? updates.contractVolume : matchingTask.volume
+          });
+        }
       }
-
-      const matchingTask = tasks.find(t => 
-        t.projectCode === existing.projectCode && 
-        norm(t.stt) === norm(existing.stt) && 
-        norm(t.name) === norm(existing.jobContent)
-      );
-      if (matchingTask) {
-        updateTask(matchingTask.id, {
-          stt: updates.stt !== undefined ? updates.stt : matchingTask.stt,
-          name: updates.jobContent !== undefined ? updates.jobContent : matchingTask.name
-        });
-      }
+    } finally {
+      syncingIdsRef.current.delete(id);
     }
   };
-
-
 
   const confirmDeleteAction = () => {
     if (!deleteConfirm) return;
