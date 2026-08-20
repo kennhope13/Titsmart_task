@@ -314,7 +314,21 @@ export const ActivityLogPage: React.FC = () => {
           <div className="space-y-4 text-sm mt-2">
             <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
               <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Thời gian</span>
-              <span className="font-bold text-slate-800">{selectedLog.timestamp}</span>
+              <span className="font-bold text-slate-800">
+                  {(() => {
+                    const d = new Date(selectedLog.timestamp);
+                    if (!Number.isNaN(d.getTime())) {
+                      const hh = String(d.getHours()).padStart(2, '0');
+                      const mm = String(d.getMinutes()).padStart(2, '0');
+                      const ss = String(d.getSeconds()).padStart(2, '0');
+                      const dd = String(d.getDate()).padStart(2, '0');
+                      const mo = String(d.getMonth() + 1).padStart(2, '0');
+                      const yy = d.getFullYear();
+                      return `${hh}:${mm}:${ss} ${dd}/${mo}/${yy}`;
+                    }
+                    return selectedLog.timestamp;
+                  })()}
+                </span>
             </div>
             <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
               <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Nhân sự</span>

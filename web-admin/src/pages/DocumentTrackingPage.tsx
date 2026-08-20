@@ -338,8 +338,8 @@ export const DocumentTrackingPage: React.FC = () => {
                     <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2 font-bold text-slate-800">{track.company || '-'}</td>
-                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
-                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.paymentStatus?.includes('Đã') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
+                    <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'text-emerald-700' : 'text-amber-700'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
+                    <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.paymentStatus?.includes('Đã') ? 'text-emerald-700' : 'text-rose-700'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
                     <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}><button onClick={() => updateDocumentTrack(track.id, { isCompleted: !track.isCompleted })} className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${track.isCompleted ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-300 border border-slate-200 hover:text-slate-500'}`}><span className="material-symbols-outlined text-base">task_alt</span></button></td>
                     <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}><button onClick={() => {
                       setConfirmConfig({
@@ -402,7 +402,7 @@ export const DocumentTrackingPage: React.FC = () => {
                     <td className="px-2 py-2 text-[11px] text-slate-500">{track.address || '-'}</td>
                     <td className="px-2 py-2 text-center">{track.sendDate || '-'}</td>
                     <td className="px-2 py-2 text-center">{track.receiveDate || <span className="text-slate-300">Chưa nhận</span>}</td>
-                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
+                    <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'text-emerald-700' : 'text-amber-700'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
                     <td className="px-2 py-2 text-[11px] text-slate-500">{track.notes || '-'}</td>
                   </tr>
                 ))}
@@ -447,7 +447,7 @@ export const DocumentTrackingPage: React.FC = () => {
                     <td className="px-2 py-2 text-right font-bold text-slate-950">{(track.contractValue || 0).toLocaleString('vi-VN')}</td>
                     <td className="px-2 py-2 text-right">{((track.prepayPercent || 0) * 100).toLocaleString('vi-VN')}%</td>
                     <td className="px-2 py-2 text-right font-bold text-rose-600">{(track.prepayAmount || 0).toLocaleString('vi-VN')}</td>
-                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.paymentStatus?.includes('Đã') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
+                    <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.paymentStatus?.includes('Đã') ? 'text-emerald-700' : 'text-rose-700'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -485,8 +485,8 @@ export const DocumentTrackingPage: React.FC = () => {
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
                     <td className="px-2 py-2 text-xs font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
-                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
-                    <td className="px-2 py-2 text-center"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${track.paymentStatus?.includes('Đã') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
+                    <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'text-emerald-700' : 'text-amber-700'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
+                    <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.paymentStatus?.includes('Đã') ? 'text-emerald-700' : 'text-rose-700'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
                     <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}><button onClick={() => updateDocumentTrack(track.id, { isCompleted: !track.isCompleted })} className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${track.isCompleted ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-300 border border-slate-200 hover:text-slate-500'}`}><span className="material-symbols-outlined text-base">task_alt</span></button></td>
                     <td className="px-2 py-2 text-[11px] text-slate-500">{track.notes || '-'}</td>
                   </tr>

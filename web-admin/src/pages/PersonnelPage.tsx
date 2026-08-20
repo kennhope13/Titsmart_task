@@ -261,30 +261,32 @@ export const PersonnelPage: React.FC = () => {
                     <td className="p-3 font-mono font-bold text-primary whitespace-nowrap">{person.code}</td>
                     <td className="p-3 text-slate-700 font-semibold whitespace-nowrap">{person.username || '-'}</td>
                     <td className="p-3 whitespace-nowrap">
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                        person.role === 'Quản trị viên' ? 'bg-purple-100 text-purple-700' :
-                        person.role === 'Quản lý dự án' ? 'bg-blue-100 text-blue-700' :
-                        person.role === 'Kỹ sư hiện trường' ? 'bg-orange-100 text-orange-700' :
-                        'bg-slate-100 text-slate-700'
+                      <span className={`text-[11px] font-bold ${
+                        person.role === 'Quản trị viên' ? 'text-purple-700' :
+                        person.role === 'Quản lý dự án' ? 'text-blue-700' :
+                        person.role === 'Kỹ sư hiện trường' ? 'text-orange-700' :
+                        'text-slate-700'
                       }`}>
                         {person.role}
                       </span>
                     </td>
                     <td className="p-3">
                       {person.role === 'Quản lý dự án' ? (
-                        <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200 whitespace-nowrap">Tất cả dự án</span>
+                        <span className="text-blue-700 text-[11px] font-bold whitespace-nowrap">Tất cả dự án</span>
                       ) : person.assignedProjects.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
-                          {person.assignedProjects.map((mp: any) => (
-                            <span key={mp.code} className="px-2 py-0.5 rounded-full bg-blue-50 text-primary text-[11px] font-bold border border-blue-100 whitespace-nowrap">{mp.name}</span>
-                          ))}
+                          {person.assignedProjects.map((mp: any, i: number, arr: any[]) => (
+  <span key={mp.code} className="text-primary text-[11px] font-bold whitespace-nowrap">
+    {mp.name}{i < arr.length - 1 ? ', ' : ''}
+  </span>
+))}
                         </div>
                       ) : (
                         <span className="text-slate-400 text-[11px]">Chưa gán</span>
                       )}
                     </td>
                     <td className="p-3 text-slate-600 whitespace-nowrap">{person.phone || 'Chưa cập nhật'}</td>
-                    <td className="p-3 whitespace-nowrap"><span className={`px-2 py-1 rounded-full text-[11px] font-bold ${person.locked ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>
+                    <td className="p-3 whitespace-nowrap"><span className={`text-[11px] font-bold ${person.locked ? 'text-red-700' : 'text-emerald-700'}`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>
                     <td className="p-3 min-w-[150px] whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <button
