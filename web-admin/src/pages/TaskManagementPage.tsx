@@ -1345,41 +1345,60 @@ export const TaskManagementPage: React.FC = () => {
 
 
 
-            <CustomSelect
+            <div className="flex items-center gap-1">
+
+
+
+
+              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Đầu mục cha:</span>
+
+
+
+
+              <CustomSelect
               value={filterSection}
               onChange={(e) => setFilterSection(e.target.value)}
-              className="h-8 w-44 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
+              className="h-8 min-w-[100px] max-w-[160px] rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
             >
-              <option value="all">Dau muc cha: Tat ca</option>
+              <option value="all">Tất cả</option>
               {columnSections.map((value) => (
                 <option key={value} value={value}>{truncateText(value, 42)}</option>
               ))}
             </CustomSelect>
+            </div>
 
-            <CustomSelect
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">ĐVT:</span>
+              <CustomSelect
               value={filterUnit}
               onChange={(e) => setFilterUnit(e.target.value)}
               className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
             >
-              <option value="all">ĐVT: Tất cả</option>
+              <option value="all">Tất cả</option>
               {columnUnits.map((value) => (
                 <option key={value} value={value}>{value}</option>
               ))}
             </CustomSelect>
+            </div>
 
-            <CustomSelect
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Tiến độ:</span>
+              <CustomSelect
               value={filterProgress}
               onChange={(e) => setFilterProgress(e.target.value)}
               className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
             >
-              <option value="all">Tien do: Tat ca</option>
+              <option value="all">Tất cả</option>
               <option value="0">0%</option>
               <option value="1-49">1% - 49%</option>
               <option value="50-99">50% - 99%</option>
               <option value="100">100%</option>
             </CustomSelect>
+            </div>
 
-            <CustomSelect
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Mua hàng:</span>
+              <CustomSelect
               value={filterPurchase}
               onChange={(e) => setFilterPurchase(e.target.value)}
               className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
@@ -1389,17 +1408,21 @@ export const TaskManagementPage: React.FC = () => {
                 <option key={value} value={value}>{value}</option>
               ))}
             </CustomSelect>
+            </div>
 
-            <CustomSelect
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Thi công:</span>
+              <CustomSelect
               value={filterConstr}
               onChange={(e) => setFilterConstr(e.target.value)}
               className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
             >
-              <option value="all">Thi cong: Tat ca</option>
+              <option value="all">Tất cả</option>
               {columnConstrStatuses.map((value) => (
                 <option key={value} value={value}>{value}</option>
               ))}
             </CustomSelect>
+            </div>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
             <button

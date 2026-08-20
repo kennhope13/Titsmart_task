@@ -263,7 +263,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
       return 0;
     });
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
-  }, [data, searchQuery, statusFilter]);
+  }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder, filterConstruction]);
 
   const startEditing = (id: string, field: keyof ProjectMaterialPlan, value: any) => {
     if (userRole === 'engineer') return;
@@ -316,56 +316,77 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-3 px-4 py-2 bg-white text-xs text-slate-600 flex-wrap">
+        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-wrap">
           <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
-            Lọc chi tiết:
           </div>
           
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative">
-              <select value={filterParent} onChange={e => setFilterParent(e.target.value)} className="appearance-none border border-slate-200 rounded px-2.5 py-1.5 pr-7 bg-white hover:border-slate-300 focus:outline-primary min-w-[140px] truncate max-w-[200px]">
-                {parentOptions.map(opt => (
-                  <option key={opt.id} value={opt.id}>{opt.id === 'all' ? 'Dau muc cha: Tat ca' : opt.label}</option>
-                ))}
-              </select>
-              <span className="material-symbols-outlined text-base absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">expand_more</span>
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 font-medium whitespace-nowrap">Đầu mục cha:</span>
+              <CustomSelect
+                value={filterParent}
+                onChange={e => setFilterParent(e.target.value)}
+                className="min-w-[100px] max-w-[160px] border border-slate-200 rounded px-2 py-1 bg-white text-xs"
+              >
+                {parentOptions.map(opt => {
+                  let label = opt.label;
+                  if (label && label.length > 30) label = label.slice(0, 30) + '...';
+                  return <option key={opt.id} value={opt.id}>{opt.id === 'all' ? 'Tất cả' : label}</option>;
+                })}
+              </CustomSelect>
             </div>
             
-            <div className="relative">
-              <select value={filterUnit} onChange={e => setFilterUnit(e.target.value)} className="appearance-none border border-slate-200 rounded px-2.5 py-1.5 pr-7 bg-white hover:border-slate-300 focus:outline-primary min-w-[120px]">
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
+              <CustomSelect
+                value={filterUnit}
+                onChange={e => setFilterUnit(e.target.value)}
+                className="min-w-[60px] max-w-[100px] border border-slate-200 rounded px-2 py-1 bg-white text-xs"
+              >
                 {unitOptions.map(opt => (
-                  <option key={opt} value={opt}>{opt === 'all' ? 'ĐVT: Tất cả' : opt}</option>
+                  <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
                 ))}
-              </select>
-              <span className="material-symbols-outlined text-base absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">expand_more</span>
+              </CustomSelect>
             </div>
 
-            <div className="relative">
-              <select value={filterProgress} onChange={e => setFilterProgress(e.target.value)} className="appearance-none border border-slate-200 rounded px-2.5 py-1.5 pr-7 bg-white hover:border-slate-300 focus:outline-primary min-w-[120px]">
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 font-medium whitespace-nowrap">Tiến độ:</span>
+              <CustomSelect
+                value={filterProgress}
+                onChange={e => setFilterProgress(e.target.value)}
+                className="min-w-[80px] max-w-[130px] border border-slate-200 rounded px-2 py-1 bg-white text-xs"
+              >
                 {progressOptions.map(opt => (
-                  <option key={opt} value={opt}>{opt === 'all' ? 'Tien do: Tat ca' : opt}</option>
+                  <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
                 ))}
-              </select>
-              <span className="material-symbols-outlined text-base absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">expand_more</span>
+              </CustomSelect>
             </div>
 
-            <div className="relative">
-              <select value={filterOrder} onChange={e => setFilterOrder(e.target.value)} className="appearance-none border border-slate-200 rounded px-2.5 py-1.5 pr-7 bg-white hover:border-slate-300 focus:outline-primary min-w-[120px]">
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 font-medium whitespace-nowrap">Mua hàng:</span>
+              <CustomSelect
+                value={filterOrder}
+                onChange={e => setFilterOrder(e.target.value)}
+                className="min-w-[80px] max-w-[130px] border border-slate-200 rounded px-2 py-1 bg-white text-xs"
+              >
                 {orderOptions.map(opt => (
-                  <option key={opt} value={opt}>{opt === 'all' ? 'Mua hang: Tat ca' : opt}</option>
+                  <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
                 ))}
-              </select>
-              <span className="material-symbols-outlined text-base absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">expand_more</span>
+              </CustomSelect>
             </div>
 
-            <div className="relative">
-              <select value={filterConstruction} onChange={e => setFilterConstruction(e.target.value)} className="appearance-none border border-slate-200 rounded px-2.5 py-1.5 pr-7 bg-white hover:border-slate-300 focus:outline-primary min-w-[120px]">
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 font-medium whitespace-nowrap">Thi công:</span>
+              <CustomSelect
+                value={filterConstruction}
+                onChange={e => setFilterConstruction(e.target.value)}
+                className="min-w-[80px] max-w-[130px] border border-slate-200 rounded px-2 py-1 bg-white text-xs"
+              >
                 {constructionOptions.map(opt => (
-                  <option key={opt} value={opt}>{opt === 'all' ? 'Thi cong: Tat ca' : opt}</option>
+                  <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
                 ))}
-              </select>
-              <span className="material-symbols-outlined text-base absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">expand_more</span>
+              </CustomSelect>
             </div>
           </div>
         </div>
