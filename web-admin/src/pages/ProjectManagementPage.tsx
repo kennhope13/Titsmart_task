@@ -695,7 +695,7 @@ export const ProjectManagementPage: React.FC = () => {
             <div><label className="block font-bold text-slate-700 mb-1">Giá trị hợp đồng</label><input value={newProjContractValue} onChange={(event) => setNewProjContractValue(event.target.value)} inputMode="numeric" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div>
           </div>
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Nhân sự / Quản lý dự án</label>
+            <label className="block font-bold text-slate-700 mb-1">Nhân sự</label>
             <div className={`max-h-36 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 ${selectedEngineerIds.length === 0 ? 'border-red-200' : 'border-slate-200'}`}>
               {engineers.length === 0 && <p className="text-[11px] text-slate-400">Chưa có nhân sự nào.</p>}
               {engineers.filter(eng => eng.title !== 'Quản trị viên' && eng.title !== 'Quản lý dự án').map((eng) => (
