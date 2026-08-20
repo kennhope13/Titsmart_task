@@ -1337,7 +1337,7 @@ export const TaskManagementPage: React.FC = () => {
       <div className="px-3 py-2">
         {/* Row 1: DETAILED ATTRIBUTE FILTERS */}
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1">
             <span className="font-bold text-slate-400 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">filter_list</span>
               Lọc chi tiết:
@@ -1358,7 +1358,7 @@ export const TaskManagementPage: React.FC = () => {
               <CustomSelect
               value={filterSection}
               onChange={(e) => setFilterSection(e.target.value)}
-              className="h-8 min-w-[100px] max-w-[160px] rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
+              className="h-7 min-w-[80px] max-w-[130px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
             >
               <option value="all">Tất cả</option>
               {columnSections.map((value) => (
@@ -1372,7 +1372,7 @@ export const TaskManagementPage: React.FC = () => {
               <CustomSelect
               value={filterUnit}
               onChange={(e) => setFilterUnit(e.target.value)}
-              className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
+              className="h-7 min-w-[70px] max-w-[100px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
             >
               <option value="all">Tất cả</option>
               {columnUnits.map((value) => (
@@ -1386,7 +1386,7 @@ export const TaskManagementPage: React.FC = () => {
               <CustomSelect
               value={filterProgress}
               onChange={(e) => setFilterProgress(e.target.value)}
-              className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
+              className="h-7 min-w-[70px] max-w-[100px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
             >
               <option value="all">Tất cả</option>
               <option value="0">0%</option>
@@ -1401,9 +1401,9 @@ export const TaskManagementPage: React.FC = () => {
               <CustomSelect
               value={filterPurchase}
               onChange={(e) => setFilterPurchase(e.target.value)}
-              className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
+              className="h-7 min-w-[70px] max-w-[100px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
             >
-              <option value="all">Mua hang: Tat ca</option>
+              <option value="all">Tất cả</option>
               {columnPurchaseStatuses.map((value) => (
                 <option key={value} value={value}>{value}</option>
               ))}
@@ -1415,7 +1415,7 @@ export const TaskManagementPage: React.FC = () => {
               <CustomSelect
               value={filterConstr}
               onChange={(e) => setFilterConstr(e.target.value)}
-              className="h-8 w-32 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary focus:ring-2 focus:ring-blue-100"
+              className="h-7 min-w-[70px] max-w-[100px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
             >
               <option value="all">Tất cả</option>
               {columnConstrStatuses.map((value) => (
@@ -1427,7 +1427,7 @@ export const TaskManagementPage: React.FC = () => {
           <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
             <button
               onClick={openNewTaskModal}
-              className="flex items-center gap-1.5 bg-primary text-white px-3.5 py-2 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap"
+              className="flex items-center gap-1 bg-primary text-white px-2 py-1 rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               <span>Thêm đầu mục</span>
@@ -1435,7 +1435,7 @@ export const TaskManagementPage: React.FC = () => {
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                className="flex items-center gap-1.5 border border-emerald-200 bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-all shadow-xs whitespace-nowrap"
+                className="flex items-center gap-1 border border-emerald-200 bg-emerald-50 text-emerald-800 px-2 py-1 rounded text-[11px] font-bold hover:bg-emerald-100 transition-all shadow-xs whitespace-nowrap h-7"
               >
                 <span className="material-symbols-outlined text-base text-emerald-700">download</span>
                 <span>Xuất file</span>
@@ -1463,7 +1463,7 @@ export const TaskManagementPage: React.FC = () => {
               )}
             </div>
             {/* Search */}
-            <div className="relative w-full md:w-56">
+            <div className="relative w-full md:w-48">
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
                 search
               </span>
@@ -1472,7 +1472,7 @@ export const TaskManagementPage: React.FC = () => {
                 placeholder="Tm nhanh cng việc..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none"
+                className="w-full pl-7 pr-2 py-1 bg-slate-50 border border-slate-200 rounded text-[11px] focus:ring-1 focus:ring-primary focus:bg-white focus:outline-none h-7"
               />
             </div>
           </div>

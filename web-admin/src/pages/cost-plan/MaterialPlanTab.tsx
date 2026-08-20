@@ -321,13 +321,13 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
           
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap">
             <div className="flex items-center gap-1">
               <span className="text-slate-500 font-medium whitespace-nowrap">Đầu mục cha:</span>
               <CustomSelect
                 value={filterParent}
                 onChange={e => setFilterParent(e.target.value)}
-                className="min-w-[100px] max-w-[160px] border border-slate-200 rounded px-2 py-1 bg-white text-xs"
+                className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
               >
                 {parentOptions.map(opt => {
                   let label = opt.label;
@@ -342,7 +342,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               <CustomSelect
                 value={filterUnit}
                 onChange={e => setFilterUnit(e.target.value)}
-                className="min-w-[60px] max-w-[100px] border border-slate-200 rounded px-2 py-1 bg-white text-xs"
+                className="min-w-[50px] max-w-[90px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
               >
                 {unitOptions.map(opt => (
                   <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
@@ -355,7 +355,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               <CustomSelect
                 value={filterProgress}
                 onChange={e => setFilterProgress(e.target.value)}
-                className="min-w-[80px] max-w-[130px] border border-slate-200 rounded px-2 py-1 bg-white text-xs"
+                className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
               >
                 {progressOptions.map(opt => (
                   <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
@@ -368,7 +368,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               <CustomSelect
                 value={filterOrder}
                 onChange={e => setFilterOrder(e.target.value)}
-                className="min-w-[80px] max-w-[130px] border border-slate-200 rounded px-2 py-1 bg-white text-xs"
+                className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
               >
                 {orderOptions.map(opt => (
                   <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
@@ -381,7 +381,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               <CustomSelect
                 value={filterConstruction}
                 onChange={e => setFilterConstruction(e.target.value)}
-                className="min-w-[80px] max-w-[130px] border border-slate-200 rounded px-2 py-1 bg-white text-xs"
+                className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
               >
                 {constructionOptions.map(opt => (
                   <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
