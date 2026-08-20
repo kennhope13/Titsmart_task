@@ -1,5 +1,10 @@
 {
   "version": "1.0.61",
-  "forceUpdate": false,
-  "message": "Fix tree grouping logic in task management page"
+  "date": "20/08/2026",
+  "notes": [
+    "Khắc phục triệt để lỗi treo đơ màn hình khi cuộn hoặc hiển thị ở tab Kế hoạch Vật tư và Mua hàng",
+    "Chỉnh sửa thuật toán nhận diện Chủ đầu tư: tự động bắt các từ khóa 'chủ đầu tư', 'nhà đầu tư', 'bên a', 'ban a', tránh nhầm lẫn đẩy sang Nhà thầu",
+    "Khắc phục lỗi định dạng tiếng Việt khi kiểm tra ký tự 'đ' (ví dụ chữ nhà đầu tư)",
+    "Sửa lỗi sai cấu trúc cha con (mục 115.2 mồ côi) ở tab Tiến độ Dự án khi thêm mới hạng mục con"
+  ]
 }
