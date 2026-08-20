@@ -1308,7 +1308,7 @@ export const TaskManagementPage: React.FC = () => {
 
       <section className="task-management-screen bg-white border-y border-r border-slate-200 shadow-xs flex flex-col flex-1 overflow-hidden">
       {/* Page Header */}
-      <div className="px-5 py-3 flex flex-col lg:flex-row justify-between lg:items-center gap-4 border-b border-slate-100">
+      <div className="px-5 py-2 flex flex-col lg:flex-row justify-between lg:items-center gap-4 border-b border-slate-100">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {selectedProjectFromUrl && (
             <button
@@ -1321,10 +1321,10 @@ export const TaskManagementPage: React.FC = () => {
               <span className="material-symbols-outlined text-lg">arrow_back</span>
             </button>
           )}
-          <div className="min-w-0 flex-1 space-y-1">
-            <h2 className="truncate text-xl font-extrabold leading-tight tracking-tight text-slate-900">Quản lý Tiến độ Công việc</h2>
+          <div className="min-w-0 flex-1 flex items-center gap-3">
+            <h2 className="text-xl font-extrabold leading-tight tracking-tight text-slate-900 whitespace-nowrap flex-shrink-0 uppercase">QUẢN LÝ TIẾN ĐỘ CÔNG VIỆC</h2>
             {selectedProjectFromUrl && (
-              <div className="inline-flex max-w-full items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
+              <div className="inline-flex min-w-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
                 <span className="truncate">Dự án: {currentProject?.name || selectedProjectFromUrl}</span>
               </div>
             )}
@@ -1334,9 +1334,9 @@ export const TaskManagementPage: React.FC = () => {
       </div>
 
       {/* TOOLBAR BỘ LỌC */}
-      <div className="px-3 py-3 space-y-3">
+      <div className="px-3 py-2">
         {/* Row 1: DETAILED ATTRIBUTE FILTERS */}
-        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-bold text-slate-400 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">filter_list</span>
