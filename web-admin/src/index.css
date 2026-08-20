@@ -90,9 +90,8 @@ main > div > div.sticky.top-0 select {
 
 /* Shared tab typography */
 .app-tab-button {
-  font-family: ui-sans-serif, system-ui, sans-serif !important;
   font-size: 12px !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   letter-spacing: 0 !important;
 }
 

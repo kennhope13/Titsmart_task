@@ -292,7 +292,7 @@ export const DocumentTrackingPage: React.FC = () => {
                 >
                   <span className="material-symbols-outlined text-base leading-none">{tab.icon}</span>
                   {tab.label}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${activeTab === tab.id ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-500'}`}>{tab.count}</span>
+                  
                 </button>
               ))}
             </div>
