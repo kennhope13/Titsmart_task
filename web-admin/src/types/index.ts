@@ -1,6 +1,22 @@
 export type TaskStatus = 'Chưa làm' | 'Đang làm' | 'Chờ vật tư' | 'Chờ khách hàng' | 'Chờ nghiệm thu' | 'Hoàn thành' | 'Tạm dừng';
 export type TaskPriority = 'Low' | 'Medium' | 'High';
 
+export const PURCHASE_STATUS_OPTIONS = [
+  'Không có hàng',
+  'Chưa đặt hàng',
+  'Đang đặt hàng',
+  'Đã đặt hàng',
+  'Đang giao',
+  'Đã có hàng',
+  'Hàng gia công',
+];
+
+export const CONSTRUCTION_STATUS_OPTIONS = [
+  'Chưa thi công',
+  'Đang thi công',
+  'Đã hoàn thành',
+];
+
 export interface Task {
   id: string;
   stt: string;

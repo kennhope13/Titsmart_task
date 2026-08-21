@@ -88,7 +88,7 @@ const normalizeStatusText = (value?: string) => (value || '')
   .replace(/[̀-ͯ]/g, '')
   .replace(/đ/g, 'd');
 
-const PURCHASE_STATUS_OPTIONS = [
+export const PURCHASE_STATUS_OPTIONS = [
   'Không có hàng',
   'Chưa đặt hàng',
   'Đang đặt hàng',
@@ -98,7 +98,7 @@ const PURCHASE_STATUS_OPTIONS = [
   'Hàng gia công',
 ];
 
-const CONSTRUCTION_STATUS_OPTIONS = [
+export const CONSTRUCTION_STATUS_OPTIONS = [
   'Chưa thi công',
   'Đang thi công',
   'Đã thi công',

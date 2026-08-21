@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ProjectMaterialPlan } from '../../types';
+import { PURCHASE_STATUS_OPTIONS } from '../TaskManagementPage';
 import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface MaterialPlanTabProps {
@@ -812,10 +813,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                                 onChange={(e) => { onUpdate(plan.id, { ...plan, orderedStatus: e.target.value }) }}
                                 className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${btnStyle}`}
                               >
-                                <option value="">Chưa đặt hàng</option>
-                                <option value="Đã đặt hàng">Đã đặt hàng</option>
-                                <option value="Đang giao hàng">Đang giao hàng</option>
-                                <option value="Đã nhận hàng">Đã nhận hàng</option>
+                                {PURCHASE_STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                               </CustomSelect>
                             );
                           })()}
