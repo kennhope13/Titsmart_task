@@ -1,7 +1,9 @@
 {
-  "version": "1.0.83",
+  "version": "1.0.85",
   "date": "21/08/2026",
   "notes": [
-    "Cập nhật hệ thống bắt lỗi (try/catch) cho form Thêm Phiếu Chi và Lương Công Nhật giúp hiển thị chính xác lý do từ chối dữ liệu (như lỗi phân quyền RLS) thay vì lỗi ẩn."
+    "Cải tiến thanh menu điều hướng: Cố định vị trí và bổ sung nút Đóng/Mở chuyên dụng ở cạnh phải để chống vướng tầm nhìn.",
+    "Bổ sung công cụ lọc nâng cao (Trạng thái Chứng từ & File đính kèm) trong tab Theo dõi chứng từ của Dự án.",
+    "Tinh chỉnh và thu gọn kích thước của tất cả thanh lọc chi tiết trên toàn hệ thống để tiết kiệm không gian."
   ]
 }

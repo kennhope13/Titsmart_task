@@ -3,7 +3,12 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { useAuthStore } from '../../services/authStore';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isExpanded?: boolean;
+  toggleSidebar?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isExpanded = false, toggleSidebar }) => {
   const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -131,17 +136,17 @@ export const Sidebar: React.FC = () => {
   const navGroups = getNavGroups();
 
   return (
-    <aside ref={sidebarRef} className={`fixed left-0 top-0 h-screen w-[64px] hover:w-[280px] transition-all duration-300 ease-in-out delay-200 hover:delay-0 flex flex-col border-r border-slate-200 bg-white z-40 group shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${(showNotifPopover || showUserPopover) ? '!w-[280px]' : ''}`}>
+    <aside ref={sidebarRef} className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[280px]' : 'w-[64px]'} ${(showNotifPopover || showUserPopover) ? '!w-[280px]' : ''}`}>
       <div className="relative h-[72px] px-3 flex items-center gap-3 border-b border-slate-100 min-w-[280px]">
-        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 cursor-pointer" onClick={toggleSidebar} title="Mở rộng / Thu gọn">
           <img src="./logo.png" alt="TITSMART" className="w-10 h-10 object-contain" />
         </div>
-        <div className="min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200 group-hover:delay-0 flex-1 flex flex-col justify-center">
+        <div className={`min-w-0 transition-opacity duration-300 flex-1 flex flex-col justify-center ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
           <h1 className="font-extrabold text-[18px] text-blue-900 leading-none tracking-tight">TITSMART</h1>
           <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Project Manager</p>
         </div>
 
-        <div className="relative opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200 group-hover:delay-0 flex-shrink-0 pr-1">
+        <div className={`relative transition-opacity duration-300 flex-shrink-0 pr-1 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
           <button
             onClick={() => {
               setShowNotifPopover(!showNotifPopover);
@@ -193,12 +198,12 @@ export const Sidebar: React.FC = () => {
         {navGroups.map((group) => (
           <div key={group.title} className="space-y-1">
             <div
-              className={`flex items-center justify-between mb-2 select-none ${group.collapsible !== false ? 'cursor-pointer group/item' : ''}`}
+              className={`flex items-center justify-between mb-2 select-none ${group.collapsible !== false ? 'cursor-pointer hover:text-primary' : ''}`}
               onClick={() => group.collapsible !== false && toggleGroup(group.title)}
             >
-              <h3 className={`text-[10px] font-extrabold text-slate-400 uppercase tracking-wider transition-opacity duration-300 delay-200 group-hover:delay-0 opacity-0 group-hover:opacity-100 ${group.collapsible !== false ? 'group-hover/item:text-primary' : ''}`}>{group.title}</h3>
+              <h3 className={`text-[10px] font-extrabold uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'} ${group.collapsible !== false ? 'text-slate-400 hover:text-primary' : 'text-slate-400'}`}>{group.title}</h3>
               {group.collapsible !== false && (
-                <span className="material-symbols-outlined text-[14px] text-slate-400 transition-opacity duration-300 delay-200 group-hover:delay-0 opacity-0 group-hover:opacity-100 group-hover/item:text-primary">
+                <span className={`material-symbols-outlined text-[14px] text-slate-400 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
                   {collapsedGroups[group.title] ? 'expand_more' : 'expand_less'}
                 </span>
               )}
@@ -211,8 +216,8 @@ export const Sidebar: React.FC = () => {
                   to={item.path}
                   end={item.path === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg text-xs font-semibold transition-all overflow-hidden whitespace-nowrap
-                    h-10 w-10 group-hover:w-full group-hover:px-3
+                    `flex items-center gap-3 rounded-lg text-xs font-semibold transition-all overflow-hidden whitespace-nowrap h-10
+                    ${isExpanded ? 'w-full px-3' : 'w-10'}
                     ${
                       isActive
                         ? 'text-primary bg-blue-50'
@@ -220,8 +225,8 @@ export const Sidebar: React.FC = () => {
                     }`
                   }
                 >
-                  <span className="material-symbols-outlined text-lg w-10 flex flex-shrink-0 items-center justify-center group-hover:w-auto group-hover:justify-start">{item.icon}</span>
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">{item.label}</span>
+                  <span className={`material-symbols-outlined text-lg flex flex-shrink-0 items-center ${isExpanded ? 'w-auto justify-start' : 'w-10 justify-center'}`}>{item.icon}</span>
+                  <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>{item.label}</span>
                 </NavLink>
               ))}
             </div>
@@ -235,8 +240,8 @@ export const Sidebar: React.FC = () => {
               setShowUserPopover(!showUserPopover);
               setShowNotifPopover(false);
             }}
-            className={`flex items-center gap-3 rounded-xl transition-all overflow-hidden whitespace-nowrap
-              h-10 w-10 group-hover:w-full group-hover:px-3 group-hover:py-3 group-hover:h-auto
+            className={`flex items-center gap-3 rounded-xl transition-all overflow-hidden whitespace-nowrap h-10
+              ${isExpanded ? 'w-full px-3 py-3 h-auto' : 'w-10'}
               ${
               showUserPopover
                 ? 'bg-blue-50 ring-1 ring-blue-100'
@@ -246,11 +251,11 @@ export const Sidebar: React.FC = () => {
             <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-bold text-sm text-white bg-blue-600 uppercase shadow-sm">
               {(user?.name || 'A').charAt(0)}
             </div>
-            <div className="min-w-0 text-left leading-tight flex-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200 group-hover:delay-0">
+            <div className={`min-w-0 text-left leading-tight flex-1 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
               <span className="block font-bold text-xs text-slate-800 truncate">{user?.name || 'Admin'}</span>
               <span className="block text-[10px] text-slate-500 truncate">{user?.title || 'Quản trị viên'}</span>
             </div>
-            <span className="material-symbols-outlined text-base text-slate-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200 group-hover:delay-0">settings</span>
+            <span className={`material-symbols-outlined text-base text-slate-400 flex-shrink-0 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>settings</span>
           </button>
 
           {showUserPopover && (

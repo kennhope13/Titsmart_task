@@ -698,14 +698,14 @@ export const MaterialTrackingPage: React.FC = () => {
           </div>
           
           {/* Lọc chi tiết */}
-          <div className="px-4 py-2.5 bg-slate-50/80 border-t border-slate-100 flex items-center gap-3 overflow-x-auto custom-scrollbar">
-            <div className="flex items-center gap-2 text-slate-500 font-semibold text-[13px] whitespace-nowrap pr-2">
-              <span className="material-symbols-outlined text-[18px]">filter_list</span>
+          <div className="px-4 py-2 bg-slate-50/80 border-t border-slate-100 flex items-center gap-3 overflow-x-auto custom-scrollbar">
+            <div className="flex items-center gap-1.5 text-slate-500 font-bold text-xs whitespace-nowrap pr-1">
+              <span className="material-symbols-outlined text-[16px]">filter_list</span>
               Lọc chi tiết:
             </div>
             
             <CustomSelect 
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[180px] max-w-[250px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
+              className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 min-w-[150px] max-w-[200px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
             >
@@ -714,7 +714,7 @@ export const MaterialTrackingPage: React.FC = () => {
             </CustomSelect>
 
             <CustomSelect 
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[200px] max-w-[300px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
+              className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 min-w-[150px] max-w-[200px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
               value={filterName}
               onChange={(e) => setFilterName(e.target.value)}
             >
@@ -723,7 +723,7 @@ export const MaterialTrackingPage: React.FC = () => {
             </CustomSelect>
 
             <CustomSelect 
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[120px] max-w-[180px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
+              className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 min-w-[100px] max-w-[150px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
               value={filterUnit}
               onChange={(e) => setFilterUnit(e.target.value)}
             >

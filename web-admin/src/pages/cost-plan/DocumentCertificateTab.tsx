@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ProjectMaterialPlan } from '../../types';
 import { ImageUpload } from '../../components/common/ImageUpload';
 import { Modal } from '../../components/common/Modal';
+import { CustomSelect } from '../../components/common/CustomSelect';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -389,7 +390,33 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
       onTriggerHandled?.();
     }
   }, [triggerAdd]);
-  const rows = data.filter(item => isDocTrack(item));
+
+  const [filterDocStatus, setFilterDocStatus] = useState('all');
+  const [filterFileStatus, setFilterFileStatus] = useState('all');
+
+  const rows = data.filter(item => {
+    if (!isDocTrack(item)) return false;
+    
+    // Tìm kiếm text
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const contentMatch = (item.jobContent || '').toLowerCase().includes(q);
+      const notesMatch = cleanNotes(item.notes).toLowerCase().includes(q);
+      if (!contentMatch && !notesMatch) return false;
+    }
+
+    const models = decodeModels(item.issueContent);
+    const itemHasAnyDoc = models.some(m => hasAnyDoc(m));
+    const itemHasAnyFile = models.some(m => m.docs.some(d => d.fileUrls && d.fileUrls.length > 0));
+
+    if (filterDocStatus === 'có' && !itemHasAnyDoc) return false;
+    if (filterDocStatus === 'chưa' && itemHasAnyDoc) return false;
+
+    if (filterFileStatus === 'có' && !itemHasAnyFile) return false;
+    if (filterFileStatus === 'chưa' && itemHasAnyFile) return false;
+
+    return true;
+  });
 
   const nextStt = String(rows.length + 1);
   const openAdd  = () => { setEditingItem(null);  setModalMode('add');  };
@@ -541,6 +568,49 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
 
   return (
     <div className="flex w-full max-w-full h-full min-h-0 flex-col bg-white overflow-hidden">
+      {/* FILTER BAR */}
+      <div className="flex border-b border-slate-200 bg-white px-4 py-2.5 gap-3 sticky top-0 z-30 items-center justify-between overflow-x-auto custom-scrollbar">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-slate-500 font-semibold text-[13px] whitespace-nowrap pr-2">
+            <span className="material-symbols-outlined text-[18px]">filter_list</span>
+            Lọc chi tiết:
+          </div>
+          
+          <CustomSelect
+            value={filterDocStatus}
+            onChange={e => setFilterDocStatus(e.target.value)}
+            className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none min-w-[140px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
+          >
+            <option value="all">Chứng từ: Tất cả</option>
+            <option value="có">Chứng từ: Đã có</option>
+            <option value="chưa">Chứng từ: Chưa có</option>
+          </CustomSelect>
+
+          <CustomSelect
+            value={filterFileStatus}
+            onChange={e => setFilterFileStatus(e.target.value)}
+            className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none min-w-[140px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
+          >
+            <option value="all">File đính kèm: Tất cả</option>
+            <option value="có">File đính kèm: Đã có</option>
+            <option value="chưa">File đính kèm: Chưa có</option>
+          </CustomSelect>
+        </div>
+
+        <div className="flex items-center">
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+            <input
+              type="text"
+              placeholder="Tìm thiết bị, nội dung..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[13px] text-slate-700 min-w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="w-full overflow-x-auto custom-scrollbar flex-1 min-h-0">
         <table className="w-max min-w-full border-collapse text-left">
           <colgroup>

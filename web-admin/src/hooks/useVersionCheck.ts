@@ -14,6 +14,11 @@ export const useVersionCheck = (checkIntervalMs = 5 * 60 * 1000) => {
     const currentVersion = import.meta.env.VITE_APP_VERSION as string;
 
     const checkForUpdate = async () => {
+      // Bỏ qua check version nếu đang chạy localhost (Web dev)
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return;
+      }
+
       try {
         const response = await fetch(`/version.json?t=${new Date().getTime()}`);
         if (!response.ok) return;

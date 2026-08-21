@@ -175,14 +175,62 @@ export const DocumentTrackingPage: React.FC = () => {
     return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
   };
 
+  // Filters state
+  const [filterProjectCode, setFilterProjectCode] = useState('all');
+  const [filterDocStatus, setFilterDocStatus] = useState('all');
+  const [filterPaymentStatus, setFilterPaymentStatus] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const docProjectOptions = useMemo(() => {
+    const pCodes = new Set<string>();
+    documentTracks.forEach(t => {
+      const code = t.projectCode || projects.find(p => p.id === (t as any).projectId)?.code;
+      if (code) pCodes.add(code);
+    });
+    return Array.from(pCodes).sort();
+  }, [documentTracks, projects]);
+
+  const docStatusOptions = useMemo(() => {
+    const statuses = new Set<string>();
+    documentTracks.forEach(t => { if (t.docStatus) statuses.add(t.docStatus); });
+    return Array.from(statuses).sort();
+  }, [documentTracks]);
+
+  const paymentStatusOptions = useMemo(() => {
+    const statuses = new Set<string>();
+    documentTracks.forEach(t => { if (t.paymentStatus) statuses.add(t.paymentStatus); });
+    return Array.from(statuses).sort();
+  }, [documentTracks]);
+
   // Filtered tracks
   const filteredTracks = useMemo(() => {
-    return [...documentTracks].sort((a, b) => {
+    let result = [...documentTracks];
+    
+    if (filterProjectCode !== 'all') {
+      result = result.filter(t => (t.projectCode || projects.find(p => p.id === (t as any).projectId)?.code) === filterProjectCode);
+    }
+    if (filterDocStatus !== 'all') {
+      result = result.filter(t => t.docStatus === filterDocStatus);
+    }
+    if (filterPaymentStatus !== 'all') {
+      result = result.filter(t => t.paymentStatus === filterPaymentStatus);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(t => 
+        (t.contractNo || '').toLowerCase().includes(q) ||
+        (t.contractName || '').toLowerCase().includes(q) ||
+        (t.company || '').toLowerCase().includes(q) ||
+        (t.receiverName || '').toLowerCase().includes(q)
+      );
+    }
+
+    return result.sort((a, b) => {
       const sttDiff = getSttNumber(a.stt) - getSttNumber(b.stt);
       if (sttDiff !== 0) return sttDiff;
       return String(a.contractNo || '').localeCompare(String(b.contractNo || ''), 'vi');
     });
-  }, [documentTracks]);
+  }, [documentTracks, filterProjectCode, filterDocStatus, filterPaymentStatus, searchQuery, projects]);
 
   // Computed summary metrics
   const summary = useMemo(() => {
@@ -300,6 +348,69 @@ export const DocumentTrackingPage: React.FC = () => {
               <span>{filteredTracks.length} hồ sơ</span>
               <span>{summary.paidCount} đã thanh toán</span>
               <span>{summary.totalPrepayVal.toLocaleString('vi-VN')} đ tạm ứng</span>
+            </div>
+          </div>
+
+          <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
+                <span className="material-symbols-outlined text-[16px]">filter_list</span>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500 font-medium whitespace-nowrap">Dự án:</span>
+                <CustomSelect
+                  value={filterProjectCode}
+                  onChange={e => setFilterProjectCode(e.target.value)}
+                  className="min-w-[100px] max-w-[150px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
+                >
+                  <option value="all">Tất cả</option>
+                  {docProjectOptions.map(opt => (
+                    <option key={opt} value={opt}>{projects.find(p => p.code === opt)?.name || opt}</option>
+                  ))}
+                </CustomSelect>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500 font-medium whitespace-nowrap">Trạng thái hồ sơ:</span>
+                <CustomSelect
+                  value={filterDocStatus}
+                  onChange={e => setFilterDocStatus(e.target.value)}
+                  className="min-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
+                >
+                  <option value="all">Tất cả</option>
+                  {docStatusOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </CustomSelect>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500 font-medium whitespace-nowrap">Thanh toán:</span>
+                <CustomSelect
+                  value={filterPaymentStatus}
+                  onChange={e => setFilterPaymentStatus(e.target.value)}
+                  className="min-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
+                >
+                  <option value="all">Tất cả</option>
+                  {paymentStatusOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </CustomSelect>
+              </div>
+            </div>
+
+            <div className="flex items-center">
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                <input
+                  type="text"
+                  placeholder="Tìm số HĐ, công ty..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-7 pr-2 py-1 border border-slate-200 rounded-md text-xs w-[200px] focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
             </div>
           </div>
 

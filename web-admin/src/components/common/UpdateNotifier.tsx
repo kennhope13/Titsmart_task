@@ -61,8 +61,8 @@ export const UpdateNotifier: React.FC = () => {
 
   // ─── Web polling version.json ───
   const checkWebVersion = useCallback(async () => {
-    // Nếu đang chạy trên Electron, bỏ qua web polling
-    if (window.electronAPI) return;
+    // Nếu đang chạy trên Electron hoặc localhost, bỏ qua web polling
+    if (window.electronAPI || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return;
 
     try {
       const currentVersion = import.meta.env.VITE_APP_VERSION || '0.0.0';
