@@ -311,6 +311,7 @@ export const MaterialTrackingPage: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterName, setFilterName] = useState('');
   const [filterUnit, setFilterUnit] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Sticky header dynamic height
   const stickyHeaderRef = useRef<HTMLDivElement>(null);
@@ -405,6 +406,14 @@ export const MaterialTrackingPage: React.FC = () => {
       if (filterName && m.name !== filterName) return false;
       if (filterUnit && m.unit !== filterUnit) return false;
 
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const codeMatch = (m.code || '').toLowerCase().includes(q);
+        const nameMatch = (m.name || '').toLowerCase().includes(q);
+        const descMatch = (m.specs || '').toLowerCase().includes(q);
+        if (!codeMatch && !nameMatch && !descMatch) return false;
+      }
+
       // OVERVIEW matches everything
       if (activeTab === 'IMPORT' && m.totalImport === 0) return false;
       if (activeTab === 'EXPORT' && m.totalExport === 0) return false;
@@ -419,7 +428,7 @@ export const MaterialTrackingPage: React.FC = () => {
     });
 
     return result;
-  }, [materials, activeTab, filterCategory, filterName, filterUnit]);
+  }, [materials, activeTab, filterCategory, filterName, filterUnit, searchQuery]);
 
   const imports = inventoryTransactions.filter(tx => tx.type === 'IMPORT');
 
@@ -698,38 +707,53 @@ export const MaterialTrackingPage: React.FC = () => {
           </div>
           
           {/* Lọc chi tiết */}
-          <div className="px-4 py-2 bg-slate-50/80 border-t border-slate-100 flex items-center gap-3 overflow-x-auto custom-scrollbar">
-            <div className="flex items-center gap-1.5 text-slate-500 font-bold text-xs whitespace-nowrap pr-1">
-              <span className="material-symbols-outlined text-[16px]">filter_list</span>
-              Lọc chi tiết:
+          <div className="px-4 py-2 bg-slate-50/80 border-t border-slate-100 flex items-center gap-3 overflow-x-auto custom-scrollbar justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 text-slate-500 font-bold text-xs whitespace-nowrap pr-1">
+                <span className="material-symbols-outlined text-[16px]">filter_list</span>
+                Lọc chi tiết:
+              </div>
+              
+              <CustomSelect 
+                className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 min-w-[150px] max-w-[200px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+              >
+                <option value="">Danh mục: Tất cả</option>
+                {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
+              </CustomSelect>
+
+              <CustomSelect 
+                className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 min-w-[150px] max-w-[200px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+              >
+                <option value="">Tên Vật Tư: Tất cả</option>
+                {uniqueNames.map(n => <option key={n} value={n}>{n}</option>)}
+              </CustomSelect>
+
+              <CustomSelect 
+                className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 min-w-[100px] max-w-[150px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
+                value={filterUnit}
+                onChange={(e) => setFilterUnit(e.target.value)}
+              >
+                <option value="">ĐVT: Tất cả</option>
+                {uniqueUnits.map(u => <option key={u} value={u}>{u}</option>)}
+              </CustomSelect>
             </div>
             
-            <CustomSelect 
-              className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 min-w-[150px] max-w-[200px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-            >
-              <option value="">Danh mục: Tất cả</option>
-              {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
-            </CustomSelect>
-
-            <CustomSelect 
-              className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 min-w-[150px] max-w-[200px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
-              value={filterName}
-              onChange={(e) => setFilterName(e.target.value)}
-            >
-              <option value="">Tên Vật Tư: Tất cả</option>
-              {uniqueNames.map(n => <option key={n} value={n}>{n}</option>)}
-            </CustomSelect>
-
-            <CustomSelect 
-              className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 min-w-[100px] max-w-[150px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
-              value={filterUnit}
-              onChange={(e) => setFilterUnit(e.target.value)}
-            >
-              <option value="">ĐVT: Tất cả</option>
-              {uniqueUnits.map(u => <option key={u} value={u}>{u}</option>)}
-            </CustomSelect>
+            <div className="flex items-center flex-shrink-0">
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">search</span>
+                <input
+                  type="text"
+                  placeholder="Tìm tên, mã vật tư..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-7 pr-2 py-1 border border-slate-200 rounded text-xs w-[180px] focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
