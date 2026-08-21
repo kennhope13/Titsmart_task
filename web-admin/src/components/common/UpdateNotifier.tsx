@@ -1,21 +1,39 @@
-import React, { useEffect, useState } from 'react';
-import { Download, X, Loader2, CheckCircle2, AlertTriangle, RotateCcw } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Download, X, Loader2, CheckCircle2, AlertTriangle, RotateCcw, Sparkles } from 'lucide-react';
 import type { UpdateStatusPayload } from '@/types/electron';
+
 
 type UiState = {
   visible: boolean;
   status: 'available' | 'downloading' | 'downloaded' | 'error';
   version?: string;
   releaseNotes?: string;
+  notes?: string[];
   percent?: number;
   message?: string;
+  source?: 'electron' | 'web';
 };
 
 const initialState: UiState = { visible: false, status: 'available' };
 
+const POLL_INTERVAL = 5 * 60 * 1000; // 5 phút
+
+function compareVersions(a: string, b: string): number {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] || 0;
+    const nb = pb[i] || 0;
+    if (na > nb) return 1;
+    if (na < nb) return -1;
+  }
+  return 0;
+}
+
 export const UpdateNotifier: React.FC = () => {
   const [state, setState] = useState<UiState>(initialState);
 
+  // ─── Electron auto-update (giữ nguyên logic cũ) ───
   useEffect(() => {
     const api = window.electronAPI;
     if (!api) return;
@@ -23,17 +41,16 @@ export const UpdateNotifier: React.FC = () => {
     api.onUpdateStatus((p: UpdateStatusPayload) => {
       switch (p.status) {
         case 'available':
-          setState({ visible: true, status: 'available', version: p.version, releaseNotes: p.releaseNotes });
+          setState({ visible: true, status: 'available', version: p.version, releaseNotes: p.releaseNotes, source: 'electron' });
           break;
         case 'downloading':
-          setState((s) => ({ ...s, visible: true, status: 'downloading', percent: p.percent }));
+          setState((s) => ({ ...s, visible: true, status: 'downloading', percent: p.percent, source: 'electron' }));
           break;
         case 'downloaded':
-          setState((s) => ({ ...s, visible: true, status: 'downloaded', version: p.version }));
+          setState((s) => ({ ...s, visible: true, status: 'downloaded', version: p.version, source: 'electron' }));
           break;
         case 'error':
-          // Hiển thị lỗi ra UI để biết vì sao auto-update thất bại
-          setState((s) => ({ ...s, visible: true, status: 'error', message: p.message || 'Lỗi không xác định' }));
+          setState((s) => ({ ...s, visible: true, status: 'error', message: p.message || 'Lỗi không xác định', source: 'electron' }));
           console.error('[Update] Lỗi kiểm tra/cập nhật:', p.message);
           break;
         default:
@@ -42,9 +59,62 @@ export const UpdateNotifier: React.FC = () => {
     });
   }, []);
 
+  // ─── Web polling version.json ───
+  const checkWebVersion = useCallback(async () => {
+    // Nếu đang chạy trên Electron, bỏ qua web polling
+    if (window.electronAPI) return;
+
+    try {
+      const currentVersion = import.meta.env.VITE_APP_VERSION || '0.0.0';
+      const res = await fetch(`./version.json?t=${Date.now()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (data.version && compareVersions(data.version, currentVersion) > 0) {
+        setState({
+          visible: true,
+          status: 'available',
+          version: data.version,
+          notes: data.notes || [],
+          source: 'web',
+        });
+      }
+    } catch {
+      // Lỗi fetch thì bỏ qua, không hiển thị gì
+    }
+  }, []);
+
+  useEffect(() => {
+    if (window.electronAPI) return; // Electron xử lý riêng
+
+    // Kiểm tra ngay khi mount
+    checkWebVersion();
+
+    // Poll mỗi 5 phút
+    const interval = setInterval(checkWebVersion, POLL_INTERVAL);
+
+    // Kiểm tra khi tab trở lại (user quay lại sau khi nghỉ)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkWebVersion();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [checkWebVersion]);
+
   if (!state.visible) return null;
 
   const dismiss = () => setState({ ...state, visible: false });
+
+  const handleWebUpdate = () => {
+    // Hard reload để xóa cache
+    window.location.reload();
+  };
 
   return (
     <div className="fixed bottom-5 right-5 z-50 w-[420px] max-w-[calc(100vw-2rem)]">
@@ -56,6 +126,8 @@ export const UpdateNotifier: React.FC = () => {
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
               ) : state.status === 'downloading' ? (
                 <Loader2 className="w-5 h-5 text-[#00236F] animate-spin" />
+              ) : state.source === 'web' ? (
+                <Sparkles className="w-5 h-5 text-[#00236F]" />
               ) : (
                 <Download className="w-5 h-5 text-[#00236F]" />
               )}
@@ -83,7 +155,23 @@ export const UpdateNotifier: React.FC = () => {
           )}
         </div>
 
-        {state.status === 'available' && state.releaseNotes && (
+        {/* Web: hiển thị danh sách notes dạng list */}
+        {state.source === 'web' && state.notes && state.notes.length > 0 && (
+          <div className="px-4 pt-2 pb-1">
+            <p className="text-[11px] font-bold text-slate-600 mb-1.5">Nội dung cập nhật:</p>
+            <ul className="space-y-1 max-h-32 overflow-y-auto">
+              {state.notes.map((note, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-slate-500">
+                  <span className="text-green-500 mt-0.5 flex-shrink-0">✓</span>
+                  <span>{note}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Electron: hiển thị releaseNotes HTML */}
+        {state.source === 'electron' && state.status === 'available' && state.releaseNotes && (
           <div className="px-4 pt-2 pb-1">
             <div 
               className="text-xs text-slate-500 max-h-32 overflow-y-auto prose prose-sm prose-slate"
@@ -116,12 +204,22 @@ export const UpdateNotifier: React.FC = () => {
               >
                 Để sau
               </button>
-              <button
-                onClick={() => window.electronAPI?.downloadUpdate()}
-                className="px-3 py-1.5 text-sm font-semibold text-white bg-[#00236F] hover:bg-[#001a56] rounded-lg transition-colors"
-              >
-                Cập nhật ngay
-              </button>
+              {state.source === 'web' ? (
+                <button
+                  onClick={handleWebUpdate}
+                  className="px-3 py-1.5 text-sm font-semibold text-white bg-[#00236F] hover:bg-[#001a56] rounded-lg transition-colors inline-flex items-center gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Cập nhật ngay
+                </button>
+              ) : (
+                <button
+                  onClick={() => window.electronAPI?.downloadUpdate()}
+                  className="px-3 py-1.5 text-sm font-semibold text-white bg-[#00236F] hover:bg-[#001a56] rounded-lg transition-colors"
+                >
+                  Cập nhật ngay
+                </button>
+              )}
             </>
           )}
           {state.status === 'downloading' && (

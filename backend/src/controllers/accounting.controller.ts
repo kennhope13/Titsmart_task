@@ -527,7 +527,7 @@ export const createDocumentTrack = async (req: Request, res: Response) => {
       include: { project: true }
     });
     res.status(201).json(formatDocumentTrack(p));
-  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create document track' }); }
+  } catch (error) { require('fs').appendFileSync('api_error.log', new Date().toISOString() + ' ' + String(error) + '\\n' + (error.stack || '') + '\\n' + JSON.stringify(req.body) + '\\n\\n'); console.error(error); res.status(500).json({ error: 'Failed to create document track' }); }
 };
 
 export const updateDocumentTrack = async (req: Request, res: Response) => {
