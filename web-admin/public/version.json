@@ -1,9 +1,9 @@
 {
-  "version": "1.0.85",
+  "version": "1.0.109",
   "date": "21/08/2026",
   "notes": [
-    "Cải tiến thanh menu điều hướng: Cố định vị trí và bổ sung nút Đóng/Mở chuyên dụng ở cạnh phải để chống vướng tầm nhìn.",
-    "Bổ sung công cụ lọc nâng cao (Trạng thái Chứng từ & File đính kèm) trong tab Theo dõi chứng từ của Dự án.",
-    "Tinh chỉnh và thu gọn kích thước của tất cả thanh lọc chi tiết trên toàn hệ thống để tiết kiệm không gian."
+    "Sửa lỗi tràn layout và các cột bị dồn ép (như cột Đáp ứng kỹ thuật).",
+    "Cho phép tự động xuống dòng (word-wrap) ở tất cả các cột để tránh bị cắt chữ thành dấu chấm lửng.",
+    "Đồng bộ căn giữa các cột Khối lượng (KL) và làm đậm đường viền để dễ nhìn hơn."
   ]
 }

@@ -406,7 +406,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
           <thead className="sticky top-0 z-30 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
               <th rowSpan={2} style={{ minWidth: 50, width: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'   }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
-              <th rowSpan={2} style={{ width: "100%", minWidth: 280, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'  , left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left " >NỘI DUNG</th>
+              <th rowSpan={2} style={{ width: 280, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'  , left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left " >NỘI DUNG</th>
               <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
               <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL HĐ</th>
 
@@ -669,7 +669,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                     )}
                   </td>
                   {/* ĐVT */}
-                  <td className="p-0 align-top text-center font-mono text-slate-500 border-r border-slate-200">
+                  <td className="p-0 align-top text-center font-mono text-slate-500 border-r border-slate-200 whitespace-normal break-words leading-tight">
                     {editingCell?.id === plan.id && editingCell?.field === 'unit' ? (
                       <input
                         type="text"
@@ -685,7 +685,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                     )}
                   </td>
                   {/* KL HĐ */}
-                  <td className="p-0 align-top text-center font-mono font-semibold text-slate-900 border-r border-slate-200">
+                  <td className="p-0 align-top text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">
                     {editingCell?.id === plan.id && editingCell?.field === 'contractVolume' ? (
                       <input
                         type="number"
@@ -785,7 +785,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   {subTab === 'ORDER' && (
                     <>
                       {/* KL ĐẶT HÀNG */}
-                      <td className="p-0 align-top text-center font-mono font-semibold text-slate-900 border-r border-slate-200">
+                      <td className="p-0 align-top text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">
                         {editingCell?.id === plan.id && editingCell?.field === 'orderedVolume' ? (
                           <input
                             type="number"

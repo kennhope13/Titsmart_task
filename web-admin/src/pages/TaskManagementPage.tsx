@@ -1530,7 +1530,7 @@ const displayTasks = tasks.filter((t) => {
             <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
               <tr>
                 <th style={{ width: "var(--stt-width)", minWidth: 42 }} className="sticky left-0 z-20 py-2 px-1 bg-slate-50 bg-clip-padding text-center border-b border-r border-slate-200 whitespace-nowrap">STT</th>
-                <th className="sticky z-20 py-2 px-2 w-full min-w-[300px] bg-slate-50 bg-clip-padding border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" style={{ left: "var(--stt-width)" }}>NỘI DUNG</th>
+                <th className="sticky z-20 py-2 px-2 w-auto min-w-[300px] bg-slate-50 bg-clip-padding border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" style={{ left: "var(--stt-width)" }}>NỘI DUNG</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
@@ -1635,7 +1635,7 @@ const displayTasks = tasks.filter((t) => {
                           <span onClick={() => startEditing(t.id, 'volume', t.volume)} className="cursor-pointer hover:text-blue-600 hover:bg-slate-100 block w-full px-1">{t.volume ? t.volume.toLocaleString('vi-VN') : '-'}</span>
                         )}
                       </td>
-                      <td className="py-1.5 px-1 text-center font-mono text-slate-500 whitespace-nowrap border-r border-slate-200">
+                      <td className="py-1.5 px-1 text-center font-mono text-slate-500 whitespace-normal break-words leading-tight border-r border-slate-200">
                         {editingCell?.id === t.id && editingCell?.field === 'unit' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary text-[10px]" />
                         ) : (

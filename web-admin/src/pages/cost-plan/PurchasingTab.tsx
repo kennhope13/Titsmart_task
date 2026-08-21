@@ -428,7 +428,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
             {subTab === 'PRICING' ? (
               <tr className="bg-slate-50">
                 <th style={{ minWidth: 32, width: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'   }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
-                <th style={{ width: "100%", minWidth: 280, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'  , left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left " >{TEXT.content}</th>
+                <th style={{ width: 180, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'  , left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left " >{TEXT.content}</th>
                 <th style={{ width: 38, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center">{TEXT.unit}</th>
                 <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.contractVolume}</th>
                 <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.orderVolume}</th>
@@ -443,7 +443,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
             ) : (
               <tr className="bg-slate-50">
                 <th style={{ minWidth: 32, width: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'   }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
-                <th style={{ width: "100%", minWidth: 280, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'  , left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left " >{TEXT.content}</th>
+                <th style={{ width: 180, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'  , left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left " >{TEXT.content}</th>
                 <th style={{ width: 38, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center">{TEXT.unit}</th>
                 <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.total}</th>
                 <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.prepayPercent}</th>
@@ -612,7 +612,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 return (
                 <tr key={pur.id} onDoubleClick={() => onEdit(pur, subTab)} className={rowClass}>
                   {/* STT */}
-                  <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 px-1 py-1 text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
+                  <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 px-1 py-1 text-center font-mono whitespace-normal break-words leading-tight ${sttStyle}`}>
                     {editingCell?.id === pur.id && editingCell?.field === 'stt' ? (
                       <input
                         type="text"
@@ -669,7 +669,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   </td>
 
                   {/* ĐVT */}
-                  <td className="border-r border-slate-200 px-1 py-1 text-center font-mono text-slate-500 whitespace-nowrap overflow-hidden">
+                  <td className="border-r border-slate-200 px-1 py-1 text-center font-mono text-slate-500 whitespace-normal break-words leading-tight">
                     {editingCell?.id === pur.id && editingCell?.field === 'unit' ? (
                       <input
                         type="text"
@@ -684,14 +684,14 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                         className="w-full text-center border rounded px-1 py-0.5 bg-white text-slate-900 focus:outline-primary"
                       />
                     ) : (
-                      <span onClick={() => startEditing(pur.id, 'unit', pur.unit)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{pur.unit || '-'}</span>
+                      <span onClick={() => startEditing(pur.id, 'unit', pur.unit)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-normal break-words leading-tight">{pur.unit || '-'}</span>
                     )}
                   </td>
 
                   {subTab === 'PRICING' ? (
                     <>
                       {/* KL HỢP ĐỒNG */}
-                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono font-semibold text-slate-900 whitespace-nowrap overflow-hidden">
+                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono font-semibold text-slate-900 whitespace-normal break-words leading-tight">
                         {editingCell?.id === pur.id && editingCell?.field === 'volumeContract' ? (
                           <input
                             type="number"
@@ -706,12 +706,12 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-semibold focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'volumeContract', pur.volumeContract)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{numberText(pur.volumeContract)}</span>
+                          <span onClick={() => startEditing(pur.id, 'volumeContract', pur.volumeContract)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-normal break-words leading-tight">{numberText(pur.volumeContract)}</span>
                         )}
                       </td>
 
                       {/* KL ĐƠN ĐẶT */}
-                      <td className="border-r border-slate-200 bg-blue-50/30 px-1.5 py-1 text-center font-mono font-semibold text-blue-700 whitespace-nowrap overflow-hidden">
+                      <td className="border-r border-slate-200 bg-blue-50/30 px-1.5 py-1 text-center font-mono font-semibold text-blue-700 whitespace-normal break-words leading-tight">
                         {editingCell?.id === pur.id && editingCell?.field === 'volumeOrder' ? (
                           <input
                             type="number"
@@ -726,12 +726,12 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-semibold focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'volumeOrder', pur.volumeOrder)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{numberText(pur.volumeOrder)}</span>
+                          <span onClick={() => startEditing(pur.id, 'volumeOrder', pur.volumeOrder)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-normal break-words leading-tight">{numberText(pur.volumeOrder)}</span>
                         )}
                       </td>
 
                       {/* ĐƠN GIÁ */}
-                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono whitespace-nowrap overflow-hidden">
+                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono whitespace-normal break-words leading-tight">
                         {editingCell?.id === pur.id && editingCell?.field === 'unitPrice' ? (
                           <input
                             type="number"
@@ -746,12 +746,12 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-semibold focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'unitPrice', pur.unitPrice)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{money(pur.unitPrice)}</span>
+                          <span onClick={() => startEditing(pur.id, 'unitPrice', pur.unitPrice)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-normal break-words leading-tight">{money(pur.unitPrice)}</span>
                         )}
                       </td>
 
                       {/* THUẾ VAT */}
-                      <td className="border-r border-slate-200 px-1 py-1 text-center font-mono whitespace-nowrap overflow-hidden">
+                      <td className="border-r border-slate-200 px-1 py-1 text-center font-mono whitespace-normal break-words leading-tight">
                         {editingCell?.id === pur.id && editingCell?.field === 'vatRate' ? (
                           <input
                             type="number"
@@ -766,15 +766,15 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'vatRate', pur.vatRate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{percentText(pur.vatRate)}</span>
+                          <span onClick={() => startEditing(pur.id, 'vatRate', pur.vatRate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-normal break-words leading-tight">{percentText(pur.vatRate)}</span>
                         )}
                       </td>
 
                       {/* TIỀN THUẾ */}
-                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono whitespace-nowrap overflow-hidden">{money(computedVat(pur))}</td>
+                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono whitespace-normal break-words leading-tight">{money(computedVat(pur))}</td>
 
                       {/* THÀNH TIỀN */}
-                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono font-extrabold text-primary whitespace-nowrap overflow-hidden">{money(computedTotal(pur))}</td>
+                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono font-extrabold text-primary whitespace-normal break-words leading-tight">{money(computedTotal(pur))}</td>
 
                       {/* TT ĐẶT HÀNG */}
                       <td className="border-r border-slate-200 px-1.5 py-1 text-center overflow-hidden">
@@ -819,10 +819,10 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   ) : (
                     <>
                       {/* THÀNH TIỀN (tab PAYMENT) */}
-                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono font-extrabold text-primary whitespace-nowrap overflow-hidden">{money(computedTotal(pur))}</td>
+                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono font-extrabold text-primary whitespace-normal break-words leading-tight">{money(computedTotal(pur))}</td>
 
                       {/* % TẠM ỨNG */}
-                      <td className="border-r border-slate-200 px-1 py-1 text-center font-mono whitespace-nowrap overflow-hidden">
+                      <td className="border-r border-slate-200 px-1 py-1 text-center font-mono whitespace-normal break-words leading-tight">
                         {editingCell?.id === pur.id && editingCell?.field === 'prepayPercent' ? (
                           <input
                             type="number"
@@ -839,7 +839,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'prepayPercent', pur.prepayPercent)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{percentText(pur.prepayPercent)}</span>
+                          <span onClick={() => startEditing(pur.id, 'prepayPercent', pur.prepayPercent)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-normal break-words leading-tight">{percentText(pur.prepayPercent)}</span>
                         )}
                       </td>
 
@@ -862,7 +862,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary text-[10px]"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'paymentDate', pur.paymentDate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center">{pur.paymentDate || ''}</span>
+                          <span onClick={() => startEditing(pur.id, 'paymentDate', pur.paymentDate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-normal break-words leading-tight">{pur.paymentDate || ''}</span>
                         )}
                       </td>
 
