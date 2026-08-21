@@ -1628,26 +1628,26 @@ const displayTasks = tasks.filter((t) => {
                           </div>
                         )}
                       </td>
-                      <td className="py-1.5 px-1 text-right font-mono font-semibold text-slate-900 whitespace-nowrap">
+                      <td className="py-1.5 px-1 text-right font-mono font-semibold text-slate-900 whitespace-nowrap border-r border-slate-100">
                         {editingCell?.id === t.id && editingCell?.field === 'volume' ? (
                           <input type="number" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full text-right border rounded px-0.5 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10px]" />
                         ) : (
                           <span onClick={() => startEditing(t.id, 'volume', t.volume)} className="cursor-pointer hover:text-blue-600 hover:bg-slate-100 block w-full px-1">{t.volume ? t.volume.toLocaleString('vi-VN') : '-'}</span>
                         )}
                       </td>
-                      <td className="py-1.5 px-1 text-center font-mono text-slate-500 whitespace-nowrap">
+                      <td className="py-1.5 px-1 text-center font-mono text-slate-500 whitespace-nowrap border-r border-slate-100">
                         {editingCell?.id === t.id && editingCell?.field === 'unit' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary text-[10px]" />
                         ) : (
                           <span onClick={() => startEditing(t.id, 'unit', t.unit)} className="cursor-pointer hover:bg-slate-100 block w-full">{t.unit || '-'}</span>
                         )}
                       </td>
-                      <td className="py-1.5 px-1 text-center whitespace-nowrap">
+                      <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-100">
                         <span className={'inline-flex min-w-10 items-center justify-center px-1.5 py-0.5 font-mono font-bold text-[10px] rounded border ' + (isFinished ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : pct > 0 ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600')}>{pct}%</span>
                       </td>
-                      <td className="py-1.5 px-1 text-center whitespace-nowrap"><CustomSelect value={t.purchaseStatus || 'Chưa đặt hàng'} onChange={(e) => { const nextPurchaseStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(nextPurchaseStatus, t.constrStatus); updateTask(t.id, { purchaseStatus: nextPurchaseStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); syncTaskStatusToCostPlan(t, nextPurchaseStatus, undefined); }} className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.purchaseStatus || "Chưa đặt hàng")}`}>{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>))}</CustomSelect></td>
-                      <td className="py-1.5 px-1 text-center whitespace-nowrap"><CustomSelect value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); updateTask(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); syncTaskStatusToCostPlan(t, undefined, nextConstrStatus); }} className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}>{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>))}</CustomSelect></td>
-                      <td className="py-1.5 px-1 font-semibold text-red-600 truncate" title={t.issue || ''}>
+                      <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-100"><CustomSelect value={t.purchaseStatus || 'Chưa đặt hàng'} onChange={(e) => { const nextPurchaseStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(nextPurchaseStatus, t.constrStatus); updateTask(t.id, { purchaseStatus: nextPurchaseStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); syncTaskStatusToCostPlan(t, nextPurchaseStatus, undefined); }} className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.purchaseStatus || "Chưa đặt hàng")}`}>{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>))}</CustomSelect></td>
+                      <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-100"><CustomSelect value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); updateTask(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); syncTaskStatusToCostPlan(t, undefined, nextConstrStatus); }} className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}>{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>))}</CustomSelect></td>
+                      <td className="py-1.5 px-1 font-semibold text-red-600 truncate border-r border-slate-100" title={t.issue || ''}>
                         {editingCell?.id === t.id && editingCell?.field === 'issue' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-red-600 font-bold focus:outline-primary text-[10px]" />
                         ) : (
@@ -1656,7 +1656,7 @@ const displayTasks = tasks.filter((t) => {
                           </span>
                         )}
                       </td>
-                      <td className="py-1.5 px-1 text-slate-600 truncate" title={t.issueStatus || ''}>
+                      <td className="py-1.5 px-1 text-slate-600 truncate border-r border-slate-100" title={t.issueStatus || ''}>
                         {editingCell?.id === t.id && editingCell?.field === 'issueStatus' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-600 font-bold focus:outline-primary text-[10px]" />
                         ) : (

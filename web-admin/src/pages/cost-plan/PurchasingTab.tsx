@@ -890,7 +890,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   )}
 
                   {/* GHI CHÚ */}
-                  <td className="w-[120px] min-w-[90px] max-w-[160px] px-1.5 py-1 text-slate-500 text-center">
+                  <td className="w-[120px] min-w-[90px] max-w-[160px] px-1.5 py-1 text-slate-500 text-center border-r border-slate-100">
                     {editingCell?.id === pur.id && editingCell?.field === 'notes' ? (
                       <input
                         type="text"

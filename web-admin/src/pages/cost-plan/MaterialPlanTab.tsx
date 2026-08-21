@@ -669,7 +669,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                     )}
                   </td>
                   {/* ĐVT */}
-                  <td className="p-0 align-top text-center font-mono text-slate-500">
+                  <td className="p-0 align-top text-center font-mono text-slate-500 border-r border-slate-100">
                     {editingCell?.id === plan.id && editingCell?.field === 'unit' ? (
                       <input
                         type="text"
@@ -685,7 +685,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                     )}
                   </td>
                   {/* KL HĐ */}
-                  <td className="p-0 align-top text-right font-mono font-semibold text-slate-900">
+                  <td className="p-0 align-top text-right font-mono font-semibold text-slate-900 border-r border-slate-100">
                     {editingCell?.id === plan.id && editingCell?.field === 'contractVolume' ? (
                       <input
                         type="number"
@@ -704,7 +704,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   {subTab === 'TECH' && (
                     <>
                       {/* CHÀO HÀNG */}
-                      <td className="p-0 align-top text-slate-600">
+                      <td className="p-0 align-top text-slate-600 border-r border-slate-100">
                         {editingCell?.id === plan.id && editingCell?.field === 'techSpecModel' ? (
                           <input
                             type="text"
@@ -720,7 +720,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         )}
                       </td>
                       {/* ĐÁP ỨNG KỸ THUẬT */}
-                      <td className="p-0 align-top text-slate-600">
+                      <td className="p-0 align-top text-slate-600 border-r border-slate-100">
                         {editingCell?.id === plan.id && editingCell?.field === 'techSpecOrigin' ? (
                           <input
                             type="text"
@@ -736,7 +736,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         )}
                       </td>
                       {/* TÌNH TRẠNG */}
-                      <td className="w-[125px] p-0 align-middle text-slate-600">
+                      <td className="w-[125px] p-0 align-middle text-slate-600 border-r border-slate-100">
                         <div className="p-1">
                           {(() => {
                             const status = plan.techSpecStatus || '';
@@ -760,7 +760,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </div>
                       </td>
                       {/* TIẾN ĐỘ */}
-                      <td className="w-[125px] p-0 align-middle text-center font-mono font-bold text-slate-700 whitespace-nowrap">
+                      <td className="w-[125px] p-0 align-middle text-center font-mono font-bold text-slate-700 whitespace-nowrap border-r border-slate-100">
                         <div className="p-1">
                           {(() => {
                             const status = plan.progressStatus || '';
@@ -785,7 +785,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   {subTab === 'ORDER' && (
                     <>
                       {/* KL ĐẶT HÀNG */}
-                      <td className="p-0 align-top text-right font-mono font-semibold text-slate-900">
+                      <td className="p-0 align-top text-right font-mono font-semibold text-slate-900 border-r border-slate-100">
                         {editingCell?.id === plan.id && editingCell?.field === 'orderedVolume' ? (
                           <input
                             type="number"
@@ -801,7 +801,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         )}
                       </td>
                       {/* TT ĐẶT HÀNG */}
-                      <td className="p-0 align-middle text-center">
+                      <td className="p-0 align-middle text-center border-r border-slate-100">
                         <div className="p-1">
                           {(() => {
                             const currentStatus = plan.orderedStatus || '';
@@ -819,7 +819,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </div>
                       </td>
                       {/* NGÀY CÓ HÀNG */}
-                      <td className="p-0 align-top text-center font-mono text-slate-600 truncate">
+                      <td className="p-0 align-top text-center font-mono text-slate-600 truncate border-r border-slate-100">
                         {editingCell?.id === plan.id && editingCell?.field === 'expectedDate' ? (
                           <input
                             type="date"
@@ -835,7 +835,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         )}
                       </td>
                       {/* NỘI DUNG VƯỚNG MẮC */}
-                      <td className="p-0 align-top font-semibold text-red-600">
+                      <td className="p-0 align-top font-semibold text-red-600 border-r border-slate-100">
                         {editingCell?.id === plan.id && editingCell?.field === 'issueContent' ? (
                           <input
                             type="text"
@@ -851,7 +851,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         )}
                       </td>
                       {/* TT XỬ LÝ */}
-                      <td className="p-0 align-top text-slate-600">
+                      <td className="p-0 align-top text-slate-600 border-r border-slate-100">
                         {editingCell?.id === plan.id && editingCell?.field === 'issueStatus' ? (
                           <input
                             type="text"
@@ -872,7 +872,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   {subTab === 'DOCS' && (
                     <>
                       {/* CO */}
-                      <td className="p-0 align-top text-center">
+                      <td className="p-0 align-top text-center border-r border-slate-100">
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, docCo: !plan.docCo })}
@@ -885,7 +885,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </button>
                       </td>
                       {/* CQ */}
-                      <td className="p-0 align-top text-center">
+                      <td className="p-0 align-top text-center border-r border-slate-100">
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, docCq: !plan.docCq })}
@@ -898,7 +898,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </button>
                       </td>
                       {/* KIỂM ĐỊNH PCCC */}
-                      <td className="p-0 align-top text-center">
+                      <td className="p-0 align-top text-center border-r border-slate-100">
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, docFireInspection: !plan.docFireInspection })}
@@ -911,7 +911,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </button>
                       </td>
                       {/* ĐÃ GỬI TỚI CT */}
-                      <td className="p-0 align-top text-center">
+                      <td className="p-0 align-top text-center border-r border-slate-100">
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, dispatchToSite: !plan.dispatchToSite })}
@@ -924,7 +924,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </button>
                       </td>
                       {/* NGÀY */}
-                      <td className="p-0 align-top text-center font-mono text-slate-600 truncate">
+                      <td className="p-0 align-top text-center font-mono text-slate-600 truncate border-r border-slate-100">
                         {editingCell?.id === plan.id && editingCell?.field === 'dispatchDate' ? (
                           <input
                             type="date"
