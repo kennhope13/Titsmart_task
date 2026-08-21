@@ -377,7 +377,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
             </div>
 
             <div className="flex items-center gap-1">
-              <span className="text-slate-500 font-medium whitespace-nowrap">Thi công:</span>
+              <span className="text-slate-500 font-medium whitespace-nowrap">Tình trạng:</span>
               <CustomSelect
                 value={filterConstruction}
                 onChange={e => setFilterConstruction(e.target.value)}
