@@ -1,7 +1,7 @@
 {
-  "version": "1.0.110",
+  "version": "1.0.111",
   "date": "21/08/2026",
   "notes": [
-    "Mở rộng tối đa cột NỘI DUNG ở tab Quản lý tiến độ để lấp đầy khoảng trống bên phải."
+    "Bật tính năng tự động xuống dòng (word-wrap) cho cột VƯỚNG MẮC và XỬ LÝ để hiển thị đầy đủ văn bản dài."
   ]
 }
