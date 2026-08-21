@@ -1,7 +1,10 @@
 {
-  "version": "1.0.115",
+  "version": "1.0.116",
   "date": "21/08/2026",
   "notes": [
-    "Tự động đồng bộ thêm/xóa hạng mục sang tab Mua Hàng và Theo dõi khi người dùng tự check chọn Phạm vi cung cấp (Nhà thầu/Chủ đầu tư) ở Modal Sửa hạng mục."
+    "Xóa bỏ cột XONG, mở rộng cột XỬ LÝ hiển thị đầy đủ.",
+    "Đồng bộ màu sắc pastel cho dropdown XỬ LÝ giống MUA HÀNG và THI CÔNG.",
+    "Khắc phục dữ liệu tab Mua hàng dự án Phước Tân - phân loại đúng Nhà thầu/Chủ đầu tư.",
+    "Tự động đồng bộ khi thay đổi Phạm vi cung cấp cho các dự án mới."
   ]
 }
