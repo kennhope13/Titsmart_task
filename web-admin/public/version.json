@@ -1,7 +1,7 @@
 {
-  "version": "1.0.111",
+  "version": "1.0.113",
   "date": "21/08/2026",
   "notes": [
-    "Bật tính năng tự động xuống dòng (word-wrap) cho cột VƯỚNG MẮC và XỬ LÝ để hiển thị đầy đủ văn bản dài."
+    "Đồng bộ phong cách màu sắc (nhạt, viền mỏng) cho menu thả xuống của cột XỬ LÝ giống y hệt cột MUA HÀNG và THI CÔNG."
   ]
 }

@@ -7,7 +7,7 @@ import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
 import { WebOcrExtractedData } from '../services/webOcrService';
-import { Task, getStatusColorStyle , calculateAutoProgressRatio, calculateAutoProgressPercent, normalizeStatusText, purchaseProgressScore, constructionProgressScore, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS } from '../types';
+import { Task, getStatusColorStyle , calculateAutoProgressRatio, calculateAutoProgressPercent, normalizeStatusText, purchaseProgressScore, constructionProgressScore, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS, ISSUE_STATUS_OPTIONS, getIssueStatusColorStyle } from '../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
 
 // Convert integer to Roman numeral
@@ -1656,12 +1656,16 @@ const displayTasks = tasks.filter((t) => {
                           </span>
                         )}
                       </td>
-                      <td className="py-1.5 px-1 text-slate-600 whitespace-normal break-words leading-tight border-r border-slate-200" title={t.issueStatus || ''}>
-                        {editingCell?.id === t.id && editingCell?.field === 'issueStatus' ? (
-                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-600 font-bold focus:outline-primary text-[10px]" />
-                        ) : (
-                          <span onClick={() => startEditing(t.id, 'issueStatus', t.issueStatus)} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">{t.issueStatus || <span className="text-slate-300">-</span>}</span>
-                        )}
+                      <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200">
+                        <CustomSelect 
+                          value={t.issueStatus || "Không có"} 
+                          onChange={(e) => updateTask(t.id, { issueStatus: e.target.value })} 
+                          className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getIssueStatusColorStyle(t.issueStatus || "Không có")}`}
+                        >
+                          {ISSUE_STATUS_OPTIONS.map((option) => (
+                            <option key={option} value={option} className={getIssueStatusColorStyle(option)}>{option}</option>
+                          ))}
+                        </CustomSelect>
                       </td>
                       <td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-center cursor-pointer"><span className={'material-symbols-outlined text-sm ' + (isFinished ? 'text-emerald-600' : 'text-slate-300')}>{isFinished ? 'check_circle' : 'radio_button_unchecked'}</span></td>
                       <td className={`sticky right-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-l border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-slate-500 truncate`} title={cleanNotes(t.notes)}>

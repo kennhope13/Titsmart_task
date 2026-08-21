@@ -344,3 +344,16 @@ export const calculateAutoProgressRatio = (purchaseStatus?: string, constrStatus
   calculateAutoProgressPercent(purchaseStatus, constrStatus) / 100;
 
 
+
+
+export const ISSUE_STATUS_OPTIONS = ["Không có", "Chưa xử lý", "Đang xử lý", "Đã xử lý xong"] as const;
+
+export const getIssueStatusColorStyle = (status?: string) => {
+  if (!status) return "border-slate-200 bg-slate-50 text-slate-600";
+  const s = status.toLowerCase();
+  if (s === "chưa xử lý") return "border-red-200 bg-red-50 text-red-700";
+  if (s === "đang xử lý") return "border-blue-200 bg-blue-50 text-blue-700";
+  if (s === "đã xử lý xong") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (s === "không có") return "border-slate-200 bg-slate-50 text-slate-600";
+  return "border-slate-200 bg-slate-50 text-slate-600";
+};
