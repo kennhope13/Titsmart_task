@@ -2944,33 +2944,37 @@ export const ProjectCostPlanPage: React.FC = () => {
 
       {/* 3. Modal Chi Phí Công Trình */}
       <Modal isOpen={isNewExpenseOpen} onClose={() => setIsNewExpenseOpen(false)} title="Tạo Phiếu Chi Công trình mới">
-        <form onSubmit={(e) => {
+        <form onSubmit={async (e) => {
           e.preventDefault();
           const qty = Number(newExpenseData.quantity || 1);
           const price = Number(newExpenseData.unitPrice || 0);
           const vat = Number((newExpenseData as any).vatAmount || 0);
           const total = qty * price + vat;
 
-          addExpense({
-            projectCode: selectedProject,
-            stt: newExpenseData.stt || String(currentProjExpenses.length + 1),
-            date: newExpenseData.date || new Date().toISOString().split('T')[0],
-            content: newExpenseData.content || 'Vật tư/ thiết bị',
-            description: newExpenseData.description || '',
-            spenderName: newExpenseData.spenderName || '',
-            unit: newExpenseData.unit || 'cái',
-            quantity: qty,
-            unitPrice: price,
-            taxAmount: vat,
-            totalAmount: total,
-            incomeAmount: Number((newExpenseData as any).incomeAmount || 0),
-            balanceFund: Number((newExpenseData as any).balanceFund || 0),
-            notes: newExpenseData.notes || '',
-            invoiceUrl: newExpenseData.invoiceUrl || ''
-          });
-          setIsNewExpenseOpen(false);
-          setNewExpenseData({stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', spenderName: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''});
-          triggerToast('Đã thêm Chi phí thành công!', 'success');
+          try {
+            await addExpense({
+              projectCode: selectedProject,
+              stt: newExpenseData.stt || String(currentProjExpenses.length + 1),
+              date: newExpenseData.date || new Date().toISOString().split('T')[0],
+              content: newExpenseData.content || 'Vật tư/ thiết bị',
+              description: newExpenseData.description || '',
+              spenderName: newExpenseData.spenderName || '',
+              unit: newExpenseData.unit || 'cái',
+              quantity: qty,
+              unitPrice: price,
+              taxAmount: vat,
+              totalAmount: total,
+              incomeAmount: Number((newExpenseData as any).incomeAmount || 0),
+              balanceFund: Number((newExpenseData as any).balanceFund || 0),
+              notes: newExpenseData.notes || '',
+              invoiceUrl: newExpenseData.invoiceUrl || ''
+            });
+            setIsNewExpenseOpen(false);
+            setNewExpenseData({stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', spenderName: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''});
+            triggerToast('Đã thêm Chi phí thành công!', 'success');
+          } catch (err: any) {
+            triggerToast(err.message || 'Lỗi khi thêm chi phí!', 'warning');
+          }
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={newExpenseData.date} onChange={(e) => setNewExpenseData({...newExpenseData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>

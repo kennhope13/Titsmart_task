@@ -1,13 +1,7 @@
 {
-  "version": "1.0.81",
+  "version": "1.0.83",
   "date": "21/08/2026",
   "notes": [
-    "Thêm thanh công cụ lọc vào tab Lương công nhật",
-    "Đổi tên 'Đầu mục cha' thành 'Đầu mục' trong các bộ lọc",
-    "Thêm thanh công cụ lọc (Ngày chi, Nội dung, ĐVT) vào tab Chi phí công trình",
-    "Thêm thanh công cụ lọc (Đầu mục cha, ĐVT, TT Đặt hàng, TT Hợp đồng) vào tab Mua hàng (nhà thầu)",
-    "Đổi tên bộ lọc từ 'Thi công' thành 'Tình trạng' trong tab Kế hoạch Vật tư",
-    "Cải thiện giao diện UI/UX: Loại bỏ màu nền của các thẻ trạng thái (Vai trò, Dự án, Thanh toán...) tại tab Nhân sự và tab Theo dõi hồ sơ giúp giao diện gọn gàng và dễ nhìn hơn.",
-    "Sửa lỗi hiển thị sai định dạng thời gian ở Chi tiết Nhật ký hoạt động: Chuyển đổi định dạng giờ chuẩn sang giờ Việt Nam (VD: 12:11:32 20/08/2026) thay vì mã thời gian thô của hệ thống."
+    "Cập nhật hệ thống bắt lỗi (try/catch) cho form Thêm Phiếu Chi và Lương Công Nhật giúp hiển thị chính xác lý do từ chối dữ liệu (như lỗi phân quyền RLS) thay vì lỗi ẩn."
   ]
 }

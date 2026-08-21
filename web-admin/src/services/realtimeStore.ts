@@ -1281,6 +1281,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         });
       } catch (e) {
         console.error('Failed to add expense', e);
+        throw e;
       }
     },
 
