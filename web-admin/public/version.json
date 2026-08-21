@@ -1,6 +1,6 @@
 {
-  "version": "1.0.73",
-  "date": "20/08/2026",
+  "version": "1.0.74",
+  "date": "21/08/2026",
   "notes": [
     "Cải thiện giao diện UI/UX: Loại bỏ màu nền của các thẻ trạng thái (Vai trò, Dự án, Thanh toán...) tại tab Nhân sự và tab Theo dõi hồ sơ giúp giao diện gọn gàng và dễ nhìn hơn.",
     "Sửa lỗi hiển thị sai định dạng thời gian ở Chi tiết Nhật ký hoạt động: Chuyển đổi định dạng giờ chuẩn sang giờ Việt Nam (VD: 12:11:32 20/08/2026) thay vì mã thời gian thô của hệ thống."
