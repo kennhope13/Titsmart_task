@@ -352,19 +352,23 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
       </div>
 
       {/* Filter Bar */}
-      <div className="flex border-b border-slate-200 bg-slate-50 px-3 py-1.5 gap-4 sticky top-[45px] z-10 items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-[45px] z-10 items-center justify-between text-xs text-slate-600 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
+            <span className="material-symbols-outlined text-[16px]">filter_list</span>
+          </div>
           <div className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px] text-slate-400">filter_list</span>
             <span className="text-slate-500 font-medium whitespace-nowrap">Đầu mục cha:</span>
             <CustomSelect
               value={filterParent}
               onChange={e => setFilterParent(e.target.value)}
               className="min-w-[120px] max-w-[200px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
             >
-              {parentOptions.map(opt => (
-                <option key={opt.id} value={opt.id}>{opt.label}</option>
-              ))}
+              {parentOptions.map(opt => {
+                let label = opt.label;
+                if (label && label.length > 30) label = label.slice(0, 30) + '...';
+                return <option key={opt.id} value={opt.id}>{opt.id === 'all' ? 'Tất cả' : label}</option>;
+              })}
             </CustomSelect>
           </div>
           
