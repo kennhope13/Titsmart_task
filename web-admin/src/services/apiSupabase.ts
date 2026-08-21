@@ -229,7 +229,7 @@ export const api = {
   },
   activityLogs: {
     getAll: async () => {
-      const { data, error } = await supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(300);
+      const { data, error } = await supabase.from('activity_logs').select('*').order('timestamp', { ascending: false });
       if (error) throw error;
       return mapArray(data || []);
     },
