@@ -293,3 +293,17 @@ export interface FieldLog {
   images: string[]; // URL ảnh (đường dẫn /uploads/...)
   timestamp: string; // Thời điểm tạo báo cáo
 }
+
+export const getStatusColorStyle = (status?: string) => {
+  if (!status) return "border-slate-200 bg-slate-50 text-slate-600";
+  const s = status.toLowerCase();
+  if (s.includes("kh�ng c�") || s.includes("vu?ng m?c") || s.includes("h?y")) return "border-red-200 bg-red-50 text-red-700";
+  if (s.includes("d� c� h�ng") || s.includes("d� nh?n") || s.includes("d� thi c�ng") || s.includes("ho�n th�nh") || s.includes("d� k�") || s.includes("d� xu?t")) return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (s.includes("dang d?t") || s.includes("dang giao") || s.includes("dang tr�nh") || s.includes("dang ki?m") || s.includes("ete")) return "border-amber-200 bg-amber-50 text-amber-700";
+  if (s.includes("d� d?t h�ng") || s.includes("dang thi c�ng")) return "border-blue-200 bg-blue-50 text-blue-700";
+  if (s.includes("gia c�ng")) return "border-purple-200 bg-purple-50 text-purple-700";
+  if (s.includes("k�o d�y") && !s.includes("l?p")) return "border-indigo-200 bg-indigo-50 text-indigo-700";
+  if (s.includes("l?p thi?t b?")) return "border-teal-200 bg-teal-50 text-teal-700";
+  if (s.includes("tb + k�o d�y")) return "border-cyan-200 bg-cyan-50 text-cyan-700";
+  return "border-slate-200 bg-slate-50 text-slate-600";
+};

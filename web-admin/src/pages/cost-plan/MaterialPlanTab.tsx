@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ProjectMaterialPlan } from '../../types';
+import { ProjectMaterialPlan, getStatusColorStyle } from '../../types';
 import { PURCHASE_STATUS_OPTIONS } from '../TaskManagementPage';
 import { CustomSelect } from '@/components/common/CustomSelect';
 
@@ -799,14 +799,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <div className="p-1">
                           {(() => {
                             const currentStatus = plan.orderedStatus || '';
-                            let btnStyle = 'border-slate-200 bg-slate-50 text-slate-500';
-                            if (currentStatus === 'Đã nhận hàng') {
-                              btnStyle = 'border-emerald-200 bg-emerald-50 text-emerald-700';
-                            } else if (currentStatus === 'Đang giao hàng') {
-                              btnStyle = 'border-amber-200 bg-amber-50 text-amber-700';
-                            } else if (currentStatus === 'Đã đặt hàng') {
-                              btnStyle = 'border-blue-200 bg-blue-50 text-blue-700';
-                            }
+                            const btnStyle = getStatusColorStyle(currentStatus);
                             return (
                               <CustomSelect
                                 value={currentStatus}

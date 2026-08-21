@@ -1,5 +1,5 @@
 import React from 'react';
-import { ProjectPurchasing } from '../../types';
+import { ProjectPurchasing, getStatusColorStyle } from '../../types';
 import { PURCHASE_STATUS_OPTIONS } from '../TaskManagementPage';
 import { CustomSelect } from '@/components/common/CustomSelect';
 
@@ -773,14 +773,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                         <div className="p-1 flex justify-center">
                           {(() => {
                             const currentStatus = pur.orderStatus || 'Chưa đặt hàng';
-                            let btnStyle = 'border-slate-200 bg-slate-50 text-slate-500';
-                            if (currentStatus === 'Đã nhận hàng' || currentStatus === TEXT.received) {
-                              btnStyle = 'border-emerald-200 bg-emerald-50 text-emerald-700';
-                            } else if (currentStatus === 'Đang giao hàng' || currentStatus === TEXT.delivering) {
-                              btnStyle = 'border-amber-200 bg-amber-50 text-amber-700';
-                            } else if (currentStatus === 'Đã đặt hàng' || currentStatus === TEXT.ordered) {
-                              btnStyle = 'border-blue-200 bg-blue-50 text-blue-700';
-                            }
+                            const btnStyle = getStatusColorStyle(currentStatus);
                             return (
                               <CustomSelect
                                 value={currentStatus}
@@ -802,12 +795,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                         <div className="p-1">
                           {(() => {
                             const currentContractStatus = pur.contractStatus || 'Chưa ký';
-                            let contractBtnStyle = 'border-slate-200 bg-slate-50 text-slate-500';
-                            if (currentContractStatus === 'Đã ký') {
-                              contractBtnStyle = 'border-emerald-200 bg-emerald-50 text-emerald-700';
-                            } else if (currentContractStatus === 'Đang trình duyệt') {
-                              contractBtnStyle = 'border-amber-200 bg-amber-50 text-amber-700';
-                            }
+                            const contractBtnStyle = getStatusColorStyle(currentContractStatus);
                             return (
                               <CustomSelect
                                 value={currentContractStatus}
@@ -877,15 +865,13 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       <td className="w-[120px] border-r border-slate-100 px-0 py-0 text-center font-semibold text-slate-700">
                         <div className="p-1">
                           {(() => {
-                            const status = pur.invoiceStatus || 'Chưa xuất';
-                            let style = 'border-slate-200 bg-slate-50 text-slate-500';
-                            if (status === 'Đã xuất') style = 'border-emerald-200 bg-emerald-50 text-emerald-700';
-                            else if (status === 'Đang kiểm tra') style = 'border-amber-200 bg-amber-50 text-amber-700';
+                            const currentInvoiceStatus = pur.invoiceStatus || 'Chưa xuất';
+                            const invoiceBtnStyle = getStatusColorStyle(currentInvoiceStatus);
                             return (
                               <CustomSelect
-                                value={status}
+                                value={currentInvoiceStatus}
                                 onChange={(e) => { onUpdate(pur.id, { ...pur, invoiceStatus: e.target.value }); }}
-                                className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${style}`}
+                                className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${invoiceBtnStyle}`}
                               >
                                 <option value="Chưa xuất">Chưa xuất</option>
                                 <option value="Đang kiểm tra">Đang kiểm tra</option>
