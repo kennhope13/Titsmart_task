@@ -806,7 +806,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                                 onChange={(e) => { onUpdate(plan.id, { ...plan, orderedStatus: e.target.value }) }}
                                 className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${btnStyle}`}
                               >
-                                {PURCHASE_STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                {PURCHASE_STATUS_OPTIONS.map(opt => <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>)}
                               </CustomSelect>
                             );
                           })()}

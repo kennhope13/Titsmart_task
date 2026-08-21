@@ -780,10 +780,10 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                                 onChange={(e) => { onUpdate(pur.id, { ...pur, orderStatus: e.target.value }); }}
                                 className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${btnStyle}`}
                               >
-                                <option value="Chưa đặt hàng">Chưa đặt hàng</option>
-                                <option value="Đã đặt hàng">Đã đặt hàng</option>
-                                <option value="Đang giao hàng">Đang giao hàng</option>
-                                <option value="Đã nhận hàng">Đã nhận hàng</option>
+                                <option value="Chưa đặt hàng" className={getStatusColorStyle("Chưa đặt hàng")}>Chưa đặt hàng</option>
+                                <option value="Đã đặt hàng" className={getStatusColorStyle("Đã đặt hàng")}>Đã đặt hàng</option>
+                                <option value="Đang giao hàng" className={getStatusColorStyle("Đang giao hàng")}>Đang giao hàng</option>
+                                <option value="Đã nhận hàng" className={getStatusColorStyle("Đã nhận hàng")}>Đã nhận hàng</option>
                               </CustomSelect>
                             );
                           })()}
@@ -802,9 +802,9 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                                 onChange={(e) => { onUpdate(pur.id, { ...pur, contractStatus: e.target.value }); }}
                                 className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${contractBtnStyle}`}
                               >
-                                <option value="Chưa ký">Chưa ký</option>
-                                <option value="Đang trình duyệt">Đang trình duyệt</option>
-                                <option value="Đã ký">Đã ký</option>
+                                <option value="Chưa ký" className={getStatusColorStyle("Chưa ký")}>Chưa ký</option>
+                                <option value="Đang trình duyệt" className={getStatusColorStyle("Đang trình duyệt")}>Đang trình duyệt</option>
+                                <option value="Đã ký" className={getStatusColorStyle("Đã ký")}>Đã ký</option>
                               </CustomSelect>
                             );
                           })()}
@@ -873,9 +873,9 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                                 onChange={(e) => { onUpdate(pur.id, { ...pur, invoiceStatus: e.target.value }); }}
                                 className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${invoiceBtnStyle}`}
                               >
-                                <option value="Chưa xuất">Chưa xuất</option>
-                                <option value="Đang kiểm tra">Đang kiểm tra</option>
-                                <option value="Đã xuất">Đã xuất</option>
+                                <option value="Chưa xuất" className={getStatusColorStyle("Chưa xuất")}>Chưa xuất</option>
+                                <option value="Đang kiểm tra" className={getStatusColorStyle("Đang kiểm tra")}>Đang kiểm tra</option>
+                                <option value="Đã xuất" className={getStatusColorStyle("Đã xuất")}>Đã xuất</option>
                               </CustomSelect>
                             );
                           })()}

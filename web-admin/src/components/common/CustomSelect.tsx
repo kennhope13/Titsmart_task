@@ -21,7 +21,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const options: { value: string | number; label: React.ReactNode }[] = [];
+  const options: { value: string | number; label: React.ReactNode; className?: string }[] = [];
 
   const childrenArray = React.Children.toArray(children);
   childrenArray.forEach((child: any) => {
@@ -30,6 +30,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       options.push({
         value: childElement.props.value !== undefined ? childElement.props.value : childElement.props.children,
         label: childElement.props.children,
+        className: childElement.props.className
       });
     }
   });
@@ -126,9 +127,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             key={String(option.value) + idx}
             className={`px-3 py-1.5 cursor-pointer transition-colors ${fontSizeClass} ${
-              String(value) === String(option.value)
-                ? 'bg-blue-50 text-primary font-semibold'
-                : 'text-slate-700 hover:bg-slate-50'
+              option.className
+                ? (String(value) === String(option.value) ? option.className + ' ring-1 ring-inset ring-black/20 font-bold' : option.className + ' opacity-80 hover:opacity-100 hover:brightness-95')
+                : (String(value) === String(option.value) ? 'bg-blue-50 text-primary font-semibold' : 'text-slate-700 hover:bg-slate-50')
             }`}
             onMouseDown={(e) => { e.preventDefault(); handleSelect(option.value); }}
           >
