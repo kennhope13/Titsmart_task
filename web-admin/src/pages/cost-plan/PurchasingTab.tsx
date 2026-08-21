@@ -210,7 +210,55 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
     return finalRes;
   };
 
-  const filteredData = [...data].sort((a, b) => {
+  const [filterParent, setFilterParent] = React.useState('all');
+  const [filterUnit, setFilterUnit] = React.useState('all');
+  const [filterOrder, setFilterOrder] = React.useState('all');
+  const [filterContract, setFilterContract] = React.useState('all');
+
+  const parentOptions = React.useMemo(() => {
+    const parents = data.filter(p => isSectionRow(p));
+    return [{ id: 'all', label: 'Tất cả' }, ...parents.map(p => ({ id: p.id, label: p.content }))];
+  }, [data]);
+
+  const unitOptions = React.useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.unit).filter(Boolean)))], [data]);
+  const orderOptions = React.useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.orderStatus).filter(Boolean)))], [data]);
+  const contractOptions = React.useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.contractStatus).filter(Boolean)))], [data]);
+
+  let processedData = [...data];
+  if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      processedData = processedData.filter(p => 
+          p.content?.toLowerCase().includes(q) || 
+          p.unit?.toLowerCase().includes(q) || 
+          p.notes?.toLowerCase().includes(q)
+      );
+  }
+  if (filterParent !== 'all') {
+    processedData = processedData.filter(p => {
+      if (p.id === filterParent) return true;
+      let currentParentId = resolveParentId(p);
+      let safety = 0;
+      while (currentParentId && safety < 100) {
+        if (currentParentId === filterParent) return true;
+        const parentItem = data.find(r => r.id === currentParentId);
+        if (!parentItem) break;
+        currentParentId = resolveParentId(parentItem);
+        safety++;
+      }
+      return getSectionIndexForItem(p) === sectionOrder.get(filterParent);
+    });
+  }
+  if (filterUnit !== 'all') {
+    processedData = processedData.filter(p => isSectionRow(p) || p.unit === filterUnit);
+  }
+  if (filterOrder !== 'all') {
+    processedData = processedData.filter(p => isSectionRow(p) || p.orderStatus === filterOrder);
+  }
+  if (filterContract !== 'all') {
+    processedData = processedData.filter(p => isSectionRow(p) || p.contractStatus === filterContract);
+  }
+
+  const filteredData = [...processedData].sort((a, b) => {
       const secA = getSectionIndexForItem(a);
       const secB = getSectionIndexForItem(b);
       if (secA !== secB) return secA - secB;
@@ -301,6 +349,64 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
             {t.label}
           </button>
         ))}
+      </div>
+
+      {/* Filter Bar */}
+      <div className="flex border-b border-slate-200 bg-slate-50 px-3 py-1.5 gap-4 sticky top-[45px] z-10 items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px] text-slate-400">filter_list</span>
+            <span className="text-slate-500 font-medium whitespace-nowrap">Đầu mục cha:</span>
+            <CustomSelect
+              value={filterParent}
+              onChange={e => setFilterParent(e.target.value)}
+              className="min-w-[120px] max-w-[200px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+            >
+              {parentOptions.map(opt => (
+                <option key={opt.id} value={opt.id}>{opt.label}</option>
+              ))}
+            </CustomSelect>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
+            <CustomSelect
+              value={filterUnit}
+              onChange={e => setFilterUnit(e.target.value)}
+              className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+            >
+              {unitOptions.map(opt => (
+                <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
+              ))}
+            </CustomSelect>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500 font-medium whitespace-nowrap">TT Đặt hàng:</span>
+            <CustomSelect
+              value={filterOrder}
+              onChange={e => setFilterOrder(e.target.value)}
+              className="min-w-[100px] max-w-[150px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+            >
+              {orderOptions.map(opt => (
+                <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
+              ))}
+            </CustomSelect>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500 font-medium whitespace-nowrap">TT Hợp đồng:</span>
+            <CustomSelect
+              value={filterContract}
+              onChange={e => setFilterContract(e.target.value)}
+              className="min-w-[100px] max-w-[150px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+            >
+              {contractOptions.map(opt => (
+                <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
+              ))}
+            </CustomSelect>
+          </div>
+        </div>
       </div>
 
       <div className="w-full max-w-full overflow-x-auto custom-scrollbar flex-1 min-h-0">
