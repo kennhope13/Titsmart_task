@@ -1,7 +1,8 @@
 {
-  "version": "1.0.78",
+  "version": "1.0.79",
   "date": "21/08/2026",
   "notes": [
+    "Đổi tên 'Đầu mục cha' thành 'Đầu mục' trong các bộ lọc",
     "Thêm thanh công cụ lọc (Ngày chi, Nội dung, ĐVT) vào tab Chi phí công trình",
     "Thêm thanh công cụ lọc (Đầu mục cha, ĐVT, TT Đặt hàng, TT Hợp đồng) vào tab Mua hàng (nhà thầu)",
     "Đổi tên bộ lọc từ 'Thi công' thành 'Tình trạng' trong tab Kế hoạch Vật tư",

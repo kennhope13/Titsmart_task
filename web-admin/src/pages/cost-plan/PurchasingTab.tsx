@@ -358,7 +358,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-slate-500 font-medium whitespace-nowrap">Đầu mục cha:</span>
+            <span className="text-slate-500 font-medium whitespace-nowrap">Đầu mục:</span>
             <CustomSelect
               value={filterParent}
               onChange={e => setFilterParent(e.target.value)}
