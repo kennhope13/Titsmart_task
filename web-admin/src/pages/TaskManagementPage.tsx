@@ -1162,7 +1162,16 @@ export const TaskManagementPage: React.FC = () => {
   const columnConstrStatuses = Array.from(new Set(tasksForColumnFilters.map((t) => t.constrStatus).filter((value): value is string => !!value && value.trim().length > 0))).sort((a, b) => a.localeCompare(b, 'vi'));
 
   // Filter Tasks by Project and visible table columns
-  const displayTasks = tasks.filter((t) => {
+  const maxSttWidth = React.useMemo(() => {
+  let maxLen = 3;
+  tasks.forEach(t => {
+    const len = String((t as any).computedStt || t.stt || "").length;
+    if (len > maxLen) maxLen = len;
+  });
+  return Math.max(42, maxLen * 7.5 + 16);
+}, [tasks]);
+
+const displayTasks = tasks.filter((t) => {
     const matchesProj = selectedProjectCode === 'all' || t.projectCode === selectedProjectCode;
 
     // Column Filters
@@ -1517,11 +1526,11 @@ export const TaskManagementPage: React.FC = () => {
       {/* Main Data Table */}
       <div className="border-t border-slate-200 flex flex-col flex-1 overflow-hidden">
         <div className="w-full overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
-          <table className="min-w-[1060px] w-full text-left border-collapse text-[11px] table-fixed">
+          <table className="min-w-[1060px] w-full text-left border-collapse text-[11px] table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
             <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
               <tr>
-                <th className="sticky left-0 z-20 py-2 px-1 w-auto min-w-[42px] bg-slate-50 bg-clip-padding text-center border-b border-r border-slate-200 whitespace-nowrap">STT</th>
-                <th className="py-2 px-2 w-[400px] min-w-[400px] bg-slate-50 bg-clip-padding border-b border-r border-slate-200 whitespace-nowrap">NỘI DUNG</th>
+                <th style={{ width: "var(--stt-width)", minWidth: 42 }} className="sticky left-0 z-20 py-2 px-1 bg-slate-50 bg-clip-padding text-center border-b border-r border-slate-200 whitespace-nowrap">STT</th>
+                <th className="sticky z-20 py-2 px-2 w-[400px] min-w-[400px] bg-slate-50 bg-clip-padding border-b border-r border-slate-200 whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" style={{ left: "var(--stt-width)" }}>NỘI DUNG</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-right border-b border-slate-200 whitespace-nowrap">KL</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
@@ -1543,8 +1552,8 @@ export const TaskManagementPage: React.FC = () => {
                     const isCollapsed = collapsedSections.has(t._sectionKey || '');
                     return (
                       <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                        <td onClick={() => handleOpenEditModal(t)} className="sticky left-0 z-10 py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{t.computedStt || t.stt}</td>
-                        <td colSpan={10} className="py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap">
+                        <td onClick={() => handleOpenEditModal(t)} className="sticky left-0 z-10 py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{(t as any).computedStt || t.stt}</td>
+                        <td colSpan={10} className="sticky z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" style={{ left: "var(--stt-width)" }}>
                           <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}
@@ -1604,10 +1613,10 @@ export const TaskManagementPage: React.FC = () => {
                         {editingCell?.id === t.id && editingCell?.field === 'stt' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10px]" />
                         ) : (
-                          <span onClick={() => startEditing(t.id, 'stt', t.computedStt || t.stt)} className="cursor-pointer hover:bg-slate-200/50 block w-full px-1">{t.computedStt || t.stt || idx + 1}</span>
+                          <span onClick={() => startEditing(t.id, 'stt', (t as any).computedStt || t.stt)} className="cursor-pointer hover:bg-slate-200/50 block w-full px-1">{(t as any).computedStt || t.stt || idx + 1}</span>
                         )}
                       </td>
-                      <td className={`py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 leading-tight transition-colors truncate ${fontStyle}`} title={t.name}>
+                      <td className={`sticky z-10 py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-100 leading-tight transition-colors truncate ${fontStyle}`} style={{ left: "var(--stt-width)" }} title={t.name}>
                         {editingCell?.id === t.id && editingCell?.field === 'name' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10.5px]" />
                         ) : (
