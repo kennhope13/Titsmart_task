@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ProjectMaterialPlan, getStatusColorStyle } from '../../types';
-import { PURCHASE_STATUS_OPTIONS } from '../TaskManagementPage';
+import { ProjectMaterialPlan, getStatusColorStyle, PURCHASE_STATUS_OPTIONS } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface MaterialPlanTabProps {

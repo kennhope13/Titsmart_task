@@ -6,8 +6,7 @@ import { CostPlanSummaryTable } from './cost-plan/CostPlanSummaryTable';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { ImageUpload } from '../components/common/ImageUpload';
-import { ProjectMaterialPlan, ProjectPurchasing, ProjectExpense, LaborPayroll } from '../types';
-import { PURCHASE_STATUS_OPTIONS } from './TaskManagementPage';
+import { ProjectMaterialPlan, ProjectPurchasing, ProjectExpense, LaborPayroll , calculateAutoProgressRatio, PURCHASE_STATUS_OPTIONS } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { MaterialPlanTab } from './cost-plan/MaterialPlanTab';
 import { PurchasingTab } from './cost-plan/PurchasingTab';
@@ -234,7 +233,17 @@ export const ProjectCostPlanPage: React.FC = () => {
           norm(t.name) === norm(existing.content)
         );
         if (matchingTask) {
-          updateTask(matchingTask.id, { purchaseStatus: updates.orderStatus || 'Chưa đặt hàng' });
+          const newPurch = updates.orderStatus || 'Chưa đặt hàng';
+          const taskUpdates: Record<string, any> = { purchaseStatus: newPurch };
+          
+          if (!matchingTask.isSectionHeader) {
+            const nextProgress = calculateAutoProgressRatio(newPurch, matchingTask.constrStatus);
+            taskUpdates.progress = nextProgress;
+            taskUpdates.isDone = nextProgress >= 1;
+            taskUpdates.status = nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm';
+          }
+          
+          updateTask(matchingTask.id, taskUpdates);
         }
       }
     } finally {
@@ -293,8 +302,25 @@ export const ProjectCostPlanPage: React.FC = () => {
         );
         if (matchingTask) {
           const taskUpdates: Record<string, any> = {};
-          if (updates.orderedStatus !== undefined) taskUpdates.purchaseStatus = updates.orderedStatus || 'Chưa đặt hàng';
-          if (updates.progressStatus !== undefined) taskUpdates.constrStatus = updates.progressStatus || 'Chưa thi công';
+          let newPurch = matchingTask.purchaseStatus;
+          let newConstr = matchingTask.constrStatus;
+
+          if (updates.orderedStatus !== undefined) {
+             taskUpdates.purchaseStatus = updates.orderedStatus || 'Chưa đặt hàng';
+             newPurch = taskUpdates.purchaseStatus;
+          }
+          if (updates.progressStatus !== undefined) {
+             taskUpdates.constrStatus = updates.progressStatus || 'Chưa thi công';
+             newConstr = taskUpdates.constrStatus;
+          }
+
+          if (!matchingTask.isSectionHeader) {
+            const nextProgress = calculateAutoProgressRatio(newPurch, newConstr);
+            taskUpdates.progress = nextProgress;
+            taskUpdates.isDone = nextProgress >= 1;
+            taskUpdates.status = nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm';
+          }
+
           updateTask(matchingTask.id, taskUpdates);
         }
 

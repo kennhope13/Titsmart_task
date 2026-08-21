@@ -1,6 +1,5 @@
 import React from 'react';
-import { ProjectPurchasing, getStatusColorStyle } from '../../types';
-import { PURCHASE_STATUS_OPTIONS } from '../TaskManagementPage';
+import { ProjectPurchasing, getStatusColorStyle, PURCHASE_STATUS_OPTIONS } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface PurchasingTabProps {
