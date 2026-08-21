@@ -220,6 +220,22 @@ export const ProjectCostPlanPage: React.FC = () => {
           });
         }
       }
+
+      // Đồng bộ trạng thái đặt hàng sang Kế hoạch Vật tư + Quản lý Công việc
+      if (updates.orderStatus !== undefined) {
+        if (matchingMaterial) {
+          await updateMaterialPlan(matchingMaterial.id, { orderedStatus: updates.orderStatus || 'Chưa đặt hàng' });
+        }
+
+        const matchingTask = tasks.find(t => 
+          t.projectCode === existing.projectCode && 
+          norm(t.stt) === norm(existing.stt) && 
+          norm(t.name) === norm(existing.content)
+        );
+        if (matchingTask) {
+          updateTask(matchingTask.id, { purchaseStatus: updates.orderStatus || 'Chưa đặt hàng' });
+        }
+      }
     } finally {
       if (matchingMaterial) {
         syncingIdsRef.current.delete(matchingMaterial.id);
@@ -234,9 +250,10 @@ export const ProjectCostPlanPage: React.FC = () => {
       await updateMaterialPlan(id, updates);
       if (!existing) return;
 
-      if (updates.stt !== undefined || updates.jobContent !== undefined || updates.unit !== undefined || updates.contractVolume !== undefined) {
-        const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
+      // Đồng bộ STT, tên, đơn vị, khối lượng sang Purchasing + Task
+      if (updates.stt !== undefined || updates.jobContent !== undefined || updates.unit !== undefined || updates.contractVolume !== undefined) {
         const matchingPurchasing = purchasingPlans.find(p => 
           p.projectCode === existing.projectCode && 
           norm(p.stt) === norm(existing.stt) && 
@@ -263,6 +280,32 @@ export const ProjectCostPlanPage: React.FC = () => {
             unit: updates.unit !== undefined ? updates.unit : matchingTask.unit,
             volume: updates.contractVolume !== undefined ? updates.contractVolume : matchingTask.volume
           });
+        }
+      }
+
+      // Đồng bộ trạng thái đặt hàng / thi công sang Purchasing + Task
+      if (updates.orderedStatus !== undefined || updates.progressStatus !== undefined) {
+        const matchingTask = tasks.find(t => 
+          t.projectCode === existing.projectCode && 
+          norm(t.stt) === norm(existing.stt) && 
+          norm(t.name) === norm(existing.jobContent)
+        );
+        if (matchingTask) {
+          const taskUpdates: Record<string, any> = {};
+          if (updates.orderedStatus !== undefined) taskUpdates.purchaseStatus = updates.orderedStatus || 'Chưa đặt hàng';
+          if (updates.progressStatus !== undefined) taskUpdates.constrStatus = updates.progressStatus || 'Chưa thi công';
+          updateTask(matchingTask.id, taskUpdates);
+        }
+
+        if (updates.orderedStatus !== undefined) {
+          const matchingPurchasing = purchasingPlans.find(p => 
+            p.projectCode === existing.projectCode && 
+            norm(p.stt) === norm(existing.stt) && 
+            norm(p.content) === norm(existing.jobContent)
+          );
+          if (matchingPurchasing) {
+            updatePurchasingPlan(matchingPurchasing.id, { orderStatus: updates.orderedStatus || 'Chưa đặt hàng' });
+          }
         }
       }
     } finally {

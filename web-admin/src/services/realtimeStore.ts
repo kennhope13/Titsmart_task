@@ -558,7 +558,15 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     fetchEngineers: async () => {
       try {
-        const engineers = await api.engineers.getAll();
+        const rawEngineers = await api.engineers.getAll();
+        const engineers = rawEngineers.map((e: any) => {
+          const allProjects = [
+            ...(e.managedProjects || []),
+            ...(e.memberProjects || [])
+          ];
+          const uniqueCodes = Array.from(new Set(allProjects.map((p: any) => p.code).filter(Boolean)));
+          return { ...e, projectCodes: uniqueCodes };
+        });
         set({ engineers });
 
         // Sync authStore if the logged-in user is updated

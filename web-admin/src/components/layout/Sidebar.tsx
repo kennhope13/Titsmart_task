@@ -2,18 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { useAuthStore } from '../../services/authStore';
+import { useUIStore } from '../../services/uiStore';
 
 interface SidebarProps {
   isExpanded?: boolean;
   toggleSidebar?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isExpanded = false, toggleSidebar }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = false, toggleSidebar }) => {
   const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const { sidebarHoverToExpand, sidebarShowToggleButton, setSidebarHoverToExpand, setSidebarShowToggleButton } = useUIStore();
+  
+  const [isHovered, setIsHovered] = useState(false);
   const [showNotifPopover, setShowNotifPopover] = useState(false);
   const [showUserPopover, setShowUserPopover] = useState(false);
+  
+  const isExpanded = isExpandedProp || (sidebarHoverToExpand && isHovered) || showNotifPopover || showUserPopover;
   const navigate = useNavigate();
   const unreadCount = notifications.filter((item) => !item.read).length;
   const sidebarRef = useRef<HTMLElement>(null);
@@ -136,7 +142,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded = false, toggleSide
   const navGroups = getNavGroups();
 
   return (
-    <aside ref={sidebarRef} className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[280px]' : 'w-[64px]'} ${(showNotifPopover || showUserPopover) ? '!w-[280px]' : ''}`}>
+    <aside 
+      ref={sidebarRef} 
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[280px]' : 'w-[64px]'}`}
+    >
       <div className="relative h-[72px] px-3 flex items-center gap-3 border-b border-slate-100 min-w-[280px]">
         <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 cursor-pointer" onClick={toggleSidebar} title="Mở rộng / Thu gọn">
           <img src="./logo.png" alt="TITSMART" className="w-10 h-10 object-contain" />
@@ -271,6 +282,44 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded = false, toggleSide
                   <span className="material-symbols-outlined text-lg">lock_reset</span>
                   Đổi mật khẩu
                 </button>
+                <div className="h-px bg-slate-100 my-1 mx-2"></div>
+                
+                <div className="px-3 py-1.5 space-y-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chế độ thanh điều hướng</p>
+                  
+                  <div 
+                    className="flex items-center justify-between cursor-pointer group"
+                    onClick={() => {
+                      setSidebarShowToggleButton(true);
+                      setSidebarHoverToExpand(false);
+                    }}
+                  >
+                    <span className="text-xs font-semibold text-slate-600 group-hover:text-slate-800">Sử dụng nút ghim</span>
+                    <input 
+                      type="radio" 
+                      className="w-3.5 h-3.5 text-primary focus:ring-primary border-slate-300 pointer-events-none"
+                      checked={sidebarShowToggleButton}
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div 
+                    className="flex items-center justify-between cursor-pointer group"
+                    onClick={() => {
+                      setSidebarHoverToExpand(true);
+                      setSidebarShowToggleButton(false);
+                    }}
+                  >
+                    <span className="text-xs font-semibold text-slate-600 group-hover:text-slate-800">Mở rộng khi trỏ chuột</span>
+                    <input 
+                      type="radio" 
+                      className="w-3.5 h-3.5 text-primary focus:ring-primary border-slate-300 pointer-events-none"
+                      checked={sidebarHoverToExpand}
+                      readOnly
+                    />
+                  </div>
+                </div>
+                
                 <div className="h-px bg-slate-100 my-1 mx-2"></div>
                 <button 
                   onClick={handleLogout}
