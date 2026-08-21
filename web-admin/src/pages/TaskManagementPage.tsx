@@ -1530,7 +1530,7 @@ const displayTasks = tasks.filter((t) => {
             <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
               <tr>
                 <th style={{ width: "var(--stt-width)", minWidth: 42 }} className="sticky left-0 z-20 py-2 px-1 bg-slate-50 bg-clip-padding text-center border-b border-r border-slate-200 whitespace-nowrap">STT</th>
-                <th className="sticky z-20 py-2 px-2 w-[400px] min-w-[400px] bg-slate-50 bg-clip-padding border-b border-r border-slate-200 whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" style={{ left: "var(--stt-width)" }}>NỘI DUNG</th>
+                <th className="sticky z-20 py-2 px-2 w-full min-w-[300px] bg-slate-50 bg-clip-padding border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" style={{ left: "var(--stt-width)" }}>NỘI DUNG</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-right border-b border-slate-200 whitespace-nowrap">KL</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
@@ -1539,7 +1539,7 @@ const displayTasks = tasks.filter((t) => {
                 <th className="py-2 px-1 w-[115px] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
                 <th className="py-2 px-1 w-[82px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
                 <th className="py-2 px-1 w-[58px] text-center border-b border-slate-200 whitespace-nowrap">XONG</th>
-                <th className="sticky right-0 z-20 bg-slate-50 bg-clip-padding py-2 px-1 w-full min-w-[120px] border-b border-l border-slate-200 whitespace-nowrap shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">GHI CHÚ</th>
+                <th className="sticky right-0 z-20 bg-slate-50 bg-clip-padding py-2 px-1 w-[150px] min-w-[150px] border-b border-l border-slate-200 whitespace-nowrap shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">GHI CHÚ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -1553,8 +1553,8 @@ const displayTasks = tasks.filter((t) => {
                     return (
                       <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
                         <td onClick={() => handleOpenEditModal(t)} className="sticky left-0 z-10 py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{(t as any).computedStt || t.stt}</td>
-                        <td colSpan={10} className="sticky z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" style={{ left: "var(--stt-width)" }}>
-                          <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
+                        <td colSpan={10} className="sticky z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" style={{ left: "var(--stt-width)" }}>
+                          <div className="flex items-start gap-2 whitespace-normal break-words">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}
                               className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
@@ -1563,7 +1563,7 @@ const displayTasks = tasks.filter((t) => {
                               <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                             </button>
                             <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                            <span onClick={() => handleOpenEditModal(t)} className="truncate cursor-pointer hover:underline flex-1">{t.name}</span>
+                            <span onClick={() => handleOpenEditModal(t)} className="cursor-pointer hover:underline flex-1 break-words leading-tight pt-0.5">{t.name}</span>
                             <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-base">add_circle</span></button>
                             <button onClick={(e) => { e.stopPropagation(); handleDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-base">delete</span></button>
                           </div>
@@ -1616,13 +1616,13 @@ const displayTasks = tasks.filter((t) => {
                           <span onClick={() => startEditing(t.id, 'stt', (t as any).computedStt || t.stt)} className="cursor-pointer hover:bg-slate-200/50 block w-full px-1">{(t as any).computedStt || t.stt || idx + 1}</span>
                         )}
                       </td>
-                      <td className={`sticky z-10 py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-100 leading-tight transition-colors truncate ${fontStyle}`} style={{ left: "var(--stt-width)" }} title={t.name}>
+                      <td className={`sticky z-10 py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-100 leading-tight transition-colors whitespace-normal break-words ${fontStyle}`} style={{ left: "var(--stt-width)" }} title={t.name}>
                         {editingCell?.id === t.id && editingCell?.field === 'name' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10.5px]" />
                         ) : (
                           <div style={{ paddingLeft }} className="flex items-center gap-1">
                             {depth > 1 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}
-                            <span onClick={() => startEditing(t.id, 'name', t.name)} className="truncate flex-1 cursor-pointer hover:underline hover:text-blue-600 block">{t.name}</span>
+                            <span onClick={() => startEditing(t.id, 'name', t.name)} className="flex-1 cursor-pointer hover:underline hover:text-blue-600 block">{t.name}</span>
                             <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button>
                             <button onClick={(e) => { e.stopPropagation(); handleDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button>
                           </div>
