@@ -454,7 +454,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
               </tr>
             )}
           </thead>
-          <tbody className="divide-y divide-slate-100 bg-white font-medium text-slate-700">
+          <tbody className="divide-y divide-slate-200 bg-white font-medium text-slate-700">
             {(() => {
               const groups: { [key: string]: any[] } = {};
               const order: string[] = [];
@@ -612,7 +612,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 return (
                 <tr key={pur.id} onDoubleClick={() => onEdit(pur, subTab)} className={rowClass}>
                   {/* STT */}
-                  <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 px-1 py-1 text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
+                  <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 px-1 py-1 text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
                     {editingCell?.id === pur.id && editingCell?.field === 'stt' ? (
                       <input
                         type="text"
@@ -632,7 +632,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   </td>
 
                   {/* NỘI DUNG MUA SẮM */}
-                  <td className={`sticky z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-100 px-1.5 py-1  text-left overflow-hidden ${fontStyle}`} style={{ left: "var(--stt-width)" }}>
+                  <td className={`sticky z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 px-1.5 py-1  text-left overflow-hidden ${fontStyle}`} style={{ left: "var(--stt-width)" }}>
                     {editingCell?.id === pur.id && editingCell?.field === 'content' ? (
                       <input
                         type="text"
@@ -669,7 +669,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   </td>
 
                   {/* ĐVT */}
-                  <td className="border-r border-slate-100 px-1 py-1 text-center font-mono text-slate-500 whitespace-nowrap overflow-hidden">
+                  <td className="border-r border-slate-200 px-1 py-1 text-center font-mono text-slate-500 whitespace-nowrap overflow-hidden">
                     {editingCell?.id === pur.id && editingCell?.field === 'unit' ? (
                       <input
                         type="text"
@@ -691,7 +691,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   {subTab === 'PRICING' ? (
                     <>
                       {/* KL HỢP ĐỒNG */}
-                      <td className="border-r border-slate-100 px-1.5 py-1 text-center font-mono font-semibold text-slate-900 whitespace-nowrap overflow-hidden">
+                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono font-semibold text-slate-900 whitespace-nowrap overflow-hidden">
                         {editingCell?.id === pur.id && editingCell?.field === 'volumeContract' ? (
                           <input
                             type="number"
@@ -711,7 +711,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       </td>
 
                       {/* KL ĐƠN ĐẶT */}
-                      <td className="border-r border-slate-100 bg-blue-50/30 px-1.5 py-1 text-center font-mono font-semibold text-blue-700 whitespace-nowrap overflow-hidden">
+                      <td className="border-r border-slate-200 bg-blue-50/30 px-1.5 py-1 text-center font-mono font-semibold text-blue-700 whitespace-nowrap overflow-hidden">
                         {editingCell?.id === pur.id && editingCell?.field === 'volumeOrder' ? (
                           <input
                             type="number"
@@ -731,7 +731,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       </td>
 
                       {/* ĐƠN GIÁ */}
-                      <td className="border-r border-slate-100 px-1.5 py-1 text-center font-mono whitespace-nowrap overflow-hidden">
+                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono whitespace-nowrap overflow-hidden">
                         {editingCell?.id === pur.id && editingCell?.field === 'unitPrice' ? (
                           <input
                             type="number"
@@ -751,7 +751,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       </td>
 
                       {/* THUẾ VAT */}
-                      <td className="border-r border-slate-100 px-1 py-1 text-center font-mono whitespace-nowrap overflow-hidden">
+                      <td className="border-r border-slate-200 px-1 py-1 text-center font-mono whitespace-nowrap overflow-hidden">
                         {editingCell?.id === pur.id && editingCell?.field === 'vatRate' ? (
                           <input
                             type="number"
@@ -771,13 +771,13 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       </td>
 
                       {/* TIỀN THUẾ */}
-                      <td className="border-r border-slate-100 px-1.5 py-1 text-center font-mono whitespace-nowrap overflow-hidden">{money(computedVat(pur))}</td>
+                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono whitespace-nowrap overflow-hidden">{money(computedVat(pur))}</td>
 
                       {/* THÀNH TIỀN */}
-                      <td className="border-r border-slate-100 px-1.5 py-1 text-center font-mono font-extrabold text-primary whitespace-nowrap overflow-hidden">{money(computedTotal(pur))}</td>
+                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono font-extrabold text-primary whitespace-nowrap overflow-hidden">{money(computedTotal(pur))}</td>
 
                       {/* TT ĐẶT HÀNG */}
-                      <td className="border-r border-slate-100 px-1.5 py-1 text-center overflow-hidden">
+                      <td className="border-r border-slate-200 px-1.5 py-1 text-center overflow-hidden">
                         <div className="p-1 flex justify-center">
                           {(() => {
                             const currentStatus = pur.orderStatus || 'Chưa đặt hàng';
@@ -796,7 +796,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       </td>
 
                       {/* TT HỢP ĐỒNG */}
-                      <td className="w-[125px] border-r border-slate-100 px-0 py-0 text-center font-semibold text-slate-700">
+                      <td className="w-[125px] border-r border-slate-200 px-0 py-0 text-center font-semibold text-slate-700">
                         <div className="p-1">
                           {(() => {
                             const currentContractStatus = pur.contractStatus || 'Chưa ký';
@@ -819,10 +819,10 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   ) : (
                     <>
                       {/* THÀNH TIỀN (tab PAYMENT) */}
-                      <td className="border-r border-slate-100 px-1.5 py-1 text-center font-mono font-extrabold text-primary whitespace-nowrap overflow-hidden">{money(computedTotal(pur))}</td>
+                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono font-extrabold text-primary whitespace-nowrap overflow-hidden">{money(computedTotal(pur))}</td>
 
                       {/* % TẠM ỨNG */}
-                      <td className="border-r border-slate-100 px-1 py-1 text-center font-mono whitespace-nowrap overflow-hidden">
+                      <td className="border-r border-slate-200 px-1 py-1 text-center font-mono whitespace-nowrap overflow-hidden">
                         {editingCell?.id === pur.id && editingCell?.field === 'prepayPercent' ? (
                           <input
                             type="number"
@@ -844,10 +844,10 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       </td>
 
                       {/* THANH TOÁN */}
-                      <td className="w-[85px] min-w-[85px] max-w-[85px] border-r border-slate-100 px-1.5 py-1 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">{money(computedPayment(pur))}</td>
+                      <td className="w-[85px] min-w-[85px] max-w-[85px] border-r border-slate-200 px-1.5 py-1 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">{money(computedPayment(pur))}</td>
 
                       {/* NGÀY THANH TOÁN */}
-                      <td className="w-[75px] border-r border-slate-100 px-1.5 py-1 text-center font-mono text-slate-600 whitespace-nowrap">
+                      <td className="w-[75px] border-r border-slate-200 px-1.5 py-1 text-center font-mono text-slate-600 whitespace-nowrap">
                         {editingCell?.id === pur.id && editingCell?.field === 'paymentDate' ? (
                           <input
                             type="date"
@@ -867,7 +867,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       </td>
 
                       {/* HÓA ĐƠN */}
-                      <td className="w-[120px] border-r border-slate-100 px-0 py-0 text-center font-semibold text-slate-700">
+                      <td className="w-[120px] border-r border-slate-200 px-0 py-0 text-center font-semibold text-slate-700">
                         <div className="p-1">
                           {(() => {
                             const currentInvoiceStatus = pur.invoiceStatus || 'Chưa xuất';
@@ -890,7 +890,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   )}
 
                   {/* GHI CHÚ */}
-                  <td className="w-[120px] min-w-[90px] max-w-[160px] px-1.5 py-1 text-slate-500 text-center border-r border-slate-100">
+                  <td className="w-[120px] min-w-[90px] max-w-[160px] px-1.5 py-1 text-slate-500 text-center border-r border-slate-200">
                     {editingCell?.id === pur.id && editingCell?.field === 'notes' ? (
                       <input
                         type="text"

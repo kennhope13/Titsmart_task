@@ -459,7 +459,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+          <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
             {(() => {
               const groups: { [key: string]: any[] } = {};
               const order: string[] = [];
@@ -615,7 +615,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               return (
                 <tr key={plan.id} onDoubleClick={() => onEdit(plan)} className={rowClass}>
                   {/* STT */}
-                  <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 p-0 align-top text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
+                  <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-top text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
                     {editingCell?.id === plan.id && editingCell?.field === 'stt' ? (
                       <input
                         type="text"
@@ -631,7 +631,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                     )}
                   </td>
                   {/* NỘI DUNG */}
-                  <td className={`sticky z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-100 p-0 align-top  text-left overflow-hidden ${fontStyle}`} style={{ left: "var(--stt-width)" }}>
+                  <td className={`sticky z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 p-0 align-top  text-left overflow-hidden ${fontStyle}`} style={{ left: "var(--stt-width)" }}>
                     {editingCell?.id === plan.id && editingCell?.field === 'jobContent' ? (
                       <input
                         type="text"
@@ -669,7 +669,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                     )}
                   </td>
                   {/* ĐVT */}
-                  <td className="p-0 align-top text-center font-mono text-slate-500 border-r border-slate-100">
+                  <td className="p-0 align-top text-center font-mono text-slate-500 border-r border-slate-200">
                     {editingCell?.id === plan.id && editingCell?.field === 'unit' ? (
                       <input
                         type="text"
@@ -685,7 +685,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                     )}
                   </td>
                   {/* KL HĐ */}
-                  <td className="p-0 align-top text-right font-mono font-semibold text-slate-900 border-r border-slate-100">
+                  <td className="p-0 align-top text-center font-mono font-semibold text-slate-900 border-r border-slate-200">
                     {editingCell?.id === plan.id && editingCell?.field === 'contractVolume' ? (
                       <input
                         type="number"
@@ -694,7 +694,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         onBlur={() => saveEditing(plan)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                         autoFocus
-                        className="w-full text-right bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
+                        className="w-full text-center bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                       />
                     ) : (
                       <span onClick={() => startEditing(plan.id, 'contractVolume', plan.contractVolume)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={showNumber(plan.contractVolume)}>{showNumber(plan.contractVolume)}</span>
@@ -704,7 +704,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   {subTab === 'TECH' && (
                     <>
                       {/* CHÀO HÀNG */}
-                      <td className="p-0 align-top text-slate-600 border-r border-slate-100">
+                      <td className="p-0 align-top text-slate-600 border-r border-slate-200">
                         {editingCell?.id === plan.id && editingCell?.field === 'techSpecModel' ? (
                           <input
                             type="text"
@@ -720,7 +720,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         )}
                       </td>
                       {/* ĐÁP ỨNG KỸ THUẬT */}
-                      <td className="p-0 align-top text-slate-600 border-r border-slate-100">
+                      <td className="p-0 align-top text-slate-600 border-r border-slate-200">
                         {editingCell?.id === plan.id && editingCell?.field === 'techSpecOrigin' ? (
                           <input
                             type="text"
@@ -736,7 +736,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         )}
                       </td>
                       {/* TÌNH TRẠNG */}
-                      <td className="w-[125px] p-0 align-middle text-slate-600 border-r border-slate-100">
+                      <td className="w-[125px] p-0 align-middle text-slate-600 border-r border-slate-200">
                         <div className="p-1">
                           {(() => {
                             const status = plan.techSpecStatus || '';
@@ -760,7 +760,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </div>
                       </td>
                       {/* TIẾN ĐỘ */}
-                      <td className="w-[125px] p-0 align-middle text-center font-mono font-bold text-slate-700 whitespace-nowrap border-r border-slate-100">
+                      <td className="w-[125px] p-0 align-middle text-center font-mono font-bold text-slate-700 whitespace-nowrap border-r border-slate-200">
                         <div className="p-1">
                           {(() => {
                             const status = plan.progressStatus || '';
@@ -785,7 +785,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   {subTab === 'ORDER' && (
                     <>
                       {/* KL ĐẶT HÀNG */}
-                      <td className="p-0 align-top text-right font-mono font-semibold text-slate-900 border-r border-slate-100">
+                      <td className="p-0 align-top text-center font-mono font-semibold text-slate-900 border-r border-slate-200">
                         {editingCell?.id === plan.id && editingCell?.field === 'orderedVolume' ? (
                           <input
                             type="number"
@@ -794,14 +794,14 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             onBlur={() => saveEditing(plan)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan); if (e.key === 'Escape') setEditingCell(null); }}
                             autoFocus
-                            className="w-full text-right bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
+                            className="w-full text-center bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                           />
                         ) : (
                           <span onClick={() => startEditing(plan.id, 'orderedVolume', plan.orderedVolume)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={showNumber(plan.orderedVolume)}>{showNumber(plan.orderedVolume)}</span>
                         )}
                       </td>
                       {/* TT ĐẶT HÀNG */}
-                      <td className="p-0 align-middle text-center border-r border-slate-100">
+                      <td className="p-0 align-middle text-center border-r border-slate-200">
                         <div className="p-1">
                           {(() => {
                             const currentStatus = plan.orderedStatus || '';
@@ -819,7 +819,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </div>
                       </td>
                       {/* NGÀY CÓ HÀNG */}
-                      <td className="p-0 align-top text-center font-mono text-slate-600 truncate border-r border-slate-100">
+                      <td className="p-0 align-top text-center font-mono text-slate-600 truncate border-r border-slate-200">
                         {editingCell?.id === plan.id && editingCell?.field === 'expectedDate' ? (
                           <input
                             type="date"
@@ -835,7 +835,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         )}
                       </td>
                       {/* NỘI DUNG VƯỚNG MẮC */}
-                      <td className="p-0 align-top font-semibold text-red-600 border-r border-slate-100">
+                      <td className="p-0 align-top font-semibold text-red-600 border-r border-slate-200">
                         {editingCell?.id === plan.id && editingCell?.field === 'issueContent' ? (
                           <input
                             type="text"
@@ -851,7 +851,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         )}
                       </td>
                       {/* TT XỬ LÝ */}
-                      <td className="p-0 align-top text-slate-600 border-r border-slate-100">
+                      <td className="p-0 align-top text-slate-600 border-r border-slate-200">
                         {editingCell?.id === plan.id && editingCell?.field === 'issueStatus' ? (
                           <input
                             type="text"
@@ -872,7 +872,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   {subTab === 'DOCS' && (
                     <>
                       {/* CO */}
-                      <td className="p-0 align-top text-center border-r border-slate-100">
+                      <td className="p-0 align-top text-center border-r border-slate-200">
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, docCo: !plan.docCo })}
@@ -885,7 +885,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </button>
                       </td>
                       {/* CQ */}
-                      <td className="p-0 align-top text-center border-r border-slate-100">
+                      <td className="p-0 align-top text-center border-r border-slate-200">
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, docCq: !plan.docCq })}
@@ -898,7 +898,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </button>
                       </td>
                       {/* KIỂM ĐỊNH PCCC */}
-                      <td className="p-0 align-top text-center border-r border-slate-100">
+                      <td className="p-0 align-top text-center border-r border-slate-200">
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, docFireInspection: !plan.docFireInspection })}
@@ -911,7 +911,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </button>
                       </td>
                       {/* ĐÃ GỬI TỚI CT */}
-                      <td className="p-0 align-top text-center border-r border-slate-100">
+                      <td className="p-0 align-top text-center border-r border-slate-200">
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, dispatchToSite: !plan.dispatchToSite })}
@@ -924,7 +924,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         </button>
                       </td>
                       {/* NGÀY */}
-                      <td className="p-0 align-top text-center font-mono text-slate-600 truncate border-r border-slate-100">
+                      <td className="p-0 align-top text-center font-mono text-slate-600 truncate border-r border-slate-200">
                         {editingCell?.id === plan.id && editingCell?.field === 'dispatchDate' ? (
                           <input
                             type="date"
@@ -943,7 +943,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   )}
 
                   {/* GHI CHÚ */}
-                  <td className="sticky right-0 z-10 bg-white group-hover:bg-slate-50 border-l border-slate-100 p-0 align-top text-slate-500">
+                  <td className="sticky right-0 z-10 bg-white group-hover:bg-slate-50 border-l border-slate-200 p-0 align-top text-slate-500">
                     {editingCell?.id === plan.id && editingCell?.field === 'notes' ? (
                       <input
                         type="text"
