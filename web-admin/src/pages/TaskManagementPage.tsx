@@ -1530,7 +1530,7 @@ const displayTasks = tasks.filter((t) => {
             <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
               <tr>
                 <th style={{ width: "var(--stt-width)", minWidth: 42 }} className="sticky left-0 z-20 py-2 px-1 bg-slate-50 bg-clip-padding text-center border-b border-r border-slate-200 whitespace-nowrap">STT</th>
-                <th className="sticky z-20 py-2 px-2 w-auto min-w-[300px] bg-slate-50 bg-clip-padding border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" style={{ left: "var(--stt-width)" }}>NỘI DUNG</th>
+                <th className="sticky z-20 py-2 px-2 w-full min-w-[300px] bg-slate-50 bg-clip-padding border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" style={{ left: "var(--stt-width)" }}>NỘI DUNG</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>

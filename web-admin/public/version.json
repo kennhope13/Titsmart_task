@@ -1,9 +1,7 @@
 {
-  "version": "1.0.109",
+  "version": "1.0.110",
   "date": "21/08/2026",
   "notes": [
-    "Sửa lỗi tràn layout và các cột bị dồn ép (như cột Đáp ứng kỹ thuật).",
-    "Cho phép tự động xuống dòng (word-wrap) ở tất cả các cột để tránh bị cắt chữ thành dấu chấm lửng.",
-    "Đồng bộ căn giữa các cột Khối lượng (KL) và làm đậm đường viền để dễ nhìn hơn."
+    "Mở rộng tối đa cột NỘI DUNG ở tab Quản lý tiến độ để lấp đầy khoảng trống bên phải."
   ]
 }
