@@ -969,6 +969,16 @@ export const ProjectCostPlanPage: React.FC = () => {
   const isSubmittingPlanRef = useRef(false);
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+  // Expense Tab Filters
+  const [expenseFilterDate, setExpenseFilterDate] = useState('all');
+  const [expenseFilterContent, setExpenseFilterContent] = useState('all');
+  const [expenseFilterUnit, setExpenseFilterUnit] = useState('all');
+
+  // Labor Tab Filters
+  const [laborFilterDate, setLaborFilterDate] = useState('all');
+  const [laborFilterContent, setLaborFilterContent] = useState('all');
+  const [laborFilterUnit, setLaborFilterUnit] = useState('all');
+
   useEffect(() => {
     setSearchQuery('');
     setStatusFilter('ALL');
@@ -1139,10 +1149,52 @@ export const ProjectCostPlanPage: React.FC = () => {
     [expenses, selectedProject]
   );
 
+  const expenseDateOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjExpenses.map(p => p.date).filter(Boolean)))], [currentProjExpenses]);
+  const expenseContentOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjExpenses.map(p => p.content).filter(Boolean)))], [currentProjExpenses]);
+  const expenseUnitOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjExpenses.map(p => p.unit).filter(Boolean)))], [currentProjExpenses]);
+
+  const filteredProjExpenses = useMemo(() => {
+    return currentProjExpenses.filter(exp => {
+      const q = (searchQuery || '').trim().toLowerCase();
+      const matchSearch = !q ||
+        (exp.content || '').toLowerCase().includes(q) ||
+        (exp.description || '').toLowerCase().includes(q) ||
+        (exp.notes || '').toLowerCase().includes(q);
+        
+      const matchColumn = 
+        (expenseFilterDate === 'all' || exp.date === expenseFilterDate) &&
+        (expenseFilterContent === 'all' || exp.content === expenseFilterContent) &&
+        (expenseFilterUnit === 'all' || exp.unit === expenseFilterUnit);
+        
+      return matchSearch && matchColumn;
+    });
+  }, [currentProjExpenses, searchQuery, expenseFilterDate, expenseFilterContent, expenseFilterUnit]);
+
   const currentProjLabor = useMemo(() => 
     laborPayrolls.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
     [laborPayrolls, selectedProject]
   );
+
+  const laborDateOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjLabor.map(p => p.date).filter(Boolean)))], [currentProjLabor]);
+  const laborContentOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjLabor.map(p => p.content).filter(Boolean)))], [currentProjLabor]);
+  const laborUnitOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjLabor.map(p => p.unit).filter(Boolean)))], [currentProjLabor]);
+
+  const filteredProjLabor = useMemo(() => {
+    return currentProjLabor.filter(lab => {
+      const q = (searchQuery || '').trim().toLowerCase();
+      const matchSearch = !q ||
+        (lab.content || '').toLowerCase().includes(q) ||
+        (lab.description || '').toLowerCase().includes(q) ||
+        (lab.workerName || '').toLowerCase().includes(q);
+        
+      const matchColumn = 
+        (laborFilterDate === 'all' || lab.date === laborFilterDate) &&
+        (laborFilterContent === 'all' || lab.content === laborFilterContent) &&
+        (laborFilterUnit === 'all' || lab.unit === laborFilterUnit);
+        
+      return matchSearch && matchColumn;
+    });
+  }, [currentProjLabor, searchQuery, laborFilterDate, laborFilterContent, laborFilterUnit]);
 
   const expenseSpenderNames = useMemo(() => {
     const names = new Set<string>();
@@ -1650,28 +1702,78 @@ export const ProjectCostPlanPage: React.FC = () => {
             )}
             
             {expenseSubTab === 'DETAIL' && (
-              <div className="flex-1 min-h-0 overflow-auto custom-scrollbar relative">
-                <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <tr>
-                    <th className="p-3 w-12 text-center">STT</th>
-                    <th className="p-3">Ngày chi</th>
-                    <th className="p-3">Người phụ trách</th>
-                    <th className="p-3 min-w-56">Nội dung / Diễn giải</th>
-                  <th className="p-3 w-16 text-left">ĐVT</th>
-                  <th className="p-3 text-right">Số lượng</th>
-                  <th className="p-3 text-right">Đơn giá (đ)</th>
-                  <th className="p-3 text-right">VAT</th>
-                  <th className="p-3 text-right">Thành tiền (đ)</th>
-                  <th className="p-3 text-right">Thực thu (đ)</th>
-                  <th className="p-3 text-right">Tồn quỹ (đ)</th>
-                  <th className="p-3">Ghi chú</th>
-                  <th className="p-3 text-center">Hóa đơn</th>
-                  <th className="p-3 text-center w-24">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {currentProjExpenses.map((exp) => (
+              <div className="flex flex-col flex-1 min-h-0 relative bg-white">
+                <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
+                      <span className="material-symbols-outlined text-[16px]">filter_list</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500 font-medium whitespace-nowrap">Ngày chi:</span>
+                      <CustomSelect
+                        value={expenseFilterDate}
+                        onChange={e => setExpenseFilterDate(e.target.value)}
+                        className="min-w-[70px] max-w-[120px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                      >
+                        {expenseDateOptions.map(opt => (
+                          <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
+                        ))}
+                      </CustomSelect>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500 font-medium whitespace-nowrap">Nội dung:</span>
+                      <CustomSelect
+                        value={expenseFilterContent}
+                        onChange={e => setExpenseFilterContent(e.target.value)}
+                        className="min-w-[120px] max-w-[250px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                      >
+                        {expenseContentOptions.map(opt => {
+                          let label = opt;
+                          if (label && label.length > 30) label = label.slice(0, 30) + '...';
+                          return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
+                        })}
+                      </CustomSelect>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
+                      <CustomSelect
+                        value={expenseFilterUnit}
+                        onChange={e => setExpenseFilterUnit(e.target.value)}
+                        className="min-w-[60px] max-w-[90px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                      >
+                        {expenseUnitOptions.map(opt => (
+                          <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
+                        ))}
+                      </CustomSelect>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-auto custom-scrollbar">
+                  <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <tr>
+                      <th className="p-3 w-12 text-center">STT</th>
+                      <th className="p-3">Ngày chi</th>
+                      <th className="p-3">Người phụ trách</th>
+                      <th className="p-3 min-w-56">Nội dung / Diễn giải</th>
+                    <th className="p-3 w-16 text-left">ĐVT</th>
+                    <th className="p-3 text-right">Số lượng</th>
+                    <th className="p-3 text-right">Đơn giá (đ)</th>
+                    <th className="p-3 text-right">VAT</th>
+                    <th className="p-3 text-right">Thành tiền (đ)</th>
+                    <th className="p-3 text-right">Thực thu (đ)</th>
+                    <th className="p-3 text-right">Tồn quỹ (đ)</th>
+                    <th className="p-3">Ghi chú</th>
+                    <th className="p-3 text-center">Hóa đơn</th>
+                    <th className="p-3 text-center w-24">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                  {filteredProjExpenses.map((exp) => (
                   <tr key={exp.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingExpense(exp)}>
                     <td className="p-3 text-center font-bold text-slate-400">{exp.stt || '-'}</td>
                     <td className="p-3 font-semibold text-slate-900">{exp.date}</td>
@@ -1714,19 +1816,70 @@ export const ProjectCostPlanPage: React.FC = () => {
                     </td>
                   </tr>
                 ))}
-                {currentProjExpenses.length === 0 && (
-                  <tr><td colSpan={11} className="p-8 text-center text-slate-400">Chưa có giao dịch chi phí công trình nào.</td></tr>
+                {filteredProjExpenses.length === 0 && (
+                  <tr><td colSpan={14} className="p-8 text-center text-slate-400">Chưa có giao dịch chi phí công trình nào.</td></tr>
                 )}
               </tbody>
             </table>
             </div>
+          </div>
           )}
 
         {/* LABOR TAB */}
         {expenseSubTab === 'LABOR' && (
-          <div className="flex-1 min-h-0 overflow-auto custom-scrollbar relative">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+          <div className="flex flex-col flex-1 min-h-0 relative bg-white">
+            <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
+                  <span className="material-symbols-outlined text-[16px]">filter_list</span>
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 font-medium whitespace-nowrap">Ngày làm:</span>
+                  <CustomSelect
+                    value={laborFilterDate}
+                    onChange={e => setLaborFilterDate(e.target.value)}
+                    className="min-w-[70px] max-w-[120px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                  >
+                    {laborDateOptions.map(opt => (
+                      <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
+                    ))}
+                  </CustomSelect>
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 font-medium whitespace-nowrap">Nội dung:</span>
+                  <CustomSelect
+                    value={laborFilterContent}
+                    onChange={e => setLaborFilterContent(e.target.value)}
+                    className="min-w-[120px] max-w-[250px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                  >
+                    {laborContentOptions.map(opt => {
+                      let label = opt;
+                      if (label && label.length > 30) label = label.slice(0, 30) + '...';
+                      return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
+                    })}
+                  </CustomSelect>
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
+                  <CustomSelect
+                    value={laborFilterUnit}
+                    onChange={e => setLaborFilterUnit(e.target.value)}
+                    className="min-w-[60px] max-w-[90px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                  >
+                    {laborUnitOptions.map(opt => (
+                      <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
+                    ))}
+                  </CustomSelect>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto custom-scrollbar">
+              <table className="w-full text-left border-collapse">
+              <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 <tr>
                   <th className="p-3 w-12 text-center">STT</th>
                   <th className="p-3">Ngày làm</th>
@@ -1743,7 +1896,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {currentProjLabor.map((lab) => (
+                {filteredProjLabor.map((lab) => (
                   <tr key={lab.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingLabor({...lab, date: lab.date || new Date().toISOString().split('T')[0]})}>
                     <td className="p-3 text-center font-bold text-slate-400">{lab.stt || '-'}</td>
                     <td className="p-3 font-semibold text-slate-900">{lab.date}</td>
@@ -1790,11 +1943,12 @@ export const ProjectCostPlanPage: React.FC = () => {
                     </td>
                   </tr>
                 ))}
-                {currentProjLabor.length === 0 && (
-                  <tr><td colSpan={11} className="p-8 text-center text-slate-400">Không có thông tin lương công nhật nào.</td></tr>
+                {filteredProjLabor.length === 0 && (
+                  <tr><td colSpan={12} className="p-8 text-center text-slate-400">Không có thông tin lương công nhật nào.</td></tr>
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         )}
           </div>
