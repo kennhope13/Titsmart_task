@@ -127,9 +127,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             key={String(option.value) + idx}
             className={`px-3 py-1.5 cursor-pointer transition-colors ${fontSizeClass} ${
-              option.className
-                ? (String(value) === String(option.value) ? option.className + ' ring-1 ring-inset ring-black/20 font-bold' : option.className + ' opacity-80 hover:opacity-100 hover:brightness-95')
-                : (String(value) === String(option.value) ? 'bg-blue-50 text-primary font-semibold' : 'text-slate-700 hover:bg-slate-50')
+              String(value) === String(option.value)
+                ? 'bg-blue-50 text-primary font-semibold'
+                : 'text-slate-700 hover:bg-slate-50'
             }`}
             onMouseDown={(e) => { e.preventDefault(); handleSelect(option.value); }}
           >
