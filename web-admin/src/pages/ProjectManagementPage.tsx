@@ -110,6 +110,7 @@ export const ProjectManagementPage: React.FC = () => {
     addPurchasingPlan,
     deleteProject,
     addEngineer,
+    updateEngineer,
     logActivity,
     materialPlans,
     purchasingPlans,
@@ -275,6 +276,22 @@ export const ProjectManagementPage: React.FC = () => {
     if (!createdProject) {
       triggerToast(TEXT.createFailed, 'warning');
       return;
+    }
+
+    // Cập nhật projectCodes cho các kỹ sư được gán vào dự án
+    if (selectedEngineerIds.length > 0) {
+      for (const engId of selectedEngineerIds) {
+        const eng = engineers.find(e => e.id === engId);
+        if (eng) {
+          const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
+          if (!currentCodes.includes(code)) {
+            await updateEngineer(engId, {
+              name: eng.name,
+              projectCodes: [...currentCodes, code]
+            });
+          }
+        }
+      }
     }
 
     if (pendingProjectTasks.length > 0) {

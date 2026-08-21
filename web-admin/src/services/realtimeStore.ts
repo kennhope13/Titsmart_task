@@ -560,11 +560,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       try {
         const rawEngineers = await api.engineers.getAll();
         const engineers = rawEngineers.map((e: any) => {
-          const allProjects = [
-            ...(e.managedProjects || []),
-            ...(e.memberProjects || [])
-          ];
-          const uniqueCodes = Array.from(new Set(allProjects.map((p: any) => p.code).filter(Boolean)));
+          // Lấy projectCodes trực tiếp từ cột project_codes của Supabase
+          const codes = e.projectCodes || e.project_codes || [];
+          const uniqueCodes = Array.from(new Set(Array.isArray(codes) ? codes : []));
           return { ...e, projectCodes: uniqueCodes };
         });
         set({ engineers });
