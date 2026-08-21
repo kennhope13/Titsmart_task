@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ProjectExpense } from '../../types';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 interface ExpenseTabProps {
   data: ProjectExpense[];
@@ -12,11 +13,13 @@ interface ExpenseTabProps {
 export const ExpenseTab: React.FC<ExpenseTabProps> = ({ 
   data, onEdit, onDelete, searchQuery, setSearchQuery 
 }) => {
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
-  const updateColumnFilter = (key: string, value: string) => {
-    setColumnFilters(prev => ({ ...prev, [key]: value }));
-  };
-  const clearColumnFilters = () => setColumnFilters({});
+  const [filterDate, setFilterDate] = useState('all');
+  const [filterContent, setFilterContent] = useState('all');
+  const [filterUnit, setFilterUnit] = useState('all');
+
+  const dateOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.date).filter(Boolean)))], [data]);
+  const contentOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.content).filter(Boolean)))], [data]);
+  const unitOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.unit).filter(Boolean)))], [data]);
 
   const filteredData = useMemo(() => {
     return data.filter((exp) => {
@@ -25,33 +28,78 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
         (exp.content || '').toLowerCase().includes(q) ||
         (exp.description || '').toLowerCase().includes(q) ||
         (exp.notes || '').toLowerCase().includes(q);
-      const cf = columnFilters;
-      const matchColumn =
-        (!cf.content || (exp.content || '').toLowerCase().includes((cf.content || '').toLowerCase())) &&
-        (!cf.description || (exp.description || '').toLowerCase().includes((cf.description || '').toLowerCase())) &&
-        (!cf.unit || (exp.unit || '').toLowerCase().includes((cf.unit || '').toLowerCase())) &&
-        (!cf.date || (exp.date || '').includes(cf.date));
+        
+      const matchColumn = 
+        (filterDate === 'all' || exp.date === filterDate) &&
+        (filterContent === 'all' || exp.content === filterContent) &&
+        (filterUnit === 'all' || exp.unit === filterUnit);
+        
       return matchSearch && matchColumn;
     });
-  }, [data, searchQuery, columnFilters]);
+  }, [data, searchQuery, filterDate, filterContent, filterUnit]);
+
   return (
     <div className="flex flex-col w-full max-w-full h-full overflow-hidden">
-      {/* Toolbar */}
-          <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex-1 w-full max-w-md relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-              <input 
-                type="text" 
-                placeholder="Tìm kiếm phiếu chi, nội dung..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
-              />
-            </div>
-            {(searchQuery || Object.values(columnFilters).some(v => v)) && (
-              <button type="button" onClick={() => { setSearchQuery(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
-            )}
+      {/* Filter Bar */}
+      <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-10 items-center justify-between text-xs text-slate-600 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
+            <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
+          
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500 font-medium whitespace-nowrap">Ngày chi:</span>
+            <CustomSelect
+              value={filterDate}
+              onChange={e => setFilterDate(e.target.value)}
+              className="min-w-[70px] max-w-[120px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+            >
+              {dateOptions.map(opt => (
+                <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
+              ))}
+            </CustomSelect>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500 font-medium whitespace-nowrap">Nội dung:</span>
+            <CustomSelect
+              value={filterContent}
+              onChange={e => setFilterContent(e.target.value)}
+              className="min-w-[120px] max-w-[250px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+            >
+              {contentOptions.map(opt => {
+                let label = opt;
+                if (label && label.length > 30) label = label.slice(0, 30) + '...';
+                return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
+              })}
+            </CustomSelect>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
+            <CustomSelect
+              value={filterUnit}
+              onChange={e => setFilterUnit(e.target.value)}
+              className="min-w-[60px] max-w-[90px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+            >
+              {unitOptions.map(opt => (
+                <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
+              ))}
+            </CustomSelect>
+          </div>
+        </div>
+        
+        <div className="flex-1 w-full max-w-[200px] relative">
+          <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+          <input 
+            type="text" 
+            placeholder="Tìm kiếm..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-3 py-1 bg-white border border-slate-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
+          />
+        </div>
+      </div>
 
       <div className="w-full max-w-full overflow-x-auto custom-scrollbar flex-1">
         <table className="w-max text-left border-collapse">

@@ -1,7 +1,8 @@
 {
-  "version": "1.0.77",
+  "version": "1.0.78",
   "date": "21/08/2026",
   "notes": [
+    "Thêm thanh công cụ lọc (Ngày chi, Nội dung, ĐVT) vào tab Chi phí công trình",
     "Thêm thanh công cụ lọc (Đầu mục cha, ĐVT, TT Đặt hàng, TT Hợp đồng) vào tab Mua hàng (nhà thầu)",
     "Đổi tên bộ lọc từ 'Thi công' thành 'Tình trạng' trong tab Kế hoạch Vật tư",
     "Cải thiện giao diện UI/UX: Loại bỏ màu nền của các thẻ trạng thái (Vai trò, Dự án, Thanh toán...) tại tab Nhân sự và tab Theo dõi hồ sơ giúp giao diện gọn gàng và dễ nhìn hơn.",
