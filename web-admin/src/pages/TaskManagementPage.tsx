@@ -1537,13 +1537,12 @@ const displayTasks = tasks.filter((t) => {
                 <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">MUA HÀNG</th>
                 <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">THI CÔNG</th>
                 <th className="py-2 px-1 w-[115px] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
-                <th className="py-2 px-1 w-[82px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
-                <th className="py-2 px-1 w-[58px] text-center border-b border-slate-200 whitespace-nowrap">XONG</th>
+                <th className="py-2 px-1 w-[140px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
                 <th className="sticky right-0 z-20 bg-slate-50 bg-clip-padding py-2 px-1 w-[150px] min-w-[150px] border-b border-l border-slate-200 whitespace-nowrap shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">GHI CHÚ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
-              {groupedTasks.length === 0 ? (<tr><td colSpan={12} className="p-8 text-center text-slate-400 whitespace-nowrap">Không có hạng mục nào phù hợp với bộ lọc đã chọn</td></tr>) : (
+              {groupedTasks.length === 0 ? (<tr><td colSpan={10} className="p-8 text-center text-slate-400 whitespace-nowrap">Không có hạng mục nào phù hợp với bộ lọc đã chọn</td></tr>) : (
                 groupedTasks.filter((t) => {
                   if (t.isSectionHeader) return true;
                   return !collapsedSections.has(t._sectionKey || '');
@@ -1553,7 +1552,7 @@ const displayTasks = tasks.filter((t) => {
                     return (
                       <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
                         <td onClick={() => handleOpenEditModal(t)} className="sticky left-0 z-10 py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{(t as any).computedStt || t.stt}</td>
-                        <td colSpan={10} className="sticky z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" style={{ left: "var(--stt-width)" }}>
+                        <td colSpan={8} className="sticky z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" style={{ left: "var(--stt-width)" }}>
                           <div className="flex items-start gap-2 whitespace-normal break-words">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}
@@ -1667,7 +1666,6 @@ const displayTasks = tasks.filter((t) => {
                           ))}
                         </CustomSelect>
                       </td>
-                      <td onClick={() => handleOpenEditModal(t)} className="py-1.5 px-1 text-center cursor-pointer"><span className={'material-symbols-outlined text-sm ' + (isFinished ? 'text-emerald-600' : 'text-slate-300')}>{isFinished ? 'check_circle' : 'radio_button_unchecked'}</span></td>
                       <td className={`sticky right-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-l border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-slate-500 truncate`} title={cleanNotes(t.notes)}>
                         {editingCell?.id === t.id && editingCell?.field === 'notes' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-700 font-bold focus:outline-primary text-[10px]" />

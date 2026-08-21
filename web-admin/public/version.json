@@ -1,7 +1,7 @@
 {
-  "version": "1.0.113",
+  "version": "1.0.114",
   "date": "21/08/2026",
   "notes": [
-    "Đồng bộ phong cách màu sắc (nhạt, viền mỏng) cho menu thả xuống của cột XỬ LÝ giống y hệt cột MUA HÀNG và THI CÔNG."
+    "Xóa bỏ cột XONG để tăng diện tích hiển thị cho cột XỬ LÝ."
   ]
 }
