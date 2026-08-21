@@ -1,7 +1,7 @@
 {
-  "version": "1.0.114",
+  "version": "1.0.115",
   "date": "21/08/2026",
   "notes": [
-    "Xóa bỏ cột XONG để tăng diện tích hiển thị cho cột XỬ LÝ."
+    "Tự động đồng bộ thêm/xóa hạng mục sang tab Mua Hàng và Theo dõi khi người dùng tự check chọn Phạm vi cung cấp (Nhà thầu/Chủ đầu tư) ở Modal Sửa hạng mục."
   ]
 }
