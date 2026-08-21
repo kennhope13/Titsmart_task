@@ -418,8 +418,8 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
           <thead className="sticky top-0 z-20 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             {subTab === 'PRICING' ? (
               <tr className="bg-slate-50">
-                <th style={{ width: 32, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold">STT</th>
-                <th style={{ width: 180, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-[32px] z-20 bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{TEXT.content}</th>
+                <th style={{ minWidth: 32, width: "auto", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'  }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
+                <th style={{ width: 180, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'  }} className="z-20 bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left ">{TEXT.content}</th>
                 <th style={{ width: 38, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center">{TEXT.unit}</th>
                 <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.contractVolume}</th>
                 <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.orderVolume}</th>
@@ -433,8 +433,8 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
               </tr>
             ) : (
               <tr className="bg-slate-50">
-                <th style={{ width: 32, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold">STT</th>
-                <th style={{ width: 180, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-[32px] z-20 bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{TEXT.content}</th>
+                <th style={{ minWidth: 32, width: "auto", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'  }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
+                <th style={{ width: 180, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'  }} className="z-20 bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left ">{TEXT.content}</th>
                 <th style={{ width: 38, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center">{TEXT.unit}</th>
                 <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.total}</th>
                 <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.prepayPercent}</th>
@@ -552,7 +552,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       <td className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
                         {pur.stt}
                       </td>
-                      <td colSpan={colSpanCount} className="sticky left-[32px] z-10 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" title={pur.content}>
+                      <td colSpan={colSpanCount} className=" bg-blue-50/90  px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" title={pur.content}>
                         <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleSection(pur._sectionKey || ''); }}
@@ -623,7 +623,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                   </td>
 
                   {/* NỘI DUNG MUA SẮM */}
-                  <td className={`sticky left-[32px] z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-left overflow-hidden ${fontStyle}`}>
+                  <td className={`${stickyBg} group-hover:bg-slate-100 border-r border-slate-100 px-1.5 py-1  text-left overflow-hidden ${fontStyle}`}>
                     {editingCell?.id === pur.id && editingCell?.field === 'content' ? (
                       <input
                         type="text"
