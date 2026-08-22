@@ -366,19 +366,19 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             onClick={() => setSubTab('TECH')}
             className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'TECH' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
           >
-            🛠️ Kỹ thuật
+            Kỹ thuật
           </button>
           <button
             onClick={() => setSubTab('ORDER')}
             className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'ORDER' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
           >
-            📦 Đặt hàng & Logistics
+            Đặt hàng & Logistics
           </button>
           <button
             onClick={() => setSubTab('DOCS')}
             className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'DOCS' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
           >
-            📄 Chứng từ
+            Chứng từ
           </button>
           {userRole !== 'engineer' && (
             <>
@@ -386,13 +386,13 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 onClick={() => setSubTab('PRICING')}
                 className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'PRICING' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
               >
-                💰 Giá mua & Dự toán
+                Giá mua & Dự toán
               </button>
               <button
                 onClick={() => setSubTab('PAYMENT')}
                 className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'PAYMENT' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
               >
-                💳 Thanh toán & Hóa đơn
+                Thanh toán & Hóa đơn
               </button>
             </>
           )}
