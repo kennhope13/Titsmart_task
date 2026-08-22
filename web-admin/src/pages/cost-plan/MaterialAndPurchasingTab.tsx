@@ -486,14 +486,14 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             <tr className="bg-slate-50">
               <th rowSpan={2} style={{ minWidth: 50, width: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
               <th rowSpan={2} style={{ minWidth: 280, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left ">NỘI DUNG</th>
-              <th rowSpan={2} style={{ width: 100, borderRight: "1px solid #94a3b8", borderBottom: "1px solid #94a3b8" }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">MÃ HIỆU</th>
-              <th rowSpan={2} style={{ width: 100, borderRight: "1px solid #94a3b8", borderBottom: "1px solid #94a3b8" }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">XUẤT XỨ</th>
               <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
               <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">KL HĐ</th>
+              <th rowSpan={2} style={{ width: 100, borderRight: "1px solid #94a3b8", borderBottom: "1px solid #94a3b8" }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">MÃ HIỆU</th>
+              <th rowSpan={2} style={{ width: 100, borderRight: "1px solid #94a3b8", borderBottom: "1px solid #94a3b8" }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">XUẤT XỨ</th>
 
               {subTab === 'TECH' && (
                 <>
-                  <th colSpan={3} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIÊU CHUẨN KỸ THUẬT</th>
+                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TÌNH TRẠNG</th>
                   <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIẾN ĐỘ</th>
                 </>
               )}
@@ -540,13 +540,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               <th rowSpan={2} style={{ width: 110, borderBottom: '1px solid #94a3b8' }} className="sticky right-0 z-20 bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>
             </tr>
             <tr className="bg-slate-50">
-              {subTab === 'TECH' && (
-                <>
-                  <th style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">CHÀO HÀNG</th>
-                  <th style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">ĐÁP ỨNG KỸ THUẬT</th>
-                  <th style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">TÌNH TRẠNG</th>
-                </>
-              )}
+              {/* Removed subTab === 'TECH' 2nd row headers */}
               {subTab === 'ORDER' && (
                 <>
                   <th style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">NỘI DUNG</th>
@@ -770,40 +764,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             )}
                           </td>
 
-                          {/* MÃ HIỆU */}
-                          <td className="p-0 align-top text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecModel || ""}>
-                            {editingCell?.id === plan.id && editingCell?.field === "techSpecModel" && !editingCell.isPurchasing ? (
-                              <input
-                                type="text"
-                                value={tempValue}
-                                onChange={(e) => setTempValue(e.target.value)}
-                                onBlur={() => saveEditing(plan, pRecord)}
-                                onKeyDown={(e) => { if (e.key === "Enter") saveEditing(plan, pRecord); if (e.key === "Escape") setEditingCell(null); }}
-                                autoFocus
-                                className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                              />
-                            ) : (
-                              <span onClick={() => startEditing(plan.id, "techSpecModel", plan.techSpecModel)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-1 block w-full truncate max-w-[100px]">{plan.techSpecModel || "-"}</span>
-                            )}
-                          </td>
-
-                          {/* XUẤT XỨ */}
-                          <td className="p-0 align-top text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecOrigin || ""}>
-                            {editingCell?.id === plan.id && editingCell?.field === "techSpecOrigin" && !editingCell.isPurchasing ? (
-                              <input
-                                type="text"
-                                value={tempValue}
-                                onChange={(e) => setTempValue(e.target.value)}
-                                onBlur={() => saveEditing(plan, pRecord)}
-                                onKeyDown={(e) => { if (e.key === "Enter") saveEditing(plan, pRecord); if (e.key === "Escape") setEditingCell(null); }}
-                                autoFocus
-                                className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                              />
-                            ) : (
-                              <span onClick={() => startEditing(plan.id, "techSpecOrigin", plan.techSpecOrigin)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-1 block w-full truncate max-w-[100px]">{plan.techSpecOrigin || "-"}</span>
-                            )}
-                          </td>
-
                           {/* ĐVT */}
                           <td className="p-0 align-top text-center font-mono text-slate-500 border-r border-slate-200 whitespace-normal break-words leading-tight">
                             {editingCell?.id === plan.id && editingCell?.field === 'unit' && !editingCell.isPurchasing ? (
@@ -838,41 +798,43 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             )}
                           </td>
 
+                          {/* MÃ HIỆU */}
+                          <td className="p-0 align-top text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecModel || ""}>
+                            {editingCell?.id === plan.id && editingCell?.field === "techSpecModel" && !editingCell.isPurchasing ? (
+                              <input
+                                type="text"
+                                value={tempValue}
+                                onChange={(e) => setTempValue(e.target.value)}
+                                onBlur={() => saveEditing(plan, pRecord)}
+                                onKeyDown={(e) => { if (e.key === "Enter") saveEditing(plan, pRecord); if (e.key === "Escape") setEditingCell(null); }}
+                                autoFocus
+                                className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
+                              />
+                            ) : (
+                              <span onClick={() => startEditing(plan.id, "techSpecModel", plan.techSpecModel)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-1 block w-full truncate max-w-[100px]">{plan.techSpecModel || "-"}</span>
+                            )}
+                          </td>
+
+                          {/* XUẤT XỨ */}
+                          <td className="p-0 align-top text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecOrigin || ""}>
+                            {editingCell?.id === plan.id && editingCell?.field === "techSpecOrigin" && !editingCell.isPurchasing ? (
+                              <input
+                                type="text"
+                                value={tempValue}
+                                onChange={(e) => setTempValue(e.target.value)}
+                                onBlur={() => saveEditing(plan, pRecord)}
+                                onKeyDown={(e) => { if (e.key === "Enter") saveEditing(plan, pRecord); if (e.key === "Escape") setEditingCell(null); }}
+                                autoFocus
+                                className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
+                              />
+                            ) : (
+                              <span onClick={() => startEditing(plan.id, "techSpecOrigin", plan.techSpecOrigin)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-1 block w-full truncate max-w-[100px]">{plan.techSpecOrigin || "-"}</span>
+                            )}
+                          </td>
+
                           {/* DYNAMIC RIGHT COLUMNS BASED ON SUBTAB */}
                           {subTab === 'TECH' && (
                             <>
-                              {/* CHÀO HÀNG */}
-                              <td className="p-0 align-top text-slate-600 border-r border-slate-200">
-                                {editingCell?.id === plan.id && editingCell?.field === 'techSpecModel' && !editingCell.isPurchasing ? (
-                                  <input
-                                    type="text"
-                                    value={tempValue}
-                                    onChange={(e) => setTempValue(e.target.value)}
-                                    onBlur={() => saveEditing(plan, pRecord)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                    autoFocus
-                                    className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                                  />
-                                ) : (
-                                  <span onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 flex items-center whitespace-normal break-words leading-tight" title={plan.techSpecModel || ''}>{plan.techSpecModel || ''}</span>
-                                )}
-                              </td>
-                              {/* ĐÁP ỨNG KỸ THUẬT */}
-                              <td className="p-0 align-top text-slate-600 border-r border-slate-200">
-                                {editingCell?.id === plan.id && editingCell?.field === 'techSpecOrigin' && !editingCell.isPurchasing ? (
-                                  <input
-                                    type="text"
-                                    value={tempValue}
-                                    onChange={(e) => setTempValue(e.target.value)}
-                                    onBlur={() => saveEditing(plan, pRecord)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                    autoFocus
-                                    className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                                  />
-                                ) : (
-                                  <span onClick={() => startEditing(plan.id, 'techSpecOrigin', plan.techSpecOrigin)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 flex items-center whitespace-normal break-words leading-tight" title={plan.techSpecOrigin || ''}>{plan.techSpecOrigin || ''}</span>
-                                )}
-                              </td>
                               {/* TÌNH TRẠNG */}
                               <td className="w-[125px] p-0 align-middle text-slate-600 border-r border-slate-200">
                                 <div className="p-1">
