@@ -1,7 +1,7 @@
 {
-  "version": "1.0.121",
+  "version": "1.0.122",
   "date": "22/08/2026",
   "notes": [
-    "Sửa lỗi định dạng ngày tháng hiển thị quá dài ở tab Kho và Vật tư."
+    "Sắp xếp danh sách nhập/xuất kho: mới nhất hiện lên trên cùng."
   ]
 }
