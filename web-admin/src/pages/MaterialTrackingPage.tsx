@@ -848,7 +848,7 @@ export const MaterialTrackingPage: React.FC = () => {
                 {imports.map((tx, index) => (
                   <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
                     <td className="p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
-                    <td className="p-3.5 font-bold text-slate-900">{tx.date}</td>
+                    <td className="p-3.5 font-bold text-slate-900">{tx.date ? new Date(tx.date).toLocaleDateString("vi-VN") : "-"}</td>
                     <td className="p-3.5 font-mono text-slate-500">{tx.materialCode}</td>
                     <td className="p-3.5 font-bold text-slate-800">{tx.materialName}</td>
                     <td className="p-3.5 text-slate-500">{tx.specs || '-'}</td>
@@ -888,7 +888,7 @@ export const MaterialTrackingPage: React.FC = () => {
                 {exports.map((tx, index) => (
                   <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
                     <td className="p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
-                    <td className="p-3.5 font-bold text-slate-900">{tx.date}</td>
+                    <td className="p-3.5 font-bold text-slate-900">{tx.date ? new Date(tx.date).toLocaleDateString("vi-VN") : "-"}</td>
                     <td className="p-3.5 font-mono text-slate-500">{tx.materialCode}</td>
                     <td className="p-3.5 font-bold text-slate-800">{tx.materialName}</td>
                     <td className="p-3.5 text-slate-500">{tx.specs || '-'}</td>
