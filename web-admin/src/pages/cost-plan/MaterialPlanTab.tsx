@@ -280,7 +280,11 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
     const { id, field } = editingCell;
 
     let finalValue = tempValue;
-    if (field === 'contractVolume' || field === 'orderedVolume') {
+    if (field === 'notes') {
+      const existingTags = String(plan.notes || '').match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
+      finalValue = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+    } else if (
+      field === 'contractVolume' || field === 'orderedVolume') {
       finalValue = Number(tempValue || 0);
     } else if (field === 'progressStatus' || field === 'orderedStatus') {
       finalValue = tempValue;
@@ -955,7 +959,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full bg-white text-slate-500 focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                       />
                     ) : (
-                      <div onClick={() => startEditing(plan.id, 'notes', plan.notes)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={cleanNotes(plan.notes)}>
+                      <div onClick={() => startEditing(plan.id, 'notes', cleanNotes(plan.notes))} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center" title={cleanNotes(plan.notes)}>
                         <span className="truncate flex-1">{cleanNotes(plan.notes)}</span>
                       </div>
                     )}

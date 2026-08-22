@@ -1,19 +1,25 @@
-﻿const { createClient } = require("@supabase/supabase-js");
-const url = "https://nvdonaaxbtqjfmxtlgzb.supabase.co";
-const key = "sb_publishable_gzUeVF_f2jadDuuii66pCw_W_0xmqjg";
-const supabase = createClient(url, key);
+﻿
+require("dotenv").config();
+const { createClient } = require("@supabase/supabase-js");
 
-async function run() {
-  const { data, error } = await supabase.from("project_purchasing").select("*");
+const supabaseUrl = "https://nvdonaaxbtqjfmxtlgzb.supabase.co";
+const supabaseKey = "sb_publishable_gzUeVF_f2jadDuuii66pCw_W_0xmqjg";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function check() {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("id, name, unit")
+    .eq("project_code", "TRAM_BIEN_AP_500KV_BAC_NINH")
+    .eq("unit", "ci");
+    
   if (error) console.error(error);
-  else {
-    const phuocTan = data.filter(d => d.project_code && d.project_code.includes("Phước Tân"));
-    console.log("Total purchasing:", data.length);
-    console.log("Phuoc Tan purchasing:", phuocTan.length);
-    if (phuocTan.length > 0) {
-      console.log(phuocTan[0]);
-    }
+  else console.log(`Found ${data.length} tasks with unit "ci" in Bac Ninh project`);
+  
+  if (data && data.length > 0) {
+    console.log(data.slice(0, 5));
   }
 }
-run();
+
+check();
 

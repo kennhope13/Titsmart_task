@@ -289,7 +289,10 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
     const { id, field } = editingCell;
 
     let finalValue = tempValue;
-    if (
+    if (field === 'notes') {
+      const existingTags = String(pur.notes || '').match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
+      finalValue = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+    } else if (
       field === 'volumeContract' ||
       field === 'volumeOrder' ||
       field === 'unitPrice' ||
@@ -905,7 +908,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                         className="w-full border rounded px-1.5 py-0.5 bg-white text-slate-900 focus:outline-primary"
                       />
                     ) : (
-                      <div onClick={() => startEditing(pur.id, 'notes', pur.notes)} className="w-full truncate cursor-pointer hover:bg-slate-100 px-1.5 py-0.5 rounded" title={cleanNotes(pur.notes)}>{cleanNotes(pur.notes) || '-'}</div>
+                      <div onClick={() => startEditing(pur.id, 'notes', cleanNotes(pur.notes))} className="w-full truncate cursor-pointer hover:bg-slate-100 px-1.5 py-0.5 rounded" title={cleanNotes(pur.notes)}>{cleanNotes(pur.notes) || '-'}</div>
                     )}
                   </td>
                 </tr>

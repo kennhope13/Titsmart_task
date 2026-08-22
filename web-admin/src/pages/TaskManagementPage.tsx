@@ -303,7 +303,10 @@ export const TaskManagementPage: React.FC = () => {
     if (!editingCell) return;
     const { id, field } = editingCell;
     let finalValue = tempValue;
-    if (field === 'volume') {
+    if (field === 'notes') {
+      const existingTags = String(task.notes || '').match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
+      finalValue = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+    } else if (field === 'volume') {
       finalValue = Number(tempValue || 0);
     } else if (field === 'progress') {
       finalValue = Number(tempValue || 0) / 100;
@@ -342,7 +345,7 @@ export const TaskManagementPage: React.FC = () => {
   const [sectionSelect, setSectionSelect] = useState<string>('default');
   const [customSectionInput, setCustomSectionInput] = useState('');
   const [volume, setVolume] = useState<number>(1);
-  const [unit, setUnit] = useState('ci');
+  const [unit, setUnit] = useState('');
   const [purchaseStatus, setPurchaseStatus] = useState('Chưa đặt hng');
   const [constrStatus, setConstrStatus] = useState('Chưa thi cng');
   const [engineerId, setEngineerId] = useState(engineers[0]?.id || '');
@@ -1359,11 +1362,11 @@ const displayTasks = tasks.filter((t) => {
             <button
               type="button"
               onClick={() => navigate('/projects')}
-              className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-2xs transition-all hover:bg-slate-50"
+              className="relative z-[35] inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:bg-slate-100 hover:shadow-md active:scale-95" style={{ WebkitAppRegion: "no-drag" } as any}
               title="Quay lại tất cả dự án"
               aria-label="Quay lại tất cả dự án"
             >
-              <span className="material-symbols-outlined text-lg">arrow_back</span>
+              <span className="material-symbols-outlined text-xl">arrow_back</span>
             </button>
           )}
           <div className="min-w-0 flex-1 flex items-center gap-3">
@@ -1580,20 +1583,20 @@ const displayTasks = tasks.filter((t) => {
                   
                   let rowBg = 'bg-white';
                   let stickyBg = 'bg-white';
-                  let fontStyle = 'font-bold text-slate-900';
-                  let sttStyle = 'font-bold text-slate-400';
+                  let fontStyle = "font-bold text-slate-900 text-[13px]";
+                  let sttStyle = "font-bold text-slate-400 text-xs";
                   
                   if (depth === 1) {
-                    rowBg = 'bg-slate-50';
-                    stickyBg = 'bg-slate-50';
-                    fontStyle = 'font-bold text-slate-900';
-                    sttStyle = 'font-bold text-slate-600';
+                    rowBg = "bg-slate-50";
+                    stickyBg = "bg-slate-50";
+                    fontStyle = "font-bold text-slate-900 text-sm";
+                    sttStyle = "font-bold text-slate-600 text-xs";
                   } else if (depth === 2) {
-                    fontStyle = 'font-semibold text-slate-700';
-                    sttStyle = 'font-semibold text-slate-400';
+                    fontStyle = "font-semibold text-slate-700 text-[13px]";
+                    sttStyle = "font-semibold text-slate-400 text-[11px]";
                   } else if (depth >= 3) {
-                    fontStyle = 'font-medium text-slate-600 text-[10.5px]';
-                    sttStyle = 'font-medium text-slate-400 text-[10.5px]';
+                    fontStyle = "font-medium text-slate-800 text-[13px] leading-relaxed";
+                    sttStyle = "font-medium text-slate-400 text-[11px]";
                   }
                   
                   if (t.issue) {
@@ -1615,9 +1618,9 @@ const displayTasks = tasks.filter((t) => {
                           <span onClick={() => startEditing(t.id, 'stt', (t as any).computedStt || t.stt)} className="cursor-pointer hover:bg-slate-200/50 block w-full px-1">{(t as any).computedStt || t.stt || idx + 1}</span>
                         )}
                       </td>
-                      <td className={`sticky z-10 py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 leading-tight transition-colors whitespace-normal break-words ${fontStyle}`} style={{ left: "var(--stt-width)" }} title={t.name}>
+                      <td className={`sticky z-10 py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 transition-colors whitespace-normal break-words ${fontStyle}`} style={{ left: "var(--stt-width)" }} title={t.name}>
                         {editingCell?.id === t.id && editingCell?.field === 'name' ? (
-                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10.5px]" />
+                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 focus:outline-primary text-[13px] font-medium" />
                         ) : (
                           <div style={{ paddingLeft }} className="flex items-center gap-1">
                             {depth > 1 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}
@@ -1670,7 +1673,7 @@ const displayTasks = tasks.filter((t) => {
                         {editingCell?.id === t.id && editingCell?.field === 'notes' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-700 font-bold focus:outline-primary text-[10px]" />
                         ) : (
-                          <span onClick={() => startEditing(t.id, 'notes', t.notes)} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">{cleanNotes(t.notes) || <span className="text-slate-300">-</span>}</span>
+                          <span onClick={() => startEditing(t.id, 'notes', cleanNotes(t.notes))} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">{cleanNotes(t.notes) || <span className="text-slate-300">-</span>}</span>
                         )}
                       </td>
                     </tr>

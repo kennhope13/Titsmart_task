@@ -1,10 +1,7 @@
 {
-  "version": "1.0.116",
-  "date": "21/08/2026",
+  "version": "1.0.118",
+  "date": "22/08/2026",
   "notes": [
-    "Xóa bỏ cột XONG, mở rộng cột XỬ LÝ hiển thị đầy đủ.",
-    "Đồng bộ màu sắc pastel cho dropdown XỬ LÝ giống MUA HÀNG và THI CÔNG.",
-    "Khắc phục dữ liệu tab Mua hàng dự án Phước Tân - phân loại đúng Nhà thầu/Chủ đầu tư.",
-    "Tự động đồng bộ khi thay đổi Phạm vi cung cấp cho các dự án mới."
+    "Mở rộng tính năng ẩn từ khóa metadata ở cột Ghi chú sang Tab Theo dõi chứng từ (Task Management)."
   ]
 }
