@@ -17,6 +17,8 @@ export type WebOcrTableTask = {
   vatAmount?: number;
   totalBeforeVat?: number;
   totalAmount?: number;
+  techSpecModel?: string;
+  techSpecOrigin?: string;
 };
 
 export type WebOcrExtractedData = {
@@ -245,6 +247,8 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
   const totalCol = getTableColumnIndex(header, ['tong tien', 'thanh tien sau thue'], vatAmountCol + 1);
   const notesCol = getTableColumnIndex(header, ['ghi chu'], -1);
   const supplyCol = getTableColumnIndex(header, ['nguon cung cap', 'ben cung cap', 'don vi cung cap', 'cung cap', 'phan cung cap', 'nha thau', 'chu dau tu'], -1);
+  const modelCol = getTableColumnIndex(header, ['ma hieu', 'model', 'ky ma hieu'], -1);
+  const originCol = getTableColumnIndex(header, ['nguon san xuat', 'xuat xu', 'hang san xuat'], -1);
   const fullTableText = normalizeLookupText(lines.join(' '));
   const workbookHasSupplySplit = hasOwnerSupplySignal(fullTableText) && hasContractorSupplySignal(fullTableText);
   const parsedTasks: WebOcrTableTask[] = [];
@@ -343,12 +347,17 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
 
     let effectiveStt = stt;
 
+    const techSpecModel = modelCol >= 0 ? String(cells[modelCol] || '').trim() : '';
+    const techSpecOrigin = originCol >= 0 ? String(cells[originCol] || '').trim() : '';
+
     parsedTasks.push({
       stt: isSectionHeader ? effectiveStt : stt,
       name,
       volume: isSectionHeader ? 0 : volume,
       unit: isSectionHeader ? '' : unit,
       notes: [rawNotes, supplyNote].filter(Boolean).join(' | '),
+      techSpecModel: isSectionHeader ? '' : techSpecModel,
+      techSpecOrigin: isSectionHeader ? '' : techSpecOrigin,
       isSectionHeader,
       sectionName,
       supplyScope: effectiveSupplyScope,

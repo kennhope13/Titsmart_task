@@ -1,8 +1,8 @@
 {
-  "version": "1.0.125",
+  "version": "1.0.127",
   "date": "22/08/2026",
   "notes": [
-    "Gộp tab Kế hoạch vật tư và Mua hàng thành một tab Vật tư & Mua hàng duy nhất gồm 5 Góc nhìn tiện lợi.",
-    "Đồng bộ hóa chỉnh sửa trực tiếp (inline edit) và Xuất Excel tổng hợp."
+    "Sửa lỗi không nhận diện Mã hiệu và Xuất xứ khi dùng OCR import Excel lúc tạo dự án mới.",
+    "Nâng cấp bộ đọc OCR để lấy chính xác dữ liệu Mã hiệu và Nguồn gốc cho mọi loại file (kể cả ảnh và PDF scan)."
   ]
 }
