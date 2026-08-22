@@ -836,18 +836,29 @@ export const ProjectCostPlanPage: React.FC = () => {
           const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
           const startRow = findStartRow(rows);
           if (startRow !== -1) {
-            const headerRow = rows[startRow - 1] || [];
+            const headerRow1 = rows[startRow - 2] || [];
+            const headerRow2 = rows[startRow - 1] || [];
+            const headerRow3 = rows[startRow] || [];
+            
             const findIdx = (keywords: string[], fallback: number) => {
-              const idx = headerRow.findIndex((c: any) => c && keywords.some((k: string) => String(c).toLowerCase().includes(k)));
-              return idx !== -1 ? idx : fallback;
+              for (let col = 0; col < 30; col++) {
+                const combined = [headerRow1[col], headerRow2[col], headerRow3[col]]
+                  .map(c => String(c || '').trim().toLowerCase())
+                  .join(' ');
+                
+                if (keywords.some((k: string) => combined.includes(k))) {
+                  return col;
+                }
+              }
+              return fallback;
             };
 
             const idxSTT = findIdx(['stt'], 0);
             const idxContent = findIdx(['nội dung', 'công việc'], 1);
-            const idxUnit = findIdx(['đvt', 'đơn vị'], 2);
-            const idxVol = findIdx(['khối lượng hđ', 'khối lượng hợp đồng'], 3);
-            const idxModel = findIdx(['mã hiệu', 'chào hàng'], 4);
-            const idxOrigin = findIdx(['xuất xứ', 'nguồn', 'đáp ứng'], 5);
+            const idxUnit = findIdx(['đvt', 'đơn vị', 'đơn vi', 'đơn vị tính'], 2);
+            const idxVol = findIdx(['khối lượng', 'khối lượng hđ', 'khối lượng hợp đồng', 'kl hđ', 'klhd'], 3);
+            const idxModel = findIdx(['mã hiệu', 'chào hàng', 'ký mã hiệu'], 4);
+            const idxOrigin = findIdx(['xuất xứ', 'nguồn sản xuất', 'đáp ứng', 'hãng sản xuất'], 5);
             const idxProg = findIdx(['tình trạng', 'tiến độ'], 6);
             const idxOrdVol = findIdx(['kl đặt hàng', 'khối lượng đặt'], 8);
             const idxOrdStat = findIdx(['tt đặt hàng', 'trạng thái đặt'], 9);
