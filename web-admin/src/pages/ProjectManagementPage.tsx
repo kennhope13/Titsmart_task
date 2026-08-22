@@ -454,7 +454,7 @@ export const ProjectManagementPage: React.FC = () => {
           .filter((plan) => plan.projectCode === code)
           .map((plan) => `${String(plan.stt || '').trim()}|${String(plan.content || '').trim().toLowerCase()}`)
       );
-      for (const [index, item] of tasksWithIds.filter((item) => ((item.isSectionHeader && item.supplyScope !== 'owner') || item.supplyScope === 'contractor') && item.name?.trim()).entries()) {
+      for (const [index, item] of tasksWithIds.filter((item) => item.name?.trim()).entries()) {
         const key = `${String(item.stt || '').trim()}|${String(item.name || '').trim().toLowerCase()}`;
         if (existingPurchasingKeys.has(key)) continue;
         existingPurchasingKeys.add(key);

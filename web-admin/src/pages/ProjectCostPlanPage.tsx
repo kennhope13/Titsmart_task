@@ -115,15 +115,7 @@ const getSectionForMaterialPlan = (plan: ProjectMaterialPlan, allPlans: ProjectM
 };
 
 const isEffectiveContractorPlan = (plan: ProjectMaterialPlan, allPlans: ProjectMaterialPlan[]) => {
-  if (isSectionMarker(plan.stt, plan.notes)) {
-    return isContractorMaterialPlan(plan);
-  }
-  
-  if (plan.supplyScope === 'contractor') return true;
-  if (plan.supplyScope === 'owner') return false;
-  
-  const section = getSectionForMaterialPlan(plan, allPlans);
-  return section ? isContractorMaterialPlan(section) : false;
+  return true;
 };
 
 export const ProjectCostPlanPage: React.FC = () => {
@@ -707,7 +699,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               }
               appendixMaterialCount++;
 
-              const pushToPurchasing = ((isSection && supplyScope !== 'owner') || supplyScope === 'contractor');
+              const pushToPurchasing = true;
 
               if (pushToPurchasing) {
                 const computedVatAmount = vatAmount || (vatRate ? totalBeforeVat * vatRate / 100 : 0);
@@ -1123,17 +1115,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     const validIds = new Set<string>();
 
     projectPurchasing.forEach(plan => {
-      const matPlan = plan.materialPlanId 
-        ? currentProjMaterialPlans.find(m => m.id === plan.materialPlanId)
-        : currentProjMaterialPlans.find(m => normalizePlanKey(m.stt, m.jobContent) === normalizePlanKey(plan.stt, plan.content));
-        
-      if (matPlan) {
-        if (isEffectiveContractorPlan(matPlan, currentProjMaterialPlans)) {
-          validIds.add(plan.id);
-        }
-      } else {
-        validIds.add(plan.id);
-      }
+      validIds.add(plan.id);
     });
 
     let added;
@@ -1181,9 +1163,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
     const syncMissing = async () => {
-      const contractorPlans = currentProjMaterialPlans.filter(plan => 
-        isEffectiveContractorPlan(plan, currentProjMaterialPlans)
-      );
+      const contractorPlans = currentProjMaterialPlans;
 
       const missingPlans = contractorPlans.filter(plan => {
         if (syncingIdsRef.current.has(plan.id)) return false;

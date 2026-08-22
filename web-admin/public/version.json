@@ -1,8 +1,7 @@
 {
-  "version": "1.0.127",
+  "version": "1.0.128",
   "date": "22/08/2026",
   "notes": [
-    "Sửa lỗi không nhận diện Mã hiệu và Xuất xứ khi dùng OCR import Excel lúc tạo dự án mới.",
-    "Nâng cấp bộ đọc OCR để lấy chính xác dữ liệu Mã hiệu và Nguồn gốc cho mọi loại file (kể cả ảnh và PDF scan)."
+    "Thay đổi luồng hiển thị: Tất cả các hạng mục từ Quản lý Tiến độ sẽ được đem qua Kế hoạch Vật tư và Kế hoạch Mua sắm (Purchasing) mà không còn bị ẩn nếu không phải do Nhà thầu cung cấp."
   ]
 }
