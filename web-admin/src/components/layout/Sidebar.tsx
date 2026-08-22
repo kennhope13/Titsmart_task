@@ -66,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           title: 'Quản lý dự án',
           items: [
             { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
-            { label: 'Kế hoạch & Chi phí', path: '/cost-plan', icon: 'request_quote' },
+            { label: 'Vật tư & Chi phí', path: '/cost-plan', icon: 'request_quote' },
             { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
             { label: 'Theo dõi Hồ sơ', path: '/document-tracking', icon: 'drafts' },
           ]
@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           title: 'Quản lý dự án',
           items: [
             { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
-            { label: 'Kế hoạch & Chi phí', path: '/cost-plan', icon: 'request_quote' },
+            { label: 'Vật tư & Chi phí', path: '/cost-plan', icon: 'request_quote' },
             { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
             { label: 'Theo dõi Hồ sơ', path: '/document-tracking', icon: 'drafts' },
           ]
