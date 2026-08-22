@@ -163,7 +163,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       .sort((a, b) => {
         const ka = sectionSortKey(a), kb = sectionSortKey(b);
         for (let i = 0; i < Math.max(ka.length, kb.length); i++) {
-          const diff = (ka[i] ?? Infinity) - (kb[i] ?? Infinity);
+          const diff = (ka[i] ?? -1) - (kb[i] ?? -1);
           if (diff !== 0) return diff;
         }
         return 0;
@@ -270,7 +270,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       if (aIsSec !== bIsSec) return aIsSec - bIsSec;
       const ap = numericSttParts(a.stt), bp = numericSttParts(b.stt);
       for (let i = 0; i < Math.max(ap.length, bp.length); i++) {
-        const diff = (ap[i] ?? Infinity) - (bp[i] ?? Infinity);
+        const diff = (ap[i] ?? -1) - (bp[i] ?? -1);
         if (diff !== 0) return diff;
       }
       return 0;
