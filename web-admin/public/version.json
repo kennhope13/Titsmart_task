@@ -1,7 +1,8 @@
 {
-  "version": "1.0.124",
+  "version": "1.0.125",
   "date": "22/08/2026",
   "notes": [
-    "Thêm nội dung hiển thị Mã hiệu và Nguồn sản xuất vào tab Kế hoạch vật tư."
+    "Gộp tab Kế hoạch vật tư và Mua hàng thành một tab Vật tư & Mua hàng duy nhất gồm 5 Góc nhìn tiện lợi.",
+    "Đồng bộ hóa chỉnh sửa trực tiếp (inline edit) và Xuất Excel tổng hợp."
   ]
 }

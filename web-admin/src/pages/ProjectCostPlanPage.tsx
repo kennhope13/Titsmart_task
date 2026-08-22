@@ -8,8 +8,8 @@ import { Toast } from '../components/common/Toast';
 import { ImageUpload } from '../components/common/ImageUpload';
 import { ProjectMaterialPlan, ProjectPurchasing, ProjectExpense, LaborPayroll , calculateAutoProgressRatio, PURCHASE_STATUS_OPTIONS } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { MaterialPlanTab } from './cost-plan/MaterialPlanTab';
-import { PurchasingTab } from './cost-plan/PurchasingTab';
+import { MaterialAndPurchasingTab } from './cost-plan/MaterialAndPurchasingTab';
+
 import { DocumentCertificateTab } from './cost-plan/DocumentCertificateTab';
 import { CustomSelect } from '@/components/common/CustomSelect';
 
@@ -1356,49 +1356,48 @@ export const ProjectCostPlanPage: React.FC = () => {
     let data: any[] = [];
     let sheetName = '';
     
-    if (activeTab === 'MATERIAL_PLAN') {
-      data = currentProjMaterialPlans.map(p => ({
-        'STT': p.stt,
-        'Nội dung công việc': p.jobContent,
-        'ĐVT': p.unit,
-        'Khối lượng HĐ': p.contractVolume,
-        'Chào hàng': p.techSpecModel || '',
-        'Đáp ứng kỹ thuật': p.techSpecOrigin || '',
-        'Tình trạng': p.progressStatus || '',
-        'KL Đặt hàng': p.orderedVolume || 0,
-        'TT Đặt hàng': p.orderedStatus || '',
-        'Ngày có hàng (dự kiến)': p.expectedDate || '',
-        'Vướng mắc/Tồn đọng - Nội dung': p.issueContent || '',
-        'Vướng mắc/Tồn đọng - TT xử lý': p.issueStatus || '',
-        'Chứng từ CO': p.docCo ? 'Có' : 'Chưa có',
-        'Chứng từ CQ': p.docCq ? 'Có' : 'Chưa có',
-        'Kiểm định PCCC': p.docFireInspection ? 'Có' : 'Chưa có',
-        'Đã gửi tới CT': p.dispatchToSite ? 'Có' : 'Chưa gửi',
-        'Ngày luân chuyển': p.dispatchDate || '',
-        'Ghi chú': p.notes || ''
-      }));
-      sheetName = 'KeHoachVatTu';
-    } else if (activeTab === 'PURCHASING') {
-      data = currentProjPurchasing.map(p => ({
-        'STT': p.stt,
-        'Nội dung': p.content,
-        'ĐVT': p.unit,
-        'Khối lượng HĐ': p.volumeContract,
-        'Khối lượng ĐH': p.volumeOrder,
-        'Đơn giá': p.unitPrice,
-        'VAT (%)': p.vatRate,
-        'Tiền thuế': p.vatAmount,
-        'Thành tiền': p.totalAmount,
-        'Tạm ứng (%)': p.prepayPercent * 100,
-        'Thanh toán': p.prepayAmount,
-        'TT Đặt hàng': p.orderStatus,
-        'TT Hợp đồng': p.contractStatus,
-        'Ngày thanh toán': p.paymentDate || '',
-        'Hóa đơn': p.invoiceStatus || '',
-        'Ghi chú': p.notes || ''
-      }));
-      sheetName = 'MuaSamHangHoa';
-    } else if (activeTab === 'EXPENSE') {
+    if (activeTab === "MATERIAL_PLAN") {
+      data = currentProjMaterialPlans.map(p => {
+        const norm = (s?: string) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+        const pRecord = currentProjPurchasing.find(
+          x => x.materialPlanId === p.id || (norm(x.stt) === norm(p.stt) && norm(x.content) === norm(p.jobContent))
+        );
+        return {
+          "STT": p.stt,
+          "Nội dung công việc": p.jobContent,
+          "Mã hiệu": p.techSpecModel || "",
+          "Xuất xứ": p.techSpecOrigin || "",
+          "ĐVT": p.unit,
+          "Khối lượng HĐ": p.contractVolume,
+          "Chào hàng": p.techSpecModel || "",
+          "Đáp ứng kỹ thuật": p.techSpecOrigin || "",
+          "Tình trạng": p.progressStatus || "",
+          "KL Đặt hàng": p.orderedVolume || 0,
+          "TT Đặt hàng": p.orderedStatus || "",
+          "Ngày có hàng (dự kiến)": p.expectedDate || "",
+          "Vướng mắc/Tồn đọng - Nội dung": p.issueContent || "",
+          "Vướng mắc/Tồn đọng - TT xử lý": p.issueStatus || "",
+          "Chứng từ CO": p.docCo ? "Có" : "Chưa có",
+          "Chứng từ CQ": p.docCq ? "Có" : "Chưa có",
+          "Kiểm định PCCC": p.docFireInspection ? "Có" : "Chưa có",
+          "Đã gửi tới CT": p.dispatchToSite ? "Có" : "Chưa gửi",
+          "Ngày luân chuyển": p.dispatchDate || "",
+          "KL Đặt hàng mua": pRecord?.volumeOrder || 0,
+          "Đơn giá mua": pRecord?.unitPrice || 0,
+          "VAT %": pRecord?.vatRate || 0,
+          "Tiền VAT": pRecord?.vatAmount || 0,
+          "Thành tiền mua": pRecord?.totalAmount || 0,
+          "Trạng thái ĐH mua": pRecord?.orderStatus || "",
+          "Tình trạng hợp đồng": pRecord?.contractStatus || "",
+          "% tạm ứng": pRecord ? Math.round(pRecord.prepayPercent * 100) : 0,
+          "Thực chi": pRecord?.prepayAmount || 0,
+          "Hạn thanh toán": pRecord?.paymentDate || "",
+          "Hóa đơn VAT": pRecord?.invoiceStatus || "",
+          "Ghi chú": p.notes || ""
+        };
+      });
+      sheetName = "VatTuVaMuaHang";
+    }else if (activeTab === 'EXPENSE') {
       data = currentProjExpenses.map(e => ({
         'STT': e.stt,
         'Ngày': e.date,
@@ -1509,8 +1508,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1 shadow-xs border-x">
         <div className="flex items-center gap-4">
           {[
-            { id: 'MATERIAL_PLAN', label: 'Kế Hoạch Vật Tư', icon: 'list_alt', show: true },
-            { id: 'PURCHASING', label: 'Mua hàng (nhà thầu)', icon: 'shopping_bag', show: user?.role !== 'engineer' },
+            { id: 'MATERIAL_PLAN', label: 'Vật tư & Mua hàng', icon: 'list_alt', show: true },
             { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long', show: user?.role !== 'engineer' },
             { id: 'DOCUMENTS', label: 'Theo dõi chứng từ', icon: 'description', show: user?.role !== 'engineer' },
           ].filter(t => t.show).map(tab => (
@@ -1593,14 +1591,17 @@ export const ProjectCostPlanPage: React.FC = () => {
       <div className="bg-white border-x border-b border-slate-200 shadow-xs overflow-hidden flex-1">
         
         {/* MATERIAL PLAN TAB */}
-        {activeTab === 'MATERIAL_PLAN' && (
-          <MaterialPlanTab
+        {activeTab === "MATERIAL_PLAN" && (
+          <MaterialAndPurchasingTab
             data={currentProjMaterialPlans}
-            onUpdate={handleUpdateMaterialPlanSync}
-            onEdit={setEditingPlan}
+            purchasingData={currentProjPurchasing}
+            onUpdateMaterial={handleUpdateMaterialPlanSync}
+            onUpdatePurchasing={handleUpdatePurchasingPlanSync}
+            onEditMaterial={setEditingPlan}
+            onEditPurchasing={setEditingPurchasing}
             onDelete={(id) => {
               const item = currentProjMaterialPlans.find(p => p.id === id);
-              setDeleteConfirm({ isOpen: true, id, type: 'material', title: 'Xóa kế hoạch vật tư', itemName: `hạng mục "${item?.jobContent}"` });
+              setDeleteConfirm({ isOpen: true, id, type: "material", title: "Xóa kế hoạch vật tư", itemName: `hạng mục "${item?.jobContent}"` });
             }}
             onAddSubtask={(plan, suggestedStt) => {
               setParentPlanIdForNew(plan.id);
@@ -1608,47 +1609,13 @@ export const ProjectCostPlanPage: React.FC = () => {
               if (section) setSectionPlanIdForNew(section.id);
               setIsCreatingSectionHeader(false);
               setIsNewPlanOpen(true);
-              setNewPlanData(prev => ({ ...prev, stt: suggestedStt || '', isContractor: isEffectiveContractorPlan(plan, currentProjMaterialPlans) }));
+              setNewPlanData(prev => ({ ...prev, stt: suggestedStt || "", isContractor: isEffectiveContractorPlan(plan, currentProjMaterialPlans) }));
             }}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
-          />
-        )}
-
-        {/* PURCHASING TAB */}
-        {activeTab === 'PURCHASING' && (
-          <PurchasingTab
-            data={currentProjPurchasing}
-            onUpdate={handleUpdatePurchasingPlanSync}
-            onEdit={setEditingPurchasing}
-            onDelete={(id) => {
-              const item = currentProjPurchasing.find(p => p.id === id);
-              setDeleteConfirm({ isOpen: true, id, type: 'purchasing', title: 'Xóa mua sắm hàng hóa', itemName: `mục "${item?.content}"` });
-            }}
-            onAddSubtask={(plan, suggestedStt) => {
-              setParentPurchasingIdForNew(plan.id);
-              const getSectionForPurchasing = (p: ProjectPurchasing, all: ProjectPurchasing[], visited = new Set<string>()): ProjectPurchasing | null => {
-                if (visited.has(p.id)) return null;
-                visited.add(p.id);
-                if (isSectionMarker(p.stt, p.notes)) return p;
-                if (p.parentId) {
-                  const parent = all.find(x => x.id === p.parentId);
-                  if (parent) return getSectionForPurchasing(parent, all, visited);
-                }
-                return null;
-              };
-              const section = getSectionForPurchasing(plan, currentProjPurchasing);
-              if (section) setSectionPurchasingIdForNew(section.id);
-              setIsCreatingSectionHeader(false);
-              setIsNewPurchasingOpen(true);
-              setNewPurchasingData(prev => ({ ...prev, stt: suggestedStt || '' }));
-            }}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
+            userRole={user?.role}
           />
         )}
 
