@@ -1,7 +1,7 @@
 {
-  "version": "1.0.122",
+  "version": "1.0.124",
   "date": "22/08/2026",
   "notes": [
-    "Sắp xếp danh sách nhập/xuất kho: mới nhất hiện lên trên cùng."
+    "Thêm nội dung hiển thị Mã hiệu và Nguồn sản xuất vào tab Kế hoạch vật tư."
   ]
 }
