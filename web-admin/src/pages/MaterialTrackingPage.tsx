@@ -962,8 +962,8 @@ export const MaterialTrackingPage: React.FC = () => {
                 Thêm vật tư mới
               </button>
             </div>
-            <CustomSelect required value={txMaterialId} onChange={(e) => setTxMaterialId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
-              <option value="" disabled>-- Chọn vật tư --</option>
+            <CustomSelect required searchable value={txMaterialId} onChange={(e) => setTxMaterialId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+              
               {materials.map(m => (
                 <option key={m.id} value={m.id}>[{m.code}] {m.name} (Tồn: {m.currentStock ?? (m.initialStock || 0)} {m.unit})</option>
               ))}
