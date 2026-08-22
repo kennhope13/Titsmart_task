@@ -160,7 +160,11 @@ export const ProjectManagementPage: React.FC = () => {
       .filter((eng) => eng.memberProjects?.some((mp) => mp.code === project.code))
       .map((eng) => eng.name);
 
-    const combined = Array.from(new Set([...memberFromIds, ...memberFromManaged, ...memberFromAssigned]));
+    const memberFromProjectCodes = engineers
+      .filter((eng) => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(project.code))
+      .map((eng) => eng.name);
+
+    const combined = Array.from(new Set([...memberFromIds, ...memberFromManaged, ...memberFromAssigned, ...memberFromProjectCodes]));
     if (combined.length > 0) return combined;
     if (project.managerName && project.managerName !== TEXT.unassigned) return [project.managerName];
     return [];
@@ -625,29 +629,24 @@ export const ProjectManagementPage: React.FC = () => {
                     )}
 
                     {/* Nhân sự dự án */}
-                    <div className="flex items-center gap-2 mt-1 pt-1 border-t border-slate-100/50">
-                      <span className="text-[11px] font-semibold text-slate-400 whitespace-nowrap">Nhân sự:</span>
-                      {project.memberNames?.length ? (
-                        <div className="flex items-center gap-2.5 overflow-hidden">
-                          {project.memberNames.slice(0, 3).map((name, i) => (
-                            <div key={i} className="flex items-center gap-1">
-                              <div className="w-4 h-4 rounded-full bg-sky-100 text-sky-700 border border-sky-200 flex items-center justify-center text-[9px] font-bold uppercase shrink-0">
+                    <div className="mt-1.5 pt-1.5 border-t border-slate-100/50">
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5">
+                        <span className="text-[11px] font-semibold text-slate-400 mr-0.5">Nhân sự:</span>
+                        {project.memberNames?.length ? (
+                          project.memberNames.map((name, i) => (
+                            <div key={i} className="inline-flex items-center gap-1 bg-sky-50/50 border border-sky-100 rounded-full pr-2 pl-0.5 py-0.5">
+                              <span className="w-3.5 h-3.5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-[8px] font-bold uppercase shrink-0">
                                 {name.charAt(0)}
-                              </div>
-                              <span className="text-[11px] font-semibold text-sky-700 truncate max-w-[65px]" title={name}>
+                              </span>
+                              <span className="text-[10px] font-semibold text-sky-700">
                                 {name}
                               </span>
                             </div>
-                          ))}
-                          {project.memberNames.length > 3 && (
-                            <span className="text-[11px] font-semibold text-slate-400">
-                              +{project.memberNames.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="italic text-[11px] text-slate-400">Chưa có</span>
-                      )}
+                          ))
+                        ) : (
+                          <span className="italic text-[11px] text-slate-400">Chưa có</span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Tiến độ */}
