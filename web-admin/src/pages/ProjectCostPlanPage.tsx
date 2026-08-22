@@ -836,27 +836,53 @@ export const ProjectCostPlanPage: React.FC = () => {
           const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
           const startRow = findStartRow(rows);
           if (startRow !== -1) {
+            const headerRow = rows[startRow - 1] || [];
+            const findIdx = (keywords: string[], fallback: number) => {
+              const idx = headerRow.findIndex((c: any) => c && keywords.some((k: string) => String(c).toLowerCase().includes(k)));
+              return idx !== -1 ? idx : fallback;
+            };
+
+            const idxSTT = findIdx(['stt'], 0);
+            const idxContent = findIdx(['nội dung', 'công việc'], 1);
+            const idxUnit = findIdx(['đvt', 'đơn vị'], 2);
+            const idxVol = findIdx(['khối lượng hđ', 'khối lượng hợp đồng'], 3);
+            const idxModel = findIdx(['mã hiệu', 'chào hàng'], 4);
+            const idxOrigin = findIdx(['xuất xứ', 'nguồn', 'đáp ứng'], 5);
+            const idxProg = findIdx(['tình trạng', 'tiến độ'], 6);
+            const idxOrdVol = findIdx(['kl đặt hàng', 'khối lượng đặt'], 8);
+            const idxOrdStat = findIdx(['tt đặt hàng', 'trạng thái đặt'], 9);
+            const idxExpDate = findIdx(['ngày có hàng', 'dự kiến'], 10);
+            const idxIssue = findIdx(['vướng mắc', 'tồn đọng - nội dung'], 11);
+            const idxCO = findIdx(['chứng từ co'], 13);
+            const idxCQ = findIdx(['chứng từ cq'], 14);
+            const idxFire = findIdx(['kiểm định pccc'], 15);
+            const idxDispatch = findIdx(['đã gửi tới ct', 'luân chuyển'], 16);
+            const idxDispatchDate = findIdx(['ngày luân chuyển'], 17);
+            const idxNotes = findIdx(['ghi chú'], 18);
+
             rows.slice(startRow).forEach(row => {
-              const jobContent = row[1];
+              const jobContent = row[idxContent];
               if (!jobContent) return;
               
-              const stt = String(row[0] || '');
+              const stt = String(row[idxSTT] || '');
               const contentStr = String(jobContent);
               const rKey = baselineKey(stt, contentStr);
               const existing = materialBaselineMap.get(rKey);
 
               const updateData = {
-                progressStatus: String(row[6] || row[7] || 'Chưa thi công'),
-                orderedVolume: numVal(row[8]),
-                orderedStatus: String(row[9] || 'Chưa đặt hàng'),
-                expectedDate: parseExcelDate(row[10]),
-                issueContent: String(row[11] || ''),
-                docCo: String(row[13] || '').toLowerCase().includes('x') || row[13] === true || String(row[13] || '') === '1',
-                docCq: String(row[14] || '').toLowerCase().includes('x') || row[14] === true || String(row[14] || '') === '1',
-                docFireInspection: String(row[15] || '').toLowerCase().includes('x') || row[15] === true || String(row[15] || '') === '1',
-                dispatchToSite: String(row[16] || '').toLowerCase().includes('x') || row[16] === true || String(row[16] || '') === '1',
-                dispatchDate: parseExcelDate(row[17]),
-                notes: String(row[18] || '')
+                progressStatus: String(row[idxProg] || row[idxProg+1] || 'Chưa thi công'),
+                orderedVolume: numVal(row[idxOrdVol]),
+                orderedStatus: String(row[idxOrdStat] || 'Chưa đặt hàng'),
+                expectedDate: parseExcelDate(row[idxExpDate]),
+                issueContent: String(row[idxIssue] || ''),
+                docCo: String(row[idxCO] || '').toLowerCase().includes('x') || row[idxCO] === true || String(row[idxCO] || '') === '1',
+                docCq: String(row[idxCQ] || '').toLowerCase().includes('x') || row[idxCQ] === true || String(row[idxCQ] || '') === '1',
+                docFireInspection: String(row[idxFire] || '').toLowerCase().includes('x') || row[idxFire] === true || String(row[idxFire] || '') === '1',
+                dispatchToSite: String(row[idxDispatch] || '').toLowerCase().includes('x') || row[idxDispatch] === true || String(row[idxDispatch] || '') === '1',
+                dispatchDate: parseExcelDate(row[idxDispatchDate]),
+                notes: String(row[idxNotes] || ''),
+                techSpecModel: String(row[idxModel] || ''),
+                techSpecOrigin: String(row[idxOrigin] || '')
               };
 
               if (existing) {
@@ -869,10 +895,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                   projectCode: selectedProject,
                   stt: stt,
                   jobContent: contentStr,
-                  unit: String(row[2] || ''),
-                  contractVolume: numVal(row[3]),
-                  techSpecModel: String(row[4] || ''),
-                  techSpecOrigin: String(row[5] || ''),
+                  unit: String(row[idxUnit] || ''),
+                  contractVolume: numVal(row[idxVol]),
                   ...updateData
                 });
               }
