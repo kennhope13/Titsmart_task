@@ -368,15 +368,18 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     const plan = data.find(p => p.id === docModalPlanId);
     if (!plan) return;
 
+    const allTexts = newModels.flatMap(m => m.docs.map(d => d.text.toLowerCase())).join(' ');
+    const docCo = allTexts.includes('c/o') || allTexts.includes('co');
+    const docCq = allTexts.includes('c/q') || allTexts.includes('cq');
+    const docFireInspection = allTexts.includes('pccc') || allTexts.includes('phòng cháy');
+
     const payload = {
       ...plan,
       issueContent: `${getIssueContentText(plan.issueContent)} [DOC-DATA] ${encodeModels(newModels)}`,
+      docCo,
+      docCq,
+      docFireInspection,
     };
-    
-    // Auto-enable the badge if a file was added for this specific type
-    if (fastDocType === 'CO' && newModels.some(m => m.docs.some(d => d.text.toLowerCase().includes('co') || d.text.toLowerCase().includes('c/o')))) payload.docCo = true;
-    if (fastDocType === 'CQ' && newModels.some(m => m.docs.some(d => d.text.toLowerCase().includes('cq') || d.text.toLowerCase().includes('c/q')))) payload.docCq = true;
-    if (fastDocType === 'PCCC' && newModels.some(m => m.docs.some(d => d.text.toLowerCase().includes('pccc') || d.text.toLowerCase().includes('phòng cháy')))) payload.docFireInspection = true;
     
     onUpdateMaterial(plan.id, payload);
     setFastDocType(null);
@@ -1069,49 +1072,34 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
-                                      onClick={() => onUpdateMaterial(plan.id, { ...plan, docCo: !plan.docCo })}
+                                      onClick={() => handleDocBadgeClick(plan, 'CO')}
                                       className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docCo ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
                                     >
                                       CO
                                     </button>
-                                    <div className="flex flex-wrap items-center justify-center gap-0.5">
-                                      {renderAutoFilesByType(plan, 'CO')}
-                                      <button onClick={() => handleDocBadgeClick(plan, 'CO')} className="text-slate-400 hover:text-blue-500 mt-0.5" title="Đính kèm file">
-                                        <span className="material-symbols-outlined text-[13px]">attach_file</span>
-                                      </button>
-                                    </div>
+                                    {renderAutoFilesByType(plan, 'CO')}
                                   </div>
                                   <div className="flex flex-col items-center gap-1 pl-2">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
-                                      onClick={() => onUpdateMaterial(plan.id, { ...plan, docCq: !plan.docCq })}
+                                      onClick={() => handleDocBadgeClick(plan, 'CQ')}
                                       className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docCq ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
                                     >
                                       CQ
                                     </button>
-                                    <div className="flex flex-wrap items-center justify-center gap-0.5">
-                                      {renderAutoFilesByType(plan, 'CQ')}
-                                      <button onClick={() => handleDocBadgeClick(plan, 'CQ')} className="text-slate-400 hover:text-blue-500 mt-0.5" title="Đính kèm file">
-                                        <span className="material-symbols-outlined text-[13px]">attach_file</span>
-                                      </button>
-                                    </div>
+                                    {renderAutoFilesByType(plan, 'CQ')}
                                   </div>
                                   <div className="flex flex-col items-center gap-1 pl-2">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
-                                      onClick={() => onUpdateMaterial(plan.id, { ...plan, docFireInspection: !plan.docFireInspection })}
+                                      onClick={() => handleDocBadgeClick(plan, 'PCCC')}
                                       className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docFireInspection ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
                                     >
                                       PCCC
                                     </button>
-                                    <div className="flex flex-wrap items-center justify-center gap-0.5">
-                                      {renderAutoFilesByType(plan, 'PCCC')}
-                                      <button onClick={() => handleDocBadgeClick(plan, 'PCCC')} className="text-slate-400 hover:text-blue-500 mt-0.5" title="Đính kèm file">
-                                        <span className="material-symbols-outlined text-[13px]">attach_file</span>
-                                      </button>
-                                    </div>
+                                    {renderAutoFilesByType(plan, 'PCCC')}
                                   </div>
                                 </div>
                               </td>
