@@ -351,7 +351,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
   const colSpanCount = useMemo(() => {
     if (subTab === 'TECH') return 5;
-    if (subTab === 'DOCS') return 5;
+    if (subTab === 'DOCS') return 4;
     if (subTab === 'PRICING') return 7;
     if (subTab === 'PAYMENT') return 6;
     return 4;
@@ -521,7 +521,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
               {subTab === 'DOCS' && (
                 <>
-                  <th colSpan={3} style={{ width: 160, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
+                  <th colSpan={2} style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
                   <th colSpan={2} style={{ width: 130, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">LUÂN CHUYỂN VẬT TƯ</th>
                 </>
               )}
@@ -645,7 +645,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               });
 
               if (flattened.length === 0) {
-                return <tr><td colSpan={colSpanCount + 6} className="p-8 text-center text-slate-400 whitespace-nowrap">{TEXT.empty}</td></tr>;
+                return <tr><td colSpan={colSpanCount + (subTab === 'DOCS' ? 2 : 6)} className="p-8 text-center text-slate-400 whitespace-nowrap">{TEXT.empty}</td></tr>;
               }
 
               return (
@@ -665,7 +665,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             <td className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
                               {plan.stt}
                             </td>
-                            <td colSpan={colSpanCount + 5} className="bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" title={plan.jobContent}>
+                            <td colSpan={colSpanCount + (subTab === 'DOCS' ? 1 : 5)} className="bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" title={plan.jobContent}>
                               <div className="flex items-center gap-2 min-w-0 overflow-hidden whitespace-nowrap">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
@@ -770,73 +770,78 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             )}
                           </td>
 
-                          {/* ĐVT */}
-                          <td className="p-0 align-middle text-center font-mono text-slate-500 border-r border-slate-200 whitespace-normal break-words leading-tight">
-                            {editingCell?.id === plan.id && editingCell?.field === 'unit' && !editingCell.isPurchasing ? (
-                              <input
-                                type="text"
-                                value={tempValue}
-                                onChange={(e) => setTempValue(e.target.value)}
-                                onBlur={() => saveEditing(plan, pRecord)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                autoFocus
-                                className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                              />
-                            ) : (
-                              <span onClick={() => startEditing(plan.id, 'unit', plan.unit)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 flex items-center whitespace-normal break-words leading-tight" title={plan.unit || ''}>{plan.unit || ''}</span>
-                            )}
-                          </td>
-
-                          {/* KL HĐ */}
-                          <td className="p-0 align-middle text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">
-                            {editingCell?.id === plan.id && editingCell?.field === 'contractVolume' && !editingCell.isPurchasing ? (
-                              <input
-                                type="number"
-                                value={tempValue}
-                                onChange={(e) => setTempValue(e.target.value)}
-                                onBlur={() => saveEditing(plan, pRecord)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                autoFocus
-                                className="w-full text-center bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                              />
-                            ) : (
-                              <span onClick={() => startEditing(plan.id, 'contractVolume', plan.contractVolume)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5" title={showNumber(plan.contractVolume)}>{showNumber(plan.contractVolume)}</span>
-                            )}
-                          </td>
-
-                          {/* MÃ HIỆU */}
-                          <td className="p-0 align-middle text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecModel || ""}>
-                            {editingCell?.id === plan.id && editingCell?.field === "techSpecModel" && !editingCell.isPurchasing ? (
-                              <input
-                                type="text"
-                                value={tempValue}
-                                onChange={(e) => setTempValue(e.target.value)}
-                                onBlur={() => saveEditing(plan, pRecord)}
-                                onKeyDown={(e) => { if (e.key === "Enter") saveEditing(plan, pRecord); if (e.key === "Escape") setEditingCell(null); }}
-                                autoFocus
-                                className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                              />
-                            ) : (
-                              <span onClick={() => startEditing(plan.id, "techSpecModel", plan.techSpecModel)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-1 block w-full truncate max-w-[100px]">{plan.techSpecModel || "-"}</span>
-                            )}
-                          </td>
-
-                          {/* XUẤT XỨ */}
-                          <td className="p-0 align-middle text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecOrigin || ""}>
-                            {editingCell?.id === plan.id && editingCell?.field === "techSpecOrigin" && !editingCell.isPurchasing ? (
-                              <input
-                                type="text"
-                                value={tempValue}
-                                onChange={(e) => setTempValue(e.target.value)}
-                                onBlur={() => saveEditing(plan, pRecord)}
-                                onKeyDown={(e) => { if (e.key === "Enter") saveEditing(plan, pRecord); if (e.key === "Escape") setEditingCell(null); }}
-                                autoFocus
-                                className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                              />
-                            ) : (
-                              <span onClick={() => startEditing(plan.id, "techSpecOrigin", plan.techSpecOrigin)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-1 block w-full truncate max-w-[100px]">{plan.techSpecOrigin || "-"}</span>
-                            )}
-                          </td>
+                          {subTab !== 'DOCS' && (
+                            <>
+                            {/* ĐVT */}  
+                            <td className="p-0 align-middle text-center font-mono text-slate-500 border-r border-slate-200 whitespace-normal break-words leading-tight">  
+                              {editingCell?.id === plan.id && editingCell?.field === 'unit' && !editingCell.isPurchasing ? (  
+                                <input  
+                                  type="text"  
+                                  value={tempValue}  
+                                  onChange={(e) => setTempValue(e.target.value)}  
+                                  onBlur={() => saveEditing(plan, pRecord)}  
+                                  onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}  
+                                  autoFocus  
+                                  className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"  
+                                />  
+                              ) : (  
+                                <span onClick={() => startEditing(plan.id, 'unit', plan.unit)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 flex items-center whitespace-normal break-words leading-tight" title={plan.unit || ''}>{plan.unit || ''}</span>  
+                              )}  
+                            </td>  
+    
+                            {/* KL HĐ */}  
+                            <td className="p-0 align-middle text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">  
+                              {editingCell?.id === plan.id && editingCell?.field === 'contractVolume' && !editingCell.isPurchasing ? (  
+                                <input  
+                                  type="number"  
+                                  value={tempValue}  
+                                  onChange={(e) => setTempValue(e.target.value)}  
+                                  onBlur={() => saveEditing(plan, pRecord)}  
+                                  onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}  
+                                  autoFocus  
+                                  className="w-full text-center bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"  
+                                />  
+                              ) : (  
+                                <span onClick={() => startEditing(plan.id, 'contractVolume', plan.contractVolume)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5" title={showNumber(plan.contractVolume)}>{showNumber(plan.contractVolume)}</span>  
+                              )}  
+                            </td>  
+    
+                            {/* MÃ HIỆU */}  
+                            <td className="p-0 align-middle text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecModel || ""}>  
+                              {editingCell?.id === plan.id && editingCell?.field === "techSpecModel" && !editingCell.isPurchasing ? (  
+                                <input  
+                                  type="text"  
+                                  value={tempValue}  
+                                  onChange={(e) => setTempValue(e.target.value)}  
+                                  onBlur={() => saveEditing(plan, pRecord)}  
+                                  onKeyDown={(e) => { if (e.key === "Enter") saveEditing(plan, pRecord); if (e.key === "Escape") setEditingCell(null); }}  
+                                  autoFocus  
+                                  className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"  
+                                />  
+                              ) : (  
+                                <span onClick={() => startEditing(plan.id, "techSpecModel", plan.techSpecModel)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-1 block w-full truncate max-w-[100px]">{plan.techSpecModel || "-"}</span>  
+                              )}  
+                            </td>  
+    
+                            {/* XUẤT XỨ */}  
+                            <td className="p-0 align-middle text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecOrigin || ""}>  
+                              {editingCell?.id === plan.id && editingCell?.field === "techSpecOrigin" && !editingCell.isPurchasing ? (  
+                                <input  
+                                  type="text"  
+                                  value={tempValue}  
+                                  onChange={(e) => setTempValue(e.target.value)}  
+                                  onBlur={() => saveEditing(plan, pRecord)}  
+                                  onKeyDown={(e) => { if (e.key === "Enter") saveEditing(plan, pRecord); if (e.key === "Escape") setEditingCell(null); }}  
+                                  autoFocus  
+                                  className="w-full text-center bg-white text-slate-900 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"  
+                                />  
+                              ) : (  
+                                <span onClick={() => startEditing(plan.id, "techSpecOrigin", plan.techSpecOrigin)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-1 block w-full truncate max-w-[100px]">{plan.techSpecOrigin || "-"}</span>  
+                              )}  
+                            </td>  
+    
+                            </>
+                          )}
 
                           {/* DYNAMIC RIGHT COLUMNS BASED ON SUBTAB */}
                           {subTab === 'TECH' && (
