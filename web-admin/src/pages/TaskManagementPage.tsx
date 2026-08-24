@@ -151,37 +151,43 @@ export const TaskManagementPage: React.FC = () => {
   const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addPurchasingPlan, materialPlans, purchasingPlans, deleteMaterialPlan, deletePurchasingPlan, updateMaterialPlan, updatePurchasingPlan } = useRealtimeStore();
 
   // Đồng bộ trạng thái Mua hàng / Thi công từ tab Quản lý Công việc sang tab Kế hoạch Vật tư & Mua hàng
-  const syncTaskStatusToCostPlan = (task: Task, purchaseStatus?: string, constrStatus?: string) => {
+    const handleUpdateTaskSync = (id: string, updates: Partial<Task>) => {
+    updateTask(id, updates);
+    const existing = tasks.find(t => t.id === id);
+    if (!existing) return;
+    
     const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
     
-    // Tìm MaterialPlan tương ứng (khớp theo projectCode + stt + name)
+    // Tìm MaterialPlan
     const matchingMaterial = materialPlans.find(m =>
-      m.projectCode === task.projectCode &&
-      norm(m.stt) === norm(task.stt) &&
-      norm(m.jobContent) === norm(task.name)
+      m.projectCode === existing.projectCode &&
+      norm(m.stt) === norm(existing.stt) &&
+      norm(m.jobContent) === norm(existing.name)
     );
     if (matchingMaterial) {
       const matUpdates: Record<string, any> = {};
-      if (purchaseStatus !== undefined) matUpdates.orderedStatus = purchaseStatus;
-      if (constrStatus !== undefined) matUpdates.progressStatus = constrStatus;
+      if (updates.purchaseStatus !== undefined) matUpdates.orderedStatus = updates.purchaseStatus;
+      if (updates.constrStatus !== undefined) matUpdates.progressStatus = updates.constrStatus;
+      if (updates.issue !== undefined) matUpdates.issueContent = updates.issue;
+      if (updates.issueStatus !== undefined) matUpdates.issueStatus = updates.issueStatus;
+      if (updates.notes !== undefined) matUpdates.notes = updates.notes;
       if (Object.keys(matUpdates).length > 0) {
         updateMaterialPlan(matchingMaterial.id, matUpdates);
       }
     }
 
-    // Tìm Purchasing tương ứng (khớp theo projectCode + stt + content)
+    // Tìm Purchasing
     const matchingPurchasing = purchasingPlans.find(p =>
-      p.projectCode === task.projectCode &&
-      norm(p.stt) === norm(task.stt) &&
-      norm(p.content) === norm(task.name)
+      p.projectCode === existing.projectCode &&
+      norm(p.stt) === norm(existing.stt) &&
+      norm(p.content) === norm(existing.name)
     );
-    if (matchingPurchasing && purchaseStatus !== undefined) {
-      updatePurchasingPlan(matchingPurchasing.id, { orderStatus: purchaseStatus });
+    if (matchingPurchasing && updates.purchaseStatus !== undefined) {
+      updatePurchasingPlan(matchingPurchasing.id, { orderStatus: updates.purchaseStatus });
     }
   };
 
-  // Auto-sync: Đồng bộ tất cả trạng thái hiện có từ Task sang MaterialPlan + Purchasing khi trang load
-  const hasSyncedRef = useRef(false);
+const hasSyncedRef = useRef(false);
   useEffect(() => {
     if (hasSyncedRef.current) return;
     if (tasks.length === 0 || (materialPlans.length === 0 && purchasingPlans.length === 0)) return;
@@ -313,7 +319,7 @@ export const TaskManagementPage: React.FC = () => {
     }
     const nextProgress = field === 'progress' ? finalValue : task.progress;
     
-    updateTask(id, { 
+    handleUpdateTaskSync(id, { 
       [field]: finalValue,
       ...(field === 'progress' ? {
         isDone: nextProgress >= 1,
@@ -445,7 +451,7 @@ export const TaskManagementPage: React.FC = () => {
     const eng = engineers.find((e) => e.id === editEngineerId);
     const nextProgress = editingTask.isSectionHeader ? editingTask.progress : calculateAutoProgressRatio(editPurchaseStatus, editConstrStatus);
 
-    updateTask(editingTask.id, {
+    handleUpdateTaskSync(editingTask.id, {
       stt: editStt,
       name: editName,
       sectionName: finalSection,
@@ -466,7 +472,7 @@ export const TaskManagementPage: React.FC = () => {
 
     // Đồng bộ trạng thái sang tab Kế hoạch Vật tư & Mua hàng
     if (!editingTask.isSectionHeader) {
-      syncTaskStatusToCostPlan(editingTask, editPurchaseStatus, editConstrStatus);
+      // syncTaskStatusToCostPlan(editingTask, editPurchaseStatus, editConstrStatus);
     }
 
     setIsEditTaskModalOpen(false);
@@ -780,7 +786,7 @@ export const TaskManagementPage: React.FC = () => {
     ['KHỐI LƯỢNG']: t.isSectionHeader ? '' : t.volume,
     ['ĐVT']: t.unit || '',
     ['TIẾN ĐỘ']: t.isSectionHeader ? '' : String(Math.round(t.progress * 100)) + '%',
-    ['TÌNH TRẠNG MUA HÀNG']: t.purchaseStatus || '',
+    ['TT ĐẶT HÀNG']: t.purchaseStatus || '',
     ['TÌNH TRẠNG THI CÔNG']: t.constrStatus || '',
     ['VƯỚNG MẮC/ TỒN ĐỌNG']: t.issue || '',
     ['TT XỬ LÝ']: t.issueStatus || '',
@@ -1445,7 +1451,7 @@ const displayTasks = tasks.filter((t) => {
             </div>
 
             <div className="flex items-center gap-1">
-              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Mua hàng:</span>
+              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">TT Đặt hàng:</span>
               <CustomSelect
               value={filterPurchase}
               onChange={(e) => setFilterPurchase(e.target.value)}
@@ -1537,7 +1543,7 @@ const displayTasks = tasks.filter((t) => {
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
-                <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">MUA HÀNG</th>
+                <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
                 <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">THI CÔNG</th>
                 <th className="py-2 px-1 w-[115px] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
                 <th className="py-2 px-1 w-[140px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
@@ -1647,8 +1653,12 @@ const displayTasks = tasks.filter((t) => {
                       <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200">
                         <span className={'inline-flex min-w-10 items-center justify-center px-1.5 py-0.5 font-mono font-bold text-[10px] rounded border ' + (isFinished ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : pct > 0 ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600')}>{pct}%</span>
                       </td>
-                      <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200"><CustomSelect value={t.purchaseStatus || 'Chưa đặt hàng'} onChange={(e) => { const nextPurchaseStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(nextPurchaseStatus, t.constrStatus); updateTask(t.id, { purchaseStatus: nextPurchaseStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); syncTaskStatusToCostPlan(t, nextPurchaseStatus, undefined); }} className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.purchaseStatus || "Chưa đặt hàng")}`}>{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>))}</CustomSelect></td>
-                      <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200"><CustomSelect value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); updateTask(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); syncTaskStatusToCostPlan(t, undefined, nextConstrStatus); }} className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}>{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>))}</CustomSelect></td>
+                      <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200">
+                        <div title="Tự động đồng bộ từ tab Vật tư và Chi phí" className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold flex items-center justify-center ${getStatusColorStyle(t.purchaseStatus || "Chưa đặt hàng")}`}>
+                          {t.purchaseStatus || "Chưa đặt hàng"}
+                        </div>
+                      </td>
+                      <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200"><CustomSelect value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); handleUpdateTaskSync(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}>{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>))}</CustomSelect></td>
                       <td className="py-1.5 px-1 font-semibold text-red-600 whitespace-normal break-words leading-tight border-r border-slate-200" title={t.issue || ''}>
                         {editingCell?.id === t.id && editingCell?.field === 'issue' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-red-600 font-bold focus:outline-primary text-[10px]" />
@@ -1661,7 +1671,7 @@ const displayTasks = tasks.filter((t) => {
                       <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200">
                         <CustomSelect 
                           value={t.issueStatus || "Không có"} 
-                          onChange={(e) => updateTask(t.id, { issueStatus: e.target.value })} 
+                          onChange={(e) => handleUpdateTaskSync(t.id, { issueStatus: e.target.value })} 
                           className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getIssueStatusColorStyle(t.issueStatus || "Không có")}`}
                         >
                           {ISSUE_STATUS_OPTIONS.map((option) => (
@@ -1710,7 +1720,7 @@ const displayTasks = tasks.filter((t) => {
           <div><label className="block font-bold text-slate-700 mb-1">Nội dung Công việc *</label><textarea required rows={4} value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
           {editingTask && !editingTask.isSectionHeader && (<>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Khối lượng</label><input type="number" value={editVolume} onChange={(e) => setEditVolume(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị tính (ĐVT)</label><input type="text" value={editUnit} onChange={(e) => setEditUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div></div>
-            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tình trạng mua hàng</label><CustomSelect value={editPurchaseStatus} onChange={(e) => setEditPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div><div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><CustomSelect value={editConstrStatus} onChange={(e) => setEditConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div></div>
+            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">TT Đặt hàng</label><CustomSelect disabled title="Được đồng bộ tự động từ tab Vật tư" value={editPurchaseStatus} onChange={(e) => setEditPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div><div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><CustomSelect value={editConstrStatus} onChange={(e) => setEditConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-red-600 mb-1">Vướng mắc / Tồn đọng</label><input type="text" placeholder="VD: Thiếu vật tư cáp..." value={editIssue} onChange={(e) => setEditIssue(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none bg-red-50/30 text-red-700 font-medium" /></div><div><label className="block font-bold text-slate-700 mb-1">Trạng thái xử lý</label><input type="text" placeholder="VD: Yêu cầu cấp bổ sung..." value={editIssueStatus} onChange={(e) => setEditIssueStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Ghi chú thêm cho dòng công việc" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Kỹ sư phụ trách</label><CustomSelect value={editEngineerId} onChange={(e) => setEditEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{engineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}</CustomSelect></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tiến độ tự tính (%)</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">{calculateAutoProgressPercent(editPurchaseStatus, editConstrStatus)}%</div></div><div><label className="block font-bold text-slate-700 mb-1">Hoàn thành</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-bold text-slate-800">{calculateAutoProgressRatio(editPurchaseStatus, editConstrStatus) >= 1 ? 'Đã hoàn thành' : 'Chưa hoàn thành'}</div></div></div>

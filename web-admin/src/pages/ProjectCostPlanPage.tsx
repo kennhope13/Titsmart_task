@@ -285,6 +285,24 @@ export const ProjectCostPlanPage: React.FC = () => {
         }
       }
 
+      // Đồng bộ Ghi chú / Vướng mắc sang Task
+      if (updates.issueContent !== undefined || updates.issueStatus !== undefined || updates.notes !== undefined) {
+        const matchingTask = tasks.find(t => 
+          t.projectCode === existing.projectCode && 
+          norm(t.stt) === norm(existing.stt) && 
+          norm(t.name) === norm(existing.jobContent)
+        );
+        if (matchingTask) {
+          const taskUpdates: Record<string, any> = {};
+          if (updates.issueContent !== undefined) taskUpdates.issue = updates.issueContent;
+          if (updates.issueStatus !== undefined) taskUpdates.issueStatus = updates.issueStatus;
+          if (updates.notes !== undefined) taskUpdates.notes = updates.notes;
+          if (Object.keys(taskUpdates).length > 0) {
+            updateTask(matchingTask.id, taskUpdates);
+          }
+        }
+      }
+
       // Đồng bộ trạng thái đặt hàng / thi công sang Purchasing + Task
       if (updates.orderedStatus !== undefined || updates.progressStatus !== undefined) {
         const matchingTask = tasks.find(t => 
