@@ -200,7 +200,7 @@ const hasSyncedRef = useRef(false);
       if (task.isSectionHeader) return;
       const hasPurchase = task.purchaseStatus && task.purchaseStatus !== 'Chưa đặt hàng';
       const hasConstr = task.constrStatus && task.constrStatus !== 'Chưa thi công';
-      if (!hasPurchase && !hasConstr) return;
+      // if (!hasPurchase && !hasConstr) return; // Removed to allow sync of issues
 
       // Sync to MaterialPlan
       const matchingMaterial = materialPlans.find(m =>
@@ -215,6 +215,15 @@ const hasSyncedRef = useRef(false);
         }
         if (hasConstr && norm(matchingMaterial.progressStatus) !== norm(task.constrStatus)) {
           matUpdates.progressStatus = task.constrStatus;
+        }
+        if (norm(matchingMaterial.issueContent) !== norm(task.issue)) {
+          matUpdates.issueContent = task.issue || '';
+        }
+        if (norm(matchingMaterial.issueStatus) !== norm(task.issueStatus)) {
+          matUpdates.issueStatus = task.issueStatus || '';
+        }
+        if (norm(matchingMaterial.notes) !== norm(task.notes)) {
+          matUpdates.notes = task.notes || '';
         }
         if (Object.keys(matUpdates).length > 0) {
           updateMaterialPlan(matchingMaterial.id, matUpdates);
