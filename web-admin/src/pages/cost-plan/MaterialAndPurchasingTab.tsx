@@ -77,7 +77,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const [filterUnit, setFilterUnit] = useState('all');
   const [filterProgress, setFilterProgress] = useState('all');
   const [filterOrder, setFilterOrder] = useState('all');
-  const [filterConstruction, setFilterConstruction] = useState('all');
+
 
   // Cross-reference helper
   const findPurchasingMatch = (plan: ProjectMaterialPlan) => {
@@ -103,7 +103,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const unitOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.unit).filter(Boolean)))], [data]);
   const progressOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.progressStatus).filter(Boolean)))], [data]);
   const orderOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.orderedStatus).filter(Boolean)))], [data]);
-  const constructionOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.techSpecStatus).filter(Boolean)))], [data]);
+
 
   const [editingCell, setEditingCell] = useState<{ id: string; field: string; isPurchasing: boolean } | null>(null);
   const [tempValue, setTempValue] = useState<any>('');
@@ -210,9 +210,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     if (filterOrder !== 'all') {
       filtered = filtered.filter(p => p.orderedStatus === filterOrder || isParentRow(p));
     }
-    if (filterConstruction !== 'all') {
-      filtered = filtered.filter(p => p.techSpecStatus === filterConstruction || isParentRow(p));
-    }
+
 
     const sectionIndexCache = new Map<string, number>();
     const getSectionIndexForItem = (plan: ProjectMaterialPlan, visited = new Set<string>()): number => {
@@ -276,7 +274,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       return 0;
     });
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
-  }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder, filterConstruction]);
+  }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder]);
 
   const startEditing = (id: string, field: string, value: any, isPurchasing = false) => {
     if (userRole === 'engineer') return;
@@ -459,18 +457,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               <>
 
 
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-500 font-medium whitespace-nowrap">Kỹ thuật:</span>
-                  <CustomSelect
-                    value={filterConstruction}
-                    onChange={e => setFilterConstruction(e.target.value)}
-                    className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
-                  >
-                    {constructionOptions.map(opt => (
-                      <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
-                    ))}
-                  </CustomSelect>
-                </div>
+                
               </>
             )}
 
