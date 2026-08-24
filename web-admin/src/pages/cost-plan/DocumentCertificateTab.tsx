@@ -27,14 +27,14 @@ interface DocItem {
 }
 
 // Mỗi model/xuất xứ có danh sách chứng từ động
-interface ModelEntry {
+export interface ModelEntry {
   model: string;
   manufacturer: string;
   origin: string;
   docs: DocItem[];
 }
 
-interface FormState {
+export interface FormState {
   jobContent: string;
   unit: string;
   contractVolume: number;
@@ -57,12 +57,12 @@ const EMPTY_FORM: FormState = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const DOC_TRACK_TAG = '[doc-track]';
+export const DOC_TRACK_TAG = '[doc-track]';
 
 const isDocTrack = (item: ProjectMaterialPlan) =>
   String(item.notes || '').includes(DOC_TRACK_TAG);
 
-const cleanNotes = (value?: string) =>
+export const cleanNotes = (value?: string) =>
   String(value || '').replace(/\s*\[doc-track\]\s*/gi, '').trim();
 
 export const encodeModels = (models: ModelEntry[]): string => {
@@ -72,7 +72,7 @@ export const encodeModels = (models: ModelEntry[]): string => {
   return nonEmpty.length ? JSON.stringify(nonEmpty) : '';
 };
 
-const decodeModels = (issueContent?: string): ModelEntry[] => {
+export const decodeModels = (issueContent?: string): ModelEntry[] => {
   if (!issueContent) return [{ ...EMPTY_MODEL, docs: [{ ...EMPTY_DOC }] }];
   try {
     const parsed = JSON.parse(issueContent);
@@ -96,7 +96,7 @@ const decodeModels = (issueContent?: string): ModelEntry[] => {
   return [{ ...EMPTY_MODEL, docs: [{ ...EMPTY_DOC }] }];
 };
 
-const firstModel = (models: ModelEntry[]): ModelEntry =>
+export const firstModel = (models: ModelEntry[]): ModelEntry =>
   models[0] ?? { ...EMPTY_MODEL, docs: [] };
 
 const hasAnyDoc = (m: ModelEntry) =>
@@ -217,7 +217,7 @@ interface DocFormModalProps {
   onSubmit: (data: FormState) => void;
 }
 
-const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onClose, onSubmit }) => {
+export const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onClose, onSubmit }) => {
   const [form, setForm] = useState<FormState>({
     ...initial,
     models: initial.models.map(m => ({ ...m, docs: m.docs.map(d => ({ ...d })) })),

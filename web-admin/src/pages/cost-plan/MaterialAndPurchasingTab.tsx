@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { ProjectMaterialPlan, ProjectPurchasing, getStatusColorStyle, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { Modal } from '../../components/common/Modal';
+import { DocFormModal, FormState, decodeModels, encodeModels, DOC_TRACK_TAG, firstModel } from './DocumentCertificateTab';
 import { DocumentCertificateTab } from './DocumentCertificateTab';
 
 interface MaterialAndPurchasingTabProps {
@@ -113,6 +115,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const [editingCell, setEditingCell] = useState<{ id: string; field: string; isPurchasing: boolean } | null>(null);
   const [tempValue, setTempValue] = useState<any>('');
   const [triggerAddDoc, setTriggerAddDoc] = useState(false);
+  const [docModalOpen, setDocModalOpen] = useState(false);
+  const [docModalPlanId, setDocModalPlanId] = useState<string | null>(null);
+  const [docModalInitial, setDocModalInitial] = useState<FormState | null>(null);
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const toggleSection = (sectionKey: string) => {
@@ -282,6 +287,47 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
   }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder]);
 
+  const handleDocBadgeClick = (plan: any) => {
+    setDocModalInitial({
+      jobContent: plan.jobContent,
+      unit: plan.unit,
+      contractVolume: plan.contractVolume,
+      notes: cleanNotes(plan.notes),
+      models: decodeModels(plan.issueContent)
+    });
+    setDocModalPlanId(plan.id);
+    setDocModalOpen(true);
+  };
+
+  const handleDocModalSubmit = (form: FormState) => {
+    if (!docModalPlanId) return;
+    const plan = data.find(p => p.id === docModalPlanId);
+    if (!plan) return;
+
+    const fm = firstModel(form.models);
+    const allTexts = form.models.flatMap(m => m.docs.map(d => d.text.toLowerCase())).join(' ');
+    const docCo = allTexts.includes('c/o') || allTexts.includes('co');
+    const docCq = allTexts.includes('c/q') || allTexts.includes('cq');
+    const docFireInspection = allTexts.includes('pccc') || allTexts.includes('phòng cháy');
+
+    const payload = {
+      ...plan,
+      jobContent: form.jobContent,
+      unit: form.unit,
+      contractVolume: form.contractVolume,
+      techSpecModel: fm.model,
+      techSpecOrigin: [fm.manufacturer, fm.origin].filter(Boolean).join(' - '),
+      notes: form.notes ? DOC_TRACK_TAG + " " + form.notes : DOC_TRACK_TAG,
+      issueContent: encodeModels(form.models),
+      docCo,
+      docCq,
+      docFireInspection,
+    };
+    
+    onUpdateMaterial(plan.id, payload);
+    setDocModalOpen(false);
+  };
+
   const startEditing = (id: string, field: string, value: any, isPurchasing = false) => {
     if (userRole === 'engineer') return;
     setEditingCell({ id, field, isPurchasing });
@@ -363,6 +409,17 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-white">
+      <Modal isOpen={docModalOpen} onClose={() => setDocModalOpen(false)} title="Hồ sơ Chứng từ" size="xl" icon="description">
+        {docModalInitial && (
+          <DocFormModal
+            title="Cập nhật chứng từ"
+            initial={docModalInitial}
+            onClose={() => setDocModalOpen(false)}
+            onSubmit={handleDocModalSubmit}
+          />
+        )}
+      </Modal>
+
       <datalist id="issueStatus-options">
         <option value="Chưa xử lý" />
         <option value="Đang xử lý" />
@@ -937,7 +994,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   <button
                                     type="button"
                                     disabled={userRole === 'engineer'}
-                                    onClick={() => onUpdateMaterial(plan.id, { ...plan, docCo: !plan.docCo })}
+                                    onClick={() => handleDocBadgeClick(plan)}
                                     className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docCo ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
                                   >
                                     CO
@@ -945,7 +1002,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   <button
                                     type="button"
                                     disabled={userRole === 'engineer'}
-                                    onClick={() => onUpdateMaterial(plan.id, { ...plan, docCq: !plan.docCq })}
+                                    onClick={() => handleDocBadgeClick(plan)}
                                     className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docCq ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
                                   >
                                     CQ
@@ -953,7 +1010,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   <button
                                     type="button"
                                     disabled={userRole === 'engineer'}
-                                    onClick={() => onUpdateMaterial(plan.id, { ...plan, docFireInspection: !plan.docFireInspection })}
+                                    onClick={() => handleDocBadgeClick(plan)}
                                     className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docFireInspection ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
                                   >
                                     PCCC
