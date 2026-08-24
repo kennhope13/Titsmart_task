@@ -393,25 +393,25 @@ export const api = {
       if (error) throw error;
       return data.map((d: any) => ({
         id: d.id,
-        projectCode: d.project_id,
-        note: d.note,
-        images: d.images,
+        projectCode: d.project_code,
+        note: d.notes,
+        images: d.photos || [],
         timestamp: d.created_at,
       }));
     },
     create: async (data: any) => {
       const payload = {
-        project_id: data.projectCode,
-        note: data.note,
-        images: data.images,
+        project_code: data.projectCode,
+        notes: data.note,
+        photos: data.images,
       };
       const { data: result, error } = await supabase.from('field_logs').insert(payload).select().single();
       if (error) throw error;
       return {
         id: result.id,
-        projectCode: result.project_id,
-        note: result.note,
-        images: result.images,
+        projectCode: result.project_code,
+        note: result.notes,
+        images: result.photos || [],
         timestamp: result.created_at,
       };
     },
