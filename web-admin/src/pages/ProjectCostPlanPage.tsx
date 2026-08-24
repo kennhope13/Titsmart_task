@@ -1647,6 +1647,13 @@ export const ProjectCostPlanPage: React.FC = () => {
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             userRole={user?.role}
+            onAddSection={() => {
+              setIsCreatingSectionHeader(true);
+              setParentPlanIdForNew(null);
+              setSectionPlanIdForNew(null);
+              setIsNewPlanOpen(true);
+              setNewPlanData(prev => ({ ...prev, stt: '', jobContent: '' }));
+            }}
           />
         )}
 

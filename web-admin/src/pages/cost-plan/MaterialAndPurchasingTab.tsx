@@ -11,6 +11,7 @@ interface MaterialAndPurchasingTabProps {
   onUpdateMaterial: (id: string, plan: Partial<ProjectMaterialPlan>) => void | Promise<void>;
   onUpdatePurchasing: (id: string, plan: Partial<ProjectPurchasing>) => void | Promise<void>;
   onAddSubtask?: (plan: ProjectMaterialPlan, suggestedStt?: string) => void;
+  onAddSection?: () => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   statusFilter: string;
@@ -66,6 +67,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   onUpdateMaterial,
   onUpdatePurchasing,
   onAddSubtask,
+  onAddSection,
   searchQuery,
   setSearchQuery,
   statusFilter,
@@ -453,14 +455,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               </CustomSelect>
             </div>
 
-            {subTab === 'TECH' && (
-              <>
-
-
-                
-              </>
-            )}
-
             {(subTab === 'TECH' || subTab === 'PRICING') && (
               <div className="flex items-center gap-1">
                 <span className="text-slate-500 font-medium whitespace-nowrap">Đặt hàng:</span>
@@ -475,8 +469,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 </CustomSelect>
               </div>
             )}
-            
-            <div className="relative w-full sm:w-64 ml-auto">
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto">
+            <div className="relative w-48 sm:w-64">
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">
                 search
               </span>
@@ -488,6 +484,16 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 className="w-full pl-8 pr-3 py-1 bg-slate-100 border-none rounded text-xs focus:ring-1 focus:ring-primary focus:bg-white transition-all outline-none"
               />
             </div>
+
+            {onAddSection && (
+              <button
+                onClick={onAddSection}
+                className="flex items-center gap-1 bg-primary text-white px-2 py-1 rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
+              >
+                <span className="material-symbols-outlined text-sm">add</span>
+                <span>Thêm đầu mục</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
