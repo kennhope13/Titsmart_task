@@ -368,10 +368,14 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     const plan = data.find(p => p.id === docModalPlanId);
     if (!plan) return;
 
-    const allTexts = newModels.flatMap(m => m.docs.map(d => d.text.toLowerCase())).join(' ');
-    const docCo = allTexts.includes('c/o') || allTexts.includes('co');
-    const docCq = allTexts.includes('c/q') || allTexts.includes('cq');
-    const docFireInspection = allTexts.includes('pccc') || allTexts.includes('phòng cháy');
+    const hasFileFor = (keywords: string[]) => newModels.some(m => m.docs.some(d => {
+      const lowerText = d.text.toLowerCase();
+      return keywords.some(k => lowerText.includes(k)) && d.fileUrls && d.fileUrls.length > 0;
+    }));
+
+    const docCo = hasFileFor(['c/o', 'co']);
+    const docCq = hasFileFor(['c/q', 'cq']);
+    const docFireInspection = hasFileFor(['pccc', 'phòng cháy']);
 
     const payload = {
       ...plan,
