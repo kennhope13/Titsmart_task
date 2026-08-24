@@ -21,7 +21,7 @@ interface DocumentCertificateTabProps {
 }
 
 // Một dòng chứng từ do người dùng tự đặt tên
-interface DocItem {
+export interface DocItem {
   text: string; // VD: "C/O số: E267049658120001 cấp ngày 22/02/2025"
   fileUrls?: string[]; // Array of uploaded URLs (PDF/Image)
 }
