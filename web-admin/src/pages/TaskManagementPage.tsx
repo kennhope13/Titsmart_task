@@ -257,8 +257,7 @@ const hasSyncedRef = useRef(false);
   // Column Filters
   const [filterSection, setFilterSection] = useState<string>('all');
   const [filterUnit, setFilterUnit] = useState<string>('all');
-  const [filterProgress, setFilterProgress] = useState<string>('all');
-
+  
   // Detailed Attribute Filters
   const [filterPurchase, setFilterPurchase] = useState<string>('all');
   const [filterConstr, setFilterConstr] = useState<string>('all');
@@ -1196,17 +1195,7 @@ const displayTasks = tasks.filter((t) => {
     const pct = Math.round((t.progress || 0) * 100);
     const matchesSection = filterSection === 'all' || t.sectionName === filterSection;
     const matchesUnit = filterUnit === 'all' || t.unit === filterUnit;
-    const matchesProgress =
-      filterProgress === 'all'
-        ? true
-        : filterProgress === '0'
-        ? pct === 0
-        : filterProgress === '1-49'
-        ? pct >= 1 && pct <= 49
-        : filterProgress === '50-99'
-        ? pct >= 50 && pct <= 99
-        : pct >= 100;
-    const matchesPurchase = filterPurchase === 'all' || t.purchaseStatus === filterPurchase;
+        const matchesPurchase = filterPurchase === 'all' || t.purchaseStatus === filterPurchase;
     const matchesConstr = filterConstr === 'all' || t.constrStatus === filterConstr;
     const matchesSearch =
       t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1216,8 +1205,7 @@ const displayTasks = tasks.filter((t) => {
       matchesProj &&
       matchesSection &&
       matchesUnit &&
-      matchesProgress &&
-      matchesPurchase &&
+            matchesPurchase &&
       matchesConstr &&
       matchesSearch
     );
@@ -1444,20 +1432,7 @@ const displayTasks = tasks.filter((t) => {
             </CustomSelect>
             </div>
 
-            <div className="flex items-center gap-1">
-              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Tiến độ:</span>
-              <CustomSelect
-              value={filterProgress}
-              onChange={(e) => setFilterProgress(e.target.value)}
-              className="h-7 min-w-[70px] max-w-[100px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
-            >
-              <option value="all">Tất cả</option>
-              <option value="0">0%</option>
-              <option value="1-49">1% - 49%</option>
-              <option value="50-99">50% - 99%</option>
-              <option value="100">100%</option>
-            </CustomSelect>
-            </div>
+            
 
             <div className="flex items-center gap-1">
               <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">TT Đặt hàng:</span>
@@ -1474,7 +1449,7 @@ const displayTasks = tasks.filter((t) => {
             </div>
 
             <div className="flex items-center gap-1">
-              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Thi công:</span>
+              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">TĐ Thi công:</span>
               <CustomSelect
               value={filterConstr}
               onChange={(e) => setFilterConstr(e.target.value)}
@@ -1553,7 +1528,7 @@ const displayTasks = tasks.filter((t) => {
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
                 <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
-                <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">THI CÔNG</th>
+                <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
                 <th className="py-2 px-1 w-[115px] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
                 <th className="py-2 px-1 w-[140px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
                 <th className="sticky right-0 z-20 bg-slate-50 bg-clip-padding py-2 px-1 w-[150px] min-w-[150px] border-b border-l border-slate-200 whitespace-nowrap shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">GHI CHÚ</th>
