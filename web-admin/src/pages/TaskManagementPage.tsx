@@ -170,7 +170,10 @@ export const TaskManagementPage: React.FC = () => {
       if (updates.constrStatus !== undefined) matUpdates.progressStatus = updates.constrStatus;
       if (updates.issue !== undefined) matUpdates.issueContent = updates.issue;
       if (updates.issueStatus !== undefined) matUpdates.issueStatus = updates.issueStatus;
-      if (updates.notes !== undefined) matUpdates.notes = updates.notes;
+      if (updates.notes !== undefined) {
+        const docPart = String(matchingMaterial.notes || '').split('[DOC-NOTE]');
+        matUpdates.notes = updates.notes + (docPart.length > 1 ? ' [DOC-NOTE]' + docPart[1] : '');
+      }
       if (Object.keys(matUpdates).length > 0) {
         updateMaterialPlan(matchingMaterial.id, matUpdates);
       }
@@ -222,8 +225,10 @@ const hasSyncedRef = useRef(false);
         if (norm(matchingMaterial.issueStatus) !== norm(task.issueStatus)) {
           matUpdates.issueStatus = task.issueStatus || '';
         }
-        if (norm(matchingMaterial.notes) !== norm(task.notes)) {
-          matUpdates.notes = task.notes || '';
+        const techNoteOnly = String(matchingMaterial.notes || '').split('[DOC-NOTE]')[0];
+        if (norm(techNoteOnly) !== norm(task.notes)) {
+          const docPart = String(matchingMaterial.notes || '').split('[DOC-NOTE]');
+          matUpdates.notes = (task.notes || '') + (docPart.length > 1 ? ' [DOC-NOTE]' + docPart[1] : '');
         }
         if (Object.keys(matUpdates).length > 0) {
           updateMaterialPlan(matchingMaterial.id, matUpdates);

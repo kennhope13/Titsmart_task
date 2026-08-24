@@ -296,7 +296,9 @@ export const ProjectCostPlanPage: React.FC = () => {
           const taskUpdates: Record<string, any> = {};
           if (updates.issueContent !== undefined) taskUpdates.issue = updates.issueContent;
           if (updates.issueStatus !== undefined) taskUpdates.issueStatus = updates.issueStatus;
-          if (updates.notes !== undefined) taskUpdates.notes = updates.notes;
+          if (updates.notes !== undefined) {
+            taskUpdates.notes = String(updates.notes).split('[DOC-NOTE]')[0].trimEnd();
+          }
           if (Object.keys(taskUpdates).length > 0) {
             updateTask(matchingTask.id, taskUpdates);
           }
