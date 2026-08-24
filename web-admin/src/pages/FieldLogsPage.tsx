@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { FieldLog } from '../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { supabase } from '../lib/supabase';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -63,7 +64,7 @@ const UploadModal: React.FC<{
   defaultProjectCode: string;
   projects: { code: string; name: string }[];
   onClose: () => void;
-  onUpload: (input: { projectCode: string; note: string; images: File[] }) => Promise<void>;
+  onUpload: (input: { projectCode: string; note: string; images: string[] }) => Promise<void>;
 }> = ({ defaultProjectCode, projects, onClose, onUpload }) => {
   const [projectCode, setProjectCode] = useState(defaultProjectCode || '');
   const [note, setNote] = useState('');
@@ -102,7 +103,17 @@ const UploadModal: React.FC<{
     setIsUploading(true);
     setError('');
     try {
-      await onUpload({ projectCode, note, images: files });
+      const urls: string[] = [];
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `cccd/${fileName}`;
+        const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
+        urls.push(publicUrl);
+      }
+      await onUpload({ projectCode, note, images: urls });
       onClose();
     } catch (err) {
       console.error(err);
@@ -237,7 +248,7 @@ export const FieldLogsPage: React.FC = () => {
   const projectName = (code: string) => projects.find(p => p.code === code)?.name || code;
   const totalImages = visibleLogs.reduce((sum, l) => sum + l.images.length, 0);
 
-  const handleUpload = async (input: { projectCode: string; note: string; images: File[] }) => {
+  const handleUpload = async (input: { projectCode: string; note: string; images: string[] }) => {
     await addFieldLog(input);
     await fetchFieldLogs();
   };

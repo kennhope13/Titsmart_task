@@ -226,7 +226,7 @@ interface RealtimeStoreState {
   updateDocumentTrack: (id: string, fields: Partial<DocumentTrack>) => void;
   deleteDocumentTrack: (id: string) => void;
   
-  addFieldLog: (input: { projectCode: string; note?: string; images: File[] }) => Promise<void>;
+  addFieldLog: (input: { projectCode: string; note?: string; images: string[] }) => Promise<void>;
   deleteFieldLog: (id: string) => Promise<void>;
   logActivity: (action: string, project: string, user?: string) => void;
 }
