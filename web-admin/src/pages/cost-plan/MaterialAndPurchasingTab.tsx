@@ -722,7 +722,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                       return (
                         <tr key={plan.id} onDoubleClick={() => onEditMaterial(plan)} className={rowClass}>
                           {/* STT */}
-                          <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-top text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
+                          <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-middle text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
                             {editingCell?.id === plan.id && editingCell?.field === 'stt' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -739,7 +739,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           </td>
                           
                           {/* NỘI DUNG */}
-                          <td className={`sticky z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 p-0 align-top text-left overflow-hidden ${fontStyle}`} style={{ left: "var(--stt-width)" }}>
+                          <td className={`sticky z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 p-0 align-middle text-left overflow-hidden ${fontStyle}`} style={{ left: "var(--stt-width)" }}>
                             {editingCell?.id === plan.id && editingCell?.field === 'jobContent' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -778,7 +778,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           </td>
 
                           {/* ĐVT */}
-                          <td className="p-0 align-top text-center font-mono text-slate-500 border-r border-slate-200 whitespace-normal break-words leading-tight">
+                          <td className="p-0 align-middle text-center font-mono text-slate-500 border-r border-slate-200 whitespace-normal break-words leading-tight">
                             {editingCell?.id === plan.id && editingCell?.field === 'unit' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -795,7 +795,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           </td>
 
                           {/* KL HĐ */}
-                          <td className="p-0 align-top text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">
+                          <td className="p-0 align-middle text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">
                             {editingCell?.id === plan.id && editingCell?.field === 'contractVolume' && !editingCell.isPurchasing ? (
                               <input
                                 type="number"
@@ -812,7 +812,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           </td>
 
                           {/* MÃ HIỆU */}
-                          <td className="p-0 align-top text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecModel || ""}>
+                          <td className="p-0 align-middle text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecModel || ""}>
                             {editingCell?.id === plan.id && editingCell?.field === "techSpecModel" && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -829,7 +829,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           </td>
 
                           {/* XUẤT XỨ */}
-                          <td className="p-0 align-top text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecOrigin || ""}>
+                          <td className="p-0 align-middle text-center text-slate-600 border-r border-slate-200 whitespace-normal break-words leading-tight" title={plan.techSpecOrigin || ""}>
                             {editingCell?.id === plan.id && editingCell?.field === "techSpecOrigin" && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -896,7 +896,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             
 
                               {/* KL ĐẶT HÀNG */}
-                              <td className="p-0 align-top text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">
+                              <td className="p-0 align-middle text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'orderedVolume' && !editingCell.isPurchasing ? (
                                   <input
                                     type="number"
@@ -930,7 +930,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </div>
                               </td>
                               {/* NGÀY CÓ HÀNG */}
-                              <td className="p-0 align-top text-center font-mono text-slate-600 truncate border-r border-slate-200">
+                              <td className="p-0 align-middle text-center font-mono text-slate-600 truncate border-r border-slate-200">
                                 {editingCell?.id === plan.id && editingCell?.field === 'expectedDate' && !editingCell.isPurchasing ? (
                                   <input
                                     type="date"
@@ -951,7 +951,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           {subTab === 'DOCS' && (
                             <>
                               {/* CO */}
-                              <td className="p-0 align-top text-center border-r border-slate-200">
+                              <td className="p-0 align-middle text-center border-r border-slate-200">
                                 <button
                                   type="button"
                                   disabled={userRole === 'engineer'}
@@ -965,7 +965,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </button>
                               </td>
                               {/* CQ */}
-                              <td className="p-0 align-top text-center border-r border-slate-200">
+                              <td className="p-0 align-middle text-center border-r border-slate-200">
                                 <button
                                   type="button"
                                   disabled={userRole === 'engineer'}
@@ -979,7 +979,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </button>
                               </td>
                               {/* KIỂM ĐỊNH PCCC */}
-                              <td className="p-0 align-top text-center border-r border-slate-200">
+                              <td className="p-0 align-middle text-center border-r border-slate-200">
                                 <button
                                   type="button"
                                   disabled={userRole === 'engineer'}
@@ -993,7 +993,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </button>
                               </td>
                               {/* ĐÃ GỬI TỚI CT */}
-                              <td className="p-0 align-top text-center border-r border-slate-200">
+                              <td className="p-0 align-middle text-center border-r border-slate-200">
                                 <button
                                   type="button"
                                   disabled={userRole === 'engineer'}
@@ -1007,7 +1007,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </button>
                               </td>
                               {/* NGÀY */}
-                              <td className="p-0 align-top text-center font-mono text-slate-600 truncate border-r border-slate-200">
+                              <td className="p-0 align-middle text-center font-mono text-slate-600 truncate border-r border-slate-200">
                                 {editingCell?.id === plan.id && editingCell?.field === 'dispatchDate' && !editingCell.isPurchasing ? (
                                   <input
                                     type="date"
@@ -1028,7 +1028,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           {subTab === 'PRICING' && (
                             <>
                               {/* KL ĐH */}
-                              <td className="p-0 align-top text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
+                              <td className="p-0 align-middle text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'volumeOrder' && editingCell?.isPurchasing ? (
                                   <input
                                     type="number"
@@ -1044,7 +1044,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 )}
                               </td>
                               {/* ĐƠN GIÁ MUA */}
-                              <td className="p-0 align-top text-right font-mono text-slate-600 border-r border-slate-200 leading-tight">
+                              <td className="p-0 align-middle text-right font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'unitPrice' && editingCell?.isPurchasing ? (
                                   <input
                                     type="number"
@@ -1060,7 +1060,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 )}
                               </td>
                               {/* VAT % */}
-                              <td className="p-0 align-top text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
+                              <td className="p-0 align-middle text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'vatRate' && editingCell?.isPurchasing ? (
                                   <input
                                     type="number"
@@ -1076,11 +1076,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 )}
                               </td>
                               {/* TIỀN VAT */}
-                              <td className="p-1.5 align-top text-right font-mono text-slate-500 border-r border-slate-200 leading-tight">
+                              <td className="p-1.5 align-middle text-right font-mono text-slate-500 border-r border-slate-200 leading-tight">
                                 {showNumber(pRecord?.vatAmount) || '-'}
                               </td>
                               {/* THÀNH TIỀN MUA */}
-                              <td className="p-1.5 align-top text-right font-mono font-bold text-slate-800 border-r border-slate-200 leading-tight">
+                              <td className="p-1.5 align-middle text-right font-mono font-bold text-slate-800 border-r border-slate-200 leading-tight">
                                 {showNumber(pRecord?.totalAmount) || '-'}
                               </td>
                               {/* TRẠNG THÁI ĐH */}
@@ -1111,11 +1111,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           {subTab === 'PAYMENT' && (
                             <>
                               {/* THÀNH TIỀN MUA */}
-                              <td className="p-1.5 align-top text-right font-mono font-bold text-slate-800 border-r border-slate-200 leading-tight">
+                              <td className="p-1.5 align-middle text-right font-mono font-bold text-slate-800 border-r border-slate-200 leading-tight">
                                 {showNumber(pRecord?.totalAmount) || '-'}
                               </td>
                               {/* % TẠM ỨNG */}
-                              <td className="p-0 align-top text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
+                              <td className="p-0 align-middle text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'prepayPercent' && editingCell?.isPurchasing ? (
                                   <input
                                     type="number"
@@ -1131,7 +1131,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 )}
                               </td>
                               {/* THỰC CHI */}
-                              <td className="p-0 align-top text-right font-mono text-slate-600 border-r border-slate-200 leading-tight">
+                              <td className="p-0 align-middle text-right font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'prepayAmount' && editingCell?.isPurchasing ? (
                                   <input
                                     type="number"
@@ -1147,11 +1147,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 )}
                               </td>
                               {/* CÒN LẠI */}
-                              <td className="p-1.5 align-top text-right font-mono text-slate-500 border-r border-slate-200 leading-tight">
+                              <td className="p-1.5 align-middle text-right font-mono text-slate-500 border-r border-slate-200 leading-tight">
                                 {pRecord ? showNumber((pRecord.totalAmount || 0) - (pRecord.prepayAmount || 0)) : '-'}
                               </td>
                               {/* HẠN THANH TOÁN */}
-                              <td className="p-0 align-top text-center font-mono text-slate-600 truncate border-r border-slate-200">
+                              <td className="p-0 align-middle text-center font-mono text-slate-600 truncate border-r border-slate-200">
                                 {editingCell?.id === plan.id && editingCell?.field === 'paymentDate' && editingCell?.isPurchasing ? (
                                   <input
                                     type="date"
@@ -1183,7 +1183,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
                           {/* GHI CHÚ COMBINED */}
                           {subTab !== 'TECH' ? (
-                            <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-0 align-top text-slate-500">
+                            <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-0 align-middle text-slate-500">
                               {editingCell?.id === plan.id && editingCell?.field === 'notes' && !editingCell.isPurchasing ? (
                                 <input
                                   type="text"
@@ -1201,7 +1201,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               )}
                             </td>
                           ) : (
-                            <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1 align-top text-slate-500 min-w-[200px]">
+                            <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1 align-middle text-slate-500 min-w-[200px]">
                               <div className="flex flex-col gap-1 w-full text-xs">
                                 {/* Vướng mắc */}
                                 <div className="flex items-start gap-1">
