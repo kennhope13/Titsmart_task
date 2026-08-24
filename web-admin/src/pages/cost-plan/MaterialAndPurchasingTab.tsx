@@ -457,18 +457,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
             {subTab === 'TECH' && (
               <>
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-500 font-medium whitespace-nowrap">Tiến độ:</span>
-                  <CustomSelect
-                    value={filterProgress}
-                    onChange={e => setFilterProgress(e.target.value)}
-                    className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
-                  >
-                    {progressOptions.map(opt => (
-                      <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
-                    ))}
-                  </CustomSelect>
-                </div>
+
 
                 <div className="flex items-center gap-1">
                   <span className="text-slate-500 font-medium whitespace-nowrap">Kỹ thuật:</span>
@@ -499,6 +488,19 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 </CustomSelect>
               </div>
             )}
+            
+            <div className="relative w-full sm:w-64 ml-auto">
+              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Tìm kiếm nội dung, ĐVT, ghi chú..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-1 bg-slate-100 border-none rounded text-xs focus:ring-1 focus:ring-primary focus:bg-white transition-all outline-none"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -699,19 +701,18 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
                       let rowBg = 'bg-white';
                       let stickyBg = 'bg-white';
-                      let fontStyle = 'font-bold text-slate-900';
+                      let fontStyle = 'font-bold text-slate-900 text-[13px]';
                       let sttStyle = 'font-bold text-slate-400';
                       
                       if (depth === 1) {
                         rowBg = 'bg-slate-50';
                         stickyBg = 'bg-slate-50';
-                        fontStyle = 'font-bold text-slate-900';
+                        fontStyle = 'font-bold text-slate-900 text-sm';
                         sttStyle = 'font-bold text-slate-600';
                       } else if (depth === 2) {
-                        fontStyle = 'font-semibold text-slate-700';
+                        fontStyle = 'font-semibold text-slate-700 text-[13px]';
                         sttStyle = 'font-semibold text-slate-400';
                       } else if (depth >= 3) {
-                        fontStyle = 'font-medium text-slate-600 text-[10.5px]';
                         sttStyle = 'font-medium text-slate-400 text-[10.5px]';
                       }
                       
