@@ -121,8 +121,8 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'P
           d.fileUrls.forEach(url => {
              counter++;
              links.push(
-               <a key={`f-${counter}`} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-[11px] truncate max-w-[150px]" title={d.text}>
-                 {type}
+               <a key={`f-${counter}`} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 transition-colors flex items-center justify-center" title={d.text || 'Xem file'}>
+                 <span className="material-symbols-outlined text-[16px]">description</span>
                </a>
              );
           });
@@ -1062,8 +1062,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             <>
                               {/* CHỨNG TỪ HÀNG HÓA (Combined CO, CQ, PCCC) */}
                               <td className="w-[300px] p-0 align-middle border-r border-slate-200">
-                                <div className="flex flex-row flex-wrap gap-3 p-1.5 w-full items-center justify-start">
-                                  <div className="flex flex-wrap items-center gap-1.5">
+                                <div className="flex flex-row flex-wrap gap-x-4 gap-y-2 p-1.5 w-full items-start justify-center divide-x divide-slate-200">
+                                  <div className="flex flex-col items-center gap-1 pl-4 first:pl-0">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
@@ -1074,7 +1074,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     </button>
                                     {renderAutoFilesByType(plan, 'CO')}
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-1.5">
+                                  <div className="flex flex-col items-center gap-1 pl-4">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
@@ -1085,7 +1085,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     </button>
                                     {renderAutoFilesByType(plan, 'CQ')}
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-1.5">
+                                  <div className="flex flex-col items-center gap-1 pl-4">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
