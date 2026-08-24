@@ -1541,7 +1541,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           {[
             { id: 'MATERIAL_PLAN', label: 'Vật tư & Mua hàng', icon: 'list_alt', show: true },
             { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long', show: user?.role !== 'engineer' },
-            { id: 'DOCUMENTS', label: 'Theo dõi chứng từ', icon: 'description', show: user?.role !== 'engineer' },
+            // { id: 'DOCUMENTS', label: 'Theo dõi chứng từ', icon: 'description', show: user?.role !== 'engineer' },
           ].filter(t => t.show).map(tab => (
             <button 
               key={tab.id}
@@ -1623,7 +1623,9 @@ export const ProjectCostPlanPage: React.FC = () => {
         
         {/* MATERIAL PLAN TAB */}
         {activeTab === "MATERIAL_PLAN" && (
-          <MaterialAndPurchasingTab
+          <MaterialAndPurchasingTab 
+            selectedProject={selectedProject}
+            onAddMaterial={addMaterialPlan}
             data={currentProjMaterialPlans}
             purchasingData={currentProjPurchasing}
             onUpdateMaterial={handleUpdateMaterialPlanSync}
@@ -1658,22 +1660,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         )}
 
         {/* DOCUMENTS TAB */}
-        {activeTab === 'DOCUMENTS' && (
-          <DocumentCertificateTab
-            data={currentProjMaterialPlans}
-            selectedProject={selectedProject}
-            onAdd={addMaterialPlan}
-            onUpdate={updateMaterialPlan}
-            onDelete={(id) => {
-              const item = currentProjMaterialPlans.find(p => p.id === id);
-              setDeleteConfirm({ isOpen: true, id, type: 'material', title: 'Xóa chứng từ', itemName: `chứng từ của "${item?.jobContent}"` });
-            }}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            triggerAdd={triggerAddDoc}
-            onTriggerHandled={() => setTriggerAddDoc(false)}
-          />
-        )}
+        
 
         {/* EXPENSE TAB */}
         {activeTab === 'EXPENSE' && (

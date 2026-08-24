@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ProjectMaterialPlan, ProjectPurchasing, getStatusColorStyle, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { DocumentCertificateTab } from './DocumentCertificateTab';
 
 interface MaterialAndPurchasingTabProps {
   data: ProjectMaterialPlan[];
@@ -17,6 +18,8 @@ interface MaterialAndPurchasingTabProps {
   statusFilter: string;
   setStatusFilter: (s: string) => void;
   userRole?: string;
+  selectedProject: string;
+  onAddMaterial: (plan: any) => void;
 }
 
 const TEXT = {
@@ -109,6 +112,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
   const [editingCell, setEditingCell] = useState<{ id: string; field: string; isPurchasing: boolean } | null>(null);
   const [tempValue, setTempValue] = useState<any>('');
+  const [triggerAddDoc, setTriggerAddDoc] = useState(false);
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const toggleSection = (sectionKey: string) => {
@@ -420,8 +424,19 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             </>
           )}
         </div>
+        {subTab === 'DOCS' && userRole !== 'engineer' && (
+          <div className="absolute right-4 top-2 z-50">
+            <button 
+              onClick={() => setTriggerAddDoc(true)} 
+              className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              Thêm Mới
+            </button>
+          </div>
+        )}
 
-        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-wrap">
+        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-wrap" style={{ display: subTab === "DOCS" ? "none" : "flex" }}>
           <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
