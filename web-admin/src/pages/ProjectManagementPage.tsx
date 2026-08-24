@@ -526,7 +526,14 @@ export const ProjectManagementPage: React.FC = () => {
     setEditProjLocation(project.location || '');
     setEditProjClient(project.client || '');
     setEditProjContractValue(project.contractValue ? String(project.contractValue) : '');
-    setEditSelectedEngineerIds(project.members || []);
+    
+    // Resolve engineers from the engineers array since database doesn't store project.members
+    const assignedEngineers = engineers
+      .filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(project.code))
+      .map(eng => eng.id);
+      
+    const allMemberIds = Array.from(new Set([...(project.members || []), ...assignedEngineers]));
+    setEditSelectedEngineerIds(allMemberIds);
   };
   
   const handleEditProject = async (e: React.FormEvent) => {
@@ -554,7 +561,10 @@ export const ProjectManagementPage: React.FC = () => {
       await updateProject(projectToEdit.id, payload);
       
       // Update engineer project codes if members changed
-      const oldMembers = projectToEdit.members || [];
+      const oldMembers = Array.from(new Set([
+        ...(projectToEdit.members || []), 
+        ...engineers.filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(projectToEdit.code)).map(eng => eng.id)
+      ]));
       const addedMembers = editSelectedEngineerIds.filter(id => !oldMembers.includes(id));
       const removedMembers = oldMembers.filter(id => !editSelectedEngineerIds.includes(id));
       
