@@ -147,7 +147,7 @@ const UploadModal: React.FC<{
                 onChange={e => setProjectCode(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
                 <option value="">-- Chọn dự án --</option>
-                {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
+                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </CustomSelect>
             </div>
 
@@ -245,7 +245,7 @@ export const FieldLogsPage: React.FC = () => {
     return Array.from(groups.entries());
   }, [visibleLogs]);
 
-  const projectName = (code: string) => projects.find(p => p.code === code)?.name || code;
+  const projectName = (id: string) => projects.find(p => p.id === id)?.name || id;
   const totalImages = visibleLogs.reduce((sum, l) => sum + l.images.length, 0);
 
   const handleUpload = async (input: { projectCode: string; note: string; images: string[] }) => {
@@ -279,7 +279,7 @@ export const FieldLogsPage: React.FC = () => {
             <CustomSelect value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
               className="max-w-xs flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 md:w-64">
               <option value="">Tất cả dự án</option>
-              {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </CustomSelect>
             <button onClick={() => setIsUploadOpen(true)}
               className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-95">
