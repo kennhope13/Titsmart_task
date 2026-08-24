@@ -850,30 +850,31 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             <>
                               {/* CHỨNG TỪ HÀNG HÓA (Combined CO, CQ, PCCC) */}
                               <td className="w-[140px] p-0 align-middle text-center border-r border-slate-200">
-                                <div className="p-1">
-                                  <CustomSelect
-                                    value={[plan.docCo ? 'CO' : '', plan.docCq ? 'CQ' : '', plan.docFireInspection ? 'PCCC' : ''].filter(Boolean).join(', ')}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      onUpdateMaterial(plan.id, { 
-                                        ...plan, 
-                                        docCo: val.includes('CO'), 
-                                        docCq: val.includes('CQ'), 
-                                        docFireInspection: val.includes('PCCC') 
-                                      });
-                                    }}
-                                    className="w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors border-slate-200 bg-slate-50 text-slate-700"
+                                <div className="flex items-center justify-center gap-1 p-1">
+                                  <button
+                                    type="button"
                                     disabled={userRole === 'engineer'}
+                                    onClick={() => onUpdateMaterial(plan.id, { ...plan, docCo: !plan.docCo })}
+                                    className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docCo ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
                                   >
-                                    <option value="">Chưa có</option>
-                                    <option value="CO">CO</option>
-                                    <option value="CQ">CQ</option>
-                                    <option value="PCCC">PCCC</option>
-                                    <option value="CO, CQ">CO, CQ</option>
-                                    <option value="CO, PCCC">CO, PCCC</option>
-                                    <option value="CQ, PCCC">CQ, PCCC</option>
-                                    <option value="CO, CQ, PCCC">CO, CQ, PCCC</option>
-                                  </CustomSelect>
+                                    CO
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={userRole === 'engineer'}
+                                    onClick={() => onUpdateMaterial(plan.id, { ...plan, docCq: !plan.docCq })}
+                                    className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docCq ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
+                                  >
+                                    CQ
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={userRole === 'engineer'}
+                                    onClick={() => onUpdateMaterial(plan.id, { ...plan, docFireInspection: !plan.docFireInspection })}
+                                    className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docFireInspection ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
+                                  >
+                                    PCCC
+                                  </button>
                                 </div>
                               </td>
                               {/* ĐÃ GỬI TỚI CT */}
