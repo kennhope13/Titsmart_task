@@ -323,6 +323,23 @@ export const FieldLogsPage: React.FC = () => {
                             className="rounded p-1 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
                             <span className="material-symbols-outlined text-base">delete</span>
                           </button>
+                        </div>                        {log.note && (
+                          <p className="whitespace-pre-wrap text-[12px] text-slate-700 mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                            {log.note}
+                          </p>
+                        )}
+
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+                          {log.images.map((img, i) => (
+                            <button key={i} onClick={() => setLightbox({ images: log.images, index: i })}
+                              className="group relative aspect-square overflow-hidden rounded-lg bg-slate-100 border border-slate-200">
+                              <img src={img} alt="Ảnh hiện trường" loading="lazy"
+                                className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                              <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/20 group-hover:opacity-100">
+                                <span className="material-symbols-outlined text-[16px] text-white">zoom_in</span>
+                              </span>
+                            </button>
+                          ))}
                         </div>
                       </div>
                     ))}
