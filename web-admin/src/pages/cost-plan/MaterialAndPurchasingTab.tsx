@@ -805,7 +805,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </div>
                               )}
                             </td>
-                            <td className="bg-white group-hover:bg-slate-50 border-r border-slate-200 p-0 text-center font-semibold text-[11px] align-middle text-emerald-700">
+                            <td className="bg-white group-hover:bg-slate-50 border-r border-slate-200 p-0 text-center font-semibold text-[11px] align-middle text-slate-700">
                               {editingCell?.id === plan.id && editingCell?.field === 'contractVolume' && !editingCell.isPurchasing ? (
                                 <input
                                   type="text"
@@ -817,7 +817,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   onBlur={() => saveEditing(plan, pRecord)}
                                   onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
                                   autoFocus
-                                  className="w-full text-center bg-white text-emerald-700 font-semibold focus:outline-primary px-1 py-1 box-border outline-none shadow-sm border-none h-[28px] rounded"
+                                  className="w-full text-center bg-white text-slate-700 font-semibold focus:outline-primary px-1 py-1 box-border outline-none shadow-sm border-none h-[28px] rounded"
                                 />
                               ) : (
                                 <div onClick={() => startEditing(plan.id, 'contractVolume', plan.contractVolume)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-center" title={showNumber(plan.contractVolume) || 'Click để nhập'}>
@@ -826,7 +826,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               )}
                             </td>
                             <td className="bg-white group-hover:bg-slate-50 border-r border-slate-200 p-0 text-center text-[11px] align-middle">
-                              {editingCell?.id === plan.id && editingCell?.field === 'model' && !editingCell.isPurchasing ? (
+                              {editingCell?.id === plan.id && editingCell?.field === 'techSpecModel' && !editingCell.isPurchasing ? (
                                 <input
                                   type="text"
                                   value={tempValue}
@@ -837,13 +837,13 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   className="w-full text-center bg-white text-slate-700 focus:outline-primary px-1 py-1 box-border outline-none shadow-sm border-none h-[28px] rounded"
                                 />
                               ) : (
-                                <div onClick={() => startEditing(plan.id, 'model', plan.model)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-center break-words px-1 text-slate-600" title={plan.model || 'Click để nhập'}>
-                                  {plan.model || <span className="text-slate-300 italic">...</span>}
+                                <div onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-center break-words px-1 text-slate-600" title={plan.techSpecModel || 'Click để nhập'}>
+                                  {plan.techSpecModel || <span className="text-slate-300 italic">...</span>}
                                 </div>
                               )}
                             </td>
                             <td className="bg-white group-hover:bg-slate-50 border-r border-slate-200 p-0 text-center text-[11px] align-middle">
-                              {editingCell?.id === plan.id && editingCell?.field === 'origin' && !editingCell.isPurchasing ? (
+                              {editingCell?.id === plan.id && editingCell?.field === 'techSpecOrigin' && !editingCell.isPurchasing ? (
                                 <input
                                   type="text"
                                   value={tempValue}
@@ -854,8 +854,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   className="w-full text-center bg-white text-slate-700 focus:outline-primary px-1 py-1 box-border outline-none shadow-sm border-none h-[28px] rounded"
                                 />
                               ) : (
-                                <div onClick={() => startEditing(plan.id, 'origin', plan.origin)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-center break-words px-1 text-slate-600" title={plan.origin || 'Click để nhập'}>
-                                  {plan.origin || <span className="text-slate-300 italic">...</span>}
+                                <div onClick={() => startEditing(plan.id, 'techSpecOrigin', plan.techSpecOrigin)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-center break-words px-1 text-slate-600" title={plan.techSpecOrigin || 'Click để nhập'}>
+                                  {plan.techSpecOrigin || <span className="text-slate-300 italic">...</span>}
                                 </div>
                               )}
                             </td>
