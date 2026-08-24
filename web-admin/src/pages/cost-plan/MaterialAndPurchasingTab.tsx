@@ -350,7 +350,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   }, [data]);
 
   const colSpanCount = useMemo(() => {
-    if (subTab === 'TECH') return 9;
+    if (subTab === 'TECH') return 6;
     if (subTab === 'DOCS') return 5;
     if (subTab === 'PRICING') return 7;
     if (subTab === 'PAYMENT') return 6;
@@ -359,6 +359,36 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-white">
+      <datalist id="issueStatus-options">
+        <option value="Chưa xử lý" />
+        <option value="Đang xử lý" />
+        <option value="Đã xử lý" />
+        <option value="Cần xác nhận" />
+      </datalist>
+      <datalist id="issueContent-options">
+        <option value="Chưa chốt phương án kỹ thuật" />
+        <option value="Sai khác so với thiết kế" />
+        <option value="Thiết kế thay đổi" />
+        <option value="Hàng về chậm" />
+        <option value="Nhà máy trễ tiến độ" />
+        <option value="Chờ phê duyệt" />
+      </datalist>
+
+      <datalist id="issueStatus-options">
+        <option value="Chưa xử lý" />
+        <option value="Đang xử lý" />
+        <option value="Đã xử lý" />
+        <option value="Cần xác nhận" />
+      </datalist>
+      <datalist id="issueContent-options">
+        <option value="Chưa chốt phương án kỹ thuật" />
+        <option value="Sai khác so với thiết kế" />
+        <option value="Thiết kế thay đổi" />
+        <option value="Hàng về chậm" />
+        <option value="Nhà máy trễ tiến độ" />
+        <option value="Chờ phê duyệt" />
+      </datalist>
+
       <div className="flex flex-col border-b border-slate-200 sticky top-0 z-10 bg-slate-50">
         <div className="flex px-4 gap-4 border-b border-slate-200 overflow-x-auto custom-scrollbar">
           <button
@@ -478,7 +508,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           <thead className="sticky top-0 z-30 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
               <th rowSpan={2} style={{ minWidth: 50, width: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
-              <th rowSpan={2} style={{ minWidth: 280, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left ">NỘI DUNG</th>
+              <th rowSpan={2} style={{ minWidth: 400, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left ">NỘI DUNG</th>
               <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
               <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">KL HĐ</th>
               <th rowSpan={2} style={{ width: 100, borderRight: "1px solid #94a3b8", borderBottom: "1px solid #94a3b8" }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">MÃ HIỆU</th>
@@ -491,7 +521,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐẶT HÀNG</th>
                   <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">NGÀY CÓ HÀNG</th>
-                  <th colSpan={3} style={{ borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">VƯỚNG MẮC/ TỒN ĐỌNG / GHI CHÚ</th>
+                  <th rowSpan={2} style={{ width: 200, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">GHI CHÚ / VƯỚNG MẮC</th>
                 </>
               )}
 
@@ -529,13 +559,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             </tr>
             <tr className="bg-slate-50">
               {/* Removed subTab === 'TECH' 2nd row headers */}
-              {subTab === 'TECH' && (
-                <>
-                  <th style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">NỘI DUNG</th>
-                  <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">TT XỬ LÝ</th>
-                  <th style={{ width: 110, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">GHI CHÚ</th>
-                </>
-              )}
+              
               {subTab === 'DOCS' && (
                 <>
                   <th style={{ width: 40, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">CO</th>
@@ -921,39 +945,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   <span onClick={() => startEditing(plan.id, 'expectedDate', plan.expectedDate)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5">{plan.expectedDate || ''}</span>
                                 )}
                               </td>
-                              {/* NỘI DUNG VƯỚNG MẮC */}
-                              <td className="p-0 align-top font-semibold text-red-600 border-r border-slate-200">
-                                {editingCell?.id === plan.id && editingCell?.field === 'issueContent' && !editingCell.isPurchasing ? (
-                                  <input
-                                    type="text"
-                                    value={tempValue}
-                                    onChange={(e) => setTempValue(e.target.value)}
-                                    onBlur={() => saveEditing(plan, pRecord)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                    autoFocus
-                                    className="w-full bg-white text-red-600 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                                  />
-                                ) : (
-                                  <span onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 flex items-center whitespace-normal break-words leading-tight" title={plan.issueContent || ''}>{plan.issueContent || ''}</span>
-                                )}
-                              </td>
-                              {/* TT XỬ LÝ */}
-                              <td className="p-0 align-top text-slate-600 border-r border-slate-200">
-                                {editingCell?.id === plan.id && editingCell?.field === 'issueStatus' && !editingCell.isPurchasing ? (
-                                  <input
-                                    type="text"
-                                    value={tempValue}
-                                    onChange={(e) => setTempValue(e.target.value)}
-                                    onBlur={() => saveEditing(plan, pRecord)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                    autoFocus
-                                    className="w-full bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                                  />
-                                ) : (
-                                  <span onClick={() => startEditing(plan.id, 'issueStatus', plan.issueStatus)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 flex items-center whitespace-normal break-words leading-tight" title={plan.issueStatus || ''}>{plan.issueStatus || ''}</span>
-                                )}
-                              </td>
-                            
 </>
 )}
 
@@ -1190,25 +1181,100 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             </>
                           )}
 
-                          {/* GHI CHÚ */}
-                          <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-0 align-top text-slate-500">
-                            {editingCell?.id === plan.id && editingCell?.field === 'notes' && !editingCell.isPurchasing ? (
-                              <input
-                                type="text"
-                                value={tempValue}
-                                onChange={(e) => setTempValue(e.target.value)}
-                                onBlur={() => saveEditing(plan, pRecord)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                autoFocus
-                                className="w-full bg-white text-slate-500 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                              />
-                            ) : (
-                              <div onClick={() => startEditing(plan.id, 'notes', cleanNotes(plan.notes))} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={cleanNotes(plan.notes)}>
-                                <span className="truncate flex-1">{cleanNotes(plan.notes)}</span>
+                          {/* GHI CHÚ COMBINED */}
+                          {subTab !== 'TECH' ? (
+                            <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-0 align-top text-slate-500">
+                              {editingCell?.id === plan.id && editingCell?.field === 'notes' && !editingCell.isPurchasing ? (
+                                <input
+                                  type="text"
+                                  value={tempValue}
+                                  onChange={(e) => setTempValue(e.target.value)}
+                                  onBlur={() => saveEditing(plan, pRecord)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
+                                  autoFocus
+                                  className="w-full bg-white text-slate-500 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
+                                />
+                              ) : (
+                                <div onClick={() => startEditing(plan.id, 'notes', cleanNotes(plan.notes))} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={cleanNotes(plan.notes)}>
+                                  <span className="truncate flex-1">{cleanNotes(plan.notes)}</span>
+                                </div>
+                              )}
+                            </td>
+                          ) : (
+                            <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1 align-top text-slate-500 min-w-[200px]">
+                              <div className="flex flex-col gap-1 w-full text-xs">
+                                {/* Vướng mắc */}
+                                <div className="flex items-start gap-1">
+                                  <span className="text-[10px] font-bold text-red-500 w-12 shrink-0 mt-0.5" title="Nội dung vướng mắc">V.MẮC:</span>
+                                  <div className="flex-1 bg-slate-50 rounded">
+                                    {editingCell?.id === plan.id && editingCell?.field === 'issueContent' ? (
+                                      <input
+                                        type="text"
+                                        list="issueContent-options"
+                                        value={tempValue}
+                                        onChange={(e) => setTempValue(e.target.value)}
+                                        onBlur={() => saveEditing(plan, pRecord)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
+                                        autoFocus
+                                        placeholder="Nhập hoặc chọn..."
+                                        className="w-full bg-white text-red-600 font-semibold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm border border-slate-200 rounded"
+                                      />
+                                    ) : (
+                                      <div onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="min-h-[20px] cursor-pointer hover:bg-slate-200 px-1 py-0.5 rounded text-red-600 font-semibold whitespace-normal break-words leading-tight" title={plan.issueContent || 'Click để nhập'}>
+                                        {plan.issueContent || <span className="text-slate-300 italic">...</span>}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                {/* TT Xử lý */}
+                                <div className="flex items-start gap-1">
+                                  <span className="text-[10px] font-bold text-orange-500 w-12 shrink-0 mt-0.5" title="Trạng thái xử lý">XỬ LÝ:</span>
+                                  <div className="flex-1 bg-slate-50 rounded">
+                                    {editingCell?.id === plan.id && editingCell?.field === 'issueStatus' ? (
+                                      <input
+                                        type="text"
+                                        list="issueStatus-options"
+                                        value={tempValue}
+                                        onChange={(e) => setTempValue(e.target.value)}
+                                        onBlur={() => saveEditing(plan, pRecord)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
+                                        autoFocus
+                                        placeholder="Nhập hoặc chọn..."
+                                        className="w-full bg-white text-orange-600 font-semibold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm border border-slate-200 rounded"
+                                      />
+                                    ) : (
+                                      <div onClick={() => startEditing(plan.id, 'issueStatus', plan.issueStatus)} className="min-h-[20px] cursor-pointer hover:bg-slate-200 px-1 py-0.5 rounded text-orange-600 font-semibold whitespace-normal break-words leading-tight" title={plan.issueStatus || 'Click để nhập'}>
+                                        {plan.issueStatus || <span className="text-slate-300 italic">...</span>}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                {/* Ghi chú */}
+                                <div className="flex items-start gap-1">
+                                  <span className="text-[10px] font-bold text-slate-500 w-12 shrink-0 mt-0.5" title="Ghi chú">NOTE:</span>
+                                  <div className="flex-1 bg-slate-50 rounded">
+                                    {editingCell?.id === plan.id && editingCell?.field === 'notes' ? (
+                                      <input
+                                        type="text"
+                                        value={tempValue}
+                                        onChange={(e) => setTempValue(e.target.value)}
+                                        onBlur={() => saveEditing(plan, pRecord)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
+                                        autoFocus
+                                        placeholder="Nhập ghi chú..."
+                                        className="w-full bg-white text-slate-700 focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm border border-slate-200 rounded"
+                                      />
+                                    ) : (
+                                      <div onClick={() => startEditing(plan.id, 'notes', cleanNotes(plan.notes))} className="min-h-[20px] cursor-pointer hover:bg-slate-200 px-1 py-0.5 rounded text-slate-700 whitespace-normal break-words leading-tight" title={cleanNotes(plan.notes) || 'Click để nhập'}>
+                                        {cleanNotes(plan.notes) || <span className="text-slate-300 italic">...</span>}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            )}
-                          </td>
-                        </tr>
+                            </td>
+                          )}
+                      </tr>
                       );
                     })}
                 </>

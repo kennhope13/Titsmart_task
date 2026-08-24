@@ -1,9 +1,10 @@
 {
-  "version": "1.0.130",
+  "version": "1.0.131",
   "date": "24/08/2026",
   "notes": [
     "Cập nhật giao diện Nhân sự trong thẻ dự án (thiết kế dạng Pill, tự động xuống dòng đẹp mắt).",
     "Sửa lỗi sắp xếp STT bị lệch trong bảng Vật tư và Chi phí dự án.",
-    "Gộp chung cột Vướng mắc / Tồn đọng và cột Ghi chú vào cùng một nhóm trong tab Kỹ thuật & Đặt hàng."
+    "Gộp chung cột Vướng mắc / Tồn đọng và cột Ghi chú vào cùng một nhóm trong tab Kỹ thuật & Đặt hàng.",
+    "Gộp 3 cột (Nội dung vướng mắc, TT Xử lý, Ghi chú) vào một ô duy nhất để tiết kiệm diện tích. Hỗ trợ nhập và chọn trạng thái xử lý."
   ]
 }

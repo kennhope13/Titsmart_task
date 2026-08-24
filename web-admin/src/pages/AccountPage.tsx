@@ -76,7 +76,7 @@ const Info = ({ label, value, icon }: { label: string; value: string; icon: stri
     <span className="material-symbols-outlined text-primary text-xl group-hover:scale-110 transition-transform">{icon}</span>
     <div className="min-w-0 flex-1">
       <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">{label}</div>
-      <div className="text-[15px] font-extrabold text-slate-800 truncate">{value}</div>
+      <div className="text-[15px] font-extrabold text-slate-800 break-words">{value}</div>
     </div>
   </div>
 );

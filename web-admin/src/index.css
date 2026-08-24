@@ -395,26 +395,8 @@ main > div > div.sticky.top-0 select {
 
 .project-list-grid {
   display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 10px;
-}
-
-@media (min-width: 768px) {
-  .project-list-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1280px) {
-  .project-list-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1536px) {
-  .project-list-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
 }
 
 .project-card {

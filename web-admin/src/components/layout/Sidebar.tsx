@@ -251,7 +251,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
               setShowUserPopover(!showUserPopover);
               setShowNotifPopover(false);
             }}
-            className={`flex items-center gap-3 rounded-xl transition-all overflow-hidden whitespace-nowrap h-10
+            className={`flex items-center gap-3 rounded-xl transition-all overflow-hidden whitespace-normal h-10
               ${isExpanded ? 'w-full px-3 py-3 h-auto' : 'w-10'}
               ${
               showUserPopover
@@ -263,8 +263,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
               {(user?.name || 'A').charAt(0)}
             </div>
             <div className={`min-w-0 text-left leading-tight flex-1 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
-              <span className="block font-bold text-xs text-slate-800 truncate">{user?.name || 'Admin'}</span>
-              <span className="block text-[10px] text-slate-500 truncate">{user?.title || 'Quản trị viên'}</span>
+              <span className="block font-bold text-xs text-slate-800 break-words">{user?.name || 'Admin'}</span>
+              <span className="block text-[10px] text-slate-500 break-words">{user?.title || 'Quản trị viên'}</span>
             </div>
             <span className={`material-symbols-outlined text-base text-slate-400 flex-shrink-0 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>settings</span>
           </button>

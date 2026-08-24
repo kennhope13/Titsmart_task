@@ -256,11 +256,11 @@ export const PersonnelPage: React.FC = () => {
                   >
                     <td className="p-3 text-center font-mono font-bold text-slate-400 whitespace-nowrap">{index + 1}</td>
                     <td className="p-3 text-sm font-semibold text-slate-900 tracking-tight">
-                      <div className="truncate">{person.name}</div>
+                      <div className="break-words">{person.name}</div>
                     </td>
-                    <td className="p-3 font-mono font-bold text-primary whitespace-nowrap">{person.code}</td>
-                    <td className="p-3 text-slate-700 font-semibold whitespace-nowrap">{person.username || '-'}</td>
-                    <td className="p-3 whitespace-nowrap">
+                    <td className="p-3 font-mono font-bold text-primary break-all">{person.code}</td>
+                    <td className="p-3 text-slate-700 font-semibold break-all">{person.username || '-'}</td>
+                    <td className="p-3 break-words">
                       <span className={`text-[11px] font-bold ${
                         person.role === 'Quản trị viên' ? 'text-purple-700' :
                         person.role === 'Quản lý dự án' ? 'text-blue-700' :
@@ -272,11 +272,11 @@ export const PersonnelPage: React.FC = () => {
                     </td>
                     <td className="p-3">
                       {person.role === 'Quản lý dự án' ? (
-                        <span className="text-blue-700 text-[11px] font-bold whitespace-nowrap">Tất cả dự án</span>
+                        <span className="text-blue-700 text-[11px] font-bold">Tất cả dự án</span>
                       ) : person.assignedProjects.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-y-0.5">
                           {person.assignedProjects.map((mp: any, i: number, arr: any[]) => (
-  <span key={mp.code} className="text-primary text-[11px] font-bold whitespace-nowrap">
+  <span key={mp.code} className="text-primary text-[11px] font-bold break-words">
     {mp.name}{i < arr.length - 1 ? ', ' : ''}
   </span>
 ))}
