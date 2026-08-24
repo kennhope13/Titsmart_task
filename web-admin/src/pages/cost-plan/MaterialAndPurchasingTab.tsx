@@ -661,7 +661,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
               {subTab === 'DOCS' && (
                 <>
-                  <th rowSpan={2} style={{ width: 300, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
+                  <th rowSpan={2} style={{ width: 160, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
                 </>
               )}
 
@@ -1061,9 +1061,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           {subTab === 'DOCS' && (
                             <>
                               {/* CHỨNG TỪ HÀNG HÓA (Combined CO, CQ, PCCC) */}
-                              <td className="w-[300px] p-0 align-middle border-r border-slate-200">
-                                <div className="flex flex-row flex-wrap gap-x-4 gap-y-2 p-1.5 w-full items-start justify-center divide-x divide-slate-200">
-                                  <div className="flex flex-col items-center gap-1 pl-4 first:pl-0">
+                              <td className="w-[160px] p-0 align-middle border-r border-slate-200">
+                                <div className="flex flex-row flex-wrap gap-x-3 gap-y-2 p-1.5 w-full items-start justify-center divide-x divide-slate-200">
+                                  <div className="flex flex-col items-center gap-1 pl-2 first:pl-0">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
@@ -1074,7 +1074,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     </button>
                                     {renderAutoFilesByType(plan, 'CO')}
                                   </div>
-                                  <div className="flex flex-col items-center gap-1 pl-4">
+                                  <div className="flex flex-col items-center gap-1 pl-2">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
@@ -1085,7 +1085,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     </button>
                                     {renderAutoFilesByType(plan, 'CQ')}
                                   </div>
-                                  <div className="flex flex-col items-center gap-1 pl-4">
+                                  <div className="flex flex-col items-center gap-1 pl-2">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
