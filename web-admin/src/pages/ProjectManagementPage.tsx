@@ -511,10 +511,22 @@ export const ProjectManagementPage: React.FC = () => {
   };
 
   const [editProjName, setEditProjName] = useState('');
+  const [editProjLocation, setEditProjLocation] = useState('');
+  const [editProjClient, setEditProjClient] = useState('');
+  const [editProjContractValue, setEditProjContractValue] = useState('');
+  const [editSelectedEngineerIds, setEditSelectedEngineerIds] = useState<string[]>([]);
   
+  const toggleEditEngineerId = (id: string) => {
+    setEditSelectedEngineerIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
   const openEditModal = (project: Project) => {
     setProjectToEdit(project);
     setEditProjName(project.name);
+    setEditProjLocation(project.location || '');
+    setEditProjClient(project.client || '');
+    setEditProjContractValue(project.contractValue ? String(project.contractValue) : '');
+    setEditSelectedEngineerIds(project.members || []);
   };
   
   const handleEditProject = async (e: React.FormEvent) => {
@@ -525,9 +537,44 @@ export const ProjectManagementPage: React.FC = () => {
     setLoading(true);
     setLoadingMessage('Đang cập nhật dự án...');
     try {
-      await updateProject(projectToEdit.id, { name: editProjName.trim() });
-      logActivity(`Đổi tên dự án: ${projectToEdit.name} -> ${editProjName.trim()}`, projectToEdit.name);
-      triggerToast('Cập nhật tên dự án thành công', 'success');
+      const selectedEngineers = engineers.filter(eng => editSelectedEngineerIds.includes(eng.id));
+      const managerName = selectedEngineers.length > 0 ? selectedEngineers.map(e => e.name).join(', ') : TEXT.unassigned;
+
+      const payload = {
+        name: editProjName.trim(),
+        location: editProjLocation.trim(),
+        client: editProjClient.trim() || undefined,
+        contractValue: Number(editProjContractValue) || undefined,
+        managerId: editSelectedEngineerIds[0],
+        managerName: managerName,
+        members: editSelectedEngineerIds,
+        memberIds: editSelectedEngineerIds,
+      };
+
+      await updateProject(projectToEdit.id, payload);
+      
+      // Update engineer project codes if members changed
+      const oldMembers = projectToEdit.members || [];
+      const addedMembers = editSelectedEngineerIds.filter(id => !oldMembers.includes(id));
+      const removedMembers = oldMembers.filter(id => !editSelectedEngineerIds.includes(id));
+      
+      for (const id of addedMembers) {
+        const eng = engineers.find(e => e.id === id);
+        if (eng && (!eng.projectCodes || !eng.projectCodes.includes(projectToEdit.code))) {
+          const newCodes = Array.isArray(eng.projectCodes) ? [...eng.projectCodes, projectToEdit.code] : [projectToEdit.code];
+          await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+        }
+      }
+      for (const id of removedMembers) {
+        const eng = engineers.find(e => e.id === id);
+        if (eng && eng.projectCodes && eng.projectCodes.includes(projectToEdit.code)) {
+          const newCodes = eng.projectCodes.filter(c => c !== projectToEdit.code);
+          await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+        }
+      }
+
+      logActivity(`Cập nhật thông tin dự án: ${editProjName.trim()}`, editProjName.trim());
+      triggerToast('Cập nhật dự án thành công', 'success');
       setProjectToEdit(null);
     } catch (error) {
       console.error(error);
@@ -733,20 +780,45 @@ export const ProjectManagementPage: React.FC = () => {
         </div>
       </Modal>
 
-      <Modal isOpen={Boolean(projectToEdit)} onClose={() => setProjectToEdit(null)} title="Đổi tên dự án">
+      <Modal isOpen={Boolean(projectToEdit)} onClose={() => setProjectToEdit(null)} title="Cập nhật dự án">
         <form onSubmit={handleEditProject} className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-slate-700">
-              Tên dự án <span className="text-rose-500">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              value={editProjName}
-              onChange={(e) => setEditProjName(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="Nhập tên dự án..."
-            />
+            <label className="block font-bold text-slate-700 mb-1">Tên Dự án / Công trình mới *</label>
+            <input required value={editProjName} onChange={(e) => setEditProjName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Mã Dự án</label>
+              <input value={projectToEdit?.code || ''} disabled className="w-full px-3 py-2 border border-slate-200 bg-slate-100 rounded-lg cursor-not-allowed text-slate-500" title="Không thể đổi mã dự án sau khi tạo" />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Địa điểm công trình</label>
+              <input value={editProjLocation} onChange={(e) => setEditProjLocation(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Chủ đầu tư</label>
+              <input value={editProjClient} onChange={(e) => setEditProjClient(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Giá trị hợp đồng</label>
+              <input value={editProjContractValue} onChange={(e) => setEditProjContractValue(e.target.value)} inputMode="numeric" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" />
+            </div>
+          </div>
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Nhân sự</label>
+            <div className={`max-h-36 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 ${editSelectedEngineerIds.length === 0 ? 'border-red-200' : 'border-slate-200'}`}>
+              {engineers.length === 0 && <p className="text-[11px] text-slate-400">Chưa có nhân sự nào.</p>}
+              {engineers.filter(eng => eng.title !== 'Quản trị viên' && eng.title !== 'Quản lý dự án').map((eng) => (
+                <label key={eng.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input type="checkbox" checked={editSelectedEngineerIds.includes(eng.id)} onChange={() => toggleEditEngineerId(eng.id)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
+                  <span className="font-semibold text-slate-700">{eng.name}</span>
+                  <span className="text-slate-400">({eng.title || 'Nhân viên'})</span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">Người đầu tiên được chọn sẽ hiển thị dưới dạng Chỉ huy trưởng chính.</p>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setProjectToEdit(null)} className="px-4 py-2 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">{TEXT.cancel}</button>
