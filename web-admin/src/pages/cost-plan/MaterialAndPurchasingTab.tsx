@@ -424,17 +424,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             </>
           )}
         </div>
-        {subTab === 'DOCS' && userRole !== 'engineer' && (
-          <div className="absolute right-4 top-2 z-50">
-            <button 
-              onClick={() => setTriggerAddDoc(true)} 
-              className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs"
-            >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              Thêm Mới
-            </button>
-          </div>
-        )}
+        
 
         <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-wrap" style={{ display: subTab === "DOCS" ? "none" : "flex" }}>
           <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
