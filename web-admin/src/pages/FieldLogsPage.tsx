@@ -115,9 +115,9 @@ const UploadModal: React.FC<{
       }
       await onUpload({ projectCode, note, images: urls });
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError('Upload thất bại. Vui lòng kiểm tra kết nối và thử lại.');
+      setError(`Lỗi: ${err.message || JSON.stringify(err)}`);
       setIsUploading(false);
     }
   };
