@@ -94,7 +94,6 @@ export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, init
         <form onSubmit={handleSubmit} className="flex flex-col p-5 space-y-4">
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Đính kèm file (ảnh/pdf)</label>
             <ImageUpload
               label="Đính kèm file (ảnh/pdf)"
               value={fileUrls}
