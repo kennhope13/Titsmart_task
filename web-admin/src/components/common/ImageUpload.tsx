@@ -128,7 +128,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
                   <button 
                     type="button"
                     onClick={() => handleRemove(idx)}
-                    className="absolute top-0.5 right-0.5 bg-white rounded-full p-0.5 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity text-rose-500 hover:text-rose-700"
+                    className="absolute top-0.5 right-0.5 bg-white rounded-full p-0.5 shadow-sm text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors"
                     title="Xóa tệp"
                   >
                     <span className="material-symbols-outlined text-[14px] block">close</span>
