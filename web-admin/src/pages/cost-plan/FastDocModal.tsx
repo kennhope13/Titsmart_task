@@ -92,16 +92,6 @@ export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, init
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col p-5 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Nội dung chứng từ ({docType})</label>
-            <input 
-              type="text" 
-              required 
-              value={text}
-              onChange={e => setText(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Đính kèm file (ảnh/pdf)</label>
