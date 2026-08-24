@@ -924,26 +924,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   <span onClick={() => startEditing(plan.id, 'expectedDate', plan.expectedDate)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5">{plan.expectedDate || ''}</span>
                                 )}
                               </td>
-                              {/* TIẾN ĐỘ */}
-                              <td className="w-[125px] p-0 align-middle text-center font-mono font-bold text-slate-700 whitespace-nowrap border-r border-slate-200">
-                                <div className="p-1">
-                                  {(() => {
-                                    const status = plan.progressStatus || '';
-                                    let style = 'border-slate-200 bg-slate-50 text-slate-500';
-                                    if (status === 'Đã hoàn thành') style = 'border-emerald-200 bg-emerald-50 text-emerald-700';
-                                    else if (status === 'Đang thi công') style = 'border-blue-200 bg-blue-50 text-blue-700';
-                                    return (
-                                      <CustomSelect
-                                        value={status}
-                                        onChange={(e) => { onUpdateMaterial(plan.id, { ...plan, progressStatus: e.target.value }) }}
-                                        className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${style}`}
-                                      >
-                                        {CONSTRUCTION_STATUS_OPTIONS.map(opt => <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>)}
-                                      </CustomSelect>
-                                    );
-                                  })()}
-                                </div>
-                              </td>
+                              
 </>
 )}
 
