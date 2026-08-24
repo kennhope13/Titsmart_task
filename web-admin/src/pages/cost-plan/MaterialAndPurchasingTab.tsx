@@ -350,8 +350,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   }, [data]);
 
   const colSpanCount = useMemo(() => {
-    if (subTab === 'TECH') return 4;
-    if (subTab === 'ORDER') return 5;
+    if (subTab === 'TECH') return 9;
     if (subTab === 'DOCS') return 5;
     if (subTab === 'PRICING') return 7;
     if (subTab === 'PAYMENT') return 6;
@@ -366,13 +365,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             onClick={() => setSubTab('TECH')}
             className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'TECH' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
           >
-            Kỹ thuật
-          </button>
-          <button
-            onClick={() => setSubTab('ORDER')}
-            className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'ORDER' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
-          >
-            Đặt hàng & Logistics
+            Kỹ thuật & Đặt hàng
           </button>
           <button
             onClick={() => setSubTab('DOCS')}
@@ -462,7 +455,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               </>
             )}
 
-            {(subTab === 'ORDER' || subTab === 'PRICING') && (
+            {(subTab === 'TECH' || subTab === 'PRICING') && (
               <div className="flex items-center gap-1">
                 <span className="text-slate-500 font-medium whitespace-nowrap">Đặt hàng:</span>
                 <CustomSelect
@@ -495,11 +488,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 <>
                   <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TÌNH TRẠNG</th>
                   <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TIẾN ĐỘ</th>
-                </>
-              )}
-
-              {subTab === 'ORDER' && (
-                <>
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐẶT HÀNG</th>
                   <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">NGÀY CÓ HÀNG</th>
@@ -541,7 +529,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             </tr>
             <tr className="bg-slate-50">
               {/* Removed subTab === 'TECH' 2nd row headers */}
-              {subTab === 'ORDER' && (
+              {subTab === 'TECH' && (
                 <>
                   <th style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">NỘI DUNG</th>
                   <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">TT XỬ LÝ</th>
@@ -834,7 +822,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
                           {/* DYNAMIC RIGHT COLUMNS BASED ON SUBTAB */}
                           {subTab === 'TECH' && (
-                            <>
+<>
+
                               {/* TÌNH TRẠNG */}
                               <td className="w-[125px] p-0 align-middle text-slate-600 border-r border-slate-200">
                                 <div className="p-1">
@@ -879,11 +868,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   })()}
                                 </div>
                               </td>
-                            </>
-                          )}
+                            
 
-                          {subTab === 'ORDER' && (
-                            <>
                               {/* KL ĐẶT HÀNG */}
                               <td className="p-0 align-top text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'orderedVolume' && !editingCell.isPurchasing ? (
@@ -966,8 +952,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   <span onClick={() => startEditing(plan.id, 'issueStatus', plan.issueStatus)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 flex items-center whitespace-normal break-words leading-tight" title={plan.issueStatus || ''}>{plan.issueStatus || ''}</span>
                                 )}
                               </td>
-                            </>
-                          )}
+                            
+</>
+)}
 
                           {subTab === 'DOCS' && (
                             <>
