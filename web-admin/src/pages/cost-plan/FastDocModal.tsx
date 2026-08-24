@@ -114,21 +114,42 @@ export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, init
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-between items-center pt-2">
             <button
               type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 transition"
+              onClick={() => {
+                const newModels = JSON.parse(JSON.stringify(initialModels)) as ModelEntry[];
+                for (const m of newModels) {
+                  m.docs = m.docs.filter(d => {
+                    const lowerText = d.text.toLowerCase();
+                    if (docType === 'CO' && (lowerText.includes('co') || lowerText.includes('c/o'))) return false;
+                    if (docType === 'CQ' && (lowerText.includes('cq') || lowerText.includes('c/q'))) return false;
+                    if (docType === 'PCCC' && (lowerText.includes('pccc') || lowerText.includes('phòng cháy'))) return false;
+                    return true;
+                  });
+                }
+                onSubmit(newModels);
+              }}
+              className="rounded-lg px-4 py-2 text-sm font-bold text-rose-500 hover:bg-rose-50 transition"
             >
-              Hủy
+              Xóa / Tắt
             </button>
-            <button
-              type="submit"
-              disabled={isUploading || !text.trim()}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isUploading ? 'Đang tải...' : 'Lưu cập nhật'}
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 transition"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={isUploading || !text.trim()}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUploading ? 'Đang tải...' : 'Lưu cập nhật'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
