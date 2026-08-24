@@ -204,6 +204,7 @@ interface RealtimeStoreState {
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
   addProject: (proj: Omit<Project, 'id'>) => Promise<Project | undefined>;
+  updateProject: (id: string, proj: Partial<Project>) => Promise<Project | undefined>;
   deleteProject: (id: string) => Promise<void>;
 
   // New Actions
@@ -1110,7 +1111,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
-    deleteProject: async (id) => {
+      updateProject: async (id, projData) => { try { const updatedProj = await api.projects.update(id, projData); set((state) => { const nextProjs = state.projects.map((p) => (p.id === id ? { ...p, ...updatedProj } : p)); persistAndNotify({ projects: nextProjs }); return { projects: nextProjs }; }); return updatedProj; } catch (e) { console.error('Failed to update project', e); } },
+
+  deleteProject: async (id) => {
       try {
         const projectToDelete = get().projects.find((p) => p.id === id);
         if (!projectToDelete) return;

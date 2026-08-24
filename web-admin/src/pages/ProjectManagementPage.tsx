@@ -116,11 +116,13 @@ export const ProjectManagementPage: React.FC = () => {
     purchasingPlans,
     expenses,
     laborPayrolls,
+    updateProject,
   } = useRealtimeStore();
 
   const [searchQuery, setSearchQuery] = useState('');
 
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const [newProjName, setNewProjName] = useState('');
@@ -505,7 +507,33 @@ export const ProjectManagementPage: React.FC = () => {
     setPendingProjectTasks([]);
     } finally {
       setLoading(false);
-      setLoadingMessage('');
+    }
+  };
+
+  const [editProjName, setEditProjName] = useState('');
+  
+  const openEditModal = (project: Project) => {
+    setProjectToEdit(project);
+    setEditProjName(project.name);
+  };
+  
+  const handleEditProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectToEdit) return;
+    if (!editProjName.trim()) return;
+    
+    setLoading(true);
+    setLoadingMessage('Đang cập nhật dự án...');
+    try {
+      await updateProject(projectToEdit.id, { name: editProjName.trim() });
+      logActivity(`Đổi tên dự án: ${projectToEdit.name} -> ${editProjName.trim()}`, projectToEdit.name);
+      triggerToast('Cập nhật tên dự án thành công', 'success');
+      setProjectToEdit(null);
+    } catch (error) {
+      console.error(error);
+      triggerToast('Lỗi khi cập nhật dự án', 'warning');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -666,17 +694,27 @@ export const ProjectManagementPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Nút xóa — hiện khi hover */}
+                  {/* Nút sửa/xóa — hiện khi hover */}
                   {user?.role === 'admin' && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
-                      title={TEXT.deleteProject}
-                      aria-label="Xóa dự án"
-                      className="absolute top-2 right-2 rounded p-1 text-slate-400 hover:text-rose-500 transition z-20"
-                    >
-                      <span className="material-symbols-outlined text-lg">delete</span>
-                    </button>
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openEditModal(project); }}
+                        title="Sửa tên dự án"
+                        className="rounded p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
+                        title={TEXT.deleteProject}
+                        aria-label="Xóa dự án"
+                        className="rounded p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               );
@@ -693,6 +731,28 @@ export const ProjectManagementPage: React.FC = () => {
             <button type="button" onClick={handleDeleteProject} className="px-5 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700">{TEXT.deleteProject}</button>
           </div>
         </div>
+      </Modal>
+
+      <Modal isOpen={Boolean(projectToEdit)} onClose={() => setProjectToEdit(null)} title="Đổi tên dự án">
+        <form onSubmit={handleEditProject} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-slate-700">
+              Tên dự án <span className="text-rose-500">*</span>
+            </label>
+            <input
+              required
+              type="text"
+              value={editProjName}
+              onChange={(e) => setEditProjName(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Nhập tên dự án..."
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setProjectToEdit(null)} className="px-4 py-2 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">{TEXT.cancel}</button>
+            <button type="submit" disabled={!editProjName.trim()} className="px-5 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50">Lưu thay đổi</button>
+          </div>
+        </form>
       </Modal>
 
       <Modal isOpen={isNewProjectModalOpen} onClose={() => setIsNewProjectModalOpen(false)} title={TEXT.importProjectTitle}>
