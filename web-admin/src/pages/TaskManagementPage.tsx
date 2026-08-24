@@ -1401,7 +1401,7 @@ const displayTasks = tasks.filter((t) => {
 
 
 
-              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Đầu mục cha:</span>
+              <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Đầu mục:</span>
 
 
 
@@ -1461,6 +1461,20 @@ const displayTasks = tasks.filter((t) => {
               ))}
             </CustomSelect>
             </div>
+
+{/* Search */}
+            <div className="relative w-full md:w-48">
+              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Tìm nhanh công việc..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-7 pr-2 py-1 bg-slate-50 border border-slate-200 rounded text-[11px] focus:ring-1 focus:ring-primary focus:bg-white focus:outline-none h-7"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
             <button
@@ -1500,19 +1514,7 @@ const displayTasks = tasks.filter((t) => {
                 </div>
               )}
             </div>
-            {/* Search */}
-            <div className="relative w-full md:w-48">
-              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-                search
-              </span>
-              <input
-                type="text"
-                placeholder="Tm nhanh cng việc..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-7 pr-2 py-1 bg-slate-50 border border-slate-200 rounded text-[11px] focus:ring-1 focus:ring-primary focus:bg-white focus:outline-none h-7"
-              />
-            </div>
+            
           </div>
         </div>
       </div>
