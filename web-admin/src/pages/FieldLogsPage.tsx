@@ -234,13 +234,12 @@ export const FieldLogsPage: React.FC = () => {
     return sorted.filter(l => l.projectCode === selectedProject);
   }, [fieldLogs, selectedProject]);
 
-  const logsByDay = useMemo(() => {
+  const logsByProject = useMemo(() => {
     const groups = new Map<string, FieldLog[]>();
     for (const log of visibleLogs) {
-      const day = formatDate(log.timestamp);
-      const arr = groups.get(day) || [];
+      const arr = groups.get(log.projectCode) || [];
       arr.push(log);
-      groups.set(day, arr);
+      groups.set(log.projectCode, arr);
     }
     return Array.from(groups.entries());
   }, [visibleLogs]);
@@ -290,82 +289,49 @@ export const FieldLogsPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Content */}
-      <div className={`flex flex-col flex-1 ${logsByDay.length === 0 ? '' : 'p-6 space-y-8'}`}>
-        {logsByDay.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 bg-white flex-1 text-slate-400">
-            <span className="material-symbols-outlined text-5xl">photo_library</span>
-            <p className="text-sm font-bold">Chưa có ảnh hiện trường</p>
-            <p className="text-xs">Nhấn <strong className="text-primary">Upload ảnh</strong> để thêm ảnh cho dự án</p>
-          </div>
-        ) : (
-          logsByDay.map(([day, logs]) => (
-            <section key={day}>
-              <div className="mb-3 flex items-center gap-3">
-                <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-600">{day}</h2>
-                <div className="h-px flex-1 bg-slate-200" />
-                <span className="text-xs font-semibold text-slate-400">{logs.length} báo cáo</span>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {logs.map((log, index) => (
-                  <div key={log.id} className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                    {/* Header Card */}
-                    <div className="flex items-start justify-between gap-3 bg-slate-50 p-3">
-                      <div className="flex flex-1 items-start gap-2">
-                        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded bg-slate-200 text-xs font-bold text-slate-600">
-                          {(index + 1).toString().padStart(2, '0')}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-extrabold text-slate-700 line-clamp-2">
-                            {projectName(log.projectCode)}
-                          </p>
-                          <div className="mt-1 flex items-center gap-1.5">
-                            <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">
-                              <span className="mr-1 h-1.5 w-1.5 rounded-full bg-blue-500"></span>
-                              {formatTimeOnly(log.timestamp)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <button onClick={() => setDeletingId(log.id)} title="Xóa báo cáo"
-                        className="flex-shrink-0 rounded p-1 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
-                        <span className="material-symbols-outlined text-base">delete</span>
-                      </button>
-                    </div>
-
-                    {/* Note */}
-                    {log.note && (
-                      <p className="whitespace-pre-wrap border-t border-slate-100 px-4 py-2.5 text-[11px] text-slate-600">
-                        {log.note}
-                      </p>
-                    )}
-
-                    {/* Images Grid */}
-                    <div className="mt-auto border-t border-slate-100 p-2">
-                      <p className="mb-1.5 px-1 text-[10px] font-bold text-slate-400">
-                        {log.images.length} ẢNH HIỆN TRƯỜNG
-                      </p>
-                      <div className="grid grid-cols-4 gap-1 sm:grid-cols-5 md:grid-cols-6">
-                        {log.images.map((img, i) => (
-                          <button key={i} onClick={() => setLightbox({ images: log.images, index: i })}
-                            className="group relative aspect-square overflow-hidden rounded bg-slate-100">
-                            <img src={img} alt="Ảnh hiện trường" loading="lazy"
-                              className="h-full w-full object-cover transition-transform group-hover:scale-105" />
-                            <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/20 group-hover:opacity-100">
-                              <span className="material-symbols-outlined text-[16px] text-white">zoom_in</span>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
+        <div className={`flex flex-col flex-1 ${logsByProject.length === 0 ? '' : 'p-6'}`}>
+          {logsByProject.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 bg-white flex-1 text-slate-400">
+              <span className="material-symbols-outlined text-5xl">photo_library</span>
+              <p className="text-sm font-bold">Chưa có ảnh hiện trường</p>
+              <p className="text-xs">Nhấn <strong className="text-primary">Upload ảnh</strong> để thêm ảnh cho dự án</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              {logsByProject.map(([projectCode, logs]) => (
+                <div key={projectCode} className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                  {/* Header Card */}
+                  <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-5 py-4">
+                    <div>
+                      <h2 className="text-sm font-extrabold uppercase text-slate-800">{projectName(projectCode)}</h2>
+                      <p className="text-xs font-semibold text-slate-500 mt-1">{logs.length} bản ghi nhật ký</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </section>
-          ))
-        )}
-      </div>
+
+                  <div className="flex flex-col p-5 space-y-6 max-h-[600px] overflow-y-auto">
+                    {logs.map((log) => (
+                      <div key={log.id} className="relative pl-5 border-l-2 border-slate-100">
+                        <div className="absolute -left-[9px] top-0.5 h-4 w-4 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center">
+                          <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                            {formatTimeOnly(log.timestamp)}
+                          </span>
+                          <button onClick={() => setDeletingId(log.id)} title="Xóa báo cáo"
+                            className="rounded p-1 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
+                            <span className="material-symbols-outlined text-base">delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
       {/* Upload Modal */}
       {isUploadOpen && (
