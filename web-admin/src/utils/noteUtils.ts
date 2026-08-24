@@ -4,11 +4,11 @@ export const cleanSystemNotes = (notes: string) => {
     .replace(/\[section\]/g, '')
     .replace(/\[contractor\]/g, '')
     .replace(/\[owner\]/g, '')
-    .replace(/Nhà th?u cung c?p/g, '')
+    .replace(/Nhï¿½ th?u cung c?p/g, '')
     .replace(/Ch? d?u tu cung c?p/g, '')
-    .replace(/Import t? ph? l?c d? án/g, '')
-    .replace(/Ð?ng b? t? ph? l?c khi t?o d? án/g, '')
-    .split('|')
+    .replace(/Import t? ph? l?c d? ï¿½n/g, '')
+    .replace(/ï¿½?ng b? t? ph? l?c khi t?o d? ï¿½n/g, '')
+    .split('[DOC-NOTE]')[0].split('|')
     .map(s => s.trim())
     .filter(Boolean)
     .join(' | ');
@@ -16,17 +16,17 @@ export const cleanSystemNotes = (notes: string) => {
 
 export const mergeSystemNotes = (originalNotes: string, newCleanNotes: string) => {
   const systemTags = String(originalNotes || '')
-    .split('|')
+    .split('[DOC-NOTE]')[0].split('|')
     .map(s => s.trim())
     .filter(s => 
       s.match(/^\[order:[\d.]+\]$/) || 
       s === '[section]' || 
       s === '[contractor]' || 
       s === '[owner]' ||
-      s === 'Nhà th?u cung c?p' ||
+      s === 'Nhï¿½ th?u cung c?p' ||
       s === 'Ch? d?u tu cung c?p' ||
-      s === 'Import t? ph? l?c d? án' ||
-      s === 'Ð?ng b? t? ph? l?c khi t?o d? án'
+      s === 'Import t? ph? l?c d? ï¿½n' ||
+      s === 'ï¿½?ng b? t? ph? l?c khi t?o d? ï¿½n'
     );
   
   if (newCleanNotes && newCleanNotes.trim()) {

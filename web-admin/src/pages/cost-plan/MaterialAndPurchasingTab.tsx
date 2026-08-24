@@ -47,7 +47,7 @@ const cleanNotes = (value?: string) => {
     .replace(/\[order:[\d.]+\]/g, '')
     .replace(/\[section\]/gi, '')
     .replace(/\[contractor\]/gi, '')
-    .replace(/\[owner\]/gi, '')
+    .replace(/\[owner\]/gi, '').replace(/\[doc-track\]/gi, '').replace(/\[doc-track\s*]/gi, '')
     .replace(/Nhà thầu cung cấp/gi, '')
     .replace(/Chủ đầu tư cung cấp/gi, '')
     .replace(/Import từ phụ lục dự án/gi, '')
@@ -58,9 +58,79 @@ const cleanNotes = (value?: string) => {
     .join(' | ');
 };
 
+const getIssueContentText = (val?: string) => {
+  const parts = String(val || '').split('[DOC-DATA]');
+  // If there's no [DOC-DATA], and the string is valid JSON, then it's all JSON (no text).
+  if (parts.length === 1) {
+    try {
+      JSON.parse(parts[0]);
+      return ''; // It's all JSON, so text is empty
+    } catch (e) {
+      return parts[0]; // Not JSON, so it's all text
+    }
+  }
+  return parts[0];
+};
+
+const getIssueContentData = (val?: string) => {
+  const parts = String(val || '').split('[DOC-DATA]');
+  if (parts.length > 1) return parts[1];
+  try {
+    JSON.parse(parts[0]);
+    return parts[0];
+  } catch (e) {
+    return '';
+  }
+};
+
+const getTechNote = (val?: string) => String(val || '').split('[DOC-NOTE]')[0];
+const getDocNoteFull = (val?: string) => {
+  const parts = String(val || '').split('[DOC-NOTE]');
+  return parts.length > 1 ? parts[1] : '';
+};
+const getDocNote = (val?: string) => getDocNoteFull(val).split('[DOC-FILENAME]')[0].trim();
+const getDocFileName = (val?: string) => {
+  const parts = getDocNoteFull(val).split('[DOC-FILENAME]');
+  return parts.length > 1 ? parts[1].trim() : '';
+};
+const cleanTechNotes = (val?: string) => cleanNotes(getTechNote(val));
+const cleanDocNotes = (val?: string) => getDocNote(val);
+
+
 const showNumber = (value?: number) => {
   const n = Number(value || 0);
   return n ? n.toLocaleString('vi-VN') : '';
+};
+
+const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC') => {
+  if (!plan.issueContent || !plan.issueContent.includes('[DOC-DATA]')) return null;
+  try {
+    const models = decodeModels(plan.issueContent);
+    const links: React.ReactNode[] = [];
+    let counter = 0;
+    models.forEach(m => {
+      m.docs.forEach(d => {
+        if (!d.fileUrls || d.fileUrls.length === 0) return;
+        const lower = (d.text || '').toLowerCase();
+        let docTypeMatches = false;
+        if (type === 'CO' && (lower.includes('co') || lower.includes('c/o'))) docTypeMatches = true;
+        else if (type === 'CQ' && (lower.includes('cq') || lower.includes('c/q'))) docTypeMatches = true;
+        else if (type === 'PCCC' && (lower.includes('pccc') || lower.includes('phòng cháy'))) docTypeMatches = true;
+        
+        if (docTypeMatches) {
+          d.fileUrls.forEach(url => {
+             counter++;
+             links.push(
+               <a key={`f-${counter}`} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-[11px] truncate max-w-[150px]" title={d.text}>
+                 {type}
+               </a>
+             );
+          });
+        }
+      });
+    });
+    return links.length > 0 ? <div className="flex flex-wrap items-center gap-1">{links}</div> : null;
+  } catch (e) { return null; }
 };
 
 export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> = ({
@@ -305,7 +375,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
     const payload = {
       ...plan,
-      issueContent: encodeModels(newModels),
+      issueContent: `${getIssueContentText(plan.issueContent)} [DOC-DATA] ${encodeModels(newModels)}`,
       docCo,
       docCq,
       docFireInspection,
@@ -318,7 +388,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const startEditing = (id: string, field: string, value: any, isPurchasing = false) => {
     if (userRole === 'engineer') return;
     setEditingCell({ id, field, isPurchasing });
-    setTempValue(value === undefined || value === null ? '' : value);
+    
+    let finalTemp = value === undefined || value === null ? '' : value;
+    if (field === 'issueContent') finalTemp = getIssueContentText(value);
+    setTempValue(finalTemp);
+
   };
 
   const saveEditing = (plan: ProjectMaterialPlan, pRecord?: ProjectPurchasing) => {
@@ -364,15 +438,29 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         onUpdatePurchasing(pRecord.id, updatePayload);
       }
     } else {
+      let finalNotes = String(plan.notes || '');
+      const currentTech = getTechNote(finalNotes);
+      const currentDoc = getDocNote(finalNotes);
+      const currentFile = getDocFileName(finalNotes);
+
       if (field === 'notes') {
-        const existingTags = String(plan.notes || '').match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
-        finalValue = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+        const existingTags = finalNotes.match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
+        let updatedNote = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+        
+        if (subTab === 'DOCS') {
+           finalValue = `${currentTech} [DOC-NOTE] ${updatedNote} [DOC-FILENAME] ${currentFile}`;
+        } else {
+           finalValue = `${updatedNote} [DOC-NOTE] ${currentDoc} [DOC-FILENAME] ${currentFile}`;
+        }
+      } else if (field === 'fileName') {
+        finalValue = `${currentTech} [DOC-NOTE] ${currentDoc} [DOC-FILENAME] ${typeof tempValue === 'string' ? tempValue.trim() : tempValue}`;
+        
       } else if (field === 'contractVolume' || field === 'orderedVolume') {
         finalValue = Number(tempValue || 0);
       } else if (field === 'docCo' || field === 'docCq' || field === 'docFireInspection' || field === 'dispatchToSite') {
         finalValue = tempValue === true || tempValue === 'true' || tempValue === 'Có';
       }
-      onUpdateMaterial(id, { ...plan, [field]: finalValue });
+      onUpdateMaterial(id, { ...plan, [field === 'fileName' ? 'notes' : field]: finalValue });
     }
     setEditingCell(null);
   };
@@ -573,8 +661,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
               {subTab === 'DOCS' && (
                 <>
-                  <th rowSpan={2} style={{ width: 140, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
-                  <th colSpan={2} style={{ width: 130, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">LUÂN CHUYỂN VẬT TƯ</th>
+                  <th rowSpan={2} style={{ width: 220, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
                 </>
               )}
 
@@ -607,8 +694,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               
               {subTab === 'DOCS' && (
                 <>
-                  <th style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight whitespace-nowrap">GỬI CT</th>
-                  <th style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight whitespace-nowrap">NGÀY</th>
+                  
                 </>
               )}
             </tr>
@@ -975,64 +1061,44 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           {subTab === 'DOCS' && (
                             <>
                               {/* CHỨNG TỪ HÀNG HÓA (Combined CO, CQ, PCCC) */}
-                              <td className="w-[140px] p-0 align-middle text-center border-r border-slate-200">
-                                <div className="flex items-center justify-center gap-1 p-1">
-                                  <button
-                                    type="button"
-                                    disabled={userRole === 'engineer'}
-                                    onClick={() => handleDocBadgeClick(plan, 'CO')}
-                                    className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docCo ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
-                                  >
-                                    CO
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={userRole === 'engineer'}
-                                    onClick={() => handleDocBadgeClick(plan, 'CQ')}
-                                    className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docCq ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
-                                  >
-                                    CQ
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={userRole === 'engineer'}
-                                    onClick={() => handleDocBadgeClick(plan, 'PCCC')}
-                                    className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docFireInspection ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
-                                  >
-                                    PCCC
-                                  </button>
+                              <td className="w-[220px] p-0 align-middle border-r border-slate-200">
+                                <div className="flex flex-col gap-1.5 p-1.5 w-full items-center justify-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      type="button"
+                                      disabled={userRole === 'engineer'}
+                                      onClick={() => handleDocBadgeClick(plan, 'CO')}
+                                      className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docCo ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
+                                    >
+                                      CO
+                                    </button>
+                                    {renderAutoFilesByType(plan, 'CO')}
+                                  </div>
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      type="button"
+                                      disabled={userRole === 'engineer'}
+                                      onClick={() => handleDocBadgeClick(plan, 'CQ')}
+                                      className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docCq ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
+                                    >
+                                      CQ
+                                    </button>
+                                    {renderAutoFilesByType(plan, 'CQ')}
+                                  </div>
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      type="button"
+                                      disabled={userRole === 'engineer'}
+                                      onClick={() => handleDocBadgeClick(plan, 'PCCC')}
+                                      className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors ${plan.docFireInspection ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
+                                    >
+                                      PCCC
+                                    </button>
+                                    {renderAutoFilesByType(plan, 'PCCC')}
+                                  </div>
                                 </div>
                               </td>
-                              {/* ĐÃ GỬI TỚI CT */}
-                              <td className="p-0 align-middle text-center border-r border-slate-200">
-                                <button
-                                  type="button"
-                                  disabled={userRole === 'engineer'}
-                                  onClick={() => onUpdateMaterial(plan.id, { ...plan, dispatchToSite: !plan.dispatchToSite })}
-                                  className="flex items-center justify-center w-full h-[34px] transition-colors"
-                                >
-                                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.dispatchToSite ? '#10b981' : '#cbd5e1'} strokeWidth="2">
-                                    <circle cx="12" cy="12" r="10" fill={plan.dispatchToSite ? '#d1fae5' : '#f8fafc'} />
-                                    <path d="M8 12l3 3 5-5" strokeLinecap="round" strokeLinejoin="round" />
-                                  </svg>
-                                </button>
-                              </td>
-                              {/* NGÀY */}
-                              <td className="p-0 align-middle text-center font-mono text-slate-600 truncate border-r border-slate-200">
-                                {editingCell?.id === plan.id && editingCell?.field === 'dispatchDate' && !editingCell.isPurchasing ? (
-                                  <input
-                                    type="date"
-                                    value={tempValue}
-                                    onChange={(e) => setTempValue(e.target.value)}
-                                    onBlur={() => saveEditing(plan, pRecord)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                    autoFocus
-                                    className="w-full text-center bg-white text-slate-600 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                                  />
-                                ) : (
-                                  <span onClick={() => startEditing(plan.id, 'dispatchDate', plan.dispatchDate)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5">{plan.dispatchDate || ''}</span>
-                                )}
-                              </td>
+                              
                             </>
                           )}
 
@@ -1206,8 +1272,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   className="w-full bg-white text-slate-500 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
                                 />
                               ) : (
-                                <div onClick={() => startEditing(plan.id, 'notes', cleanNotes(plan.notes))} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={cleanNotes(plan.notes)}>
-                                  <span className="truncate flex-1">{cleanNotes(plan.notes)}</span>
+                                <div onClick={() => startEditing(plan.id, 'notes', (subTab === 'DOCS' ? cleanDocNotes(plan.notes) : cleanTechNotes(plan.notes)))} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={(subTab === 'DOCS' ? cleanDocNotes(plan.notes) : cleanTechNotes(plan.notes))}>
+                                  <span className="truncate flex-1">{(subTab === 'DOCS' ? cleanDocNotes(plan.notes) : cleanTechNotes(plan.notes))}</span>
                                 </div>
                               )}
                             </td>
@@ -1231,8 +1297,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                         className="w-full bg-white text-red-600 font-semibold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm border border-slate-200 rounded"
                                       />
                                     ) : (
-                                      <div onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="min-h-[20px] cursor-pointer hover:bg-slate-200 px-1 py-0.5 rounded text-red-600 font-semibold whitespace-normal break-words leading-tight" title={plan.issueContent || 'Click để nhập'}>
-                                        {plan.issueContent || <span className="text-slate-300 italic">...</span>}
+                                      <div onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="min-h-[20px] cursor-pointer hover:bg-slate-200 px-1 py-0.5 rounded text-red-600 font-semibold whitespace-normal break-words leading-tight" title={getIssueContentText(plan.issueContent) || 'Click để nhập'}>
+                                        {getIssueContentText(plan.issueContent) || <span className="text-slate-300 italic">...</span>}
                                       </div>
                                     )}
                                   </div>
@@ -1276,8 +1342,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                         className="w-full bg-white text-slate-700 focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm border border-slate-200 rounded"
                                       />
                                     ) : (
-                                      <div onClick={() => startEditing(plan.id, 'notes', cleanNotes(plan.notes))} className="min-h-[20px] cursor-pointer hover:bg-slate-200 px-1 py-0.5 rounded text-slate-700 whitespace-normal break-words leading-tight" title={cleanNotes(plan.notes) || 'Click để nhập'}>
-                                        {cleanNotes(plan.notes) || <span className="text-slate-300 italic">...</span>}
+                                      <div onClick={() => startEditing(plan.id, 'notes', cleanTechNotes(plan.notes))} className="min-h-[20px] cursor-pointer hover:bg-slate-200 px-1 py-0.5 rounded text-slate-700 whitespace-normal break-words leading-tight" title={cleanTechNotes(plan.notes) || 'Click để nhập'}>
+                                        {cleanTechNotes(plan.notes) || <span className="text-slate-300 italic">...</span>}
                                       </div>
                                     )}
                                   </div>

@@ -74,8 +74,7 @@ export const encodeModels = (models: ModelEntry[]): string => {
 
 export const decodeModels = (issueContent?: string): ModelEntry[] => {
   if (!issueContent) return [{ ...EMPTY_MODEL, docs: [{ ...EMPTY_DOC }] }];
-  try {
-    const parsed = JSON.parse(issueContent);
+  try { const parts = issueContent.split('[DOC-DATA]'); let dataString = parts.length > 1 ? parts[1].trim() : issueContent; const parsed = JSON.parse(dataString);
     if (Array.isArray(parsed) && parsed.length > 0) {
       // Migration: nếu entry cũ dùng field cứng, convert sang docs array
       return (parsed as any[]).map(m => {
