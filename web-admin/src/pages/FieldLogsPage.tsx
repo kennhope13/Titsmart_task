@@ -108,9 +108,9 @@ const UploadModal: React.FC<{
         const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
         const filePath = `cccd/${fileName}`;
-        const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file);
+        const { error: uploadError } = await supabase.storage.from('titsmart-images').upload(filePath, file);
         if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
+        const { data: { publicUrl } } = supabase.storage.from('titsmart-images').getPublicUrl(filePath);
         urls.push(publicUrl);
       }
       await onUpload({ projectCode, note, images: urls });
