@@ -391,13 +391,29 @@ export const api = {
     getAll: async () => {
       const { data, error } = await supabase.from('field_logs').select('*');
       if (error) throw error;
-      return data.map(toCamelCase);
+      return data.map((d: any) => ({
+        id: d.id,
+        projectCode: d.project_id,
+        note: d.note,
+        images: d.images,
+        timestamp: d.created_at,
+      }));
     },
     create: async (data: any) => {
-      const payload = toSnakeCase(data);
+      const payload = {
+        project_id: data.projectCode,
+        note: data.note,
+        images: data.images,
+      };
       const { data: result, error } = await supabase.from('field_logs').insert(payload).select().single();
       if (error) throw error;
-      return toCamelCase(result);
+      return {
+        id: result.id,
+        projectCode: result.project_id,
+        note: result.note,
+        images: result.images,
+        timestamp: result.created_at,
+      };
     },
     delete: async (id: string) => {
       const { error } = await supabase.from('field_logs').delete().eq('id', id);
