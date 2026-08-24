@@ -1688,7 +1688,7 @@ const displayTasks = tasks.filter((t) => {
                           ))}
                         </CustomSelect>
                       </td>
-                      <td className={`sticky right-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-l border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-slate-500 truncate`} title={cleanNotes(t.notes)}>
+                      <td className={`sticky right-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-l border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-slate-500 whitespace-normal break-words leading-tight`} title={cleanNotes(t.notes)}>
                         {editingCell?.id === t.id && editingCell?.field === 'notes' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-700 font-bold focus:outline-primary text-[10px]" />
                         ) : (
