@@ -73,7 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
 
       return [
         {
-          title: 'Hệ thống',
+          title: '',
           collapsible: false,
           items: [
             { label: 'Tất cả dự án', path: '/projects', icon: 'arrow_back' }
