@@ -142,6 +142,9 @@ app.on('activate', () => {
   }
 });
 
+// Fix for ERR_HTTP2_PROTOCOL_ERROR when auto-updating from GitHub Releases
+app.commandLine.appendSwitch('disable-http2');
+
 app.whenReady().then(() => {
   createWindow();
   setupAutoUpdater();

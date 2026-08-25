@@ -183,6 +183,22 @@ export const UpdateNotifier: React.FC = () => {
         {state.status === 'error' && (
           <div className="px-4 pt-2 pb-1">
             <p className="text-xs text-red-500 whitespace-pre-line max-h-24 overflow-y-auto">{state.message}</p>
+            {state.source === 'electron' && (
+              <div className="mt-2 p-2 bg-slate-50 border border-slate-100 rounded-lg">
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Lỗi kết nối mạng khi tải bản cập nhật tự động. Vui lòng tải file cài đặt thủ công:
+                </p>
+                <a 
+                  href="https://github.com/kennhope13/Titsmart_task/releases/latest" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="inline-flex items-center gap-1 mt-1.5 text-xs font-bold text-primary hover:underline"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Tải Setup.exe mới nhất
+                </a>
+              </div>
+            )}
           </div>
         )}
 
