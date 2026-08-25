@@ -163,12 +163,12 @@ export const ActivityLogPage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-hidden">
       {/* HEADER SECTION */}
-      <section className="border-b border-slate-200 bg-white pl-3 pr-4 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
-        <div className="flex items-center gap-4">
+      <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 electron-drag ${window.electronAPI ? 'pr-[140px]' : 'pr-4'}`}>
+        <div className="flex items-center gap-4 electron-no-drag">
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">NHẬT KÝ HOẠT ĐỘNG</h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end electron-no-drag">
           <span className="px-3 h-[38px] rounded-full bg-blue-50 text-primary text-[13px] font-bold border border-blue-100 whitespace-nowrap">
             {filteredLogs.length} thao tác
           </span>
