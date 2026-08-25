@@ -93,8 +93,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         title: '',
         collapsible: false,
         items: [
-          { label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' },
-          { label: 'Tất cả dự án', path: '/projects', icon: 'domain' },
+          { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
+          { label: 'Tất cả dự án', path: '/projects', icon: 'electric_bolt' },
           { label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' },
           { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
           { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' }
@@ -108,8 +108,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         title: '',
         collapsible: false,
         items: [
-          { label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' },
-          { label: 'Tất cả dự án', path: '/projects', icon: 'domain' },
+          { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
+          { label: 'Tất cả dự án', path: '/projects', icon: 'electric_bolt' },
           { label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }
         ]
       }];
@@ -121,7 +121,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         title: '',
         collapsible: false,
         items: [
-          { label: 'Tất cả dự án', path: '/projects', icon: 'domain' },
+          { label: 'Tất cả dự án', path: '/projects', icon: 'electric_bolt' },
           { label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }
         ]
       }];
@@ -132,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       title: '',
       collapsible: false,
       items: [
-        { label: 'Tất cả dự án', path: '/projects', icon: 'domain' }
+        { label: 'Tất cả dự án', path: '/projects', icon: 'electric_bolt' }
       ]
     }];
   };
