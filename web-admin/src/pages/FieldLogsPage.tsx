@@ -83,13 +83,16 @@ const Lightbox: React.FC<{ images: string[]; index: number; onClose: () => void;
 const UploadModal: React.FC<{
   defaultProjectCode: string;
   projects: { code: string; name: string }[];
+  editLog?: any;
   onClose: () => void;
   onUpload: (input: { projectCode: string; note: string; images: string[] }) => Promise<void>;
-}> = ({ defaultProjectCode, projects, onClose, onUpload }) => {
-  const [projectCode, setProjectCode] = useState(defaultProjectCode || '');
-  const [note, setNote] = useState('');
+  onUpdate?: (id: string, input: { note: string; images: string[]; existingImages: string[] }) => Promise<void>;
+}> = ({ defaultProjectCode, projects, editLog, onClose, onUpload, onUpdate }) => {
+  const [projectCode, setProjectCode] = useState(editLog?.projectCode || defaultProjectCode || '');
+  const [note, setNote] = useState(editLog?.note || '');
   const [files, setFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [previews, setPreviews] = useState<string[]>(editLog?.images || []);
+  const [existingImages, setExistingImages] = useState<string[]>(editLog?.images || []);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -112,14 +115,19 @@ const UploadModal: React.FC<{
   };
 
   const removeFile = (idx: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== idx));
+    const isExisting = idx < existingImages.length;
+    if (isExisting) {
+      setExistingImages(prev => prev.filter((_, i) => i !== idx));
+    } else {
+      setFiles(prev => prev.filter((_, i) => i !== (idx - existingImages.length)));
+    }
     setPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectCode) { setError('Vui lòng chọn dự án'); return; }
-    if (files.length === 0) { setError('Vui lòng chọn ít nhất 1 ảnh'); return; }
+    if (files.length === 0 && existingImages.length === 0) { setError('Vui lòng chọn ít nhất 1 ảnh'); return; }
     setIsUploading(true);
     setError('');
     try {
@@ -133,7 +141,11 @@ const UploadModal: React.FC<{
         const { data: { publicUrl } } = supabase.storage.from('titsmart-images').getPublicUrl(filePath);
         urls.push(publicUrl);
       }
-      await onUpload({ projectCode, note, images: urls });
+      if (editLog && onUpdate) {
+        await onUpdate(editLog.id, { note, images: urls, existingImages });
+      } else {
+        await onUpload({ projectCode, note, images: urls });
+      }
       onClose();
     } catch (err: any) {
       console.error(err);
@@ -149,7 +161,7 @@ const UploadModal: React.FC<{
         <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
           <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-800">
             <span className="material-symbols-outlined text-base text-primary">add_a_photo</span>
-            Upload ảnh hiện trường
+            {editLog ? 'Sửa ảnh hiện trường' : 'Upload ảnh hiện trường'}
           </h3>
           <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
             <span className="material-symbols-outlined text-lg">close</span>
@@ -236,9 +248,10 @@ const UploadModal: React.FC<{
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export const FieldLogsPage: React.FC = () => {
-  const { fieldLogs, projects, addFieldLog, deleteFieldLog, fetchFieldLogs } = useRealtimeStore();
+  const { fieldLogs, projects, addFieldLog, deleteFieldLog, updateFieldLog, fetchFieldLogs } = useRealtimeStore();
   const [selectedProject, setSelectedProject] = useState('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [editLog, setEditLog] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
@@ -339,10 +352,16 @@ export const FieldLogsPage: React.FC = () => {
                           <span className="text-[13px] font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full shadow-sm">
                             {formatTimeOnly(log.timestamp)}
                           </span>
-                          <button onClick={() => setDeletingId(log.id)} title="Xóa báo cáo"
-                            className="rounded p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
-                            <span className="material-symbols-outlined text-lg">delete</span>
-                          </button>
+                          <div className="flex gap-1">
+                            <button onClick={() => setEditLog(log)} title="Sửa báo cáo"
+                              className="rounded p-1.5 text-slate-300 hover:bg-blue-50 hover:text-blue-500 transition">
+                              <span className="material-symbols-outlined text-lg">edit</span>
+                            </button>
+                            <button onClick={() => setDeletingId(log.id)} title="Xóa báo cáo"
+                              className="rounded p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
+                              <span className="material-symbols-outlined text-lg">delete</span>
+                            </button>
+                          </div>
                         </div>
 
                         {log.note && (
@@ -408,12 +427,18 @@ export const FieldLogsPage: React.FC = () => {
         </div>
 
       {/* Upload Modal */}
-      {isUploadOpen && (
+      {(isUploadOpen || editLog) && (
         <UploadModal
           defaultProjectCode={selectedProject}
           projects={projects}
-          onClose={() => setIsUploadOpen(false)}
-          onUpload={handleUpload} />
+          editLog={editLog}
+          onClose={() => { setIsUploadOpen(false); setEditLog(null); }}
+          onUpload={handleUpload}
+          onUpdate={async (id, input) => {
+            if (updateFieldLog) await updateFieldLog(id, input);
+            await fetchFieldLogs();
+          }}
+        />
       )}
 
       {/* Lightbox */}

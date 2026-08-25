@@ -88,6 +88,13 @@ export const api = {
       return (await axios.post(`${API_URL}/field-logs`, form)).data;
     },
     delete: async (id: string) => (await axios.delete(`${API_URL}/field-logs/${id}`)).data,
+    update: async (id: string, data: { note?: string; images?: string[]; existingImages?: string[] }) => {
+      const form = new FormData();
+      if (data.note !== undefined) form.append('note', data.note);
+      if (data.images) data.images.forEach(f => form.append('images', f));
+      if (data.existingImages) data.existingImages.forEach(img => form.append('existingImages', img));
+      return (await axios.put(`${API_URL}/field-logs/${id}`, form)).data;
+    },
   },
   accounting: {
     getMaterialPlans: async () => (await axios.get(`${API_URL}/accounting/material-plans`)).data,
