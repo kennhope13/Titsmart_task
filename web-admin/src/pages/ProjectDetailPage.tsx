@@ -73,26 +73,7 @@ export const ProjectDetailPage: React.FC = () => {
 
       </div>
 
-      {/* Tabs list inside detail layout */}
-      <div className="flex border-b border-slate-200 bg-white px-6 gap-6 flex-shrink-0 overflow-x-auto scrollbar-hide shadow-sm z-10">
-        {tabs.map(tab => {
-          const isActive = location.pathname.startsWith(`/projects/${project.id}/${tab.path.split('/').pop()}`);
-          return (
-            <Link
-              key={tab.path}
-              to={tab.path}
-              className={`flex items-center gap-2 py-2 border-b-2 font-bold text-xs transition-all whitespace-nowrap ${
-                isActive 
-                  ? 'border-primary text-primary' 
-                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
+
 
       {/* Content wrapper */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">
