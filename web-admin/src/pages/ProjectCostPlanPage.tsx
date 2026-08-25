@@ -1512,45 +1512,44 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
+      {/* Hidden file input for Excel import */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleImportExcel} 
+        accept=".xlsx,.xls,.csv,.pdf,.doc,.docx" 
+        className="hidden" 
+      />
+
       {/* HEADER SECTION */}
-      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-3 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        {!projectId && (
+      {!projectId && (
+        <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-3 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-black text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter']">VẬT TƯ & CHI PHÍ DỰ ÁN</h1>
           </div>
-        )}
 
-        {/* Project Selector & Actions */}
-        <div className="flex items-center gap-3">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleImportExcel} 
-            accept=".xlsx,.xls,.csv,.pdf,.doc,.docx" 
-            className="hidden" 
-          />
-
-          {!projectId && (
+          {/* Project Selector & Actions */}
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200">
               <span className="text-[13px] font-bold text-slate-500 uppercase px-2 whitespace-nowrap">Dự án:</span>
-            <CustomSelect 
-              value={selectedProject} 
-              onChange={(e) => setSelectedProject(e.target.value)} 
-              className="bg-white border border-slate-200 px-3 py-1.5 rounded-md text-[13px] font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
-            >
-              {projectOptions.length === 0 ? (
-                <option value="">-- Chưa có dự án --</option>
-              ) : (
-                projectOptions.map(code => {
-                  const proj = projects.find(p => p.code === code);
-                  return <option key={code} value={code}>{proj?.name || code}</option>;
-                })
-              )}
-            </CustomSelect>
+              <CustomSelect 
+                value={selectedProject} 
+                onChange={(e) => setSelectedProject(e.target.value)} 
+                className="bg-white border border-slate-200 px-3 py-1.5 rounded-md text-[13px] font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
+              >
+                {projectOptions.length === 0 ? (
+                  <option value="">-- Chưa có dự án --</option>
+                ) : (
+                  projectOptions.map(code => {
+                    const proj = projects.find(p => p.code === code);
+                    return <option key={code} value={code}>{proj?.name || code}</option>;
+                  })
+                )}
+              </CustomSelect>
             </div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
       {/* TABS SELECTOR */}
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1 shadow-xs border-x">
