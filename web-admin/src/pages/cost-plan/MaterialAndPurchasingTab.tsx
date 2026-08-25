@@ -481,7 +481,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const colSpanCount = useMemo(() => {
     if (subTab === 'TECH') return 9;
     if (subTab === 'DOCS') return 6;
-    if (subTab === 'FINANCE') return 12;
+    if (subTab === 'FINANCE') return 11;
     return 8;
   }, [subTab]);
 
@@ -670,7 +670,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">% TẠM ỨNG</th>
                   <th rowSpan={2} style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THỰC CHI (đ)</th>
                   <th rowSpan={2} style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">CÒN LẠI (đ)</th>
-                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TRẠNG THÁI ĐH</th>
                   <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TÌNH TRẠNG HĐ</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HẠN THANH TOÁN</th>
                   <th rowSpan={2} style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HÓA ĐƠN VAT</th>
@@ -1190,16 +1189,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <td className="p-1.5 align-middle text-right font-mono text-slate-500 border-r border-slate-200 leading-tight">
                                 {pRecord ? showNumber((pRecord.totalAmount || 0) - (pRecord.prepayAmount || 0)) : '-'}
                               </td>
-                              {/* TRẠNG THÁI ĐH */}
-                              <td className="p-1 align-middle text-center border-r border-slate-200">
-                                <CustomSelect
-                                  value={pRecord?.orderStatus || 'Chưa đặt hàng'}
-                                  onChange={(e) => { if (pRecord) onUpdatePurchasing(pRecord.id, { ...pRecord, orderStatus: e.target.value }) }}
-                                  className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${getStatusColorStyle(pRecord?.orderStatus || '')}`}
-                                >
-                                  {PURCHASE_STATUS_OPTIONS.map(opt => <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>)}
-                                </CustomSelect>
-                              </td>
+
                               {/* TÌNH TRẠNG HĐ */}
                               <td className="p-1 align-middle text-center border-r border-slate-200">
                                 <CustomSelect
