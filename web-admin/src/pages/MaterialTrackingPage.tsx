@@ -653,7 +653,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-slate-50 relative overflow-hidden">
-      <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3 electron-drag ${window.electronAPI ? 'pr-[140px]' : 'pr-4'}`}>
+      <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3 electron-drag ${window.electronAPI ? 'pr-[180px]' : 'pr-4'}`}>
         {!projectId && (
           <div className="flex items-center gap-4 electron-no-drag">
             <div>
