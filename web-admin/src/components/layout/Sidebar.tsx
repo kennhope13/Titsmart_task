@@ -277,8 +277,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                 : 'hover:bg-slate-50'
             }`}
           >
-            <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center font-bold text-xs text-white bg-blue-600 uppercase shadow-sm">
-              {(user?.name || 'A').charAt(0)}
+            <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-slate-400 bg-slate-100 uppercase shadow-sm border border-slate-200">
+              <span className="material-symbols-outlined text-[20px]">person</span>
             </div>
             <div className={`min-w-0 text-left leading-tight flex-1 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
               <span className="block font-bold text-xs text-slate-800 break-words">{user?.name || 'Admin'}</span>

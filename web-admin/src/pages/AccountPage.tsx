@@ -27,8 +27,8 @@ export const AccountPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Panel */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 flex flex-col items-center justify-center min-h-[360px]">
-            <div className="w-28 h-28 rounded-[24px] bg-primary text-white flex items-center justify-center text-4xl font-extrabold shadow-lg mb-6">
-              {(user?.name || engineer?.name || 'AD').slice(0, 2).toUpperCase()}
+            <div className="w-28 h-28 rounded-[24px] bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center shadow-lg mb-6">
+              <span className="material-symbols-outlined text-[64px]">person</span>
             </div>
             <h3 className="text-lg font-extrabold text-slate-900 mb-2">
               {user?.name || engineer?.name || 'Admin'}

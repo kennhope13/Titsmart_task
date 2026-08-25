@@ -720,8 +720,8 @@ export const ProjectManagementPage: React.FC = () => {
                         {project.memberNames?.length ? (
                           project.memberNames.map((name, i) => (
                             <div key={i} className="inline-flex items-center gap-2 bg-sky-50/50 border border-sky-100 rounded-full pr-2 pl-0.5 py-0.5">
-                              <span className="w-3.5 h-3.5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-[8px] font-bold uppercase shrink-0">
-                                {name.charAt(0)}
+                              <span className="w-3.5 h-3.5 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-[10px]">person</span>
                               </span>
                               <span className="text-[10px] font-semibold text-sky-700">
                                 {name}
