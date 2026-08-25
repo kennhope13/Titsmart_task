@@ -1514,9 +1514,11 @@ export const ProjectCostPlanPage: React.FC = () => {
     <div className="flex flex-col flex-1 overflow-y-auto">
       {/* HEADER SECTION */}
       <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-3 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-lg font-black text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter']">VẬT TƯ & CHI PHÍ DỰ ÁN</h1>
-        </div>
+        {!projectId && (
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-black text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter']">VẬT TƯ & CHI PHÍ DỰ ÁN</h1>
+          </div>
+        )}
 
         {/* Project Selector & Actions */}
         <div className="flex items-center gap-3">

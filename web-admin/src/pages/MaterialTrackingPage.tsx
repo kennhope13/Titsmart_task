@@ -654,13 +654,15 @@ export const MaterialTrackingPage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 h-full bg-slate-50 relative overflow-hidden">
       <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3 electron-drag ${window.electronAPI ? 'pr-[140px]' : 'pr-4'}`}>
-        <div className="flex items-center gap-4 electron-no-drag">
-          <div>
-            <div className="flex items-center gap-3">
-              <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">QUẢN LÝ KHO & VẬT TƯ</h2>
+        {!projectId && (
+          <div className="flex items-center gap-4 electron-no-drag">
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">QUẢN LÝ KHO & VẬT TƯ</h2>
+              </div>
             </div>
           </div>
-        </div>
+        )}
         <div className="flex flex-wrap gap-2">
           <input 
             type="file" 

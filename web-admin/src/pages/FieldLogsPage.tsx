@@ -315,12 +315,13 @@ export const FieldLogsPage: React.FC = () => {
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-3 py-4 md:py-0 md:h-12 shadow-sm">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between h-full">
-          <div className="flex items-center gap-4">
-
-            <div>
-              <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">NHẬT KÝ HIỆN TRƯỜNG</h1>
+          {!projectId && (
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">NHẬT KÝ HIỆN TRƯỜNG</h1>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex items-center gap-2">
             {!projectId && (
