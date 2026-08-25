@@ -149,14 +149,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       <div className="relative h-[72px] px-3 flex items-center gap-2 border-b border-slate-100 min-w-[240px]">
         <div className="flex-1 flex items-center gap-3 min-w-0 p-1">
           <div 
-            className={`relative w-8 h-8 flex items-center justify-center flex-shrink-0 ${sidebarShowToggleButton ? 'cursor-pointer group/logo' : ''}`}
+            className={`relative w-10 h-10 flex items-center justify-center flex-shrink-0 ${sidebarShowToggleButton ? 'cursor-pointer group/logo' : ''}`}
             onClick={() => sidebarShowToggleButton && toggleSidebar && toggleSidebar()}
             title={sidebarShowToggleButton ? "Ghim / Bỏ ghim thanh menu" : ""}
           >
             <img 
               src="./logo.png" 
               alt="TITSMART" 
-              className={`w-8 h-8 object-contain transition-opacity duration-200 ${sidebarShowToggleButton ? 'group-hover/logo:opacity-0' : ''}`} 
+              className={`w-5 h-5 object-contain transition-opacity duration-200 ${sidebarShowToggleButton ? 'group-hover/logo:opacity-0' : ''}`} 
             />
             {sidebarShowToggleButton && (
               <div className="absolute inset-0 bg-slate-100 rounded-lg flex items-center justify-center opacity-0 group-hover/logo:opacity-100 transition-all text-slate-500 hover:text-primary hover:bg-slate-200">
