@@ -323,7 +323,8 @@ export const FieldLogsPage: React.FC = () => {
               <p className="text-sm font-bold">Chưa có ảnh hiện trường</p>
               <p className="text-xs">Nhấn <strong className="text-primary">Upload ảnh</strong> để thêm ảnh cho dự án</p>
             </div>
-          ) : selectedProject ? (
+          ) : (
+            {selectedProject ? (
               <div className="flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 flex-1 overflow-hidden">
                 <div className="flex items-center px-6 py-4 border-b border-slate-200 bg-slate-50 sticky top-0 z-10">
                   <button onClick={() => setSelectedProject(null)} className="mr-4 p-2 rounded-full hover:bg-slate-200 text-slate-600 transition flex items-center justify-center">
@@ -409,10 +410,15 @@ export const FieldLogsPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-              )
-            }
-          </div>
+                )})}
+              </div>
             )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) })}
+            </div>
           )}
         </div>
 
