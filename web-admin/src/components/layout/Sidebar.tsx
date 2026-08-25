@@ -61,14 +61,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
     
     if (currentProject) {
       const projectItems = [
-        { label: 'Tiến độ Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'playlist_add_check' },
+        { label: 'Tiến độ Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'task' },
         { label: 'Nhật ký Hiện trường', path: `/projects/${currentProject.id}/field-logs`, icon: 'photo_camera' },
-        { label: 'Vật tư & Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'request_quote' },
+        { label: 'Vật tư & Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'receipt_long' },
         { label: 'Kho Dự án', path: `/projects/${currentProject.id}/inventory`, icon: 'warehouse' }
       ];
 
       if (role !== 'staff' && role !== 'engineer') {
-        projectItems.push({ label: 'Theo dõi Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'drafts' });
+        projectItems.push({ label: 'Theo dõi Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'folder_open' });
       }
 
       return [
