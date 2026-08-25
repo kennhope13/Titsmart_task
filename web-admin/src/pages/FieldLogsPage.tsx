@@ -24,7 +24,8 @@ const formatDate = (value: string) => {
 
 const formatTimeOnly = (value: string) => {
   try {
-    return new Date(value).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const d = new Date(value);
+    return `${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}`;
   } catch {
     return value;
   }
@@ -282,7 +283,7 @@ export const FieldLogsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-slate-100">
+    <div className="flex min-h-screen flex-1 flex-col bg-slate-100 overflow-y-auto">
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-6 py-4 md:py-0 md:h-[72px] shadow-sm">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between h-full">
@@ -315,58 +316,95 @@ export const FieldLogsPage: React.FC = () => {
               <p className="text-sm font-bold">Chưa có ảnh hiện trường</p>
               <p className="text-xs">Nhấn <strong className="text-primary">Upload ảnh</strong> để thêm ảnh cho dự án</p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              {logsByProject.map(([projectCode, logs]) => (
-                <div key={projectCode} className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                  {/* Header Card */}
-                  <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-5 py-4">
-                    <div>
-                      <h2 className="text-sm font-extrabold uppercase text-slate-800">{projectName(projectCode)}</h2>
-                      <p className="text-xs font-semibold text-slate-500 mt-1">{logs.length} bản ghi nhật ký</p>
-                    </div>
+          ) : selectedProject ? (
+              <div className="flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 flex-1 overflow-hidden">
+                <div className="flex items-center px-6 py-4 border-b border-slate-200 bg-slate-50 sticky top-0 z-10">
+                  <button onClick={() => setSelectedProject('')} className="mr-4 p-2 rounded-full hover:bg-slate-200 text-slate-600 transition flex items-center justify-center">
+                    <span className="material-symbols-outlined">arrow_back</span>
+                  </button>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800 uppercase">{projectName(selectedProject)}</h2>
+                    <p className="text-sm text-slate-500">Chi tiết nhật ký hiện trường</p>
                   </div>
-
-                  <div className="flex flex-col p-5 space-y-6 max-h-[600px] overflow-y-auto">
-                    {logs.map((log) => (
-                      <div key={log.id} className="relative pl-5 border-l-2 border-slate-100">
-                        <div className="absolute -left-[9px] top-0.5 h-4 w-4 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center">
-                          <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
-                        </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                  {(() => {
+                    const logs = logsByProject.find(p => p[0] === selectedProject)?.[1] || [];
+                    const allProjectImages = logs.flatMap(l => l.images);
+                    return logs.map((log) => (
+                      <div key={log.id} className="relative pl-6 border-l-2 border-slate-200">
+                        <div className="absolute -left-[11px] top-1 h-5 w-5 rounded-full bg-white border-4 border-primary flex items-center justify-center"></div>
                         
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[13px] font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full shadow-sm">
                             {formatTimeOnly(log.timestamp)}
                           </span>
                           <button onClick={() => setDeletingId(log.id)} title="Xóa báo cáo"
-                            className="rounded p-1 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
-                            <span className="material-symbols-outlined text-base">delete</span>
+                            className="rounded p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
+                            <span className="material-symbols-outlined text-lg">delete</span>
                           </button>
-                        </div>                        {log.note && (
-                          <p className="whitespace-pre-wrap text-[12px] text-slate-700 mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                        </div>
+
+                        {log.note && (
+                          <div className="mb-4 text-sm text-slate-700 bg-slate-50 p-4 rounded-lg border border-slate-100 shadow-inner whitespace-pre-wrap">
                             {log.note}
-                          </p>
+                          </div>
                         )}
 
-                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                           {log.images.map((img, i) => (
-                            <button key={i} onClick={() => setLightbox({ images: log.images, index: i })}
-                              className="group relative aspect-square overflow-hidden rounded-lg bg-slate-100 border border-slate-200">
-                              <img src={img} alt="Ảnh hiện trường" loading="lazy"
-                                className="h-full w-full object-cover transition-transform group-hover:scale-105" />
-                              <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/20 group-hover:opacity-100">
-                                <span className="material-symbols-outlined text-[16px] text-white">zoom_in</span>
-                              </span>
+                            <button key={i} onClick={() => setLightbox({ images: allProjectImages, index: allProjectImages.indexOf(img) })}
+                              className="group relative aspect-square overflow-hidden rounded-xl bg-slate-100 border border-slate-200 shadow-sm hover:shadow-md transition">
+                              <img src={img} alt="Ảnh nhật ký" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy" />
                             </button>
                           ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    ));
+                  })()}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {logsByProject.map(([projectCode, logs]) => {
+                  const latestLog = logs[0];
+                  if (!latestLog) return null;
+                  const previewImages = logs.flatMap(l => l.images).slice(0, 4);
+                  return (
+                  <div key={projectCode} onClick={() => setSelectedProject(projectCode)} className="group cursor-pointer flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300 transform hover:-translate-y-1">
+                    <div className="flex flex-col p-5 border-b border-slate-100 bg-slate-50 group-hover:bg-primary/5 transition-colors">
+                      <h3 className="font-bold text-slate-800 uppercase text-[14px] tracking-wide mb-1 truncate group-hover:text-primary transition-colors">
+                        {projectName(projectCode)}
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium">{logs.length} bản ghi nhật ký</p>
+                    </div>
+
+                    <div className="flex-1 p-5 flex flex-col justify-between">
+                      <div className="mb-4">
+                        <div className="flex items-center text-xs text-slate-400 mb-2">
+                          <span className="material-symbols-outlined text-[14px] mr-1">schedule</span>
+                          Cập nhật: {formatTimeOnly(latestLog.timestamp)}
+                        </div>
+                        {latestLog.note && <p className="text-sm text-slate-600 line-clamp-2">{latestLog.note}</p>}
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {previewImages.map((img, i) => (
+                          <div key={i} className="h-10 w-10 rounded bg-slate-100 overflow-hidden border border-slate-200">
+                            <img src={img} className="h-full w-full object-cover" />
+                          </div>
+                        ))}
+                        {logs.flatMap(l => l.images).length > 4 && (
+                          <div className="h-10 w-10 rounded bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-200">
+                            +{logs.flatMap(l => l.images).length - 4}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )})}
+              </div>
+            )}
         </div>
 
       {/* Upload Modal */}
