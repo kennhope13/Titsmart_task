@@ -208,6 +208,10 @@ export const PersonnelPage: React.FC = () => {
         <div className="flex items-center gap-4">
           <div><h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">TÀI KHOẢN & NHÂN SỰ</h2></div>
         </div>
+
+        {/* Drag region spacer */}
+        <div className="flex-1 h-full min-h-[10px] electron-drag" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+
         <div className="flex items-center gap-3">
           <span className="h-[40px] px-4 rounded-full flex items-center bg-blue-50 text-primary text-[13px] font-bold border border-blue-100">{engineers.filter(e => e.role !== 'Quản trị viên' && e.username !== 'admin').length} nhân sự</span>
           <button 
@@ -372,7 +376,6 @@ export const PersonnelPage: React.FC = () => {
               )}
             </div>
           )}
-          <div className="flex-1 h-full min-h-[10px] electron-drag" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
           <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
             <button type="button" onClick={closeForm} className="px-5 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-colors">Hủy</button>
             <button
