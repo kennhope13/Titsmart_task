@@ -144,10 +144,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       ref={sidebarRef} 
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[240px]' : 'w-[64px]'}`}
+      className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[240px]' : 'w-[56px]'}`}
     >
-      <div className="relative h-12 px-3 flex items-center gap-2 border-b border-slate-100 min-w-[240px]">
-        <div className="flex-1 flex items-center gap-3 min-w-0 p-1">
+      <div className="relative h-12 px-2 flex items-center gap-2 border-b border-slate-100 min-w-[240px]">
+        <div className="flex-1 flex items-center gap-3 min-w-0">
           <div 
             className={`relative w-10 h-10 flex items-center justify-center flex-shrink-0 ${sidebarShowToggleButton ? 'cursor-pointer group/logo' : ''}`}
             onClick={() => sidebarShowToggleButton && toggleSidebar && toggleSidebar()}
@@ -221,7 +221,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         )}
       </div>
 
-      <nav className="flex-1 w-[240px] px-3 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 w-[240px] px-2 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">
         {navGroups.map((group, index) => (
           <div key={group.title || index} className="space-y-1">
             {group.title && (
@@ -269,15 +269,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
               setShowUserPopover(!showUserPopover);
               setShowNotifPopover(false);
             }}
-            className={`flex items-center gap-3 rounded-xl transition-all overflow-hidden whitespace-normal h-10
-              ${isExpanded ? 'w-full px-3 py-3 h-auto' : 'w-10'}
+            className={`flex items-center rounded-xl transition-all overflow-hidden whitespace-normal h-10
+              ${isExpanded ? 'w-full px-3 py-3 gap-3 h-auto' : 'w-10 justify-center gap-0'}
               ${
               showUserPopover
                 ? 'bg-blue-50 ring-1 ring-blue-100'
                 : 'hover:bg-slate-50'
             }`}
           >
-            <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-bold text-sm text-white bg-blue-600 uppercase shadow-sm">
+            <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center font-bold text-xs text-white bg-blue-600 uppercase shadow-sm">
               {(user?.name || 'A').charAt(0)}
             </div>
             <div className={`min-w-0 text-left leading-tight flex-1 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>

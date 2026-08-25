@@ -93,7 +93,7 @@ export const IssueResolutionPage: React.FC = () => {
       <section className="bg-white border-b border-slate-200 shadow-xs px-5 py-4 flex items-center gap-4 flex-shrink-0">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">Xử lý sự cố</h2>
+            <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">Xử lý sự cố</h2>
           </div>
         </div>
       </section>

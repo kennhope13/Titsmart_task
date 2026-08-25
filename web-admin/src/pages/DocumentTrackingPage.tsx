@@ -300,7 +300,7 @@ export const DocumentTrackingPage: React.FC = () => {
       {/* HEADER SECTION */}
       <section className="border-b border-slate-200 bg-white shadow-sm px-6 pr-[140px] py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
-          <h1 className="page-header-title text-lg text-slate-900 border-l-4 border-primary pl-4 uppercase">Theo dõi Hồ sơ gửi đi</h1>
+          <h1 className="page-header-title text-lg text-slate-900 border-l-4 border-primary pl-2 uppercase">Theo dõi Hồ sơ gửi đi</h1>
         </div>
 
         <div className="flex gap-2">
