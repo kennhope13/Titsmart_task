@@ -24,7 +24,8 @@ const formatDate = (value: string) => {
 
 const formatTimeOnly = (value: string) => {
   try {
-    return new Date(value).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const d = new Date(value);
+    return `${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}`;
   } catch {
     return value;
   }
@@ -334,6 +335,7 @@ export const FieldLogsPage: React.FC = () => {
                     </div>
                   </div>
 
+                  const allProjectImages = logs.flatMap(l => l.images);
                   <div className="flex flex-col p-5 space-y-6 max-h-[600px] overflow-y-auto">
                     {logs.map((log) => (
                       <div key={log.id} className="relative pl-5 border-l-2 border-slate-100">
@@ -357,7 +359,7 @@ export const FieldLogsPage: React.FC = () => {
 
                         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
                           {log.images.map((img, i) => (
-                            <button key={i} onClick={() => setLightbox({ images: log.images, index: i })}
+                            <button key={i} onClick={() => setLightbox({ images: allProjectImages, index: allProjectImages.indexOf(img) })}
                               className="group relative aspect-square overflow-hidden rounded-lg bg-slate-100 border border-slate-200">
                               <img src={img} alt="Ảnh hiện trường" loading="lazy"
                                 className="h-full w-full object-cover transition-transform group-hover:scale-105" />
