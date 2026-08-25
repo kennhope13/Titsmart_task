@@ -325,17 +325,20 @@ export const FieldLogsPage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              {logsByProject.map(([projectCode, logs]) => (
+              {logsByProject.map(([projectCode, logs]) => {
+                const allProjectImages = logs.flatMap(l => l.images);
+                return (
                 <div key={projectCode} className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                   {/* Header Card */}
-                  <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-5 py-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-4">
                     <div>
-                      <h2 className="text-sm font-extrabold uppercase text-slate-800">{projectName(projectCode)}</h2>
-                      <p className="text-xs font-semibold text-slate-500 mt-1">{logs.length} bản ghi nhật ký</p>
+                      <h3 className="font-bold text-slate-800 uppercase text-[13px] tracking-wide mb-1">
+                        {projectCode}
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium">{logs.length} bản ghi nhật ký</p>
                     </div>
                   </div>
 
-                  const allProjectImages = logs.flatMap(l => l.images);
                   <div className="flex flex-col p-5 space-y-6 max-h-[600px] overflow-y-auto">
                     {logs.map((log) => (
                       <div key={log.id} className="relative pl-5 border-l-2 border-slate-100">
@@ -373,7 +376,7 @@ export const FieldLogsPage: React.FC = () => {
                     ))}
                   </div>
                 </div>
-              ))}
+              ) })}
             </div>
           )}
         </div>
