@@ -65,14 +65,6 @@ export const ProjectDetailPage: React.FC = () => {
       {/* Top Project Bar */}
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0 shadow-sm">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold mb-1">
-            <Link to="/projects" className="hover:text-primary transition-colors flex items-center gap-2">
-              <span className="material-symbols-outlined text-xs">arrow_back</span>
-              Dự án
-            </Link>
-            <span>/</span>
-            <span className="text-slate-600 truncate max-w-[200px]">{project.name}</span>
-          </div>
           <h1 className="text-lg font-extrabold text-slate-900 uppercase tracking-tight flex items-center gap-2">
             <span className="material-symbols-outlined text-primary text-lg">domain</span>
             {project.name}
