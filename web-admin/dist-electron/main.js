@@ -80,6 +80,7 @@ s.on("window-all-closed", () => {
 s.on("activate", () => {
   p.getAllWindows().length === 0 && c();
 });
+s.commandLine.appendSwitch("disable-http2");
 s.whenReady().then(() => {
   c(), v();
 });
