@@ -12,11 +12,11 @@ import { WebOcrExtractedData } from '../services/webOcrService';
 const todayStamp = () => new Date().toISOString().split('T')[0];
 
 const TEXT = {
-  unassigned: 'Ch\u01b0a ph\u00e2n c\u00f4ng',
-  projectManagement: 'Qu\u1ea3n l\u00fd D\u1ef1 \u00e1n',
-  projectSubtitle: 'T\u1ed5ng quan th\u00f4ng tin v\u00e0 ti\u1ebfn \u0111\u1ed9 c\u1ee7a t\u1ea5t c\u1ea3 c\u00e1c d\u1ef1 \u00e1n',
-  searchProject: 'T\u00ecm ki\u1ebfm d\u1ef1 \u00e1n...',
-  createProject: 'T\u1ea1o d\u1ef1 \u00e1n m\u1edbi',
+  unassigned: 'Chưa phân công',
+  projectManagement: 'Tất cả dự án',
+  projectSubtitle: 'Tổng quan thông tin và tiến độ của tất cả các dự án',
+  searchProject: 'Tìm kiếm dự án...',
+  createProject: 'Tạo dự án mới',
   active: '\u0110ang tri\u1ec3n khai',
   completed: 'Ho\u00e0n th\u00e0nh',
   onHold: 'T\u1ea1m d\u1eebng',

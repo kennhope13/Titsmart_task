@@ -76,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           title: 'Hệ thống',
           collapsible: false,
           items: [
-            { label: 'Tất cả Dự án', path: '/projects', icon: 'arrow_back' }
+            { label: 'Tất cả dự án', path: '/projects', icon: 'arrow_back' }
           ]
         },
         {
@@ -94,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         collapsible: false,
         items: [
           { label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' },
-          { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
+          { label: 'Tất cả dự án', path: '/projects', icon: 'domain' },
           { label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' },
           { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
           { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' }
@@ -109,7 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         collapsible: false,
         items: [
           { label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' },
-          { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
+          { label: 'Tất cả dự án', path: '/projects', icon: 'domain' },
           { label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }
         ]
       }];
@@ -121,7 +121,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         title: '',
         collapsible: false,
         items: [
-          { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
+          { label: 'Tất cả dự án', path: '/projects', icon: 'domain' },
           { label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }
         ]
       }];
@@ -132,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       title: '',
       collapsible: false,
       items: [
-        { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' }
+        { label: 'Tất cả dự án', path: '/projects', icon: 'domain' }
       ]
     }];
   };
@@ -277,15 +277,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                 : 'hover:bg-slate-50'
             }`}
           >
-            <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-slate-400 bg-slate-100 uppercase shadow-sm border border-slate-200">
-              <span className="material-symbols-outlined text-[20px]">person</span>
-            </div>
-            <div className={`min-w-0 text-left leading-tight flex-1 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
-              <span className="block font-bold text-xs text-slate-800 break-words">{user?.name || 'Admin'}</span>
-              <span className="block text-[10px] text-slate-500 break-words">{user?.title || 'Quản trị viên'}</span>
-            </div>
-            <span className={`material-symbols-outlined text-base text-slate-400 flex-shrink-0 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>settings</span>
-          </button>
+              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-slate-400 bg-slate-100 uppercase shadow-sm border border-slate-200">
+                <span className="material-symbols-outlined text-[20px]">person</span>
+              </div>
+              <div className={`text-left leading-tight transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-1 opacity-100 delay-0 w-auto' : 'flex-none w-0 opacity-0 delay-200'}`}>
+                <span className="block font-bold text-xs text-slate-800 whitespace-nowrap">{user?.name || 'Admin'}</span>
+                <span className="block text-[10px] text-slate-500 whitespace-nowrap">{user?.title || 'Quản trị viên'}</span>
+              </div>
+              <span className={`material-symbols-outlined text-base text-slate-400 transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-shrink-0 opacity-100 delay-0 w-[16px]' : 'w-0 opacity-0 delay-200'}`}>settings</span>
+            </button>
 
           {showUserPopover && (
             <div className="absolute bottom-full left-3 mb-2 w-52 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50">
