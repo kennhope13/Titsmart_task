@@ -204,13 +204,12 @@ export const PersonnelPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-hidden">
-      <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex items-center justify-between gap-4 ${window.electronAPI ? 'pr-[180px]' : 'pr-4'}`}>
+      <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex items-center justify-between gap-4 pr-4`}>
         <div className="flex items-center gap-4">
           <div><h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">TÀI KHOẢN & NHÂN SỰ</h2></div>
         </div>
 
-        {/* Drag region spacer */}
-        <div className="flex-1 h-full min-h-[10px] electron-drag" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+        
 
         <div className="flex items-center gap-3">
           <span className="h-[40px] px-4 rounded-full flex items-center bg-blue-50 text-primary text-[13px] font-bold border border-blue-100">{engineers.filter(e => e.role !== 'Quản trị viên' && e.username !== 'admin').length} nhân sự</span>

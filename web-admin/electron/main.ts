@@ -18,11 +18,11 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    titleBarStyle: 'hidden', // Lấy cảm hứng từ Notion (giấu thanh tiêu đề mặc định)
-    titleBarOverlay: {
-      color: '#ffffff',
-      symbolColor: '#00236f',
-    },
+    // titleBarStyle: 'hidden', // Lấy cảm hứng từ Notion (giấu thanh tiêu đề mặc định)
+    // titleBarOverlay: {
+    //   color: '#ffffff',
+    //   symbolColor: '#00236f',
+    // },
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       nodeIntegration: false,

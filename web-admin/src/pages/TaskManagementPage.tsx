@@ -1373,7 +1373,7 @@ const displayTasks = tasks.filter((t) => {
       <section className="task-management-screen bg-white border-y border-r border-slate-200 shadow-xs flex flex-col flex-1 overflow-hidden">
       {/* Page Header (Only show if not nested) */}
         {!projectId && (
-      <div className={`px-5 py-2 flex flex-col lg:flex-row justify-between lg:items-center gap-4 border-b border-slate-100 ${window.electronAPI ? 'pr-[180px]' : ''}`}>
+      <div className={`px-5 py-2 flex flex-col lg:flex-row justify-between lg:items-center gap-4 border-b border-slate-100 `}>
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {selectedProjectFromUrl && (
             <button
@@ -1395,8 +1395,7 @@ const displayTasks = tasks.filter((t) => {
             )}
           </div>
         </div>
-        {/* Drag region spacer */}
-        <div className="flex-1 h-full min-h-[10px] electron-drag" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+        
       </div>
         )}
 
