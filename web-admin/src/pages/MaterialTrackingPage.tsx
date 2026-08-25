@@ -653,8 +653,8 @@ export const MaterialTrackingPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-slate-50 relative overflow-hidden">
-      <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3 electron-drag ${window.electronAPI ? 'pr-[180px]' : 'pr-4'}`}>
-        <div className="flex items-center gap-4 electron-no-drag">
+      <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3 ${window.electronAPI ? 'pr-[180px]' : 'pr-4'}`}>
+        <div className="flex items-center gap-4">
           <div>
             <div className="flex items-center gap-3">
               <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">QUẢN LÝ KHO & VẬT TƯ</h2>
@@ -936,7 +936,8 @@ export const MaterialTrackingPage: React.FC = () => {
               <div><label className="block font-bold text-slate-700 mb-1">Đơn giá</label><input type="number" value={editUnitPrice} onChange={(event) => setEditUnitPrice(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
             </div>
             <div><label className="block font-bold text-slate-700 mb-1">Nhà cung cấp mặc định</label><input type="text" value={editSupplier} onChange={(event) => setEditSupplier(event.target.value)} placeholder="VD: Kho công ty, nhà cung cấp A..." className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
-            <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setEditingMaterial(null)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">Lưu cập nhật</button></div>
+            <div className="flex-1 h-full min-h-[10px] electron-drag" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setEditingMaterial(null)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">Lưu cập nhật</button></div>
           </form>
         )}
       </Modal>

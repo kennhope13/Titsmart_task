@@ -63,9 +63,9 @@ export const ProjectDetailPage: React.FC = () => {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-100">
       {/* Top Project Bar */}
-      <div className={`bg-white border-b border-slate-200 pl-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0 shadow-sm electron-drag ${window.electronAPI ? "pr-[180px]" : "pr-6"}`}>
+      <div className={`bg-white border-b border-slate-200 pl-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0 shadow-sm ${window.electronAPI ? "pr-[180px]" : "pr-6"}`}>
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold mb-1 electron-no-drag">
+          <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold mb-1">
             <Link to="/projects" className="hover:text-primary transition-colors flex items-center gap-2">
               <span className="material-symbols-outlined text-xs">arrow_back</span>
               Dự án
@@ -80,7 +80,8 @@ export const ProjectDetailPage: React.FC = () => {
         </div>
 
         {/* Quick status badge */}
-        <div className="flex items-center gap-2">
+        <div className="flex-1 h-full min-h-[10px] electron-drag" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+          <div className="flex items-center gap-2">
           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[13px] font-bold border ${
             project.status === 'active' 
               ? 'bg-blue-50 text-blue-700 border-blue-200' 
