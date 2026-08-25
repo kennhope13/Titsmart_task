@@ -35,26 +35,45 @@ const formatTimeOnly = (value: string) => {
 const Lightbox: React.FC<{ images: string[]; index: number; onClose: () => void; onPrev: () => void; onNext: () => void }> = ({
   images, index, onClose, onPrev, onNext,
 }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" onClick={onClose}>
-    <button onClick={onClose} className="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition">
-      <span className="material-symbols-outlined">close</span>
-    </button>
-    {index > 0 && (
-      <button onClick={(e) => { e.stopPropagation(); onPrev(); }}
-        className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition">
-        <span className="material-symbols-outlined">chevron_left</span>
+  <div className="fixed inset-0 z-[100] flex flex-col bg-black/95">
+    {/* Header / Actions */}
+    <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 pointer-events-none">
+      <span className="rounded-full bg-black/50 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md">
+        {index + 1} / {images.length}
+      </span>
+      <button onClick={onClose} className="rounded-full bg-black/50 p-2 text-white hover:bg-white/20 transition pointer-events-auto shadow-lg backdrop-blur-md cursor-pointer">
+        <span className="material-symbols-outlined">close</span>
       </button>
+    </div>
+
+    {/* Image Container (Scrollable) */}
+    <div className="flex-1 overflow-auto flex flex-col items-center p-2 sm:p-4" onClick={onClose}>
+      <div className="my-auto relative max-w-full" onClick={(e) => e.stopPropagation()}>
+        <img 
+          src={images[index]} 
+          alt="Ảnh hiện trường" 
+          className="w-full h-auto max-h-none object-contain rounded-lg shadow-2xl" 
+        />
+      </div>
+    </div>
+
+    {/* Navigation */}
+    {images.length > 1 && (
+      <>
+        {index > 0 && (
+          <button onClick={(e) => { e.stopPropagation(); onPrev(); }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white hover:bg-white/20 transition shadow-lg backdrop-blur-md">
+            <span className="material-symbols-outlined">chevron_left</span>
+          </button>
+        )}
+        {index < images.length - 1 && (
+          <button onClick={(e) => { e.stopPropagation(); onNext(); }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white hover:bg-white/20 transition shadow-lg backdrop-blur-md">
+            <span className="material-symbols-outlined">chevron_right</span>
+          </button>
+        )}
+      </>
     )}
-    <img src={images[index]} alt="Ảnh hiện trường" className="max-h-[88vh] max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
-    {index < images.length - 1 && (
-      <button onClick={(e) => { e.stopPropagation(); onNext(); }}
-        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition">
-        <span className="material-symbols-outlined">chevron_right</span>
-      </button>
-    )}
-    <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white">
-      {index + 1} / {images.length}
-    </span>
   </div>
 );
 
