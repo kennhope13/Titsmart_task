@@ -289,7 +289,7 @@ export const FieldLogsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-slate-100">
+    <div className="flex h-full flex-1 flex-col bg-slate-100 overflow-y-auto">
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-6 py-4 md:py-0 md:h-[72px] shadow-sm">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between h-full">
