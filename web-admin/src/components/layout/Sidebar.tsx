@@ -160,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
             />
             {sidebarShowToggleButton && (
               <div className="absolute inset-0 bg-slate-100 rounded-lg flex items-center justify-center opacity-0 group-hover/logo:opacity-100 transition-all text-slate-500 hover:text-primary hover:bg-slate-200">
-                <span className="material-symbols-outlined text-[20px]">view_sidebar</span>
+                <span className="material-symbols-outlined text-[20px] transform -scale-x-100">view_sidebar</span>
               </div>
             )}
           </div>
