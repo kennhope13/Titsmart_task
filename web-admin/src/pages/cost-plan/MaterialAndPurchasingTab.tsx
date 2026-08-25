@@ -616,7 +616,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               />
             </div>
 
-            {onAddSection && (
+            {onAddSection && subTab !== 'FINANCE' && (
               <button
                 onClick={onAddSection}
                 className="flex items-center gap-1 bg-primary text-white px-2 py-1 rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
@@ -798,7 +798,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </button>
                                 <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
                                 <span className="truncate flex-1 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }}>{plan.jobContent}</span>
-                                {onAddSubtask && (
+                                {onAddSubtask && subTab !== 'FINANCE' && (
                                   <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
                                     <span className="material-symbols-outlined text-[16px]">add_circle</span>
                                   </button>
@@ -835,7 +835,13 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                       const paddingLeft = `${depth * 1.5}rem`;
 
                       return (
-                        <tr key={plan.id} onDoubleClick={() => onEditMaterial(plan)} className={rowClass}>
+                        <tr key={plan.id} onDoubleClick={() => {
+                          if (subTab === 'FINANCE') {
+                            if (pRecord) onEditPurchasing(pRecord, 'FINANCE');
+                          } else {
+                            onEditMaterial(plan);
+                          }
+                        }} className={rowClass}>
                           {/* STT */}
                           <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-middle text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
                             {editingCell?.id === plan.id && editingCell?.field === 'stt' && !editingCell.isPurchasing ? (
@@ -877,11 +883,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </span>
                                 
                                 <div className="flex items-center ml-1 transition-opacity">
-                                  {onAddSubtask && (
-                                    <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
-                                      <span className="material-symbols-outlined text-[14px]">add_circle</span>
-                                    </button>
-                                  )}
+                                {onAddSubtask && subTab !== 'FINANCE' && (
+                                  <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
+                                    <span className="material-symbols-outlined text-[14px]">add_circle</span>
+                                  </button>
+                                )}
                                   {onDelete && (
                                     <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-100 transition-colors inline-flex items-center flex-shrink-0" title="Xóa">
                                       <span className="material-symbols-outlined text-[14px]">delete</span>
