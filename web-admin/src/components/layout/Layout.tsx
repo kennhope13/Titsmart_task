@@ -31,7 +31,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </button>
       )}
 
-      <div className={`${isSidebarExpanded ? 'ml-[280px]' : 'ml-[64px]'} flex flex-col h-screen flex-1 overflow-hidden transition-all duration-300 ease-in-out`}>
+      <div className={`${isSidebarExpanded ? 'ml-[240px]' : 'ml-[64px]'} flex flex-col h-screen flex-1 overflow-hidden transition-all duration-300 ease-in-out`}>
         <main className="flex-1 bg-slate-50 flex flex-col w-full max-w-full overflow-hidden">{children}</main>
       </div>
     </div>

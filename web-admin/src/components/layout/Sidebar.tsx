@@ -144,9 +144,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       ref={sidebarRef} 
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[280px]' : 'w-[64px]'}`}
+      className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[240px]' : 'w-[64px]'}`}
     >
-      <div className="relative h-[72px] px-3 flex items-center gap-3 border-b border-slate-100 min-w-[280px]">
+      <div className="relative h-[72px] px-3 flex items-center gap-3 border-b border-slate-100 min-w-[240px]">
         <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 cursor-pointer" onClick={toggleSidebar} title="Mở rộng / Thu gọn">
           <img src="./logo.png" alt="TITSMART" className="w-10 h-10 object-contain" />
         </div>
@@ -203,7 +203,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         )}
       </div>
 
-      <nav className="flex-1 w-[280px] px-3 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 w-[240px] px-3 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">
         {navGroups.map((group, index) => (
           <div key={group.title || index} className="space-y-1">
             {group.title && (
