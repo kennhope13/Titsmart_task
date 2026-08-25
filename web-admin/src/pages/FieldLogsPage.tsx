@@ -1,11 +1,329 @@
-selectedProject ? (
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useRealtimeStore } from '../services/realtimeStore';
+import { FieldLog } from '../types';
+import { CustomSelect } from '@/components/common/CustomSelect';
+import { supabase } from '../lib/supabase';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const formatTime = (value: string) => {
+  try {
+    return new Date(value).toLocaleString('vi-VN');
+  } catch {
+    return value;
+  }
+};
+
+const formatDate = (value: string) => {
+  try {
+    return new Date(value).toLocaleDateString('vi-VN');
+  } catch {
+    return value;
+  }
+};
+
+const formatTimeOnly = (value: string) => {
+  try {
+    const d = new Date(value);
+    return `${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}`;
+  } catch {
+    return value;
+  }
+};
+
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+
+const Lightbox: React.FC<{ images: string[]; index: number; onClose: () => void; onPrev: () => void; onNext: () => void }> = ({
+  images, index, onClose, onPrev, onNext,
+}) => (
+  <div className="fixed inset-0 z-[100] flex flex-col bg-black/95">
+    {/* Header / Actions */}
+    <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 pointer-events-none">
+      <span className="rounded-full bg-black/50 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md">
+        {index + 1} / {images.length}
+      </span>
+      <button onClick={onClose} className="rounded-full bg-black/50 p-2 text-white hover:bg-white/20 transition pointer-events-auto shadow-lg backdrop-blur-md cursor-pointer">
+        <span className="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    {/* Image Container (Scrollable) */}
+    <div className="flex-1 overflow-auto p-4 text-center whitespace-nowrap" onClick={onClose}>
+      <span className="inline-block h-full align-middle" />
+      <img 
+        src={images[index]} 
+        alt="Ảnh hiện trường" 
+        className="inline-block align-middle w-full max-w-5xl h-auto rounded-lg shadow-2xl cursor-default" 
+        onClick={(e) => e.stopPropagation()} 
+      />
+    </div>
+
+    {/* Navigation */}
+    {images.length > 1 && (
+      <>
+        {index > 0 && (
+          <button onClick={(e) => { e.stopPropagation(); onPrev(); }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white hover:bg-white/20 transition shadow-lg backdrop-blur-md">
+            <span className="material-symbols-outlined">chevron_left</span>
+          </button>
+        )}
+        {index < images.length - 1 && (
+          <button onClick={(e) => { e.stopPropagation(); onNext(); }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white hover:bg-white/20 transition shadow-lg backdrop-blur-md">
+            <span className="material-symbols-outlined">chevron_right</span>
+          </button>
+        )}
+      </>
+    )}
+  </div>
+);
+
+// ── Upload Modal ──────────────────────────────────────────────────────────────
+
+const UploadModal: React.FC<{
+  defaultProjectCode: string;
+  projects: { code: string; name: string }[];
+  onClose: () => void;
+  onUpload: (input: { projectCode: string; note: string; images: string[] }) => Promise<void>;
+}> = ({ defaultProjectCode, projects, onClose, onUpload }) => {
+  const [projectCode, setProjectCode] = useState(defaultProjectCode || '');
+  const [note, setNote] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!projectCode && defaultProjectCode) setProjectCode(defaultProjectCode);
+  }, [defaultProjectCode]);
+
+  const handleFiles = (list: FileList | null) => {
+    if (!list || list.length === 0) return;
+    const next = Array.from(list).filter(f => f.type.startsWith('image/'));
+    if (next.length === 0) { setError('Chỉ chấp nhận file ảnh'); return; }
+    setError('');
+    setFiles(prev => [...prev, ...next]);
+    next.forEach(f => {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreviews(prev => [...prev, reader.result as string]);
+      reader.readAsDataURL(f);
+    });
+  };
+
+  const removeFile = (idx: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== idx));
+    setPreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectCode) { setError('Vui lòng chọn dự án'); return; }
+    if (files.length === 0) { setError('Vui lòng chọn ít nhất 1 ảnh'); return; }
+    setIsUploading(true);
+    setError('');
+    try {
+      const urls: string[] = [];
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `cccd/${fileName}`;
+        const { error: uploadError } = await supabase.storage.from('titsmart-images').upload(filePath, file);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from('titsmart-images').getPublicUrl(filePath);
+        urls.push(publicUrl);
+      }
+      await onUpload({ projectCode, note, images: urls });
+      onClose();
+    } catch (err: any) {
+      console.error(err);
+      setError(`Lỗi: ${err.message || JSON.stringify(err)}`);
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
+          <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-800">
+            <span className="material-symbols-outlined text-base text-primary">add_a_photo</span>
+            Upload ảnh hiện trường
+          </h3>
+          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
+            <span className="material-symbols-outlined text-lg">close</span>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 space-y-4 overflow-y-auto p-5">
+            {/* Dự án */}
+            <div>
+              <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">
+                Dự án <span className="text-rose-500 normal-case font-normal">*</span>
+              </label>
+              <CustomSelect required value={projectCode}
+                onChange={e => setProjectCode(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">-- Chọn dự án --</option>
+                {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
+              </CustomSelect>
+            </div>
+
+            {/* Ảnh */}
+            <div>
+              <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">
+                Ảnh hiện trường <span className="text-rose-500 normal-case font-normal">*</span>
+              </label>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {previews.map((url, i) => (
+                  <div key={i} className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                    <img src={url} alt="preview" className="h-full w-full object-cover" />
+                    <button type="button" onClick={() => removeFile(i)}
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow hover:bg-red-600">
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => fileInputRef.current?.click()}
+                  className="flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:bg-slate-50 hover:text-primary transition">
+                  <span className="material-symbols-outlined mb-0.5 text-xl">add_photo_alternate</span>
+                  <span className="text-[10px] font-bold">Thêm ảnh</span>
+                </button>
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
+              {files.length > 0 && (
+                <p className="mt-2 text-[11px] font-semibold text-slate-500">{files.length} ảnh đã chọn</p>
+              )}
+            </div>
+
+            {/* Ghi chú */}
+            <div>
+              <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">Ghi chú</label>
+              <textarea rows={2} value={note} onChange={e => setNote(e.target.value)}
+                placeholder="Mô tả nội dung hiện trường (tùy chọn)..."
+                className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+
+            {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600">{error}</p>}
+          </div>
+
+          <div className="flex flex-shrink-0 justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-4">
+            <button type="button" onClick={onClose}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
+            <button type="submit" disabled={isUploading}
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-xs font-bold text-white shadow-sm hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
+              {isUploading ? (
+                <>
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  Đang upload...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-sm">upload</span>
+                  Upload
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
+export const FieldLogsPage: React.FC = () => {
+  const { fieldLogs, projects, addFieldLog, deleteFieldLog, fetchFieldLogs } = useRealtimeStore();
+  const [selectedProject, setSelectedProject] = useState('');
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
+
+  useEffect(() => {
+    fetchFieldLogs();
+  }, [fetchFieldLogs]);
+
+  const visibleLogs = useMemo(() => {
+    const sorted = [...fieldLogs].sort((a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    if (!selectedProject) return sorted;
+    return sorted.filter(l => l.projectCode === selectedProject);
+  }, [fieldLogs, selectedProject]);
+
+  const logsByProject = useMemo(() => {
+    const groups = new Map<string, FieldLog[]>();
+    for (const log of visibleLogs) {
+      const arr = groups.get(log.projectCode) || [];
+      arr.push(log);
+      groups.set(log.projectCode, arr);
+    }
+    return Array.from(groups.entries());
+  }, [visibleLogs]);
+
+  const projectName = (code: string) => projects.find(p => p.code === code)?.name || code;
+  const totalImages = visibleLogs.reduce((sum, l) => sum + l.images.length, 0);
+
+  const handleUpload = async (input: { projectCode: string; note: string; images: string[] }) => {
+    await addFieldLog(input);
+    await fetchFieldLogs();
+  };
+
+  const handleDelete = async () => {
+    if (!deletingId) return;
+    try {
+      await deleteFieldLog(deletingId);
+    } catch (e) {
+      console.error(e);
+    }
+    setDeletingId(null);
+  };
+
+  return (
+    <div className="flex min-h-screen flex-1 flex-col bg-slate-100 overflow-y-auto">
+      {/* Header */}
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-6 py-4 md:py-0 md:h-[72px] shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between h-full">
+          <div className="flex items-center gap-4">
+
+            <div className="border-l-4 border-primary pl-4">
+              <h1 className="text-2xl font-extrabold uppercase text-slate-900">NHẬT KÝ HIỆN TRƯỜNG</h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <CustomSelect value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
+              className="max-w-xs flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 md:w-64">
+              <option value="">Tất cả dự án</option>
+              {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
+            </CustomSelect>
+            <button onClick={() => setIsUploadOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-95">
+              <span className="material-symbols-outlined text-lg">add_a_photo</span>
+              Upload ảnh
+            </button>
+          </div>
+        </div>
+      </header>
+
+        <div className={`flex flex-col flex-1 ${logsByProject.length === 0 ? '' : 'p-6'}`}>
+          {logsByProject.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 bg-white flex-1 text-slate-400">
+              <span className="material-symbols-outlined text-5xl">photo_library</span>
+              <p className="text-sm font-bold">Chưa có ảnh hiện trường</p>
+              <p className="text-xs">Nhấn <strong className="text-primary">Upload ảnh</strong> để thêm ảnh cho dự án</p>
+            </div>
+          ) : selectedProject ? (
               <div className="flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 flex-1 overflow-hidden">
                 <div className="flex items-center px-6 py-4 border-b border-slate-200 bg-slate-50 sticky top-0 z-10">
-                  <button onClick={() => setSelectedProject(null)} className="mr-4 p-2 rounded-full hover:bg-slate-200 text-slate-600 transition flex items-center justify-center">
+                  <button onClick={() => setSelectedProject('')} className="mr-4 p-2 rounded-full hover:bg-slate-200 text-slate-600 transition flex items-center justify-center">
                     <span className="material-symbols-outlined">arrow_back</span>
                   </button>
                   <div>
-                    <h2 className="text-lg font-bold text-slate-800 uppercase">{selectedProject}</h2>
+                    <h2 className="text-lg font-bold text-slate-800 uppercase">{projectName(selectedProject)}</h2>
                     <p className="text-sm text-slate-500">Chi tiết nhật ký hiện trường</p>
                   </div>
                 </div>
@@ -56,7 +374,7 @@ selectedProject ? (
                   <div key={projectCode} onClick={() => setSelectedProject(projectCode)} className="group cursor-pointer flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300 transform hover:-translate-y-1">
                     <div className="flex flex-col p-5 border-b border-slate-100 bg-slate-50 group-hover:bg-primary/5 transition-colors">
                       <h3 className="font-bold text-slate-800 uppercase text-[14px] tracking-wide mb-1 truncate group-hover:text-primary transition-colors">
-                        {projectCode}
+                        {projectName(projectCode)}
                       </h3>
                       <p className="text-xs text-slate-500 font-medium">{logs.length} bản ghi nhật ký</p>
                     </div>
@@ -86,55 +404,7 @@ selectedProject ? (
                   </div>
                 )})}
               </div>
-            )
-                      </div>
-                    ));
-                  })()}
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {logsByProject.map(([projectCode, logs]) => {
-                  const latestLog = logs[0];
-                  if (!latestLog) return null;
-                  const previewImages = logs.flatMap(l => l.images).slice(0, 4);
-                  return (
-                  <div key={projectCode} onClick={() => setSelectedProject(projectCode)} className="group cursor-pointer flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300 transform hover:-translate-y-1">
-                    <div className="flex flex-col p-5 border-b border-slate-100 bg-slate-50 group-hover:bg-primary/5 transition-colors">
-                      <h3 className="font-bold text-slate-800 uppercase text-[14px] tracking-wide mb-1 truncate group-hover:text-primary transition-colors">
-                        {projectCode}
-                      </h3>
-                      <p className="text-xs text-slate-500 font-medium">{logs.length} bản ghi nhật ký</p>
-                    </div>
-
-                    <div className="flex-1 p-5 flex flex-col justify-between">
-                      <div className="mb-4">
-                        <div className="flex items-center text-xs text-slate-400 mb-2">
-                          <span className="material-symbols-outlined text-[14px] mr-1">schedule</span>
-                          Cập nhật: {formatTimeOnly(latestLog.timestamp)}
-                        </div>
-                        {latestLog.note && <p className="text-sm text-slate-600 line-clamp-2">{latestLog.note}</p>}
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {previewImages.map((img, i) => (
-                          <div key={i} className="h-10 w-10 rounded bg-slate-100 overflow-hidden border border-slate-200">
-                            <img src={img} className="h-full w-full object-cover" />
-                          </div>
-                        ))}
-                        {logs.flatMap(l => l.images).length > 4 && (
-                          <div className="h-10 w-10 rounded bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-200">
-                            +{logs.flatMap(l => l.images).length - 4}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-              )
-            }
-          </div>
             )}
-          )}
         </div>
 
       {/* Upload Modal */}
