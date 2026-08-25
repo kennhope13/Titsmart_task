@@ -1518,7 +1518,7 @@ const displayTasks = tasks.filter((t) => {
                     <button
                       key={format}
                       onClick={() => handleExportFile(format)}
-                      className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                     >
                       <span className="material-symbols-outlined text-sm text-emerald-600">{icon}</span>
                       {label}

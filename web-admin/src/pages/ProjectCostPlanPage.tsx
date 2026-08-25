@@ -1623,7 +1623,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   }
                   else if (activeTab === 'DOCUMENTS') setTriggerAddDoc(true);
                 }} 
-                className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
+                className="flex items-center gap-1 bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
               >
                 <span className="material-symbols-outlined text-sm">add</span>
                 Thêm Mới
