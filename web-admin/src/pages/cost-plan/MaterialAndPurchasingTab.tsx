@@ -9,7 +9,7 @@ interface MaterialAndPurchasingTabProps {
   data: ProjectMaterialPlan[];
   purchasingData: ProjectPurchasing[];
   onEditMaterial: (plan: ProjectMaterialPlan) => void;
-  onEditPurchasing: (plan: ProjectPurchasing, subTab: 'PRICING' | 'PAYMENT') => void;
+  onEditPurchasing: (plan: ProjectPurchasing, subTab: 'FINANCE') => void;
   onDelete: (id: string) => void;
   onUpdateMaterial: (id: string, plan: Partial<ProjectMaterialPlan>) => void | Promise<void>;
   onUpdatePurchasing: (id: string, plan: Partial<ProjectPurchasing>) => void | Promise<void>;
@@ -149,7 +149,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   setStatusFilter,
   userRole
 }) => {
-  const [subTab, setSubTab] = useState<'TECH' | 'ORDER' | 'DOCS' | 'PRICING' | 'PAYMENT'>('TECH');
+  const [subTab, setSubTab] = useState<'TECH' | 'ORDER' | 'DOCS' | 'FINANCE'>('TECH');
   const [filterParent, setFilterParent] = useState('all');
   const [filterUnit, setFilterUnit] = useState('all');
   const [filterProgress, setFilterProgress] = useState('all');
@@ -481,8 +481,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const colSpanCount = useMemo(() => {
     if (subTab === 'TECH') return 9;
     if (subTab === 'DOCS') return 6;
-    if (subTab === 'PRICING') return 7;
-    if (subTab === 'PAYMENT') return 6;
+    if (subTab === 'FINANCE') return 12;
     return 8;
   }, [subTab]);
 
@@ -543,20 +542,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             Chứng từ
           </button>
           {userRole !== 'engineer' && (
-            <>
-              <button
-                onClick={() => setSubTab('PRICING')}
-                className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'PRICING' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
-              >
-                Giá mua & Dự toán
-              </button>
-              <button
-                onClick={() => setSubTab('PAYMENT')}
-                className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'PAYMENT' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
-              >
-                Thanh toán & Hóa đơn
-              </button>
-            </>
+            <button
+              onClick={() => setSubTab('FINANCE')}
+              className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'FINANCE' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+            >
+              Giá mua, Dự toán & Thanh toán
+            </button>
           )}
         </div>
         
@@ -595,7 +586,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               </CustomSelect>
             </div>
 
-            {(subTab === 'TECH' || subTab === 'PRICING') && (
+            {(subTab === 'TECH' || subTab === 'FINANCE') && (
               <div className="flex items-center gap-1">
                 <span className="text-slate-500 font-medium whitespace-nowrap">Đặt hàng:</span>
                 <CustomSelect
@@ -669,24 +660,18 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 </>
               )}
 
-              {subTab === 'PRICING' && (
+              {subTab === 'FINANCE' && (
                 <>
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐH</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">ĐƠN GIÁ MUA</th>
                   <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">VAT %</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TIỀN VAT</th>
                   <th rowSpan={2} style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THÀNH TIỀN MUA</th>
-                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TRẠNG THÁI ĐH</th>
-                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TÌNH TRẠNG HĐ</th>
-                </>
-              )}
-
-              {subTab === 'PAYMENT' && (
-                <>
-                  <th rowSpan={2} style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THÀNH TIỀN MUA</th>
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">% TẠM ỨNG</th>
                   <th rowSpan={2} style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THỰC CHI (đ)</th>
                   <th rowSpan={2} style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">CÒN LẠI (đ)</th>
+                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TRẠNG THÁI ĐH</th>
+                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TÌNH TRẠNG HĐ</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HẠN THANH TOÁN</th>
                   <th rowSpan={2} style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HÓA ĐƠN VAT</th>
                 </>
@@ -1111,7 +1096,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             </>
                           )}
 
-                          {subTab === 'PRICING' && (
+                          {subTab === 'FINANCE' && (
                             <>
                               {/* KL ĐH */}
                               <td className="p-0 align-middle text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
@@ -1169,37 +1154,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <td className="p-1.5 align-middle text-right font-mono font-bold text-slate-800 border-r border-slate-200 leading-tight">
                                 {showNumber(pRecord?.totalAmount) || '-'}
                               </td>
-                              {/* TRẠNG THÁI ĐH */}
-                              <td className="p-1 align-middle text-center border-r border-slate-200">
-                                <CustomSelect
-                                  value={pRecord?.orderStatus || 'Chưa đặt hàng'}
-                                  onChange={(e) => { if (pRecord) onUpdatePurchasing(pRecord.id, { ...pRecord, orderStatus: e.target.value }) }}
-                                  className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${getStatusColorStyle(pRecord?.orderStatus || '')}`}
-                                >
-                                  {PURCHASE_STATUS_OPTIONS.map(opt => <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>)}
-                                </CustomSelect>
-                              </td>
-                              {/* TÌNH TRẠNG HĐ */}
-                              <td className="p-1 align-middle text-center border-r border-slate-200">
-                                <CustomSelect
-                                  value={pRecord?.contractStatus || 'Chưa ký'}
-                                  onChange={(e) => { if (pRecord) onUpdatePurchasing(pRecord.id, { ...pRecord, contractStatus: e.target.value }) }}
-                                  className="w-full font-bold text-[11px] px-1.5 py-1 border border-slate-200 rounded-md bg-white text-slate-700 focus:outline-primary"
-                                >
-                                  <option value="Chưa ký">Chưa ký</option>
-                                  <option value="Đã ký">Đã ký</option>
-                                  <option value="Đang thương thảo">Đang thương thảo</option>
-                                </CustomSelect>
-                              </td>
-                            </>
-                          )}
-
-                          {subTab === 'PAYMENT' && (
-                            <>
-                              {/* THÀNH TIỀN MUA */}
-                              <td className="p-1.5 align-middle text-right font-mono font-bold text-slate-800 border-r border-slate-200 leading-tight">
-                                {showNumber(pRecord?.totalAmount) || '-'}
-                              </td>
                               {/* % TẠM ỨNG */}
                               <td className="p-0 align-middle text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'prepayPercent' && editingCell?.isPurchasing ? (
@@ -1236,6 +1190,28 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <td className="p-1.5 align-middle text-right font-mono text-slate-500 border-r border-slate-200 leading-tight">
                                 {pRecord ? showNumber((pRecord.totalAmount || 0) - (pRecord.prepayAmount || 0)) : '-'}
                               </td>
+                              {/* TRẠNG THÁI ĐH */}
+                              <td className="p-1 align-middle text-center border-r border-slate-200">
+                                <CustomSelect
+                                  value={pRecord?.orderStatus || 'Chưa đặt hàng'}
+                                  onChange={(e) => { if (pRecord) onUpdatePurchasing(pRecord.id, { ...pRecord, orderStatus: e.target.value }) }}
+                                  className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${getStatusColorStyle(pRecord?.orderStatus || '')}`}
+                                >
+                                  {PURCHASE_STATUS_OPTIONS.map(opt => <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>)}
+                                </CustomSelect>
+                              </td>
+                              {/* TÌNH TRẠNG HĐ */}
+                              <td className="p-1 align-middle text-center border-r border-slate-200">
+                                <CustomSelect
+                                  value={pRecord?.contractStatus || 'Chưa ký'}
+                                  onChange={(e) => { if (pRecord) onUpdatePurchasing(pRecord.id, { ...pRecord, contractStatus: e.target.value }) }}
+                                  className="w-full font-bold text-[11px] px-1.5 py-1 border border-slate-200 rounded-md bg-white text-slate-700 focus:outline-primary"
+                                >
+                                  <option value="Chưa ký">Chưa ký</option>
+                                  <option value="Đã ký">Đã ký</option>
+                                  <option value="Đang thương thảo">Đang thương thảo</option>
+                                </CustomSelect>
+                              </td>
                               {/* HẠN THANH TOÁN */}
                               <td className="p-0 align-middle text-center font-mono text-slate-600 truncate border-r border-slate-200">
                                 {editingCell?.id === plan.id && editingCell?.field === 'paymentDate' && editingCell?.isPurchasing ? (
@@ -1267,7 +1243,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             </>
                           )}
 
-                          {/* GHI CHÚ COMBINED */}
                           {subTab !== 'TECH' ? (
                             <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-0 align-middle text-slate-500">
                               {editingCell?.id === plan.id && editingCell?.field === 'notes' && !editingCell.isPurchasing ? (
