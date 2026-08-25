@@ -99,19 +99,19 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
                     onChange={(e) => setRemember(e.target.checked)}
                     className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
                   />
-                  <span className="text-xs font-semibold text-slate-600">Ghi nhớ đăng nhập</span>
+                  <span className="text-[13px] font-bold text-slate-600">Ghi nhớ đăng nhập</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => alert('Vui lòng liên hệ quản trị viên để đặt lại mật khẩu.')}
-                  className="text-xs font-bold text-primary hover:underline"
+                  className="text-[13px] font-bold text-primary hover:underline"
                 >
                   Quên mật khẩu?
                 </button>
               </div>
 
               {error && (
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-red-50 border border-red-100 text-red-600 text-xs font-bold">
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-red-50 border border-red-100 text-red-600 text-[13px] font-bold">
                   <span className="material-symbols-outlined text-base flex-shrink-0">error</span>
                   <span>{error}</span>
                 </div>
@@ -148,7 +148,7 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
           <button
             type="button"
             onClick={onSwitchStyle}
-            className="mx-auto mt-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-[11px] font-bold text-slate-500 hover:bg-blue-50 hover:text-primary hover:border-blue-200 transition-colors"
+            className="mx-auto mt-4 flex items-center gap-2.5 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-[11px] font-bold text-slate-500 hover:bg-blue-50 hover:text-primary hover:border-blue-200 transition-colors"
           >
             <span className="material-symbols-outlined text-sm">style</span>
             Xem giao diện đăng nhập khác

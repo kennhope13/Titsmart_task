@@ -653,7 +653,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-slate-50 relative overflow-hidden">
-      <section className="border-b border-slate-200 bg-white pl-3 pr-[140px] py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3">
+      <section className="border-b border-slate-200 bg-white pl-3 pr-4 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3">
         <div className="flex items-center gap-4">
           <div>
             <div className="flex items-center gap-3">
@@ -671,20 +671,20 @@ export const MaterialTrackingPage: React.FC = () => {
           />
           <button 
             onClick={() => fileInputRef.current?.click()} 
-            className="flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-4 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+            className="flex items-center gap-2 border border-slate-200 bg-white h-[40px] px-5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
           >
             <span className="material-symbols-outlined text-base">file_upload</span>
             Nhập Excel
           </button>
-          <button onClick={handleExportExcel} className="flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-4 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
+          <button onClick={handleExportExcel} className="flex items-center gap-2 border border-slate-200 bg-white h-[40px] px-5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
             <span className="material-symbols-outlined text-base">file_download</span>
             Xuất Excel
           </button>
-          <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-1 bg-emerald-600 text-white h-[34px] px-4 rounded-lg text-xs font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
+          <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-2 bg-emerald-600 text-white h-[40px] px-5 rounded-lg text-[13px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
             <span className="material-symbols-outlined text-base">arrow_downward</span>
             Nhập Kho
           </button>
-          <button onClick={() => handleOpenTransaction('EXPORT')} className="flex items-center gap-1 bg-amber-500 text-white h-[34px] px-4 rounded-lg text-xs font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-xs">
+          <button onClick={() => handleOpenTransaction('EXPORT')} className="flex items-center gap-2 bg-amber-500 text-white h-[40px] px-5 rounded-lg text-[13px] font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-xs">
             <span className="material-symbols-outlined text-base">arrow_upward</span>
             Xuất Kho
           </button>
@@ -705,7 +705,7 @@ export const MaterialTrackingPage: React.FC = () => {
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${
+                className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${
                   activeTab === tab.id 
                     ? 'border-primary text-primary' 
                     : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
@@ -718,9 +718,9 @@ export const MaterialTrackingPage: React.FC = () => {
           </div>
           
           {/* Lọc chi tiết */}
-          <div className="h-[34px] px-4 bg-slate-50/80 border-t border-slate-100 flex items-center gap-3 overflow-x-auto custom-scrollbar justify-between">
+          <div className="h-[40px] px-5 bg-slate-50/80 border-t border-slate-100 flex items-center gap-3 overflow-x-auto custom-scrollbar justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-slate-500 font-bold text-xs whitespace-nowrap pr-1">
+              <div className="flex items-center gap-2.5 text-slate-500 font-bold text-xs whitespace-nowrap pr-1">
                 <span className="material-symbols-outlined text-[16px]">filter_list</span>
                 Lọc chi tiết:
               </div>

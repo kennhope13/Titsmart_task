@@ -129,7 +129,7 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'P
         }
       });
     });
-    return links.length > 0 ? <div className="flex flex-wrap items-center gap-1">{links}</div> : null;
+    return links.length > 0 ? <div className="flex flex-wrap items-center gap-2">{links}</div> : null;
   } catch (e) { return null; }
 };
 
@@ -531,20 +531,20 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         <div className="flex px-4 gap-4 border-b border-slate-200 overflow-x-auto custom-scrollbar">
           <button
             onClick={() => setSubTab('TECH')}
-            className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'TECH' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+            className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'TECH' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
           >
             Kỹ thuật & Đặt hàng
           </button>
           <button
             onClick={() => setSubTab('DOCS')}
-            className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'DOCS' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+            className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'DOCS' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
           >
             Chứng từ
           </button>
           {userRole !== 'engineer' && (
             <button
               onClick={() => setSubTab('FINANCE')}
-              className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'FINANCE' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+              className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'FINANCE' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
             >
               Giá mua, Dự toán & Thanh toán
             </button>
@@ -553,12 +553,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         
 
         <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-wrap" style={{ display: subTab === "DOCS" ? "none" : "flex" }}>
-          <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
+          <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
           
-          <div className="flex items-center gap-1 flex-wrap">
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap">Đầu mục:</span>
               <CustomSelect
                 value={filterParent}
@@ -573,7 +573,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               </CustomSelect>
             </div>
             
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
               <CustomSelect
                 value={filterUnit}
@@ -587,7 +587,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             </div>
 
             {(subTab === 'TECH' || subTab === 'FINANCE') && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <span className="text-slate-500 font-medium whitespace-nowrap">Đặt hàng:</span>
                 <CustomSelect
                   value={filterOrder}
@@ -619,7 +619,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             {onAddSection && subTab !== 'FINANCE' && (
               <button
                 onClick={onAddSection}
-                className="flex items-center gap-1 bg-primary text-white px-2 py-1 rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
+                className="flex items-center gap-2 bg-primary text-white px-2 py-1 rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
               >
                 <span className="material-symbols-outlined text-sm">add</span>
                 <span>Thêm đầu mục</span>
@@ -872,7 +872,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 className="w-full bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
                               />
                             ) : (
-                              <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
+                              <div className="flex items-center gap-2.5 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
                                 {depth > 1 && (
                                   <span className="material-symbols-outlined flex-shrink-0 text-slate-300 text-[14px] mr-1 translate-y-[1px]">
                                     subdirectory_arrow_right
@@ -1062,7 +1062,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               {/* CHỨNG TỪ HÀNG HÓA (Combined CO, CQ, PCCC) */}
                               <td className="w-[160px] p-0 align-middle border-r border-slate-200">
                                 <div className="flex flex-row flex-wrap gap-x-3 gap-y-2 p-1.5 w-full items-start justify-center divide-x divide-slate-200">
-                                  <div className="flex flex-col items-center gap-1 pl-2 first:pl-0">
+                                  <div className="flex flex-col items-center gap-2 pl-2 first:pl-0">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
@@ -1073,7 +1073,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     </button>
                                     {renderAutoFilesByType(plan, 'CO')}
                                   </div>
-                                  <div className="flex flex-col items-center gap-1 pl-2">
+                                  <div className="flex flex-col items-center gap-2 pl-2">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
@@ -1084,7 +1084,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     </button>
                                     {renderAutoFilesByType(plan, 'CQ')}
                                   </div>
-                                  <div className="flex flex-col items-center gap-1 pl-2">
+                                  <div className="flex flex-col items-center gap-2 pl-2">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
@@ -1259,9 +1259,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             </td>
                           ) : (
                             <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1 align-middle text-slate-500 min-w-[200px]">
-                              <div className="flex flex-col gap-1 w-full text-xs">
+                              <div className="flex flex-col gap-2 w-full text-xs">
                                 {/* Vướng mắc */}
-                                <div className="flex items-start gap-1">
+                                <div className="flex items-start gap-2">
                                   <span className="text-[10px] font-bold text-red-500 w-12 shrink-0 mt-0.5" title="Nội dung vướng mắc">V.MẮC:</span>
                                   <div className="flex-1 bg-slate-50 rounded">
                                     {editingCell?.id === plan.id && editingCell?.field === 'issueContent' ? (
@@ -1284,7 +1284,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   </div>
                                 </div>
                                 {/* TT Xử lý */}
-                                <div className="flex items-start gap-1">
+                                <div className="flex items-start gap-2">
                                   <span className="text-[10px] font-bold text-orange-500 w-12 shrink-0 mt-0.5" title="Trạng thái xử lý">XỬ LÝ:</span>
                                   <div className="flex-1 bg-slate-50 rounded">
                                     {editingCell?.id === plan.id && editingCell?.field === 'issueStatus' ? (
@@ -1307,7 +1307,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   </div>
                                 </div>
                                 {/* Ghi chú */}
-                                <div className="flex items-start gap-1">
+                                <div className="flex items-start gap-2">
                                   <span className="text-[10px] font-bold text-slate-500 w-12 shrink-0 mt-0.5" title="Ghi chú">NOTE:</span>
                                   <div className="flex-1 bg-slate-50 rounded">
                                     {editingCell?.id === plan.id && editingCell?.field === 'notes' ? (

@@ -121,7 +121,7 @@ export const DashboardPage: React.FC = () => {
         <div className="flex items-center gap-4">
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">Tổng Quan</h1>
         </div>
-        <div className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
+        <div className="text-[11px] text-slate-400 font-mono flex items-center gap-2">
           <span className="material-symbols-outlined text-[13px]">schedule</span>
           {new Date().toLocaleString('vi-VN')}
         </div>

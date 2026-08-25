@@ -95,7 +95,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ selectedProject }) => 
             <h3 className="text-sm font-bold text-slate-500">Tổng giá trị HĐ mua sắm</h3>
           </div>
           <div className="text-lg font-black text-slate-900">{formatMoney(metrics.purchasing.totalValue)} đ</div>
-          <div className="mt-2 text-xs font-semibold text-slate-500">
+          <div className="mt-2 text-[13px] font-bold text-slate-500">
             Còn lại: <span className="text-rose-600">{formatMoney(metrics.purchasing.remaining)} đ</span>
           </div>
         </div>
@@ -109,7 +109,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ selectedProject }) => 
             <h3 className="text-sm font-bold text-slate-500">Chi phí & Lương</h3>
           </div>
           <div className="text-lg font-black text-slate-900">{formatMoney(metrics.expense.total + metrics.labor.total)} đ</div>
-          <div className="mt-2 text-xs font-semibold text-slate-500">
+          <div className="mt-2 text-[13px] font-bold text-slate-500">
             CP: {formatMoney(metrics.expense.total)} đ | Lương: {formatMoney(metrics.labor.total)} đ
           </div>
         </div>

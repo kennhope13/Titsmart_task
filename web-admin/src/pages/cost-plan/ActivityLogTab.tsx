@@ -199,7 +199,7 @@ export const ActivityLogTab: React.FC<ActivityLogTabProps> = ({
         <CustomSelect
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+          className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
         >
           {ACTION_TYPES.map((t) => (
             <option key={t.value} value={t.value}>{t.label}</option>
@@ -209,7 +209,7 @@ export const ActivityLogTab: React.FC<ActivityLogTabProps> = ({
         <CustomSelect
           value={userFilter}
           onChange={(e) => setUserFilter(e.target.value)}
-          className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+          className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
         >
           <option value="ALL">Tất cả người dùng</option>
           {uniqueUsers.map((u) => (
@@ -237,7 +237,7 @@ export const ActivityLogTab: React.FC<ActivityLogTabProps> = ({
         {hasFilters && (
           <button
             onClick={clearFilters}
-            className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
           >
             <span className="material-symbols-outlined text-[14px]">filter_alt_off</span>
             Xóa lọc
@@ -294,7 +294,7 @@ export const ActivityLogTab: React.FC<ActivityLogTabProps> = ({
                         <div className="flex-1 min-w-0 bg-white border border-slate-100 rounded-xl px-4 py-2.5 shadow-xs hover:shadow-sm hover:border-slate-200 transition-all">
                           <div className="flex items-start justify-between gap-2 flex-wrap">
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-slate-800 leading-relaxed break-words">
+                              <p className="text-[13px] font-bold text-slate-800 leading-relaxed break-words">
                                 {log.action}
                               </p>
                               <div className="flex items-center gap-2 mt-1 flex-wrap">

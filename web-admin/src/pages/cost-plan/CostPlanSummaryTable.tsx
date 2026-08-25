@@ -98,7 +98,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                             }}
                           />
                         ) : (
-                          <div className="flex items-center justify-center gap-1 group">
+                          <div className="flex items-center justify-center gap-2 group">
                             <span>{money(summary.totalProjectFund)}</span>
                           </div>
                         )}
@@ -224,7 +224,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                               if (onAllocateFund) onAllocateFund(name);
                             }}
                           >
-                            <div className="flex items-center justify-center gap-1 group">
+                            <div className="flex items-center justify-center gap-2 group">
                               <span>{money(summary.bySpender[name].quy)}</span>
                             </div>
                           </td>

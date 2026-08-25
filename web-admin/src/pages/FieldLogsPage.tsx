@@ -40,7 +40,7 @@ const Lightbox: React.FC<{ images: string[]; index: number; onClose: () => void;
   <div className="fixed inset-0 z-[100] flex flex-col bg-black/95">
     {/* Header / Actions */}
     <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 pointer-events-none">
-      <span className="rounded-full bg-black/50 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md">
+      <span className="rounded-full bg-black/50 px-3 py-1 text-[13px] font-bold text-white shadow-lg backdrop-blur-md">
         {index + 1} / {images.length}
       </span>
       <button onClick={onClose} className="rounded-full bg-black/50 p-2 text-white hover:bg-white/20 transition pointer-events-auto shadow-lg backdrop-blur-md cursor-pointer">
@@ -219,14 +219,14 @@ const UploadModal: React.FC<{
                 className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
 
-            {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600">{error}</p>}
+            {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-[13px] font-bold text-rose-600">{error}</p>}
           </div>
 
           <div className="flex flex-shrink-0 justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-4">
             <button type="button" onClick={onClose}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-[13px] font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
             <button type="submit" disabled={isUploading}
-              className="flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-xs font-bold text-white shadow-sm hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
+              className="flex items-center gap-2.5 rounded-lg bg-primary px-5 py-2 text-[13px] font-bold text-white shadow-sm hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
               {isUploading ? (
                 <>
                   <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
@@ -331,7 +331,7 @@ export const FieldLogsPage: React.FC = () => {
               </CustomSelect>
             )}
             <button onClick={() => setIsUploadOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-95">
+              className="flex items-center gap-2.5 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-95">
               <span className="material-symbols-outlined text-lg">add_a_photo</span>
               Upload ảnh
             </button>
@@ -371,7 +371,7 @@ export const FieldLogsPage: React.FC = () => {
                           <span className="text-[13px] font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full shadow-sm">
                             {formatTimeOnly(log.timestamp)}
                           </span>
-                          <div className="flex gap-1">
+                          <div className="flex gap-2">
                             <button onClick={() => setEditLog(log)} title="Sửa báo cáo"
                               className="rounded p-1.5 text-slate-300 hover:bg-blue-50 hover:text-blue-500 transition">
                               <span className="material-symbols-outlined text-lg">edit</span>
@@ -433,7 +433,7 @@ export const FieldLogsPage: React.FC = () => {
                           </div>
                         ))}
                         {logs.flatMap(l => l.images).length > 4 && (
-                          <div className="h-10 w-10 rounded bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-200">
+                          <div className="h-10 w-10 rounded bg-slate-100 flex items-center justify-center text-[13px] font-bold text-slate-500 border border-slate-200">
                             +{logs.flatMap(l => l.images).length - 4}
                           </div>
                         )}
@@ -480,9 +480,9 @@ export const FieldLogsPage: React.FC = () => {
             <p className="text-xs text-slate-500">Các ảnh trong báo cáo sẽ bị xóa vĩnh viễn.</p>
             <div className="flex justify-center gap-3 pt-1">
               <button onClick={() => setDeletingId(null)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
+                className="rounded-lg border border-slate-200 px-4 py-2 text-[13px] font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
               <button onClick={handleDelete}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 active:scale-95">Xóa</button>
+                className="rounded-lg bg-rose-600 px-4 py-2 text-[13px] font-bold text-white hover:bg-rose-700 active:scale-95">Xóa</button>
             </div>
           </div>
         </div>

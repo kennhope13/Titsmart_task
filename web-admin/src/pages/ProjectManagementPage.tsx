@@ -626,7 +626,7 @@ export const ProjectManagementPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
-          <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100 whitespace-nowrap">
+          <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-[13px] font-bold border border-blue-100 whitespace-nowrap">
             {displayProjects.length} dự án
           </span>
           <div className="relative w-full sm:w-64 flex items-center">
@@ -636,14 +636,14 @@ export const ProjectManagementPage: React.FC = () => {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder={TEXT.searchProject}
-              className="w-full pl-9 pr-3 h-[34px] border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+              className="w-full pl-9 pr-3 h-[38px] border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
             />
           </div>
           { (user?.role === 'admin' || user?.role === 'pm') ? (
           <button
             type="button"
             onClick={() => setIsNewProjectModalOpen(true)}
-            className="flex items-center gap-1.5 bg-primary text-white px-3.5 h-[34px] rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap"
+            className="flex items-center gap-2.5 bg-primary text-white px-3.5 h-[38px] rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             {TEXT.createProject}
@@ -696,7 +696,7 @@ export const ProjectManagementPage: React.FC = () => {
 
                     {/* Badge trạng thái */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
+                      <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
                         {statusLabel[project.status]}
                       </span>
@@ -719,7 +719,7 @@ export const ProjectManagementPage: React.FC = () => {
                         <span className="text-[11px] font-semibold text-slate-400 mr-0.5">Nhân sự:</span>
                         {project.memberNames?.length ? (
                           project.memberNames.map((name, i) => (
-                            <div key={i} className="inline-flex items-center gap-1 bg-sky-50/50 border border-sky-100 rounded-full pr-2 pl-0.5 py-0.5">
+                            <div key={i} className="inline-flex items-center gap-2 bg-sky-50/50 border border-sky-100 rounded-full pr-2 pl-0.5 py-0.5">
                               <span className="w-3.5 h-3.5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-[8px] font-bold uppercase shrink-0">
                                 {name.charAt(0)}
                               </span>
@@ -753,7 +753,7 @@ export const ProjectManagementPage: React.FC = () => {
 
                   {/* Nút sửa/xóa — hiện khi hover */}
                   {user?.role === 'admin' && (
-                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                    <div className="absolute top-2 right-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); openEditModal(project); }}

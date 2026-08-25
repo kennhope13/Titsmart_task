@@ -163,13 +163,13 @@ export const ActivityLogPage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-hidden">
       {/* HEADER SECTION */}
-      <section className="border-b border-slate-200 bg-white pl-3 pr-[140px] py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+      <section className="border-b border-slate-200 bg-white pl-3 pr-4 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
         <div className="flex items-center gap-4">
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">NHẬT KÝ HOẠT ĐỘNG</h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
-          <span className="px-3 h-[34px] rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100 whitespace-nowrap">
+          <span className="px-3 h-[38px] rounded-full bg-blue-50 text-primary text-[13px] font-bold border border-blue-100 whitespace-nowrap">
             {filteredLogs.length} thao tác
           </span>
           <div className="relative w-full sm:w-64 flex items-center">
@@ -179,28 +179,28 @@ export const ActivityLogPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm hành động, nhân sự..."
-              className="w-full pl-9 pr-3 h-[34px] bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all"
+              className="w-full pl-9 pr-3 h-[38px] bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all"
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-3 h-[34px] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-3 h-[38px] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
               <span className="text-[11px] font-bold text-slate-500 mr-2">Từ</span>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-28"
+                className="bg-transparent text-[13px] font-bold text-slate-700 focus:outline-none w-28"
               />
             </div>
             
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-3 h-[34px] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-3 h-[38px] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
               <span className="text-[11px] font-bold text-slate-500 mr-2">Đến</span>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-28"
+                className="bg-transparent text-[13px] font-bold text-slate-700 focus:outline-none w-28"
               />
             </div>
           </div>
@@ -209,7 +209,7 @@ export const ActivityLogPage: React.FC = () => {
             <button
               type="button"
               onClick={clearFilters}
-              className="flex items-center justify-center gap-1 px-3 h-[34px] border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors"
+              className="flex items-center justify-center gap-2 px-3 h-[38px] border border-slate-200 bg-white rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors"
             >
               <span className="material-symbols-outlined text-[14px]">filter_alt_off</span>
               Xóa lọc
@@ -269,13 +269,13 @@ export const ActivityLogPage: React.FC = () => {
                                 {globalIndex}
                               </td>
                               <td className="p-3 whitespace-nowrap">
-                                <span className="font-bold text-slate-600 flex items-center gap-1">
+                                <span className="font-bold text-slate-600 flex items-center gap-2">
                                   <span className="material-symbols-outlined text-[14px]">schedule</span>
                                   {timeStr}
                                 </span>
                               </td>
                               <td className="p-3 whitespace-nowrap">
-                                <span className="inline-flex items-center gap-1.5 text-slate-700 font-bold">
+                                <span className="inline-flex items-center gap-2.5 text-slate-700 font-bold">
                                   <span className="material-symbols-outlined text-[13px] text-slate-500">person</span>
                                   {log.user}
                                 </span>
@@ -285,14 +285,14 @@ export const ActivityLogPage: React.FC = () => {
                                 {log.project === 'COMPANY' || !log.project || log.project === 'Hệ thống' ? (
                                   <span className="text-slate-400">-</span>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1.5 text-indigo-700 font-bold">
+                                  <span className="inline-flex items-center gap-2.5 text-indigo-700 font-bold">
                                     <span className="material-symbols-outlined text-[13px]">business_center</span>
                                     {getProjectName(log.project || "")}
                                   </span>
                                 )}
                               </td>
                               <td className="p-3">
-                                <span className={`inline-block text-xs font-semibold ${actionInfo.color} leading-relaxed`}>
+                                <span className={`inline-block text-[13px] font-bold ${actionInfo.color} leading-relaxed`}>
                                   {renderActionText(log.action)}
                                 </span>
                               </td>
@@ -312,7 +312,7 @@ export const ActivityLogPage: React.FC = () => {
       <Modal isOpen={!!selectedLog} onClose={() => setSelectedLog(null)} title="Chi tiết Nhật ký hoạt động">
         {selectedLog && (
           <div className="space-y-4 text-sm mt-2">
-            <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
+            <div className="flex flex-col gap-2 border-b pb-3 border-slate-100">
               <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Thời gian</span>
               <span className="font-bold text-slate-800">
                   {(() => {
@@ -330,7 +330,7 @@ export const ActivityLogPage: React.FC = () => {
                   })()}
                 </span>
             </div>
-            <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
+            <div className="flex flex-col gap-2 border-b pb-3 border-slate-100">
               <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Nhân sự</span>
               <span className="font-bold text-slate-800 flex items-center gap-2">
                 <span className="material-symbols-outlined text-base text-slate-400">person</span>
@@ -339,17 +339,17 @@ export const ActivityLogPage: React.FC = () => {
             </div>
             
             {selectedLog.project && selectedLog.project !== 'COMPANY' && selectedLog.project !== 'Hệ thống' && (
-              <div className="flex flex-col gap-1 border-b pb-3 border-slate-100">
+              <div className="flex flex-col gap-2 border-b pb-3 border-slate-100">
                 <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Dự án</span>
                 <div className="mt-1">
-                  <span className="inline-flex items-center gap-1.5 text-indigo-700 font-bold">
+                  <span className="inline-flex items-center gap-2.5 text-indigo-700 font-bold">
                     <span className="material-symbols-outlined text-[13px]">business_center</span>
                     {getProjectName(selectedLog.project || "")}
                   </span>
                 </div>
               </div>
             )}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Thao tác / Nội dung chi tiết</span>
               <div className="mt-1 p-4 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 font-medium leading-relaxed">
                 {renderActionText(selectedLog.action, true)}

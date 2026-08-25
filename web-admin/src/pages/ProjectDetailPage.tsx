@@ -18,7 +18,7 @@ export const ProjectDetailPage: React.FC = () => {
         <span className="material-symbols-outlined text-5xl text-rose-500 mb-3 animate-pulse">error</span>
         <h2 className="text-lg font-bold text-slate-800">Không tìm thấy dự án</h2>
         <p className="text-slate-500 text-sm mb-5 text-center max-w-sm">Dự án này không tồn tại, đã bị xóa hoặc bạn không có quyền truy cập.</p>
-        <Link to="/projects" className="bg-primary hover:opacity-90 active:scale-95 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all">
+        <Link to="/projects" className="bg-primary hover:opacity-90 active:scale-95 text-white px-5 py-2.5 rounded-xl text-[13px] font-bold shadow-md transition-all">
           Quay lại Danh sách Dự án
         </Link>
       </div>
@@ -66,7 +66,7 @@ export const ProjectDetailPage: React.FC = () => {
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0 shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold mb-1">
-            <Link to="/projects" className="hover:text-primary transition-colors flex items-center gap-1">
+            <Link to="/projects" className="hover:text-primary transition-colors flex items-center gap-2">
               <span className="material-symbols-outlined text-xs">arrow_back</span>
               Dự án
             </Link>
@@ -81,7 +81,7 @@ export const ProjectDetailPage: React.FC = () => {
 
         {/* Quick status badge */}
         <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[13px] font-bold border ${
             project.status === 'active' 
               ? 'bg-blue-50 text-blue-700 border-blue-200' 
               : project.status === 'completed'

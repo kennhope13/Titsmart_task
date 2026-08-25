@@ -311,31 +311,31 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
         <div className="flex px-4 gap-4 border-b border-slate-200">
           <button
             onClick={() => setSubTab('TECH')}
-            className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${subTab === 'TECH' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+            className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${subTab === 'TECH' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
           >
             Kỹ thuật & tiến độ
           </button>
           <button
             onClick={() => setSubTab('ORDER')}
-            className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${subTab === 'ORDER' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+            className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${subTab === 'ORDER' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
           >
             Đặt hàng & vướng mắc
           </button>
           <button
             onClick={() => setSubTab('DOCS')}
-            className={`app-tab-button flex items-center gap-1.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${subTab === 'DOCS' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+            className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${subTab === 'DOCS' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
           >
             Chứng từ & giao hàng
           </button>
         </div>
 
         <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-wrap">
-          <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
+          <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
           
-          <div className="flex items-center gap-1 flex-wrap">
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap">Đầu mục:</span>
               <CustomSelect
                 value={filterParent}
@@ -350,7 +350,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               </CustomSelect>
             </div>
             
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
               <CustomSelect
                 value={filterUnit}
@@ -363,7 +363,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               </CustomSelect>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap">Tiến độ:</span>
               <CustomSelect
                 value={filterProgress}
@@ -376,7 +376,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               </CustomSelect>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap">Mua hàng:</span>
               <CustomSelect
                 value={filterOrder}
@@ -389,7 +389,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               </CustomSelect>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap">Tình trạng:</span>
               <CustomSelect
                 value={filterConstruction}
@@ -649,7 +649,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                       />
                     ) : (
-                      <div className="flex items-center gap-1.5 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
+                      <div className="flex items-center gap-2.5 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
                         {depth > 1 && (
                           <span className="material-symbols-outlined flex-shrink-0 text-slate-300 text-[14px] mr-1 translate-y-[1px]">
                             subdirectory_arrow_right
@@ -914,7 +914,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, docCo: !plan.docCo })}
-                          className="flex items-center justify-center w-full h-[34px] transition-colors"
+                          className="flex items-center justify-center w-full h-[38px] transition-colors"
                         >
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.docCo ? '#10b981' : '#cbd5e1'} strokeWidth="2">
                             <circle cx="12" cy="12" r="10" fill={plan.docCo ? '#d1fae5' : '#f8fafc'} />
@@ -927,7 +927,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, docCq: !plan.docCq })}
-                          className="flex items-center justify-center w-full h-[34px] transition-colors"
+                          className="flex items-center justify-center w-full h-[38px] transition-colors"
                         >
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.docCq ? '#10b981' : '#cbd5e1'} strokeWidth="2">
                             <circle cx="12" cy="12" r="10" fill={plan.docCq ? '#d1fae5' : '#f8fafc'} />
@@ -940,7 +940,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, docFireInspection: !plan.docFireInspection })}
-                          className="flex items-center justify-center w-full h-[34px] transition-colors"
+                          className="flex items-center justify-center w-full h-[38px] transition-colors"
                         >
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.docFireInspection ? '#10b981' : '#cbd5e1'} strokeWidth="2">
                             <circle cx="12" cy="12" r="10" fill={plan.docFireInspection ? '#d1fae5' : '#f8fafc'} />
@@ -953,7 +953,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <button
                           type="button"
                           onClick={() => onUpdate(plan.id, { ...plan, dispatchToSite: !plan.dispatchToSite })}
-                          className="flex items-center justify-center w-full h-[34px] transition-colors"
+                          className="flex items-center justify-center w-full h-[38px] transition-colors"
                         >
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.dispatchToSite ? '#10b981' : '#cbd5e1'} strokeWidth="2">
                             <circle cx="12" cy="12" r="10" fill={plan.dispatchToSite ? '#d1fae5' : '#f8fafc'} />

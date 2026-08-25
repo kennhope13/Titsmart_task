@@ -57,7 +57,7 @@ export const LaborTab: React.FC<LaborTabProps> = ({
           <button type="button" onClick={() => { setSearchQuery(''); clearColumnFilters(); }} className="px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50">Xóa lọc</button>
         )}
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <span className="text-xs font-bold text-slate-500 whitespace-nowrap">Lọc thanh toán:</span>
+          <span className="text-[13px] font-bold text-slate-500 whitespace-nowrap">Lọc thanh toán:</span>
           <CustomSelect 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -110,14 +110,14 @@ export const LaborTab: React.FC<LaborTabProps> = ({
                   <div className="mt-0.5 font-mono text-[11px] font-bold text-blue-600">{lab.bankAccount}</div>
                 </td>
                 <td className="p-3 text-center">
-                  <div className="flex flex-col gap-1 items-center">
+                  <div className="flex flex-col gap-2 items-center">
                     {lab.idCardFrontUrl && (
-                      <a href={lab.idCardFrontUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] text-primary hover:text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100 transition-colors">
+                      <a href={lab.idCardFrontUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[10px] text-primary hover:text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100 transition-colors">
                         <span className="material-symbols-outlined text-[12px]">badge</span> Mặt trước
                       </a>
                     )}
                     {lab.idCardBackUrl && (
-                      <a href={lab.idCardBackUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] text-primary hover:text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100 transition-colors">
+                      <a href={lab.idCardBackUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[10px] text-primary hover:text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100 transition-colors">
                         <span className="material-symbols-outlined text-[12px]">badge</span> Mặt sau
                       </a>
                     )}
@@ -125,7 +125,7 @@ export const LaborTab: React.FC<LaborTabProps> = ({
                   </div>
                 </td>
                 <td className="p-3 text-center">
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-bold border ${
+                  <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-[9px] font-bold border ${
                     lab.paymentStatus === 'Đã thanh toán' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
                   }`}>
                     <span className="material-symbols-outlined text-[12px]">{lab.paymentStatus === 'Đã thanh toán' ? 'check_circle' : 'pending'}</span>

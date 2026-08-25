@@ -1530,11 +1530,11 @@ export const ProjectCostPlanPage: React.FC = () => {
 
           {!projectId && (
             <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200">
-              <span className="text-xs font-bold text-slate-500 uppercase px-2 whitespace-nowrap">Dự án:</span>
+              <span className="text-[13px] font-bold text-slate-500 uppercase px-2 whitespace-nowrap">Dự án:</span>
             <CustomSelect 
               value={selectedProject} 
               onChange={(e) => setSelectedProject(e.target.value)} 
-              className="bg-white border border-slate-200 px-3 py-1.5 rounded-md text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
+              className="bg-white border border-slate-200 px-3 py-1.5 rounded-md text-[13px] font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
             >
               {projectOptions.length === 0 ? (
                 <option value="">-- Chưa có dự án --</option>
@@ -1561,7 +1561,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <button 
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 py-3.5 text-xs font-bold border-b-2 transition-all ${
+              className={`flex items-center gap-2 py-3.5 text-[13px] font-bold border-b-2 transition-all ${
                 activeTab === tab.id 
                   ? 'border-primary text-primary' 
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
@@ -1590,7 +1590,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 }
                 fileInputRef.current?.click();
               }} 
-              className="flex items-center gap-1 border border-slate-200 bg-white px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+              className="flex items-center gap-2 border border-slate-200 bg-white px-2.5 py-1.5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
             >
               <span className="material-symbols-outlined text-sm">file_upload</span>
               Nhập Excel
@@ -1603,7 +1603,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 }
                 handleExportExcel();
               }} 
-              className="flex items-center gap-1 border border-slate-200 bg-white px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+              className="flex items-center gap-2 border border-slate-200 bg-white px-2.5 py-1.5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
             >
               <span className="material-symbols-outlined text-sm">file_download</span>
               Xuất Excel
@@ -1623,7 +1623,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   }
                   else if (activeTab === 'DOCUMENTS') setTriggerAddDoc(true);
                 }} 
-                className="flex items-center gap-1 bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
+                className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs"
               >
                 <span className="material-symbols-outlined text-sm">add</span>
                 Thêm Mới
@@ -1683,19 +1683,19 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div className="flex border-b border-slate-200 shrink-0 bg-white sticky top-0 z-20 px-4 gap-2">
               <button
                 onClick={() => setExpenseSubTab('SUMMARY')}
-                className={`app-tab-button flex items-center gap-1.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'SUMMARY' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+                className={`app-tab-button flex items-center gap-2.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'SUMMARY' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
               >
                 Tổng hợp quỹ
               </button>
               <button
                 onClick={() => setExpenseSubTab('DETAIL')}
-                className={`app-tab-button flex items-center gap-1.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'DETAIL' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+                className={`app-tab-button flex items-center gap-2.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'DETAIL' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
               >
                 Chi tiết phiếu chi
               </button>
               <button
                 onClick={() => setExpenseSubTab('LABOR')}
-                className={`app-tab-button flex items-center gap-1.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'LABOR' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+                className={`app-tab-button flex items-center gap-2.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'LABOR' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
               >
                 Lương công nhật
               </button>
@@ -1782,11 +1782,11 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div className="flex flex-col flex-1 min-h-0 relative bg-white">
                 <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
+                    <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
                       <span className="material-symbols-outlined text-[16px]">filter_list</span>
                     </div>
                     
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <span className="text-slate-500 font-medium whitespace-nowrap">Ngày chi:</span>
                       <CustomSelect
                         value={expenseFilterDate}
@@ -1799,7 +1799,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                       </CustomSelect>
                     </div>
                     
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <span className="text-slate-500 font-medium whitespace-nowrap">Nội dung:</span>
                       <CustomSelect
                         value={expenseFilterContent}
@@ -1814,7 +1814,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                       </CustomSelect>
                     </div>
                     
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
                       <CustomSelect
                         value={expenseFilterUnit}
@@ -1873,7 +1873,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                           e.preventDefault();
                           e.stopPropagation();
                           setPreviewImage(exp.invoiceUrl!);
-                        }} className="inline-flex items-center gap-1 text-xs text-primary font-bold hover:underline">
+                        }} className="inline-flex items-center gap-2 text-xs text-primary font-bold hover:underline">
                           <span className="material-symbols-outlined text-sm">image</span>
                           Xem ảnh
                         </button>
@@ -1907,11 +1907,11 @@ export const ProjectCostPlanPage: React.FC = () => {
           <div className="flex flex-col flex-1 min-h-0 relative bg-white">
             <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap">
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
+                <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
                   <span className="material-symbols-outlined text-[16px]">filter_list</span>
                 </div>
                 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <span className="text-slate-500 font-medium whitespace-nowrap">Ngày làm:</span>
                   <CustomSelect
                     value={laborFilterDate}
@@ -1924,7 +1924,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   </CustomSelect>
                 </div>
                 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <span className="text-slate-500 font-medium whitespace-nowrap">Nội dung:</span>
                   <CustomSelect
                     value={laborFilterContent}
@@ -1939,7 +1939,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   </CustomSelect>
                 </div>
                 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
                   <CustomSelect
                     value={laborFilterUnit}
@@ -2250,7 +2250,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
-                <div className="flex items-center gap-1.5 w-full">
+                <div className="flex items-center gap-2.5 w-full">
                   <CustomSelect
                     value={sectionPlanIdForNew || ''}
                     onChange={(e) => {
@@ -2360,9 +2360,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <input type="date" value={newPlanData.expectedDate || ''} onChange={(e) => setNewPlanData({...newPlanData, expectedDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
               </div>
               <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
-                <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.docCo} onChange={(e) => setNewPlanData({...newPlanData, docCo: e.target.checked})} /> <span className="font-bold">Chứng từ CO</span></div>
-                <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.docCq} onChange={(e) => setNewPlanData({...newPlanData, docCq: e.target.checked})} /> <span className="font-bold">Chứng từ CQ</span></div>
-                <div className="flex items-center gap-1.5"><input type="checkbox" checked={newPlanData.dispatchToSite} onChange={(e) => setNewPlanData({...newPlanData, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi tới CT</span></div>
+                <div className="flex items-center gap-2.5"><input type="checkbox" checked={newPlanData.docCo} onChange={(e) => setNewPlanData({...newPlanData, docCo: e.target.checked})} /> <span className="font-bold">Chứng từ CO</span></div>
+                <div className="flex items-center gap-2.5"><input type="checkbox" checked={newPlanData.docCq} onChange={(e) => setNewPlanData({...newPlanData, docCq: e.target.checked})} /> <span className="font-bold">Chứng từ CQ</span></div>
+                <div className="flex items-center gap-2.5"><input type="checkbox" checked={newPlanData.dispatchToSite} onChange={(e) => setNewPlanData({...newPlanData, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi tới CT</span></div>
               </div>
               {/* Nhà thầu cung cấp */}
               <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
@@ -2373,7 +2373,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   onChange={(e) => setNewPlanData({...newPlanData, isContractor: e.target.checked})}
                   className="w-4 h-4 accent-amber-500"
                 />
-                <label htmlFor="isContractorCheck" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-1.5">
+                <label htmlFor="isContractorCheck" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-2.5">
                   <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
                   Nhà thầu cung cấp — tự động đồng bộ sang tab Mua hàng
                 </label>
@@ -2390,7 +2390,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 onChange={(e) => setNewPlanData({...newPlanData, isContractor: e.target.checked})}
                 className="w-4 h-4 accent-amber-500"
               />
-              <label htmlFor="isContractorCheckHeader" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-1.5">
+              <label htmlFor="isContractorCheckHeader" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-2.5">
                 <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
                 Tự động đồng bộ Đầu mục này sang tab Mua hàng
               </label>
@@ -2503,9 +2503,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                   <input type="date" value={editingPlan.expectedDate || ''} onChange={(e) => setEditingPlan({...editingPlan, expectedDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
                 </div>
                 <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
-                  <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.docCo} onChange={(e) => setEditingPlan({...editingPlan, docCo: e.target.checked})} /> <span className="font-bold">CO</span></div>
-                  <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.docCq} onChange={(e) => setEditingPlan({...editingPlan, docCq: e.target.checked})} /> <span className="font-bold">CQ</span></div>
-                  <div className="flex items-center gap-1.5"><input type="checkbox" checked={editingPlan.dispatchToSite} onChange={(e) => setEditingPlan({...editingPlan, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi CT</span></div>
+                  <div className="flex items-center gap-2.5"><input type="checkbox" checked={editingPlan.docCo} onChange={(e) => setEditingPlan({...editingPlan, docCo: e.target.checked})} /> <span className="font-bold">CO</span></div>
+                  <div className="flex items-center gap-2.5"><input type="checkbox" checked={editingPlan.docCq} onChange={(e) => setEditingPlan({...editingPlan, docCq: e.target.checked})} /> <span className="font-bold">CQ</span></div>
+                  <div className="flex items-center gap-2.5"><input type="checkbox" checked={editingPlan.dispatchToSite} onChange={(e) => setEditingPlan({...editingPlan, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi CT</span></div>
                 </div>
                 {/* Nhà thầu */}
                 <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
@@ -2516,7 +2516,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     onChange={(e) => setEditingPlan({...editingPlan, supplyScope: e.target.checked ? 'contractor' : 'owner'})}
                     className="w-4 h-4 accent-amber-500"
                   />
-                  <label htmlFor="editIsContractorCheck" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-1.5">
+                  <label htmlFor="editIsContractorCheck" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-2.5">
                     <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
                     Nhà thầu cung cấp — hiển thị trong tab Mua hàng
                   </label>
@@ -2731,7 +2731,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label>
-                <div className="flex items-center gap-1.5 w-full">
+                <div className="flex items-center gap-2.5 w-full">
                   <CustomSelect
                     value={sectionPurchasingIdForNew || ''}
                     onChange={(e) => {
@@ -2848,7 +2848,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                       <span>Thuế VAT ({liveVatRate}%):</span>
                       <span className="font-bold text-slate-800">{liveVatAmount.toLocaleString('vi-VN')} đ</span>
                     </div>
-                    <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
+                    <div className="flex justify-between border-t pt-1 font-sans text-[13px] font-bold text-slate-900">
                       <span>Tổng tiền (có VAT):</span>
                       <span className="text-primary">{liveTotalAmount.toLocaleString('vi-VN')} đ</span>
                     </div>
@@ -2856,7 +2856,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                       <span>Tiền Tạm ứng ({Math.round(livePrepayPercent * 100)}%):</span>
                       <span className="font-bold text-rose-600">{livePrepayAmount.toLocaleString('vi-VN')} đ</span>
                     </div>
-                    <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
+                    <div className="flex justify-between border-t pt-1 font-sans text-[13px] font-bold text-slate-900">
                       <span>Còn lại phải trả:</span>
                       <span className="text-emerald-600">{liveRemainingAmount.toLocaleString('vi-VN')} đ</span>
                     </div>
@@ -2968,7 +2968,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     <span>Thuế VAT ({editVatRate}%):</span>
                     <span className="font-bold text-slate-800">{editVatAmount.toLocaleString('vi-VN')} đ</span>
                   </div>
-                  <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
+                  <div className="flex justify-between border-t pt-1 font-sans text-[13px] font-bold text-slate-900">
                     <span>Tổng tiền (có VAT):</span>
                     <span className="text-primary">{editTotalAmount.toLocaleString('vi-VN')} đ</span>
                   </div>
@@ -2976,7 +2976,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     <span>Tiền Tạm ứng ({Math.round(editPrepayPercent * 100)}%):</span>
                     <span className="font-bold text-rose-600">{editPrepayAmount.toLocaleString('vi-VN')} đ</span>
                   </div>
-                  <div className="flex justify-between border-t pt-1 font-sans text-xs font-bold text-slate-900">
+                  <div className="flex justify-between border-t pt-1 font-sans text-[13px] font-bold text-slate-900">
                     <span>Còn lại phải trả:</span>
                     <span className="text-emerald-600">{editRemainingAmount.toLocaleString('vi-VN')} đ</span>
                   </div>
@@ -3092,7 +3092,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             const liveVat = Number((newExpenseData as any).vatAmount || 0);
             const liveTotal = liveQty * livePrice + liveVat;
             return (
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between text-xs font-bold">
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between text-[13px] font-bold">
                 <span className="text-slate-600">Thành tiền tự động:</span>
                 <span className="text-rose-600">{liveTotal.toLocaleString('vi-VN')} đ</span>
               </div>
@@ -3184,7 +3184,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               const editVat = Number(editingExpense.taxAmount || 0);
               const editTotal = editQty * editPrice + editVat;
               return (
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between text-xs font-bold">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between text-[13px] font-bold">
                   <span className="text-slate-600">Thành tiền tự động:</span>
                   <span className="text-rose-600">{editTotal.toLocaleString('vi-VN')} đ</span>
                 </div>
@@ -3393,7 +3393,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   setPendingTaskItems([]);
                   triggerToast(`Đã tạo ${pendingTaskItems.length} Công việc từ phụ lục PL01!`, 'success');
                 }}
-                className="px-4 py-2 bg-secondary-container text-white hover:opacity-90 rounded transition-opacity font-bold text-sm shadow-md flex items-center gap-1"
+                className="px-4 py-2 bg-secondary-container text-white hover:opacity-90 rounded transition-opacity font-bold text-sm shadow-md flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-sm">done</span>
                 Có, tạo Công việc

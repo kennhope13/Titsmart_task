@@ -1388,7 +1388,7 @@ const displayTasks = tasks.filter((t) => {
           <div className="min-w-0 flex-1 flex items-center gap-3">
             <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase whitespace-nowrap flex-shrink-0">QUẢN LÝ TIẾN ĐỘ CÔNG VIỆC</h2>
             {selectedProjectFromUrl && (
-              <div className="inline-flex min-w-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
+              <div className="inline-flex min-w-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[13px] font-bold text-slate-700">
                 <span className="truncate">Dự án: {currentProject?.name || selectedProjectFromUrl}</span>
               </div>
             )}
@@ -1401,15 +1401,15 @@ const displayTasks = tasks.filter((t) => {
       <div className="px-3 py-2">
         {/* Row 1: DETAILED ATTRIBUTE FILTERS */}
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="font-bold text-slate-400 flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-bold text-slate-400 flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">filter_list</span>
               Lọc chi tiết:
             </span>
 
 
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
 
 
 
@@ -1431,7 +1431,7 @@ const displayTasks = tasks.filter((t) => {
             </CustomSelect>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">ĐVT:</span>
               <CustomSelect
               value={filterUnit}
@@ -1447,7 +1447,7 @@ const displayTasks = tasks.filter((t) => {
 
             
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">TT Đặt hàng:</span>
               <CustomSelect
               value={filterPurchase}
@@ -1461,7 +1461,7 @@ const displayTasks = tasks.filter((t) => {
             </CustomSelect>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">TĐ Thi công:</span>
               <CustomSelect
               value={filterConstr}
@@ -1492,7 +1492,7 @@ const displayTasks = tasks.filter((t) => {
           <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
             <button
               onClick={openNewTaskModal}
-              className="flex items-center gap-1 bg-primary text-white px-2 py-1 rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
+              className="flex items-center gap-2 bg-primary text-white px-2 py-1 rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               <span>Thêm đầu mục</span>
@@ -1500,7 +1500,7 @@ const displayTasks = tasks.filter((t) => {
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                className="flex items-center gap-1 border border-emerald-200 bg-emerald-50 text-emerald-800 px-2 py-1 rounded text-[11px] font-bold hover:bg-emerald-100 transition-all shadow-xs whitespace-nowrap h-7"
+                className="flex items-center gap-2 border border-emerald-200 bg-emerald-50 text-emerald-800 px-2 py-1 rounded text-[11px] font-bold hover:bg-emerald-100 transition-all shadow-xs whitespace-nowrap h-7"
               >
                 <span className="material-symbols-outlined text-base text-emerald-700">download</span>
                 <span>Xuất file</span>
@@ -1518,7 +1518,7 @@ const displayTasks = tasks.filter((t) => {
                     <button
                       key={format}
                       onClick={() => handleExportFile(format)}
-                      className="w-full text-left px-4 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                     >
                       <span className="material-symbols-outlined text-sm text-emerald-600">{icon}</span>
                       {label}
@@ -1627,7 +1627,7 @@ const displayTasks = tasks.filter((t) => {
                         {editingCell?.id === t.id && editingCell?.field === 'name' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 focus:outline-primary text-[13px] font-medium" />
                         ) : (
-                          <div style={{ paddingLeft }} className="flex items-center gap-1">
+                          <div style={{ paddingLeft }} className="flex items-center gap-2">
                             {depth > 1 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}
                             <span onClick={() => startEditing(t.id, 'name', t.name)} className="flex-1 cursor-pointer hover:underline hover:text-blue-600 block">{t.name}</span>
                             <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button>
@@ -1663,7 +1663,7 @@ const displayTasks = tasks.filter((t) => {
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-red-600 font-bold focus:outline-primary text-[10px]" />
                         ) : (
                           <span onClick={() => startEditing(t.id, 'issue', t.issue)} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">
-                            {t.issue ? (<span className="inline-flex items-start gap-1 whitespace-normal break-words leading-tight"><span className="material-symbols-outlined text-red-500 text-xs flex-shrink-0 mt-0.5">warning</span><span>{t.issue}</span></span>) : (<span className="text-slate-300">-</span>)}
+                            {t.issue ? (<span className="inline-flex items-start gap-2 whitespace-normal break-words leading-tight"><span className="material-symbols-outlined text-red-500 text-xs flex-shrink-0 mt-0.5">warning</span><span>{t.issue}</span></span>) : (<span className="text-slate-300">-</span>)}
                           </span>
                         )}
                       </td>
@@ -1741,7 +1741,7 @@ const displayTasks = tasks.filter((t) => {
             {!isSectionHeader && (
               <div>
                 <label className="block font-bold text-slate-700 mb-1">{'Thu\u1ed9c \u0110\u1ea7u m\u1ee5c cha'}</label>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2.5">
                   <CustomSelect
                     value={sectionSelect}
                     onChange={(e) => setSectionSelect(e.target.value)}

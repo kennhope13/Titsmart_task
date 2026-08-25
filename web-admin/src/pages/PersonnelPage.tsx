@@ -204,22 +204,22 @@ export const PersonnelPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-hidden">
-      <section className="border-b border-slate-200 bg-white pl-3 pr-[140px] py-4 md:py-0 md:h-12 flex items-center justify-between gap-4">
+      <section className="border-b border-slate-200 bg-white pl-3 pr-4 py-4 md:py-0 md:h-12 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div><h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">TÀI KHOẢN & NHÂN SỰ</h2></div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="h-[34px] px-3 rounded-full flex items-center bg-blue-50 text-primary text-xs font-bold border border-blue-100">{engineers.filter(e => e.role !== 'Quản trị viên' && e.username !== 'admin').length} nhân sự</span>
+          <span className="h-[40px] px-4 rounded-full flex items-center bg-blue-50 text-primary text-[13px] font-bold border border-blue-100">{engineers.filter(e => e.role !== 'Quản trị viên' && e.username !== 'admin').length} nhân sự</span>
           <button 
             onClick={handleExportExcel} 
-            className="flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-4 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+            className="flex items-center gap-2 border border-slate-200 bg-white h-[40px] px-5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
           >
             <span className="material-symbols-outlined text-sm">file_download</span>
             Xuất Excel
           </button>
           <button
             onClick={openCreateModal}
-            className="bg-primary text-white h-[34px] px-4 rounded-lg text-xs font-bold hover:opacity-90 flex items-center gap-1 shadow-xs"
+            className="bg-primary text-white h-[40px] px-5 rounded-lg text-[13px] font-bold hover:opacity-90 flex items-center gap-2 shadow-xs"
           >
             <span className="material-symbols-outlined text-sm align-[-2px]">add</span>Thêm nhân sự
           </button>
@@ -231,7 +231,7 @@ export const PersonnelPage: React.FC = () => {
         <div className="bg-white border-b border-r border-slate-200 shadow-xs overflow-hidden flex flex-col">
             <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-white">
               <div className="flex flex-wrap gap-2">
-                {filters.map((item) => <button key={item.key} onClick={() => setFilter(item.key)} className={`app-tab-button flex items-center gap-1.5 px-3 py-1.5 border-b-2 transition-all whitespace-nowrap ${filter === item.key ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}>{item.label}</button>)}
+                {filters.map((item) => <button key={item.key} onClick={() => setFilter(item.key)} className={`app-tab-button flex items-center gap-2.5 px-3 py-1.5 border-b-2 transition-all whitespace-nowrap ${filter === item.key ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}>{item.label}</button>)}
               </div>
               <div className="relative w-full max-w-xs">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
@@ -288,13 +288,13 @@ export const PersonnelPage: React.FC = () => {
                     <td className="p-3 text-slate-600 whitespace-nowrap">{person.phone || 'Chưa cập nhật'}</td>
                     <td className="p-3 whitespace-nowrap"><span className={`text-[11px] font-bold ${person.locked ? 'text-red-700' : 'text-emerald-700'}`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>
                     <td className="p-3 min-w-[150px] whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2.5">
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
                             toggleLock(person);
                           }}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border text-[11px] font-bold active:scale-95 transition-all ${person.locked ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10'}`}
+                          className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-[11px] font-bold active:scale-95 transition-all ${person.locked ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10'}`}
                         >
                           <span className="material-symbols-outlined text-[14px]">{person.locked ? 'lock_open' : 'lock'}</span>
                           {person.locked ? 'Mở khóa' : 'Khóa'}
@@ -304,7 +304,7 @@ export const PersonnelPage: React.FC = () => {
                             event.stopPropagation();
                             setDeletingPerson({ id: person.id, name: person.name });
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-red-200 bg-white text-[11px] font-bold text-red-600 hover:bg-red-50 hover:border-red-300 active:scale-95 transition-all"
+                          className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-red-200 bg-white text-[11px] font-bold text-red-600 hover:bg-red-50 hover:border-red-300 active:scale-95 transition-all"
                         >
                           <span className="material-symbols-outlined text-[14px]">delete</span>Xóa
                         </button>
@@ -323,18 +323,18 @@ export const PersonnelPage: React.FC = () => {
         <form onSubmit={handleSavePerson} className="p-2 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Họ tên <span className="text-red-500">*</span></label>
+              <label className="text-[13px] font-bold text-slate-700">Họ tên <span className="text-red-500">*</span></label>
               <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nhập họ tên" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" required />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Số điện thoại</label>
+              <label className="text-[13px] font-bold text-slate-700">Số điện thoại</label>
               <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Nhập SĐT" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Vai trò</label>
+              <label className="text-[13px] font-bold text-slate-700">Vai trò</label>
               <CustomSelect value={role} onChange={(event) => setRole(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                 <option value="Quản lý dự án">Quản lý dự án</option>
                 <option value="Kỹ sư hiện trường">Kỹ sư hiện trường</option>
@@ -342,19 +342,19 @@ export const PersonnelPage: React.FC = () => {
               </CustomSelect>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">Tên đăng nhập</label>
+              <label className="text-[13px] font-bold text-slate-700">Tên đăng nhập</label>
               <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Nhập tên đăng nhập" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700">Mật khẩu {editingPersonId && <span className="text-slate-400 font-normal">(Bỏ trống nếu không đổi)</span>}</label>
+            <label className="text-[13px] font-bold text-slate-700">Mật khẩu {editingPersonId && <span className="text-slate-400 font-normal">(Bỏ trống nếu không đổi)</span>}</label>
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={editingPersonId ? "••••••••" : "Nhập mật khẩu"} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
           </div>
 
           {role !== 'Quản lý dự án' && (
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label className="block text-[13px] font-bold text-slate-700 mb-1.5">
                 Phân quyền Dự án <span className="text-red-500">*</span>
               </label>
               <div className={`max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 custom-scrollbar ${selectedProjectCodes.length === 0 ? 'border-red-300' : 'border-slate-200'}`}>
@@ -389,8 +389,8 @@ export const PersonnelPage: React.FC = () => {
           <div className="py-4">
             <p className="mb-8 text-sm font-medium text-slate-700">Bạn chắc chắn muốn xóa nhân sự "{deletingPerson.name}"?</p>
             <div className="flex justify-end gap-3 border-t pt-4">
-              <button onClick={() => setDeletingPerson(null)} className="h-[34px] px-4 border border-slate-300 text-slate-700 bg-white rounded hover:bg-slate-50 transition-colors font-medium">Hủy</button>
-              <button onClick={() => { const { id, name } = deletingPerson; setDeletingPerson(null); handleDeletePerson(id, name); }} className="h-[34px] px-4 bg-[#e53935] text-white rounded hover:bg-red-700 transition-colors font-bold shadow-md">Xóa</button>
+              <button onClick={() => setDeletingPerson(null)} className="h-[40px] px-5 border border-slate-300 text-slate-700 bg-white rounded hover:bg-slate-50 transition-colors font-medium">Hủy</button>
+              <button onClick={() => { const { id, name } = deletingPerson; setDeletingPerson(null); handleDeletePerson(id, name); }} className="h-[40px] px-5 bg-[#e53935] text-white rounded hover:bg-red-700 transition-colors font-bold shadow-md">Xóa</button>
             </div>
           </div>
         </Modal>

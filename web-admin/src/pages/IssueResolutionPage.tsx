@@ -140,7 +140,7 @@ export const IssueResolutionPage: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-xs text-slate-900 truncate">{cleanText(issue.title)}</h4>
                     <span className="text-[10px] text-slate-400 font-mono block mt-0.5">{cleanText(issue.reportedTime)}</span>
-                    <div className="mt-1.5 flex items-center gap-1 text-[10px] font-bold">
+                    <div className="mt-1.5 flex items-center gap-2 text-[10px] font-bold">
                       <span className={`w-1.5 h-1.5 rounded-full ${issue.status === 'OPEN' ? 'bg-red-500' : issue.status === 'PROCESSING' ? 'bg-amber-500' : 'bg-emerald-600'}`}></span>
                       <span className={issue.status === 'OPEN' ? 'text-red-600' : issue.status === 'PROCESSING' ? 'text-amber-600' : 'text-emerald-700'}>{statusLabel(issue.status)}</span>
                     </div>
@@ -162,7 +162,7 @@ export const IssueResolutionPage: React.FC = () => {
                 <span className="text-xs text-slate-500">{cleanText(selectedIssue.location)}</span>
               </div>
               {selectedIssue.status !== 'RESOLVED' && (
-                <button onClick={handleResolveTicket} className="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold hover:opacity-90 transition-all shadow-xs">
+                <button onClick={handleResolveTicket} className="bg-primary text-white px-4 py-2 rounded-lg text-[13px] font-bold hover:opacity-90 transition-all shadow-xs">
                   Hoàn thành xử lý
                 </button>
               )}
@@ -185,7 +185,7 @@ export const IssueResolutionPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSendDirective} className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3">
-              <span className="text-xs font-bold text-primary block">Chỉ đạo xử lý của Ban Quản lý</span>
+              <span className="text-[13px] font-bold text-primary block">Chỉ đạo xử lý của Ban Quản lý</span>
               <textarea
                 required
                 rows={3}
@@ -201,12 +201,12 @@ export const IssueResolutionPage: React.FC = () => {
                   <span>Gửi thông báo Push tới Mobile App Kỹ sư</span>
                 </label>
 
-                <button type="submit" className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 shadow-xs">Gửi chỉ đạo</button>
+                <button type="submit" className="bg-primary text-white px-4 py-1.5 rounded-lg text-[13px] font-bold hover:opacity-90 shadow-xs">Gửi chỉ đạo</button>
               </div>
             </form>
 
             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3">
-              <span className="text-xs font-bold text-slate-700 block">Nhật ký xử lý</span>
+              <span className="text-[13px] font-bold text-slate-700 block">Nhật ký xử lý</span>
               <div className="space-y-3 text-xs">
                 {selectedIssue.timelineLogs.map((log) => (
                   <div key={log.id} className="flex items-start gap-3">

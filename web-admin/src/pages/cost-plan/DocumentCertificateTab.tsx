@@ -108,7 +108,7 @@ const inp = 'rounded-lg border border-slate-200 px-3 py-1.5 text-xs focus:border
 const DocLine = ({ text }: { text: string }) => {
   if (!text.trim()) return null;
   return (
-    <div className="flex items-start gap-1.5 text-[11px] leading-snug">
+    <div className="flex items-start gap-2.5 text-[11px] leading-snug">
       <span className="mt-0.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
       <span className="text-slate-600">{text}</span>
     </div>
@@ -334,7 +334,7 @@ export const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onCl
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[11px] font-extrabold uppercase tracking-wider text-primary">Model / Xuất xứ & Chứng từ</p>
                 <button type="button" onClick={addModel}
-                  className="flex items-center gap-1 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/10 transition">
+                  className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/10 transition">
                   <span className="material-symbols-outlined text-sm">add</span>Thêm model
                 </button>
               </div>
@@ -359,9 +359,9 @@ export const DocFormModal: React.FC<DocFormModalProps> = ({ title, initial, onCl
 
           <div className="flex flex-shrink-0 justify-end gap-2 border-t border-slate-100 px-5 py-4">
             <button type="button" onClick={onClose}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
+              className="rounded-lg border border-slate-200 px-4 py-2 text-[13px] font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
             <button type="submit" disabled={isUploading}
-              className="rounded-lg bg-primary px-5 py-2 text-xs font-bold text-white hover:opacity-90 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+              className="rounded-lg bg-primary px-5 py-2 text-[13px] font-bold text-white hover:opacity-90 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
               {isUploading ? 'Đang tải file...' : 'Lưu'}
             </button>
           </div>
@@ -526,13 +526,13 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
                   if (cleanUrls.length === 0) return null;
 
                   return (
-                    <div key={j} className="flex flex-wrap gap-1.5">
+                    <div key={j} className="flex flex-wrap gap-2.5">
                       {cleanUrls.map((url, uIdx) => {
                         const isPdf = url.toLowerCase().endsWith('.pdf');
                         if (isPdf) {
                           return (
                             <a key={uIdx} href={url} target="_blank" rel="noreferrer" 
-                              className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-200 hover:text-primary transition"
+                              className="flex items-center gap-2 rounded bg-slate-100 px-1.5 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-200 hover:text-primary transition"
                               title="Xem tệp đính kèm"
                             >
                               <span className="material-symbols-outlined text-[12px] text-rose-500">picture_as_pdf</span>
@@ -546,7 +546,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
                             e.stopPropagation();
                             setPreviewImage(url);
                           }}
-                            className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-200 hover:text-primary transition"
+                            className="flex items-center gap-2 rounded bg-slate-100 px-1.5 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-200 hover:text-primary transition"
                             title="Xem tệp đính kèm"
                           >
                             <span className="material-symbols-outlined text-[12px] text-rose-500">image</span>
@@ -646,7 +646,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
                 <td className="px-2 py-2.5">{renderFilesCell(item)}</td>
                 <td className="px-2 py-2.5 text-[11px] text-slate-500 break-words">{cleanNotes(item.notes) || '-'}</td>
                 <td className="px-2 py-2.5 text-center whitespace-nowrap">
-                  <div className="flex items-center justify-center gap-1">
+                  <div className="flex items-center justify-center gap-2">
                     <button onClick={(e) => { e.stopPropagation(); onDelete(item.id); }} title="Xóa"
                       className="rounded p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition">
                       <span className="material-symbols-outlined text-base">delete</span>

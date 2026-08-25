@@ -53,7 +53,7 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
             <div className="w-full max-w-4xl bg-white rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,35,111,0.1)] border border-slate-100 relative mt-4 overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-400 to-primary"></div>
               
-              <div className="flex flex-col md:flex-row p-8 sm:p-10 gap-10 md:gap-14">
+              <div className="flex flex-col md:flex-row p-8 sm:p-10 gap-20 md:gap-24">
                 
                 {/* Left Column: Branding & Demo Accounts */}
                 <div className="flex-1 flex flex-col justify-between">
@@ -78,7 +78,7 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
                 <div className="flex-1 flex flex-col justify-center">
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Tên đăng nhập</label>
+                      <label className="text-[13px] font-bold text-slate-500 uppercase tracking-wider ml-1">Tên đăng nhập</label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
                           <User size={20} strokeWidth={2} />
@@ -94,7 +94,7 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Mật khẩu</label>
+                      <label className="text-[13px] font-bold text-slate-500 uppercase tracking-wider ml-1">Mật khẩu</label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
                           <Key size={20} strokeWidth={2} />

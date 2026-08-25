@@ -366,10 +366,10 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
       {/* Filter Bar */}
       <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-[45px] z-10 items-center justify-between text-xs text-slate-600 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
+          <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <span className="text-slate-500 font-medium whitespace-nowrap">Đầu mục:</span>
             <CustomSelect
               value={filterParent}
@@ -384,7 +384,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
             </CustomSelect>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
             <CustomSelect
               value={filterUnit}
@@ -397,7 +397,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
             </CustomSelect>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <span className="text-slate-500 font-medium whitespace-nowrap">TT Đặt hàng:</span>
             <CustomSelect
               value={filterOrder}
@@ -410,7 +410,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
             </CustomSelect>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <span className="text-slate-500 font-medium whitespace-nowrap">TT Hợp đồng:</span>
             <CustomSelect
               value={filterContract}
@@ -650,7 +650,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                         className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-xs"
                       />
                     ) : (
-                      <div style={{ paddingLeft }} className={`flex items-center gap-1 overflow-hidden whitespace-nowrap group-hover:bg-slate-100 ${stickyBg}`}>
+                      <div style={{ paddingLeft }} className={`flex items-center gap-2 overflow-hidden whitespace-nowrap group-hover:bg-slate-100 ${stickyBg}`}>
                         {depth >= 1 && (
                           <span className="material-symbols-outlined flex-shrink-0 text-slate-300 text-lg mr-1 translate-y-[2px]">
                             subdirectory_arrow_right

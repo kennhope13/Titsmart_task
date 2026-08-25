@@ -43,11 +43,11 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
       {/* Filter Bar */}
       <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-10 items-center justify-between text-xs text-slate-600 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
+          <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <span className="text-slate-500 font-medium whitespace-nowrap">Ngày chi:</span>
             <CustomSelect
               value={filterDate}
@@ -60,7 +60,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
             </CustomSelect>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <span className="text-slate-500 font-medium whitespace-nowrap">Nội dung:</span>
             <CustomSelect
               value={filterContent}
@@ -75,7 +75,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
             </CustomSelect>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
             <CustomSelect
               value={filterUnit}
@@ -142,7 +142,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                       href={exp.invoiceUrl} 
                       target="_blank" 
                       rel="noreferrer" 
-                      className="inline-flex flex-col items-center gap-1 group/img"
+                      className="inline-flex flex-col items-center gap-2 group/img"
                     >
                       <div className="w-8 h-8 rounded border border-slate-200 overflow-hidden shadow-sm group-hover/img:border-primary transition-colors">
                         <img src={exp.invoiceUrl} alt="invoice" className="w-full h-full object-cover opacity-90 group-hover/img:opacity-100" />
