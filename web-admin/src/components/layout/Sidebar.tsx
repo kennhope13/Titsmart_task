@@ -229,7 +229,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                 className={`flex items-center justify-between mb-2 select-none ${group.collapsible !== false ? 'cursor-pointer hover:text-primary' : ''}`}
                 onClick={() => group.collapsible !== false && toggleGroup(group.title)}
               >
-                <h3 className={`text-[10px] font-extrabold uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'} ${group.collapsible !== false ? 'text-slate-400 hover:text-primary' : 'text-slate-400'}`}>{group.title}</h3>
+                <h3 className={`text-[11px] font-black uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'} ${group.collapsible !== false ? 'text-slate-500 hover:text-primary' : 'text-slate-700'}`}>{group.title}</h3>
                 {group.collapsible !== false && (
                   <span className={`material-symbols-outlined text-[14px] text-slate-400 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
                     {collapsedGroups[group.title] ? 'expand_more' : 'expand_less'}
