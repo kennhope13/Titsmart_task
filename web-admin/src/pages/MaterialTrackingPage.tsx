@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
@@ -54,7 +55,11 @@ const constructionBadgeClass = (status: string) => {
 };
 
 export const MaterialTrackingPage: React.FC = () => {
+  const { projectId } = useParams();
   const { materials, projects, inventoryTransactions, addMaterial, addMaterialsBatch, updateMaterial, deleteMaterial, addInventoryTransaction, addInventoryTransactionsBatch, logActivity } = useRealtimeStore();
+
+  const currentProject = projects.find(p => p.id === projectId || p.code === projectId);
+  const projectCodeFilter = currentProject ? currentProject.code : null;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -203,8 +208,9 @@ export const MaterialTrackingPage: React.FC = () => {
               code: finalCode,
               name: finalName,
               category: String(category || 'Vật tư chung'),
-              projectCode: 'COMPANY',
-              projectName: 'Kho Công Ty',
+              englishName: finalName,
+              projectCode: currentProject ? currentProject.code : 'COMPANY',
+              projectName: currentProject ? currentProject.name : 'Kho Công Ty',
               specs: specs,
               unit: unit || 'Cái',
               initialStock: numVal(row[7] || 0),
@@ -402,6 +408,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const filteredMaterials = useMemo(() => {
     let result = materials.filter(m => {
+      if (projectCodeFilter && m.projectCode !== projectCodeFilter) return false;
       if (filterCategory && (m.category || 'Vật tư chung') !== filterCategory) return false;
       if (filterName && m.name !== filterName) return false;
       if (filterUnit && m.unit !== filterUnit) return false;
@@ -430,9 +437,13 @@ export const MaterialTrackingPage: React.FC = () => {
     return result;
   }, [materials, activeTab, filterCategory, filterName, filterUnit, searchQuery]);
 
-  const imports = inventoryTransactions.filter(tx => tx.type === "IMPORT").sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+  const imports = inventoryTransactions
+    .filter(tx => tx.type === "IMPORT" && (!projectCodeFilter || materials.find(m => m.id === tx.materialId)?.projectCode === projectCodeFilter))
+    .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
-  const exports = inventoryTransactions.filter(tx => tx.type === "EXPORT").sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+  const exports = inventoryTransactions
+    .filter(tx => tx.type === "EXPORT" && (!projectCodeFilter || materials.find(m => m.id === tx.materialId)?.projectCode === projectCodeFilter))
+    .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
   const summaryCards = [
     { label: 'Tổng vật tư', value: filteredMaterials.length, icon: 'inventory_2', tone: 'text-slate-700 bg-slate-100' },
@@ -555,8 +566,8 @@ export const MaterialTrackingPage: React.FC = () => {
       code: finalCode,
       name: matName.trim(),
       englishName: description.trim() || matName.trim(),
-      projectCode: 'COMPANY',
-      projectName: 'Kho Công Ty',
+      projectCode: currentProject ? currentProject.code : 'COMPANY',
+      projectName: currentProject ? currentProject.name : 'Kho Công Ty',
       volume,
       initialStock: volume,
       currentStock: volume,

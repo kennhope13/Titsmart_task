@@ -43,6 +43,11 @@ export const ProjectDetailPage: React.FC = () => {
       icon: 'request_quote'
     },
     {
+      label: 'Kho Dự án',
+      path: `/projects/${project.id}/inventory`,
+      icon: 'warehouse'
+    },
+    {
       label: 'Theo dõi Hồ sơ',
       path: `/projects/${project.id}/documents`,
       icon: 'drafts'

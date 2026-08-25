@@ -78,6 +78,7 @@ export const App: React.FC = () => {
             <Route path="tasks" element={<TaskManagementPage />} />
             <Route path="field-logs" element={<FieldLogsPage />} />
             <Route path="cost-plan" element={<ProjectCostPlanPage />} />
+            <Route path="inventory" element={<MaterialTrackingPage />} />
             <Route path="documents" element={<DocumentTrackingPage />} />
           </Route>
           <Route path="/tasks" element={<TaskManagementPage />} />
