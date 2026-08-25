@@ -16,6 +16,7 @@ import { DocumentTrackingPage } from './pages/DocumentTrackingPage';
 import { ActivityLogPage } from './pages/ActivityLogPage';
 import { FieldLogsPage } from './pages/FieldLogsPage';
 import { ProjectCostPlanPage } from './pages/ProjectCostPlanPage';
+import { ProjectDetailPage } from './pages/ProjectDetailPage';
 
 import { UpdateNotifier } from './components/common/UpdateNotifier';
 import { GlobalNotificationToast } from './components/common/GlobalNotificationToast';
@@ -73,6 +74,12 @@ export const App: React.FC = () => {
           <Route path="/" element={<Navigate to="/projects" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/projects" element={<ProjectManagementPage />} />
+          <Route path="/projects/:projectId" element={<ProjectDetailPage />}>
+            <Route path="tasks" element={<TaskManagementPage />} />
+            <Route path="field-logs" element={<FieldLogsPage />} />
+            <Route path="cost-plan" element={<ProjectCostPlanPage />} />
+            <Route path="documents" element={<DocumentTrackingPage />} />
+          </Route>
           <Route path="/tasks" element={<TaskManagementPage />} />
           <Route path="/document-tracking" element={<DocumentTrackingPage />} />
           <Route path="/field-logs" element={<FieldLogsPage />} />

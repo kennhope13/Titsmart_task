@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import { useParams } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
 import { CostPlanSummaryTable } from './cost-plan/CostPlanSummaryTable';
@@ -1058,6 +1059,8 @@ export const ProjectCostPlanPage: React.FC = () => {
     reader.readAsBinaryString(file);
   };
 
+  const { projectId } = useParams();
+
   // Active Project Code
   const projectOptions = useMemo(() => {
     // Collect all project codes from projects list
@@ -1069,15 +1072,23 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   const [selectedProject, setSelectedProject] = useState<string>('');
 
+  const resolvedProjectCode = useMemo(() => {
+    if (!projectId) return '';
+    const proj = projects.find(p => p.id === projectId || p.code === projectId);
+    return proj ? proj.code : '';
+  }, [projectId, projects]);
+
   useEffect(() => {
-    if (projectOptions.length > 0) {
+    if (resolvedProjectCode) {
+      setSelectedProject(resolvedProjectCode);
+    } else if (projectOptions.length > 0) {
       if (!selectedProject || !projectOptions.includes(selectedProject)) {
         setSelectedProject(projectOptions[0]);
       }
     } else {
       setSelectedProject('');
     }
-  }, [projectOptions, selectedProject]);
+  }, [resolvedProjectCode, projectOptions, selectedProject]);
 
   const [activeTab, setActiveTab] = useState<'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('MATERIAL_PLAN');
   const [expenseSubTab, setExpenseSubTab] = useState<'SUMMARY' | 'DETAIL' | 'LABOR'>('SUMMARY');
@@ -1517,23 +1528,25 @@ export const ProjectCostPlanPage: React.FC = () => {
             className="hidden" 
           />
 
-          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200">
-            <span className="text-xs font-bold text-slate-500 uppercase px-2 whitespace-nowrap">Dự án:</span>
-          <CustomSelect 
-            value={selectedProject} 
-            onChange={(e) => setSelectedProject(e.target.value)} 
-            className="bg-white border border-slate-200 px-3 py-1.5 rounded-md text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
-          >
-            {projectOptions.length === 0 ? (
-              <option value="">-- Chưa có dự án --</option>
-            ) : (
-              projectOptions.map(code => {
-                const proj = projects.find(p => p.code === code);
-                return <option key={code} value={code}>{proj?.name || code}</option>;
-              })
-            )}
-          </CustomSelect>
-          </div>
+          {!projectId && (
+            <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200">
+              <span className="text-xs font-bold text-slate-500 uppercase px-2 whitespace-nowrap">Dự án:</span>
+            <CustomSelect 
+              value={selectedProject} 
+              onChange={(e) => setSelectedProject(e.target.value)} 
+              className="bg-white border border-slate-200 px-3 py-1.5 rounded-md text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
+            >
+              {projectOptions.length === 0 ? (
+                <option value="">-- Chưa có dự án --</option>
+              ) : (
+                projectOptions.map(code => {
+                  const proj = projects.find(p => p.code === code);
+                  return <option key={code} value={code}>{proj?.name || code}</option>;
+                })
+              )}
+            </CustomSelect>
+            </div>
+          )}
         </div>
       </section>
 

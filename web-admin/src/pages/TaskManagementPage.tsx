@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { useRealtimeStore } from '../services/realtimeStore';
@@ -146,9 +146,17 @@ const truncateText = (text: string, maxLength: number = 40): string => {
 
 export const TaskManagementPage: React.FC = () => {
   const navigate = useNavigate();
+  const { projectId } = useParams();
   const [searchParams] = useSearchParams();
-  const selectedProjectFromUrl = searchParams.get('project') || '';
   const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addPurchasingPlan, materialPlans, purchasingPlans, deleteMaterialPlan, deletePurchasingPlan, updateMaterialPlan, updatePurchasingPlan } = useRealtimeStore();
+
+  const resolvedProjectCode = React.useMemo(() => {
+    if (!projectId) return '';
+    const proj = projects.find(p => p.id === projectId || p.code === projectId);
+    return proj ? proj.code : '';
+  }, [projectId, projects]);
+
+  const selectedProjectFromUrl = resolvedProjectCode || searchParams.get('project') || '';
 
   // Đồng bộ trạng thái Mua hàng / Thi công từ tab Quản lý Công việc sang tab Kế hoạch Vật tư & Mua hàng
     const handleUpdateTaskSync = (id: string, updates: Partial<Task>) => {

@@ -1,5 +1,6 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import { useParams } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
@@ -175,8 +176,23 @@ export const DocumentTrackingPage: React.FC = () => {
     return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
   };
 
+  const { projectId } = useParams();
+
+  const resolvedProjectCode = useMemo(() => {
+    if (!projectId) return '';
+    const proj = projects.find(p => p.id === projectId || p.code === projectId);
+    return proj ? proj.code : '';
+  }, [projectId, projects]);
+
   // Filters state
   const [filterProjectCode, setFilterProjectCode] = useState('all');
+
+  useEffect(() => {
+    if (resolvedProjectCode) {
+      setFilterProjectCode(resolvedProjectCode);
+      setNewDoc(prev => ({ ...prev, projectCode: resolvedProjectCode }));
+    }
+  }, [resolvedProjectCode]);
   const [filterDocStatus, setFilterDocStatus] = useState('all');
   const [filterPaymentStatus, setFilterPaymentStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -357,19 +373,21 @@ export const DocumentTrackingPage: React.FC = () => {
                 <span className="material-symbols-outlined text-[16px]">filter_list</span>
               </div>
               
-              <div className="flex items-center gap-1">
-                <span className="text-slate-500 font-medium whitespace-nowrap">Dự án:</span>
-                <CustomSelect
-                  value={filterProjectCode}
-                  onChange={e => setFilterProjectCode(e.target.value)}
-                  className="min-w-[100px] max-w-[150px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
-                >
-                  <option value="all">Tất cả</option>
-                  {docProjectOptions.map(opt => (
-                    <option key={opt} value={opt}>{projects.find(p => p.code === opt)?.name || opt}</option>
-                  ))}
-                </CustomSelect>
-              </div>
+              {!projectId && (
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 font-medium whitespace-nowrap">Dự án:</span>
+                  <CustomSelect
+                    value={filterProjectCode}
+                    onChange={e => setFilterProjectCode(e.target.value)}
+                    className="min-w-[100px] max-w-[150px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
+                  >
+                    <option value="all">Tất cả</option>
+                    {docProjectOptions.map(opt => (
+                      <option key={opt} value={opt}>{projects.find(p => p.code === opt)?.name || opt}</option>
+                    ))}
+                  </CustomSelect>
+                </div>
+              )}
 
               <div className="flex items-center gap-1">
                 <span className="text-slate-500 font-medium whitespace-nowrap">Trạng thái hồ sơ:</span>

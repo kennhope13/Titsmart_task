@@ -227,7 +227,7 @@ export const ProjectManagementPage: React.FC = () => {
     });
   }, [displayProjects, tasks, materialPlans, purchasingPlans, expenses, laborPayrolls]);
   
-  const openProjectTasks = (project: Project) => navigate(`/tasks?project=${encodeURIComponent(project.code)}`);
+  const openProjectTasks = (project: Project) => navigate(`/projects/${project.id}`);
 
   const applyImportedProject = (data: WebOcrExtractedData) => {
     const projectName = data.projectName || getImportedFieldValue(data, ['cong trinh', 'ten cong trinh', 'du an', 'goi thau']);

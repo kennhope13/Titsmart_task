@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { useAuthStore } from '../../services/authStore';
 import { useUIStore } from '../../services/uiStore';
@@ -10,11 +10,16 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = false, toggleSidebar }) => {
-  const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
+  const { notifications, markNotificationRead, clearNotifications, projects } = useRealtimeStore();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const { sidebarHoverToExpand, sidebarShowToggleButton, setSidebarHoverToExpand, setSidebarShowToggleButton } = useUIStore();
   
+  const location = useLocation();
+  const match = location.pathname.match(/^\/projects\/([^\/]+)/);
+  const currentProjectId = match && match[1] !== 'new' ? match[1] : null;
+  const currentProject = projects.find(p => p.id === currentProjectId || p.code === currentProjectId);
+
   const [isHovered, setIsHovered] = useState(false);
   const [showNotifPopover, setShowNotifPopover] = useState(false);
   const [showUserPopover, setShowUserPopover] = useState(false);
@@ -54,6 +59,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
   const getNavGroups = () => {
     const role = user?.role || 'staff';
     
+    if (currentProject) {
+      const projectItems = [
+        { label: 'Tiến độ Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'playlist_add_check' },
+        { label: 'Nhật ký Hiện trường', path: `/projects/${currentProject.id}/field-logs`, icon: 'photo_camera' },
+        { label: 'Vật tư & Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'request_quote' }
+      ];
+
+      if (role !== 'staff' && role !== 'engineer') {
+        projectItems.push({ label: 'Theo dõi Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'drafts' });
+      }
+
+      return [
+        {
+          title: 'Hệ thống',
+          collapsible: false,
+          items: [
+            { label: 'Tất cả Dự án', path: '/projects', icon: 'arrow_back' }
+          ]
+        },
+        {
+          title: currentProject.name,
+          collapsible: false,
+          items: projectItems
+        }
+      ];
+    }
+
     // Admin sees everything
     if (role === 'admin') {
       return [
