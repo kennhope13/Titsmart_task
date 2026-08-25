@@ -98,10 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         {
           title: 'Quản lý dự án',
           items: [
-            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
-            { label: 'Vật tư & Chi phí', path: '/cost-plan', icon: 'request_quote' },
-            { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
-            { label: 'Theo dõi Hồ sơ', path: '/document-tracking', icon: 'drafts' },
+            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' }
           ]
         },
         {
@@ -118,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       ];
     }
 
-    // PM sees Dashboard, Projects, Cost Plan, Field Logs, Document Tracking, Materials, but NOT Personnel/System
+    // PM sees Dashboard, Projects, Materials, but NOT Personnel/System
     if (role === 'pm') {
       return [
         {
@@ -129,10 +126,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         {
           title: 'Quản lý dự án',
           items: [
-            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
-            { label: 'Vật tư & Chi phí', path: '/cost-plan', icon: 'request_quote' },
-            { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
-            { label: 'Theo dõi Hồ sơ', path: '/document-tracking', icon: 'drafts' },
+            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' }
           ]
         },
         {
@@ -142,15 +136,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       ];
     }
 
-    // Engineer sees Projects, Cost Plan (Materials only), Field Logs, Materials
+    // Engineer sees Projects, Materials
     if (role === 'engineer') {
       return [
         {
           title: 'Quản lý dự án',
           items: [
-            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
-            { label: 'Kế hoạch Vật tư', path: '/cost-plan', icon: 'view_list' },
-            { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
+            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' }
           ]
         },
         {
@@ -160,13 +152,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       ];
     }
 
-    // Staff only sees Projects and Field Logs
+    // Staff only sees Projects
     return [
       {
         title: 'Quản lý dự án',
         items: [
-          { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
-          { label: 'Nhật ký Hiện trường', path: '/field-logs', icon: 'photo_camera' },
+          { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' }
         ]
       }
     ];
