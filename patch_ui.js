@@ -1,43 +1,125 @@
 const fs = require('fs');
-const path = 'web-admin/src/pages/PersonnelPage.tsx';
-let content = fs.readFileSync(path, 'utf8');
 
-// 1. Role span
-const roleTarget = `<span className={\`px-2 py-0.5 rounded text-[11px] font-bold \${
-                        person.role === 'Quản trị viên' ? 'bg-purple-100 text-purple-700' :
-                        person.role === 'Quản lý dự án' ? 'bg-blue-100 text-blue-700' :
-                        person.role === 'Kỹ sư hiện trường' ? 'bg-orange-100 text-orange-700' :
-                        'bg-slate-100 text-slate-700'
-                      }\`}>`;
-const roleReplace = `<span className={\`text-[11px] font-bold \${
-                        person.role === 'Quản trị viên' ? 'text-purple-700' :
-                        person.role === 'Quản lý dự án' ? 'text-blue-700' :
-                        person.role === 'Kỹ sư hiện trường' ? 'text-orange-700' :
-                        'text-slate-700'
-                      }\`}>`;
+let f = fs.readFileSync('web-admin/src/pages/FieldLogsPage.tsx', 'utf8');
 
-content = content.replace(roleTarget, roleReplace);
+const uploadModalOld = `const UploadModal: React.FC<{
+  defaultProjectCode: string;
+  projects: { code: string; name: string }[];
+  onClose: () => void;
+  onUpload: (input: { projectCode: string; note: string; images: string[] }) => Promise<void>;
+}> = ({ defaultProjectCode, projects, onClose, onUpload }) => {`;
 
-// 2. Project 'Tất cả dự án'
-const allProjectsTarget = `<span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200 whitespace-nowrap">Tất cả dự án</span>`;
-const allProjectsReplace = `<span className="text-blue-700 text-[11px] font-bold whitespace-nowrap">Tất cả dự án</span>`;
-content = content.replace(allProjectsTarget, allProjectsReplace);
+const uploadModalNew = `const UploadModal: React.FC<{
+  defaultProjectCode: string;
+  projects: { code: string; name: string }[];
+  editLog?: any; // The log to edit
+  onClose: () => void;
+  onUpload: (input: { projectCode: string; note: string; images: string[] }) => Promise<void>;
+  onUpdate?: (id: string, input: { note: string; images: string[]; existingImages: string[] }) => Promise<void>;
+}> = ({ defaultProjectCode, projects, editLog, onClose, onUpload, onUpdate }) => {`;
 
-// 3. Project loops
-const projectLoopTarget = `{person.assignedProjects.map((mp: any) => (
-                            <span key={mp.code} className="px-2 py-0.5 rounded-full bg-blue-50 text-primary text-[11px] font-bold border border-blue-100 whitespace-nowrap">{mp.name}</span>
-                          ))}`;
-const projectLoopReplace = `{person.assignedProjects.map((mp: any, i: number, arr: any[]) => (
-                            <span key={mp.code} className="text-primary text-[11px] font-bold whitespace-nowrap">
-                              {mp.name}{i < arr.length - 1 ? ', ' : ''}
-                            </span>
-                          ))}`;
-content = content.replace(projectLoopTarget, projectLoopReplace);
+f = f.replace(uploadModalOld, uploadModalNew);
 
-// 4. Status span
-const statusTarget = `<td className="p-3 whitespace-nowrap"><span className={\`px-2 py-1 rounded-full text-[11px] font-bold \${person.locked ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}\`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>`;
-const statusReplace = `<td className="p-3 whitespace-nowrap"><span className={\`text-[11px] font-bold \${person.locked ? 'text-red-700' : 'text-emerald-700'}\`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>`;
-content = content.replace(statusTarget, statusReplace);
+const initOld = `  const [projectCode, setProjectCode] = useState(defaultProjectCode || '');
+  const [note, setNote] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);`;
 
-fs.writeFileSync(path, content, 'utf8');
-console.log('Patched PersonnelPage.tsx');
+const initNew = `  const [projectCode, setProjectCode] = useState(editLog?.projectCode || defaultProjectCode || '');
+  const [note, setNote] = useState(editLog?.note || '');
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>(editLog?.images || []);
+  const [existingImages, setExistingImages] = useState<string[]>(editLog?.images || []);`;
+
+f = f.replace(initOld, initNew);
+
+const removeOld = `  const removeFile = (idx: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== idx));
+    setPreviews(prev => prev.filter((_, i) => i !== idx));
+  };`;
+
+const removeNew = `  const removeFile = (idx: number) => {
+    const isExisting = idx < existingImages.length;
+    if (isExisting) {
+      setExistingImages(prev => prev.filter((_, i) => i !== idx));
+    } else {
+      setFiles(prev => prev.filter((_, i) => i !== (idx - existingImages.length)));
+    }
+    setPreviews(prev => prev.filter((_, i) => i !== idx));
+  };`;
+
+f = f.replace(removeOld, removeNew);
+
+const submitOld = `      await onUpload({ projectCode, note, images: urls });
+      onClose();`;
+
+const submitNew = `      if (editLog && onUpdate) {
+        await onUpdate(editLog.id, { note, images: urls, existingImages });
+      } else {
+        await onUpload({ projectCode, note, images: urls });
+      }
+      onClose();`;
+
+f = f.replace(submitOld, submitNew);
+
+// Add 'Sửa báo cáo' button and useRealtimeStore updates
+const storeOld = `  const { fieldLogs, projects, addFieldLog, deleteFieldLog, fetchFieldLogs } = useRealtimeStore();
+  const [selectedProject, setSelectedProject] = useState('');
+  const [isUploadOpen, setIsUploadOpen] = useState(false);`;
+
+const storeNew = `  const { fieldLogs, projects, addFieldLog, deleteFieldLog, updateFieldLog, fetchFieldLogs } = useRealtimeStore();
+  const [selectedProject, setSelectedProject] = useState('');
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [editLog, setEditLog] = useState<any>(null);`;
+
+f = f.replace(storeOld, storeNew);
+
+const uploadModalsOld = `      {isUploadOpen && (
+        <UploadModal
+          defaultProjectCode={selectedProject}
+          projects={projects}
+          onClose={() => setIsUploadOpen(false)}
+          onUpload={handleUpload} />
+      )}`;
+
+const uploadModalsNew = `      {(isUploadOpen || editLog) && (
+        <UploadModal
+          defaultProjectCode={selectedProject}
+          projects={projects}
+          editLog={editLog}
+          onClose={() => { setIsUploadOpen(false); setEditLog(null); }}
+          onUpload={handleUpload}
+          onUpdate={async (id, input) => {
+            await updateFieldLog(id, input);
+            await fetchFieldLogs();
+          }}
+        />
+      )}`;
+
+f = f.replace(uploadModalsOld, uploadModalsNew);
+
+// Add edit button next to delete button
+const deleteBtnOld = `                          <button onClick={() => setDeletingId(log.id)} title="Xóa báo cáo"
+                            className="rounded p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
+                            <span className="material-symbols-outlined text-lg">delete</span>
+                          </button>`;
+
+const deleteBtnNew = `                          <div className="flex gap-1">
+                            <button onClick={() => setEditLog(log)} title="Sửa báo cáo"
+                              className="rounded p-1.5 text-slate-300 hover:bg-blue-50 hover:text-blue-500 transition">
+                              <span className="material-symbols-outlined text-lg">edit</span>
+                            </button>
+                            <button onClick={() => setDeletingId(log.id)} title="Xóa báo cáo"
+                              className="rounded p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
+                              <span className="material-symbols-outlined text-lg">delete</span>
+                            </button>
+                          </div>`;
+
+f = f.replace(deleteBtnOld, deleteBtnNew);
+
+const titleOld = `Upload ảnh hiện trường`;
+const titleNew = `{editLog ? 'Sửa ảnh hiện trường' : 'Upload ảnh hiện trường'}`;
+f = f.replace(titleOld, titleNew);
+
+fs.writeFileSync('web-admin/src/pages/FieldLogsPage.tsx', f);
+console.log('UI updated');

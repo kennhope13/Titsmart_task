@@ -229,6 +229,7 @@ interface RealtimeStoreState {
   
   addFieldLog: (input: { projectCode: string; note?: string; images: string[] }) => Promise<void>;
   deleteFieldLog: (id: string) => Promise<void>;
+  updateFieldLog: (id: string, input: { note?: string; images?: string[]; existingImages?: string[] }) => Promise<void>;
   logActivity: (action: string, project: string, user?: string) => void;
 }
 
@@ -1406,6 +1407,20 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
     
+    updateFieldLog: async (id, input) => {
+      try {
+        const updated = await api.fieldLogs.update(id, input);
+        set((state) => {
+          const nextLogs = state.fieldLogs.map(l => l.id === id ? updated : l);
+          get().logActivity('Cập nhật nhật ký hiện trường: ' + (updated.projectCode), 'COMPANY');
+          persistAndNotify({ fieldLogs: nextLogs });
+          return { fieldLogs: nextLogs };
+        });
+      } catch (e) {
+        console.error('Failed to update field log', e);
+        throw e;
+      }
+    },
     addFieldLog: async (input) => {
       try {
         const created = await api.fieldLogs.create(input);
