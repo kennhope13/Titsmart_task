@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
 import { useParams, Link, useLocation, Outlet, Navigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore } from '../services/authStore';
 
 export const ProjectDetailPage: React.FC = () => {
   const { projectId } = useParams();
   const { projects } = useRealtimeStore();
   const location = useLocation();
+  const role = useAuthStore(state => state.user?.role);
 
   const project = useMemo(() => {
     // Find project by ID or Code
