@@ -313,21 +313,21 @@ export const DocumentTrackingPage: React.FC = () => {
           />
           <button 
             onClick={() => fileInputRef.current?.click()} 
-            className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+            className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
           >
             <span className="material-symbols-outlined text-sm">file_upload</span>
             Nhập Excel
           </button>
           <button 
             onClick={handleExportExcel} 
-            className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+            className="flex items-center gap-1 border border-slate-200 bg-white px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
           >
             <span className="material-symbols-outlined text-sm">file_download</span>
             Xuất Excel
           </button>
           <button 
             onClick={() => setIsNewDocOpen(true)} 
-            className="flex items-center gap-1 bg-primary text-white px-3 py-2 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
+            className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Thêm hồ sơ mới
