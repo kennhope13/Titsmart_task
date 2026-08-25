@@ -169,7 +169,7 @@ export const ActivityLogPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
-          <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100 whitespace-nowrap">
+          <span className="px-3 h-[34px] rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100 whitespace-nowrap">
             {filteredLogs.length} thao tác
           </span>
           <div className="relative w-full sm:w-64 flex items-center">
@@ -179,12 +179,12 @@ export const ActivityLogPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm hành động, nhân sự..."
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all"
+              className="w-full pl-9 pr-3 h-[34px] bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all"
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 py-1 focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-3 h-[34px] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
               <span className="text-[11px] font-bold text-slate-500 mr-2">Từ</span>
               <input
                 type="date"
@@ -194,7 +194,7 @@ export const ActivityLogPage: React.FC = () => {
               />
             </div>
             
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 py-1 focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-3 h-[34px] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
               <span className="text-[11px] font-bold text-slate-500 mr-2">Đến</span>
               <input
                 type="date"
@@ -209,7 +209,7 @@ export const ActivityLogPage: React.FC = () => {
             <button
               type="button"
               onClick={clearFilters}
-              className="flex items-center justify-center gap-1 px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors"
+              className="flex items-center justify-center gap-1 px-3 h-[34px] border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors"
             >
               <span className="material-symbols-outlined text-[14px]">filter_alt_off</span>
               Xóa lọc

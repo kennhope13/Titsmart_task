@@ -636,14 +636,14 @@ export const ProjectManagementPage: React.FC = () => {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder={TEXT.searchProject}
-              className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+              className="w-full pl-9 pr-3 h-[34px] border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
             />
           </div>
           { (user?.role === 'admin' || user?.role === 'pm') ? (
           <button
             type="button"
             onClick={() => setIsNewProjectModalOpen(true)}
-            className="flex items-center gap-1.5 bg-primary text-white px-3.5 py-2 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap"
+            className="flex items-center gap-1.5 bg-primary text-white px-3.5 h-[34px] rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             {TEXT.createProject}

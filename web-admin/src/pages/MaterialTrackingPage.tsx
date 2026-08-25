@@ -671,20 +671,20 @@ export const MaterialTrackingPage: React.FC = () => {
           />
           <button 
             onClick={() => fileInputRef.current?.click()} 
-            className="flex items-center gap-1 border border-slate-200 bg-white px-4 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+            className="flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-4 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
           >
             <span className="material-symbols-outlined text-base">file_upload</span>
             Nhập Excel
           </button>
-          <button onClick={handleExportExcel} className="flex items-center gap-1 border border-slate-200 bg-white px-4 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
+          <button onClick={handleExportExcel} className="flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-4 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
             <span className="material-symbols-outlined text-base">file_download</span>
             Xuất Excel
           </button>
-          <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-1 bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
+          <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-1 bg-emerald-600 text-white h-[34px] px-4 rounded-lg text-xs font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
             <span className="material-symbols-outlined text-base">arrow_downward</span>
             Nhập Kho
           </button>
-          <button onClick={() => handleOpenTransaction('EXPORT')} className="flex items-center gap-1 bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-xs">
+          <button onClick={() => handleOpenTransaction('EXPORT')} className="flex items-center gap-1 bg-amber-500 text-white h-[34px] px-4 rounded-lg text-xs font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-xs">
             <span className="material-symbols-outlined text-base">arrow_upward</span>
             Xuất Kho
           </button>
@@ -718,7 +718,7 @@ export const MaterialTrackingPage: React.FC = () => {
           </div>
           
           {/* Lọc chi tiết */}
-          <div className="px-4 py-2 bg-slate-50/80 border-t border-slate-100 flex items-center gap-3 overflow-x-auto custom-scrollbar justify-between">
+          <div className="h-[34px] px-4 bg-slate-50/80 border-t border-slate-100 flex items-center gap-3 overflow-x-auto custom-scrollbar justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5 text-slate-500 font-bold text-xs whitespace-nowrap pr-1">
                 <span className="material-symbols-outlined text-[16px]">filter_list</span>

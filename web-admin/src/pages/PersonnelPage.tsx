@@ -209,17 +209,17 @@ export const PersonnelPage: React.FC = () => {
           <div><h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">TÀI KHOẢN & NHÂN SỰ</h2></div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-xs font-bold border border-blue-100">{engineers.filter(e => e.role !== 'Quản trị viên' && e.username !== 'admin').length} nhân sự</span>
+          <span className="h-[34px] px-3 rounded-full flex items-center bg-blue-50 text-primary text-xs font-bold border border-blue-100">{engineers.filter(e => e.role !== 'Quản trị viên' && e.username !== 'admin').length} nhân sự</span>
           <button 
             onClick={handleExportExcel} 
-            className="flex items-center gap-1 border border-slate-200 bg-white px-4 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+            className="flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-4 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
           >
             <span className="material-symbols-outlined text-sm">file_download</span>
             Xuất Excel
           </button>
           <button
             onClick={openCreateModal}
-            className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 flex items-center gap-1 shadow-xs"
+            className="bg-primary text-white h-[34px] px-4 rounded-lg text-xs font-bold hover:opacity-90 flex items-center gap-1 shadow-xs"
           >
             <span className="material-symbols-outlined text-sm align-[-2px]">add</span>Thêm nhân sự
           </button>
@@ -389,8 +389,8 @@ export const PersonnelPage: React.FC = () => {
           <div className="py-4">
             <p className="mb-8 text-sm font-medium text-slate-700">Bạn chắc chắn muốn xóa nhân sự "{deletingPerson.name}"?</p>
             <div className="flex justify-end gap-3 border-t pt-4">
-              <button onClick={() => setDeletingPerson(null)} className="px-4 py-2 border border-slate-300 text-slate-700 bg-white rounded hover:bg-slate-50 transition-colors font-medium">Hủy</button>
-              <button onClick={() => { const { id, name } = deletingPerson; setDeletingPerson(null); handleDeletePerson(id, name); }} className="px-4 py-2 bg-[#e53935] text-white rounded hover:bg-red-700 transition-colors font-bold shadow-md">Xóa</button>
+              <button onClick={() => setDeletingPerson(null)} className="h-[34px] px-4 border border-slate-300 text-slate-700 bg-white rounded hover:bg-slate-50 transition-colors font-medium">Hủy</button>
+              <button onClick={() => { const { id, name } = deletingPerson; setDeletingPerson(null); handleDeletePerson(id, name); }} className="h-[34px] px-4 bg-[#e53935] text-white rounded hover:bg-red-700 transition-colors font-bold shadow-md">Xóa</button>
             </div>
           </div>
         </Modal>
