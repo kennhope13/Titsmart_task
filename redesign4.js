@@ -1,4 +1,23 @@
-selectedProject ? (
+const fs = require('fs');
+let f = fs.readFileSync('web-admin/src/pages/FieldLogsPage.tsx', 'utf8');
+
+f = f.replace(/const \[filterProject, setFilterProject\] = useState<string>\('all'\);/,
+`const [filterProject, setFilterProject] = useState<string>('all');
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);`);
+
+f = f.replace(/const formatTimeOnly = \(value: string\) => \{\r?\n\s*try \{\r?\n\s*return new Date\(value\).toLocaleTimeString\('vi-VN', \{ hour: '2-digit', minute: '2-digit' \}\);\r?\n\s*\} catch \{\r?\n\s*return value;\r?\n\s*\}\r?\n\};/, 
+`const formatTimeOnly = (value: string) => {
+  try {
+    const d = new Date(value);
+    return \`\${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - \${d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}\`;
+  } catch {
+    return value;
+  }
+};`);
+
+const gridRegex = /<div className="grid grid-cols-1 gap-6 xl:grid-cols-2">[\s\S]*?<\/div>\s*\) \}\)\}\s*<\/div>/;
+
+const newBody = `selectedProject ? (
               <div className="flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 flex-1 overflow-hidden">
                 <div className="flex items-center px-6 py-4 border-b border-slate-200 bg-slate-50 sticky top-0 z-10">
                   <button onClick={() => setSelectedProject(null)} className="mr-4 p-2 rounded-full hover:bg-slate-200 text-slate-600 transition flex items-center justify-center">
@@ -86,93 +105,11 @@ selectedProject ? (
                   </div>
                 )})}
               </div>
-            )
-                      </div>
-                    ));
-                  })()}
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {logsByProject.map(([projectCode, logs]) => {
-                  const latestLog = logs[0];
-                  if (!latestLog) return null;
-                  const previewImages = logs.flatMap(l => l.images).slice(0, 4);
-                  return (
-                  <div key={projectCode} onClick={() => setSelectedProject(projectCode)} className="group cursor-pointer flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300 transform hover:-translate-y-1">
-                    <div className="flex flex-col p-5 border-b border-slate-100 bg-slate-50 group-hover:bg-primary/5 transition-colors">
-                      <h3 className="font-bold text-slate-800 uppercase text-[14px] tracking-wide mb-1 truncate group-hover:text-primary transition-colors">
-                        {projectCode}
-                      </h3>
-                      <p className="text-xs text-slate-500 font-medium">{logs.length} bản ghi nhật ký</p>
-                    </div>
+            )`;
 
-                    <div className="flex-1 p-5 flex flex-col justify-between">
-                      <div className="mb-4">
-                        <div className="flex items-center text-xs text-slate-400 mb-2">
-                          <span className="material-symbols-outlined text-[14px] mr-1">schedule</span>
-                          Cập nhật: {formatTimeOnly(latestLog.timestamp)}
-                        </div>
-                        {latestLog.note && <p className="text-sm text-slate-600 line-clamp-2">{latestLog.note}</p>}
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {previewImages.map((img, i) => (
-                          <div key={i} className="h-10 w-10 rounded bg-slate-100 overflow-hidden border border-slate-200">
-                            <img src={img} className="h-full w-full object-cover" />
-                          </div>
-                        ))}
-                        {logs.flatMap(l => l.images).length > 4 && (
-                          <div className="h-10 w-10 rounded bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-200">
-                            +{logs.flatMap(l => l.images).length - 4}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-              )
-            }
-          </div>
-            )}
-          )}
-        </div>
+const startIndex = f.indexOf('<div className="grid grid-cols-1 gap-6 xl:grid-cols-2">');
+const endIndex = f.indexOf('</div>', f.indexOf(') })}', startIndex)) + 6;
 
-      {/* Upload Modal */}
-      {isUploadOpen && (
-        <UploadModal
-          defaultProjectCode={selectedProject}
-          projects={projects}
-          onClose={() => setIsUploadOpen(false)}
-          onUpload={handleUpload} />
-      )}
-
-      {/* Lightbox */}
-      {lightbox && (
-        <Lightbox
-          images={lightbox.images}
-          index={lightbox.index}
-          onClose={() => setLightbox(null)}
-          onPrev={() => setLightbox(l => l ? { ...l, index: l.index - 1 } : l)}
-          onNext={() => setLightbox(l => l ? { ...l, index: l.index + 1 } : l)} />
-      )}
-
-      {/* Confirm delete */}
-      {deletingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeletingId(null)} />
-          <div className="relative w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 text-center shadow-2xl ring-1 ring-slate-200">
-            <span className="material-symbols-outlined text-4xl text-rose-500">delete_forever</span>
-            <p className="text-sm font-bold text-slate-800">Xóa báo cáo này?</p>
-            <p className="text-xs text-slate-500">Các ảnh trong báo cáo sẽ bị xóa vĩnh viễn.</p>
-            <div className="flex justify-center gap-3 pt-1">
-              <button onClick={() => setDeletingId(null)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
-              <button onClick={handleDelete}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 active:scale-95">Xóa</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+f = f.substring(0, startIndex) + newBody + f.substring(endIndex);
+fs.writeFileSync('web-admin/src/pages/FieldLogsPage.tsx', f, 'utf8');
+console.log("Successfully rebuilt FieldLogsPage.tsx");
