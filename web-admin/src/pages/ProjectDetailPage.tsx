@@ -74,7 +74,7 @@ export const ProjectDetailPage: React.FC = () => {
             <span className="text-slate-600 truncate max-w-[200px]">{project.name}</span>
           </div>
           <h1 className="text-lg font-extrabold text-slate-900 uppercase tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-xl">domain</span>
+            <span className="material-symbols-outlined text-primary text-lg">domain</span>
             {project.name}
           </h1>
         </div>

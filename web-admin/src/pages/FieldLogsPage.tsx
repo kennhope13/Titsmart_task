@@ -201,7 +201,7 @@ const UploadModal: React.FC<{
                 ))}
                 <button type="button" onClick={() => fileInputRef.current?.click()}
                   className="flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:bg-slate-50 hover:text-primary transition">
-                  <span className="material-symbols-outlined mb-0.5 text-xl">add_photo_alternate</span>
+                  <span className="material-symbols-outlined mb-0.5 text-lg">add_photo_alternate</span>
                   <span className="text-[10px] font-bold">Thêm ảnh</span>
                 </button>
               </div>
@@ -313,12 +313,12 @@ export const FieldLogsPage: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-slate-100 overflow-y-auto">
       {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-6 py-4 md:py-0 md:h-[72px] shadow-sm">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-6 py-4 md:py-0 md:h-12 shadow-sm">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between h-full">
           <div className="flex items-center gap-4">
 
             <div className="border-l-4 border-primary pl-4">
-              <h1 className="text-2xl font-extrabold uppercase text-slate-900">NHẬT KÝ HIỆN TRƯỜNG</h1>
+              <h1 className="text-lg font-extrabold uppercase text-slate-900">NHẬT KÝ HIỆN TRƯỜNG</h1>
             </div>
           </div>
 

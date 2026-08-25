@@ -44,7 +44,7 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
             <div className="mx-auto w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
               <img src="./logo.png" alt="TITSMART" className="w-full h-full object-contain p-1" />
             </div>
-            <h1 className="mt-3 text-xl font-extrabold text-primary leading-tight">TITSMART</h1>
+            <h1 className="mt-3 text-lg font-extrabold text-primary leading-tight">TITSMART</h1>
             <p className="text-[11px] text-slate-500 font-medium mt-0.5">HỆ THỐNG QUẢN LÝ CÔNG VIỆC & DỰ ÁN</p>
           </div>
 

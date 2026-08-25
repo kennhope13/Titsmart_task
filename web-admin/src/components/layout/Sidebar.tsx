@@ -146,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       onMouseLeave={() => setIsHovered(false)}
       className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[240px]' : 'w-[64px]'}`}
     >
-      <div className="relative h-[72px] px-3 flex items-center gap-2 border-b border-slate-100 min-w-[240px]">
+      <div className="relative h-12 px-3 flex items-center gap-2 border-b border-slate-100 min-w-[240px]">
         <div className="flex-1 flex items-center gap-3 min-w-0 p-1">
           <div 
             className={`relative w-10 h-10 flex items-center justify-center flex-shrink-0 ${sidebarShowToggleButton ? 'cursor-pointer group/logo' : ''}`}

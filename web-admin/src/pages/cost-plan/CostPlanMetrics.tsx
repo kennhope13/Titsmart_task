@@ -66,7 +66,7 @@ export const CostPlanMetrics: React.FC<MetricsProps> = ({ projectMetrics }) => {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">{item.label}</p>
-              <p className={`mt-2 truncate text-xl font-black ${projectMetrics.balance < 0 && item.label === 'Tồn quỹ' ? 'text-red-600' : 'text-slate-900'}`}>
+              <p className={`mt-2 truncate text-lg font-black ${projectMetrics.balance < 0 && item.label === 'Tồn quỹ' ? 'text-red-600' : 'text-slate-900'}`}>
                 {item.value}
               </p>
             </div>

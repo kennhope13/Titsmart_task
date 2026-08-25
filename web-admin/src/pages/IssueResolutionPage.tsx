@@ -26,7 +26,7 @@ const IssuePhoto: React.FC<{ src: string; title: string; className: string; icon
   src,
   title,
   className,
-  iconClassName = 'text-xl',
+  iconClassName = 'text-lg',
 }) => {
   const [hasError, setHasError] = useState(false);
 
@@ -93,7 +93,7 @@ export const IssueResolutionPage: React.FC = () => {
       <section className="bg-white border-b border-slate-200 shadow-xs px-5 py-4 flex items-center gap-4 flex-shrink-0">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="page-title text-2xl font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">Xử lý sự cố</h2>
+            <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-4 uppercase">Xử lý sự cố</h2>
           </div>
         </div>
       </section>
@@ -158,7 +158,7 @@ export const IssueResolutionPage: React.FC = () => {
             <div className="bg-white border border-slate-200 p-5 rounded-xl flex justify-between items-center shadow-xs">
               <div>
                 <span className="px-2 py-0.5 bg-slate-100 font-mono text-[11px] font-bold text-slate-600 rounded">{selectedIssue.incidentCode}</span>
-                <h2 className="text-2xl font-extrabold text-slate-900 mt-1">{cleanText(selectedIssue.title)}</h2>
+                <h2 className="text-lg font-extrabold text-slate-900 mt-1">{cleanText(selectedIssue.title)}</h2>
                 <span className="text-xs text-slate-500">{cleanText(selectedIssue.location)}</span>
               </div>
               {selectedIssue.status !== 'RESOLVED' && (

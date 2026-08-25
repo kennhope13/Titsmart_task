@@ -19,7 +19,7 @@ export const AccountPage: React.FC = () => {
       <section className="bg-white px-6 py-4 flex items-center border-b border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="h-6 w-[2px] bg-primary"></div>
-          <h2 className="text-xl font-extrabold text-primary uppercase tracking-wide">TÀI KHOẢN</h2>
+          <h2 className="text-lg font-extrabold text-primary uppercase tracking-wide">TÀI KHOẢN</h2>
         </div>
       </section>
 
@@ -30,7 +30,7 @@ export const AccountPage: React.FC = () => {
             <div className="w-28 h-28 rounded-[24px] bg-primary text-white flex items-center justify-center text-4xl font-extrabold shadow-lg mb-6">
               {(user?.name || engineer?.name || 'AD').slice(0, 2).toUpperCase()}
             </div>
-            <h3 className="text-2xl font-extrabold text-slate-900 mb-2">
+            <h3 className="text-lg font-extrabold text-slate-900 mb-2">
               {user?.name || engineer?.name || 'Admin'}
             </h3>
             <span className="px-4 py-1.5 rounded-full bg-blue-50 text-primary border border-blue-100 text-sm font-bold">
@@ -73,7 +73,7 @@ export const AccountPage: React.FC = () => {
 
 const Info = ({ label, value, icon }: { label: string; value: string; icon: string }) => (
   <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 flex items-start gap-4 transition-all duration-300 hover:shadow-sm hover:bg-white hover:border-blue-200 group">
-    <span className="material-symbols-outlined text-primary text-xl group-hover:scale-110 transition-transform">{icon}</span>
+    <span className="material-symbols-outlined text-primary text-lg group-hover:scale-110 transition-transform">{icon}</span>
     <div className="min-w-0 flex-1">
       <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">{label}</div>
       <div className="text-[15px] font-extrabold text-slate-800 break-words">{value}</div>
