@@ -146,13 +146,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       onMouseLeave={() => setIsHovered(false)}
       className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[240px]' : 'w-[64px]'}`}
     >
-      <div className="relative h-[72px] px-3 flex items-center gap-3 border-b border-slate-100 min-w-[240px]">
-        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 cursor-pointer" onClick={toggleSidebar} title="Mở rộng / Thu gọn">
-          <img src="./logo.png" alt="TITSMART" className="w-10 h-10 object-contain" />
-        </div>
-        <div className={`min-w-0 transition-opacity duration-300 flex-1 flex flex-col justify-center ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
-          <h1 className="font-extrabold text-[18px] text-blue-900 leading-none tracking-tight">TITSMART</h1>
-          <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Project Manager</p>
+      <div className="relative h-[72px] px-3 flex items-center gap-2 border-b border-slate-100 min-w-[240px]">
+        <div className="flex-1 flex items-center gap-3 min-w-0 cursor-pointer group rounded-lg hover:bg-slate-50 transition-colors p-1" onClick={toggleSidebar}>
+          <div className="w-8 h-8 flex items-center justify-center flex-shrink-0" title="Mở rộng / Thu gọn">
+            <img src="./logo.png" alt="TITSMART" className="w-8 h-8 object-contain" />
+          </div>
+          <div className={`min-w-0 transition-opacity duration-300 flex-1 flex flex-row items-center justify-between ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
+            <div className="flex flex-col justify-center">
+              <h1 className="font-extrabold text-[16px] text-blue-900 leading-none tracking-tight">TITSMART</h1>
+              <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Project Manager</p>
+            </div>
+            {sidebarShowToggleButton && (
+              <div 
+                className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 flex items-center justify-center text-slate-400 hover:text-primary mr-1"
+                title="Ghim / Bỏ ghim thanh menu"
+              >
+                <span className="material-symbols-outlined text-[20px]">view_sidebar</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className={`relative transition-opacity duration-300 flex-shrink-0 pr-1 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
