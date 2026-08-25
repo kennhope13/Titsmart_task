@@ -24,7 +24,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {sidebarShowToggleButton && (
         <button 
           onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-          className={`fixed z-50 top-1/2 -translate-y-1/2 w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-50 hover:scale-110 shadow-md transition-all duration-300 ease-in-out cursor-pointer ${isSidebarExpanded ? 'left-[264px]' : 'left-[48px]'}`}
+          className={`fixed z-50 top-1/2 -translate-y-1/2 w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-50 hover:scale-110 shadow-md transition-all duration-300 ease-in-out cursor-pointer ${isSidebarExpanded ? 'left-[224px]' : 'left-[48px]'}`}
           title="Mở rộng / Thu gọn (Phím tắt: Ctrl + B)"
         >
           <span className="material-symbols-outlined text-[18px]">{isSidebarExpanded ? 'chevron_left' : 'chevron_right'}</span>
