@@ -47,14 +47,14 @@ const Lightbox: React.FC<{ images: string[]; index: number; onClose: () => void;
     </div>
 
     {/* Image Container (Scrollable) */}
-    <div className="flex-1 overflow-auto flex flex-col items-center p-2 sm:p-4" onClick={onClose}>
-      <div className="my-auto relative max-w-full" onClick={(e) => e.stopPropagation()}>
-        <img 
-          src={images[index]} 
-          alt="Ảnh hiện trường" 
-          className="w-full h-auto max-h-none object-contain rounded-lg shadow-2xl" 
-        />
-      </div>
+    <div className="flex-1 overflow-auto p-4 text-center whitespace-nowrap" onClick={onClose}>
+      <span className="inline-block h-full align-middle" />
+      <img 
+        src={images[index]} 
+        alt="Ảnh hiện trường" 
+        className="inline-block align-middle w-full max-w-5xl h-auto rounded-lg shadow-2xl cursor-default" 
+        onClick={(e) => e.stopPropagation()} 
+      />
     </div>
 
     {/* Navigation */}
