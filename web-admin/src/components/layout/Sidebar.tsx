@@ -89,78 +89,52 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
 
     // Admin sees everything
     if (role === 'admin') {
-      return [
-        {
-          title: 'Bảng điều khiển',
-          collapsible: false,
-          items: [{ label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' }]
-        },
-        {
-          title: 'Quản lý dự án',
-          items: [
-            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' }
-          ]
-        },
-        {
-          title: 'Kho công ty',
-          items: [{ label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }]
-        },
-        {
-          title: 'Hệ thống & Nội bộ',
-          items: [
-            { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
-            { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' },
-          ]
-        },
-      ];
+      return [{
+        title: '',
+        collapsible: false,
+        items: [
+          { label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' },
+          { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
+          { label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' },
+          { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
+          { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' }
+        ]
+      }];
     }
 
     // PM sees Dashboard, Projects, Materials, but NOT Personnel/System
     if (role === 'pm') {
-      return [
-        {
-          title: 'Bảng điều khiển',
-          collapsible: false,
-          items: [{ label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' }]
-        },
-        {
-          title: 'Quản lý dự án',
-          items: [
-            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' }
-          ]
-        },
-        {
-          title: 'Kho công ty',
-          items: [{ label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }]
-        }
-      ];
+      return [{
+        title: '',
+        collapsible: false,
+        items: [
+          { label: 'Tổng quan', path: '/dashboard', icon: 'dashboard' },
+          { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
+          { label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }
+        ]
+      }];
     }
 
     // Engineer sees Projects, Materials
     if (role === 'engineer') {
-      return [
-        {
-          title: 'Quản lý dự án',
-          items: [
-            { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' }
-          ]
-        },
-        {
-          title: 'Kho công ty',
-          items: [{ label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }]
-        }
-      ];
+      return [{
+        title: '',
+        collapsible: false,
+        items: [
+          { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' },
+          { label: 'Kho & Vật tư', path: '/materials', icon: 'warehouse' }
+        ]
+      }];
     }
 
     // Staff only sees Projects
-    return [
-      {
-        title: 'Quản lý dự án',
-        items: [
-          { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' }
-        ]
-      }
-    ];
+    return [{
+      title: '',
+      collapsible: false,
+      items: [
+        { label: 'Danh sách Dự án', path: '/projects', icon: 'domain' }
+      ]
+    }];
   };
 
   const navGroups = getNavGroups();
@@ -230,19 +204,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       </div>
 
       <nav className="flex-1 w-[280px] px-3 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">
-        {navGroups.map((group) => (
-          <div key={group.title} className="space-y-1">
-            <div
-              className={`flex items-center justify-between mb-2 select-none ${group.collapsible !== false ? 'cursor-pointer hover:text-primary' : ''}`}
-              onClick={() => group.collapsible !== false && toggleGroup(group.title)}
-            >
-              <h3 className={`text-[10px] font-extrabold uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'} ${group.collapsible !== false ? 'text-slate-400 hover:text-primary' : 'text-slate-400'}`}>{group.title}</h3>
-              {group.collapsible !== false && (
-                <span className={`material-symbols-outlined text-[14px] text-slate-400 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
-                  {collapsedGroups[group.title] ? 'expand_more' : 'expand_less'}
-                </span>
-              )}
-            </div>
+        {navGroups.map((group, index) => (
+          <div key={group.title || index} className="space-y-1">
+            {group.title && (
+              <div
+                className={`flex items-center justify-between mb-2 select-none ${group.collapsible !== false ? 'cursor-pointer hover:text-primary' : ''}`}
+                onClick={() => group.collapsible !== false && toggleGroup(group.title)}
+              >
+                <h3 className={`text-[10px] font-extrabold uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'} ${group.collapsible !== false ? 'text-slate-400 hover:text-primary' : 'text-slate-400'}`}>{group.title}</h3>
+                {group.collapsible !== false && (
+                  <span className={`material-symbols-outlined text-[14px] text-slate-400 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
+                    {collapsedGroups[group.title] ? 'expand_more' : 'expand_less'}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className={`space-y-1 overflow-hidden transition-all duration-200 ${group.collapsible !== false && collapsedGroups[group.title] ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'}`}>
               {group.items.map((item) => (
