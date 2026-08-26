@@ -182,7 +182,7 @@ export const MaterialTrackingPage: React.FC = () => {
             let finalCode = String(row[3] || '').trim();
             if (!finalCode) {
               let suffixNum = 0;
-              let codeBase = specs ? specs : finalName;
+              let codeBase = specs ? `${finalName}-${specs}` : finalName;
               finalCode = generateMaterialCode(codeBase);
               while (usedCodes.has(finalCode)) {
                 suffixNum++;
@@ -650,7 +650,7 @@ export const MaterialTrackingPage: React.FC = () => {
     let finalCode = newMatCode;
     if (!finalCode) {
       let suffixNum = 0;
-      let codeBase = description ? description : matName;
+      let codeBase = description ? `${matName}-${description}` : matName;
       finalCode = generateMaterialCode(codeBase);
       const usedCodes = new Set(materials.map(m => m.code));
       while (usedCodes.has(finalCode)) {
