@@ -273,7 +273,7 @@ const hasSyncedRef = useRef(false);
 
   const [selectedProjectCode, setSelectedProjectCode] = useState<string>('all');
   const [selectedRomanSection, setSelectedRomanSection] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
 
   // Column Filters
   const [filterSection, setFilterSection] = useState<string>('all');

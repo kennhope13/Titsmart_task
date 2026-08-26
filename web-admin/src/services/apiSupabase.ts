@@ -397,6 +397,7 @@ export const api = {
         note: d.notes,
         images: d.photos || [],
         timestamp: d.created_at,
+        taskId: d.task_id,
       }));
     },
     create: async (data: any) => {
@@ -404,6 +405,7 @@ export const api = {
         project_code: data.projectCode,
         notes: data.note,
         photos: data.images,
+        task_id: data.taskId || null,
       };
       const { data: result, error } = await supabase.from('field_logs').insert(payload).select().single();
       if (error) throw error;
@@ -413,6 +415,7 @@ export const api = {
         note: result.notes,
         images: result.photos || [],
         timestamp: result.created_at,
+        taskId: result.task_id,
       };
     },
     delete: async (id: string) => {
@@ -423,6 +426,7 @@ export const api = {
     update: async (id: string, data: any) => {
       const payload: any = {};
       if (data.note !== undefined) payload.notes = data.note;
+      if (data.taskId !== undefined) payload.task_id = data.taskId || null;
       if (data.images || data.existingImages) {
         payload.photos = [...(data.existingImages || []), ...(data.images || [])];
       }

@@ -294,6 +294,7 @@ export interface FieldLog {
   note: string;
   images: string[]; // URL ảnh (đường dẫn /uploads/...)
   timestamp: string; // Thời điểm tạo báo cáo
+  taskId?: string;
 }
 
 export const getTextColorStyle = (status?: string) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
-import { useParams, useOutletContext } from 'react-router-dom';
+import { useParams, useOutletContext, Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { FieldLog } from '../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
@@ -87,11 +87,13 @@ const UploadModal: React.FC<{
   projects: { code: string; name: string }[];
   editLog?: any;
   onClose: () => void;
-  onUpload: (input: { projectCode: string; note: string; images: string[] }) => Promise<void>;
-  onUpdate?: (id: string, input: { note: string; images: string[]; existingImages: string[] }) => Promise<void>;
+  onUpload: (input: { projectCode: string; note: string; images: string[]; taskId?: string }) => Promise<void>;
+  onUpdate?: (id: string, input: { note: string; images: string[]; existingImages: string[]; taskId?: string }) => Promise<void>;
 }> = ({ defaultProjectCode, projects, editLog, onClose, onUpload, onUpdate }) => {
   const [projectCode, setProjectCode] = useState(editLog?.projectCode || defaultProjectCode || '');
   const [note, setNote] = useState(editLog?.note || '');
+  const [taskId, setTaskId] = useState(editLog?.taskId || '');
+  const { tasks } = useRealtimeStore();
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>(editLog?.images || []);
   const [existingImages, setExistingImages] = useState<string[]>(editLog?.images || []);
@@ -144,9 +146,9 @@ const UploadModal: React.FC<{
         urls.push(publicUrl);
       }
       if (editLog && onUpdate) {
-        await onUpdate(editLog.id, { note, images: urls, existingImages });
+        await onUpdate(editLog.id, { note, images: urls, existingImages, taskId });
       } else {
-        await onUpload({ projectCode, note, images: urls });
+        await onUpload({ projectCode, note, images: urls, taskId });
       }
       onClose();
     } catch (err: any) {
@@ -215,7 +217,22 @@ const UploadModal: React.FC<{
             {/* Ghi chú */}
             <div>
               <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">Ghi chú</label>
-              <textarea rows={2} value={note} onChange={e => setNote(e.target.value)}
+              
+          <div>
+            <label className="mb-2 block text-[13px] font-bold text-slate-700">Đầu mục công việc (Tùy chọn)</label>
+            <select
+              value={taskId}
+              onChange={(e) => setTaskId(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all"
+              disabled={!projectCode}
+            >
+              <option value="">-- Không liên kết --</option>
+              {tasks.filter(t => t.projectCode === projectCode).map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          <textarea rows={2} value={note} onChange={e => setNote(e.target.value)}
                 placeholder="Mô tả nội dung hiện trường (tùy chọn)..."
                 className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
@@ -299,7 +316,7 @@ export const FieldLogsPage: React.FC = () => {
   const projectName = (code: string) => projects.find(p => p.code === code)?.name || code;
   const totalImages = visibleLogs.reduce((sum, l) => sum + l.images.length, 0);
 
-  const handleUpload = async (input: { projectCode: string; note: string; images: string[] }) => {
+  const handleUpload = async (input: { projectCode: string; note: string; images: string[]; taskId?: string }) => {
     await addFieldLog(input);
     await fetchFieldLogs();
   };
