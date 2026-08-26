@@ -1,7 +1,7 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const version = process.env.version || '1.0.0';
 
-const htmlContent = 
+const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,11 +16,11 @@ const htmlContent =
 <body>
     <div class="container">
         <div class="header">
-            <h2 style="margin: 0;">🎉 Bản Cập Nhật Mới (v)</h2>
+            <h2 style="margin: 0;">🎉 Bản Cập Nhật Mới (v${version})</h2>
         </div>
         <div class="content">
             <p>Chào bạn,</p>
-            <p>Hệ thống Quản lý Dự án TITSMART vừa có bản cập nhật mới nhất <b>v</b>.</p>
+            <p>Hệ thống Quản lý Dự án TITSMART vừa có bản cập nhật mới nhất <b>v${version}</b>.</p>
             <p>Bản cập nhật bao gồm:</p>
             <ul>
                 <li>Cập nhật giao diện tự động</li>
@@ -35,7 +35,7 @@ const htmlContent =
     </div>
 </body>
 </html>
-;
+`;
 
-fs.writeFileSync('mail_body.html', htmlContent);
+fs.writeFileSync('mail_body.html', htmlContent, 'utf8');
 console.log('mail_body.html generated successfully.');
