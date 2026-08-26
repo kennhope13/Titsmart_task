@@ -1203,7 +1203,7 @@ export const MaterialTrackingPage: React.FC = () => {
           </div>
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
             <button type="button" onClick={() => setIsTransferModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button>
-            <button type="submit" className="px-5 py-1.5 bg-blue-600 text-white rounded-lg font-bold hover:opacity-90 flex items-center gap-1">
+            <button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90 flex items-center gap-1">
               <span className="material-symbols-outlined text-[16px]">swap_horiz</span>
               Thực hiện chuyển
             </button>
