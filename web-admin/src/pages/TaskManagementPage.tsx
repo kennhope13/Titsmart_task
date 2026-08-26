@@ -121,6 +121,10 @@ const compareTaskStt = (a?: string, b?: string) => {
 };
 
 
+const cleanIssue = (value?: string) => {
+  return String(value || '').split('[DOC-DATA]')[0].trim();
+};
+
 const cleanNotes = (value?: string) => {
   return String(value || '')
     .replace(/\[order:[\d.]+\]/g, '')
@@ -176,7 +180,10 @@ export const TaskManagementPage: React.FC = () => {
       const matUpdates: Record<string, any> = {};
       if (updates.purchaseStatus !== undefined) matUpdates.orderedStatus = updates.purchaseStatus;
       if (updates.constrStatus !== undefined) matUpdates.progressStatus = updates.constrStatus;
-      if (updates.issue !== undefined) matUpdates.issueContent = updates.issue;
+      if (updates.issue !== undefined) {
+        const docPart = String(matchingMaterial.issueContent || '').split('[DOC-DATA]');
+        matUpdates.issueContent = updates.issue + (docPart.length > 1 ? ' [DOC-DATA]' + docPart[1] : '');
+      }
       if (updates.issueStatus !== undefined) matUpdates.issueStatus = updates.issueStatus;
       if (updates.notes !== undefined) {
         const docPart = String(matchingMaterial.notes || '').split('[DOC-NOTE]');
@@ -227,8 +234,9 @@ const hasSyncedRef = useRef(false);
         if (hasConstr && norm(matchingMaterial.progressStatus) !== norm(task.constrStatus)) {
           matUpdates.progressStatus = task.constrStatus;
         }
-        if (norm(matchingMaterial.issueContent) !== norm(task.issue)) {
-          matUpdates.issueContent = task.issue || '';
+        if (norm(cleanIssue(matchingMaterial.issueContent)) !== norm(cleanIssue(task.issue))) {
+          const docPart = String(matchingMaterial.issueContent || '').split('[DOC-DATA]');
+          matUpdates.issueContent = (task.issue || '') + (docPart.length > 1 ? ' [DOC-DATA]' + docPart[1] : '');
         }
         if (norm(matchingMaterial.issueStatus) !== norm(task.issueStatus)) {
           matUpdates.issueStatus = task.issueStatus || '';
@@ -455,7 +463,7 @@ const hasSyncedRef = useRef(false);
     setEditUnit(t.unit || 'cái');
     setEditPurchaseStatus(t.purchaseStatus || 'Chưa đặt hàng');
     setEditConstrStatus(t.constrStatus || 'Chưa thi công');
-    setEditIssue(t.issue || '');
+    setEditIssue(cleanIssue(t.issue) || '');
     setEditIssueStatus(t.issueStatus || '');
     setEditNotes(t.notes || '');
     setEditEngineerId(t.assignedEngineerId || engineers[0]?.id || '');
@@ -809,7 +817,7 @@ const hasSyncedRef = useRef(false);
     ['TIẾN ĐỘ']: t.isSectionHeader ? '' : String(Math.round(t.progress * 100)) + '%',
     ['TT ĐẶT HÀNG']: t.purchaseStatus || '',
     ['TÌNH TRẠNG THI CÔNG']: t.constrStatus || '',
-    ['VƯỚNG MẮC/ TỒN ĐỌNG']: t.issue || '',
+    ['VƯỚNG MẮC/ TỒN ĐỌNG']: cleanIssue(t.issue) || '',
     ['TT XỬ LÝ']: t.issueStatus || '',
     ['HOÀN THÀNH']: t.isDone ? 'Đã hoàn thành' : 'Chưa',
     ['GHI CHÚ']: t.notes || '',
@@ -1212,7 +1220,7 @@ const displayTasks = tasks.filter((t) => {
     const matchesConstr = filterConstr === 'all' || t.constrStatus === filterConstr;
     const matchesSearch =
       t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (t.issue && t.issue.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (cleanIssue(t.issue) && cleanIssue(t.issue).toLowerCase().includes(searchTerm.toLowerCase())) ||
       (t.sectionName && t.sectionName.toLowerCase().includes(searchTerm.toLowerCase()));
     return (
       matchesProj &&
@@ -1606,7 +1614,7 @@ const displayTasks = tasks.filter((t) => {
                     sttStyle = "font-medium text-slate-400 text-[11px]";
                   }
                   
-                  if (t.issue) {
+                  if (cleanIssue(t.issue)) {
                     rowBg = 'bg-amber-50/50';
                     stickyBg = 'bg-[#fffbeb]';
                   } else if (isFinished) {
@@ -1660,12 +1668,12 @@ const displayTasks = tasks.filter((t) => {
                         </div>
                       </td>
                       <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200"><CustomSelect value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); handleUpdateTaskSync(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}>{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>))}</CustomSelect></td>
-                      <td className="py-1.5 px-1 font-semibold text-red-600 whitespace-normal break-words leading-tight border-r border-slate-200" title={t.issue || ''}>
+                      <td className="py-1.5 px-1 font-semibold text-red-600 whitespace-normal break-words leading-tight border-r border-slate-200" title={cleanIssue(t.issue) || ''}>
                         {editingCell?.id === t.id && editingCell?.field === 'issue' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-red-600 font-bold focus:outline-primary text-[10px]" />
                         ) : (
-                          <span onClick={() => startEditing(t.id, 'issue', t.issue)} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">
-                            {t.issue ? (<span className="inline-flex items-start gap-2 whitespace-normal break-words leading-tight"><span className="material-symbols-outlined text-red-500 text-xs flex-shrink-0 mt-0.5">warning</span><span>{t.issue}</span></span>) : (<span className="text-slate-300">-</span>)}
+                          <span onClick={() => startEditing(t.id, 'issue', cleanIssue(t.issue))} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">
+                            {cleanIssue(t.issue) ? (<span className="inline-flex items-start gap-2 whitespace-normal break-words leading-tight"><span className="material-symbols-outlined text-red-500 text-xs flex-shrink-0 mt-0.5">warning</span><span>{cleanIssue(t.issue)}</span></span>) : (<span className="text-slate-300">-</span>)}
                           </span>
                         )}
                       </td>
