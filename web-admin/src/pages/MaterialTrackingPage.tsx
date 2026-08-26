@@ -345,8 +345,9 @@ export const MaterialTrackingPage: React.FC = () => {
     const timeoutId = setTimeout(updateHeight, 100);
     
     window.addEventListener('resize', updateHeight);
-  
-  const handleTransfer = async (e: React.FormEvent) => {
+    
+
+  const handleTransfer = = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!transferMaterial || !transferTargetProject || transferQuantity <= 0) return;
     
@@ -435,11 +436,7 @@ export const MaterialTrackingPage: React.FC = () => {
     setIsTransferModalOpen(false);
   };
 
-  return () => {
-      window.removeEventListener('resize', updateHeight);
-      clearTimeout(timeoutId);
-    };
-  }, [activeTab]);
+  
 
   // New Material form state
   const [newMatCode, setNewMatCode] = useState('');
