@@ -665,7 +665,7 @@ const hasSyncedRef = useRef(false);
             String(str || '')
               .toLowerCase()
               .normalize('NFD')
-              .replace(/[̀-ͯ]/g, '')
+              .replace(/[\u0300-\u036f]/g, '')
               .replace(/đ/g, 'd')
               .trim();
 
