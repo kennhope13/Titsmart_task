@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { useUIStore } from '../../services/uiStore';
+import { BackToTop } from '../common/BackToTop';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,6 +24,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className={`${isSidebarExpanded ? 'ml-[240px]' : 'ml-[56px]'} flex flex-col h-screen flex-1 overflow-hidden transition-all duration-300 ease-in-out`}>
         <main className="flex-1 bg-slate-50 flex flex-col w-full max-w-full overflow-hidden">{children}</main>
       </div>
+      <BackToTop />
     </div>
   );
 };
