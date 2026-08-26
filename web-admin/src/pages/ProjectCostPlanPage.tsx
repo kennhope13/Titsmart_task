@@ -1502,7 +1502,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         'ĐV': p.unit,
         'SL': p.contractVolume,
         'Model/xuất xứ': [p.techSpecModel, p.techSpecOrigin].filter(Boolean).join(' / '),
-        'Chứng từ': ['CO: ' + (p.docCo ? 'Có' : 'Chưa có'), 'CQ: ' + (p.docCq ? 'Có' : 'Chưa có'), 'Kiểm định PCCC: ' + (p.docFireInspection ? 'Có' : 'Chưa có')].join('; '),
+        'Chứng từ': ['CO: ' + (p.docCo ? 'Có' : 'Chưa có'), 'CQ: ' + (p.docCq ? 'Có' : 'Chưa có'), 'Tem KĐ: ' + (p.docStamp ? 'Có' : 'Chưa có'), 'Kiểm định PCCC: ' + (p.docFireInspection ? 'Có' : 'Chưa có')].join('; '),
         'Ghi chú': p.notes || ''
       }));
       sheetName = 'TheoDoiChungTu';
@@ -2380,8 +2380,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <label className="block font-bold mb-1">Ngày cấp hàng dự kiến</label>
                 <input type="date" value={newPlanData.expectedDate || ''} onChange={(e) => setNewPlanData({...newPlanData, expectedDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
               </div>
-              <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
+              <div className="grid grid-cols-4 gap-3 bg-slate-50 p-2 rounded-lg border">
                 <div className="flex items-center gap-2.5"><input type="checkbox" checked={newPlanData.docCo} onChange={(e) => setNewPlanData({...newPlanData, docCo: e.target.checked})} /> <span className="font-bold">Chứng từ CO</span></div>
+                <div className="flex items-center gap-2.5"><input type="checkbox" checked={newPlanData.docStamp} onChange={(e) => setNewPlanData({...newPlanData, docStamp: e.target.checked})} /> <span className="font-bold">Tem KĐ</span></div>
                 <div className="flex items-center gap-2.5"><input type="checkbox" checked={newPlanData.docCq} onChange={(e) => setNewPlanData({...newPlanData, docCq: e.target.checked})} /> <span className="font-bold">Chứng từ CQ</span></div>
                 <div className="flex items-center gap-2.5"><input type="checkbox" checked={newPlanData.dispatchToSite} onChange={(e) => setNewPlanData({...newPlanData, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi tới CT</span></div>
               </div>
@@ -2523,8 +2524,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                   <label className="block font-bold mb-1">Ngày cấp hàng dự kiến</label>
                   <input type="date" value={editingPlan.expectedDate || ''} onChange={(e) => setEditingPlan({...editingPlan, expectedDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" />
                 </div>
-                <div className="grid grid-cols-3 gap-3 bg-slate-50 p-2 rounded-lg border">
+                <div className="grid grid-cols-4 gap-3 bg-slate-50 p-2 rounded-lg border">
                   <div className="flex items-center gap-2.5"><input type="checkbox" checked={editingPlan.docCo} onChange={(e) => setEditingPlan({...editingPlan, docCo: e.target.checked})} /> <span className="font-bold">CO</span></div>
+                  <div className="flex items-center gap-2.5"><input type="checkbox" checked={editingPlan.docStamp} onChange={(e) => setEditingPlan({...editingPlan, docStamp: e.target.checked})} /> <span className="font-bold">Tem KĐ</span></div>
                   <div className="flex items-center gap-2.5"><input type="checkbox" checked={editingPlan.docCq} onChange={(e) => setEditingPlan({...editingPlan, docCq: e.target.checked})} /> <span className="font-bold">CQ</span></div>
                   <div className="flex items-center gap-2.5"><input type="checkbox" checked={editingPlan.dispatchToSite} onChange={(e) => setEditingPlan({...editingPlan, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi CT</span></div>
                 </div>

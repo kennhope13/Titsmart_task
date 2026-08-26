@@ -195,6 +195,7 @@ export interface ProjectMaterialPlan {
   docCo?: boolean;
   docCq?: boolean;
   docFireInspection?: boolean;
+  docStamp?: boolean;
   dispatchToSite?: boolean;
   dispatchDate?: string;
   supplyScope?: 'contractor' | 'owner' | 'unknown';

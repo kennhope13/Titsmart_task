@@ -28,6 +28,7 @@ const formatMaterialPlan = (p: any) => ({
   issueStatus: p.issue_status,
   docCo: p.doc_co,
   docCq: p.doc_cq,
+  docStamp: p.doc_stamp,
   docFireInspection: p.doc_fire_inspection,
   dispatchToSite: p.dispatch_to_site,
   dispatchDate: p.dispatch_date,
@@ -82,7 +83,7 @@ export const getMaterialPlans = async (req: Request, res: Response) => {
 
 export const createMaterialPlan = async (req: Request, res: Response) => {
   try {
-    const { projectCode, jobContent, contractVolume, orderedVolume, expectedDate, dispatchDate, docCO, docCQ, docCo, docCq, docFireInspection, dispatchToSite, ...data } = req.body;
+    const { projectCode, jobContent, contractVolume, orderedVolume, expectedDate, dispatchDate, docCO, docCQ, docCo, docCq, docStamp, docFireInspection, dispatchToSite, ...data } = req.body;
     const project_id = await resolveProjectId(projectCode);
     if (!project_id) return res.status(400).json({ error: 'Invalid projectCode' });
 
@@ -104,6 +105,7 @@ export const createMaterialPlan = async (req: Request, res: Response) => {
         issue_status: data.issueStatus || '',
         doc_co: (docCo !== undefined ? docCo : docCO) || false,
         doc_cq: (docCq !== undefined ? docCq : docCQ) || false,
+        doc_stamp: docStamp || false,
         doc_fire_inspection: docFireInspection || false,
         dispatch_to_site: dispatchToSite || false,
         dispatch_date: dispatchDate ? new Date(dispatchDate) : null,
@@ -122,7 +124,7 @@ export const createMaterialPlan = async (req: Request, res: Response) => {
 export const updateMaterialPlan = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { projectCode, jobContent, contractVolume, orderedVolume, expectedDate, dispatchDate, docCO, docCQ, docCo, docCq, docFireInspection, dispatchToSite, ...data } = req.body;
+    const { projectCode, jobContent, contractVolume, orderedVolume, expectedDate, dispatchDate, docCO, docCQ, docCo, docCq, docStamp, docFireInspection, dispatchToSite, ...data } = req.body;
     
     const updateData: any = {};
     if (jobContent !== undefined) updateData.job_content = jobContent;
@@ -134,6 +136,7 @@ export const updateMaterialPlan = async (req: Request, res: Response) => {
     const actualDocCq = docCq !== undefined ? docCq : docCQ;
     if (actualDocCo !== undefined) updateData.doc_co = actualDocCo;
     if (actualDocCq !== undefined) updateData.doc_cq = actualDocCq;
+    if (docStamp !== undefined) updateData.doc_stamp = docStamp;
     if (docFireInspection !== undefined) updateData.doc_fire_inspection = docFireInspection;
     if (dispatchToSite !== undefined) updateData.dispatch_to_site = dispatchToSite;
     if (data.stt !== undefined) updateData.stt = data.stt;

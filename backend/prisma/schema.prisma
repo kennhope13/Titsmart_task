@@ -74,69 +74,69 @@ enum attachment_owner_type {
 }
 
 model User {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code          String?   @unique @db.VarChar(50)
-  full_name     String    @db.VarChar(255)
-  email         String    @unique @db.VarChar(255)
-  phone         String?   @db.VarChar(50)
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code          String?        @unique @db.VarChar(50)
+  full_name     String         @db.VarChar(255)
+  email         String         @unique @db.VarChar(255)
+  phone         String?        @db.VarChar(50)
   password_hash String?
-  role          user_role @default(engineer)
-  title         String?   @db.VarChar(255)
+  role          user_role      @default(engineer)
+  title         String?        @db.VarChar(255)
   avatar_url    String?
   status        account_status @default(active)
-  last_login_at DateTime? @db.Timestamptz
-  created_at    DateTime  @default(now()) @db.Timestamptz
-  updated_at    DateTime  @default(now()) @db.Timestamptz
+  last_login_at DateTime?      @db.Timestamptz
+  created_at    DateTime       @default(now()) @db.Timestamptz
+  updated_at    DateTime       @default(now()) @db.Timestamptz
 
-  projects_managed Project[] @relation("ProjectManager")
-  project_memberships ProjectMember[]
-  tasks_assigned   Task[]    @relation("TaskAssignedEngineer")
-  task_assignments TaskAssignment[] @relation("TaskAssignedUser")
-  tasks_assigned_by TaskAssignment[] @relation("TaskAssignedBy")
+  projects_managed       Project[]              @relation("ProjectManager")
+  project_memberships    ProjectMember[]
+  tasks_assigned         Task[]                 @relation("TaskAssignedEngineer")
+  task_assignments       TaskAssignment[]       @relation("TaskAssignedUser")
+  tasks_assigned_by      TaskAssignment[]       @relation("TaskAssignedBy")
   inventory_transactions InventoryTransaction[] @relation("TransactionCreatedBy")
-  progress_updates ProgressUpdate[] @relation("ProgressUpdateUser")
-  issues_reported  Issue[] @relation("IssueReportedBy")
-  issues_assigned  Issue[] @relation("IssueAssignedTo")
-  issue_comments   IssueComment[] @relation("CommentAuthor")
-  attachments      Attachment[] @relation("AttachmentUploader")
-  notifications    Notification[]
-  activity_logs    ActivityLog[]
+  progress_updates       ProgressUpdate[]       @relation("ProgressUpdateUser")
+  issues_reported        Issue[]                @relation("IssueReportedBy")
+  issues_assigned        Issue[]                @relation("IssueAssignedTo")
+  issue_comments         IssueComment[]         @relation("CommentAuthor")
+  attachments            Attachment[]           @relation("AttachmentUploader")
+  notifications          Notification[]
+  activity_logs          ActivityLog[]
 
   @@map("users")
 }
 
 model Project {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code              String    @unique @db.VarChar(80)
-  name              String    @db.VarChar(255)
-  location          String    @default("") @db.VarChar(255)
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code              String         @unique @db.VarChar(80)
+  name              String         @db.VarChar(255)
+  location          String         @default("") @db.VarChar(255)
   status            project_status @default(active)
-  manager_id        String?   @db.Uuid
-  manager_name      String?   @db.VarChar(255)
-  start_date        DateTime? @db.Date
-  end_date          DateTime? @db.Date
-  active_teams      Int       @default(0)
-  progress_percent  Decimal   @default(0) @db.Decimal(5, 2)
-  total_tasks       Int       @default(0)
-  completed_tasks   Int       @default(0)
-  issue_tasks_count Int       @default(0)
+  manager_id        String?        @db.Uuid
+  manager_name      String?        @db.VarChar(255)
+  start_date        DateTime?      @db.Date
+  end_date          DateTime?      @db.Date
+  active_teams      Int            @default(0)
+  progress_percent  Decimal        @default(0) @db.Decimal(5, 2)
+  total_tasks       Int            @default(0)
+  completed_tasks   Int            @default(0)
+  issue_tasks_count Int            @default(0)
   notes             String?
-  created_at        DateTime  @default(now()) @db.Timestamptz
-  updated_at        DateTime  @default(now()) @db.Timestamptz
+  created_at        DateTime       @default(now()) @db.Timestamptz
+  updated_at        DateTime       @default(now()) @db.Timestamptz
 
-  manager           User?     @relation("ProjectManager", fields: [manager_id], references: [id], onDelete: SetNull)
-  member_assignments ProjectMember[]
-  tasks             Task[]
-  materials         Material[]
+  manager                User?                  @relation("ProjectManager", fields: [manager_id], references: [id], onDelete: SetNull)
+  member_assignments     ProjectMember[]
+  tasks                  Task[]
+  materials              Material[]
   inventory_transactions InventoryTransaction[]
-  issues            Issue[]
-  activity_logs     ActivityLog[]
-  material_plans    ProjectMaterialPlan[]
-  purchasings       ProjectPurchasing[]
-  expenses          ProjectExpense[]
-  labor_payrolls    LaborPayroll[]
-  document_tracks   DocumentTrack[]
-  field_logs        FieldLog[]
+  issues                 Issue[]
+  activity_logs          ActivityLog[]
+  material_plans         ProjectMaterialPlan[]
+  purchasings            ProjectPurchasing[]
+  expenses               ProjectExpense[]
+  labor_payrolls         LaborPayroll[]
+  document_tracks        DocumentTrack[]
+  field_logs             FieldLog[]
 
   @@index([status])
   @@map("projects")
@@ -157,39 +157,39 @@ model ProjectMember {
 }
 
 model Task {
-  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  project_id           String    @db.Uuid
-  stt                  String?   @db.VarChar(50)
-  code                 String    @unique @db.VarChar(100)
+  id                   String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id           String        @db.Uuid
+  stt                  String?       @db.VarChar(50)
+  code                 String        @unique @db.VarChar(100)
   name                 String
-  volume               Decimal   @default(0) @db.Decimal(18, 4)
-  unit                 String    @default("") @db.VarChar(50)
-  progress             Decimal   @default(0) @db.Decimal(7, 4)
-  status               task_status @default(not_started)
+  volume               Decimal       @default(0) @db.Decimal(18, 4)
+  unit                 String        @default("") @db.VarChar(50)
+  progress             Decimal       @default(0) @db.Decimal(7, 4)
+  status               task_status   @default(not_started)
   priority             task_priority @default(medium)
-  purchase_status      String    @default("") @db.VarChar(255)
-  construction_status  String    @default("") @db.VarChar(255)
+  purchase_status      String        @default("") @db.VarChar(255)
+  construction_status  String        @default("") @db.VarChar(255)
   issue_summary        String?
-  issue_status_text    String?   @db.VarChar(255)
-  is_done              Boolean   @default(false)
-  is_section_header    Boolean   @default(false)
+  issue_status_text    String?       @db.VarChar(255)
+  is_done              Boolean       @default(false)
+  is_section_header    Boolean       @default(false)
   section_name         String?
-  parent_id            String?   @db.Uuid
+  parent_id            String?       @db.Uuid
   notes                String?
-  assigned_engineer_id String?   @db.Uuid
-  due_date             DateTime? @db.Date
-  source_row           Json      @default("{}")
-  created_at           DateTime  @default(now()) @db.Timestamptz
-  updated_at           DateTime  @default(now()) @db.Timestamptz
+  assigned_engineer_id String?       @db.Uuid
+  due_date             DateTime?     @db.Date
+  source_row           Json          @default("{}")
+  created_at           DateTime      @default(now()) @db.Timestamptz
+  updated_at           DateTime      @default(now()) @db.Timestamptz
 
-  project              Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  parent               Task?     @relation("TaskToTask", fields: [parent_id], references: [id], onDelete: Cascade)
-  sub_tasks            Task[]    @relation("TaskToTask")
-  assigned_engineer    User?     @relation("TaskAssignedEngineer", fields: [assigned_engineer_id], references: [id], onDelete: SetNull)
-  task_assignments     TaskAssignment[]
-  materials            Material[]
-  progress_updates     ProgressUpdate[]
-  issues               Issue[]
+  project           Project          @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent            Task?            @relation("TaskToTask", fields: [parent_id], references: [id], onDelete: Cascade)
+  sub_tasks         Task[]           @relation("TaskToTask")
+  assigned_engineer User?            @relation("TaskAssignedEngineer", fields: [assigned_engineer_id], references: [id], onDelete: SetNull)
+  task_assignments  TaskAssignment[]
+  materials         Material[]
+  progress_updates  ProgressUpdate[]
+  issues            Issue[]
 
   @@index([project_id])
   @@index([status])
@@ -205,40 +205,40 @@ model TaskAssignment {
   assigned_at DateTime @default(now()) @db.Timestamptz
   notes       String?
 
-  task        Task     @relation(fields: [task_id], references: [id], onDelete: Cascade)
-  user        User     @relation("TaskAssignedUser", fields: [user_id], references: [id], onDelete: Cascade)
-  assigner    User?    @relation("TaskAssignedBy", fields: [assigned_by], references: [id], onDelete: SetNull)
+  task     Task  @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user     User  @relation("TaskAssignedUser", fields: [user_id], references: [id], onDelete: Cascade)
+  assigner User? @relation("TaskAssignedBy", fields: [assigned_by], references: [id], onDelete: SetNull)
 
   @@unique([task_id, user_id])
   @@map("task_assignments")
 }
 
 model Material {
-  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  project_id          String    @db.Uuid
-  task_id             String?   @db.Uuid
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id          String   @db.Uuid
+  task_id             String?  @db.Uuid
   stt                 Int?
-  code                String    @unique @db.VarChar(100)
+  code                String   @unique @db.VarChar(100)
   name                String
   english_name        String?
-  volume              Decimal   @default(0) @db.Decimal(18, 4)
-  unit                String    @default("") @db.VarChar(50)
-  unit_price          Decimal   @default(0) @db.Decimal(18, 2)
-  status              String    @default("") @db.VarChar(255)
-  construction_status String?   @db.VarChar(255)
-  supplier            String?   @db.VarChar(255)
-  initial_stock       Decimal   @default(0) @db.Decimal(18, 4)
-  current_stock       Decimal   @default(0) @db.Decimal(18, 4)
-  total_import        Decimal   @default(0) @db.Decimal(18, 4)
-  total_export        Decimal   @default(0) @db.Decimal(18, 4)
-  category            String?   @db.VarChar(255)
+  volume              Decimal  @default(0) @db.Decimal(18, 4)
+  unit                String   @default("") @db.VarChar(50)
+  unit_price          Decimal  @default(0) @db.Decimal(18, 2)
+  status              String   @default("") @db.VarChar(255)
+  construction_status String?  @db.VarChar(255)
+  supplier            String?  @db.VarChar(255)
+  initial_stock       Decimal  @default(0) @db.Decimal(18, 4)
+  current_stock       Decimal  @default(0) @db.Decimal(18, 4)
+  total_import        Decimal  @default(0) @db.Decimal(18, 4)
+  total_export        Decimal  @default(0) @db.Decimal(18, 4)
+  category            String?  @db.VarChar(255)
   specs               String?
   notes               String?
-  created_at          DateTime  @default(now()) @db.Timestamptz
-  updated_at          DateTime  @default(now()) @db.Timestamptz
+  created_at          DateTime @default(now()) @db.Timestamptz
+  updated_at          DateTime @default(now()) @db.Timestamptz
 
-  project             Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  task                Task?     @relation(fields: [task_id], references: [id], onDelete: SetNull)
+  project                Project                @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  task                   Task?                  @relation(fields: [task_id], references: [id], onDelete: SetNull)
   inventory_transactions InventoryTransaction[]
 
   @@index([project_id])
@@ -247,21 +247,21 @@ model Material {
 }
 
 model InventoryTransaction {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  material_id       String    @db.Uuid
-  project_id        String?   @db.Uuid
+  id                String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  material_id       String                     @db.Uuid
+  project_id        String?                    @db.Uuid
   type              inventory_transaction_type
-  transaction_date  DateTime  @db.Date
-  quantity          Decimal   @db.Decimal(18, 4)
-  source_or_project String    @default("") @db.VarChar(255)
-  receiver_name     String?   @db.VarChar(255)
+  transaction_date  DateTime                   @db.Date
+  quantity          Decimal                    @db.Decimal(18, 4)
+  source_or_project String                     @default("") @db.VarChar(255)
+  receiver_name     String?                    @db.VarChar(255)
   notes             String?
-  created_by        String?   @db.Uuid
-  created_at        DateTime  @default(now()) @db.Timestamptz
+  created_by        String?                    @db.Uuid
+  created_at        DateTime                   @default(now()) @db.Timestamptz
 
-  material          Material  @relation(fields: [material_id], references: [id], onDelete: Cascade)
-  project           Project?  @relation(fields: [project_id], references: [id], onDelete: SetNull)
-  creator           User?     @relation("TransactionCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  material Material @relation(fields: [material_id], references: [id], onDelete: Cascade)
+  project  Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  creator  User?    @relation("TransactionCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
 
   @@index([material_id])
   @@index([project_id])
@@ -269,48 +269,48 @@ model InventoryTransaction {
 }
 
 model ProgressUpdate {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  task_id     String    @db.Uuid
-  user_id     String?   @db.Uuid
-  progress    Decimal   @db.Decimal(7, 4)
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  task_id     String      @db.Uuid
+  user_id     String?     @db.Uuid
+  progress    Decimal     @db.Decimal(7, 4)
   status      task_status
   note        String?
-  recorded_at DateTime  @default(now()) @db.Timestamptz
-  created_at  DateTime  @default(now()) @db.Timestamptz
+  recorded_at DateTime    @default(now()) @db.Timestamptz
+  created_at  DateTime    @default(now()) @db.Timestamptz
 
-  task        Task      @relation(fields: [task_id], references: [id], onDelete: Cascade)
-  user        User?     @relation("ProgressUpdateUser", fields: [user_id], references: [id], onDelete: SetNull)
+  task Task  @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user User? @relation("ProgressUpdateUser", fields: [user_id], references: [id], onDelete: SetNull)
 
   @@index([task_id])
   @@map("progress_updates")
 }
 
 model Issue {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  project_id         String    @db.Uuid
-  task_id            String?   @db.Uuid
-  incident_code      String    @unique @db.VarChar(100)
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id         String         @db.Uuid
+  task_id            String?        @db.Uuid
+  incident_code      String         @unique @db.VarChar(100)
   title              String
-  location           String    @default("")
-  reported_by_id     String?   @db.Uuid
-  reported_by_name   String?   @db.VarChar(255)
-  reported_at        DateTime  @default(now()) @db.Timestamptz
-  description        String    @default("")
+  location           String         @default("")
+  reported_by_id     String?        @db.Uuid
+  reported_by_name   String?        @db.VarChar(255)
+  reported_at        DateTime       @default(now()) @db.Timestamptz
+  description        String         @default("")
   photo_url          String?
-  status             issue_status @default(open)
+  status             issue_status   @default(open)
   priority           issue_priority @default(standard)
-  assigned_to_id     String?   @db.Uuid
-  assigned_to_name   String?   @db.VarChar(255)
+  assigned_to_id     String?        @db.Uuid
+  assigned_to_name   String?        @db.VarChar(255)
   manager_directives String?
-  resolved_at        DateTime? @db.Timestamptz
-  created_at         DateTime  @default(now()) @db.Timestamptz
-  updated_at         DateTime  @default(now()) @db.Timestamptz
+  resolved_at        DateTime?      @db.Timestamptz
+  created_at         DateTime       @default(now()) @db.Timestamptz
+  updated_at         DateTime       @default(now()) @db.Timestamptz
 
-  project            Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  task               Task?     @relation(fields: [task_id], references: [id], onDelete: SetNull)
-  reported_by        User?     @relation("IssueReportedBy", fields: [reported_by_id], references: [id], onDelete: SetNull)
-  assigned_to        User?     @relation("IssueAssignedTo", fields: [assigned_to_id], references: [id], onDelete: SetNull)
-  comments           IssueComment[]
+  project     Project        @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  task        Task?          @relation(fields: [task_id], references: [id], onDelete: SetNull)
+  reported_by User?          @relation("IssueReportedBy", fields: [reported_by_id], references: [id], onDelete: SetNull)
+  assigned_to User?          @relation("IssueAssignedTo", fields: [assigned_to_id], references: [id], onDelete: SetNull)
+  comments    IssueComment[]
 
   @@index([project_id])
   @@index([task_id])
@@ -326,41 +326,41 @@ model IssueComment {
   message     String
   created_at  DateTime @default(now()) @db.Timestamptz
 
-  issue       Issue    @relation(fields: [issue_id], references: [id], onDelete: Cascade)
-  author      User?    @relation("CommentAuthor", fields: [author_id], references: [id], onDelete: SetNull)
+  issue  Issue @relation(fields: [issue_id], references: [id], onDelete: Cascade)
+  author User? @relation("CommentAuthor", fields: [author_id], references: [id], onDelete: SetNull)
 
   @@index([issue_id])
   @@map("issue_comments")
 }
 
 model Attachment {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   owner_type      attachment_owner_type
-  owner_id        String   @db.Uuid
-  file_name       String   @db.VarChar(255)
+  owner_id        String                @db.Uuid
+  file_name       String                @db.VarChar(255)
   file_url        String
-  mime_type       String?  @db.VarChar(120)
+  mime_type       String?               @db.VarChar(120)
   file_size_bytes BigInt?
-  uploaded_by     String?  @db.Uuid
-  uploaded_at     DateTime @default(now()) @db.Timestamptz
+  uploaded_by     String?               @db.Uuid
+  uploaded_at     DateTime              @default(now()) @db.Timestamptz
 
-  uploader        User?    @relation("AttachmentUploader", fields: [uploaded_by], references: [id], onDelete: SetNull)
+  uploader User? @relation("AttachmentUploader", fields: [uploaded_by], references: [id], onDelete: SetNull)
 
   @@index([owner_type, owner_id])
   @@map("attachments")
 }
 
 model Notification {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String?  @db.Uuid
-  title      String   @db.VarChar(255)
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String?           @db.Uuid
+  title      String            @db.VarChar(255)
   message    String
   type       notification_type @default(system)
-  icon       String?  @db.VarChar(80)
-  is_read    Boolean  @default(false)
-  created_at DateTime @default(now()) @db.Timestamptz
+  icon       String?           @db.VarChar(80)
+  is_read    Boolean           @default(false)
+  created_at DateTime          @default(now()) @db.Timestamptz
 
-  user       User?    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
   @@index([is_read])
@@ -379,74 +379,75 @@ model ActivityLog {
   icon_color   String?  @db.VarChar(80)
   created_at   DateTime @default(now()) @db.Timestamptz
 
-  user         User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
-  project      Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  user    User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  project Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
 
   @@index([project_id])
   @@map("activity_logs")
 }
 
 model ProjectMaterialPlan {
-  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  project_id          String   @db.Uuid
-  stt                 String?  @db.VarChar(50)
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id          String    @db.Uuid
+  stt                 String?   @db.VarChar(50)
   job_content         String
-  unit                String   @default("") @db.VarChar(50)
-  contract_volume     Decimal  @default(0) @db.Decimal(18, 4)
+  unit                String    @default("") @db.VarChar(50)
+  contract_volume     Decimal   @default(0) @db.Decimal(18, 4)
   tech_spec_model     String?
   tech_spec_origin    String?
-  tech_spec_status    String?  @db.VarChar(255)
-  progress_status     String?  @db.VarChar(255)
-  ordered_volume      Decimal  @default(0) @db.Decimal(18, 4)
-  ordered_status      String?  @db.VarChar(255)
+  tech_spec_status    String?   @db.VarChar(255)
+  progress_status     String?   @db.VarChar(255)
+  ordered_volume      Decimal   @default(0) @db.Decimal(18, 4)
+  ordered_status      String?   @db.VarChar(255)
   expected_date       DateTime? @db.Date
   issue_content       String?
   issue_status        String?
-  doc_co              Boolean  @default(false)
-  doc_cq              Boolean  @default(false)
-  doc_fire_inspection Boolean  @default(false)
-  dispatch_to_site    Boolean  @default(false)
+  doc_co              Boolean   @default(false)
+  doc_cq              Boolean   @default(false)
+  doc_fire_inspection Boolean   @default(false)
+  doc_stamp           Boolean   @default(false)
+  dispatch_to_site    Boolean   @default(false)
   dispatch_date       DateTime? @db.Date
   notes               String?
-  parent_id           String?  @db.Uuid
-  created_at          DateTime @default(now()) @db.Timestamptz
-  updated_at          DateTime @default(now()) @db.Timestamptz
+  parent_id           String?   @db.Uuid
+  created_at          DateTime  @default(now()) @db.Timestamptz
+  updated_at          DateTime  @default(now()) @db.Timestamptz
 
-  project             Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  parent              ProjectMaterialPlan?  @relation("MaterialPlanHierarchy", fields: [parent_id], references: [id])
-  children            ProjectMaterialPlan[] @relation("MaterialPlanHierarchy")
+  project  Project               @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent   ProjectMaterialPlan?  @relation("MaterialPlanHierarchy", fields: [parent_id], references: [id])
+  children ProjectMaterialPlan[] @relation("MaterialPlanHierarchy")
 
   @@index([project_id])
   @@map("project_material_plans")
 }
 
 model ProjectPurchasing {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  project_id       String   @db.Uuid
-  stt              String?  @db.VarChar(50)
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id       String    @db.Uuid
+  stt              String?   @db.VarChar(50)
   content          String
-  unit             String   @default("") @db.VarChar(50)
-  volume_contract  Decimal  @default(0) @db.Decimal(18, 4)
-  volume_order     Decimal  @default(0) @db.Decimal(18, 4)
-  unit_price       Decimal  @default(0) @db.Decimal(18, 2)
-  vat_rate         Decimal  @default(0) @db.Decimal(5, 2)
-  vat_amount       Decimal  @default(0) @db.Decimal(18, 2)
-  total_amount     Decimal  @default(0) @db.Decimal(18, 2)
-  prepay_percent   Decimal  @default(0) @db.Decimal(5, 2)
-  prepay_amount    Decimal  @default(0) @db.Decimal(18, 2)
-  remaining_amount Decimal  @default(0) @db.Decimal(18, 2)
-  order_status     String   @default("") @db.VarChar(255)
-  contract_status  String   @default("") @db.VarChar(255)
+  unit             String    @default("") @db.VarChar(50)
+  volume_contract  Decimal   @default(0) @db.Decimal(18, 4)
+  volume_order     Decimal   @default(0) @db.Decimal(18, 4)
+  unit_price       Decimal   @default(0) @db.Decimal(18, 2)
+  vat_rate         Decimal   @default(0) @db.Decimal(5, 2)
+  vat_amount       Decimal   @default(0) @db.Decimal(18, 2)
+  total_amount     Decimal   @default(0) @db.Decimal(18, 2)
+  prepay_percent   Decimal   @default(0) @db.Decimal(5, 2)
+  prepay_amount    Decimal   @default(0) @db.Decimal(18, 2)
+  remaining_amount Decimal   @default(0) @db.Decimal(18, 2)
+  order_status     String    @default("") @db.VarChar(255)
+  contract_status  String    @default("") @db.VarChar(255)
   payment_date     DateTime? @db.Date
-  invoice_status   String?  @db.VarChar(255)
+  invoice_status   String?   @db.VarChar(255)
   notes            String?
-  parent_id        String?  @db.Uuid
-  created_at       DateTime @default(now()) @db.Timestamptz
-  updated_at       DateTime @default(now()) @db.Timestamptz
+  parent_id        String?   @db.Uuid
+  created_at       DateTime  @default(now()) @db.Timestamptz
+  updated_at       DateTime  @default(now()) @db.Timestamptz
 
-  project          Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  parent           ProjectPurchasing?  @relation("PurchasingHierarchy", fields: [parent_id], references: [id])
-  children         ProjectPurchasing[] @relation("PurchasingHierarchy")
+  project  Project             @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent   ProjectPurchasing?  @relation("PurchasingHierarchy", fields: [parent_id], references: [id])
+  children ProjectPurchasing[] @relation("PurchasingHierarchy")
 
   @@index([project_id])
   @@map("project_purchasing")
@@ -471,7 +472,7 @@ model ProjectExpense {
   created_at    DateTime @default(now()) @db.Timestamptz
   updated_at    DateTime @default(now()) @db.Timestamptz
 
-  project       Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
 
   @@index([project_id])
   @@map("project_expenses")
@@ -498,36 +499,36 @@ model LaborPayroll {
   created_at        DateTime @default(now()) @db.Timestamptz
   updated_at        DateTime @default(now()) @db.Timestamptz
 
-  project           Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
 
   @@index([project_id])
   @@map("labor_payrolls")
 }
 
 model DocumentTrack {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  project_id     String?  @db.Uuid
-  stt            String?  @db.VarChar(50)
-  contract_no    String   @db.VarChar(120)
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id     String?   @db.Uuid
+  stt            String?   @db.VarChar(50)
+  contract_no    String    @db.VarChar(120)
   contract_name  String
-  company        String   @default("") @db.VarChar(255)
-  receiver_name  String   @default("") @db.VarChar(255)
-  phone          String   @default("") @db.VarChar(50)
-  address        String   @default("")
-  send_date      DateTime @db.Date
+  company        String    @default("") @db.VarChar(255)
+  receiver_name  String    @default("") @db.VarChar(255)
+  phone          String    @default("") @db.VarChar(50)
+  address        String    @default("")
+  send_date      DateTime  @db.Date
   receive_date   DateTime? @db.Date
-  doc_status     String   @default("") @db.VarChar(255)
-  side           String?  @db.VarChar(255)
-  contract_value Decimal  @default(0) @db.Decimal(18, 2)
-  prepay_percent Decimal  @default(0) @db.Decimal(5, 2)
-  prepay_amount  Decimal  @default(0) @db.Decimal(18, 2)
-  payment_status String   @default("") @db.VarChar(255)
-  is_completed   Boolean  @default(false)
+  doc_status     String    @default("") @db.VarChar(255)
+  side           String?   @db.VarChar(255)
+  contract_value Decimal   @default(0) @db.Decimal(18, 2)
+  prepay_percent Decimal   @default(0) @db.Decimal(5, 2)
+  prepay_amount  Decimal   @default(0) @db.Decimal(18, 2)
+  payment_status String    @default("") @db.VarChar(255)
+  is_completed   Boolean   @default(false)
   notes          String?
-  created_at     DateTime @default(now()) @db.Timestamptz
-  updated_at     DateTime @default(now()) @db.Timestamptz
+  created_at     DateTime  @default(now()) @db.Timestamptz
+  updated_at     DateTime  @default(now()) @db.Timestamptz
 
-  project        Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  project Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
 
   @@index([project_id])
   @@map("document_tracks")
@@ -540,7 +541,7 @@ model FieldLog {
   images     Json     @default("[]")
   created_at DateTime @default(now()) @db.Timestamptz
 
-  project    Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
 
   @@index([project_id])
   @@map("field_logs")
