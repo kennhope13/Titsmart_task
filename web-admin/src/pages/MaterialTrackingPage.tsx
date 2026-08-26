@@ -537,11 +537,11 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const imports = inventoryTransactions
     .filter(tx => tx.type === "IMPORT" && (!projectCodeFilter || materials.find(m => m.id === tx.materialId)?.projectCode === projectCodeFilter))
-    .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+    .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
 
   const exports = inventoryTransactions
     .filter(tx => tx.type === "EXPORT" && (!projectCodeFilter || materials.find(m => m.id === tx.materialId)?.projectCode === projectCodeFilter))
-    .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+    .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
 
   const summaryCards = [
     { label: 'Tổng vật tư', value: filteredMaterials.length, icon: 'inventory_2', tone: 'text-slate-700 bg-slate-100' },
