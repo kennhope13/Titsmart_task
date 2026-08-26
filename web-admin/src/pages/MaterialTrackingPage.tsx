@@ -741,13 +741,13 @@ export const MaterialTrackingPage: React.FC = () => {
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`app-tab-button flex items-center gap-2.5 px-3 py-2 border-b-2 transition-all whitespace-nowrap ${
+                className={`app-tab-button flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-bold border-b-2 transition-all whitespace-nowrap ${
                   activeTab === tab.id 
                     ? 'border-primary text-primary' 
                     : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
                 }`}
               >
-                <span className="material-symbols-outlined text-base leading-none">{tab.icon}</span>
+                <span className="material-symbols-outlined text-[16px] leading-none">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}

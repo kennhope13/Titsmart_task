@@ -1583,13 +1583,13 @@ export const ProjectCostPlanPage: React.FC = () => {
             <button 
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 py-2.5 text-[13px] font-bold border-b-2 transition-all ${
+              className={`flex items-center gap-2 py-1.5 text-[12px] font-bold border-b-2 transition-all ${
                 activeTab === tab.id 
                   ? 'border-primary text-primary' 
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
-              <span className="material-symbols-outlined text-lg">{tab.icon}</span>
+              <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
