@@ -465,6 +465,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         finalValue = Number(tempValue || 0);
       } else if (field === 'docCo' || field === 'docCq' || field === 'docFireInspection' || field === 'dispatchToSite') {
         finalValue = tempValue === true || tempValue === 'true' || tempValue === 'Có';
+      } else if (field === 'issueContent') {
+        const existingDocData = getIssueContentData(plan.issueContent);
+        const newText = typeof tempValue === 'string' ? tempValue.trim() : tempValue;
+        finalValue = existingDocData ? `${newText} [DOC-DATA] ${existingDocData}` : newText;
       }
       onUpdateMaterial(id, { ...plan, [field === 'fileName' ? 'notes' : field]: finalValue });
     }
