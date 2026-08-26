@@ -294,6 +294,15 @@ export interface FieldLog {
   timestamp: string; // Thời điểm tạo báo cáo
 }
 
+export const getTextColorStyle = (status?: string) => {
+  if (!status) return "text-slate-700";
+  const s = status.toLowerCase();
+  if (s.includes("chưa") || s.includes("không")) return "text-red-600";
+  if (s.includes("đã")) return "text-emerald-600";
+  if (s.includes("đang")) return "text-amber-600";
+  return "text-slate-700";
+};
+
 export const getStatusColorStyle = (status?: string) => {
   if (!status) return "border-slate-200 bg-slate-50 text-slate-600";
   const s = status.toLowerCase();

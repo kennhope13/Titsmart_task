@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ProjectMaterialPlan, ProjectPurchasing, getStatusColorStyle, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS } from '../../types';
+import { ProjectMaterialPlan, ProjectPurchasing, getStatusColorStyle, getTextColorStyle, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { decodeModels, encodeModels, ModelEntry } from './DocumentCertificateTab';
 import { FastDocModal } from './FastDocModal';
@@ -1403,11 +1403,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 <CustomSelect
                                   value={pRecord?.contractStatus || 'Chưa ký'}
                                   onChange={(e) => { if (pRecord) onUpdatePurchasing(pRecord.id, { ...pRecord, contractStatus: e.target.value }) }}
-                                  className="w-full font-bold text-[11px] px-1.5 py-1 border border-slate-200 rounded-md bg-white text-slate-700 focus:outline-primary"
+                                  className={`w-full font-bold text-[11px] px-1.5 py-1 border border-slate-200 rounded-md bg-white focus:outline-primary ${getTextColorStyle(pRecord?.contractStatus || 'Chưa ký')}`}
                                 >
-                                  <option value="Chưa ký">Chưa ký</option>
-                                  <option value="Đã ký">Đã ký</option>
-                                  <option value="Đang thương thảo">Đang thương thảo</option>
+                                  <option value="Chưa ký" className={getTextColorStyle('Chưa ký')}>Chưa ký</option>
+                                  <option value="Đã ký" className={getTextColorStyle('Đã ký')}>Đã ký</option>
+                                  <option value="Đang thương thảo" className={getTextColorStyle('Đang thương thảo')}>Đang thương thảo</option>
                                 </CustomSelect>
                               </td>
                               {/* HẠN THANH TOÁN */}
@@ -1431,11 +1431,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 <CustomSelect
                                   value={pRecord?.invoiceStatus || 'Chưa xuất'}
                                   onChange={(e) => { if (pRecord) onUpdatePurchasing(pRecord.id, { ...pRecord, invoiceStatus: e.target.value }) }}
-                                  className="w-full font-bold text-[11px] px-1.5 py-1 border border-slate-200 rounded-md bg-white text-slate-700 focus:outline-primary"
+                                  className={`w-full font-bold text-[11px] px-1.5 py-1 border border-slate-200 rounded-md bg-white focus:outline-primary ${getTextColorStyle(pRecord?.invoiceStatus || 'Chưa xuất')}`}
                                 >
-                                  <option value="Chưa xuất">Chưa xuất</option>
-                                  <option value="Đã xuất">Đã xuất</option>
-                                  <option value="Không cần VAT">Không cần VAT</option>
+                                  <option value="Chưa xuất" className={getTextColorStyle('Chưa xuất')}>Chưa xuất</option>
+                                  <option value="Đã xuất" className={getTextColorStyle('Đã xuất')}>Đã xuất</option>
+                                  <option value="Không cần VAT" className={getTextColorStyle('Không cần VAT')}>Không cần VAT</option>
                                 </CustomSelect>
                               </td>
                             </>
