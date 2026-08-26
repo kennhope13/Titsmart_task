@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
-import { useParams } from 'react-router-dom';
+import { useParams, useOutletContext } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { FieldLog } from '../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { supabase } from '../lib/supabase';
@@ -265,6 +266,9 @@ export const FieldLogsPage: React.FC = () => {
       setSelectedProject(resolvedProjectCode);
     }
   }, [resolvedProjectCode]);
+  const outletContext = useOutletContext<any>();
+  const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
+  useEffect(() => { setPortalNode(document.getElementById('project-header-actions')); }, []);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [editLog, setEditLog] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -313,32 +317,38 @@ export const FieldLogsPage: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-slate-100 overflow-y-auto">
       {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-3 py-4 md:py-0 md:h-12 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between h-full">
-          {!projectId && (
+      {!projectId && (
+        <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-3 py-4 md:py-0 md:h-12 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between h-full">
             <div className="flex items-center gap-4">
               <div>
                 <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">NHẬT KÝ HIỆN TRƯỜNG</h1>
               </div>
             </div>
-          )}
 
-          <div className="flex items-center gap-2">
-            {!projectId && (
+            <div className="flex items-center gap-2">
               <CustomSelect value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
                 className="max-w-xs flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 md:w-64">
                 <option value="">Tất cả dự án</option>
                 {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
               </CustomSelect>
-            )}
-            <button onClick={() => setIsUploadOpen(true)}
-              className="flex items-center gap-2.5 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-95">
-              <span className="material-symbols-outlined text-lg">add_a_photo</span>
-              Upload ảnh
-            </button>
+              <button onClick={() => setIsUploadOpen(true)}
+                className="flex items-center gap-2.5 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-95">
+                <span className="material-symbols-outlined text-lg">add_a_photo</span>
+                Upload ảnh
+              </button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
+
+      {projectId && portalNode && createPortal(
+        <button onClick={() => setIsUploadOpen(true)}
+          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-bold text-white shadow-sm hover:opacity-90 active:scale-95 mr-4">
+          <span className="material-symbols-outlined text-[14px]">add_a_photo</span>
+          Upload ảnh
+        </button>
+      , portalNode)}
 
         <div className={`flex flex-col flex-1 ${logsByProject.length === 0 ? '' : 'p-6'}`}>
           {logsByProject.length === 0 ? (

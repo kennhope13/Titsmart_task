@@ -1572,7 +1572,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       )}
 
       {/* TABS SELECTOR */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1 shadow-xs border-x">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 shadow-xs border-x">
         <div className="flex items-center gap-4">
           {[
             { id: 'TECH', label: 'Đặt hàng', icon: 'list_alt', show: true },
@@ -1583,7 +1583,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <button 
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 py-3.5 text-[13px] font-bold border-b-2 transition-all ${
+              className={`flex items-center gap-2 py-2.5 text-[13px] font-bold border-b-2 transition-all ${
                 activeTab === tab.id 
                   ? 'border-primary text-primary' 
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
