@@ -119,7 +119,7 @@ const hasDocFiles = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC' | 'ST
   } catch { return false; }
 };
 
-const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC' | 'STAMP') => {
+const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC' | 'STAMP', onFileClick?: (url: string, title: string) => void) => {
   if (!plan.issueContent || !plan.issueContent.includes('[DOC-DATA]')) return null;
   try {
     const models = decodeModels(plan.issueContent);
@@ -139,9 +139,15 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'P
           d.fileUrls.forEach(url => {
              counter++;
              links.push(
-               <a key={`f-${counter}`} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 transition-colors flex items-center justify-center" title={d.text || 'Xem file'}>
+               <button
+                 key={`f-${counter}`}
+                 type="button"
+                 onClick={(e) => { e.stopPropagation(); onFileClick ? onFileClick(url, d.text || type) : window.open(url, '_blank'); }}
+                 className="text-blue-500 hover:text-blue-700 transition-colors flex items-center justify-center cursor-pointer"
+                 title={d.text || type}
+               >
                  <span className="material-symbols-outlined text-[16px]">description</span>
-               </a>
+               </button>
              );
           });
         }
@@ -152,7 +158,7 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'P
 };
 
 
-const MultiDocSelect = ({ plan, onBadgeClick, disabled }: { plan: any, onBadgeClick: (plan: any, type: 'CO'|'CQ'|'PCCC'|'STAMP') => void, disabled: boolean }) => {
+const MultiDocSelect = ({ plan, onBadgeClick, onFileClick, disabled }: { plan: any, onBadgeClick: (plan: any, type: 'CO'|'CQ'|'PCCC'|'STAMP') => void, onFileClick: (url: string, title: string) => void, disabled: boolean }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -178,25 +184,25 @@ const MultiDocSelect = ({ plan, onBadgeClick, disabled }: { plan: any, onBadgeCl
         {plan.docCo && (
           <div className="flex flex-col items-center gap-1">
             <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">CO</span>
-            {renderAutoFilesByType(plan, 'CO')}
+            {renderAutoFilesByType(plan, 'CO', onFileClick)}
           </div>
         )}
         {plan.docCq && (
           <div className="flex flex-col items-center gap-1">
             <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">CQ</span>
-            {renderAutoFilesByType(plan, 'CQ')}
+            {renderAutoFilesByType(plan, 'CQ', onFileClick)}
           </div>
         )}
         {plan.docFireInspection && (
           <div className="flex flex-col items-center gap-1">
             <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">PCCC</span>
-            {renderAutoFilesByType(plan, 'PCCC')}
+            {renderAutoFilesByType(plan, 'PCCC', onFileClick)}
           </div>
         )}
         {hasDocFiles(plan, 'STAMP') && (
           <div className="flex flex-col items-center gap-1">
             <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">TKD</span>
-            {renderAutoFilesByType(plan, 'STAMP')}
+            {renderAutoFilesByType(plan, 'STAMP', onFileClick)}
           </div>
         )}
         {!plan.docCo && !plan.docCq && !plan.docFireInspection && !hasDocFiles(plan, 'STAMP') && (
@@ -310,6 +316,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const [docModalPlanId, setDocModalPlanId] = useState<string | null>(null);
   const [fastDocType, setFastDocType] = useState<'CO'|'CQ'|'PCCC'|'STAMP'|null>(null);
   const [fastDocModels, setFastDocModels] = useState<ModelEntry[]>([]);
+  const [previewFile, setPreviewFile] = useState<{ url: string; title: string } | null>(null);
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const toggleSection = (sectionKey: string) => {
@@ -689,6 +696,47 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           onClose={() => setFastDocType(null)}
           onSubmit={handleFastDocSubmit}
         />
+      )}
+
+      {/* File Preview Modal */}
+      {previewFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPreviewFile(null)} />
+          <div className="relative flex w-full max-w-4xl h-[85vh] flex-col rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 overflow-hidden">
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
+              <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-800">
+                <span className="material-symbols-outlined text-base text-primary">description</span>
+                {previewFile.title}
+              </h3>
+              <div className="flex items-center gap-2">
+                <a
+                  href={previewFile.url}
+                  download
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-90 active:scale-95 transition"
+                >
+                  <span className="material-symbols-outlined text-sm">download</span>
+                  Tải về
+                </a>
+                <button onClick={() => setPreviewFile(null)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-hidden bg-slate-100">
+              {previewFile.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) ? (
+                <div className="flex items-center justify-center h-full p-4">
+                  <img src={previewFile.url} alt={previewFile.title} className="max-w-full max-h-full object-contain rounded-lg shadow" />
+                </div>
+              ) : (
+                <iframe
+                  src={previewFile.url}
+                  className="w-full h-full border-0"
+                  title={previewFile.title}
+                />
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       <datalist id="issueStatus-options">
@@ -1364,7 +1412,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             <>
                               {/* CHỨNG TỪ HÀNG HÓA (Combined CO, CQ, PCCC, Tem KĐ) */}
                               <td className="w-[160px] p-0 align-middle border-r border-slate-200 relative group/docs">
-                                <MultiDocSelect plan={plan} onBadgeClick={handleDocBadgeClick} disabled={userRole === 'engineer'} />
+                                <MultiDocSelect plan={plan} onBadgeClick={handleDocBadgeClick} onFileClick={(url: string, title: string) => setPreviewFile({ url, title })} disabled={userRole === 'engineer'} />
                               </td>
                               
                             </>
