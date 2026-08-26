@@ -359,7 +359,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
             </div>
           )}
         </div>
-      </nav>
     </aside>
   );
 };
