@@ -678,7 +678,22 @@ export const MaterialTrackingPage: React.FC = () => {
       supplier,
     };
     
-    addMaterial(newMat);
+    const created = await addMaterial(newMat);
+    if (created && volume > 0) {
+      await addInventoryTransaction({
+        materialId: created.id as string,
+        materialCode: created.code,
+        materialName: created.name,
+        type: 'IMPORT' as const,
+        quantity: volume,
+        unit: created.unit,
+        date: new Date().toISOString().split('T')[0],
+        sourceOrProject: 'Tồn đầu kỳ',
+        receiverName: '',
+        notes: 'Khởi tạo vật tư',
+        specs: created.englishName || created.specs
+      });
+    }
 
     setIsPlaceOrderModalOpen(false);
     setMatName('');
