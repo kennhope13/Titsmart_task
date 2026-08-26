@@ -345,9 +345,13 @@ export const MaterialTrackingPage: React.FC = () => {
     const timeoutId = setTimeout(updateHeight, 100);
     
     window.addEventListener('resize', updateHeight);
-    
+    return () => {
+      window.removeEventListener('resize', updateHeight);
+      clearTimeout(timeoutId);
+    };
+  }, [activeTab]);
 
-  const handleTransfer = = async (e: React.FormEvent) => {
+  const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!transferMaterial || !transferTargetProject || transferQuantity <= 0) return;
     
