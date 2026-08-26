@@ -4,7 +4,7 @@ import { ModelEntry, DocItem } from './DocumentCertificateTab';
 
 interface FastDocModalProps {
   title: string;
-  docType: 'CO' | 'CQ' | 'PCCC';
+  docType: 'CO' | 'CQ' | 'PCCC' | 'STAMP';
   initialModels: ModelEntry[];
   onClose: () => void;
   onSubmit: (newModels: ModelEntry[]) => void;
@@ -39,6 +39,7 @@ export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, init
       if (docType === 'CO') setText('C/O: ');
       if (docType === 'CQ') setText('C/Q: ');
       if (docType === 'PCCC') setText('PCCC: ');
+      if (docType === 'STAMP') setText('Tem KĐ: ');
     }
   }, [docType, initialModels]);
 
