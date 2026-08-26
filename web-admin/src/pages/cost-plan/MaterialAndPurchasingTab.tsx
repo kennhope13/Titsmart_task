@@ -1222,7 +1222,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
                           {subTab !== 'TECH' ? (
                             <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-0 align-middle text-slate-500">
-                              {editingCell?.id === plan.id && editingCell?.field === 'notes' && !editingCell.isPurchasing ? (
+                              {editingCell?.id === plan.id && editingCell?.field === 'notes' && editingCell.isPurchasing === (subTab === 'FINANCE') ? (
                                 <input
                                   type="text"
                                   value={tempValue}
@@ -1233,8 +1233,14 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   className="w-full bg-white text-slate-500 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
                                 />
                               ) : (
-                                <div onClick={() => startEditing(plan.id, 'notes', (subTab === 'DOCS' ? cleanDocNotes(plan.notes) : cleanTechNotes(plan.notes)))} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={(subTab === 'DOCS' ? cleanDocNotes(plan.notes) : cleanTechNotes(plan.notes))}>
-                                  <span className="truncate flex-1">{(subTab === 'DOCS' ? cleanDocNotes(plan.notes) : cleanTechNotes(plan.notes))}</span>
+                                <div onClick={() => {
+                                  if (subTab === 'FINANCE') {
+                                    if (pRecord) startEditing(plan.id, 'notes', pRecord.notes || '', true);
+                                  } else {
+                                    startEditing(plan.id, 'notes', cleanDocNotes(plan.notes), false);
+                                  }
+                                }} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={subTab === 'FINANCE' ? pRecord?.notes : cleanDocNotes(plan.notes)}>
+                                  <span className="truncate flex-1">{subTab === 'FINANCE' ? pRecord?.notes : cleanDocNotes(plan.notes)}</span>
                                 </div>
                               )}
                             </td>
