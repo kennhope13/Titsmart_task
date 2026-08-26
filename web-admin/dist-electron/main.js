@@ -11,6 +11,7 @@ function c() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
+    autoHideMenuBar: !0,
     // titleBarStyle: 'hidden', // Lấy cảm hứng từ Notion (giấu thanh tiêu đề mặc định)
     // titleBarOverlay: {
     //   color: '#ffffff',

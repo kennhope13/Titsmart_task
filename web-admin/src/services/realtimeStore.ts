@@ -1159,6 +1159,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         });
 
         get().logActivity('Đã xóa dự án: ' + projectToDelete.name, projectToDelete.name);
+        get().fetchEngineers();
       } catch (e) {
         console.error('Failed to delete project', e);
       }

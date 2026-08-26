@@ -85,17 +85,27 @@ export const PersonnelPage: React.FC = () => {
 
   const people = useMemo(() => engineers.map((engineer, index) => {
     let assignedProjects = [];
+    
+    // Combine all sources of assigned projects
+    const allAssigned = [
+      ...(engineer.managedProjects || []),
+      ...(engineer.memberProjects || []),
+    ];
+    
     if (engineer.projectCodes && Array.isArray(engineer.projectCodes)) {
-      assignedProjects = engineer.projectCodes.map((code: string) => {
+      engineer.projectCodes.forEach((code: string) => {
         const found = projects.find(p => p.code === code);
-        return found ? { code: found.code, name: found.name } : { code, name: code };
+        if (found) {
+          allAssigned.push({ code: found.code, name: found.name });
+        }
       });
-    } else {
-      assignedProjects = [
-        ...(engineer.managedProjects || []),
-        ...(engineer.memberProjects || []),
-      ].filter((value, assignedIndex, self) => self.findIndex((item) => item.code === value.code) === assignedIndex);
     }
+
+    // Filter out duplicates and projects that no longer exist in the projects list
+    assignedProjects = allAssigned.filter((value, assignedIndex, self) => 
+      projects.some(p => p.code === value.code) && // Ensure project still exists
+      self.findIndex((item) => item.code === value.code) === assignedIndex
+    );
 
     const rawRole = (engineer as any).role || engineer.title?.trim() || 'Nhân viên';
     

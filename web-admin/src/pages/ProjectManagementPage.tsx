@@ -150,10 +150,6 @@ export const ProjectManagementPage: React.FC = () => {
   };
 
   const resolveProjectMemberNames = (project: Project) => {
-    const memberFromIds = (project.members || [])
-      .map((memberId) => engineers.find((eng) => eng.id === memberId)?.name)
-      .filter(Boolean) as string[];
-
     const memberFromManaged = engineers
       .filter((eng) => eng.managedProjects?.some((mp) => mp.code === project.code))
       .map((eng) => eng.name);
@@ -166,7 +162,7 @@ export const ProjectManagementPage: React.FC = () => {
       .filter((eng) => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(project.code))
       .map((eng) => eng.name);
 
-    const combined = Array.from(new Set([...memberFromIds, ...memberFromManaged, ...memberFromAssigned, ...memberFromProjectCodes]));
+    const combined = Array.from(new Set([...memberFromManaged, ...memberFromAssigned, ...memberFromProjectCodes]));
     if (combined.length > 0) return combined;
     if (project.managerName && project.managerName !== TEXT.unassigned) return [project.managerName];
     return [];
