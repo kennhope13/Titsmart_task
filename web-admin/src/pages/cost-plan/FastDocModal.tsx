@@ -39,7 +39,7 @@ export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, init
       if (docType === 'CO') setText('C/O: ');
       if (docType === 'CQ') setText('C/Q: ');
       if (docType === 'PCCC') setText('PCCC: ');
-      if (docType === 'STAMP') setText('Tem KĐ: ');
+      if (docType === 'STAMP') setText('TKD: ');
     }
   }, [docType, initialModels]);
 

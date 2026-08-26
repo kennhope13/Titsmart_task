@@ -179,7 +179,7 @@ const MultiDocSelect = ({ plan, onBadgeClick, disabled }: { plan: any, onBadgeCl
         )}
         {plan.docStamp && (
           <div className="flex flex-col items-center gap-1">
-            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">Tem KĐ</span>
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">TKD</span>
             {renderAutoFilesByType(plan, 'STAMP')}
           </div>
         )}
@@ -545,7 +545,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     const docCo = hasFileFor(['c/o', 'co']);
     const docCq = hasFileFor(['c/q', 'cq']);
     const docFireInspection = hasFileFor(['pccc', 'phòng cháy']);
-    const docStamp = hasFileFor(['tem', 'kiểm định', 'stamp']);
+    const docStamp = hasFileFor(['tem', 'kiểm định', 'stamp', 'tkd']);
 
     const payload = {
       ...plan,
