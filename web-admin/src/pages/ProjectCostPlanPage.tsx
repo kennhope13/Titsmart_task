@@ -1631,7 +1631,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               Xuất Excel
             </button>
 
-            {(activeTab !== 'TECH' && activeTab !== 'DOCS' && activeTab !== 'FINANCE') && activeTab !== 'PURCHASING' && !(activeTab === 'EXPENSE' && expenseSubTab === 'SUMMARY') && (
+            {(activeTab !== 'TECH' && activeTab !== 'DOCS' && activeTab !== 'FINANCE' && activeTab !== 'EXPENSE') && activeTab !== 'PURCHASING' && (
               <button 
                 onClick={() => {
                   if (!selectedProject) {
@@ -1700,32 +1700,20 @@ export const ProjectCostPlanPage: React.FC = () => {
         {/* DOCUMENTS TAB */}
         
 
+
         {/* EXPENSE TAB */}
         {activeTab === 'EXPENSE' && (
-          <div className="h-full flex flex-col min-h-0">
-            <div className="flex border-b border-slate-200 shrink-0 bg-white sticky top-0 z-20 px-4 gap-2">
-              <button
-                onClick={() => setExpenseSubTab('SUMMARY')}
-                className={`app-tab-button flex items-center gap-2.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'SUMMARY' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
-              >
-                Tổng hợp quỹ
-              </button>
-              <button
-                onClick={() => setExpenseSubTab('DETAIL')}
-                className={`app-tab-button flex items-center gap-2.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'DETAIL' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
-              >
-                Chi tiết phiếu chi
-              </button>
-              <button
-                onClick={() => setExpenseSubTab('LABOR')}
-                className={`app-tab-button flex items-center gap-2.5 px-3 py-3 font-bold border-b-2 transition-all whitespace-nowrap ${expenseSubTab === 'LABOR' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
-              >
-                Lương công nhật
-              </button>
-            </div>
+          <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-slate-100 p-4 flex flex-col gap-6" id="expense-unified-view">
             
-            {expenseSubTab === 'SUMMARY' && (
-              <div className="p-4 flex-1 overflow-auto custom-scrollbar">
+            {/* 1. TỔNG HỢP QUỸ */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden shrink-0">
+              <div className="px-5 py-4 border-b border-slate-100 bg-white flex items-center justify-between sticky top-0 z-20">
+                <h2 className="text-[15px] font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
+                  <span className="material-symbols-outlined text-primary text-[20px]">account_balance_wallet</span>
+                  Tổng hợp quỹ
+                </h2>
+              </div>
+              <div className="p-5">
                 <CostPlanSummaryTable 
                   expenses={currentProjExpenses} 
                   labors={currentProjLabor} 
@@ -1798,12 +1786,13 @@ export const ProjectCostPlanPage: React.FC = () => {
                     triggerToast(`Đã cập nhật ${title.toLowerCase()}`, 'success');
                   }}
                 />
+              
               </div>
-            )}
-            
-            {expenseSubTab === 'DETAIL' && (
-              <div className="flex flex-col flex-1 min-h-0 relative bg-white">
-                <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap">
+            </div>
+
+            {/* 2. CHI TIẾT PHIẾU CHI */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden shrink-0 flex flex-col">
+              <div className="flex border-b border-slate-100 bg-slate-50 px-5 py-3 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap"><h2 className="text-[14px] font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide whitespace-nowrap"><span className="material-symbols-outlined text-primary text-[18px]">receipt_long</span> CHI TIẾT PHIẾU CHI </h2>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
                       <span className="material-symbols-outlined text-[16px]">filter_list</span>
@@ -1850,9 +1839,15 @@ export const ProjectCostPlanPage: React.FC = () => {
                       </CustomSelect>
                     </div>
                   </div>
-                </div>
-
-                <div className="flex-1 overflow-auto custom-scrollbar">
+                 
+                    <button 
+                      onClick={() => setIsNewExpenseOpen(true)}
+                      className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary-dark transition-colors shadow-sm ml-auto"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">add</span>
+                      Thêm phiếu chi
+                    </button>
+ </div> <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                     <tr>
@@ -1922,13 +1917,12 @@ export const ProjectCostPlanPage: React.FC = () => {
               </tbody>
             </table>
             </div>
-          </div>
-          )}
+          
+            </div>
 
-        {/* LABOR TAB */}
-        {expenseSubTab === 'LABOR' && (
-          <div className="flex flex-col flex-1 min-h-0 relative bg-white">
-            <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap">
+            {/* 3. LƯƠNG CÔNG NHẬT */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden shrink-0 flex flex-col mb-10">
+              <div className="flex border-b border-slate-100 bg-slate-50 px-5 py-3 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap"><h2 className="text-[14px] font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide whitespace-nowrap"><span className="material-symbols-outlined text-primary text-[18px]">engineering</span> LƯƠNG CÔNG NHẬT </h2>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
                   <span className="material-symbols-outlined text-[16px]">filter_list</span>
@@ -1975,9 +1969,15 @@ export const ProjectCostPlanPage: React.FC = () => {
                   </CustomSelect>
                 </div>
               </div>
-            </div>
-
-            <div className="flex-1 overflow-auto custom-scrollbar">
+             
+                    <button 
+                      onClick={() => setIsNewLaborOpen(true)}
+                      className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary-dark transition-colors shadow-sm ml-auto"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">add</span>
+                      Thêm chấm công
+                    </button>
+ </div> <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 <tr>
@@ -2049,15 +2049,13 @@ export const ProjectCostPlanPage: React.FC = () => {
               </tbody>
             </table>
             </div>
+          
+            </div>
+
           </div>
         )}
-          </div>
-        )}
 
-
-
-      </div>
-
+            </div>
       {/* MODALS */}
       {/* Xem ảnh Modal */}
       <Modal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} title="Xem hình ảnh hóa đơn/chứng từ" size="xl" icon="image">
