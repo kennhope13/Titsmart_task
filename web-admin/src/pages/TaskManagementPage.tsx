@@ -651,7 +651,15 @@ const hasSyncedRef = useRef(false);
             const r = rows[rIdx];
             if (r && (r.includes('STT') || r.includes('stt') || r.includes('Stt') || r.some((cell: any) => String(cell).toLowerCase() === 'stt'))) {
               startRow = rIdx + 1;
-              headerRow = r;
+              const nextRow = rows[rIdx + 1] || [];
+              const isNextRowData = !!(nextRow[0] || nextRow[1]);
+              const maxLen = Math.max(r.length, nextRow.length);
+              for (let i = 0; i < maxLen; i++) {
+                  let h1 = r[i] || '';
+                  let h2 = !isNextRowData && nextRow[i] ? nextRow[i] : '';
+                  headerRow[i] = String(h1) + ' ' + String(h2);
+              }
+              if (!isNextRowData) startRow = rIdx + 2;
               break;
             }
           }
@@ -696,8 +704,11 @@ const hasSyncedRef = useRef(false);
           const isDoneCol = getColIdx(headerRow, ['hoan thanh', 'da xong'], -1);
           
           const priceCol = getColIdx(headerRow, ['don gia'], -1);
-          const vatRateCol = getColIdx(headerRow, ['thue vat', 'vat %', 'vat'], -1);
-          const vatAmountCol = getColIdx(headerRow, ['tien thue'], -1);
+          const vatRateCol = headerRow.findIndex(h => {
+            const c = cleanText(h);
+            return (c.includes('thue vat') || c.includes('vat %') || c.includes('vat')) && !c.includes('thanh tien') && !c.includes('truoc thue');
+          });
+          const vatAmountCol = headerRow.findIndex(h => cleanText(h).includes('tien thue'));
           const originCol = getColIdx(headerRow, ['nguon', 'xuat xu'], -1);
           const codeCol = getColIdx(headerRow, ['ma hieu', 'ma'], -1);
 
@@ -2078,3 +2089,4 @@ const displayTasks = tasks.filter((t) => {
     </div>
   );
 };
+
