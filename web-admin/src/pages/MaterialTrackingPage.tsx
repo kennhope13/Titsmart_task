@@ -656,8 +656,8 @@ export const MaterialTrackingPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-slate-50 relative overflow-hidden">
-      <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3 pr-4`}>
-        {!projectId && (
+            {!projectId && (
+        <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3 pr-4`}>
           <div className="flex items-center gap-4">
             <div>
               <div className="flex items-center gap-3">
@@ -665,39 +665,6 @@ export const MaterialTrackingPage: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
-        
-        
-                {projectId && portalNode ? createPortal(
-          <div className="flex flex-wrap gap-2 pr-4">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleImportExcel} 
-              accept=".xlsx,.xls,.csv" 
-              className="hidden" 
-            />
-            <button 
-              onClick={() => fileInputRef.current?.click()} 
-              className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
-            >
-              <span className="material-symbols-outlined text-[14px]">file_upload</span>
-              Nhập Excel
-            </button>
-            <button onClick={handleExportExcel} className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-              <span className="material-symbols-outlined text-[14px]">file_download</span>
-              Xuất Excel
-            </button>
-            <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-1.5 bg-emerald-600 text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-sm">
-              <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
-              Nhập Kho
-            </button>
-            <button onClick={() => handleOpenTransaction('EXPORT')} className="flex items-center gap-1.5 bg-amber-500 text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-sm">
-              <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
-              Xuất Kho
-            </button>
-          </div>
-        , portalNode) : (!projectId && (
           <div className="flex flex-wrap gap-2">
             <input 
               type="file" 
@@ -726,8 +693,39 @@ export const MaterialTrackingPage: React.FC = () => {
               Xuất Kho
             </button>
           </div>
-        ))}
-      </section>
+        </section>
+      )}
+
+      {projectId && portalNode && createPortal(
+        <div className="flex flex-wrap gap-2 pr-4">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImportExcel} 
+            accept=".xlsx,.xls,.csv" 
+            className="hidden" 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()} 
+            className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[14px]">file_upload</span>
+            Nhập Excel
+          </button>
+          <button onClick={handleExportExcel} className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+            <span className="material-symbols-outlined text-[14px]">file_download</span>
+            Xuất Excel
+          </button>
+          <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-1.5 bg-emerald-600 text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-sm">
+            <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
+            Nhập Kho
+          </button>
+          <button onClick={() => handleOpenTransaction('EXPORT')} className="flex items-center gap-1.5 bg-amber-500 text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-sm">
+            <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
+            Xuất Kho
+          </button>
+        </div>
+      , portalNode)}
 
       <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         <section className="bg-white flex flex-col flex-1 min-w-0 min-h-0">
