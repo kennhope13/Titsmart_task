@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { useParams } from 'react-router-dom';
+import { useParams, useOutletContext } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
@@ -162,6 +163,9 @@ export const DocumentTrackingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'delivery' | 'finance' | 'completion'>('overview');
 
   // Modals state
+  const outletContext = useOutletContext<any>();
+  const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
+  useEffect(() => { setPortalNode(document.getElementById('project-header-actions')); }, []);
   const [isNewDocOpen, setIsNewDocOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentTrack | null>(null);
 
@@ -300,14 +304,47 @@ export const DocumentTrackingPage: React.FC = () => {
       <div className="doc-tracking-page flex flex-col flex-1 h-full bg-slate-50 relative overflow-hidden">
       
       {/* HEADER SECTION */}
-      <section className="border-b border-slate-200 bg-white shadow-sm px-6 pr-4 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        {!projectId && (
+            {!projectId && (
+        <section className="border-b border-slate-200 bg-white shadow-sm px-6 pr-4 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
             <h1 className="page-header-title text-lg text-slate-900 border-l-4 border-primary pl-2 uppercase">Theo dõi Hồ sơ gửi đi</h1>
           </div>
-        )}
 
-        <div className="flex gap-2">
+          <div className="flex gap-2">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImportExcel} 
+              accept=".xlsx,.xls,.csv" 
+              className="hidden" 
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()} 
+              className="flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+            >
+              <span className="material-symbols-outlined text-sm">file_upload</span>
+              Nhập Excel
+            </button>
+            <button 
+              onClick={handleExportExcel} 
+              className="flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+            >
+              <span className="material-symbols-outlined text-sm">file_download</span>
+              Xuất Excel
+            </button>
+            <button 
+              onClick={() => setIsNewDocOpen(true)} 
+              className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs"
+            >
+              <span className="material-symbols-outlined text-sm">add</span>
+              Thêm hồ sơ mới
+            </button>
+          </div>
+        </section>
+      )}
+
+      {projectId && portalNode && createPortal(
+        <div className="flex flex-wrap gap-2 pr-4">
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -317,32 +354,32 @@ export const DocumentTrackingPage: React.FC = () => {
           />
           <button 
             onClick={() => fileInputRef.current?.click()} 
-            className="flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+            className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
           >
-            <span className="material-symbols-outlined text-sm">file_upload</span>
+            <span className="material-symbols-outlined text-[14px]">file_upload</span>
             Nhập Excel
           </button>
           <button 
             onClick={handleExportExcel} 
-            className="flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+            className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
           >
-            <span className="material-symbols-outlined text-sm">file_download</span>
+            <span className="material-symbols-outlined text-[14px]">file_download</span>
             Xuất Excel
           </button>
           <button 
             onClick={() => setIsNewDocOpen(true)} 
-            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs"
+            className="flex items-center gap-1.5 bg-primary text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm"
           >
-            <span className="material-symbols-outlined text-sm">add</span>
+            <span className="material-symbols-outlined text-[14px]">add</span>
             Thêm hồ sơ mới
           </button>
         </div>
-      </section>
+      , portalNode)}
 
       <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden p-0 space-y-0">
       {/* TABS & TABLE */}
       <section className="bg-white flex flex-col flex-1 min-w-0 min-h-0 border-y border-slate-200 rounded-none shadow-none overflow-hidden">
-          <div className="w-full flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1">
+          <div className="w-full flex items-center justify-between border-b border-slate-200 bg-white px-4">
             <div className="flex items-center gap-4">
               {[
               { id: 'overview', label: 'Thông tin Giao nhận', icon: 'local_shipping', count: filteredTracks.length },
@@ -352,11 +389,11 @@ export const DocumentTrackingPage: React.FC = () => {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${
+                  className={`app-tab-button flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-bold border-b-2 transition-all whitespace-nowrap ${
                     activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-base leading-none">{tab.icon}</span>
+                  <span className="material-symbols-outlined text-[16px] leading-none">{tab.icon}</span>
                   {tab.label}
                   
                 </button>
