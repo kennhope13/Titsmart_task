@@ -345,10 +345,8 @@ export const DocumentTrackingPage: React.FC = () => {
           <div className="w-full flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1">
             <div className="flex items-center gap-4">
               {[
-              { id: 'overview', label: 'Tổng quan', icon: 'dashboard', count: filteredTracks.length },
-              { id: 'delivery', label: 'Giao nhận', icon: 'local_shipping', count: filteredTracks.filter(t => !t.receiveDate).length },
-              { id: 'finance', label: 'Tạm ứng - thanh toán', icon: 'payments', count: filteredTracks.filter(t => !t.paymentStatus?.includes('Đã')).length },
-              { id: 'completion', label: 'Hoàn tất - ghi chú', icon: 'task_alt', count: filteredTracks.filter(t => t.isCompleted).length },
+              { id: 'overview', label: 'Thông tin Giao nhận', icon: 'local_shipping', count: filteredTracks.length },
+              { id: 'finance', label: 'Tạm ứng & Thanh toán', icon: 'payments', count: filteredTracks.filter(t => !t.paymentStatus?.includes('Đã')).length }
               ].map(tab => (
                 <button
                   key={tab.id}
