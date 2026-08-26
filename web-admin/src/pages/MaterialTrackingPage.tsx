@@ -1178,7 +1178,7 @@ export const MaterialTrackingPage: React.FC = () => {
       </Modal>
             {/* MODAL CHUYỂN KHO */}
       <Modal isOpen={isTransferModalOpen} onClose={() => setIsTransferModalOpen(false)} title="Chuyển Kho Dự Án">
-        <form onSubmit={handleTransferMaterial} className="space-y-3 text-xs">
+        <form onSubmit={handleTransfer} className="space-y-3 text-xs">
           <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-blue-800 mb-2">
             <div className="font-bold mb-1">Vật tư: [{transferMaterial?.code}] {transferMaterial?.name}</div>
             <div className="grid grid-cols-2 gap-2 mt-2">
