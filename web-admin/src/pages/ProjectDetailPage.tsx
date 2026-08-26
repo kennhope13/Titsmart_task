@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { useParams, Link, useLocation, Outlet, Navigate } from 'react-router-dom';
+import React, { useMemo, useState, useEffect } from 'react';
+import { useParams, Link, useLocation, Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
 
@@ -8,6 +8,13 @@ export const ProjectDetailPage: React.FC = () => {
   const { projects } = useRealtimeStore();
   const location = useLocation();
   const role = useAuthStore(state => state.user?.role);
+  const [subTitle, setSubTitle] = useState('');
+  const navigate = useNavigate();
+
+  const handleTabClick = (e: React.MouseEvent, path: string) => {
+    e.preventDefault();
+    navigate(path, { replace: true, state: { reset: Date.now() } });
+  };
 
   const project = useMemo(() => {
     // Find project by ID or Code
@@ -20,7 +27,7 @@ export const ProjectDetailPage: React.FC = () => {
         <span className="material-symbols-outlined text-5xl text-rose-500 mb-3 animate-pulse">error</span>
         <h2 className="text-lg font-bold text-slate-800">Không tìm thấy dự án</h2>
         <p className="text-slate-500 text-sm mb-5 text-center max-w-sm">Dự án này không tồn tại, đã bị xóa hoặc bạn không có quyền truy cập.</p>
-        <Link to="/projects" className="bg-primary hover:opacity-90 active:scale-95 text-white px-5 py-2.5 rounded-xl text-[13px] font-bold shadow-md transition-all">
+        <Link to="/projects" className="page-title text-lg font-extrabold text-slate-900 hover:text-primary transition-colors border-l-4 border-primary pl-2 uppercase shrink-0 cursor-pointer inline-flex items-center">
           Quay lại Danh sách Dự án
         </Link>
       </div>
@@ -42,6 +49,8 @@ export const ProjectDetailPage: React.FC = () => {
     });
 
   // Redirect to first tab if we are exactly on /projects/:projectId
+  const activeTab = tabs.find(t => location.pathname.includes(t.path));
+
   const isExactBaseRoute = location.pathname.replace(/\/$/, '') === `/projects/${projectId}`;
   if (isExactBaseRoute) {
     return <Navigate to={`/projects/${project.id}/tasks`} replace />;
@@ -51,10 +60,24 @@ export const ProjectDetailPage: React.FC = () => {
     <div className="flex flex-col h-screen overflow-hidden bg-slate-100">
       {/* Top Project Bar */}
       <div className={`bg-white border-b border-slate-200 pl-3 py-3 md:py-0 md:h-12 flex flex-col sm:flex-row sm:items-center justify-between gap-2 flex-shrink-0 shadow-sm pr-5`}>
-        <div className="flex items-center h-full">
-          <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">
+        <div className="flex items-center h-full gap-2 overflow-hidden">
+          <Link to="/projects" className="page-title text-lg font-extrabold text-slate-900 hover:text-primary transition-colors border-l-4 border-primary pl-2 uppercase shrink-0 cursor-pointer">
             {project.name}
-          </h1>
+          </Link>
+          {activeTab && (
+            <>
+              <span className="material-symbols-outlined text-slate-400 text-[14px] shrink-0">arrow_forward_ios</span>
+              <a href={activeTab.path} onClick={(e) => handleTabClick(e, activeTab.path)} className="text-[15px] font-bold text-slate-700 hover:text-primary transition-colors shrink-0 cursor-pointer">
+                {activeTab.label}
+              </a>
+            </>
+          )}
+          {subTitle && (
+            <>
+              <span className="material-symbols-outlined text-slate-400 text-[12px] shrink-0">arrow_forward_ios</span>
+              <span className="text-[14px] font-medium text-slate-600 truncate">{subTitle}</span>
+            </>
+          )}
         </div>
 
         
@@ -64,7 +87,7 @@ export const ProjectDetailPage: React.FC = () => {
 
       {/* Content wrapper */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">
-        <Outlet />
+        <Outlet context={{ setSubTitle }} key={location.state?.reset || location.pathname} />
       </div>
     </div>
   );
