@@ -676,6 +676,7 @@ export const MaterialTrackingPage: React.FC = () => {
       status: purchaseStatus,
       constrStatus,
       supplier,
+      specs: description.trim(),
     };
     
     const created = await addMaterial(newMat);
