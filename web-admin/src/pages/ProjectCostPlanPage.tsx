@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { useParams } from 'react-router-dom';
+import { useParams, useOutletContext } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
 import { CostPlanSummaryTable } from './cost-plan/CostPlanSummaryTable';
@@ -1093,6 +1093,24 @@ export const ProjectCostPlanPage: React.FC = () => {
   }, [resolvedProjectCode, projectOptions, selectedProject]);
 
   const [activeTab, setActiveTab] = useState<any>('TECH');
+  const outletContext = useOutletContext<{ setSubTitle?: (title: string) => void }>();
+
+  useEffect(() => {
+    if (outletContext?.setSubTitle) {
+      if (activeTab === 'TECH') outletContext.setSubTitle('Đặt hàng');
+      else if (activeTab === 'DOCS') outletContext.setSubTitle('Chứng từ');
+      else if (activeTab === 'FINANCE') outletContext.setSubTitle('Thanh toán');
+      else if (activeTab === 'EXPENSE') outletContext.setSubTitle('Chi phí công trình');
+      else outletContext.setSubTitle('');
+    }
+    
+    // Clear subtitle when component unmounts (e.g. switching to another main tab)
+    return () => {
+      if (outletContext?.setSubTitle) {
+        outletContext.setSubTitle('');
+      }
+    };
+  }, [activeTab, outletContext?.setSubTitle]);
   const [expenseSubTab, setExpenseSubTab] = useState<'SUMMARY' | 'DETAIL' | 'LABOR'>('SUMMARY');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
