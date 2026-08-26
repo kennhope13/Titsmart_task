@@ -537,7 +537,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         
         
 
-        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-wrap" style={{ display: subTab === "DOCS" ? "none" : "flex" }}>
+        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-wrap" >
           <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
