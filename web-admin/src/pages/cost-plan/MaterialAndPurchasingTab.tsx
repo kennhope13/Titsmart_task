@@ -183,25 +183,25 @@ const MultiDocSelect = ({ plan, onBadgeClick, onFileClick, disabled }: { plan: a
       >
         {plan.docCo && (
           <div className="flex flex-col items-center gap-1">
-            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">CO</span>
+            <button type="button" onClick={(e) => { e.stopPropagation(); onBadgeClick(plan, 'CO'); }} className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200 cursor-pointer transition">CO</button>
             {renderAutoFilesByType(plan, 'CO', onFileClick)}
           </div>
         )}
         {plan.docCq && (
           <div className="flex flex-col items-center gap-1">
-            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">CQ</span>
+            <button type="button" onClick={(e) => { e.stopPropagation(); onBadgeClick(plan, 'CQ'); }} className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200 cursor-pointer transition">CQ</button>
             {renderAutoFilesByType(plan, 'CQ', onFileClick)}
           </div>
         )}
         {plan.docFireInspection && (
           <div className="flex flex-col items-center gap-1">
-            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">PCCC</span>
+            <button type="button" onClick={(e) => { e.stopPropagation(); onBadgeClick(plan, 'PCCC'); }} className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200 cursor-pointer transition">PCCC</button>
             {renderAutoFilesByType(plan, 'PCCC', onFileClick)}
           </div>
         )}
         {hasDocFiles(plan, 'STAMP') && (
           <div className="flex flex-col items-center gap-1">
-            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">TKD</span>
+            <button type="button" onClick={(e) => { e.stopPropagation(); onBadgeClick(plan, 'STAMP'); }} className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200 cursor-pointer transition">TKD</button>
             {renderAutoFilesByType(plan, 'STAMP', onFileClick)}
           </div>
         )}
