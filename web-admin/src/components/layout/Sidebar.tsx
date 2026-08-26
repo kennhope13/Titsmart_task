@@ -264,7 +264,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           </div>
         ))}
 
-        <div className="pt-4 border-t border-slate-100 relative flex flex-col gap-2">
+        </nav>
+      <div className="pt-4 pb-4 px-2 border-t border-slate-100 relative flex flex-col gap-2">
           {/* User Profile */}
           <button
             onClick={() => {
