@@ -622,11 +622,6 @@ export const DocumentTrackingPage: React.FC = () => {
                 <option value="Giao">Giao hồ sơ (Gửi đi)</option>
                 <option value="Nhận">Nhận hồ sơ (Nhận về)</option>
               </CustomSelect>
-              <label className="block font-bold mb-1 truncate">Phân loại hồ sơ *</label>
-              <CustomSelect required value={editingDoc?.docType || 'Giao'} onChange={(e) => setEditingDoc(prev => prev ? {...prev, docType: e.target.value} : null)} className="w-full border rounded-lg p-2 bg-white font-bold mb-3">
-                <option value="Giao">Giao hồ sơ (Gửi đi)</option>
-                <option value="Nhận">Nhận hồ sơ (Nhận về)</option>
-              </CustomSelect>
               <label className="block font-bold mb-1 truncate">Dự án *</label>
               <CustomSelect required value={newDoc.projectCode} onChange={(e) => setNewDoc({...newDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold truncate">
                 <option value="">-- Chọn dự án --</option>
