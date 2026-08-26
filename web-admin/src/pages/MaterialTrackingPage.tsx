@@ -945,7 +945,7 @@ export const MaterialTrackingPage: React.FC = () => {
                     return (
                       <tr key={material.id} onClick={() => openEditMaterial(material)} className="hover:bg-blue-50/50 transition-colors align-top cursor-pointer">
                         <td className="p-3.5 text-center text-slate-500 font-medium">{material.stt || (index + 1)}</td>
-                        {!projectId && <td className="p-3.5"><span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-600 truncate max-w-[120px] inline-block" title={material.projectName || 'Kho Tổng'}>{material.projectName || 'Kho Tổng'}</span></td>}
+                        {!projectId && <td className="p-3.5"><span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-600 inline-block" title={material.projectName || 'Kho Tổng'}>{material.projectName || 'Kho Tổng'}</span></td>}
                         <td className="p-3.5 text-slate-600 text-xs">{material.category || 'Vật tư chung'}</td>
                         <td className="p-3.5">
                           <div className="font-bold text-slate-900 leading-snug">{material.name}</div>
