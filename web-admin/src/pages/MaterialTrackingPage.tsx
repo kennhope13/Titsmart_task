@@ -667,8 +667,8 @@ export const MaterialTrackingPage: React.FC = () => {
       projectCode: currentProject ? currentProject.code : (selectedAddProject || 'COMPANY'),
       projectName: currentProject ? currentProject.name : (projects.find(p => p.code === selectedAddProject)?.name || 'Kho Tổng (Kho Công Ty)'),
       volume,
-      initialStock: volume,
-      currentStock: volume,
+      initialStock: 0,
+      currentStock: 0,
       totalImport: 0,
       totalExport: 0,
       unit,
@@ -688,9 +688,9 @@ export const MaterialTrackingPage: React.FC = () => {
         quantity: volume,
         unit: created.unit,
         date: new Date().toISOString().split('T')[0],
-        sourceOrProject: 'Tồn đầu kỳ',
+        sourceOrProject: 'Nhà cung cấp / Mua mới',
         receiverName: '',
-        notes: 'Khởi tạo vật tư',
+        notes: 'Nhập kho lần đầu',
         specs: created.englishName || created.specs
       });
     }
@@ -1092,7 +1092,7 @@ export const MaterialTrackingPage: React.FC = () => {
       </Modal>
 
       {/* MODAL TẠO VẬT TƯ MỚI */}
-      <Modal isOpen={isPlaceOrderModalOpen} onClose={() => setIsPlaceOrderModalOpen(false)} title="Thêm Vật Tư Mới (Tồn đầu kỳ)">
+      <Modal isOpen={isPlaceOrderModalOpen} onClose={() => setIsPlaceOrderModalOpen(false)} title="Thêm Vật Tư Mới">
         <form onSubmit={handleAddMaterial} className="space-y-3 text-xs">
           {!projectId && (
             <div>
@@ -1109,7 +1109,7 @@ export const MaterialTrackingPage: React.FC = () => {
           <div><label className="block font-bold text-slate-700 mb-1">Tên vật tư / thiết bị *</label><input type="text" required placeholder="VD: Cáp Cu/XLPE/PVC 2x2.5mm2" value={matName} onChange={(event) => setMatName(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Mô tả / quy cách</label><input type="text" placeholder="VD: chống nhiễu, chống cháy..." value={description} onChange={(event) => setDescription(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Nhà cung cấp mặc định</label><input type="text" placeholder="VD: Kho công ty" value={supplier} onChange={(event) => setSupplier(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
-          <div className="grid grid-cols-3 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tồn kho ban đầu</label><input type="number" min="0" value={volume} onChange={(event) => setVolume(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị</label><input type="text" value={unit} onChange={(event) => setUnit(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn giá</label><input type="number" value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div></div>
+          <div className="grid grid-cols-3 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Số lượng nhập ban đầu</label><input type="number" min="0" value={volume} onChange={(event) => setVolume(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị</label><input type="text" value={unit} onChange={(event) => setUnit(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn giá</label><input type="number" value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div></div>
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setIsPlaceOrderModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">Tạo mới</button></div>
         </form>
       </Modal>
