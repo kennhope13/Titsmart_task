@@ -857,6 +857,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ materials: nextMats });
           return { materials: nextMats };
         });
+        return created;
       } catch (e) {
         console.error('Failed to add material', e);
       }
