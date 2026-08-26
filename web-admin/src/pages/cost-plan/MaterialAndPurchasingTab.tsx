@@ -103,7 +103,7 @@ const showNumber = (value?: number) => {
   return n ? n.toLocaleString('vi-VN') : '';
 };
 
-const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC') => {
+const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC' | 'STAMP') => {
   if (!plan.issueContent || !plan.issueContent.includes('[DOC-DATA]')) return null;
   try {
     const models = decodeModels(plan.issueContent);
@@ -117,6 +117,7 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'P
         if (type === 'CO' && (lower.includes('co') || lower.includes('c/o'))) docTypeMatches = true;
         else if (type === 'CQ' && (lower.includes('cq') || lower.includes('c/q'))) docTypeMatches = true;
         else if (type === 'PCCC' && (lower.includes('pccc') || lower.includes('phòng cháy'))) docTypeMatches = true;
+        else if (type === 'STAMP' && (lower.includes('tem') || lower.includes('kiểm định') || lower.includes('stamp'))) docTypeMatches = true;
         
         if (docTypeMatches) {
           d.fileUrls.forEach(url => {
@@ -135,61 +136,82 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'P
 };
 
 
-const MultiDocSelect = ({ plan, onUpdate, disabled }: { plan: any, onUpdate: (id: string, data: any) => void, disabled: boolean }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const MultiDocSelect = ({ plan, onBadgeClick, disabled }: { plan: any, onBadgeClick: (plan: any, type: 'CO'|'CQ'|'PCCC'|'STAMP') => void, disabled: boolean }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setIsOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleOptionClick = (type: 'CO'|'CQ'|'PCCC'|'STAMP') => {
+    setIsOpen(false);
+    onBadgeClick(plan, type);
+  };
+
   return (
-    <div className="relative w-full h-full" ref={containerRef}>
+    <div className="relative w-full h-full group/docs" ref={containerRef}>
       <div 
-        className={`flex flex-row flex-wrap gap-x-2 gap-y-2 p-1.5 w-full items-center justify-center min-h-[34px] h-full ${disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}
+        className={`flex flex-row flex-wrap gap-x-3 gap-y-2 p-1.5 pr-6 w-full items-start justify-center min-h-[34px] h-full ${disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
         {plan.docCo && (
-          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">CO</span>
+          <div className="flex flex-col items-center gap-1">
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">CO</span>
+            {renderAutoFilesByType(plan, 'CO')}
+          </div>
         )}
         {plan.docCq && (
-          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">CQ</span>
+          <div className="flex flex-col items-center gap-1">
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">CQ</span>
+            {renderAutoFilesByType(plan, 'CQ')}
+          </div>
         )}
         {plan.docFireInspection && (
-          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">PCCC</span>
+          <div className="flex flex-col items-center gap-1">
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">PCCC</span>
+            {renderAutoFilesByType(plan, 'PCCC')}
+          </div>
         )}
         {plan.docStamp && (
-          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">Tem KĐ</span>
+          <div className="flex flex-col items-center gap-1">
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">Tem KĐ</span>
+            {renderAutoFilesByType(plan, 'STAMP')}
+          </div>
         )}
         {!plan.docCo && !plan.docCq && !plan.docFireInspection && !plan.docStamp && (
           <span className="text-slate-400 text-xs italic">--</span>
         )}
+
+        {/* Dropdown Chevron */}
+        {!disabled && (
+          <div className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 group-hover/docs:text-slate-600 transition-colors">
+            <div className="p-0.5 hover:bg-slate-200 rounded flex items-center justify-center">
+              <span className="material-symbols-outlined text-[16px]">expand_more</span>
+            </div>
+          </div>
+        )}
       </div>
       
       {isOpen && !disabled && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-36 bg-white rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200 py-1 z-50 text-left">
-          <label className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-xs font-bold text-slate-700" onClick={e => e.stopPropagation()}>
-            <input type="checkbox" className="rounded border-slate-300 text-primary focus:ring-primary h-3 w-3" checked={!!plan.docCo} onChange={(e) => onUpdate(plan.id, { ...plan, docCo: e.target.checked })} />
-            CO
-          </label>
-          <label className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-xs font-bold text-slate-700" onClick={e => e.stopPropagation()}>
-            <input type="checkbox" className="rounded border-slate-300 text-primary focus:ring-primary h-3 w-3" checked={!!plan.docCq} onChange={(e) => onUpdate(plan.id, { ...plan, docCq: e.target.checked })} />
-            CQ
-          </label>
-          <label className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-xs font-bold text-slate-700" onClick={e => e.stopPropagation()}>
-            <input type="checkbox" className="rounded border-slate-300 text-primary focus:ring-primary h-3 w-3" checked={!!plan.docFireInspection} onChange={(e) => onUpdate(plan.id, { ...plan, docFireInspection: e.target.checked })} />
-            PCCC
-          </label>
-          <label className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-xs font-bold text-slate-700" onClick={e => e.stopPropagation()}>
-            <input type="checkbox" className="rounded border-slate-300 text-primary focus:ring-primary h-3 w-3" checked={!!plan.docStamp} onChange={(e) => onUpdate(plan.id, { ...plan, docStamp: e.target.checked })} />
-            Tem kiểm định
-          </label>
+        <div className="absolute top-full right-0 mt-1 w-36 bg-white rounded-lg shadow-xl border border-slate-200 py-1.5 z-50 text-left">
+          <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase">Thêm chứng từ</div>
+          <button type="button" onClick={(e) => { e.stopPropagation(); handleOptionClick('CO'); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-xs text-slate-700 text-left">
+            <span className="material-symbols-outlined text-[14px] text-slate-400">upload_file</span> CO
+          </button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); handleOptionClick('CQ'); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-xs text-slate-700 text-left">
+            <span className="material-symbols-outlined text-[14px] text-slate-400">upload_file</span> CQ
+          </button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); handleOptionClick('PCCC'); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-xs text-slate-700 text-left">
+            <span className="material-symbols-outlined text-[14px] text-slate-400">upload_file</span> PCCC
+          </button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); handleOptionClick('STAMP'); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-xs text-slate-700 text-left">
+            <span className="material-symbols-outlined text-[14px] text-slate-400">upload_file</span> Tem kiểm định
+          </button>
         </div>
       )}
     </div>
@@ -270,7 +292,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const [tempValue, setTempValue] = useState<any>('');
   const [triggerAddDoc, setTriggerAddDoc] = useState(false);
   const [docModalPlanId, setDocModalPlanId] = useState<string | null>(null);
-  const [fastDocType, setFastDocType] = useState<'CO'|'CQ'|'PCCC'|null>(null);
+  const [fastDocType, setFastDocType] = useState<'CO'|'CQ'|'PCCC'|'STAMP'|null>(null);
   const [fastDocModels, setFastDocModels] = useState<ModelEntry[]>([]);
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -504,7 +526,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
   }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder]);
 
-  const handleDocBadgeClick = (plan: any, type: 'CO'|'CQ'|'PCCC') => {
+  const handleDocBadgeClick = (plan: any, type: 'CO'|'CQ'|'PCCC'|'STAMP') => {
     setFastDocModels(decodeModels(plan.issueContent));
     setDocModalPlanId(plan.id);
     setFastDocType(type);
@@ -523,6 +545,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     const docCo = hasFileFor(['c/o', 'co']);
     const docCq = hasFileFor(['c/q', 'cq']);
     const docFireInspection = hasFileFor(['pccc', 'phòng cháy']);
+    const docStamp = hasFileFor(['tem', 'kiểm định', 'stamp']);
 
     const payload = {
       ...plan,
@@ -645,7 +668,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       {fastDocType && (
         <FastDocModal
           title={`Cập nhật chứng từ ${fastDocType}`}
-          docType={fastDocType}
+          docType={fastDocType as any}
           initialModels={fastDocModels}
           onClose={() => setFastDocType(null)}
           onSubmit={handleFastDocSubmit}
@@ -1325,7 +1348,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             <>
                               {/* CHỨNG TỪ HÀNG HÓA (Combined CO, CQ, PCCC, Tem KĐ) */}
                               <td className="w-[160px] p-0 align-middle border-r border-slate-200 relative group/docs">
-                                <MultiDocSelect plan={plan} onUpdate={onUpdateMaterial} disabled={userRole === 'engineer'} />
+                                <MultiDocSelect plan={plan} onBadgeClick={handleDocBadgeClick} disabled={userRole === 'engineer'} />
                               </td>
                               
                             </>
