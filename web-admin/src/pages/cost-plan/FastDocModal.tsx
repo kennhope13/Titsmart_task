@@ -8,9 +8,10 @@ interface FastDocModalProps {
   initialModels: ModelEntry[];
   onClose: () => void;
   onSubmit: (newModels: ModelEntry[]) => void;
+  onDelete?: () => void;
 }
 
-export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, initialModels, onClose, onSubmit }) => {
+export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, initialModels, onClose, onSubmit, onDelete }) => {
   const [text, setText] = useState('');
   const [fileUrls, setFileUrls] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);

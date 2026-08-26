@@ -549,6 +549,26 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
   }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder]);
 
+  const handleDeleteDoc = (planId: string, docType: 'CO'|'CQ'|'PCCC'|'STAMP') => {
+    const plan = data.find(p => p.id === planId);
+    if (!plan) return;
+    const models = decodeModels(plan.issueContent);
+    // Remove all docs matching this type
+    const newModels = models.map(m => ({
+      ...m,
+      docs: m.docs.filter(d => {
+        const lower = (d.text || '').toLowerCase();
+        if (docType === 'CO' && (lower.includes('co') || lower.includes('c/o'))) return false;
+        if (docType === 'CQ' && (lower.includes('cq') || lower.includes('c/q'))) return false;
+        if (docType === 'PCCC' && (lower.includes('pccc') || lower.includes('phòng cháy'))) return false;
+        if (docType === 'STAMP' && (lower.includes('tem') || lower.includes('kiểm định') || lower.includes('stamp') || lower.includes('tkd'))) return false;
+        return true;
+      })
+    }));
+    handleFastDocSubmit(newModels);
+    setFastDocType(null);
+  };
+
   const handleDocBadgeClick = (plan: any, type: 'CO'|'CQ'|'PCCC'|'STAMP') => {
     setFastDocModels(decodeModels(plan.issueContent));
     setDocModalPlanId(plan.id);
@@ -695,6 +715,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           initialModels={fastDocModels}
           onClose={() => setFastDocType(null)}
           onSubmit={handleFastDocSubmit}
+          onDelete={() => docModalPlanId && fastDocType && handleDeleteDoc(docModalPlanId, fastDocType)}
         />
       )}
 
