@@ -306,6 +306,7 @@ const hasSyncedRef = useRef(false);
   const [isImportMenuOpen, setIsImportMenuOpen] = useState<boolean>(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState<boolean>(false);
   const [currentImportFormat, setCurrentImportFormat] = useState<ImportFileFormat>('xlsx');
+  const [deleteConfirm, setDeleteConfirm] = useState<{isOpen: boolean; task: any | null}>({isOpen: false, task: null});
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -546,7 +547,13 @@ const hasSyncedRef = useRef(false);
   // ----------------------------------------------------------------
   // XÓA TASK KÈM XÓA MATERIALPLAN + PURCHASINGPLAN TƯƠNG ỨNG
   // ----------------------------------------------------------------
-  const handleDeleteTask = (task: Task) => {
+  const confirmDeleteTask = (task: Task) => {
+    setDeleteConfirm({ isOpen: true, task });
+  };
+
+  const handleDeleteTask = () => {
+    if (!deleteConfirm.task) return;
+    const task = deleteConfirm.task;
     // Xóa task
     deleteTask(task.id);
 
@@ -566,6 +573,8 @@ const hasSyncedRef = useRef(false);
       );
       if (matchingPurchasing) deletePurchasingPlan(matchingPurchasing.id);
     }
+    triggerToast('Đã xóa hạng mục thành công!', 'success');
+    setDeleteConfirm({ isOpen: false, task: null });
   };
 
 
@@ -1584,7 +1593,7 @@ const displayTasks = tasks.filter((t) => {
                             <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
                             <span onClick={() => handleOpenEditModal(t)} className="cursor-pointer hover:underline flex-1 break-words leading-tight pt-0.5">{t.name}</span>
                             <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-base">add_circle</span></button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-base">delete</span></button>
+                            <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-base">delete</span></button>
                           </div>
                         </td>
                         <td className="sticky right-0 z-10 bg-blue-50/90 border-l border-blue-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] py-2 px-1 text-slate-500 truncate" title={cleanNotes(t.notes)}>
@@ -1643,7 +1652,7 @@ const displayTasks = tasks.filter((t) => {
                             {depth > 1 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}
                             <span onClick={() => startEditing(t.id, 'name', t.name)} className="flex-1 cursor-pointer hover:underline hover:text-blue-600 block">{t.name}</span>
                             <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button>
+                            <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button>
                           </div>
                         )}
                       </td>
@@ -1985,6 +1994,17 @@ const displayTasks = tasks.filter((t) => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Confirm dialog: Xóa hạng mục */}
+      <Modal isOpen={deleteConfirm.isOpen} onClose={() => setDeleteConfirm({isOpen: false, task: null})} title="Xác nhận xóa">
+        <div className="py-4">
+          <p className="mb-8 text-sm font-medium text-slate-700">Bạn chắc chắn muốn xóa hạng mục "{deleteConfirm.task?.name}"?</p>
+          <div className="flex justify-end gap-3 border-t pt-4">
+            <button onClick={() => setDeleteConfirm({isOpen: false, task: null})} className="px-4 py-2 border border-slate-300 text-slate-700 bg-white rounded hover:bg-slate-50 transition-colors font-medium">Hủy</button>
+            <button onClick={handleDeleteTask} className="px-4 py-2 bg-[#e53935] text-white rounded hover:bg-red-700 transition-colors font-bold shadow-md">Xóa</button>
+          </div>
+        </div>
       </Modal>
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
     </div>
