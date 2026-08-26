@@ -130,7 +130,7 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'P
         }
       });
     });
-    return links.length > 0 ? <div className="flex flex-wrap items-center gap-2">{links}</div> : null;
+    return links.length > 0 ? <div className="flex flex-wrap items-center gap-1.5">{links}</div> : null;
   } catch (e) { return null; }
 };
 
@@ -156,6 +156,13 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const [filterUnit, setFilterUnit] = useState('all');
   const [filterProgress, setFilterProgress] = useState('all');
   const [filterOrder, setFilterOrder] = useState('all');
+  const [filterModel, setFilterModel] = useState('all');
+  const [filterOrigin, setFilterOrigin] = useState('all');
+  const [filterDocs, setFilterDocs] = useState('all');
+  const [filterExpectedDate, setFilterExpectedDate] = useState('all');
+  const [filterContractStatus, setFilterContractStatus] = useState('all');
+  const [filterPaymentDate, setFilterPaymentDate] = useState('all');
+  const [filterInvoiceStatus, setFilterInvoiceStatus] = useState('all');
 
 
   // Cross-reference helper
@@ -182,6 +189,19 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const unitOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.unit).filter(Boolean)))], [data]);
   const progressOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.progressStatus).filter(Boolean)))], [data]);
   const orderOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.orderedStatus).filter(Boolean)))], [data]);
+  const modelOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.techSpecModel).filter(Boolean)))], [data]);
+  const originOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.techSpecOrigin).filter(Boolean)))], [data]);
+  const expectedDateOptions = useMemo(() => ['all', ...Array.from(new Set(data.map(p => p.expectedDate).filter(Boolean)))], [data]);
+  const contractStatusOptions = useMemo(() => ['all', ...Array.from(new Set(purchasingData.map(p => p.contractStatus).filter(Boolean)))], [purchasingData]);
+  const paymentDateOptions = useMemo(() => ['all', ...Array.from(new Set(purchasingData.map(p => p.paymentDate).filter(Boolean)))], [purchasingData]);
+  const invoiceStatusOptions = useMemo(() => ['all', ...Array.from(new Set(purchasingData.map(p => p.invoiceStatus).filter(Boolean)))], [purchasingData]);
+  const docsOptions = [
+    { id: 'all', label: 'Tất cả' },
+    { id: 'missing_co', label: 'Thiếu CO' },
+    { id: 'missing_cq', label: 'Thiếu CQ' },
+    { id: 'missing_fire', label: 'Thiếu PCCC' },
+    { id: 'not_dispatched', label: 'Chưa về CT' }
+  ];
 
 
   const [editingCell, setEditingCell] = useState<{ id: string; field: string; isPurchasing: boolean } | null>(null);
@@ -209,6 +229,69 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             p.unit?.toLowerCase().includes(q) || 
             p.notes?.toLowerCase().includes(q)
         );
+    }
+    if (filterModel && filterModel !== 'all') {
+      filtered = filtered.filter(p => {
+         const notes = String(p.notes || '').toLowerCase();
+         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         return p.techSpecModel === filterModel;
+      });
+    }
+    if (filterOrigin && filterOrigin !== 'all') {
+      filtered = filtered.filter(p => {
+         const notes = String(p.notes || '').toLowerCase();
+         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         return p.techSpecOrigin === filterOrigin;
+      });
+    }
+    if (filterProgress && filterProgress !== 'all') {
+      filtered = filtered.filter(p => {
+         const notes = String(p.notes || '').toLowerCase();
+         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         return p.progressStatus === filterProgress;
+      });
+    }
+    if (filterExpectedDate && filterExpectedDate !== 'all') {
+      filtered = filtered.filter(p => {
+         const notes = String(p.notes || '').toLowerCase();
+         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         return p.expectedDate === filterExpectedDate;
+      });
+    }
+    if (filterContractStatus && filterContractStatus !== 'all') {
+      filtered = filtered.filter(p => {
+         const notes = String(p.notes || '').toLowerCase();
+         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         const purch = findPurchasingMatch(p);
+         return purch?.contractStatus === filterContractStatus;
+      });
+    }
+    if (filterPaymentDate && filterPaymentDate !== 'all') {
+      filtered = filtered.filter(p => {
+         const notes = String(p.notes || '').toLowerCase();
+         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         const purch = findPurchasingMatch(p);
+         return purch?.paymentDate === filterPaymentDate;
+      });
+    }
+    if (filterInvoiceStatus && filterInvoiceStatus !== 'all') {
+      filtered = filtered.filter(p => {
+         const notes = String(p.notes || '').toLowerCase();
+         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         const purch = findPurchasingMatch(p);
+         return purch?.invoiceStatus === filterInvoiceStatus;
+      });
+    }
+    if (filterDocs && filterDocs !== 'all') {
+      filtered = filtered.filter(p => {
+         const notes = String(p.notes || '').toLowerCase();
+         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         if (filterDocs === 'missing_co') return !p.docCo;
+         if (filterDocs === 'missing_cq') return !p.docCq;
+         if (filterDocs === 'missing_fire') return !p.docFireInspection;
+         if (filterDocs === 'not_dispatched') return !p.dispatchToSite;
+         return true;
+      });
     }
     if (statusFilter && statusFilter !== 'Tất cả' && statusFilter !== 'ALL') {
       filtered = filtered.filter(p => {
@@ -408,7 +491,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
     if (isPurchasing) {
       if (pRecord) {
-        if (field === 'volumeOrder' || field === 'unitPrice' || field === 'vatRate' || field === 'prepayPercent' || field === 'prepayAmount') {
+        if (field === 'notes') {
+          const finalNotes = String(pRecord.notes || '');
+          const existingTags = finalNotes.match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
+          finalValue = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+        } else if (field === 'volumeOrder' || field === 'unitPrice' || field === 'vatRate' || field === 'prepayPercent' || field === 'prepayAmount') {
           finalValue = Number(tempValue || 0);
         }
         
@@ -537,13 +624,13 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         
         
 
-        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-wrap" style={{ display: subTab === "DOCS" ? "none" : "flex" }}>
-          <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
+        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-wrap" >
+          <div className="flex items-center gap-1.5.5 font-bold text-slate-500 whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
           
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5">
               <span className="text-slate-500 font-medium whitespace-nowrap">Đầu mục:</span>
               <CustomSelect
                 value={filterParent}
@@ -558,7 +645,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               </CustomSelect>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
               <CustomSelect
                 value={filterUnit}
@@ -572,7 +659,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             </div>
 
             {(subTab === 'TECH' || subTab === 'FINANCE') && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <span className="text-slate-500 font-medium whitespace-nowrap">Đặt hàng:</span>
                 <CustomSelect
                   value={filterOrder}
@@ -585,16 +672,146 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 </CustomSelect>
               </div>
             )}
+            
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 font-medium whitespace-nowrap">Mã hiệu:</span>
+              <CustomSelect
+                value={filterModel}
+                onChange={e => setFilterModel(e.target.value)}
+                className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+              >
+                {modelOptions.map(opt => {
+                  let label = opt;
+                  if (label && label.length > 20) label = label.slice(0, 20) + '...';
+                  return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
+                })}
+              </CustomSelect>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 font-medium whitespace-nowrap">Xuất xứ:</span>
+              <CustomSelect
+                value={filterOrigin}
+                onChange={e => setFilterOrigin(e.target.value)}
+                className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+              >
+                {originOptions.map(opt => {
+                  let label = opt;
+                  if (label && label.length > 20) label = label.slice(0, 20) + '...';
+                  return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
+                })}
+              </CustomSelect>
+            </div>
+
+            {subTab === 'TECH' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500 font-medium whitespace-nowrap">Tình trạng:</span>
+                <CustomSelect
+                  value={filterProgress}
+                  onChange={e => setFilterProgress(e.target.value)}
+                  className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                >
+                  {progressOptions.map(opt => {
+                    let label = opt;
+                    if (label && label.length > 20) label = label.slice(0, 20) + '...';
+                    return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
+                  })}
+                </CustomSelect>
+              </div>
+            )}
+            
+            {subTab === 'TECH' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500 font-medium whitespace-nowrap">Ngày có hàng:</span>
+                <CustomSelect
+                  value={filterExpectedDate}
+                  onChange={e => setFilterExpectedDate(e.target.value)}
+                  className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                >
+                  {expectedDateOptions.map(opt => {
+                    let label = opt;
+                    if (label && label.length > 20) label = label.slice(0, 20) + '...';
+                    return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
+                  })}
+                </CustomSelect>
+              </div>
+            )}
+
+            {subTab === 'FINANCE' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500 font-medium whitespace-nowrap">Tình trạng HĐ:</span>
+                <CustomSelect
+                  value={filterContractStatus}
+                  onChange={e => setFilterContractStatus(e.target.value)}
+                  className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                >
+                  {contractStatusOptions.map(opt => {
+                    let label = opt;
+                    if (label && label.length > 20) label = label.slice(0, 20) + '...';
+                    return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
+                  })}
+                </CustomSelect>
+              </div>
+            )}
+
+            {subTab === 'FINANCE' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500 font-medium whitespace-nowrap">Hạn TT:</span>
+                <CustomSelect
+                  value={filterPaymentDate}
+                  onChange={e => setFilterPaymentDate(e.target.value)}
+                  className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                >
+                  {paymentDateOptions.map(opt => {
+                    let label = opt;
+                    if (label && label.length > 20) label = label.slice(0, 20) + '...';
+                    return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
+                  })}
+                </CustomSelect>
+              </div>
+            )}
+
+            {subTab === 'FINANCE' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500 font-medium whitespace-nowrap">Hóa đơn VAT:</span>
+                <CustomSelect
+                  value={filterInvoiceStatus}
+                  onChange={e => setFilterInvoiceStatus(e.target.value)}
+                  className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                >
+                  {invoiceStatusOptions.map(opt => {
+                    let label = opt;
+                    if (label && label.length > 20) label = label.slice(0, 20) + '...';
+                    return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
+                  })}
+                </CustomSelect>
+              </div>
+            )}
+
+            {subTab === 'DOCS' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500 font-medium whitespace-nowrap">Chứng từ:</span>
+                <CustomSelect
+                  value={filterDocs}
+                  onChange={e => setFilterDocs(e.target.value)}
+                  className="min-w-[70px] max-w-[110px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
+                >
+                  {docsOptions.map(opt => (
+                    <option key={opt.id} value={opt.id}>{opt.label}</option>
+                  ))}
+                </CustomSelect>
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
-            <div className="relative w-48 sm:w-64">
+          <div className="flex items-center gap-1.5 ml-auto">
+            <div className="relative w-32 sm:w-40">
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">
                 search
               </span>
               <input
                 type="text"
-                placeholder="Tìm kiếm nội dung, ĐVT, ghi chú..."
+                placeholder="Tìm kiếm..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-8 pr-3 py-1 bg-slate-100 border-none rounded text-xs focus:ring-1 focus:ring-primary focus:bg-white transition-all outline-none"
@@ -604,7 +821,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             {onAddSection && subTab !== 'FINANCE' && (
               <button
                 onClick={onAddSection}
-                className="flex items-center gap-2 bg-primary text-white px-2 py-1 rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
+                className="flex items-center gap-1.5 bg-primary text-white px-2 py-1 rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
               >
                 <span className="material-symbols-outlined text-sm">add</span>
                 <span>Thêm đầu mục</span>
@@ -773,7 +990,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               {plan.stt}
                             </td>
                             <td colSpan={colSpanCount + 1} className="bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-nowrap" title={plan.jobContent}>
-                              <div className="flex items-center gap-2 min-w-0 overflow-hidden whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 min-w-0 overflow-hidden whitespace-nowrap">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
                                   className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
@@ -857,7 +1074,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 className="w-full bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
                               />
                             ) : (
-                              <div className="flex items-center gap-2.5 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
+                              <div className="flex items-center gap-1.5.5 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
                                 {depth > 1 && (
                                   <span className="material-symbols-outlined flex-shrink-0 text-slate-300 text-[14px] mr-1 translate-y-[1px]">
                                     subdirectory_arrow_right
@@ -1047,7 +1264,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               {/* CHỨNG TỪ HÀNG HÓA (Combined CO, CQ, PCCC) */}
                               <td className="w-[160px] p-0 align-middle border-r border-slate-200">
                                 <div className="flex flex-row flex-wrap gap-x-3 gap-y-2 p-1.5 w-full items-start justify-center divide-x divide-slate-200">
-                                  <div className="flex flex-col items-center gap-2 pl-2 first:pl-0">
+                                  <div className="flex flex-col items-center gap-1.5 pl-2 first:pl-0">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
@@ -1058,7 +1275,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     </button>
                                     {renderAutoFilesByType(plan, 'CO')}
                                   </div>
-                                  <div className="flex flex-col items-center gap-2 pl-2">
+                                  <div className="flex flex-col items-center gap-1.5 pl-2">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
@@ -1069,7 +1286,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     </button>
                                     {renderAutoFilesByType(plan, 'CQ')}
                                   </div>
-                                  <div className="flex flex-col items-center gap-2 pl-2">
+                                  <div className="flex flex-col items-center gap-1.5 pl-2">
                                     <button
                                       type="button"
                                       disabled={userRole === 'engineer'}
@@ -1226,7 +1443,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
                           {subTab !== 'TECH' ? (
                             <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-0 align-middle text-slate-500">
-                              {editingCell?.id === plan.id && editingCell?.field === 'notes' && !editingCell.isPurchasing ? (
+                              {editingCell?.id === plan.id && editingCell?.field === 'notes' && editingCell.isPurchasing === (subTab === 'FINANCE') ? (
                                 <input
                                   type="text"
                                   value={tempValue}
@@ -1237,16 +1454,22 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   className="w-full bg-white text-slate-500 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
                                 />
                               ) : (
-                                <div onClick={() => startEditing(plan.id, 'notes', (subTab === 'DOCS' ? cleanDocNotes(plan.notes) : cleanTechNotes(plan.notes)))} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={(subTab === 'DOCS' ? cleanDocNotes(plan.notes) : cleanTechNotes(plan.notes))}>
-                                  <span className="truncate flex-1">{(subTab === 'DOCS' ? cleanDocNotes(plan.notes) : cleanTechNotes(plan.notes))}</span>
+                                <div onClick={() => {
+                                  if (subTab === 'FINANCE') {
+                                    if (pRecord) startEditing(plan.id, 'notes', cleanNotes(pRecord.notes) || '', true);
+                                  } else {
+                                    startEditing(plan.id, 'notes', cleanDocNotes(plan.notes), false);
+                                  }
+                                }} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={subTab === 'FINANCE' ? cleanNotes(pRecord?.notes) : cleanDocNotes(plan.notes)}>
+                                  <span className="truncate flex-1">{subTab === 'FINANCE' ? cleanNotes(pRecord?.notes) : cleanDocNotes(plan.notes)}</span>
                                 </div>
                               )}
                             </td>
                           ) : (
                             <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1 align-middle text-slate-500 min-w-[200px]">
-                              <div className="flex flex-col gap-2 w-full text-xs">
+                              <div className="flex flex-col gap-1.5 w-full text-xs">
                                 {/* Vướng mắc */}
-                                <div className="flex items-start gap-2">
+                                <div className="flex items-start gap-1.5">
                                   <span className="text-[10px] font-bold text-red-500 w-12 shrink-0 mt-0.5" title="Nội dung vướng mắc">V.MẮC:</span>
                                   <div className="flex-1 bg-slate-50 rounded">
                                     {editingCell?.id === plan.id && editingCell?.field === 'issueContent' ? (
@@ -1269,7 +1492,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   </div>
                                 </div>
                                 {/* TT Xử lý */}
-                                <div className="flex items-start gap-2">
+                                <div className="flex items-start gap-1.5">
                                   <span className="text-[10px] font-bold text-orange-500 w-12 shrink-0 mt-0.5" title="Trạng thái xử lý">XỬ LÝ:</span>
                                   <div className="flex-1 bg-slate-50 rounded">
                                     {editingCell?.id === plan.id && editingCell?.field === 'issueStatus' ? (
@@ -1292,7 +1515,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   </div>
                                 </div>
                                 {/* Ghi chú */}
-                                <div className="flex items-start gap-2">
+                                <div className="flex items-start gap-1.5">
                                   <span className="text-[10px] font-bold text-slate-500 w-12 shrink-0 mt-0.5" title="Ghi chú">NOTE:</span>
                                   <div className="flex-1 bg-slate-50 rounded">
                                     {editingCell?.id === plan.id && editingCell?.field === 'notes' ? (
