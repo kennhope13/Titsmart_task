@@ -18,6 +18,7 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
+    autoHideMenuBar: true,
     // titleBarStyle: 'hidden', // Lấy cảm hứng từ Notion (giấu thanh tiêu đề mặc định)
     // titleBarOverlay: {
     //   color: '#ffffff',
