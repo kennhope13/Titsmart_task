@@ -152,7 +152,7 @@ export const TaskManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const { projectId } = useParams();
   const [searchParams] = useSearchParams();
-  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addPurchasingPlan, materialPlans, purchasingPlans, deleteMaterialPlan, deletePurchasingPlan, updateMaterialPlan, updatePurchasingPlan } = useRealtimeStore();
+  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addMaterialPlansBatch, addPurchasingPlan, addPurchasingsBatch, materialPlans, purchasingPlans, deleteMaterialPlan, deletePurchasingPlan, updateMaterialPlan, updatePurchasingPlan } = useRealtimeStore();
 
   const resolvedProjectCode = React.useMemo(() => {
     if (!projectId) return '';
@@ -613,6 +613,8 @@ const hasSyncedRef = useRef(false);
         }
 
         const importedTasks: any[] = [];
+        const importedMaterials: any[] = [];
+        const importedPurchasings: any[] = [];
         let createdProjectsCount = 0;
 
         wb.SheetNames.forEach((sheetName) => {
@@ -692,6 +694,12 @@ const hasSyncedRef = useRef(false);
           const issueCol = getColIdx(headerRow, ['vuong mac', 'su co', 'ton dong'], -1);
           const issueStatusCol = getColIdx(headerRow, ['trang thai xu ly', 'tt xu ly'], -1);
           const isDoneCol = getColIdx(headerRow, ['hoan thanh', 'da xong'], -1);
+          
+          const priceCol = getColIdx(headerRow, ['don gia'], -1);
+          const vatRateCol = getColIdx(headerRow, ['thue vat', 'vat %', 'vat'], -1);
+          const vatAmountCol = getColIdx(headerRow, ['tien thue'], -1);
+          const originCol = getColIdx(headerRow, ['nguon', 'xuat xu'], -1);
+          const codeCol = getColIdx(headerRow, ['ma hieu', 'ma'], -1);
 
           let currentSection = 'Mục chung';
           let currentMainSectionId: string | undefined = undefined;
@@ -778,9 +786,17 @@ const hasSyncedRef = useRef(false);
                }
             }
 
+            const priceVal = priceCol >= 0 ? (typeof r[priceCol] === 'number' ? r[priceCol] : (parseFloat(String(r[priceCol]).replace(/,/g, '')) || 0)) : 0;
+            const vatRateRaw = vatRateCol >= 0 ? (typeof r[vatRateCol] === 'number' ? r[vatRateCol] : (parseFloat(String(r[vatRateCol]).replace(/%/g, '')) || 10)) : 10;
+            const vatRateVal = vatRateRaw < 1 ? vatRateRaw * 100 : vatRateRaw;
+            const vatAmountVal = vatAmountCol >= 0 ? (typeof r[vatAmountCol] === 'number' ? r[vatAmountCol] : (parseFloat(String(r[vatAmountCol]).replace(/,/g, '')) || 0)) : (volVal * priceVal * vatRateVal / 100);
+            const originVal = originCol >= 0 ? String(r[originCol] || '').trim() : '';
+            const codeVal = codeCol >= 0 ? String(r[codeCol] || '').trim() : '';
+            const finalStt = sttVal || `${i - startRow + 1}`;
+
             importedTasks.push({
               id: taskId,
-              stt: sttVal || `${i - startRow + 1}`,
+              stt: finalStt,
               code: taskId,
               name: String(itemName).trim(),
               projectCode: targetProjectCode,
@@ -801,11 +817,63 @@ const hasSyncedRef = useRef(false);
               assignedEngineerId: engineers[0]?.id || '',
               assignedEngineerName: engineers[0]?.name || '',
             });
+
+            if (isSection) {
+              importedPurchasings.push({
+                projectCode: targetProjectCode,
+                stt: finalStt,
+                content: String(itemName).trim(),
+                unit: '',
+                volumeContract: 0,
+                volumeOrder: 0,
+                unitPrice: 0,
+                vatRate: 10,
+                vatAmount: 0,
+                totalAmount: 0,
+                prepayPercent: 0,
+                prepayAmount: 0,
+                remainingAmount: 0,
+                orderStatus: 'Chưa đặt hàng',
+                contractStatus: 'Chưa ký',
+                invoiceStatus: 'Chưa xuất',
+                notes: '[section]'
+              });
+            } else {
+              importedMaterials.push({
+                projectCode: targetProjectCode,
+                stt: finalStt,
+                jobContent: String(itemName).trim(),
+                unit: unitVal,
+                volume: volVal,
+              });
+
+              importedPurchasings.push({
+                projectCode: targetProjectCode,
+                stt: finalStt,
+                content: String(itemName).trim(),
+                unit: unitVal,
+                volumeContract: volVal,
+                volumeOrder: 0,
+                unitPrice: priceVal,
+                vatRate: vatRateVal,
+                vatAmount: vatAmountVal,
+                totalAmount: (volVal * priceVal) + vatAmountVal,
+                prepayPercent: 0,
+                prepayAmount: 0,
+                remainingAmount: (volVal * priceVal) + vatAmountVal,
+                orderStatus: rawPurchaseStatus,
+                contractStatus: 'Chưa ký',
+                invoiceStatus: 'Chưa xuất',
+                notes: ''
+              });
+            }
           }
         });
 
         if (importedTasks.length > 0) {
           addTasksBatch(importedTasks);
+          if (importedMaterials.length > 0) addMaterialPlansBatch(importedMaterials);
+          if (importedPurchasings.length > 0) addPurchasingsBatch(importedPurchasings);
           triggerToast(`Đ nạp thnh cng ${importedTasks.length} hạng mục từ file Excel!`, 'success');
         }
       } catch (err) {

@@ -209,9 +209,11 @@ interface RealtimeStoreState {
 
   // New Actions
   addMaterialPlan: (plan: Omit<ProjectMaterialPlan, 'id'> & { id?: string }, skipLog?: boolean) => Promise<string | undefined>;
+  addMaterialPlansBatch: (plans: (Omit<ProjectMaterialPlan, 'id'> & { id?: string })[]) => Promise<ProjectMaterialPlan[]>;
   updateMaterialPlan: (id: string, fields: Partial<ProjectMaterialPlan>) => Promise<void>;
   deleteMaterialPlan: (id: string) => Promise<void>;
   addPurchasingPlan: (plan: Omit<ProjectPurchasing, 'id'> & { id?: string }, skipLog?: boolean) => Promise<string | undefined>;
+  addPurchasingsBatch: (plans: (Omit<ProjectPurchasing, 'id'> & { id?: string })[]) => Promise<ProjectPurchasing[]>;
   updatePurchasingPlan: (id: string, fields: Partial<ProjectPurchasing>) => void;
   deletePurchasingPlan: (id: string) => void;
 
@@ -1165,6 +1167,36 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
+    addMaterialPlansBatch: async (plansData) => {
+      try {
+        const createdMatsRaw = await Promise.all(plansData.map(p => api.accounting.createMaterialPlan(p)));
+        const createdMats = createdMatsRaw.map(r => r ? normalizeMaterialPlan(r) : null).filter(Boolean) as ProjectMaterialPlan[];
+        set((state) => {
+          const nextMats = [...createdMats, ...state.materialPlans];
+          persistAndNotify({ materialPlans: nextMats });
+          return { materialPlans: nextMats };
+        });
+        return createdMats;
+      } catch (e) {
+        console.error('Failed to add material plans batch', e);
+        return [];
+      }
+    },
+    addPurchasingsBatch: async (plansData) => {
+      try {
+        const createdPursRaw = await Promise.all(plansData.map(p => api.accounting.createPurchasing(p)));
+        const createdPurs = createdPursRaw.map(r => r ? normalizePurchasingPlan(r) : null).filter(Boolean) as ProjectPurchasing[];
+        set((state) => {
+          const nextPurs = [...createdPurs, ...state.purchasingPlans];
+          persistAndNotify({ purchasingPlans: nextPurs });
+          return { purchasingPlans: nextPurs };
+        });
+        return createdPurs;
+      } catch (e) {
+        console.error('Failed to add purchasing plans batch', e);
+        return [];
+      }
+    },
     addMaterialPlan: async (planData, skipLog?: boolean) => {
       try {
         const created = normalizeMaterialPlan(await api.accounting.createMaterialPlan(planData));
