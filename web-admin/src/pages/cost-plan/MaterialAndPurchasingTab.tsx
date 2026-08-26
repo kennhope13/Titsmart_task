@@ -117,7 +117,7 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'P
         if (type === 'CO' && (lower.includes('co') || lower.includes('c/o'))) docTypeMatches = true;
         else if (type === 'CQ' && (lower.includes('cq') || lower.includes('c/q'))) docTypeMatches = true;
         else if (type === 'PCCC' && (lower.includes('pccc') || lower.includes('phòng cháy'))) docTypeMatches = true;
-        else if (type === 'STAMP' && (lower.includes('tem') || lower.includes('kiểm định') || lower.includes('stamp'))) docTypeMatches = true;
+        else if (type === 'STAMP' && (lower.includes('tem') || lower.includes('kiểm định') || lower.includes('stamp') || lower.includes('tkd'))) docTypeMatches = true;
         
         if (docTypeMatches) {
           d.fileUrls.forEach(url => {

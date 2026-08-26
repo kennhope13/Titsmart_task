@@ -24,7 +24,8 @@ export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, init
         if (
           (docType === 'CO' && (lowerText.includes('co') || lowerText.includes('c/o'))) ||
           (docType === 'CQ' && (lowerText.includes('cq') || lowerText.includes('c/q'))) ||
-          (docType === 'PCCC' && (lowerText.includes('pccc') || lowerText.includes('phòng cháy')))
+          (docType === 'PCCC' && (lowerText.includes('pccc') || lowerText.includes('phòng cháy'))) ||
+          (docType === 'STAMP' && (lowerText.includes('tem') || lowerText.includes('kiểm định') || lowerText.includes('stamp') || lowerText.includes('tkd')))
         ) {
           setText(d.text);
           setFileUrls(d.fileUrls || []);
@@ -56,7 +57,8 @@ export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, init
         if (
           (docType === 'CO' && (lowerText.includes('co') || lowerText.includes('c/o'))) ||
           (docType === 'CQ' && (lowerText.includes('cq') || lowerText.includes('c/q'))) ||
-          (docType === 'PCCC' && (lowerText.includes('pccc') || lowerText.includes('phòng cháy')))
+          (docType === 'PCCC' && (lowerText.includes('pccc') || lowerText.includes('phòng cháy'))) ||
+          (docType === 'STAMP' && (lowerText.includes('tem') || lowerText.includes('kiểm định') || lowerText.includes('stamp') || lowerText.includes('tkd')))
         ) {
           d.text = text;
           d.fileUrls = fileUrls;
