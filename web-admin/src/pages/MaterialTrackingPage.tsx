@@ -315,6 +315,11 @@ export const MaterialTrackingPage: React.FC = () => {
   
   const [transactionType, setTransactionType] = useState<'IMPORT' | 'EXPORT'>('IMPORT');
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [selectedAddProject, setSelectedAddProject] = useState('');
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [transferMaterial, setTransferMaterial] = useState<any>(null);
+  const [transferTargetProject, setTransferTargetProject] = useState('');
+  const [transferQuantity, setTransferQuantity] = useState(0);
 
   // Filter state
   const [filterCategory, setFilterCategory] = useState('');
@@ -340,7 +345,97 @@ export const MaterialTrackingPage: React.FC = () => {
     const timeoutId = setTimeout(updateHeight, 100);
     
     window.addEventListener('resize', updateHeight);
-    return () => {
+  
+  const handleTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transferMaterial || !transferTargetProject || transferQuantity <= 0) return;
+    
+    const targetProjectObj = projects.find(p => p.code === transferTargetProject);
+    const targetProjectName = targetProjectObj ? targetProjectObj.name : 'Kho Tổng';
+    const targetCode = targetProjectObj ? targetProjectObj.code : 'COMPANY';
+
+    if (transferMaterial.projectCode === targetCode) {
+      triggerToast('Không thể chuyển kho trong cùng một dự án!', 'warning');
+      return;
+    }
+
+    if (transferQuantity > (transferMaterial.currentStock !== undefined ? transferMaterial.currentStock : (transferMaterial.initialStock || 0))) {
+      triggerToast('Số lượng chuyển không thể lớn hơn tồn kho!', 'warning');
+      return;
+    }
+
+    // 1. Export from current material
+    const exportTx = {
+      materialId: transferMaterial.id,
+      materialCode: transferMaterial.code,
+      materialName: transferMaterial.name,
+      type: 'EXPORT' as const,
+      quantity: transferQuantity,
+      unit: transferMaterial.unit,
+      date: new Date().toISOString().split('T')[0],
+      sourceOrProject: `Chuyển đến ${targetProjectName}`,
+      receiverName: '',
+      notes: 'Chuyển kho',
+      specs: transferMaterial.englishName || transferMaterial.specs
+    };
+    await addInventoryTransaction(exportTx);
+
+    // 2. Find or create material in target project
+    let targetMaterial = materials.find(m => m.code === transferMaterial.code && m.projectCode === targetCode);
+    let targetMaterialId = targetMaterial?.id;
+
+    if (!targetMaterial) {
+      const maxStt = materials.reduce((max, m) => Math.max(max, m.stt || 0), 0);
+      const newMat = {
+        stt: maxStt + 1,
+        code: transferMaterial.code,
+        name: transferMaterial.name,
+        englishName: transferMaterial.englishName,
+        projectCode: targetCode,
+        projectName: targetProjectName,
+        volume: 0,
+        initialStock: 0,
+        currentStock: 0,
+        totalImport: 0,
+        totalExport: 0,
+        unit: transferMaterial.unit,
+        unitPrice: transferMaterial.unitPrice,
+        status: transferMaterial.status,
+        constrStatus: transferMaterial.constrStatus,
+        supplier: transferMaterial.supplier,
+        category: transferMaterial.category,
+        specs: transferMaterial.specs,
+      };
+      // We will just do a small hack: add the import transaction on next tick or rely on user to see it.
+      await addMaterial(newMat);
+      
+      logActivity('Chuyển kho', targetProjectName);
+      triggerToast('Chuyển kho thành công!', 'success');
+      setIsTransferModalOpen(false);
+      return; 
+    } else {
+      // 3. Import to target material
+      const importTx = {
+        materialId: targetMaterialId as string,
+        materialCode: transferMaterial.code,
+        materialName: transferMaterial.name,
+        type: 'IMPORT' as const,
+        quantity: transferQuantity,
+        unit: transferMaterial.unit,
+        date: new Date().toISOString().split('T')[0],
+        sourceOrProject: `Chuyển từ ${transferMaterial.projectName || 'Kho tổng'}`,
+        receiverName: '',
+        notes: 'Nhận từ chuyển kho',
+        specs: transferMaterial.englishName || transferMaterial.specs
+      };
+      await addInventoryTransaction(importTx);
+      logActivity('Chuyển kho', targetProjectName);
+      triggerToast('Chuyển kho thành công!', 'success');
+      setIsTransferModalOpen(false);
+    }
+  };
+
+  return () => {
       window.removeEventListener('resize', updateHeight);
       clearTimeout(timeoutId);
     };
@@ -814,6 +909,7 @@ export const MaterialTrackingPage: React.FC = () => {
                  >
                  <tr>
                    <th className="p-2 w-10 text-center bg-slate-50">STT</th>
+                   {!projectId && <th className="p-2 w-[10%] bg-slate-50">Dự Án</th>}
                    <th className="p-2 w-[8%] bg-slate-50">Danh mục</th>
                    <th className="p-2 w-[15%] bg-slate-50">Tên Vật Tư</th>
                    <th className="p-2 w-[8%] bg-slate-50">Mã Vật Tư</th>
@@ -833,6 +929,7 @@ export const MaterialTrackingPage: React.FC = () => {
                     return (
                       <tr key={material.id} onClick={() => openEditMaterial(material)} className="hover:bg-blue-50/50 transition-colors align-top cursor-pointer">
                         <td className="p-3.5 text-center text-slate-500 font-medium">{material.stt || (index + 1)}</td>
+                        {!projectId && <td className="p-3.5"><span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-600 truncate max-w-[120px] inline-block" title={material.projectName || 'Kho Tổng'}>{material.projectName || 'Kho Tổng'}</span></td>}
                         <td className="p-3.5 text-slate-600 text-xs">{material.category || 'Vật tư chung'}</td>
                         <td className="p-3.5">
                           <div className="font-bold text-slate-900 leading-snug">{material.name}</div>
@@ -980,6 +1077,17 @@ export const MaterialTrackingPage: React.FC = () => {
       {/* MODAL TẠO VẬT TƯ MỚI */}
       <Modal isOpen={isPlaceOrderModalOpen} onClose={() => setIsPlaceOrderModalOpen(false)} title="Thêm Vật Tư Mới (Tồn đầu kỳ)">
         <form onSubmit={handleAddMaterial} className="space-y-3 text-xs">
+          {!projectId && (
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Thuộc dự án *</label>
+              <select value={selectedAddProject} onChange={e => setSelectedAddProject(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                <option value="">-- Kho Tổng (Kho Công Ty) --</option>
+                {projects.map(p => (
+                  <option key={p.code} value={p.code}>{p.code} - {p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div><label className="block font-bold text-slate-700 mb-1">Mã vật tư (Tùy chọn)</label><input type="text" placeholder="Bỏ trống để tự động tạo (VD: MAT-186)" value={newMatCode} onChange={(event) => setNewMatCode(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Tên vật tư / thiết bị *</label><input type="text" required placeholder="VD: Cáp Cu/XLPE/PVC 2x2.5mm2" value={matName} onChange={(event) => setMatName(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Mô tả / quy cách</label><input type="text" placeholder="VD: chống nhiễu, chống cháy..." value={description} onChange={(event) => setDescription(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
