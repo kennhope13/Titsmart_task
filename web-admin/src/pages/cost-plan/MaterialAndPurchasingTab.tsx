@@ -103,6 +103,22 @@ const showNumber = (value?: number) => {
   return n ? n.toLocaleString('vi-VN') : '';
 };
 
+const hasDocFiles = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC' | 'STAMP'): boolean => {
+  if (!plan.issueContent || !plan.issueContent.includes('[DOC-DATA]')) return false;
+  try {
+    const models = decodeModels(plan.issueContent);
+    return models.some(m => m.docs.some(d => {
+      if (!d.fileUrls || d.fileUrls.length === 0) return false;
+      const lower = (d.text || '').toLowerCase();
+      if (type === 'CO') return lower.includes('co') || lower.includes('c/o');
+      if (type === 'CQ') return lower.includes('cq') || lower.includes('c/q');
+      if (type === 'PCCC') return lower.includes('pccc') || lower.includes('phòng cháy');
+      if (type === 'STAMP') return lower.includes('tem') || lower.includes('kiểm định') || lower.includes('stamp') || lower.includes('tkd');
+      return false;
+    }));
+  } catch { return false; }
+};
+
 const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC' | 'STAMP') => {
   if (!plan.issueContent || !plan.issueContent.includes('[DOC-DATA]')) return null;
   try {
@@ -177,13 +193,13 @@ const MultiDocSelect = ({ plan, onBadgeClick, disabled }: { plan: any, onBadgeCl
             {renderAutoFilesByType(plan, 'PCCC')}
           </div>
         )}
-        {plan.docStamp && (
+        {hasDocFiles(plan, 'STAMP') && (
           <div className="flex flex-col items-center gap-1">
             <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300">TKD</span>
             {renderAutoFilesByType(plan, 'STAMP')}
           </div>
         )}
-        {!plan.docCo && !plan.docCq && !plan.docFireInspection && !plan.docStamp && (
+        {!plan.docCo && !plan.docCq && !plan.docFireInspection && !hasDocFiles(plan, 'STAMP') && (
           <span className="text-slate-400 text-xs italic">--</span>
         )}
 
