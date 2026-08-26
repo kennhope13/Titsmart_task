@@ -961,8 +961,15 @@ export const MaterialTrackingPage: React.FC = () => {
                         <td className="p-3.5 text-right font-bold text-primary text-sm">{(material.currentStock !== undefined ? material.currentStock : (material.initialStock || 0)).toLocaleString('vi-VN')}</td>
                         <td className="p-3.5 text-slate-600 text-xs max-w-xs truncate" title={material.notes || ''}>{material.notes || '-'}</td>
                         <td className="p-3.5 text-center" onClick={(event) => event.stopPropagation()}>
-                          <button type="button" onClick={() => {
-                            setConfirmConfig({
+                          <div className="flex justify-center gap-2">
+                            <button type="button" onClick={() => {
+                              setTransferMaterial(material);
+                              setIsTransferModalOpen(true);
+                            }} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors" title="Chuyển kho">
+                              <span className="material-symbols-outlined text-[14px]">swap_horiz</span>
+                            </button>
+                            <button type="button" onClick={() => {
+                              setConfirmConfig({
                               isOpen: true,
                               title: 'Xóa vật tư',
                               message: `Bạn chắc chắn muốn xóa vật tư "${material.name}"?`,
@@ -973,7 +980,8 @@ export const MaterialTrackingPage: React.FC = () => {
                             });
                           }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title="Xóa vật tư">
                             <span className="material-symbols-outlined text-base">delete</span>
-                          </button>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
