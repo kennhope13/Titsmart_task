@@ -408,7 +408,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
     if (isPurchasing) {
       if (pRecord) {
-        if (field === 'volumeOrder' || field === 'unitPrice' || field === 'vatRate' || field === 'prepayPercent' || field === 'prepayAmount') {
+        if (field === 'notes') {
+          const finalNotes = String(pRecord.notes || '');
+          const existingTags = finalNotes.match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
+          finalValue = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+        } else if (field === 'volumeOrder' || field === 'unitPrice' || field === 'vatRate' || field === 'prepayPercent' || field === 'prepayAmount') {
           finalValue = Number(tempValue || 0);
         }
         
@@ -1235,12 +1239,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               ) : (
                                 <div onClick={() => {
                                   if (subTab === 'FINANCE') {
-                                    if (pRecord) startEditing(plan.id, 'notes', pRecord.notes || '', true);
+                                    if (pRecord) startEditing(plan.id, 'notes', cleanNotes(pRecord.notes) || '', true);
                                   } else {
                                     startEditing(plan.id, 'notes', cleanDocNotes(plan.notes), false);
                                   }
-                                }} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={subTab === 'FINANCE' ? pRecord?.notes : cleanDocNotes(plan.notes)}>
-                                  <span className="truncate flex-1">{subTab === 'FINANCE' ? pRecord?.notes : cleanDocNotes(plan.notes)}</span>
+                                }} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={subTab === 'FINANCE' ? cleanNotes(pRecord?.notes) : cleanDocNotes(plan.notes)}>
+                                  <span className="truncate flex-1">{subTab === 'FINANCE' ? cleanNotes(pRecord?.notes) : cleanDocNotes(plan.notes)}</span>
                                 </div>
                               )}
                             </td>
