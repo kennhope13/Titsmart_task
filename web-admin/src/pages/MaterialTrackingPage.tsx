@@ -732,7 +732,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
         {/* TABS & FILTERS */}
         <div ref={stickyHeaderRef} className="flex flex-col border-b border-slate-200 bg-white z-20">
-          <div className="flex items-center gap-4 px-4 pt-1">
+          <div className="flex items-center gap-4 px-4">
             {[
               { id: 'OVERVIEW', label: 'Tồn Kho Tổng Hợp', icon: 'inventory' },
               { id: 'IMPORT', label: 'Nhật Ký Nhập Kho', icon: 'login' },
@@ -741,7 +741,7 @@ export const MaterialTrackingPage: React.FC = () => {
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap ${
+                className={`app-tab-button flex items-center gap-2.5 px-3 py-2 border-b-2 transition-all whitespace-nowrap ${
                   activeTab === tab.id 
                     ? 'border-primary text-primary' 
                     : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
