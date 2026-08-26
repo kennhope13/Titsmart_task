@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
 import { useParams, Link, useLocation, Outlet, Navigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore } from '../services/authStore';
 
 export const ProjectDetailPage: React.FC = () => {
   const { projectId } = useParams();
   const { projects } = useRealtimeStore();
   const location = useLocation();
+  const role = useAuthStore(state => state.user?.role);
 
   const project = useMemo(() => {
     // Find project by ID or Code
@@ -26,33 +28,18 @@ export const ProjectDetailPage: React.FC = () => {
   }
 
   // Tabs for the project detail view
-  const tabs = [
-    {
-      label: 'Tiến độ Công việc',
-      path: `/projects/${project.id}/tasks`,
-      icon: 'playlist_add_check'
-    },
-    {
-      label: 'Nhật ký Hiện trường',
-      path: `/projects/${project.id}/field-logs`,
-      icon: 'photo_camera'
-    },
-    {
-      label: 'Vật tư & Chi phí',
-      path: `/projects/${project.id}/cost-plan`,
-      icon: 'request_quote'
-    },
-    {
-      label: 'Kho Dự án',
-      path: `/projects/${project.id}/inventory`,
-      icon: 'warehouse'
-    },
-    {
-      label: 'Theo dõi Hồ sơ',
-      path: `/projects/${project.id}/documents`,
-      icon: 'drafts'
-    }
-  ];
+  const baseTabs = [
+      { label: 'Tiến độ Công việc', path: `/projects/${project.id}/tasks`, icon: 'fact_check' },
+      { label: 'Vật tư & Chi phí', path: `/projects/${project.id}/cost-plan`, icon: 'account_balance_wallet' },
+      { label: 'Theo dõi Hồ sơ', path: `/projects/${project.id}/documents`, icon: 'file_present', requireAdmin: true },
+      { label: 'Kho Dự án', path: `/projects/${project.id}/inventory`, icon: 'inventory_2' },
+      { label: 'Nhật ký Hiện trường', path: `/projects/${project.id}/field-logs`, icon: 'add_a_photo' }
+    ];
+
+    const tabs = baseTabs.filter(tab => {
+      if (tab.requireAdmin && (role === 'staff' || role === 'engineer')) return false;
+      return true;
+    });
 
   // Redirect to first tab if we are exactly on /projects/:projectId
   const isExactBaseRoute = location.pathname.replace(/\/$/, '') === `/projects/${projectId}`;
