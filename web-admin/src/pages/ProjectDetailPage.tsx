@@ -80,7 +80,7 @@ export const ProjectDetailPage: React.FC = () => {
           )}
         </div>
 
-        
+        <div id="project-header-actions" className="flex items-center gap-2 shrink-0 ml-auto flex-wrap justify-end"></div>
       </div>
 
 
