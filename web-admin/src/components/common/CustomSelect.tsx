@@ -127,7 +127,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     if (node && typeof node === "object" && node.props && node.props.children) return extractText(node.props.children);
     return "";
   };
-  const filteredOptions = searchable ? options.filter(opt => extractText(opt.label).toLowerCase().includes(searchTerm.toLowerCase())) : options;
+  const normalizeVN = (str: string) => {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  };
+  const filteredOptions = searchable 
+    ? options.filter(opt => normalizeVN(extractText(opt.label)).includes(normalizeVN(searchTerm))) 
+    : options;
 
   const dropdownEl = isOpen && !disabled ? (
     <div
@@ -164,7 +169,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             type="text"
             className="w-full h-full bg-transparent border-none outline-none pr-6"
             style={{ color: "inherit", fontWeight: "inherit", fontSize: "inherit", margin: 0, padding: 0 }}
-            placeholder="-- Chọn --"
+            placeholder={isOpen ? "Nhập để tìm kiếm..." : "-- Chọn --"}
             disabled={disabled}
             value={isOpen ? searchTerm : (typeof displayLabel === "string" ? displayLabel : extractText(displayLabel)) || ""}
             onChange={(e) => {
