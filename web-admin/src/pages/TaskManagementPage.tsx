@@ -596,7 +596,7 @@ const hasSyncedRef = useRef(false);
     }
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
@@ -617,16 +617,16 @@ const hasSyncedRef = useRef(false);
         const importedPurchasings: any[] = [];
         let createdProjectsCount = 0;
 
-        wb.SheetNames.forEach((sheetName) => {
+        for (const sheetName of wb.SheetNames) {
           const sheet = wb.Sheets[sheetName];
           const rows = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
-          if (!rows || rows.length === 0) return;
+          if (!rows || rows.length === 0) continue;
 
           const codeUpper = sheetName.toUpperCase().replace(/\s+/g, '_');
-          const existingProj = projects.find((p) => p.code.toUpperCase() === codeUpper || p.name.toLowerCase() === sheetName.toLowerCase());
+          let existingProj = projects.find((p) => p.code.toUpperCase() === codeUpper || p.name.toLowerCase() === sheetName.toLowerCase());
 
           if (!existingProj) {
-            addProject({
+            const newProj = await addProject({
               code: codeUpper,
               name: sheetName,
               location: 'Hiện trường mới',
@@ -640,9 +640,13 @@ const hasSyncedRef = useRef(false);
               startDate: todayStamp(),
               endDate: '2025-12-31',
             });
-            createdProjectsCount++;
+            if (newProj) {
+              existingProj = newProj;
+              createdProjectsCount++;
+            }
           }
 
+          const targetProjectId = existingProj ? existingProj.id : '';
           const targetProjectCode = existingProj ? existingProj.code : codeUpper;
 
           let startRow = -1;
@@ -810,6 +814,7 @@ const hasSyncedRef = useRef(false);
               stt: finalStt,
               code: taskId,
               name: String(itemName).trim(),
+              projectId: targetProjectId,
               projectCode: targetProjectCode,
               projectName: sheetName,
               volume: volVal,
@@ -831,6 +836,7 @@ const hasSyncedRef = useRef(false);
 
             if (isSection) {
               importedPurchasings.push({
+                projectId: targetProjectId,
                 projectCode: targetProjectCode,
                 stt: finalStt,
                 content: String(itemName).trim(),
@@ -851,6 +857,7 @@ const hasSyncedRef = useRef(false);
               });
             } else {
               importedMaterials.push({
+                projectId: targetProjectId,
                 projectCode: targetProjectCode,
                 stt: finalStt,
                 jobContent: String(itemName).trim(),
@@ -859,6 +866,7 @@ const hasSyncedRef = useRef(false);
               });
 
               importedPurchasings.push({
+                projectId: targetProjectId,
                 projectCode: targetProjectCode,
                 stt: finalStt,
                 content: String(itemName).trim(),
@@ -879,7 +887,7 @@ const hasSyncedRef = useRef(false);
               });
             }
           }
-        });
+        }
 
         if (importedTasks.length > 0) {
           addTasksBatch(importedTasks);

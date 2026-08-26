@@ -281,12 +281,12 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
 
     const volume = volumeCol >= 0 ? parseNumberValue(cells[volumeCol] || '') : 0;
     const unit = unitCol >= 0 ? String(cells[unitCol] || '').trim() : '';
-    // Không import đơn giá, tiền thuế, thành tiền từ phụ lục dự án (vẫn lấy % thuế VAT)
-    const unitPrice = 0;
-    const totalBeforeVat = 0;
-    const vatRate = vatRateCol >= 0 ? parseNumberValue(cells[vatRateCol] || '') : 0;
-    const vatAmount = 0;
-    const totalAmount = 0;
+    const unitPrice = unitPriceCol >= 0 ? parseNumberValue(cells[unitPriceCol] || '') : 0;
+    const totalBeforeVat = preTaxCol >= 0 ? parseNumberValue(cells[preTaxCol] || '') : (volume * unitPrice);
+    const vatRateRaw = vatRateCol >= 0 ? parseNumberValue(cells[vatRateCol] || '') : 0;
+    const vatRate = vatRateRaw < 1 ? vatRateRaw * 100 : vatRateRaw;
+    const vatAmount = vatAmountCol >= 0 ? parseNumberValue(cells[vatAmountCol] || '') : (totalBeforeVat * vatRate / 100);
+    const totalAmount = totalCol >= 0 ? parseNumberValue(cells[totalCol] || '') : (totalBeforeVat + vatAmount);
     const sttLookup = normalizeLookupText(stt).toUpperCase();
     const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
     const numericParentRegex = /^\d+$/;
