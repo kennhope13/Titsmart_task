@@ -119,7 +119,29 @@ const hasDocFiles = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC' | 'ST
   } catch { return false; }
 };
 
-const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC' | 'STAMP', onFileClick?: (url: string, title: string) => void) => {
+const getCustomDocs = (plan: ProjectMaterialPlan): string[] => {
+  if (!plan.issueContent || !plan.issueContent.includes('[DOC-DATA]')) return [];
+  try {
+    const models = decodeModels(plan.issueContent);
+    const customTypes = new Set<string>();
+    models.forEach(m => {
+      m.docs.forEach(d => {
+        if (!d.fileUrls || d.fileUrls.length === 0) return;
+        const lower = (d.text || '').toLowerCase();
+        const isCO = lower.includes('co') || lower.includes('c/o');
+        const isCQ = lower.includes('cq') || lower.includes('c/q');
+        const isPCCC = lower.includes('pccc') || lower.includes('phòng cháy');
+        const isSTAMP = lower.includes('tem') || lower.includes('kiểm định') || lower.includes('stamp') || lower.includes('tkd');
+        if (!isCO && !isCQ && !isPCCC && !isSTAMP && d.text) {
+          customTypes.add(d.text);
+        }
+      });
+    });
+    return Array.from(customTypes);
+  } catch { return []; }
+};
+
+const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: string, onFileClick?: (url: string, title: string) => void) => {
   if (!plan.issueContent || !plan.issueContent.includes('[DOC-DATA]')) return null;
   try {
     const models = decodeModels(plan.issueContent);
@@ -134,6 +156,7 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'P
         else if (type === 'CQ' && (lower.includes('cq') || lower.includes('c/q'))) docTypeMatches = true;
         else if (type === 'PCCC' && (lower.includes('pccc') || lower.includes('phòng cháy'))) docTypeMatches = true;
         else if (type === 'STAMP' && (lower.includes('tem') || lower.includes('kiểm định') || lower.includes('stamp') || lower.includes('tkd'))) docTypeMatches = true;
+        else if (!['CO', 'CQ', 'PCCC', 'STAMP'].includes(type) && d.text === type) docTypeMatches = true;
         
         if (docTypeMatches) {
           d.fileUrls.forEach(url => {
@@ -158,7 +181,7 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'P
 };
 
 
-const MultiDocSelect = ({ plan, onBadgeClick, onFileClick, disabled }: { plan: any, onBadgeClick: (plan: any, type: 'CO'|'CQ'|'PCCC'|'STAMP') => void, onFileClick: (url: string, title: string) => void, disabled: boolean }) => {
+const MultiDocSelect = ({ plan, onBadgeClick, onFileClick, disabled }: { plan: any, onBadgeClick: (plan: any, type: string) => void, onFileClick: (url: string, title: string) => void, disabled: boolean }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -170,7 +193,7 @@ const MultiDocSelect = ({ plan, onBadgeClick, onFileClick, disabled }: { plan: a
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleOptionClick = (type: 'CO'|'CQ'|'PCCC'|'STAMP') => {
+  const handleOptionClick = (type: string) => {
     setIsOpen(false);
     onBadgeClick(plan, type);
   };
@@ -205,7 +228,15 @@ const MultiDocSelect = ({ plan, onBadgeClick, onFileClick, disabled }: { plan: a
             {renderAutoFilesByType(plan, 'STAMP', onFileClick)}
           </div>
         )}
-        {!plan.docCo && !plan.docCq && !plan.docFireInspection && !hasDocFiles(plan, 'STAMP') && (
+        
+        {getCustomDocs(plan).map(customType => (
+          <div key={customType} className="flex flex-col items-center gap-1">
+            <button type="button" onClick={(e) => { e.stopPropagation(); onBadgeClick(plan, customType); }} className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200 cursor-pointer transition max-w-[60px] truncate" title={customType}>{customType}</button>
+            {renderAutoFilesByType(plan, customType, onFileClick)}
+          </div>
+        ))}
+        
+        {!plan.docCo && !plan.docCq && !plan.docFireInspection && !hasDocFiles(plan, 'STAMP') && getCustomDocs(plan).length === 0 && (
           <span className="text-slate-400 text-xs italic">--</span>
         )}
 
@@ -221,7 +252,20 @@ const MultiDocSelect = ({ plan, onBadgeClick, onFileClick, disabled }: { plan: a
       
       {isOpen && !disabled && (
         <div className="absolute top-full right-0 mt-1 w-36 bg-white rounded-lg shadow-xl border border-slate-200 py-1.5 z-50 text-left">
-          <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase">Thêm chứng từ</div>
+          <div className="px-2 py-1.5 border-b border-slate-100 mb-1">
+            <input
+              type="text"
+              placeholder="Nhập tên chứng từ..."
+              className="w-full text-xs px-2 py-1 border rounded focus:outline-none focus:border-primary"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                  e.stopPropagation();
+                  handleOptionClick(e.currentTarget.value.trim());
+                }
+              }}
+            />
+          </div>
           <button type="button" onClick={(e) => { e.stopPropagation(); handleOptionClick('CO'); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-xs text-slate-700 text-left">
             <span className="material-symbols-outlined text-[14px] text-slate-400">upload_file</span> CO
           </button>
@@ -314,7 +358,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const [tempValue, setTempValue] = useState<any>('');
   const [triggerAddDoc, setTriggerAddDoc] = useState(false);
   const [docModalPlanId, setDocModalPlanId] = useState<string | null>(null);
-  const [fastDocType, setFastDocType] = useState<'CO'|'CQ'|'PCCC'|'STAMP'|null>(null);
+  const [fastDocType, setFastDocType] = useState<string | null>(null);
   const [fastDocModels, setFastDocModels] = useState<ModelEntry[]>([]);
   const [previewFile, setPreviewFile] = useState<{ url: string; title: string } | null>(null);
 
@@ -549,7 +593,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
   }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder]);
 
-  const handleDeleteDoc = (planId: string, docType: 'CO'|'CQ'|'PCCC'|'STAMP') => {
+  const handleDeleteDoc = (planId: string, docType: string) => {
     const plan = data.find(p => p.id === planId);
     if (!plan) return;
     const models = decodeModels(plan.issueContent);
@@ -562,6 +606,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         if (docType === 'CQ' && (lower.includes('cq') || lower.includes('c/q'))) return false;
         if (docType === 'PCCC' && (lower.includes('pccc') || lower.includes('phòng cháy'))) return false;
         if (docType === 'STAMP' && (lower.includes('tem') || lower.includes('kiểm định') || lower.includes('stamp') || lower.includes('tkd'))) return false;
+        if (!['CO', 'CQ', 'PCCC', 'STAMP'].includes(docType) && d.text === docType) return false;
         return true;
       })
     }));
@@ -569,7 +614,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     setFastDocType(null);
   };
 
-  const handleDocBadgeClick = (plan: any, type: 'CO'|'CQ'|'PCCC'|'STAMP') => {
+  const handleDocBadgeClick = (plan: any, type: string) => {
     setFastDocModels(decodeModels(plan.issueContent));
     setDocModalPlanId(plan.id);
     setFastDocType(type);

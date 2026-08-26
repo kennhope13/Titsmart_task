@@ -4,7 +4,7 @@ import { ModelEntry, DocItem } from './DocumentCertificateTab';
 
 interface FastDocModalProps {
   title: string;
-  docType: 'CO' | 'CQ' | 'PCCC' | 'STAMP';
+  docType: string;
   initialModels: ModelEntry[];
   onClose: () => void;
   onSubmit: (newModels: ModelEntry[]) => void;
@@ -26,7 +26,7 @@ export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, init
           (docType === 'CO' && (lowerText.includes('co') || lowerText.includes('c/o'))) ||
           (docType === 'CQ' && (lowerText.includes('cq') || lowerText.includes('c/q'))) ||
           (docType === 'PCCC' && (lowerText.includes('pccc') || lowerText.includes('phòng cháy'))) ||
-          (docType === 'STAMP' && (lowerText.includes('tem') || lowerText.includes('kiểm định') || lowerText.includes('stamp') || lowerText.includes('tkd')))
+          (docType === 'STAMP' && (lowerText.includes('tem') || lowerText.includes('kiểm định') || lowerText.includes('stamp') || lowerText.includes('tkd'))) || (!['CO', 'CQ', 'PCCC', 'STAMP'].includes(docType) && d.text === docType)
         ) {
           setText(d.text);
           setFileUrls(d.fileUrls || []);
@@ -42,6 +42,7 @@ export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, init
       if (docType === 'CQ') setText('C/Q: ');
       if (docType === 'PCCC') setText('PCCC: ');
       if (docType === 'STAMP') setText('TKD: ');
+      if (!['CO', 'CQ', 'PCCC', 'STAMP'].includes(docType)) setText(docType);
     }
   }, [docType, initialModels]);
 
