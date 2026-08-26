@@ -108,6 +108,17 @@ export const FastDocModal: React.FC<FastDocModalProps> = ({ title, docType, init
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
+            {onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="rounded-lg px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-50 transition flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-sm">delete</span>
+                Xóa chứng từ
+              </button>
+            )}
+            <div className="flex-1" />
             <button
               type="button"
               onClick={onClose}
