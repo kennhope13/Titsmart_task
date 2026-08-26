@@ -187,7 +187,7 @@ interface RealtimeStoreState {
   deleteEngineer: (id: string) => Promise<void>;
   deleteTask: (id: string) => void;
 
-  addMaterial: (mat: Omit<Material, 'id'>) => void;
+  addMaterial: (mat: Omit<Material, 'id'>) => Promise<Material | void>;
   addMaterialsBatch: (mats: Omit<Material, 'id'>[]) => Promise<Material[]>;
   updateMaterial: (id: string, updatedFields: Partial<Material>) => void;
   updateMaterialStatus: (id: string, status: string) => void;
@@ -857,6 +857,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ materials: nextMats });
           return { materials: nextMats };
         });
+        return created;
       } catch (e) {
         console.error('Failed to add material', e);
       }

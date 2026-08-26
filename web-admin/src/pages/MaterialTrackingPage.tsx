@@ -182,7 +182,7 @@ export const MaterialTrackingPage: React.FC = () => {
             let finalCode = String(row[3] || '').trim();
             if (!finalCode) {
               let suffixNum = 0;
-              let codeBase = specs ? specs : finalName;
+              let codeBase = specs ? `${finalName}-${specs}` : finalName;
               finalCode = generateMaterialCode(codeBase);
               while (usedCodes.has(finalCode)) {
                 suffixNum++;
@@ -212,8 +212,8 @@ export const MaterialTrackingPage: React.FC = () => {
               name: finalName,
               category: String(category || 'Vật tư chung'),
               englishName: finalName,
-              projectCode: currentProject ? currentProject.code : 'COMPANY',
-              projectName: currentProject ? currentProject.name : 'Kho Công Ty',
+              projectCode: currentProject ? currentProject.code : (selectedAddProject || 'COMPANY'),
+              projectName: currentProject ? currentProject.name : (projects.find(p => p.code === selectedAddProject)?.name || 'Kho Tổng (Kho Công Ty)'),
               specs: specs,
               unit: unit || 'Cái',
               initialStock: numVal(row[7] || 0),
@@ -315,6 +315,11 @@ export const MaterialTrackingPage: React.FC = () => {
   
   const [transactionType, setTransactionType] = useState<'IMPORT' | 'EXPORT'>('IMPORT');
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [selectedAddProject, setSelectedAddProject] = useState('');
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [transferMaterial, setTransferMaterial] = useState<any>(null);
+  const [transferTargetProject, setTransferTargetProject] = useState('');
+  const [transferQuantity, setTransferQuantity] = useState(0);
 
   // Filter state
   const [filterCategory, setFilterCategory] = useState('');
@@ -345,6 +350,97 @@ export const MaterialTrackingPage: React.FC = () => {
       clearTimeout(timeoutId);
     };
   }, [activeTab]);
+
+  const handleTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transferMaterial || !transferTargetProject || transferQuantity <= 0) return;
+    
+    const targetProjectObj = projects.find(p => p.code === transferTargetProject);
+    const targetProjectName = targetProjectObj ? targetProjectObj.name : 'Kho Tổng';
+    const targetCode = targetProjectObj ? targetProjectObj.code : 'COMPANY';
+
+    if (transferMaterial.projectCode === targetCode) {
+      triggerToast('Không thể chuyển kho trong cùng một dự án!', 'warning');
+      return;
+    }
+
+    if (transferQuantity > (transferMaterial.currentStock !== undefined ? transferMaterial.currentStock : (transferMaterial.initialStock || 0))) {
+      triggerToast('Số lượng chuyển không thể lớn hơn tồn kho!', 'warning');
+      return;
+    }
+
+    // 1. Export from current material
+    const exportTx = {
+      materialId: transferMaterial.id,
+      materialCode: transferMaterial.code,
+      materialName: transferMaterial.name,
+      type: 'EXPORT' as const,
+      quantity: transferQuantity,
+      unit: transferMaterial.unit,
+      date: new Date().toISOString().split('T')[0],
+      sourceOrProject: `Chuyển đến ${targetProjectName}`,
+      receiverName: '',
+      notes: 'Chuyển kho',
+      specs: transferMaterial.englishName || transferMaterial.specs
+    };
+    await addInventoryTransaction(exportTx);
+
+    // 2. Find or create material in target project
+    let targetMaterial = materials.find(m => m.code === transferMaterial.code && m.projectCode === targetCode);
+    let targetMaterialId = targetMaterial?.id;
+
+    if (!targetMaterial) {
+      const maxStt = materials.reduce((max, m) => Math.max(max, m.stt || 0), 0);
+      const newMat = {
+        stt: maxStt + 1,
+        code: transferMaterial.code,
+        name: transferMaterial.name,
+        englishName: transferMaterial.englishName,
+        projectCode: targetCode,
+        projectName: targetProjectName,
+        volume: 0,
+        initialStock: 0,
+        currentStock: 0,
+        totalImport: 0,
+        totalExport: 0,
+        unit: transferMaterial.unit,
+        unitPrice: transferMaterial.unitPrice,
+        status: transferMaterial.status,
+        constrStatus: transferMaterial.constrStatus,
+        supplier: transferMaterial.supplier,
+        category: transferMaterial.category,
+        specs: transferMaterial.specs,
+      };
+      const createdMat = await addMaterial(newMat);
+      if (createdMat) {
+        targetMaterialId = createdMat.id;
+      } else {
+        triggerToast('Lỗi tạo vật tư', 'warning');
+        return;
+      }
+    }
+
+    // 3. Import to target material
+    const importTx = {
+      materialId: targetMaterialId as string,
+      materialCode: transferMaterial.code,
+      materialName: transferMaterial.name,
+      type: 'IMPORT' as const,
+      quantity: transferQuantity,
+      unit: transferMaterial.unit,
+      date: new Date().toISOString().split('T')[0],
+      sourceOrProject: `Chuyển từ ${transferMaterial.projectName || 'Kho tổng'}`,
+      receiverName: '',
+      notes: 'Nhận từ chuyển kho',
+      specs: transferMaterial.englishName || transferMaterial.specs
+    };
+    await addInventoryTransaction(importTx);
+    logActivity('Chuyển kho', targetProjectName);
+    triggerToast('Chuyển kho thành công!', 'success');
+    setIsTransferModalOpen(false);
+  };
+
+  
 
   // New Material form state
   const [newMatCode, setNewMatCode] = useState('');
@@ -442,11 +538,11 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const imports = inventoryTransactions
     .filter(tx => tx.type === "IMPORT" && (!projectCodeFilter || materials.find(m => m.id === tx.materialId)?.projectCode === projectCodeFilter))
-    .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+    .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
 
   const exports = inventoryTransactions
     .filter(tx => tx.type === "EXPORT" && (!projectCodeFilter || materials.find(m => m.id === tx.materialId)?.projectCode === projectCodeFilter))
-    .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+    .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
 
   const summaryCards = [
     { label: 'Tổng vật tư', value: filteredMaterials.length, icon: 'inventory_2', tone: 'text-slate-700 bg-slate-100' },
@@ -555,7 +651,7 @@ export const MaterialTrackingPage: React.FC = () => {
     let finalCode = newMatCode;
     if (!finalCode) {
       let suffixNum = 0;
-      let codeBase = description ? description : matName;
+      let codeBase = description ? `${matName}-${description}` : matName;
       finalCode = generateMaterialCode(codeBase);
       const usedCodes = new Set(materials.map(m => m.code));
       while (usedCodes.has(finalCode)) {
@@ -569,11 +665,11 @@ export const MaterialTrackingPage: React.FC = () => {
       code: finalCode,
       name: matName.trim(),
       englishName: description.trim() || matName.trim(),
-      projectCode: currentProject ? currentProject.code : 'COMPANY',
-      projectName: currentProject ? currentProject.name : 'Kho Công Ty',
+      projectCode: currentProject ? currentProject.code : (selectedAddProject || 'COMPANY'),
+      projectName: currentProject ? currentProject.name : (projects.find(p => p.code === selectedAddProject)?.name || 'Kho Tổng (Kho Công Ty)'),
       volume,
-      initialStock: volume,
-      currentStock: volume,
+      initialStock: 0,
+      currentStock: 0,
       totalImport: 0,
       totalExport: 0,
       unit,
@@ -581,9 +677,25 @@ export const MaterialTrackingPage: React.FC = () => {
       status: purchaseStatus,
       constrStatus,
       supplier,
+      specs: description.trim(),
     };
     
-    addMaterial(newMat);
+    const created = await addMaterial(newMat);
+    if (created && volume > 0) {
+      await addInventoryTransaction({
+        materialId: created.id as string,
+        materialCode: created.code,
+        materialName: created.name,
+        type: 'IMPORT' as const,
+        quantity: volume,
+        unit: created.unit,
+        date: new Date().toISOString().split('T')[0],
+        sourceOrProject: 'Nhà cung cấp / Mua mới',
+        receiverName: '',
+        notes: 'Nhập kho lần đầu',
+        specs: created.englishName || created.specs
+      });
+    }
 
     setIsPlaceOrderModalOpen(false);
     setMatName('');
@@ -814,6 +926,7 @@ export const MaterialTrackingPage: React.FC = () => {
                  >
                  <tr>
                    <th className="p-2 w-10 text-center bg-slate-50">STT</th>
+                   {!projectId && <th className="p-2 w-[10%] bg-slate-50">Dự Án</th>}
                    <th className="p-2 w-[8%] bg-slate-50">Danh mục</th>
                    <th className="p-2 w-[15%] bg-slate-50">Tên Vật Tư</th>
                    <th className="p-2 w-[8%] bg-slate-50">Mã Vật Tư</th>
@@ -833,6 +946,7 @@ export const MaterialTrackingPage: React.FC = () => {
                     return (
                       <tr key={material.id} onClick={() => openEditMaterial(material)} className="hover:bg-blue-50/50 transition-colors align-top cursor-pointer">
                         <td className="p-3.5 text-center text-slate-500 font-medium">{material.stt || (index + 1)}</td>
+                        {!projectId && <td className="p-3.5"><span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-600 inline-block" title={material.projectName || 'Kho Tổng'}>{material.projectName || 'Kho Tổng'}</span></td>}
                         <td className="p-3.5 text-slate-600 text-xs">{material.category || 'Vật tư chung'}</td>
                         <td className="p-3.5">
                           <div className="font-bold text-slate-900 leading-snug">{material.name}</div>
@@ -848,8 +962,15 @@ export const MaterialTrackingPage: React.FC = () => {
                         <td className="p-3.5 text-right font-bold text-primary text-sm">{(material.currentStock !== undefined ? material.currentStock : (material.initialStock || 0)).toLocaleString('vi-VN')}</td>
                         <td className="p-3.5 text-slate-600 text-xs max-w-xs truncate" title={material.notes || ''}>{material.notes || '-'}</td>
                         <td className="p-3.5 text-center" onClick={(event) => event.stopPropagation()}>
-                          <button type="button" onClick={() => {
-                            setConfirmConfig({
+                          <div className="flex justify-center gap-2">
+                            <button type="button" onClick={() => {
+                              setTransferMaterial(material);
+                              setIsTransferModalOpen(true);
+                            }} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors" title="Chuyển kho">
+                              <span className="material-symbols-outlined text-[14px]">swap_horiz</span>
+                            </button>
+                            <button type="button" onClick={() => {
+                              setConfirmConfig({
                               isOpen: true,
                               title: 'Xóa vật tư',
                               message: `Bạn chắc chắn muốn xóa vật tư "${material.name}"?`,
@@ -860,7 +981,8 @@ export const MaterialTrackingPage: React.FC = () => {
                             });
                           }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title="Xóa vật tư">
                             <span className="material-symbols-outlined text-base">delete</span>
-                          </button>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -887,6 +1009,7 @@ export const MaterialTrackingPage: React.FC = () => {
                   <th className="p-3.5 text-slate-500 bg-slate-50">Quy Cách</th>
                   <th className="p-3.5 text-right bg-slate-50">S.Lượng Nhập</th>
                   <th className="p-3.5 text-center bg-slate-50">ĐVT</th>
+                  {!projectId && <th className="p-3.5 bg-slate-50">Thuộc Dự Án</th>}
                   <th className="p-3.5 bg-slate-50">Nguồn / Nhà Cung Cấp</th>
                   <th className="p-3.5 min-w-40 bg-slate-50">Ghi chú</th>
                 </tr>
@@ -901,6 +1024,7 @@ export const MaterialTrackingPage: React.FC = () => {
                     <td className="p-3.5 text-slate-500">{tx.specs || '-'}</td>
                     <td className="p-3.5 text-right font-bold text-emerald-600">+{tx.quantity.toLocaleString('vi-VN')}</td>
                     <td className="p-3.5 text-center text-slate-500">{tx.unit}</td>
+                    {!projectId && <td className="p-3.5 text-slate-600 font-medium">{(materials.find(m => m.id === tx.materialId)?.projectName) || 'Kho Tổng'}</td>}
                     <td className="p-3.5 text-slate-600">{tx.sourceOrProject || '-'}</td>
                     <td className="p-3.5 text-slate-500 italic">{tx.notes || '-'}</td>
                   </tr>
@@ -978,13 +1102,24 @@ export const MaterialTrackingPage: React.FC = () => {
       </Modal>
 
       {/* MODAL TẠO VẬT TƯ MỚI */}
-      <Modal isOpen={isPlaceOrderModalOpen} onClose={() => setIsPlaceOrderModalOpen(false)} title="Thêm Vật Tư Mới (Tồn đầu kỳ)">
+      <Modal isOpen={isPlaceOrderModalOpen} onClose={() => setIsPlaceOrderModalOpen(false)} title="Thêm Vật Tư Mới">
         <form onSubmit={handleAddMaterial} className="space-y-3 text-xs">
+          {!projectId && (
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Thuộc dự án *</label>
+              <select value={selectedAddProject} onChange={e => setSelectedAddProject(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                <option value="">-- Kho Tổng (Kho Công Ty) --</option>
+                {projects.map(p => (
+                  <option key={p.code} value={p.code}>{p.code} - {p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div><label className="block font-bold text-slate-700 mb-1">Mã vật tư (Tùy chọn)</label><input type="text" placeholder="Bỏ trống để tự động tạo (VD: MAT-186)" value={newMatCode} onChange={(event) => setNewMatCode(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Tên vật tư / thiết bị *</label><input type="text" required placeholder="VD: Cáp Cu/XLPE/PVC 2x2.5mm2" value={matName} onChange={(event) => setMatName(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Mô tả / quy cách</label><input type="text" placeholder="VD: chống nhiễu, chống cháy..." value={description} onChange={(event) => setDescription(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Nhà cung cấp mặc định</label><input type="text" placeholder="VD: Kho công ty" value={supplier} onChange={(event) => setSupplier(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
-          <div className="grid grid-cols-3 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tồn kho ban đầu</label><input type="number" min="0" value={volume} onChange={(event) => setVolume(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị</label><input type="text" value={unit} onChange={(event) => setUnit(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn giá</label><input type="number" value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div></div>
+          <div className="grid grid-cols-3 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Số lượng nhập ban đầu</label><input type="number" min="0" value={volume} onChange={(event) => setVolume(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị</label><input type="text" value={unit} onChange={(event) => setUnit(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn giá</label><input type="number" value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div></div>
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setIsPlaceOrderModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">Tạo mới</button></div>
         </form>
       </Modal>
@@ -1042,6 +1177,40 @@ export const MaterialTrackingPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+            {/* MODAL CHUYỂN KHO */}
+      <Modal isOpen={isTransferModalOpen} onClose={() => setIsTransferModalOpen(false)} title="Chuyển Kho Dự Án">
+        <form onSubmit={handleTransfer} className="space-y-3 text-xs">
+          <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-blue-800 mb-2">
+            <div className="font-bold mb-1">Vật tư: [{transferMaterial?.code}] {transferMaterial?.name}</div>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <div>Kho hiện tại: <span className="font-bold">{transferMaterial?.projectName || 'Kho Tổng'}</span></div>
+              <div>Tồn kho: <span className="font-bold text-primary">{(transferMaterial?.currentStock !== undefined ? transferMaterial.currentStock : (transferMaterial?.initialStock || 0)).toLocaleString('vi-VN')} {transferMaterial?.unit}</span></div>
+            </div>
+          </div>
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Chuyển đến kho / dự án *</label>
+            <CustomSelect required value={transferTargetProject} onChange={(e) => setTransferTargetProject(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+              <option value="">-- Chọn kho / dự án đích --</option>
+              {transferMaterial?.projectCode !== 'COMPANY' && <option value="COMPANY">Kho Tổng (Kho Công Ty)</option>}
+              {projects.filter(p => p.code !== transferMaterial?.projectCode).map(p => (
+                <option key={p.code} value={p.code}>{p.code} - {p.name}</option>
+              ))}
+            </CustomSelect>
+          </div>
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Số lượng chuyển *</label>
+            <input type="number" required min="1" max={transferMaterial?.currentStock !== undefined ? transferMaterial.currentStock : (transferMaterial?.initialStock || 0)} value={transferQuantity || ''} onChange={(e) => setTransferQuantity(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" placeholder="Nhập số lượng..." />
+          </div>
+          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
+            <button type="button" onClick={() => setIsTransferModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button>
+            <button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90 flex items-center gap-1">
+              <span className="material-symbols-outlined text-[16px]">swap_horiz</span>
+              Thực hiện chuyển
+            </button>
+          </div>
+        </form>
+      </Modal>
+
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
       {/* Confirm Modal */}
       <ConfirmModal

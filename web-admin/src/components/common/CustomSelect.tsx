@@ -56,15 +56,14 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     };
   }, [isOpen]);
 
-  const handleOpen = () => {
-    if (disabled) return;
-    if (!isOpen && containerRef.current) {
+  const openDropdown = () => {
+    if (disabled || isOpen) return;
+    if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const dropdownHeight = Math.min(options.length * 34 + 8, 240);
       const spaceBelow = window.innerHeight - rect.bottom;
 
       if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
-        // Open upward
         setDropdownStyle({
           position: 'fixed',
           bottom: window.innerHeight - rect.top + 2,
@@ -73,7 +72,6 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           zIndex: 9999,
         });
       } else {
-        // Open downward
         setDropdownStyle({
           position: 'fixed',
           top: rect.bottom + 2,
@@ -83,10 +81,13 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         });
       }
     }
-    setIsOpen((prev) => {
-      if (!prev) setSearchTerm("");
-      return !prev;
-    });
+    setSearchTerm("");
+    setIsOpen(true);
+  };
+
+  const toggleDropdown = () => {
+    if (isOpen) setIsOpen(false);
+    else openDropdown();
   };
 
   const handleSelect = (val: string | number) => {
@@ -127,7 +128,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     if (node && typeof node === "object" && node.props && node.props.children) return extractText(node.props.children);
     return "";
   };
-  const filteredOptions = searchable ? options.filter(opt => extractText(opt.label).toLowerCase().includes(searchTerm.toLowerCase())) : options;
+  const normalizeVN = (str: string) => {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  };
+  const filteredOptions = searchable 
+    ? options.filter(opt => normalizeVN(extractText(opt.label)).includes(normalizeVN(searchTerm))) 
+    : options;
 
   const dropdownEl = isOpen && !disabled ? (
     <div
@@ -159,19 +165,19 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     <div className={`relative ${layoutClasses} min-w-0`} ref={containerRef}>
       
       {searchable ? (
-        <div className={triggerClassName} onClick={handleOpen} style={{ cursor: disabled ? "not-allowed" : "text" }}>
+        <div className={triggerClassName} onClick={toggleDropdown} style={{ cursor: disabled ? "not-allowed" : "text" }}>
           <input
             type="text"
             className="w-full h-full bg-transparent border-none outline-none pr-6"
             style={{ color: "inherit", fontWeight: "inherit", fontSize: "inherit", margin: 0, padding: 0 }}
-            placeholder="-- Chọn --"
+            placeholder={isOpen ? "Nhập để tìm kiếm..." : "-- Chọn --"}
             disabled={disabled}
             value={isOpen ? searchTerm : (typeof displayLabel === "string" ? displayLabel : extractText(displayLabel)) || ""}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              if (!isOpen) handleOpen();
+              if (!isOpen) openDropdown();
             }}
-            onFocus={() => { if (!isOpen) handleOpen(); }}
+            onFocus={() => openDropdown()} onClick={(e) => { e.stopPropagation(); openDropdown(); }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && filteredOptions.length > 0) {
                 e.preventDefault();
@@ -187,7 +193,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         <button
           type="button"
           className={triggerClassName}
-          onClick={handleOpen}
+          onClick={toggleDropdown}
           disabled={disabled}
         >
           <span className="block truncate min-w-0 flex-1 pr-6" title={typeof displayLabel === "string" ? displayLabel : ""}>{displayLabel || "\u00A0"}</span>
