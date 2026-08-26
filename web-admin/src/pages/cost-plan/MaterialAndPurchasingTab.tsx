@@ -108,7 +108,8 @@ const hasDocFiles = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC' | 'ST
   try {
     const models = decodeModels(plan.issueContent);
     return models.some(m => m.docs.some(d => {
-      if (!d.fileUrls || d.fileUrls.length === 0) return false;
+      // Allow empty files to show the badge
+      // if (!d.fileUrls || d.fileUrls.length === 0) return false;
       const lower = (d.text || '').toLowerCase();
       if (type === 'CO') return lower.includes('co') || lower.includes('c/o');
       if (type === 'CQ') return lower.includes('cq') || lower.includes('c/q');
@@ -126,7 +127,8 @@ const getCustomDocs = (plan: ProjectMaterialPlan): string[] => {
     const customTypes = new Set<string>();
     models.forEach(m => {
       m.docs.forEach(d => {
-        if (!d.fileUrls || d.fileUrls.length === 0) return;
+        // Allow empty files to show the badge
+        // if (!d.fileUrls || d.fileUrls.length === 0) return;
         const lower = (d.text || '').toLowerCase();
         const isCO = lower.includes('co') || lower.includes('c/o');
         const isCQ = lower.includes('cq') || lower.includes('c/q');
@@ -149,7 +151,8 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: string, onFileCl
     let counter = 0;
     models.forEach(m => {
       m.docs.forEach(d => {
-        if (!d.fileUrls || d.fileUrls.length === 0) return;
+        // Allow empty files to show the badge
+        // if (!d.fileUrls || d.fileUrls.length === 0) return;
         const lower = (d.text || '').toLowerCase();
         let docTypeMatches = false;
         if (type === 'CO' && (lower.includes('co') || lower.includes('c/o'))) docTypeMatches = true;
@@ -158,7 +161,7 @@ const renderAutoFilesByType = (plan: ProjectMaterialPlan, type: string, onFileCl
         else if (type === 'STAMP' && (lower.includes('tem') || lower.includes('kiểm định') || lower.includes('stamp') || lower.includes('tkd'))) docTypeMatches = true;
         else if (!['CO', 'CQ', 'PCCC', 'STAMP'].includes(type) && d.text === type) docTypeMatches = true;
         
-        if (docTypeMatches) {
+        if (docTypeMatches && d.fileUrls) {
           d.fileUrls.forEach(url => {
              counter++;
              links.push(
