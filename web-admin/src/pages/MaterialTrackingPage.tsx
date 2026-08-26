@@ -1176,6 +1176,40 @@ export const MaterialTrackingPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+            {/* MODAL CHUYỂN KHO */}
+      <Modal isOpen={isTransferModalOpen} onClose={() => setIsTransferModalOpen(false)} title="Chuyển Kho Dự Án">
+        <form onSubmit={handleTransferMaterial} className="space-y-3 text-xs">
+          <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-blue-800 mb-2">
+            <div className="font-bold mb-1">Vật tư: [{transferMaterial?.code}] {transferMaterial?.name}</div>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <div>Kho hiện tại: <span className="font-bold">{transferMaterial?.projectName || 'Kho Tổng'}</span></div>
+              <div>Tồn kho: <span className="font-bold text-primary">{(transferMaterial?.currentStock !== undefined ? transferMaterial.currentStock : (transferMaterial?.initialStock || 0)).toLocaleString('vi-VN')} {transferMaterial?.unit}</span></div>
+            </div>
+          </div>
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Chuyển đến kho / dự án *</label>
+            <CustomSelect required value={transferTargetProject} onChange={(e) => setTransferTargetProject(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+              <option value="">-- Chọn kho / dự án đích --</option>
+              {transferMaterial?.projectCode !== 'COMPANY' && <option value="COMPANY">Kho Tổng (Kho Công Ty)</option>}
+              {projects.filter(p => p.code !== transferMaterial?.projectCode).map(p => (
+                <option key={p.code} value={p.code}>{p.code} - {p.name}</option>
+              ))}
+            </CustomSelect>
+          </div>
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Số lượng chuyển *</label>
+            <input type="number" required min="1" max={transferMaterial?.currentStock !== undefined ? transferMaterial.currentStock : (transferMaterial?.initialStock || 0)} value={transferQuantity || ''} onChange={(e) => setTransferQuantity(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" placeholder="Nhập số lượng..." />
+          </div>
+          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
+            <button type="button" onClick={() => setIsTransferModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button>
+            <button type="submit" className="px-5 py-1.5 bg-blue-600 text-white rounded-lg font-bold hover:opacity-90 flex items-center gap-1">
+              <span className="material-symbols-outlined text-[16px]">swap_horiz</span>
+              Thực hiện chuyển
+            </button>
+          </div>
+        </form>
+      </Modal>
+
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
       {/* Confirm Modal */}
       <ConfirmModal
