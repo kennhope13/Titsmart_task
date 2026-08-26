@@ -6,6 +6,7 @@ import { FastDocModal } from './FastDocModal';
 import { DocumentCertificateTab } from './DocumentCertificateTab';
 
 interface MaterialAndPurchasingTabProps {
+  activeSubTab?: 'TECH' | 'ORDER' | 'DOCS' | 'FINANCE';
   data: ProjectMaterialPlan[];
   purchasingData: ProjectPurchasing[];
   onEditMaterial: (plan: ProjectMaterialPlan) => void;
@@ -147,9 +148,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   setSearchQuery,
   statusFilter,
   setStatusFilter,
-  userRole
+  userRole,
+  activeSubTab
 }) => {
-  const [subTab, setSubTab] = useState<'TECH' | 'ORDER' | 'DOCS' | 'FINANCE'>('TECH');
+  const subTab = activeSubTab || 'TECH';
   const [filterParent, setFilterParent] = useState('all');
   const [filterUnit, setFilterUnit] = useState('all');
   const [filterProgress, setFilterProgress] = useState('all');
@@ -528,28 +530,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       </datalist>
 
       <div className="flex flex-col border-b border-slate-200 sticky top-0 z-10 bg-slate-50">
-        <div className="flex px-4 gap-4 border-b border-slate-200 overflow-x-auto custom-scrollbar">
-          <button
-            onClick={() => setSubTab('TECH')}
-            className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'TECH' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
-          >
-            Kỹ thuật & Đặt hàng
-          </button>
-          <button
-            onClick={() => setSubTab('DOCS')}
-            className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'DOCS' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
-          >
-            Chứng từ
-          </button>
-          {userRole !== 'engineer' && (
-            <button
-              onClick={() => setSubTab('FINANCE')}
-              className={`app-tab-button flex items-center gap-2.5 px-3 py-3 border-b-2 transition-all whitespace-nowrap font-bold text-xs ${subTab === 'FINANCE' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
-            >
-              Giá mua, Dự toán & Thanh toán
-            </button>
-          )}
-        </div>
+        
         
 
         <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-wrap" style={{ display: subTab === "DOCS" ? "none" : "flex" }}>

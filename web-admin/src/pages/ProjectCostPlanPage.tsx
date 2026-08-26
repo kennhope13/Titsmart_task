@@ -1090,7 +1090,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     }
   }, [resolvedProjectCode, projectOptions, selectedProject]);
 
-  const [activeTab, setActiveTab] = useState<'MATERIAL_PLAN' | 'PURCHASING' | 'EXPENSE' | 'LABOR' | 'DOCUMENTS'>('MATERIAL_PLAN');
+  const [activeTab, setActiveTab] = useState<any>('TECH');
   const [expenseSubTab, setExpenseSubTab] = useState<'SUMMARY' | 'DETAIL' | 'LABOR'>('SUMMARY');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
@@ -1402,7 +1402,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     let data: any[] = [];
     let sheetName = '';
     
-    if (activeTab === "MATERIAL_PLAN") {
+    if ((activeTab === 'TECH' || activeTab === 'DOCS' || activeTab === 'FINANCE')) {
       data = currentProjMaterialPlans.map(p => {
         const norm = (s?: string) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
         const pRecord = currentProjPurchasing.find(
@@ -1525,7 +1525,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       {!projectId && (
         <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm px-3 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-black text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter']">VẬT TƯ & CHI PHÍ DỰ ÁN</h1>
+            <h1 className="text-lg font-black text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter']">MUA HÀNG & CHI PHÍ</h1>
           </div>
 
           {/* Project Selector & Actions */}
@@ -1555,9 +1555,10 @@ export const ProjectCostPlanPage: React.FC = () => {
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-1 shadow-xs border-x">
         <div className="flex items-center gap-4">
           {[
-            { id: 'MATERIAL_PLAN', label: 'Vật tư & Mua hàng', icon: 'list_alt', show: true },
+            { id: 'TECH', label: 'Đặt hàng', icon: 'list_alt', show: true },
+            { id: 'DOCS', label: 'Chứng từ', icon: 'description', show: true },
+            { id: 'FINANCE', label: 'Thanh toán', icon: 'payments', show: user?.role !== 'engineer' },
             { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long', show: user?.role !== 'engineer' },
-            // { id: 'DOCUMENTS', label: 'Theo dõi chứng từ', icon: 'description', show: user?.role !== 'engineer' },
           ].filter(t => t.show).map(tab => (
             <button 
               key={tab.id}
@@ -1610,7 +1611,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               Xuất Excel
             </button>
 
-            {activeTab !== 'MATERIAL_PLAN' && activeTab !== 'PURCHASING' && !(activeTab === 'EXPENSE' && expenseSubTab === 'SUMMARY') && (
+            {(activeTab !== 'TECH' && activeTab !== 'DOCS' && activeTab !== 'FINANCE') && activeTab !== 'PURCHASING' && !(activeTab === 'EXPENSE' && expenseSubTab === 'SUMMARY') && (
               <button 
                 onClick={() => {
                   if (!selectedProject) {
@@ -1638,8 +1639,9 @@ export const ProjectCostPlanPage: React.FC = () => {
       <div className="bg-white border-x border-b border-slate-200 shadow-xs overflow-hidden flex-1">
         
         {/* MATERIAL PLAN TAB */}
-        {activeTab === "MATERIAL_PLAN" && (
-          <MaterialAndPurchasingTab 
+        {(activeTab === 'TECH' || activeTab === 'DOCS' || activeTab === 'FINANCE') && (
+          <MaterialAndPurchasingTab
+            activeSubTab={activeTab}
             selectedProject={selectedProject}
             onAddMaterial={addMaterialPlan}
             data={currentProjMaterialPlans}
