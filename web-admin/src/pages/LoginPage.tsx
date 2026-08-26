@@ -61,7 +61,7 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
                     {/* Centered Logo & Header */}
                     <div className="flex flex-col items-start mb-6">
                       <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-sm overflow-hidden mb-4">
-                        <img src="/logo.png" alt="TITSMART" className="w-8 h-8 object-contain" />
+                        <img src="./logo.png" alt="TITSMART" className="w-8 h-8 object-contain" />
                       </div>
                       <h1 className="text-3xl font-extrabold text-primary tracking-tight mb-1">TITSMART</h1>
                       <p className="text-slate-400 font-bold text-[10px] tracking-[0.2em] uppercase">Project Manager</p>

@@ -156,7 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
             title={sidebarShowToggleButton ? "Ghim / Bỏ ghim thanh menu" : ""}
           >
             <img 
-              src="/logo.png" 
+              src="./logo.png" 
               alt="TITSMART" 
               className={`w-5 h-5 object-contain transition-opacity duration-200 ${sidebarShowToggleButton ? 'group-hover/logo:opacity-0' : ''}`} 
             />
