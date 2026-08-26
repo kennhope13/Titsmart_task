@@ -475,7 +475,7 @@ export const ProjectManagementPage: React.FC = () => {
           content: item.name,
           unit: item.unit || '',
           volumeContract: item.volume || 0,
-          volumeOrder: 0,
+          volumeOrder: item.volume || 0,
           unitPrice: item.unitPrice || 0,
           vatRate: item.vatRate !== undefined ? item.vatRate : 10,
           vatAmount: item.vatAmount || 0,
