@@ -167,6 +167,7 @@ export const DocumentTrackingPage: React.FC = () => {
 
   // Forms state
   const [newDoc, setNewDoc] = useState<Partial<DocumentTrack>>({
+    docType: 'Giao',
     stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: ''
   });
 
@@ -195,6 +196,7 @@ export const DocumentTrackingPage: React.FC = () => {
   }, [resolvedProjectCode]);
   const [filterDocStatus, setFilterDocStatus] = useState('all');
   const [filterPaymentStatus, setFilterPaymentStatus] = useState('all');
+  const [filterDocType, setFilterDocType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const docProjectOptions = useMemo(() => {
@@ -452,7 +454,8 @@ export const DocumentTrackingPage: React.FC = () => {
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>
-                   <th className="px-2 py-2">Dự án</th>
+                   <th className="px-2 py-2 text-center">Loại</th>
+                   {!projectId && <th className="px-2 py-2">Dự án</th>}
                    <th className="px-2 py-2">Tên hợp đồng</th>
                    <th className="px-2 py-2">Công ty</th>
                    <th className="px-2 py-2 text-center">Hồ sơ</th>
@@ -466,7 +469,8 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
-                    <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
+                    <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${(track.docType || 'Giao') === 'Giao' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>{track.docType || 'Giao'}</span></td>
+                    {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2 font-bold text-slate-800">{track.company || '-'}</td>
                     <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'text-emerald-700' : 'text-amber-700'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
@@ -510,7 +514,8 @@ export const DocumentTrackingPage: React.FC = () => {
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>
-                   <th className="px-2 py-2">Dự án</th>
+                   <th className="px-2 py-2 text-center">Loại</th>
+                   {!projectId && <th className="px-2 py-2">Dự án</th>}
                    <th className="px-2 py-2">Công ty</th>
                    <th className="px-2 py-2">Người nhận</th>
                    <th className="px-2 py-2">SĐT</th>
@@ -526,7 +531,8 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
-                    <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
+                    <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${(track.docType || 'Giao') === 'Giao' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>{track.docType || 'Giao'}</span></td>
+                    {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
                     <td className="px-2 py-2 font-bold text-slate-800">{track.company || '-'}</td>
                     <td className="px-2 py-2">{track.receiverName || '-'}</td>
                     <td className="px-2 py-2 font-mono">{track.phone || '-'}</td>
@@ -558,7 +564,8 @@ export const DocumentTrackingPage: React.FC = () => {
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>
-                   <th className="px-2 py-2">Dự án</th>
+                   <th className="px-2 py-2 text-center">Loại</th>
+                   {!projectId && <th className="px-2 py-2">Dự án</th>}
                    <th className="px-2 py-2">Tên hợp đồng</th>
                    <th className="px-2 py-2">Bên</th>
                    <th className="px-2 py-2 text-right">Giá trị HĐ</th>
@@ -572,7 +579,8 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
-                    <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
+                    <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${(track.docType || 'Giao') === 'Giao' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>{track.docType || 'Giao'}</span></td>
+                    {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2">{track.side || '-'}</td>
                     <td className="px-2 py-2 text-right font-bold text-slate-950">{(track.contractValue || 0).toLocaleString('vi-VN')}</td>
@@ -601,7 +609,8 @@ export const DocumentTrackingPage: React.FC = () => {
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
                    <th className="px-2 py-2">Số hợp đồng</th>
-                   <th className="px-2 py-2">Dự án</th>
+                   <th className="px-2 py-2 text-center">Loại</th>
+                   {!projectId && <th className="px-2 py-2">Dự án</th>}
                    <th className="px-2 py-2">Tên hợp đồng</th>
                    <th className="px-2 py-2 text-center">Hồ sơ</th>
                    <th className="px-2 py-2 text-center">Thanh toán</th>
@@ -614,7 +623,8 @@ export const DocumentTrackingPage: React.FC = () => {
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
-                    <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>
+                    <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${(track.docType || 'Giao') === 'Giao' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>{track.docType || 'Giao'}</span></td>
+                    {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'text-emerald-700' : 'text-amber-700'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
                     <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.paymentStatus?.includes('Đã') ? 'text-emerald-700' : 'text-rose-700'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
@@ -673,6 +683,16 @@ export const DocumentTrackingPage: React.FC = () => {
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gapx-2 py-2">
             <div className="min-w-0">
+              <label className="block font-bold mb-1 truncate">Phân loại hồ sơ *</label>
+              <CustomSelect required value={newDoc.docType || 'Giao'} onChange={(e) => setNewDoc({...newDoc, docType: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold mb-3">
+                <option value="Giao">Giao hồ sơ (Gửi đi)</option>
+                <option value="Nhận">Nhận hồ sơ (Nhận về)</option>
+              </CustomSelect>
+              <label className="block font-bold mb-1 truncate">Phân loại hồ sơ *</label>
+              <CustomSelect required value={editingDoc?.docType || 'Giao'} onChange={(e) => setEditingDoc(prev => prev ? {...prev, docType: e.target.value} : null)} className="w-full border rounded-lg p-2 bg-white font-bold mb-3">
+                <option value="Giao">Giao hồ sơ (Gửi đi)</option>
+                <option value="Nhận">Nhận hồ sơ (Nhận về)</option>
+              </CustomSelect>
               <label className="block font-bold mb-1 truncate">Dự án *</label>
               <CustomSelect required value={newDoc.projectCode} onChange={(e) => setNewDoc({...newDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold truncate">
                 <option value="">-- Chọn dự án --</option>

@@ -277,6 +277,7 @@ export interface DocumentTrack {
   sendDate: string;
   receiveDate?: string;
   docStatus: string;
+  docType?: string; // 'Giao' | 'Nhận'
   side?: string;
   contractValue: number;
   prepayPercent: number;
