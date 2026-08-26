@@ -210,7 +210,7 @@ const MultiDocSelect = ({ plan, onBadgeClick, disabled }: { plan: any, onBadgeCl
             <span className="material-symbols-outlined text-[14px] text-slate-400">upload_file</span> PCCC
           </button>
           <button type="button" onClick={(e) => { e.stopPropagation(); handleOptionClick('STAMP'); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-xs text-slate-700 text-left">
-            <span className="material-symbols-outlined text-[14px] text-slate-400">upload_file</span> Tem kiểm định
+            <span className="material-symbols-outlined text-[14px] text-slate-400">upload_file</span> TKD
           </button>
         </div>
       )}
