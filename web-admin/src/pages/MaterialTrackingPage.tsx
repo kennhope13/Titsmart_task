@@ -406,33 +406,33 @@ export const MaterialTrackingPage: React.FC = () => {
         category: transferMaterial.category,
         specs: transferMaterial.specs,
       };
-      // We will just do a small hack: add the import transaction on next tick or rely on user to see it.
-      await addMaterial(newMat);
-      
-      logActivity('Chuyển kho', targetProjectName);
-      triggerToast('Chuyển kho thành công!', 'success');
-      setIsTransferModalOpen(false);
-      return; 
-    } else {
-      // 3. Import to target material
-      const importTx = {
-        materialId: targetMaterialId as string,
-        materialCode: transferMaterial.code,
-        materialName: transferMaterial.name,
-        type: 'IMPORT' as const,
-        quantity: transferQuantity,
-        unit: transferMaterial.unit,
-        date: new Date().toISOString().split('T')[0],
-        sourceOrProject: `Chuyển từ ${transferMaterial.projectName || 'Kho tổng'}`,
-        receiverName: '',
-        notes: 'Nhận từ chuyển kho',
-        specs: transferMaterial.englishName || transferMaterial.specs
-      };
-      await addInventoryTransaction(importTx);
-      logActivity('Chuyển kho', targetProjectName);
-      triggerToast('Chuyển kho thành công!', 'success');
-      setIsTransferModalOpen(false);
+      const createdMat = await addMaterial(newMat);
+      if (createdMat) {
+        targetMaterialId = createdMat.id;
+      } else {
+        triggerToast('Lỗi tạo vật tư', 'warning');
+        return;
+      }
     }
+
+    // 3. Import to target material
+    const importTx = {
+      materialId: targetMaterialId as string,
+      materialCode: transferMaterial.code,
+      materialName: transferMaterial.name,
+      type: 'IMPORT' as const,
+      quantity: transferQuantity,
+      unit: transferMaterial.unit,
+      date: new Date().toISOString().split('T')[0],
+      sourceOrProject: `Chuyển từ ${transferMaterial.projectName || 'Kho tổng'}`,
+      receiverName: '',
+      notes: 'Nhận từ chuyển kho',
+      specs: transferMaterial.englishName || transferMaterial.specs
+    };
+    await addInventoryTransaction(importTx);
+    logActivity('Chuyển kho', targetProjectName);
+    triggerToast('Chuyển kho thành công!', 'success');
+    setIsTransferModalOpen(false);
   };
 
   return () => {
@@ -984,6 +984,7 @@ export const MaterialTrackingPage: React.FC = () => {
                   <th className="p-3.5 text-slate-500 bg-slate-50">Quy Cách</th>
                   <th className="p-3.5 text-right bg-slate-50">S.Lượng Nhập</th>
                   <th className="p-3.5 text-center bg-slate-50">ĐVT</th>
+                  {!projectId && <th className="p-3.5 bg-slate-50">Thuộc Dự Án</th>}
                   <th className="p-3.5 bg-slate-50">Nguồn / Nhà Cung Cấp</th>
                   <th className="p-3.5 min-w-40 bg-slate-50">Ghi chú</th>
                 </tr>
@@ -998,6 +999,7 @@ export const MaterialTrackingPage: React.FC = () => {
                     <td className="p-3.5 text-slate-500">{tx.specs || '-'}</td>
                     <td className="p-3.5 text-right font-bold text-emerald-600">+{tx.quantity.toLocaleString('vi-VN')}</td>
                     <td className="p-3.5 text-center text-slate-500">{tx.unit}</td>
+                    {!projectId && <td className="p-3.5 text-slate-600 font-medium">{(materials.find(m => m.id === tx.materialId)?.projectName) || 'Kho Tổng'}</td>}
                     <td className="p-3.5 text-slate-600">{tx.sourceOrProject || '-'}</td>
                     <td className="p-3.5 text-slate-500 italic">{tx.notes || '-'}</td>
                   </tr>
