@@ -53,8 +53,8 @@ const normalizeVietnameseText = (value: string) =>
     .replace(/\s+$/gm, '')
     .trim();
 
-const normalizeLookupText = (value: string) =>
-  value
+const normalizeLookupText = (value: any) =>
+  String(value || "")
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[\u0111\u0110]/g, 'd')
@@ -165,13 +165,13 @@ const splitTableLine = (line: string) => {
 };
 
 const getTableColumnIndex = (header: string[], candidates: string[], fallback: number) => {
-  const normalized = header.map(normalizeLookupText);
+  const normalized = Array.from(header || []).map(normalizeLookupText);
   const found = normalized.findIndex((cell) => candidates.some((candidate) => cell.includes(candidate)));
   return found >= 0 ? found : fallback;
 };
 
 const isLikelyTableHeader = (cells: string[]) => {
-  const normalized = cells.map(normalizeLookupText);
+  const normalized = Array.from(cells || []).map(normalizeLookupText);
   const hasStt = normalized.some((cell) => cell === 'stt' || cell === 'tt' || cell.includes('stt'));
   const hasContent = normalized.some((cell) => cell.includes('noi dung') || cell.includes('hang muc') || cell.includes('dien giai') || cell.includes('mo ta'));
   const hasQuantity = normalized.some((cell) => cell.includes('khoi luong') || cell.includes('so luong') || cell.includes('don vi') || cell.includes('dvt'));

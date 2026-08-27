@@ -67,16 +67,7 @@ const isAutoSyncedMaterialPlan = (plan?: ProjectMaterialPlan) => {
   return notes.includes('[section]') || notes.includes('đồng bộ') || notes.includes('dong bo');
 };
 
-const isContractorMaterialPlan = (plan: ProjectMaterialPlan) => {
-  const notes = String(plan.notes || '').toLowerCase();
-  const content = String(plan.jobContent || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/\u0111/g, 'd');
-  
-  if (plan.supplyScope === 'owner' || notes.includes('[owner]') || content.includes('chu dau tu') || content.includes('nha dau tu') || content.includes('ben a') || content.includes('ban a')) {
-    return false;
-  }
-  
-  return true;
-};
+const isContractorMaterialPlan = (plan: ProjectMaterialPlan) => true;
 
 const getSectionForMaterialPlan = (plan: ProjectMaterialPlan, allPlans: ProjectMaterialPlan[], visited = new Set<string>()) => {
   if (visited.has(plan.id)) return null;
@@ -1191,15 +1182,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           ? currentProjMaterialPlans.find(m => m.id === plan.materialPlanId)
           : currentProjMaterialPlans.find(m => normalizePlanKey(m.stt, m.jobContent) === normalizePlanKey(plan.stt, plan.content));
         
-        if (!matPlan) {
-          const content = String(plan.content || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/\u0111/g, 'd');
-          if (content.includes('chu dau tu') || content.includes('nha dau tu') || content.includes('ben a') || content.includes('ban a')) {
-             const hasValidChild = projectPurchasing.some(p => p.parentId === plan.id && validIds.has(p.id));
-             if (!hasValidChild) {
-                validIds.delete(plan.id);
-             }
-          }
-        }
+        if (!matPlan) { /* owner check removed */ }
       }
     });
 

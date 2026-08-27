@@ -1185,9 +1185,7 @@ const hasSyncedRef = useRef(false);
           parentId: parentMaterialPlan?.id || sectionMaterialId,
         }, true); // skipLog = true
 
-        if (!sectionIsOwner) {
-          // Tạo PurchasingPlan cho mọi hạng mục (trừ hạng mục của chủ đầu tư)
-          await addPurchasingPlan({
+        await addPurchasingPlan({
             projectCode,
             stt: taskStt,
             content: name,
@@ -1206,8 +1204,7 @@ const hasSyncedRef = useRef(false);
             invoiceStatus: 'Chưa xuất',
             notes: itemNotes,
             parentId: parentPurchasingPlan?.id || sectionInPurchasing?.id,
-          }, true); // skipLog = true
-        }
+          }, true);
       }
     }
 
