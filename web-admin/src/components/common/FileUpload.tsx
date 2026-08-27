@@ -31,6 +31,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!event.target.files || event.target.files.length === 0) return;
+      setError('');
       setIsUploading(true);
       if (onUploadStateChange) onUploadStateChange(true);
       
@@ -56,6 +57,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
       
       const updatedValues = multiple ? [...localValues, ...newUrls] : [newUrls[0]];
       setLocalValues(updatedValues);
+      setError('');
       
       if (onChange) {
         if (multiple) {
@@ -66,7 +68,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
       }
     } catch (error) {
       console.error('Lỗi khi tải file:', error);
-      alert('Đã xảy ra lỗi khi tải file lên.');
+      setError('Đã xảy ra lỗi khi tải file lên. Vui lòng kiểm tra lại kết nối.');
     } finally {
       setIsUploading(false);
       if (onUploadStateChange) onUploadStateChange(false);
