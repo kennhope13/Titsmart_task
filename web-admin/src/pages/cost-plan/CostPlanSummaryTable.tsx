@@ -59,8 +59,8 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
   const spenderNames = Object.keys(summary.bySpender).filter(n => n !== 'KHÁC' || summary.bySpender[n].chi > 0 || summary.bySpender[n].quy > 0);
 
   return (
-    <div className="w-full mb-4">
-      <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
+    <div className="w-full">
+      <div className="w-full overflow-x-auto custom-scrollbar">
         <div className="flex gap-3 w-full items-start justify-center">
           
           {/* QUỸ CÔNG TRÌNH */}
