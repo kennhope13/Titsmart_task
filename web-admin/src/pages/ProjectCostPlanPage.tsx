@@ -1282,7 +1282,12 @@ export const ProjectCostPlanPage: React.FC = () => {
     };
   }, [selectedProject, currentProjMaterialPlans, currentProjPurchasing]);
   const currentProjExpenses = useMemo(() => 
-    expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
+    expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      if (dateA !== dateB) return dateA - dateB;
+      return Number(a.stt || 0) - Number(b.stt || 0);
+    }),
     [expenses, selectedProject]
   );
 
