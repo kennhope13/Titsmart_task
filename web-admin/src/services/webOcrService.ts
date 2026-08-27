@@ -184,8 +184,6 @@ const isTotalOrNoiseRow = (name: string) => {
   return lookup.includes('tong cong') || lookup === 'cong' || lookup.includes('bang chi tiet gia tri hop dong') || lookup.includes('gia tri hop dong');
 };
 
-const stripSectionPrefix = (value: string) =>
-  cleanCSVArtifacts(String(value || '').replace(/^\s*(?:[IVXLCDM]+|MUC\s+[A-Z0-9]+)\s*[.)\-:]?\s*/i, ''));
 
 type SupplyScope = 'contractor' | 'owner' | 'unknown';
 
@@ -311,7 +309,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     if (explicitSupplyScope !== 'unknown') currentSupplyScope = explicitSupplyScope;
     else if (headerSupplyScope !== 'unknown') currentSupplyScope = headerSupplyScope;
     const supplyScope = explicitSupplyScope !== 'unknown' ? explicitSupplyScope : currentSupplyScope;
-    const cleanSectionName = stripSectionPrefix(name);
+    const cleanSectionName = name.trim();
     
     // Find next valid row's STT to detect if this is a subfolder with children
     let isSubFolder = false;
@@ -653,7 +651,7 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
       if (explicitSupplyScope !== 'unknown') currentSupplyScope = explicitSupplyScope;
       else if (headerSupplyScope !== 'unknown') currentSupplyScope = headerSupplyScope;
       const supplyScope = explicitSupplyScope !== 'unknown' ? explicitSupplyScope : currentSupplyScope;
-      const cleanSectionName = stripSectionPrefix(name);
+      const cleanSectionName = name.trim();
 
       const sectionName = isSectionHeader ? cleanSectionName : currentSection;
       if (isSectionHeader) currentSection = sectionName;
