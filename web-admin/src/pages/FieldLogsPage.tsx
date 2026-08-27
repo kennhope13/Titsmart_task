@@ -335,7 +335,7 @@ export const FieldLogsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-slate-100 overflow-y-auto">
+    <div className="flex flex-col flex-1 h-full bg-slate-100 overflow-hidden">
       {/* Header */}
       {!projectId && (
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-3 py-4 md:py-0 md:h-12 shadow-sm">
