@@ -1920,10 +1920,10 @@ export const ProjectCostPlanPage: React.FC = () => {
                     <th className="px-2 py-2.5 text-right min-w-[85px]">Thực thu</th>
                     <th className="px-2 py-2.5 text-right min-w-[85px]">Tồn quỹ</th>
                     <th className="px-2 py-2.5 min-w-[110px]">TK & Người nhận</th>
-                    <th className="px-2 py-2.5 min-w-[80px]">Ghi chú</th>
                     <th className="px-2 py-2.5 w-[70px]">Tình trạng</th>
                     <th className="px-2 py-2.5 text-center w-[50px]">H.Đơn</th>
                     <th className="px-2 py-2.5 text-center w-[50px]">CCCD</th>
+                    <th className="px-2 py-2.5 min-w-[80px]">Ghi chú</th>
                     <th className="px-2 py-2.5 text-center w-14">Xóa</th>
                   </tr>
                 </thead>
@@ -1948,7 +1948,6 @@ export const ProjectCostPlanPage: React.FC = () => {
                             <td className="px-2 py-2.5 text-right font-bold text-emerald-600 whitespace-nowrap">{exp.incomeAmount ? exp.incomeAmount.toLocaleString('vi-VN') : '-'}</td>
                             <td className="px-2 py-2.5 text-right font-bold text-slate-700 whitespace-nowrap">{exp.autoBalance ? exp.autoBalance.toLocaleString('vi-VN') : '0'}</td>
                             <td className="px-2 py-2.5 text-slate-400">-</td>
-                            <td className="px-2 py-2.5 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
                             <td className="px-2 py-2.5 text-slate-400">-</td>
                             <td className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                               {exp.invoiceUrl ? (
@@ -1956,6 +1955,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                               ) : <span className="text-slate-300">-</span>}
                             </td>
                             <td className="px-2 py-2.5 text-slate-400 text-center">-</td>
+                            <td className="px-2 py-2.5 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
                             <td className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                               <button onClick={() => setDeleteConfirm({ isOpen: true, id: exp.id, type: 'expense', title: 'Xóa phiếu chi', itemName: `phiếu chi "${exp.content}"` })} className="w-6 h-6 inline-flex items-center justify-center rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors" title="Xóa">
                                 <span className="material-symbols-outlined text-[15px]">delete</span>
@@ -1985,7 +1985,6 @@ export const ProjectCostPlanPage: React.FC = () => {
                               <div className="font-bold text-slate-900 line-clamp-1" title={lab.bankInfo}>{lab.bankInfo}</div>
                               <div className="font-mono text-[10px] text-slate-500 mt-0.5 whitespace-nowrap">{lab.bankAccount}</div>
                             </td>
-                            <td className="px-2 py-2.5 text-slate-400">-</td>
                             <td className="px-2 py-2.5 text-[10px]" title={lab.paymentStatus}>
                               <span className={`inline-flex px-1 py-0.5 rounded text-[10px] whitespace-nowrap font-bold border ${
                                 lab.paymentStatus === 'Đã thanh toán' 
@@ -2007,8 +2006,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                                 {!lab.idCardFrontUrl && !lab.idCardBackUrl && <span className="text-slate-300">-</span>}
                               </div>
                             </td>
+                            <td className="px-2 py-2.5 text-slate-400">-</td>
                             <td className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
-                              <button onClick={() => setDeleteConfirm({ isOpen: true, id: lab.id, type: 'labor', title: 'Xóa lương công nhật', itemName: `chấm công "${lab.workerName}"` })} className="w-6 h-6 inline-flex items-center justify-center rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors" title="Xóa">
+                              <button onClick={() => setDeleteConfirm({ isOpen: true, id: lab.id, type: 'labor', title: 'Xóa công nhật', itemName: `công nhật "${lab.workerName}"` })} className="w-6 h-6 inline-flex items-center justify-center rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors" title="Xóa">
                                 <span className="material-symbols-outlined text-[15px]">delete</span>
                               </button>
                             </td>
