@@ -3088,14 +3088,19 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={newExpenseData.date} onChange={(e) => setNewExpenseData({...newExpenseData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
               <label className="block font-bold mb-1">Người phụ trách / Nguồn quỹ</label>
-              <input
-                type="text"
-                list="spender-names"
-                placeholder="Chọn hoặc tự nhập..."
-                value={newExpenseData.spenderName || ''}
-                onChange={(e) => setNewExpenseData({...newExpenseData, spenderName: e.target.value})}
-                className="w-full border rounded-lg p-2 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  list="spender-names"
+                  placeholder="Chọn hoặc tự nhập..."
+                  value={newExpenseData.spenderName || ''}
+                  onChange={(e) => setNewExpenseData({...newExpenseData, spenderName: e.target.value})}
+                  className="w-full border rounded-lg p-2 pr-8 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none"
+                />
+                <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xl">
+                  expand_more
+                </span>
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -3182,14 +3187,19 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={editingExpense.date} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div>
                 <label className="block font-bold mb-1">Người phụ trách / Nguồn quỹ</label>
-                <input
-                  type="text"
-                  list="spender-names"
-                  placeholder="Chọn hoặc tự nhập..."
-                  value={editingExpense.spenderName || ''}
-                  onChange={(e) => setEditingExpense({...editingExpense, spenderName: e.target.value})}
-                  className="w-full border rounded-lg p-2 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    list="spender-names"
+                    placeholder="Chọn hoặc tự nhập..."
+                    value={editingExpense.spenderName || ''}
+                    onChange={(e) => setEditingExpense({...editingExpense, spenderName: e.target.value})}
+                    className="w-full border rounded-lg p-2 pr-8 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none"
+                  />
+                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xl">
+                    expand_more
+                  </span>
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
