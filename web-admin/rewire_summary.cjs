@@ -1,70 +1,35 @@
-import React, { useMemo, useState } from 'react';
-import { Modal } from '../../components/common/Modal';
-import { ProjectExpense, LaborPayroll } from '../../types';
+const fs = require('fs');
+const path = require('path');
 
-interface CostPlanSummaryTableProps {
-  expenses: ProjectExpense[];
-  labors: LaborPayroll[];
-  onAllocateFund?: (spenderName: string, amount?: number) => void;
+const file = 'src/pages/cost-plan/CostPlanSummaryTable.tsx';
+let code = fs.readFileSync(file, 'utf8');
+
+// Add Modal import
+if (!code.includes('import { Modal }')) {
+  code = code.replace("import { ProjectExpense", "import { Modal } from '../../components/common/Modal';\nimport { ProjectExpense");
 }
 
-const money = (value: number) => value.toLocaleString('vi-VN');
+// Add state for modal
+if (!code.includes('showPersonalModal')) {
+  code = code.replace(
+    /const \[editingProjectFund, setEditingProjectFund\] = useState\(false\);/,
+    `const [editingProjectFund, setEditingProjectFund] = useState(false);\n  const [showPersonalModal, setShowPersonalModal] = useState(false);`
+  );
+}
 
-export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expenses, labors, onAllocateFund }) => {
-  const [editingProjectFund, setEditingProjectFund] = useState(false);
-  const [showPersonalModal, setShowPersonalModal] = useState(false);
-  const [projectFundInput, setProjectFundInput] = useState('');
-  
+// Extract the spenderNames.map blocks out of the flex container, and put them in a Modal at the bottom
+// Replace the CT TT CÔNG NHẬT and spenderNames.map with a single "QUỸ CÁ NHÂN" card.
 
-  
+// First, we find the entire return statement to rewrite it carefully.
+// Instead of regex madness, let's just rewrite the return statement.
 
-  const summary = useMemo(() => {
-    const bySpender: Record<string, { chi: number; quy: number }> = {};
-    let totalProjectExpense = 0;
-    let totalProjectFund = 0;
-
-    expenses.forEach((exp) => {
-      
-      
-      const name = (exp.spenderName || '').trim() || 'KHÁC';
-      if (!bySpender[name]) {
-        bySpender[name] = { chi: 0, quy: 0 };
-      }
-      
-      const chi = exp.totalAmount || 0;
-      const quy = exp.incomeAmount || 0;
-      
-      bySpender[name].chi += chi;
-      bySpender[name].quy += quy;
-      
-      totalProjectExpense += chi;
-      totalProjectFund += quy;
-    });
-
-    const totalChi = totalProjectExpense;
-    const tonCuoiKy = totalProjectFund - totalProjectExpense;
-
-    const totalLabor = labors.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
-
-    return {
-      bySpender,
-      totalProjectExpense,
-      totalProjectFund,
-      totalChi,
-      tonCuoiKy,
-      totalLabor
-    };
-  }, [expenses, labors]);
-
-  const spenderNames = Object.keys(summary.bySpender).filter(n => n !== 'KHÁC' || summary.bySpender[n].chi > 0 || summary.bySpender[n].quy > 0);
-
-  return (
+const returnReplacement = `  return (
     <div className="w-full mb-4">
       <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
-        <div className="flex gap-3 w-full items-start justify-center">
+        <div className="flex gap-3 min-w-max items-start">
           
           {/* QUỸ CÔNG TRÌNH */}
-          <table className="border-collapse text-sm flex-1 min-w-[140px] bg-white">
+          <table className="border-collapse text-sm w-44 shrink-0 bg-white">
             <thead>
               <tr>
                 <th className="border border-slate-300 bg-blue-100 text-blue-900 py-1 px-2 text-[11px] font-bold text-center uppercase">QUỸ CÔNG TRÌNH</th>
@@ -114,7 +79,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
           </table>
 
           {/* TỔNG CHI */}
-          <table className="border-collapse text-sm flex-1 min-w-[140px] bg-white">
+          <table className="border-collapse text-sm w-44 shrink-0 bg-white">
             <thead>
               <tr>
                 <th className="border border-slate-300 bg-blue-100 text-blue-900 py-1 px-2 text-[11px] font-bold text-center uppercase">TỔNG CHI</th>
@@ -130,7 +95,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
           </table>
 
           {/* TỒN CUỐI KỲ */}
-          <table className="border-collapse text-sm flex-1 min-w-[140px] bg-white">
+          <table className="border-collapse text-sm w-44 shrink-0 bg-white">
             <thead>
               <tr>
                 <th className="border border-slate-300 bg-blue-100 text-blue-900 py-1 px-2 text-[11px] font-bold text-center uppercase">TỒN CUỐI KỲ</th>
@@ -146,7 +111,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
           </table>
 
           {/* TRÌNH */}
-          <table className="border-collapse text-sm flex-1 min-w-[140px] bg-white">
+          <table className="border-collapse text-sm w-44 shrink-0 bg-white">
             <thead>
               <tr>
                 <th className="border border-slate-300 bg-orange-200 text-orange-900 py-1 px-2 text-[11px] font-bold text-center uppercase">TRÌNH</th>
@@ -157,7 +122,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                 <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800 relative">
                   {money(summary.totalProjectExpense)}
                   <div className="w-full h-1 bg-slate-100 mt-1">
-                    <div className="h-full bg-orange-400" style={{ width: summary.totalProjectFund > 0 ? `${Math.min(100, (summary.totalProjectExpense / summary.totalProjectFund) * 100)}%` : '0%' }}></div>
+                    <div className="h-full bg-orange-400" style={{ width: summary.totalProjectFund > 0 ? \`\${Math.min(100, (summary.totalProjectExpense / summary.totalProjectFund) * 100)}%\` : '0%' }}></div>
                   </div>
                 </td>
               </tr>
@@ -186,7 +151,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
         </div>
       </div>
 
-      <Modal isOpen={showPersonalModal} onClose={() => setShowPersonalModal(false)} title="CHI TIẾT QUỸ CÁ NHÂN" size="xl">
+      <Modal isOpen={showPersonalModal} onClose={() => setShowPersonalModal(false)} title="CHI TIẾT QUỸ CÁ NHÂN" maxWidth="max-w-6xl">
         <div className="flex flex-wrap gap-4 p-2 items-start justify-center">
           {spenderNames.length === 0 && (
             <div className="text-slate-500 italic py-4">Chưa có dữ liệu quỹ cá nhân.</div>
@@ -201,7 +166,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                 <table className="border-collapse text-sm w-44 shrink-0 bg-white shadow-sm">
                   <thead>
                     <tr>
-                      <th className={`border border-slate-300 py-1 px-2 text-[10px] font-bold text-center ${colorClass}`}>
+                      <th className={\`border border-slate-300 py-1 px-2 text-[10px] font-bold text-center \${colorClass}\`}>
                         TỔNG CHI ({name})
                       </th>
                     </tr>
@@ -211,7 +176,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                       <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800">
                         {money(summary.bySpender[name].chi)}
                         <div className="w-full h-1 bg-slate-100 mt-1">
-                          <div className="h-full bg-rose-400" style={{ width: summary.bySpender[name].quy > 0 ? `${Math.min(100, (summary.bySpender[name].chi / summary.bySpender[name].quy) * 100)}%` : '0%' }}></div>
+                          <div className="h-full bg-rose-400" style={{ width: summary.bySpender[name].quy > 0 ? \`\${Math.min(100, (summary.bySpender[name].chi / summary.bySpender[name].quy) * 100)}%\` : '0%' }}></div>
                         </div>
                       </td>
                     </tr>
@@ -222,7 +187,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                 <table className="border-collapse text-sm w-44 shrink-0 bg-white shadow-sm">
                   <thead>
                     <tr>
-                      <th className={`border border-slate-300 py-1 px-2 text-[10px] font-bold text-center ${colorClass}`}>
+                      <th className={\`border border-slate-300 py-1 px-2 text-[10px] font-bold text-center \${colorClass}\`}>
                         TỒN QUỸ ({name})
                       </th>
                     </tr>
@@ -240,7 +205,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                 <table className="border-collapse text-sm w-44 shrink-0 bg-white shadow-sm">
                   <thead>
                     <tr>
-                      <th className={`border border-slate-300 py-1 px-2 text-[10px] font-bold text-center ${colorClass}`}>
+                      <th className={\`border border-slate-300 py-1 px-2 text-[10px] font-bold text-center \${colorClass}\`}>
                         TỔNG QUỸ ({name})
                       </th>
                     </tr>
@@ -267,4 +232,9 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
       </Modal>
     </div>
   );
-};
+};`;
+
+code = code.replace(/  return \([\s\S]*\);\n};\s*$/, returnReplacement);
+
+fs.writeFileSync(file, code);
+console.log('Done rewiring summary table');
