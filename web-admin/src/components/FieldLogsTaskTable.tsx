@@ -15,6 +15,51 @@ const CustomLightbox: React.FC<{ images: string[]; index: number; onClose: () =>
   </div>
 );
 
+const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => void; onEditLogClick: (log: FieldLog) => void }> = ({
+  task, logs, onClose, onEditLogClick
+}) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
+          <h3 className="font-bold text-slate-800 text-lg">Nhật ký: {task.name}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-red-500"><span className="material-symbols-outlined">close</span></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-100">
+          {logs.length === 0 ? (
+            <p className="text-slate-500 text-center py-8">Chưa có nhật ký nào.</p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {logs.map((log) => (
+                <div key={log.id} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm flex flex-col">
+                  <div className="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                    <div className="text-xs text-slate-500 font-medium">
+                      {new Date(log.timestamp).toLocaleString('vi-VN')}
+                    </div>
+                    <button onClick={() => onEditLogClick(log)} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">edit</span> Sửa
+                    </button>
+                  </div>
+                  {log.note && <div className="p-3 text-sm text-slate-700">{log.note}</div>}
+                  {log.images && log.images.length > 0 && (
+                    <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-slate-100">
+                      {log.images.map((url, i) => (
+                        <div key={i} className="h-24 bg-slate-100 relative group rounded overflow-hidden">
+                          <img src={url} className="w-full h-full object-cover cursor-pointer hover:opacity-90" onClick={() => window.open(url, '_blank')} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 interface FieldLogsTaskTableProps {
   selectedProject: string;
@@ -30,6 +75,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
   // Lightbox state
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [lightboxImages, setLightboxImages] = useState<{ src: string }[]>([]);
+  const [viewAllLogsTask, setViewAllLogsTask] = useState<Task | null>(null);
 
   const displayTasks = useMemo(() => {
     return tasks.filter(t => t.projectCode === selectedProject);
@@ -186,7 +232,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                               </div>
                             ))}
                             {allImagesForTask.length > 4 && (
-                              <div onClick={() => openLightbox(allImagesForTask, 4)} className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-200 cursor-pointer">
+                              <div onClick={() => setViewAllLogsTask(t as Task)} className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-200 cursor-pointer">
                                 +{allImagesForTask.length - 4}
                               </div>
                             )}
@@ -226,6 +272,18 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
           onClose={() => setLightboxIndex(-1)} 
           onPrev={() => setLightboxIndex(prev => prev - 1)} 
           onNext={() => setLightboxIndex(prev => prev + 1)} 
+        />
+      )}
+
+      {viewAllLogsTask && (
+        <TaskLogsModal
+          task={viewAllLogsTask}
+          logs={logs.filter(l => l.taskId === viewAllLogsTask.id)}
+          onClose={() => setViewAllLogsTask(null)}
+          onEditLogClick={(log) => {
+            setViewAllLogsTask(null);
+            onEditLogClick(log);
+          }}
         />
       )}
     </div>
