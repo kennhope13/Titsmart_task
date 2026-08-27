@@ -1346,6 +1346,8 @@ export const ProjectCostPlanPage: React.FC = () => {
   const laborContentOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjLabor.map(p => p.content).filter(Boolean)))], [currentProjLabor]);
   const laborUnitOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjLabor.map(p => p.unit).filter(Boolean)))], [currentProjLabor]);
 
+
+
   const filteredProjLabor = useMemo(() => {
     return currentProjLabor.filter(lab => {
       const q = (searchQuery || '').trim().toLowerCase();
@@ -1377,6 +1379,29 @@ export const ProjectCostPlanPage: React.FC = () => {
     }
     return Array.from(names);
   }, [expenses, engineers]);
+
+  const combinedCashFlow = useMemo(() => {
+    const e = filteredProjExpenses.map(exp => ({ ...exp, isLabor: false }));
+    const l = filteredProjLabor.map(lab => ({ ...lab, isLabor: true }));
+    
+    const combined = [...e, ...l].sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      if (dateA !== dateB) return dateA - dateB;
+      return Number(a.stt || 0) - Number(b.stt || 0);
+    });
+
+    let currentBalance = 0;
+    const computed = combined.map(record => {
+      if (!record.isLabor) {
+        currentBalance = currentBalance + Number((record as any).incomeAmount || 0) - Number(record.totalAmount || 0);
+      } else {
+        currentBalance = currentBalance - Number(record.totalAmount || 0);
+      }
+      return { ...record, autoBalance: currentBalance };
+    });
+    return computed.reverse();
+  }, [filteredProjExpenses, filteredProjLabor]);
 
   const expenseContentTypes = useMemo(() => {
     const contents = new Set<string>();
@@ -1907,53 +1932,89 @@ export const ProjectCostPlanPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                  {filteredProjExpenses.map((exp) => (
-                  <tr key={exp.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingExpense(exp)}>
-                    <td className="p-3 text-center font-bold text-slate-400">{exp.stt || '-'}</td>
-                    <td className="p-3 font-semibold text-slate-900">{exp.date}</td>
-                    <td className="p-3">{exp.spenderName || '-'}</td>
-                    <td className="p-3">
-                      <div className="font-bold text-slate-900">{exp.content}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">{exp.description}</div>
-                    </td>
-                    <td className="p-3 text-left">{exp.unit}</td>
-                    <td className="p-3 text-right">{exp.quantity}</td>
-                    <td className="p-3 text-right">{exp.unitPrice.toLocaleString('vi-VN')}</td>
-                    <td className="p-3 text-right text-slate-500">{(exp.taxAmount || 0).toLocaleString('vi-VN')}</td>
-                    <td className="p-3 text-right font-bold text-rose-600">-{exp.totalAmount.toLocaleString('vi-VN')}</td>
-                    <td className="p-3 text-right text-emerald-600 font-bold">{(exp.incomeAmount || 0) > 0 ? `+${exp.incomeAmount?.toLocaleString('vi-VN')}` : '-'}</td>
-                    <td className="p-3 text-right font-bold text-primary">{(exp as any).autoBalance !== 0 ? (exp as any).autoBalance.toLocaleString('vi-VN') : '-'}</td>
-                    <td className="p-3 text-slate-500 italic">{exp.notes || '-'}</td>
-                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      {exp.invoiceUrl ? (
-                        <button onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setPreviewImage(exp.invoiceUrl!);
-                        }} className="inline-flex items-center gap-2 text-xs text-primary font-bold hover:underline">
-                          <span className="material-symbols-outlined text-sm">image</span>
-                          Xem ảnh
-                        </button>
-                      ) : (
-                        <span className="text-slate-300">Không có</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        onClick={() => {
-                          setDeleteConfirm({ isOpen: true, id: exp.id, type: 'expense', title: 'Xóa phiếu chi', itemName: `phiếu chi "${exp.content}"` });
-                        }} 
-                        className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-base">delete</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredProjExpenses.length === 0 && (
-                  <tr><td colSpan={14} className="p-8 text-center text-slate-400">Chưa có giao dịch chi phí công trình nào.</td></tr>
-                )}
-              </tbody>
+                    {combinedCashFlow.map((record) => {
+                      if (!record.isLabor) {
+                        const exp = record as any;
+                        return (
+                          <tr key={'exp_'+exp.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingExpense(exp)}>
+                            <td className="p-3 text-center font-bold text-slate-400">{exp.stt || '-'}</td>
+                            <td className="p-3 font-semibold text-slate-900 whitespace-nowrap">{exp.date}</td>
+                            <td className="p-3 font-semibold">{exp.spenderName || '-'}</td>
+                            <td className="p-3">
+                              <div className="font-bold text-slate-900">{exp.content}</div>
+                              <div className="text-[10px] text-slate-500 mt-0.5">{exp.description}</div>
+                            </td>
+                            <td className="p-3 text-left">{exp.unit}</td>
+                            <td className="p-3 text-right">{exp.quantity || '-'}</td>
+                            <td className="p-3 text-right">{exp.unitPrice ? exp.unitPrice.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="p-3 text-right">{exp.taxAmount ? exp.taxAmount.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="p-3 text-right font-bold text-rose-600">{exp.totalAmount ? exp.totalAmount.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="p-3 text-right font-bold text-emerald-600">{exp.incomeAmount ? exp.incomeAmount.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="p-3 text-right font-bold text-slate-700">{exp.autoBalance ? exp.autoBalance.toLocaleString('vi-VN') : '0'}</td>
+                            <td className="p-3 text-[11px] max-w-[150px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
+                            <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                              {exp.invoiceUrl ? (
+                                <button onClick={() => setPreviewImage(exp.invoiceUrl!)} className="text-[10px] text-primary hover:underline font-bold">Xem hóa đơn</button>
+                              ) : <span className="text-slate-300">-</span>}
+                            </td>
+                            <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                              <button onClick={() => setDeleteConfirm({ isOpen: true, id: exp.id, type: 'expense', title: 'Xóa phiếu chi', itemName: `phiếu chi "${exp.content}"` })} className="w-7 h-7 inline-flex items-center justify-center rounded-lg hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors" title="Xóa">
+                                <span className="material-symbols-outlined text-base">delete</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      } else {
+                        const lab = record as any;
+                        return (
+                          <tr key={'lab_'+lab.id} className="hover:bg-blue-50/50 bg-blue-50/20 transition-colors align-middle cursor-pointer" onClick={() => setEditingLabor({...lab, date: lab.date || new Date().toISOString().split('T')[0]})}>
+                            <td className="p-3 text-center font-bold text-blue-400">{lab.stt || '-'}</td>
+                            <td className="p-3 font-semibold text-blue-900 whitespace-nowrap">{lab.date}</td>
+                            <td className="p-3 font-bold text-blue-800">{lab.workerName || '-'}</td>
+                            <td className="p-3">
+                              <div className="font-bold text-blue-900">{lab.content}</div>
+                              <div className="text-[10px] text-blue-600 mt-0.5">{lab.description}</div>
+                            </td>
+                            <td className="p-3 text-left">{lab.unit}</td>
+                            <td className="p-3 text-right">{lab.quantity || '-'}</td>
+                            <td className="p-3 text-right">{lab.unitPrice ? lab.unitPrice.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="p-3 text-right">-</td>
+                            <td className="p-3 text-right font-bold text-rose-600">{lab.totalAmount ? lab.totalAmount.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="p-3 text-right font-bold text-emerald-600">-</td>
+                            <td className="p-3 text-right font-bold text-slate-700">{lab.autoBalance ? lab.autoBalance.toLocaleString('vi-VN') : '0'}</td>
+                            <td className="p-3 text-[11px] max-w-[150px] truncate" title={lab.paymentStatus}>
+                              <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+                                lab.paymentStatus === 'Đã thanh toán' 
+                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                                  : 'bg-amber-50 text-amber-600 border-amber-200'
+                              }`}>
+                                {lab.paymentStatus}
+                              </span>
+                            </td>
+                            <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex flex-col gap-0.5">
+                                {lab.idCardFrontUrl ? (
+                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardFrontUrl!); }} className="text-[9px] text-blue-600 hover:underline font-bold">CCCD trước</button>
+                                ) : null}
+                                {lab.idCardBackUrl ? (
+                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardBackUrl!); }} className="text-[9px] text-blue-600 hover:underline font-bold">CCCD sau</button>
+                                ) : null}
+                                {!lab.idCardFrontUrl && !lab.idCardBackUrl && <span className="text-slate-300">-</span>}
+                              </div>
+                            </td>
+                            <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                              <button onClick={() => setDeleteConfirm({ isOpen: true, id: lab.id, type: 'labor', title: 'Xóa lương công nhật', itemName: `chấm công "${lab.workerName}"` })} className="w-7 h-7 inline-flex items-center justify-center rounded-lg hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors" title="Xóa">
+                                <span className="material-symbols-outlined text-base">delete</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      }
+                    })}
+                    {combinedCashFlow.length === 0 && (
+                      <tr><td colSpan={14} className="p-8 text-center text-slate-400">Chưa có giao dịch phiếu chi nào.</td></tr>
+                    )}
+                  </tbody>
             </table>
             </div>
           
