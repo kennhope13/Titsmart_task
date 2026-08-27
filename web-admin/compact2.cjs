@@ -1,5 +1,10 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/pages/cost-plan/MaterialAndPurchasingTab.tsx', 'utf8');
+let code = fs.readFileSync('src/pages/cost-plan/CostPlanSummaryTable.tsx', 'utf8');
 
-code = code.replace(/className="flex flex-col gap-1\.5 w-full text-xs"/g, 'className="flex flex-col gap-0.5 w-full text-xs py-0.5"');
-fs.writeFileSync('src/pages/cost-plan/MaterialAndPurchasingTab.tsx', code);
+// Change w-full min-w-[800px] to w-max
+code = code.replace('<table className="w-full min-w-[800px] border-collapse text-sm">', '<table className="border-collapse text-sm w-max">');
+
+// Change w-1/4 to w-60 (240px)
+code = code.replace(/className="w-1\/4/g, 'className="w-[200px]');
+
+fs.writeFileSync('src/pages/cost-plan/CostPlanSummaryTable.tsx', code);

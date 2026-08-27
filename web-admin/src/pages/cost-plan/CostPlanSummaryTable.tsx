@@ -57,192 +57,202 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
   const spenderNames = Object.keys(summary.bySpender).filter(n => n !== 'KHÁC' || summary.bySpender[n].chi > 0 || summary.bySpender[n].quy > 0);
 
   return (
+    
     <div className="w-full mb-4">
-      
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px] border-collapse text-sm">
-          <tbody>
-            <tr>
-              <td className="w-1/4 align-top pr-2">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-center">QUỸ CÔNG TRÌNH</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td 
-                        className="border border-slate-300 text-center py-1 font-semibold text-slate-800 cursor-pointer hover:bg-slate-50 transition-colors"
-                        onClick={() => {
-                          if (!editingProjectFund) {
-                            setProjectFundInput(summary.totalProjectFund.toString());
-                            setEditingProjectFund(true);
+      <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
+<div className="flex gap-3 min-w-max items-start">
+          
+          {/* QUỸ CÔNG TRÌNH */}
+          <table className="border-collapse text-sm w-44 shrink-0 bg-white">
+            <thead>
+              <tr>
+                <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-[10px] text-center ">QUỸ CÔNG TRÌNH</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td 
+                  className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800 cursor-pointer hover:bg-slate-50 transition-colors"
+                  onClick={() => {
+                    if (!editingProjectFund) {
+                      setProjectFundInput(summary.totalProjectFund.toString());
+                      setEditingProjectFund(true);
+                    }
+                  }}
+                >
+                  {editingProjectFund ? (
+                    <input
+                      autoFocus
+                      type="number"
+                      className="w-full text-center border-2 border-primary rounded outline-none px-1 text-slate-900"
+                      value={projectFundInput}
+                      onChange={e => setProjectFundInput(e.target.value)}
+                      onBlur={() => {
+                        setEditingProjectFund(false);
+                        if (onAllocateFund && projectFundInput.trim() !== '') {
+                          const val = Number(projectFundInput);
+                          if (!isNaN(val) && val !== summary.totalProjectFund) {
+                            onAllocateFund('__PROJECT__', val);
                           }
-                        }}
-                      >
-                        {editingProjectFund ? (
-                          <input
-                            autoFocus
-                            type="number"
-                            className="w-full text-center border-2 border-primary rounded outline-none px-1 text-slate-900"
-                            value={projectFundInput}
-                            onChange={e => setProjectFundInput(e.target.value)}
-                            onBlur={() => {
-                              setEditingProjectFund(false);
-                              if (onAllocateFund && projectFundInput.trim() !== '') {
-                                const val = Number(projectFundInput);
-                                if (!isNaN(val) && val !== summary.totalProjectFund) {
-                                  onAllocateFund('__PROJECT__', val);
-                                }
-                              }
-                            }}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') {
-                                e.currentTarget.blur();
-                              }
-                            }}
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center gap-2 group">
-                            <span>{money(summary.totalProjectFund)}</span>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-              <td className="w-1/4 align-top px-2">
-                <table className="w-full border-collapse">
+                        }
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.currentTarget.blur();
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 group">
+                      <span>{money(summary.totalProjectFund)}</span>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* TỔNG CHI */}
+          <table className="border-collapse text-sm w-44 shrink-0 bg-white">
+            <thead>
+              <tr>
+                <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-[10px] text-center ">TỔNG CHI</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800">
+                  {money(summary.totalChi)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* TỒN CUỐI KỲ */}
+          <table className="border-collapse text-sm w-44 shrink-0 bg-white">
+            <thead>
+              <tr>
+                <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-[10px] text-center ">TỒN CUỐI KỲ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800">
+                  {money(summary.tonCuoiKy)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* CT TT CÔNG NHẬT */}
+          <table className="border-collapse text-sm w-44 shrink-0 bg-white">
+            <thead>
+              <tr>
+                <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-[10px] text-center ">CT TT CÔNG NHẬT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800">
+                  {money(summary.totalLabor)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* TRÌNH */}
+          <table className="border-collapse text-sm w-44 shrink-0 bg-white">
+    <thead>
+      <tr>
+        <th className="border border-slate-300 bg-orange-200 text-orange-900 font-bold py-1 px-2 text-[10px] text-center ">TRÌNH</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800 relative">
+                  {money(summary.totalProjectExpense)}
+                  <div className="w-full h-1 bg-slate-100 mt-1">
+                    <div className="h-full bg-orange-400" style={{ width: summary.totalProjectFund > 0 ? `${Math.min(100, (summary.totalProjectExpense / summary.totalProjectFund) * 100)}%` : '0%' }}></div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* TỪNG NGƯỜI */}
+          {spenderNames.map((name, idx) => {
+            const ton = summary.bySpender[name].quy - summary.bySpender[name].chi;
+            const colorClass = idx % 3 === 0 ? 'bg-red-100 text-red-800' : idx % 3 === 1 ? 'bg-teal-100 text-teal-800' : 'bg-indigo-100 text-indigo-800';
+            
+            return (
+              <React.Fragment key={name}>
+                {/* TỔNG CHI CÁ NHÂN */}
+                <table className="border-collapse text-sm w-44 shrink-0 bg-white">
                   <thead>
                     <tr>
-                      <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-center">TỔNG CHI</th>
+                      <th className={`border border-slate-300 py-1 px-2 text-[10px] font-bold text-center  ${colorClass}`}>
+                        TỔNG CHI ({name})
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="border border-slate-300 text-center py-1 font-semibold text-slate-800">
-                        {money(summary.totalChi)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-              <td className="w-1/4 align-top px-2">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-center">TỒN CUỐI KỲ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="border border-slate-300 text-center py-1 font-semibold text-slate-800">
-                        {money(summary.tonCuoiKy)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-              <td className="w-1/4 align-top pl-2">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="border border-slate-300 bg-blue-100 text-blue-900 font-bold py-1 px-2 text-center">CT TT CÔNG NHẬT</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="border border-slate-300 text-center py-1 font-semibold text-slate-800">
-                        {money(summary.totalLabor)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-            </tr>
-            <tr>
-              <td colSpan={4} className="h-4"></td>
-            </tr>
-            <tr>
-              <td className="align-top pr-2">
-                <table className="w-full border-collapse h-full">
-                  <tbody>
-                    <tr>
-                      <td className="border border-slate-300 bg-orange-200 text-orange-900 font-bold py-1 px-2 text-center w-1/2">TRÌNH</td>
-                      <td className="border border-slate-300 text-center py-1 px-2 font-semibold text-slate-800 w-1/2">
-                        {money(summary.totalProjectExpense)}
+                      <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800">
+                        {money(summary.bySpender[name].chi)}
                         <div className="w-full h-1 bg-slate-100 mt-1">
-                          <div className="h-full bg-orange-400" style={{ width: summary.totalProjectFund > 0 ? `${Math.min(100, (summary.totalProjectExpense / summary.totalProjectFund) * 100)}%` : '0%' }}></div>
+                          <div className="h-full bg-rose-400" style={{ width: summary.bySpender[name].quy > 0 ? `${Math.min(100, (summary.bySpender[name].chi / summary.bySpender[name].quy) * 100)}%` : '0%' }}></div>
                         </div>
                       </td>
                     </tr>
                   </tbody>
                 </table>
-              </td>
-              <td className="align-top px-2" colSpan={3}>
-                <div className="grid grid-cols-3 gap-4">
-                  <table className="w-full border-collapse">
-                    <tbody>
-                      {spenderNames.map((name, idx) => (
-                        <tr key={"chi-" + name}>
-                          <td className={"border border-slate-300 py-1 px-2 font-bold text-center w-1/2 " + (idx % 3 === 0 ? 'bg-red-100 text-red-800' : idx % 3 === 1 ? 'bg-teal-100 text-teal-800' : 'bg-indigo-100 text-indigo-800')}>
-                            TỔNG CHI ({name.toUpperCase()})
-                          </td>
-                          <td className="border border-slate-300 text-center py-1 px-2 font-semibold text-slate-800 w-1/2">
-                            {money(summary.bySpender[name].chi)}
-                            <div className="w-full h-1 bg-slate-100 mt-1">
-                              <div className="h-full bg-rose-400" style={{ width: summary.bySpender[name].quy > 0 ? `${Math.min(100, (summary.bySpender[name].chi / summary.bySpender[name].quy) * 100)}%` : '0%' }}></div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <table className="w-full border-collapse">
-                    <tbody>
-                      {spenderNames.map((name, idx) => {
-                        const ton = summary.bySpender[name].quy - summary.bySpender[name].chi;
-                        return (
-                          <tr key={"ton-" + name}>
-                            <td className={"border border-slate-300 py-1 px-2 font-bold text-center w-1/2 " + (idx % 3 === 0 ? 'bg-red-100 text-red-800' : idx % 3 === 1 ? 'bg-teal-100 text-teal-800' : 'bg-indigo-100 text-indigo-800')}>
-                              TỒN QUỸ ({name.toUpperCase()})
-                            </td>
-                            <td className="border border-slate-300 text-center py-1 px-2 font-semibold text-slate-800 w-1/2">
-                              {money(ton)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  <table className="w-full border-collapse">
-                    <tbody>
-                      {spenderNames.map((name, idx) => (
-                        <tr key={"quy-" + name}>
-                          <td className={"border border-slate-300 py-1 px-2 font-bold text-center w-1/2 " + (idx % 3 === 0 ? 'bg-red-100 text-red-800' : idx % 3 === 1 ? 'bg-teal-100 text-teal-800' : 'bg-indigo-100 text-indigo-800')}>
-                            TỔNG QUỸ ({name.toUpperCase()})
-                          </td>
-                          <td 
-                            className="border border-slate-300 text-center py-1 px-2 font-semibold text-slate-800 w-1/2 cursor-pointer hover:bg-slate-50 transition-colors"
-                            onClick={() => {
-                              if (onAllocateFund) onAllocateFund(name);
-                            }}
-                          >
-                            <div className="flex items-center justify-center gap-2 group">
-                              <span>{money(summary.bySpender[name].quy)}</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                
+                {/* TỒN QUỸ CÁ NHÂN */}
+                <table className="border-collapse text-sm w-44 shrink-0 bg-white">
+                  <thead>
+                    <tr>
+                      <th className={`border border-slate-300 py-1 px-2 text-[10px] font-bold text-center  ${colorClass}`}>
+                        TỒN QUỸ ({name})
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800">
+                        {money(ton)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                {/* TỔNG QUỸ CÁ NHÂN */}
+                <table className="border-collapse text-sm w-44 shrink-0 bg-white">
+                  <thead>
+                    <tr>
+                      <th className={`border border-slate-300 py-1 px-2 text-[10px] font-bold text-center  ${colorClass}`}>
+                        TỔNG QUỸ ({name})
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td 
+                        className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800 cursor-pointer hover:bg-slate-50 transition-colors"
+                        onClick={() => {
+                          if (onAllocateFund) onAllocateFund(name);
+                        }}
+                      >
+                        <div className="flex items-center justify-center gap-2 group">
+                          <span>{money(summary.bySpender[name].quy)}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

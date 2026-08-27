@@ -1906,57 +1906,57 @@ export const ProjectCostPlanPage: React.FC = () => {
                     </button>
  </div> <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
-                  <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                  <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-tight">
                   <tr>
-                    <th className="px-1.5 py-2 w-8 text-center">STT</th>
-                    <th className="px-1.5 py-2 w-[70px]">Ngày</th>
-                    <th className="px-1.5 py-2 min-w-[90px]">Người PT/Tên</th>
-                    <th className="px-1.5 py-2 min-w-[120px]">Nội dung / Diễn giải</th>
-                    <th className="px-1.5 py-2 w-10 text-left">ĐVT</th>
-                    <th className="px-1.5 py-2 w-10 text-right">SL</th>
-                    <th className="px-1.5 py-2 text-right">Đơn giá</th>
-                    <th className="px-1.5 py-2 text-right">VAT</th>
-                    <th className="px-1.5 py-2 text-right min-w-[85px]">Thành tiền</th>
-                    <th className="px-1.5 py-2 text-right min-w-[85px]">Thực thu</th>
-                    <th className="px-1.5 py-2 text-right min-w-[85px]">Tồn quỹ</th>
-                    <th className="px-1.5 py-2 min-w-[110px]">TK & Người nhận</th>
-                    <th className="px-1.5 py-2 min-w-[80px]">Ghi chú</th>
-                    <th className="px-1.5 py-2 w-[70px]">Tình trạng</th>
-                    <th className="px-1.5 py-2 text-center w-[50px]">H.Đơn</th>
-                    <th className="px-1.5 py-2 text-center w-[50px]">CCCD</th>
-                    <th className="px-1.5 py-2 text-center w-14">Xóa</th>
+                    <th className="px-2 py-2.5 w-8 text-center">STT</th>
+                    <th className="px-2 py-2.5 w-[70px]">Ngày</th>
+                    <th className="px-2 py-2.5 min-w-[90px]">Người PT/Tên</th>
+                    <th className="px-2 py-2.5 min-w-[120px]">Nội dung / Diễn giải</th>
+                    <th className="px-2 py-2.5 w-10 text-left">ĐVT</th>
+                    <th className="px-2 py-2.5 w-10 text-right">SL</th>
+                    <th className="px-2 py-2.5 text-right">Đơn giá</th>
+                    <th className="px-2 py-2.5 text-right">VAT</th>
+                    <th className="px-2 py-2.5 text-right min-w-[85px]">Thành tiền</th>
+                    <th className="px-2 py-2.5 text-right min-w-[85px]">Thực thu</th>
+                    <th className="px-2 py-2.5 text-right min-w-[85px]">Tồn quỹ</th>
+                    <th className="px-2 py-2.5 min-w-[110px]">TK & Người nhận</th>
+                    <th className="px-2 py-2.5 min-w-[80px]">Ghi chú</th>
+                    <th className="px-2 py-2.5 w-[70px]">Tình trạng</th>
+                    <th className="px-2 py-2.5 text-center w-[50px]">H.Đơn</th>
+                    <th className="px-2 py-2.5 text-center w-[50px]">CCCD</th>
+                    <th className="px-2 py-2.5 text-center w-14">Xóa</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 leading-tight">
+                <tbody className="divide-y divide-slate-100 text-[12px] text-slate-700 leading-tight">
                     {combinedCashFlow.map((record) => {
                       if (!record.isLabor) {
                         const exp = record as any;
                         return (
                           <tr key={'exp_'+exp.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingExpense(exp)}>
-                            <td className="px-1.5 py-2 text-center font-bold text-slate-400">{exp.stt || '-'}</td>
-                            <td className="px-1.5 py-2 font-semibold text-slate-900 whitespace-nowrap">{exp.date ? exp.date.substring(2) : '-'}</td>
-                            <td className="px-1.5 py-2 font-semibold line-clamp-2" title={exp.spenderName}>{exp.spenderName || '-'}</td>
-                            <td className="px-1.5 py-2">
+                            <td className="px-2 py-2.5 text-center font-bold text-slate-400">{exp.stt || '-'}</td>
+                            <td className="px-2 py-2.5 font-semibold text-slate-900 whitespace-nowrap">{exp.date ? exp.date.substring(2) : '-'}</td>
+                            <td className="px-2 py-2.5 font-semibold line-clamp-2" title={exp.spenderName}>{exp.spenderName || '-'}</td>
+                            <td className="px-2 py-2.5">
                               <div className="font-bold text-slate-900 line-clamp-1" title={exp.content}>{exp.content}</div>
-                              <div className="text-[9px] text-slate-500 mt-0.5 line-clamp-1" title={exp.description}>{exp.description}</div>
+                              <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-1" title={exp.description}>{exp.description}</div>
                             </td>
-                            <td className="px-1.5 py-2 text-left">{exp.unit}</td>
-                            <td className="px-1.5 py-2 text-right">{exp.quantity || '-'}</td>
-                            <td className="px-1.5 py-2 text-right whitespace-nowrap">{exp.unitPrice ? exp.unitPrice.toLocaleString('vi-VN') : '-'}</td>
-                            <td className="px-1.5 py-2 text-right whitespace-nowrap">{exp.taxAmount ? exp.taxAmount.toLocaleString('vi-VN') : '-'}</td>
-                            <td className="px-1.5 py-2 text-right font-bold text-rose-600 whitespace-nowrap">{exp.totalAmount ? exp.totalAmount.toLocaleString('vi-VN') : '-'}</td>
-                            <td className="px-1.5 py-2 text-right font-bold text-emerald-600 whitespace-nowrap">{exp.incomeAmount ? exp.incomeAmount.toLocaleString('vi-VN') : '-'}</td>
-                            <td className="px-1.5 py-2 text-right font-bold text-slate-700 whitespace-nowrap">{exp.autoBalance ? exp.autoBalance.toLocaleString('vi-VN') : '0'}</td>
-                            <td className="px-1.5 py-2 text-slate-400">-</td>
-                            <td className="px-1.5 py-2 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
-                            <td className="px-1.5 py-2 text-slate-400">-</td>
-                            <td className="px-1.5 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                            <td className="px-2 py-2.5 text-left">{exp.unit}</td>
+                            <td className="px-2 py-2.5 text-right">{exp.quantity || '-'}</td>
+                            <td className="px-2 py-2.5 text-right whitespace-nowrap">{exp.unitPrice ? exp.unitPrice.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="px-2 py-2.5 text-right whitespace-nowrap">{exp.taxAmount ? exp.taxAmount.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="px-2 py-2.5 text-right font-bold text-rose-600 whitespace-nowrap">{exp.totalAmount ? exp.totalAmount.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="px-2 py-2.5 text-right font-bold text-emerald-600 whitespace-nowrap">{exp.incomeAmount ? exp.incomeAmount.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="px-2 py-2.5 text-right font-bold text-slate-700 whitespace-nowrap">{exp.autoBalance ? exp.autoBalance.toLocaleString('vi-VN') : '0'}</td>
+                            <td className="px-2 py-2.5 text-slate-400">-</td>
+                            <td className="px-2 py-2.5 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
+                            <td className="px-2 py-2.5 text-slate-400">-</td>
+                            <td className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                               {exp.invoiceUrl ? (
                                 <button onClick={() => setPreviewImage(exp.invoiceUrl!)} className="text-[10px] text-primary hover:underline font-bold whitespace-nowrap">Xem</button>
                               ) : <span className="text-slate-300">-</span>}
                             </td>
-                            <td className="px-1.5 py-2 text-slate-400 text-center">-</td>
-                            <td className="px-1.5 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                            <td className="px-2 py-2.5 text-slate-400 text-center">-</td>
+                            <td className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                               <button onClick={() => setDeleteConfirm({ isOpen: true, id: exp.id, type: 'expense', title: 'Xóa phiếu chi', itemName: `phiếu chi "${exp.content}"` })} className="w-6 h-6 inline-flex items-center justify-center rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors" title="Xóa">
                                 <span className="material-symbols-outlined text-[15px]">delete</span>
                               </button>
@@ -1967,27 +1967,27 @@ export const ProjectCostPlanPage: React.FC = () => {
                         const lab = record as any;
                         return (
                           <tr key={'lab_'+lab.id} className="hover:bg-blue-50/50 bg-blue-50/20 transition-colors align-middle cursor-pointer" onClick={() => setEditingLabor({...lab, date: lab.date || new Date().toISOString().split('T')[0]})}>
-                            <td className="px-1.5 py-2 text-center font-bold text-blue-400">{lab.stt || '-'}</td>
-                            <td className="px-1.5 py-2 font-semibold text-blue-900 whitespace-nowrap">{lab.date ? lab.date.substring(2) : '-'}</td>
-                            <td className="px-1.5 py-2 font-bold text-blue-800 line-clamp-2" title={lab.workerName}>{lab.workerName || '-'}</td>
-                            <td className="px-1.5 py-2">
+                            <td className="px-2 py-2.5 text-center font-bold text-blue-400">{lab.stt || '-'}</td>
+                            <td className="px-2 py-2.5 font-semibold text-blue-900 whitespace-nowrap">{lab.date ? lab.date.substring(2) : '-'}</td>
+                            <td className="px-2 py-2.5 font-bold text-blue-800 line-clamp-2" title={lab.workerName}>{lab.workerName || '-'}</td>
+                            <td className="px-2 py-2.5">
                               <div className="font-bold text-blue-900 line-clamp-1" title={lab.content}>{lab.content}</div>
-                              <div className="text-[9px] text-blue-600 mt-0.5 line-clamp-1" title={lab.description}>{lab.description}</div>
+                              <div className="text-[10px] text-blue-600 mt-0.5 line-clamp-1" title={lab.description}>{lab.description}</div>
                             </td>
-                            <td className="px-1.5 py-2 text-left">{lab.unit}</td>
-                            <td className="px-1.5 py-2 text-right">{lab.quantity || '-'}</td>
-                            <td className="px-1.5 py-2 text-right whitespace-nowrap">{lab.unitPrice ? lab.unitPrice.toLocaleString('vi-VN') : '-'}</td>
-                            <td className="px-1.5 py-2 text-right text-slate-400">-</td>
-                            <td className="px-1.5 py-2 text-right font-bold text-rose-600 whitespace-nowrap">{lab.totalAmount ? lab.totalAmount.toLocaleString('vi-VN') : '-'}</td>
-                            <td className="px-1.5 py-2 text-right text-slate-400">-</td>
-                            <td className="px-1.5 py-2 text-right font-bold text-slate-700 whitespace-nowrap">{lab.autoBalance ? lab.autoBalance.toLocaleString('vi-VN') : '0'}</td>
-                            <td className="px-1.5 py-2">
+                            <td className="px-2 py-2.5 text-left">{lab.unit}</td>
+                            <td className="px-2 py-2.5 text-right">{lab.quantity || '-'}</td>
+                            <td className="px-2 py-2.5 text-right whitespace-nowrap">{lab.unitPrice ? lab.unitPrice.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="px-2 py-2.5 text-right text-slate-400">-</td>
+                            <td className="px-2 py-2.5 text-right font-bold text-rose-600 whitespace-nowrap">{lab.totalAmount ? lab.totalAmount.toLocaleString('vi-VN') : '-'}</td>
+                            <td className="px-2 py-2.5 text-right text-slate-400">-</td>
+                            <td className="px-2 py-2.5 text-right font-bold text-slate-700 whitespace-nowrap">{lab.autoBalance ? lab.autoBalance.toLocaleString('vi-VN') : '0'}</td>
+                            <td className="px-2 py-2.5">
                               <div className="font-bold text-slate-900 line-clamp-1" title={lab.bankInfo}>{lab.bankInfo}</div>
-                              <div className="font-mono text-[9px] text-slate-500 mt-0.5 whitespace-nowrap">{lab.bankAccount}</div>
+                              <div className="font-mono text-[10px] text-slate-500 mt-0.5 whitespace-nowrap">{lab.bankAccount}</div>
                             </td>
-                            <td className="px-1.5 py-2 text-slate-400">-</td>
-                            <td className="px-1.5 py-2 text-[10px]" title={lab.paymentStatus}>
-                              <span className={`inline-flex px-1 py-0.5 rounded text-[8px] whitespace-nowrap font-bold border ${
+                            <td className="px-2 py-2.5 text-slate-400">-</td>
+                            <td className="px-2 py-2.5 text-[10px]" title={lab.paymentStatus}>
+                              <span className={`inline-flex px-1 py-0.5 rounded text-[10px] whitespace-nowrap font-bold border ${
                                 lab.paymentStatus === 'Đã thanh toán' 
                                   ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
                                   : 'bg-amber-50 text-amber-600 border-amber-200'
@@ -1995,19 +1995,19 @@ export const ProjectCostPlanPage: React.FC = () => {
                                 {lab.paymentStatus === 'Đã thanh toán' ? 'Đã T.Toán' : 'Chưa T.Toán'}
                               </span>
                             </td>
-                            <td className="px-1.5 py-2 text-slate-400 text-center">-</td>
-                            <td className="px-1.5 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                            <td className="px-2 py-2.5 text-slate-400 text-center">-</td>
+                            <td className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                               <div className="flex flex-col gap-0.5">
                                 {lab.idCardFrontUrl ? (
-                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardFrontUrl!); }} className="text-[9px] text-blue-600 hover:underline font-bold whitespace-nowrap">M.trước</button>
+                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardFrontUrl!); }} className="text-[10px] text-blue-600 hover:underline font-bold whitespace-nowrap">M.trước</button>
                                 ) : null}
                                 {lab.idCardBackUrl ? (
-                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardBackUrl!); }} className="text-[9px] text-blue-600 hover:underline font-bold whitespace-nowrap">M.sau</button>
+                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardBackUrl!); }} className="text-[10px] text-blue-600 hover:underline font-bold whitespace-nowrap">M.sau</button>
                                 ) : null}
                                 {!lab.idCardFrontUrl && !lab.idCardBackUrl && <span className="text-slate-300">-</span>}
                               </div>
                             </td>
-                            <td className="px-1.5 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                            <td className="px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                               <button onClick={() => setDeleteConfirm({ isOpen: true, id: lab.id, type: 'labor', title: 'Xóa lương công nhật', itemName: `chấm công "${lab.workerName}"` })} className="w-6 h-6 inline-flex items-center justify-center rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors" title="Xóa">
                                 <span className="material-symbols-outlined text-[15px]">delete</span>
                               </button>
