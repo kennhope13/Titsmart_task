@@ -1849,7 +1849,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             {/* CHI TIẾT PHIẾU CHI */}
 
             <div className="bg-white border-t border-slate-200 overflow-hidden flex-1 flex flex-col">
-              <div className="flex border-b border-slate-100 bg-slate-50 px-5 py-3 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap"><h2 className="text-[14px] font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide whitespace-nowrap"> CHI TIẾT PHIẾU CHI </h2>
+              <div className="flex border-b border-slate-100 bg-slate-50 px-5 py-3 gap-3 sticky top-0 z-20 items-center justify-end text-xs text-slate-600 flex-wrap">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
                       <span className="material-symbols-outlined text-[16px]">filter_list</span>
