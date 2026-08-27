@@ -1,10 +1,9 @@
 {
-  "version": "1.0.131",
-  "date": "24/08/2026",
+  "version": "1.1.38",
+  "date": "27/8/2026",
   "notes": [
-    "Cập nhật giao diện Nhân sự trong thẻ dự án (thiết kế dạng Pill, tự động xuống dòng đẹp mắt).",
-    "Sửa lỗi sắp xếp STT bị lệch trong bảng Vật tư và Chi phí dự án.",
-    "Gộp chung cột Vướng mắc / Tồn đọng và cột Ghi chú vào cùng một nhóm trong tab Kỹ thuật & Đặt hàng.",
-    "Gộp 3 cột (Nội dung vướng mắc, TT Xử lý, Ghi chú) vào một ô duy nhất để tiết kiệm diện tích. Hỗ trợ nhập và chọn trạng thái xử lý."
+    "Thêm bảng lưới xem toàn bộ ảnh nhật ký hiện trường (click vào mục ảnh).",
+    "Khắc phục lỗi bảng nhật ký hiện trường không cuộn được trên màn hình nhỏ gây mất dòng dữ liệu.",
+    "Sửa lỗi giật lag, tối ưu giao diện hiển thị."
   ]
 }
