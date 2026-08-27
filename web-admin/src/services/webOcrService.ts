@@ -74,21 +74,22 @@ const getFirstMatch = (text: string, patterns: RegExp[]) => {
 const getLineAfterLabel = (lines: string[], labels: string[]) => {
   const normalizedLabels = labels.map(normalizeLookupText);
   for (const line of lines) {
-    const lookupLine = normalizeLookupText(line);
+    const cleanLine = line.replace(/^["'\s]+/, '');
+    const lookupLine = normalizeLookupText(cleanLine);
     const matchedLabel = normalizedLabels.find((label) => lookupLine.startsWith(label));
     if (!matchedLabel) continue;
 
-    const colonIndex = line.indexOf(':');
-    const dashIndex = line.indexOf('-');
+    const colonIndex = cleanLine.indexOf(':');
+    const dashIndex = cleanLine.indexOf('-');
     const separatorIndex = colonIndex >= 0 ? colonIndex : dashIndex;
     if (separatorIndex >= 0) {
-      const value = compactSpaces(line.slice(separatorIndex + 1));
+      const value = compactSpaces(cleanLine.slice(separatorIndex + 1));
       if (value) return value;
     }
 
     for (const label of labels) {
-      const value = compactSpaces(line.replace(new RegExp(`^\\s*${label}\\s*`, 'i'), ''));
-      if (value && normalizeLookupText(value) !== normalizeLookupText(line)) return value;
+      const value = compactSpaces(cleanLine.replace(new RegExp(`^\\s*${label}\\s*`, 'i'), ''));
+      if (value && normalizeLookupText(value) !== normalizeLookupText(cleanLine)) return value;
     }
   }
   return '';
@@ -257,11 +258,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
 
   const isMainSectionName = (nameStr: string): boolean => {
     const norm = nameStr.toLowerCase();
-    return norm.includes('phần vttb') || 
-           norm.includes('cung cấp') || 
-           norm.includes('chủ đầu tư') || 
-           norm.includes('nhà thầu') || 
-           norm.startsWith('phần ');
+    return norm.includes('phần vttb') || norm.startsWith('phần ');
   };
 
   for (let index = headerIndex + 1; index < rows.length; index += 1) {
@@ -289,9 +286,11 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const totalAmount = totalCol >= 0 ? parseNumberValue(cells[totalCol] || '') : (totalBeforeVat + vatAmount);
     const sttLookup = normalizeLookupText(stt).toUpperCase();
     const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
+    const alphaSectionRegex = /^[A-Z]{1,2}$/i;
     const numericParentRegex = /^\d+$/;
     const decimalItemRegex = /^\d+(?:\.\d+)+$/;
-    const hasValidStt = romanRegex.test(sttLookup) || numericParentRegex.test(sttLookup) || decimalItemRegex.test(sttLookup);
+    const alphaNumericRegex = /^[A-Z0-9.\-/_]{1,10}$/i;
+    const hasValidStt = romanRegex.test(sttLookup) || alphaSectionRegex.test(sttLookup) || numericParentRegex.test(sttLookup) || decimalItemRegex.test(sttLookup) || alphaNumericRegex.test(sttLookup.replace(/\s/g, ''));
     
     // Bỏ qua các dòng không có STT hợp lệ (như dòng Thuế VAT, Tiền thuế...)
     if (!hasValidStt) continue;
@@ -299,12 +298,12 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const cleanUnitVal = unit.replace(/^[-–—_.\s]+$/, '').trim();
     // A section header is ONLY a roman numeral if the file has roman numerals, OR if it has [section] in notes.
     const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
-    const isRomanSection = romanRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
+    const isRomanOrAlphaSection = romanRegex.test(sttLookup) || alphaSectionRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
     const cleanStt = String(stt || '').trim().replace(/\.$/, '');
     const hasNoDot = !cleanStt.includes('.');
     const startsWithPhan = name.trim().toUpperCase().startsWith('PHẦN ') && !name.trim().toUpperCase().startsWith('PHẦN MỀM');
     const hasNoVolumeAndUnit = (volume === 0 || !volume) && (!cleanUnitVal || cleanUnitVal === '');
-    const isSectionHeader = startsWithPhan || (hasNoDot && isMainSectionName(name)) || (hasNoDot && hasNoVolumeAndUnit && isRomanSection);
+    const isSectionHeader = startsWithPhan || (hasNoDot && hasNoVolumeAndUnit && isMainSectionName(name)) || (hasNoDot && hasNoVolumeAndUnit && isRomanOrAlphaSection);
     const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
     
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
@@ -371,50 +370,9 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     } as any);
   }
 
-  const hasDottedStt = parsedTasks.some(t => t.stt && String(t.stt).includes('.'));
-
-  if (!hasDottedStt) {
-    // POST-PROCESSING: Generate hierarchical STTs for non-header items
-    let currentLevel2 = 0;
-    let currentLevel3 = 0;
-    let lastSection = '';
-    
-    for (const task of parsedTasks) {
-      if (task.isSectionHeader) {
-        currentLevel2 = 0;
-        currentLevel3 = 0;
-        lastSection = task.sectionName;
-        continue;
-      }
-      
-      // If we changed sections implicitly (shouldn't happen but just in case)
-      if (task.sectionName !== lastSection) {
-        currentLevel2 = 0;
-        currentLevel3 = 0;
-        lastSection = task.sectionName;
-      }
-      
-      const anyTask = task as any;
-      if (anyTask._isLevel2) {
-        currentLevel2++;
-        currentLevel3 = 0;
-        task.stt = String(currentLevel2);
-      } else {
-        currentLevel3++;
-        // If there was no level 2 before this, just use the item counter
-        if (currentLevel2 === 0) {
-          task.stt = String(currentLevel3);
-        } else {
-          task.stt = `${currentLevel2}.${currentLevel3}`;
-        }
-      }
-      delete anyTask._isLevel2;
-    }
-  } else {
-    for (const task of parsedTasks) {
-      const anyTask = task as any;
-      delete anyTask._isLevel2;
-    }
+  for (const task of parsedTasks) {
+    const anyTask = task as any;
+    delete anyTask._isLevel2;
   }
 
   return parsedTasks;
@@ -588,10 +546,188 @@ export const extractTextFromFile = async (
   throw new Error('Định dạng file này chưa hỗ trợ trích xuất. Hãy dùng ảnh, Excel/CSV, TXT, DOCX hoặc PDF có text.');
 };
 
+const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData> => {
+  const XLSX = await import('xlsx');
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: 'array' });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+
+  // 1. Find header row
+  const headerIndex = rows.findIndex((row, idx) => idx < 20 && isLikelyTableHeader(row.map(c => String(c || '').trim())));
+  
+  let projectName = '';
+  let projectItem = '';
+  let location = '';
+  let client = '';
+  
+  const scanRowsLimit = headerIndex >= 0 ? headerIndex : Math.min(20, rows.length);
+  for (let i = 0; i < scanRowsLimit; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    for (const cell of row) {
+      const cellStr = String(cell || '').trim();
+      if (!cellStr) continue;
+      
+      const normCell = normalizeLookupText(cellStr);
+      if (normCell.startsWith('du an') || normCell.startsWith('cong trinh') || normCell.startsWith('ten cong trinh')) {
+        const colonIdx = cellStr.indexOf(':');
+        if (colonIdx >= 0) projectName = cleanCSVArtifacts(cellStr.slice(colonIdx + 1));
+      } else if (normCell.startsWith('hang muc') || normCell.startsWith('goi thau') || normCell.startsWith('ten goi thau')) {
+        const colonIdx = cellStr.indexOf(':');
+        if (colonIdx >= 0) projectItem = cleanCSVArtifacts(cellStr.slice(colonIdx + 1));
+      } else if (normCell.startsWith('dia diem') || normCell.startsWith('vi tri') || normCell.startsWith('dia chi')) {
+        const colonIdx = cellStr.indexOf(':');
+        if (colonIdx >= 0) location = cleanCSVArtifacts(cellStr.slice(colonIdx + 1));
+      } else if (normCell.startsWith('chu dau tu') || normCell.startsWith('khach hang')) {
+        const colonIdx = cellStr.indexOf(':');
+        if (colonIdx >= 0) client = cleanCSVArtifacts(cellStr.slice(colonIdx + 1));
+      }
+    }
+  }
+
+  const isMainSectionName = (nameStr: string): boolean => {
+    const norm = nameStr.toLowerCase();
+    return norm.includes('phần vttb') || norm.startsWith('phần ');
+  };
+
+  const tableTasks: WebOcrTableTask[] = [];
+  if (headerIndex >= 0) {
+    const header = rows[headerIndex].map(c => String(c || '').trim());
+    const sttCol = getTableColumnIndex(header, ['stt', 'tt'], 0);
+    const nameCol = getTableColumnIndex(header, ['noi dung', 'hang muc', 'dien giai', 'mo ta', 'cong viec'], 1);
+    const volumeCol = getTableColumnIndex(header, ['khoi luong', 'so luong'], 2);
+    const unitCol = getTableColumnIndex(header, ['don vi tinh', 'don vi', 'dvt'], 3);
+    const unitPriceCol = getTableColumnIndex(header, ['don gia'], 4);
+    const preTaxCol = getTableColumnIndex(header, ['thanh tien truoc thue', 'thanh tien'], unitPriceCol + 1);
+    const vatRateCol = getTableColumnIndex(header, ['thue vat', 'vat'], preTaxCol + 1);
+    const vatAmountCol = vatRateCol + 1;
+    const totalCol = getTableColumnIndex(header, ['tong tien', 'thanh tien sau thue'], vatAmountCol + 1);
+    const notesCol = getTableColumnIndex(header, ['ghi chu'], -1);
+    const supplyCol = getTableColumnIndex(header, ['nguon cung cap', 'ben cung cap', 'don vi cung cap', 'cung cap', 'phan cung cap', 'nha thau', 'chu dau tu'], -1);
+    const modelCol = getTableColumnIndex(header, ['ma hieu', 'model', 'ky ma hieu'], -1);
+    const originCol = getTableColumnIndex(header, ['nguon san xuat', 'xuat xu', 'hang san xuat'], -1);
+
+    const fullTableText = normalizeLookupText(rows.map(r => r.join(' ')).join(' '));
+    const workbookHasSupplySplit = hasOwnerSupplySignal(fullTableText) && hasContractorSupplySignal(fullTableText);
+    
+    let currentSection = '';
+    let currentSupplyScope: SupplyScope = 'unknown';
+
+    const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
+    const alphaSectionRegex = /^[A-Z]{1,2}$/i;
+    const alphaNumericRegex = /^[A-Z0-9.\-/_]{1,10}$/i;
+
+    for (let i = headerIndex + 1; i < rows.length; i++) {
+      const cells = rows[i];
+      if (!cells || cells.length === 0) continue;
+
+      const stt = String(cells[sttCol] || '').trim();
+      const name = String(cells[nameCol] || cells.find((cell, cellIdx) => cellIdx !== sttCol && cell !== undefined) || '').trim();
+      if (!name || isTotalOrNoiseRow(name)) continue;
+
+      const sttLookup = normalizeLookupText(stt).toUpperCase();
+      const hasValidStt = romanRegex.test(sttLookup) || alphaSectionRegex.test(sttLookup) || /^\d+$/.test(sttLookup) || /^\d+(?:\.\d+)+$/.test(sttLookup) || alphaNumericRegex.test(sttLookup.replace(/\s/g, ''));
+      if (!hasValidStt) continue;
+
+      const volume = volumeCol >= 0 ? parseNumberValue(cells[volumeCol] || '') : 0;
+      const unit = unitCol >= 0 ? String(cells[unitCol] || '').trim() : '';
+      const unitPrice = unitPriceCol >= 0 ? parseNumberValue(cells[unitPriceCol] || '') : 0;
+      const totalBeforeVat = preTaxCol >= 0 ? parseNumberValue(cells[preTaxCol] || '') : (volume * unitPrice);
+      const vatRateRaw = vatRateCol >= 0 ? parseNumberValue(cells[vatRateCol] || '') : 0;
+      const vatRate = vatRateRaw < 1 ? vatRateRaw * 100 : vatRateRaw;
+      const vatAmount = vatAmountCol >= 0 ? parseNumberValue(cells[vatAmountCol] || '') : (totalBeforeVat * vatRate / 100);
+      const totalAmount = totalCol >= 0 ? parseNumberValue(cells[totalCol] || '') : (totalBeforeVat + vatAmount);
+
+      const cleanUnitVal = unit.replace(/^[-–—_.\s]+$/, '').trim();
+      const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
+      const isRomanOrAlphaSection = romanRegex.test(sttLookup) || alphaSectionRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
+      const cleanStt = String(stt || '').trim().replace(/\.$/, '');
+      const hasNoDot = !cleanStt.includes('.');
+      const startsWithPhan = name.toUpperCase().startsWith('PHẦN ') && !name.toUpperCase().startsWith('PHẦN MỀM');
+      const hasNoVolumeAndUnit = (volume === 0 || !volume) && (!cleanUnitVal || cleanUnitVal === '');
+      const isSectionHeader = startsWithPhan || (hasNoDot && hasNoVolumeAndUnit && isMainSectionName(name)) || (hasNoDot && hasNoVolumeAndUnit && isRomanOrAlphaSection);
+
+      const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
+      const headerSupplyScope = isSectionHeader ? detectSupplyScope(cells.join(' ')) : 'unknown';
+      if (explicitSupplyScope !== 'unknown') currentSupplyScope = explicitSupplyScope;
+      else if (headerSupplyScope !== 'unknown') currentSupplyScope = headerSupplyScope;
+      const supplyScope = explicitSupplyScope !== 'unknown' ? explicitSupplyScope : currentSupplyScope;
+      const cleanSectionName = stripSectionPrefix(name);
+
+      const sectionName = isSectionHeader ? cleanSectionName : currentSection;
+      if (isSectionHeader) currentSection = sectionName;
+
+      const effectiveSupplyScope = supplyScope === 'unknown' && !workbookHasSupplySplit ? 'contractor' : supplyScope;
+      const supplyNote = effectiveSupplyScope === 'owner' ? 'Chủ đầu tư cung cấp' : effectiveSupplyScope === 'contractor' ? 'Nhà thầu cung cấp' : '';
+
+      const techSpecModel = modelCol >= 0 ? String(cells[modelCol] || '').trim() : '';
+      const techSpecOrigin = originCol >= 0 ? String(cells[originCol] || '').trim() : '';
+
+      tableTasks.push({
+        stt,
+        name,
+        volume: isSectionHeader ? 0 : volume,
+        unit: isSectionHeader ? '' : unit,
+        notes: [rawNotes, supplyNote].filter(Boolean).join(' | '),
+        techSpecModel: isSectionHeader ? '' : techSpecModel,
+        techSpecOrigin: isSectionHeader ? '' : techSpecOrigin,
+        isSectionHeader,
+        sectionName,
+        supplyScope: effectiveSupplyScope,
+        unitPrice: isSectionHeader ? 0 : unitPrice,
+        vatRate: isSectionHeader ? 0 : vatRate,
+        vatAmount: isSectionHeader ? 0 : vatAmount,
+        totalBeforeVat: isSectionHeader ? 0 : totalBeforeVat,
+        totalAmount: isSectionHeader ? 0 : totalAmount,
+      });
+    }
+  }
+
+  const rawText = rows.map(r => r.join('\t')).join('\n');
+
+  const fields: WebOcrField[] = [
+    { label: 'Dự án/Công trình', value: projectName },
+    { label: 'Hạng mục', value: projectItem },
+    { label: 'Địa điểm', value: location },
+    { label: 'Chủ đầu tư', value: client }
+  ];
+
+  return {
+    fields,
+    tableTasks,
+    projectItem,
+    taskName: '',
+    projectName,
+    location,
+    dueDate: '',
+    quantity: '',
+    unit: '',
+    phone: '',
+    materialCode: '',
+    materialName: '',
+    note: '',
+    rawText,
+    sourceFileName: file.name,
+    sourceFileType: file.type,
+  };
+};
+
 export const extractFileData = async (
   file: File,
   onProgress?: (progress: WebOcrProgress) => void,
 ) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  if (['xlsx', 'xls', 'csv'].includes(extension)) {
+    onProgress?.({ status: 'Đang đọc phụ lục', progress: 20 });
+    const extracted = await parseSpreadsheetDirectly(file);
+    onProgress?.({ status: 'Đã trích xuất xong', progress: 100 });
+    return {
+      text: extracted.rawText,
+      extracted,
+    };
+  }
+
   const text = normalizeVietnameseText(await extractTextFromFile(file, onProgress));
   onProgress?.({ status: 'Đã trích xuất xong', progress: 100 });
   return {

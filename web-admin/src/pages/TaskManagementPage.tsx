@@ -447,7 +447,18 @@ const hasSyncedRef = useRef(false);
     setParentIdSelect(parentTask.id);
     setName('');
     
-    setStt('');
+    const siblingTasks = activeTasksForProj.filter(t => t.parentId === parentTask.id);
+    let nextStt = '1';
+    if (siblingTasks.length > 0) {
+      const lastStt = siblingTasks[siblingTasks.length - 1].stt?.trim() || '';
+      const match = lastStt.match(/^(.*?)(\d+)$/);
+      if (match) {
+        nextStt = `${match[1]}${parseInt(match[2], 10) + 1}`;
+      }
+    } else if (parentTask.stt) {
+      nextStt = `${parentTask.stt.trim()}.1`;
+    }
+    setStt(nextStt);
     
     setOcrIssueDraft('');
     setIsNewTaskModalOpen(true);
@@ -538,7 +549,18 @@ const hasSyncedRef = useRef(false);
     }
     setIsSectionHeader(false);
     setName('');
-    setStt('');
+    
+    const siblingTasks = activeTasksForProj.filter(t => !t.parentId && t.sectionName === activeSectionName && !t.isSectionHeader);
+    let nextStt = '1';
+    if (siblingTasks.length > 0) {
+      const lastStt = siblingTasks[siblingTasks.length - 1].stt?.trim() || '';
+      const match = lastStt.match(/^(.*?)(\d+)$/);
+      if (match) {
+        nextStt = `${match[1]}${parseInt(match[2], 10) + 1}`;
+      }
+    }
+    setStt(nextStt);
+    
     setOcrIssueDraft('');
     setParentIdSelect('default');
     setIsNewTaskModalOpen(true);
