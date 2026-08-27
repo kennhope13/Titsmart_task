@@ -156,9 +156,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
               <tr>
                 <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800 relative">
                   {money(summary.totalProjectExpense)}
-                  <div className="w-full h-1 bg-slate-100 mt-1">
-                    <div className="h-full bg-orange-400" style={{ width: summary.totalProjectFund > 0 ? `${Math.min(100, (summary.totalProjectExpense / summary.totalProjectFund) * 100)}%` : '0%' }}></div>
-                  </div>
+                  
                 </td>
               </tr>
             </tbody>
@@ -210,9 +208,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                     <tr>
                       <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800">
                         {money(summary.bySpender[name].chi)}
-                        <div className="w-full h-1 bg-slate-100 mt-1">
-                          <div className="h-full bg-rose-400" style={{ width: summary.bySpender[name].quy > 0 ? `${Math.min(100, (summary.bySpender[name].chi / summary.bySpender[name].quy) * 100)}%` : '0%' }}></div>
-                        </div>
+                        
                       </td>
                     </tr>
                   </tbody>
