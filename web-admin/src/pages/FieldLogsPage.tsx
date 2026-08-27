@@ -3,6 +3,7 @@ import { useRealtimeStore } from '../services/realtimeStore';
 import { useParams, useOutletContext, Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { FieldLog } from '../types';
+import { FieldLogsTaskTable } from '../components/FieldLogsTaskTable';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { supabase } from '../lib/supabase';
 
@@ -84,15 +85,16 @@ const Lightbox: React.FC<{ images: string[]; index: number; onClose: () => void;
 
 const UploadModal: React.FC<{
   defaultProjectCode: string;
+  defaultTaskId?: string;
   projects: { code: string; name: string }[];
   editLog?: any;
   onClose: () => void;
   onUpload: (input: { projectCode: string; note: string; images: string[]; taskId?: string }) => Promise<void>;
   onUpdate?: (id: string, input: { note: string; images: string[]; existingImages: string[]; taskId?: string }) => Promise<void>;
-}> = ({ defaultProjectCode, projects, editLog, onClose, onUpload, onUpdate }) => {
+}> = ({ defaultProjectCode, defaultTaskId, projects, editLog, onClose, onUpload, onUpdate }) => {
   const [projectCode, setProjectCode] = useState(editLog?.projectCode || defaultProjectCode || '');
   const [note, setNote] = useState(editLog?.note || '');
-  const [taskId, setTaskId] = useState(editLog?.taskId || '');
+  const [taskId, setTaskId] = useState(editLog?.taskId || defaultTaskId || '');
   const { tasks } = useRealtimeStore();
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>(editLog?.images || []);
@@ -287,6 +289,7 @@ export const FieldLogsPage: React.FC = () => {
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
   useEffect(() => { setPortalNode(document.getElementById('project-header-actions')); }, []);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadTaskId, setUploadTaskId] = useState<string>('');
   const [editLog, setEditLog] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
@@ -387,50 +390,18 @@ export const FieldLogsPage: React.FC = () => {
                     <p className="text-sm text-slate-500">Chi tiết nhật ký hiện trường</p>
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                  {(() => {
-                    const logs = logsByProject.find(p => p[0] === selectedProject)?.[1] || [];
-                    const allProjectImages = logs.flatMap(l => l.images);
-                    return logs.map((log) => (
-                      <div key={log.id} className="relative pl-6 border-l-2 border-slate-200">
-                        <div className="absolute -left-[11px] top-1 h-5 w-5 rounded-full bg-white border-4 border-primary flex items-center justify-center"></div>
-                        
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[13px] font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full shadow-sm">
-                            {formatTimeOnly(log.timestamp)}
-                          </span>
-                          <div className="flex gap-2">
-                            <button onClick={() => setEditLog(log)} title="Sửa báo cáo"
-                              className="rounded p-1.5 text-slate-300 hover:bg-blue-50 hover:text-blue-500 transition">
-                              <span className="material-symbols-outlined text-lg">edit</span>
-                            </button>
-                            <button onClick={() => setDeletingId(log.id)} title="Xóa báo cáo"
-                              className="rounded p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
-                              <span className="material-symbols-outlined text-lg">delete</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {log.note && (
-                          <div className="mb-4 text-sm text-slate-700 bg-slate-50 p-4 rounded-lg border border-slate-100 shadow-inner whitespace-pre-wrap">
-                            {log.note}
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                          {log.images.map((img, i) => (
-                            <button key={i} onClick={() => setLightbox({ images: allProjectImages, index: allProjectImages.indexOf(img) })}
-                              className="group relative aspect-square overflow-hidden rounded-xl bg-slate-100 border border-slate-200 shadow-sm hover:shadow-md transition">
-                              <img src={img} alt="Ảnh nhật ký" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ));
-                  })()}
+                
+                  <FieldLogsTaskTable 
+                    selectedProject={selectedProject} 
+                    logs={logsByProject.find(p => p[0] === selectedProject)?.[1] || []} 
+                    onAddLogClick={(tid) => {
+                      setUploadTaskId(tid);
+                      setIsUploadOpen(true);
+                    }}
+                    onEditLogClick={(log) => setEditLog(log)}
+                  />
                 </div>
-              </div>
-            ) : (
+              ) : (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {logsByProject.map(([projectCode, logs]) => {
                   const latestLog = logs[0];
@@ -477,9 +448,10 @@ export const FieldLogsPage: React.FC = () => {
       {(isUploadOpen || editLog) && (
         <UploadModal
           defaultProjectCode={selectedProject}
+            defaultTaskId={uploadTaskId}
           projects={projects}
           editLog={editLog}
-          onClose={() => { setIsUploadOpen(false); setEditLog(null); }}
+          onClose={() => { setIsUploadOpen(false); setEditLog(null); setUploadTaskId(''); }}
           onUpload={handleUpload}
           onUpdate={async (id, input) => {
             if (updateFieldLog) await updateFieldLog(id, input);
