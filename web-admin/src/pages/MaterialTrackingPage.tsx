@@ -773,7 +773,7 @@ export const MaterialTrackingPage: React.FC = () => {
           <div className="flex items-center gap-4">
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">QUẢN LÝ KHO & VẬT TƯ</h2>
+                <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">TỔNG KHO</h2>
               </div>
             </div>
           </div>

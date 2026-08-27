@@ -1265,7 +1265,12 @@ export const ProjectCostPlanPage: React.FC = () => {
     };
   }, [selectedProject, currentProjMaterialPlans, currentProjPurchasing]);
   const currentProjExpenses = useMemo(() => 
-    expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
+    expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      if (dateA !== dateB) return dateB - dateA;
+      return Number(a.stt || 0) - Number(b.stt || 0);
+    }),
     [expenses, selectedProject]
   );
 
@@ -1360,8 +1365,9 @@ export const ProjectCostPlanPage: React.FC = () => {
     const totalLab = currentProjLabor.reduce((sum, l) => sum + Number(l.totalAmount || 0), 0);
     const totalSpent = totalExp + totalLab;
     const fund = currentProjExpenses.reduce((sum, e) => sum + Number(e.incomeAmount || 0), 0);
-    const balance = currentProjExpenses.length > 0 && currentProjExpenses.some((e) => Number(e.balanceFund || 0) !== 0)
-      ? Number(currentProjExpenses[currentProjExpenses.length - 1].balanceFund || 0)
+    const balanceExp = currentProjExpenses.find((e) => Number(e.balanceFund || 0) !== 0);
+    const balance = balanceExp
+      ? Number(balanceExp.balanceFund || 0)
       : fund - totalSpent;
     const missingCo = materialRows.filter(p => !p.docCo).length;
     const missingCq = materialRows.filter(p => !p.docCq).length;
