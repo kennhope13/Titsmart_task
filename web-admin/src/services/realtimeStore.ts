@@ -445,7 +445,8 @@ const normalizeDocumentTrack = (doc: any): DocumentTrack => ({
   paymentStatus: doc.paymentStatus ?? doc.payment_status ?? '',
   isCompleted: !!(doc.isCompleted ?? doc.is_completed ?? false),
   notes: doc.notes || '',
-  fileUrls: doc.fileUrls ?? doc.file_urls ?? []
+  fileUrls: doc.fileUrls ?? doc.file_urls ?? [],
+  docType: doc.docType ?? doc.doc_type ?? 'Giao'
 });
 
 export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
@@ -1411,6 +1412,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         });
       } catch (e) {
         console.error('Failed to add document track', e);
+        throw e;
       }
     },
 
@@ -1425,6 +1427,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         });
       } catch (e) {
         console.error('Failed to update document track', e);
+        throw e;
       }
     },
 

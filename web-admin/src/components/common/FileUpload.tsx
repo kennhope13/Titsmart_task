@@ -31,6 +31,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!event.target.files || event.target.files.length === 0) return;
+      setError('');
       setIsUploading(true);
       if (onUploadStateChange) onUploadStateChange(true);
       
@@ -48,7 +49,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
 
         if (uploadError) {
           console.error("Upload error:", uploadError);
-          alert(`Lỗi tải file. Vui lòng đảm bảo bạn đã tạo Storage Bucket tên "titsmart-images" trên Supabase và bật Public.`);
+          setError(`Lỗi tải file. Vui lòng đảm bảo đã tạo Bucket "titsmart-images" và bật Public.`);
           continue;
         }
 
@@ -71,7 +72,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
       }
     } catch (error) {
       console.error('Lỗi khi tải file:', error);
-      alert('Đã xảy ra lỗi khi tải file lên.');
+      setError('Đã xảy ra lỗi khi tải file lên.');
     } finally {
       setIsUploading(false);
       if (onUploadStateChange) onUploadStateChange(false);

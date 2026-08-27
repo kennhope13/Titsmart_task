@@ -1427,7 +1427,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <td className="p-0 align-middle text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'orderedVolume' && !editingCell.isPurchasing ? (
                                   <input
-                                    type="number"
+                                    type="number" step="any"
                                     value={tempValue}
                                     onChange={(e) => setTempValue(e.target.value)}
                                     onBlur={() => saveEditing(plan, pRecord)}
@@ -1493,7 +1493,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <td className="p-0 align-middle text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'volumeOrder' && editingCell?.isPurchasing ? (
                                   <input
-                                    type="number"
+                                    type="number" step="any"
                                     value={tempValue}
                                     onChange={(e) => setTempValue(e.target.value)}
                                     onBlur={() => saveEditing(plan, pRecord)}
@@ -1509,7 +1509,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <td className="p-0 align-middle text-right font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'unitPrice' && editingCell?.isPurchasing ? (
                                   <input
-                                    type="number"
+                                    type="number" step="any"
                                     value={tempValue}
                                     onChange={(e) => setTempValue(e.target.value)}
                                     onBlur={() => saveEditing(plan, pRecord)}
@@ -1525,7 +1525,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <td className="p-0 align-middle text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'vatRate' && editingCell?.isPurchasing ? (
                                   <input
-                                    type="number"
+                                    type="number" step="any"
                                     value={tempValue}
                                     onChange={(e) => setTempValue(e.target.value)}
                                     onBlur={() => saveEditing(plan, pRecord)}
@@ -1549,7 +1549,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <td className="p-0 align-middle text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'prepayPercent' && editingCell?.isPurchasing ? (
                                   <input
-                                    type="number"
+                                    type="number" step="any"
                                     value={tempValue}
                                     onChange={(e) => setTempValue(e.target.value)}
                                     onBlur={() => saveEditing(plan, pRecord)}
@@ -1565,7 +1565,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <td className="p-0 align-middle text-right font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'prepayAmount' && editingCell?.isPurchasing ? (
                                   <input
-                                    type="number"
+                                    type="number" step="any"
                                     value={tempValue}
                                     onChange={(e) => setTempValue(e.target.value)}
                                     onBlur={() => saveEditing(plan, pRecord)}

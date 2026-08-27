@@ -694,7 +694,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   <td className="p-0 align-top text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">
                     {editingCell?.id === plan.id && editingCell?.field === 'contractVolume' ? (
                       <input
-                        type="number"
+                        type="number" step="any"
                         value={tempValue}
                         onChange={(e) => setTempValue(e.target.value)}
                         onBlur={() => saveEditing(plan)}
@@ -826,7 +826,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       <td className="p-0 align-top text-center font-mono font-semibold text-slate-900 border-r border-slate-200 whitespace-normal break-words leading-tight">
                         {editingCell?.id === plan.id && editingCell?.field === 'orderedVolume' ? (
                           <input
-                            type="number"
+                            type="number" step="any"
                             value={tempValue}
                             onChange={(e) => setTempValue(e.target.value)}
                             onBlur={() => saveEditing(plan)}

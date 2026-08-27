@@ -40,7 +40,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, type
     if (!selectedMaterial) return;
 
     if (type === 'EXPORT' && quantity > materialCurrentStock(selectedMaterial)) {
-      const confirmed = window.confirm(`S? lu?ng xu?t (${quantity}) l?n hon t?n kho hi?n t?i (${materialCurrentStock(selectedMaterial)}). B?n có mu?n xu?t kho âm không?`);
+      const confirmed = window.confirm(`S? lu?ng xu?t (${quantity}) l?n hon t?n kho hi?n t?i (${materialCurrentStock(selectedMaterial)}). B?n cï¿½ mu?n xu?t kho ï¿½m khï¿½ng?`);
       if (!confirmed) return;
     }
 
@@ -74,17 +74,17 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, type
         {selectedMaterial && (
           <div className="grid grid-cols-3 gap-2 bg-slate-50 border border-slate-200 rounded-lg p-3 text-[11px] text-slate-600">
             <div><b>Danh m?c:</b> {selectedMaterial.category || '-'}</div>
-            <div><b>Quy cách:</b> {selectedMaterial.specs || selectedMaterial.englishName || '-'}</div>
-            <div><b>ÐVT:</b> {selectedMaterial.unit || '-'}</div>
+            <div><b>Quy cï¿½ch:</b> {selectedMaterial.specs || selectedMaterial.englishName || '-'}</div>
+            <div><b>ï¿½VT:</b> {selectedMaterial.unit || '-'}</div>
           </div>
         )}
         <div className="grid grid-cols-2 gap-3">
-          <Field label={`Ngày ${type === 'IMPORT' ? 'nh?p' : 'xu?t'} *`}><input type="date" required value={date} onChange={(event) => setDate(event.target.value)} className={inputClass} /></Field>
-          <Field label="S? lu?ng *"><input type="number" required min="1" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} className={inputClass} /></Field>
+          <Field label={`Ngï¿½y ${type === 'IMPORT' ? 'nh?p' : 'xu?t'} *`}><input type="date" required value={date} onChange={(event) => setDate(event.target.value)} className={inputClass} /></Field>
+          <Field label="S? lu?ng *"><input type="number" step="any" required min="1" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} className={inputClass} /></Field>
         </div>
-        <Field label={type === 'IMPORT' ? 'Ngu?n Nh?p / D? Án Du *' : 'Mã D? Án / Tên Công Trình *'}><input required value={sourceOrProject} onChange={(event) => setSourceOrProject(event.target.value)} className={inputClass} /></Field>
+        <Field label={type === 'IMPORT' ? 'Ngu?n Nh?p / D? ï¿½n Du *' : 'Mï¿½ D? ï¿½n / Tï¿½n Cï¿½ng Trï¿½nh *'}><input required value={sourceOrProject} onChange={(event) => setSourceOrProject(event.target.value)} className={inputClass} /></Field>
         {type === 'EXPORT' && <Field label="Ngu?i Nh?n V?t Tu"><input value={receiverName} onChange={(event) => setReceiverName(event.target.value)} className={inputClass} /></Field>}
-        <Field label="Ghi Chú"><input value={notes} onChange={(event) => setNotes(event.target.value)} className={inputClass} /></Field>
+        <Field label="Ghi Chï¿½"><input value={notes} onChange={(event) => setNotes(event.target.value)} className={inputClass} /></Field>
         <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
           <button type="button" onClick={onClose} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">H?y</button>
           <button type="submit" className={`px-5 py-1.5 text-white rounded-lg font-bold hover:opacity-90 ${type === 'IMPORT' ? 'bg-emerald-600' : 'bg-amber-500'}`}>Luu {type === 'IMPORT' ? 'Nh?p Kho' : 'Xu?t Kho'}</button>

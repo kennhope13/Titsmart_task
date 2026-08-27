@@ -85,9 +85,9 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({ isOpen, material, 
         <Field label="Tên Vật Tư / Thiết Bị *"><input required value={name} onChange={(event) => setName(event.target.value)} className={`${inputClass} font-bold`} /></Field>
         <Field label="Thông Số Kỹ Thuật / Quy Cách"><input value={specs} onChange={(event) => setSpecs(event.target.value)} className={inputClass} /></Field>
         <div className="grid grid-cols-3 gap-3">
-          <Field label="Tồn kho đầu kỳ"><input type="number" value={initialStock} onChange={(event) => setInitialStock(Number(event.target.value))} className={inputClass} /></Field>
+          <Field label="Tồn kho đầu kỳ"><input type="number" step="any" value={initialStock} onChange={(event) => setInitialStock(Number(event.target.value))} className={inputClass} /></Field>
           <Field label="Đơn Vị Tính"><input value={unit} onChange={(event) => setUnit(event.target.value)} className={inputClass} /></Field>
-          <Field label="Đơn giá"><input type="number" value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className={inputClass} /></Field>
+          <Field label="Đơn giá"><input type="number" step="any" value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className={inputClass} /></Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Tình trạng mua hàng"><CustomSelect value={purchaseStatus} onChange={(event) => setPurchaseStatus(event.target.value)} className={inputClass}>{PURCHASE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</CustomSelect></Field>

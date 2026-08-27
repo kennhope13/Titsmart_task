@@ -697,7 +697,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono font-semibold text-slate-900 whitespace-normal break-words leading-tight">
                         {editingCell?.id === pur.id && editingCell?.field === 'volumeContract' ? (
                           <input
-                            type="number"
+                            type="number" step="any"
                             value={tempValue}
                             onChange={(e) => setTempValue(e.target.value)}
                             onBlur={() => saveEditing(pur)}
@@ -717,7 +717,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       <td className="border-r border-slate-200 bg-blue-50/30 px-1.5 py-1 text-center font-mono font-semibold text-blue-700 whitespace-normal break-words leading-tight">
                         {editingCell?.id === pur.id && editingCell?.field === 'volumeOrder' ? (
                           <input
-                            type="number"
+                            type="number" step="any"
                             value={tempValue}
                             onChange={(e) => setTempValue(e.target.value)}
                             onBlur={() => saveEditing(pur)}
@@ -737,7 +737,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono whitespace-normal break-words leading-tight">
                         {editingCell?.id === pur.id && editingCell?.field === 'unitPrice' ? (
                           <input
-                            type="number"
+                            type="number" step="any"
                             value={tempValue}
                             onChange={(e) => setTempValue(e.target.value)}
                             onBlur={() => saveEditing(pur)}
@@ -757,7 +757,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       <td className="border-r border-slate-200 px-1 py-1 text-center font-mono whitespace-normal break-words leading-tight">
                         {editingCell?.id === pur.id && editingCell?.field === 'vatRate' ? (
                           <input
-                            type="number"
+                            type="number" step="any"
                             value={tempValue}
                             onChange={(e) => setTempValue(e.target.value)}
                             onBlur={() => saveEditing(pur)}
@@ -828,7 +828,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                       <td className="border-r border-slate-200 px-1 py-1 text-center font-mono whitespace-normal break-words leading-tight">
                         {editingCell?.id === pur.id && editingCell?.field === 'prepayPercent' ? (
                           <input
-                            type="number"
+                            type="number" step="any"
                             min="0"
                             max="100"
                             value={tempValue}
