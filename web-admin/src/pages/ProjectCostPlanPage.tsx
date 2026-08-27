@@ -127,6 +127,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     expenses,
     laborPayrolls,
     tasks,
+    engineers,
     addTask,
     addTasksBatch,
     addMaterialPlan,
@@ -1334,11 +1335,18 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   const expenseSpenderNames = useMemo(() => {
     const names = new Set<string>();
+    names.add('DỰ ÁN');
+    names.add('Công ty');
     expenses.forEach(exp => {
       if (exp.spenderName?.trim()) names.add(exp.spenderName.trim());
     });
+    if (Array.isArray(engineers)) {
+      engineers.forEach(eng => {
+        if (eng.name?.trim()) names.add(eng.name.trim());
+      });
+    }
     return Array.from(names);
-  }, [expenses]);
+  }, [expenses, engineers]);
 
   const expenseContentTypes = useMemo(() => {
     const contents = new Set<string>();
@@ -3080,12 +3088,14 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={newExpenseData.date} onChange={(e) => setNewExpenseData({...newExpenseData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
               <label className="block font-bold mb-1">Người phụ trách / Nguồn quỹ</label>
-              <CustomSelect value={newExpenseData.spenderName || ''} onChange={(e) => setNewExpenseData({...newExpenseData, spenderName: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs">
-                <option value="">Chọn người phụ trách...</option>
-                {Array.from(new Set(currentProjExpenses.map(e => e.spenderName).filter(Boolean))).map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </CustomSelect>
+              <input
+                type="text"
+                list="spender-names"
+                placeholder="Chọn hoặc tự nhập..."
+                value={newExpenseData.spenderName || ''}
+                onChange={(e) => setNewExpenseData({...newExpenseData, spenderName: e.target.value})}
+                className="w-full border rounded-lg p-2 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none"
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -3172,12 +3182,14 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={editingExpense.date} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div>
                 <label className="block font-bold mb-1">Người phụ trách / Nguồn quỹ</label>
-                <CustomSelect value={editingExpense.spenderName || ''} onChange={(e) => setEditingExpense({...editingExpense, spenderName: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs">
-                  <option value="">Chọn người phụ trách...</option>
-                  {Array.from(new Set(currentProjExpenses.map(e => e.spenderName).filter(Boolean))).map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </CustomSelect>
+                <input
+                  type="text"
+                  list="spender-names"
+                  placeholder="Chọn hoặc tự nhập..."
+                  value={editingExpense.spenderName || ''}
+                  onChange={(e) => setEditingExpense({...editingExpense, spenderName: e.target.value})}
+                  className="w-full border rounded-lg p-2 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

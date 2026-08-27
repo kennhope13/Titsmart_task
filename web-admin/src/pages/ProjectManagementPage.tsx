@@ -323,25 +323,9 @@ export const ProjectManagementPage: React.FC = () => {
       
       tasksWithIds.forEach((item, index) => {
 
-
-        const sttVal = item.stt.trim();
-        const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
-        const numericParentRegex = /^\d+$/;
-        
-        const isRoman = romanRegex.test(sttVal);
-          if (!/[a-zA-ZÀ-ỹ]/.test(item.name || '')) return;
-        const cleanUnitVal = (item.unit || '').replace(/^[-–—_.\s]+$/, '').trim();
-        
-        const isMainSectionName = (name: string): boolean => {
-            const norm = (name || '').toLowerCase();
-            return norm.includes('phần vttb') || norm.includes('cung cấp') || norm.includes('chủ đầu tư') || norm.includes('nhà thầu') || norm.startsWith('phần ') || norm.startsWith('hệ thống ');
-        };
-        const cleanStt = String(sttVal || '').trim().replace(/\.$/, '');
-        const hasNoDot = !cleanStt.includes('.');
-        const normalizedName = String(item.name || '').trim().toUpperCase();
-        const startsWithPhan = normalizedName.startsWith('PHẦN ') && !normalizedName.startsWith('PHẦN MỀM');
-        const hasNoVolumeAndUnit = (item.volume === 0 || !item.volume) && (!cleanUnitVal || cleanUnitVal === '');
-        const isSection = startsWithPhan || (hasNoDot && isMainSectionName(item.name)) || (hasNoDot && hasNoVolumeAndUnit && isRoman);
+        const sttVal = (item.stt || '').trim();
+        if (!/[a-zA-ZÀ-ỹ]/.test(item.name || '')) return;
+        const isSection = item.isSectionHeader;
         
         let parentId = undefined;
         if (isSection) {
