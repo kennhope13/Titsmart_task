@@ -34,30 +34,25 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
       setIsUploading(true);
       if (onUploadStateChange) onUploadStateChange(true);
       
-      const newUrls: string[] = [];
+      const formData = new FormData();
       const filesToUpload = multiple ? Array.from(event.target.files) : [event.target.files[0]];
       
       for (const file of filesToUpload) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = `documents/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('titsmart-images')
-          .upload(filePath, file);
-
-        if (uploadError) {
-          console.error("Upload error:", uploadError);
-          alert(`Lỗi tải file. Vui lòng đảm bảo bạn đã tạo Storage Bucket tên "titsmart-images" trên Supabase và bật Public.`);
-          continue;
-        }
-
-        const { data } = supabase.storage
-          .from('titsmart-images')
-          .getPublicUrl(filePath);
-          
-        newUrls.push(data.publicUrl);
+        formData.append('files', file);
       }
+
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed with status ' + response.status);
+      }
+
+      const data = await response.json();
+      const newUrls: string[] = data.urls || [];
       
       const updatedValues = multiple ? [...localValues, ...newUrls] : [newUrls[0]];
       setLocalValues(updatedValues);
