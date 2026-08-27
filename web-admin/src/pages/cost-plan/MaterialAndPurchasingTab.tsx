@@ -1275,7 +1275,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 className="w-full text-center bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
                               />
                             ) : (
-                              <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block w-full">{depth > 0 ? plan.computedStt : plan.stt}</span>
+                              <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0 rounded block w-full">{depth > 0 ? plan.computedStt : plan.stt}</span>
                             )}
                           </td>
                           
@@ -1651,10 +1651,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             </td>
                           ) : (
                             <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1 align-middle text-slate-500 min-w-[200px]">
-                              <div className="flex flex-col gap-1.5 w-full text-xs">
+                              <div className="flex flex-col gap-0.5 w-full text-xs py-0.5">
                                 {/* Vướng mắc */}
                                 <div className="flex items-start gap-1.5">
-                                  <span className="text-[10px] font-bold text-red-500 w-12 shrink-0 mt-0.5" title="Nội dung vướng mắc">V.MẮC:</span>
+                                  <span className="text-[10px] font-bold text-red-500 w-12 shrink-0 mt-0" title="Nội dung vướng mắc">V.MẮC:</span>
                                   <div className="flex-1 bg-slate-50 rounded">
                                     {editingCell?.id === plan.id && editingCell?.field === 'issueContent' ? (
                                       <input
@@ -1669,7 +1669,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                         className="w-full bg-white text-red-600 font-semibold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm border border-slate-200 rounded"
                                       />
                                     ) : (
-                                      <div onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="min-h-[20px] cursor-pointer hover:bg-slate-200 px-1 py-0.5 rounded text-red-600 font-semibold whitespace-normal break-words leading-tight" title={getIssueContentText(plan.issueContent) || 'Click để nhập'}>
+                                      <div onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="min-h-[16px] cursor-pointer hover:bg-slate-200 px-1 py-0 rounded text-red-600 font-semibold whitespace-normal break-words leading-tight" title={getIssueContentText(plan.issueContent) || 'Click để nhập'}>
                                         {getIssueContentText(plan.issueContent) || <span className="text-slate-300 italic">...</span>}
                                       </div>
                                     )}
@@ -1677,7 +1677,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </div>
                                 {/* TT Xử lý */}
                                 <div className="flex items-start gap-1.5">
-                                  <span className="text-[10px] font-bold text-orange-500 w-12 shrink-0 mt-0.5" title="Trạng thái xử lý">XỬ LÝ:</span>
+                                  <span className="text-[10px] font-bold text-orange-500 w-12 shrink-0 mt-0" title="Trạng thái xử lý">XỬ LÝ:</span>
                                   <div className="flex-1 bg-slate-50 rounded">
                                     {editingCell?.id === plan.id && editingCell?.field === 'issueStatus' ? (
                                       <input
@@ -1692,7 +1692,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                         className="w-full bg-white text-orange-600 font-semibold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm border border-slate-200 rounded"
                                       />
                                     ) : (
-                                      <div onClick={() => startEditing(plan.id, 'issueStatus', plan.issueStatus)} className="min-h-[20px] cursor-pointer hover:bg-slate-200 px-1 py-0.5 rounded text-orange-600 font-semibold whitespace-normal break-words leading-tight" title={plan.issueStatus || 'Click để nhập'}>
+                                      <div onClick={() => startEditing(plan.id, 'issueStatus', plan.issueStatus)} className="min-h-[16px] cursor-pointer hover:bg-slate-200 px-1 py-0 rounded text-orange-600 font-semibold whitespace-normal break-words leading-tight" title={plan.issueStatus || 'Click để nhập'}>
                                         {plan.issueStatus || <span className="text-slate-300 italic">...</span>}
                                       </div>
                                     )}
@@ -1700,7 +1700,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </div>
                                 {/* Ghi chú */}
                                 <div className="flex items-start gap-1.5">
-                                  <span className="text-[10px] font-bold text-slate-500 w-12 shrink-0 mt-0.5" title="Ghi chú">NOTE:</span>
+                                  <span className="text-[10px] font-bold text-slate-500 w-12 shrink-0 mt-0" title="Ghi chú">NOTE:</span>
                                   <div className="flex-1 bg-slate-50 rounded">
                                     {editingCell?.id === plan.id && editingCell?.field === 'notes' ? (
                                       <input
@@ -1714,7 +1714,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                         className="w-full bg-white text-slate-700 focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm border border-slate-200 rounded"
                                       />
                                     ) : (
-                                      <div onClick={() => startEditing(plan.id, 'notes', cleanTechNotes(plan.notes))} className="min-h-[20px] cursor-pointer hover:bg-slate-200 px-1 py-0.5 rounded text-slate-700 whitespace-normal break-words leading-tight" title={cleanTechNotes(plan.notes) || 'Click để nhập'}>
+                                      <div onClick={() => startEditing(plan.id, 'notes', cleanTechNotes(plan.notes))} className="min-h-[16px] cursor-pointer hover:bg-slate-200 px-1 py-0 rounded text-slate-700 whitespace-normal break-words leading-tight" title={cleanTechNotes(plan.notes) || 'Click để nhập'}>
                                         {cleanTechNotes(plan.notes) || <span className="text-slate-300 italic">...</span>}
                                       </div>
                                     )}

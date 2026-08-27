@@ -1,5 +1,5 @@
 {
-  "version": "1.1.44",
+  "version": "1.1.45",
   "date": "27/8/2026",
   "notes": [
     "Cải tiến logic Import Excel: Tự động giữ nguyên định dạng và số thứ tự (STT) gốc.",
