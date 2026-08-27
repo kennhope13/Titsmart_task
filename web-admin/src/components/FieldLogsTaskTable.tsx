@@ -118,7 +118,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-white p-4">
+    <div className="flex-1 overflow-auto bg-white">
       <table className="w-full text-left text-sm text-slate-600 border-collapse">
         <thead className="bg-slate-50 text-xs uppercase text-slate-500 font-bold sticky top-0 z-20 shadow-sm">
           <tr>

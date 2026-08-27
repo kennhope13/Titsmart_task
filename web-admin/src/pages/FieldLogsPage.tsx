@@ -370,20 +370,17 @@ export const FieldLogsPage: React.FC = () => {
         </button>
       , portalNode)}
 
-        <div className={`flex flex-col flex-1 ${(logsByProject.length === 0 && !selectedProject) ? '' : 'p-6'}`}>
+        <div className={`flex flex-col flex-1 ${(logsByProject.length === 0 && !selectedProject) || selectedProject ? '' : 'p-6'}`}>
           {selectedProject ? (
-              <div className="flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 flex-1 overflow-hidden">
-                <div className="flex items-center px-6 py-4 border-b border-slate-200 bg-slate-50 sticky top-0 z-10">
+              <div className="flex flex-col flex-1 overflow-hidden bg-white">
                   {!projectId && (
-                    <button onClick={() => setSelectedProject('')} className="mr-4 p-2 rounded-full hover:bg-slate-200 text-slate-600 transition flex items-center justify-center">
-                      <span className="material-symbols-outlined">arrow_back</span>
-                    </button>
+                    <div className="p-2 border-b border-slate-200 bg-slate-50">
+                      <button onClick={() => setSelectedProject('')} className="px-3 py-1.5 rounded text-slate-600 hover:bg-slate-200 transition flex items-center gap-1 text-sm font-medium">
+                        <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                        Quay lại danh sách dự án
+                      </button>
+                    </div>
                   )}
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800 uppercase">{projectName(selectedProject)}</h2>
-                    <p className="text-sm text-slate-500">Chi tiết nhật ký hiện trường</p>
-                  </div>
-                </div>
                 
                   <FieldLogsTaskTable 
                     selectedProject={selectedProject} 
