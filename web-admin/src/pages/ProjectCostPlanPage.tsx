@@ -1767,7 +1767,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
         {/* EXPENSE TAB */}
         {activeTab === 'EXPENSE' && (
-          <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-slate-100 p-4 flex flex-col gap-6" id="expense-unified-view">
+          <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-slate-100 py-4 px-1 md:px-2 flex flex-col gap-6" id="expense-unified-view">
             
             
             {/* 1. BẢNG TỔNG QUAN */}
@@ -1911,7 +1911,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     <th className="px-2 py-2.5 w-8 text-center">STT</th>
                     <th className="px-2 py-2.5 w-[70px]">Ngày</th>
                     <th className="px-2 py-2.5 min-w-[90px]">Người PT/Tên</th>
-                    <th className="px-2 py-2.5 min-w-[120px]">Nội dung / Diễn giải</th>
+                    <th className="px-2 py-2.5 w-full min-w-[200px]">Nội dung / Diễn giải</th>
                     <th className="px-2 py-2.5 w-10 text-left">ĐVT</th>
                     <th className="px-2 py-2.5 w-10 text-right">SL</th>
                     <th className="px-2 py-2.5 text-right">Đơn giá</th>
