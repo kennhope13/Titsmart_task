@@ -1310,7 +1310,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       currentBalance = currentBalance + Number(exp.incomeAmount || 0) - Number(exp.totalAmount || 0);
       return { ...exp, autoBalance: currentBalance };
     });
-    return computed.reverse();
+    return computed;
   }, [expenses, selectedProject]);
 
   const expenseDateOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjExpenses.map(p => p.date).filter(Boolean)))], [currentProjExpenses]);
@@ -1394,7 +1394,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       }
       return { ...record, autoBalance: currentBalance };
     });
-    return computed.reverse();
+    return computed;
   }, [filteredProjExpenses, filteredProjLabor]);
 
   const expenseContentTypes = useMemo(() => {
