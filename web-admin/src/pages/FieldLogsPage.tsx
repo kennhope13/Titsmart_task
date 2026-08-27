@@ -335,7 +335,7 @@ export const FieldLogsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col flex-1 h-full bg-slate-100 overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0 bg-slate-100 overflow-hidden">
       {/* Header */}
       {!projectId && (
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-3 py-4 md:py-0 md:h-12 shadow-sm">
@@ -370,7 +370,7 @@ export const FieldLogsPage: React.FC = () => {
         </button>
       , portalNode)}
 
-        <div className={`flex flex-col flex-1 ${(logsByProject.length === 0 && !selectedProject) || selectedProject ? '' : 'p-6'}`}>
+        <div className={`flex flex-col flex-1 min-h-0 ${(logsByProject.length === 0 && !selectedProject) || selectedProject ? '' : 'p-6'}`}>
           {selectedProject ? (
               <div className="flex flex-col flex-1 overflow-hidden bg-white">
                   {!projectId && (

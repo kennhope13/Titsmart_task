@@ -215,6 +215,9 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
           )}
         </tbody>
       </table>
+      <div className="bg-emerald-100 p-3 text-center text-xs font-bold text-emerald-800 border-t border-emerald-200 mt-4">
+        --- HẾT DANH SÁCH (Tổng: {groupedTasks.length} mục) ---
+      </div>
 
       {lightboxIndex >= 0 && (
         <CustomLightbox 
