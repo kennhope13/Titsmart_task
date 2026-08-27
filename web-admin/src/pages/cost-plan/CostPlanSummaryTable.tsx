@@ -12,11 +12,9 @@ const money = (value: number) => value.toLocaleString('vi-VN');
 export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expenses, labors, onAllocateFund }) => {
   const [editingProjectFund, setEditingProjectFund] = useState(false);
   const [projectFundInput, setProjectFundInput] = useState('');
-  const [filterContent, setFilterContent] = useState('all');
+  
 
-  const contentOptions = useMemo(() => {
-    return ['all', ...Array.from(new Set(expenses.map(e => e.content).filter(Boolean)))];
-  }, [expenses]);
+  
 
   const summary = useMemo(() => {
     const bySpender: Record<string, { chi: number; quy: number }> = {};
@@ -24,7 +22,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
     let totalProjectFund = 0;
 
     expenses.forEach((exp) => {
-      if (filterContent !== 'all' && exp.content !== filterContent) return;
+      
       
       const name = (exp.spenderName || '').trim() || 'KHÁC';
       if (!bySpender[name]) {
@@ -54,24 +52,13 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
       tonCuoiKy,
       totalLabor
     };
-  }, [expenses, labors, filterContent]);
+  }, [expenses, labors]);
 
   const spenderNames = Object.keys(summary.bySpender).filter(n => n !== 'KHÁC' || summary.bySpender[n].chi > 0 || summary.bySpender[n].quy > 0);
 
   return (
-    <div className="w-full bg-white mb-4">
-      <div className="flex justify-end mb-3 items-center gap-2">
-        <label className="text-sm font-bold text-slate-600">Lọc theo nội dung:</label>
-        <select 
-          value={filterContent} 
-          onChange={(e) => setFilterContent(e.target.value)}
-          className="border border-slate-300 rounded px-3 py-1 text-sm text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-        >
-          {contentOptions.map(opt => (
-            <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả nội dung' : opt}</option>
-          ))}
-        </select>
-      </div>
+    <div className="w-full mb-4">
+      
       <div className="overflow-x-auto">
         <table className="w-full min-w-[800px] border-collapse text-sm">
           <tbody>

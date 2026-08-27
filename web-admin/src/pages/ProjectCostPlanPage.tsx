@@ -1768,7 +1768,86 @@ export const ProjectCostPlanPage: React.FC = () => {
         {/* EXPENSE TAB */}
         {activeTab === 'EXPENSE' && (
           <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-slate-100 p-4 flex flex-col gap-6" id="expense-unified-view">
-{/* CHI TIẾT PHIẾU CHI */}
+            
+            
+            {/* 1. BẢNG TỔNG QUAN */}
+            <div className="shrink-0 w-full overflow-x-auto">
+              <CostPlanSummaryTable 
+                expenses={currentProjExpenses} 
+                labors={currentProjLabor} 
+                onAllocateFund={(name, amount) => {
+                  if (name === 'KHÁC') return;
+                  
+                  let targetName = name;
+                  let currentTotalFund = 0;
+                  let personExpenses: any[] = [];
+                  let title = '';
+                  
+                  if (name === '__PROJECT__') {
+                    personExpenses = currentProjExpenses.filter(e => e.spenderName === 'DỰ ÁN' && e.content === 'Quỹ Công Trình');
+                    currentTotalFund = currentProjExpenses.reduce((acc, curr) => acc + (curr.incomeAmount || 0), 0);
+                    title = 'Quỹ Tổng Công Trình';
+                    targetName = 'DỰ ÁN';
+                  } else {
+                    if (!targetName) {
+                      const inputName = window.prompt('Nhập tên người muốn cấp quỹ:');
+                      if (!inputName || !inputName.trim()) return;
+                      targetName = inputName.trim();
+                    }
+                    personExpenses = currentProjExpenses.filter(e => e.spenderName === targetName);
+                    currentTotalFund = personExpenses.reduce((acc, curr) => acc + (curr.incomeAmount || 0), 0);
+                    title = `Tổng Quỹ cho [${targetName.toUpperCase()}]`;
+                  }
+                  
+                  let newTotal = 0;
+                  
+                  if (amount !== undefined) {
+                    newTotal = amount;
+                  } else {
+                    const input = window.prompt(`Cập nhật ${title}:\n(Nhập số tiền, hiện tại là: ${currentTotalFund.toLocaleString('vi-VN')})`, currentTotalFund.toString());
+                    if (input === null) return;
+                    
+                    newTotal = parseInt(input.replace(/[,.]/g, ''), 10);
+                    if (isNaN(newTotal)) {
+                      triggerToast('Số tiền không hợp lệ', 'warning');
+                      return;
+                    }
+                  }
+                  
+                  const diff = newTotal - currentTotalFund;
+                  if (diff === 0) return;
+                  
+                  const adjustmentContent = name === '__PROJECT__' ? 'Quỹ Công Trình' : 'Cấp quỹ';
+                  const adjustmentRecord = personExpenses.find(e => e.content === adjustmentContent && (e.totalAmount || 0) === 0);
+                  
+                  if (adjustmentRecord) {
+                    updateExpense(adjustmentRecord.id, {
+                      ...adjustmentRecord,
+                      incomeAmount: (adjustmentRecord.incomeAmount || 0) + diff,
+                      balanceFund: (adjustmentRecord.balanceFund || 0) + diff
+                    });
+                  } else {
+                    addExpense({
+                      projectCode: selectedProject,
+                      spenderName: targetName,
+                      content: adjustmentContent,
+                      description: name === '__PROJECT__' ? 'Khởi tạo Quỹ Công Trình' : `Cấp quỹ cho ${targetName}`,
+                      date: new Date().toISOString().split('T')[0],
+                      quantity: 0,
+                      unitPrice: 0,
+                      taxAmount: 0,
+                      totalAmount: 0,
+                      incomeAmount: diff,
+                      balanceFund: diff
+                    } as any);
+                  }
+                  triggerToast(`Đã cập nhật ${title.toLowerCase()}`, 'success');
+                }}
+              />
+            </div>
+
+            {/* CHI TIẾT PHIẾU CHI */}
+
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
               <div className="flex border-b border-slate-100 bg-slate-50 px-5 py-3 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap"><h2 className="text-[14px] font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide whitespace-nowrap"><span className="material-symbols-outlined text-primary text-[18px]">receipt_long</span> CHI TIẾT PHIẾU CHI </h2>
                   <div className="flex items-center gap-3">
