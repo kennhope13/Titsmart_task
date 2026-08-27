@@ -1303,10 +1303,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   const currentProjExpenses = useMemo(() => {
     const sortedOldestFirst = expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => {
-      const dateA = a.date ? new Date(a.date).getTime() : 0;
-      const dateB = b.date ? new Date(b.date).getTime() : 0;
-      if (dateA !== dateB) return dateA - dateB;
-      return Number(a.stt || 0) - Number(b.stt || 0);
+      return sttSortValue(a.stt) - sttSortValue(b.stt);
     });
     let currentBalance = 0;
     const computed = sortedOldestFirst.map(exp => {
@@ -1338,7 +1335,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   }, [currentProjExpenses, searchQuery, expenseFilterDate, expenseFilterContent, expenseFilterUnit]);
 
   const currentProjLabor = useMemo(() => 
-    laborPayrolls.filter(p => p.projectCode === selectedProject).sort((a, b) => Number(a.stt || 0) - Number(b.stt || 0)),
+    laborPayrolls.filter(p => p.projectCode === selectedProject).sort((a, b) => sttSortValue(a.stt) - sttSortValue(b.stt)),
     [laborPayrolls, selectedProject]
   );
 
