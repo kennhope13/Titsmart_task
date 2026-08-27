@@ -444,7 +444,44 @@ export const ProjectCostPlanPage: React.FC = () => {
           })
           .join(' ');
         const normalizedWorkbookPreview = normalizeImportText(workbookPreviewText);
-        // ------------------------------------------------------------------
+        
+  const laborWorkerNames = useMemo(() => {
+    const names = new Set<string>();
+    labors.forEach(l => { if (l.workerName?.trim()) names.add(l.workerName.trim()); });
+    return Array.from(names);
+  }, [labors]);
+
+  const laborContents = useMemo(() => {
+    const contents = new Set<string>();
+    labors.forEach(l => { if (l.content?.trim()) contents.add(l.content.trim()); });
+    return Array.from(contents);
+  }, [labors]);
+
+  const laborDescriptions = useMemo(() => {
+    const desc = new Set<string>();
+    labors.forEach(l => { if (l.description?.trim()) desc.add(l.description.trim()); });
+    return Array.from(desc);
+  }, [labors]);
+
+  const laborUnits = useMemo(() => {
+    const units = new Set<string>();
+    labors.forEach(l => { if (l.unit?.trim()) units.add(l.unit.trim()); });
+    return Array.from(units);
+  }, [labors]);
+
+  const laborBankAccounts = useMemo(() => {
+    const accounts = new Set<string>();
+    labors.forEach(l => { if (l.bankAccount?.trim()) accounts.add(l.bankAccount.trim()); });
+    return Array.from(accounts);
+  }, [labors]);
+
+  const laborBankInfos = useMemo(() => {
+    const infos = new Set<string>();
+    labors.forEach(l => { if (l.bankInfo?.trim()) infos.add(l.bankInfo.trim()); });
+    return Array.from(infos);
+  }, [labors]);
+
+  // ------------------------------------------------------------------
         // Smart validation: nhận diện file hợp lệ theo nhiều tiêu chí
         // ------------------------------------------------------------------
         const normalizeSheetName = (n: string) => normalizeImportText(n);
@@ -3276,20 +3313,26 @@ export const ProjectCostPlanPage: React.FC = () => {
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block font-bold mb-1">Ngày chấm công *</label><input type="date" required value={newLaborData.date || new Date().toISOString().split('T')[0]} onChange={(e) => setNewLaborData({...newLaborData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Loại thanh toán</label><input type="text" value={newLaborData.content} onChange={(e) => setNewLaborData({...newLaborData, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Loại thanh toán</label><CustomSelect value={newLaborData.content} onChange={(e) => setNewLaborData({...newLaborData, content: e.target.value})} searchable={true} allowCustomInput={true} placeholder="" className="w-full border rounded-lg p-2 bg-white text-xs">
+    {laborContents.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}
+  </CustomSelect></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block font-bold mb-1">Họ tên *</label><input type="text" required placeholder="VD: Nguyễn Văn A" value={(newLaborData as any).workerName || ''} onChange={(e) => setNewLaborData({...newLaborData, workerName: e.target.value} as any)} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
-            <div><label className="block font-bold mb-1">Diễn giải / Chức danh *</label><input type="text" required placeholder="VD: Lương thợ điện, Lương phụ hồ..." value={newLaborData.description} onChange={(e) => setNewLaborData({...newLaborData, description: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Họ tên *</label><CustomSelect value={(newLaborData as any).workerName || ''} onChange={(e) => setNewLaborData({...newLaborData, workerName: e.target.value} as any)} searchable={true} allowCustomInput={true} placeholder="VD: Nguyễn Văn A" className="w-full border rounded-lg p-2 bg-white font-bold text-xs">{laborWorkerNames.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}</CustomSelect></div>
+            <div><label className="block font-bold mb-1">Diễn giải / Chức danh *</label><CustomSelect value={newLaborData.description} onChange={(e) => setNewLaborData({...newLaborData, description: e.target.value})} searchable={true} allowCustomInput={true} placeholder="VD: Lương thợ điện, Lương phụ hồ..." className="w-full border rounded-lg p-2 bg-white text-xs">{laborDescriptions.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}</CustomSelect></div>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newLaborData.unit} onChange={(e) => setNewLaborData({...newLaborData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">ĐVT</label><CustomSelect value={newLaborData.unit} onChange={(e) => setNewLaborData({...newLaborData, unit: e.target.value})} searchable={true} allowCustomInput={true} placeholder="" className="w-full border rounded-lg p-2 bg-white text-xs">
+    {laborUnits.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}
+  </CustomSelect></div>
             <div><label className="block font-bold mb-1">Số công/Số lượng</label><input type="number" step="0.5" value={newLaborData.quantity} onChange={(e) => setNewLaborData({...newLaborData, quantity: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Đơn giá công nhật (đ)</label><input type="text" value={newLaborData.unitPrice?.toLocaleString('vi-VN') || ''} onChange={(e) => setNewLaborData({...newLaborData, unitPrice: Number(e.target.value.replace(/[^0-9]/g, ''))})} className="w-full border rounded-lg p-2 font-bold bg-white text-right text-primary" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
-            <div><label className="block font-bold mb-1">Số tài khoản ngân hàng</label><input type="text" placeholder="0919996466 - BIDV" value={newLaborData.bankAccount} onChange={(e) => setNewLaborData({...newLaborData, bankAccount: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Tên chủ tài khoản *</label><input type="text" placeholder="VD: Nguyễn Chí Công" value={newLaborData.bankInfo} onChange={(e) => setNewLaborData({...newLaborData, bankInfo: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+            <div><label className="block font-bold mb-1">Số tài khoản ngân hàng</label><CustomSelect value={newLaborData.bankAccount} onChange={(e) => setNewLaborData({...newLaborData, bankAccount: e.target.value})} searchable={true} allowCustomInput={true} placeholder="0919996466 - BIDV" className="w-full border rounded-lg p-2 bg-white text-xs">
+    {laborBankAccounts.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}
+  </CustomSelect></div>
+            <div><label className="block font-bold mb-1">Tên chủ tài khoản *</label><CustomSelect value={newLaborData.bankInfo} onChange={(e) => setNewLaborData({...newLaborData, bankInfo: e.target.value})} searchable={true} allowCustomInput={true} placeholder="VD: Nguyễn Chí Công" className="w-full border rounded-lg p-2 bg-white font-bold text-xs">{laborBankInfos.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}</CustomSelect></div>
           </div>
           <div className="grid grid-cols-1 gap-3">
             <div>
@@ -3332,20 +3375,24 @@ export const ProjectCostPlanPage: React.FC = () => {
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block font-bold mb-1">Ngày làm *</label><input type="date" required value={String(editingLabor.date || '').split('T')[0] || new Date().toISOString().split('T')[0]} onChange={(e) => setEditingLabor({...editingLabor, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Loại thanh toán</label><input type="text" value={editingLabor.content} onChange={(e) => setEditingLabor({...editingLabor, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Loại thanh toán</label><CustomSelect value={editingLabor.content} onChange={(e) => setEditingLabor({...editingLabor, content: e.target.value})} searchable={true} allowCustomInput={true} placeholder="" className="w-full border rounded-lg p-2 bg-white text-xs">
+    {laborContents.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}
+  </CustomSelect></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold mb-1">Họ tên *</label><input type="text" required value={editingLabor.workerName || ''} onChange={(e) => setEditingLabor({...editingLabor, workerName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
-              <div><label className="block font-bold mb-1">Diễn giải/ Chức vụ *</label><input type="text" required value={editingLabor.description} onChange={(e) => setEditingLabor({...editingLabor, description: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Họ tên *</label><CustomSelect value={editingLabor.workerName || ''} onChange={(e) => setEditingLabor({...editingLabor, workerName: e.target.value})} searchable={true} allowCustomInput={true} placeholder="VD: Nguyễn Văn A" className="w-full border rounded-lg p-2 bg-white font-bold text-xs">{laborWorkerNames.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}</CustomSelect></div>
+              <div><label className="block font-bold mb-1">Diễn giải/ Chức vụ *</label><CustomSelect value={editingLabor.description} onChange={(e) => setEditingLabor({...editingLabor, description: e.target.value})} searchable={true} allowCustomInput={true} placeholder="VD: Lương thợ điện, Lương phụ hồ..." className="w-full border rounded-lg p-2 bg-white text-xs">{laborDescriptions.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}</CustomSelect></div>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingLabor.unit} onChange={(e) => setEditingLabor({...editingLabor, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">ĐVT</label><CustomSelect value={editingLabor.unit} onChange={(e) => setEditingLabor({...editingLabor, unit: e.target.value})} searchable={true} allowCustomInput={true} placeholder="" className="w-full border rounded-lg p-2 bg-white text-xs">
+    {laborUnits.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}
+  </CustomSelect></div>
               <div><label className="block font-bold mb-1">Số công</label><input type="number" step="0.5" value={editingLabor.quantity} onChange={(e) => setEditingLabor({...editingLabor, quantity: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Đơn giá</label><input type="text" value={editingLabor.unitPrice?.toLocaleString('vi-VN') || ''} onChange={(e) => setEditingLabor({...editingLabor, unitPrice: Number(e.target.value.replace(/[^0-9]/g, ''))})} className="w-full border rounded-lg p-2 font-bold bg-white text-right text-primary" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
-              <div><label className="block font-bold mb-1">Số tài khoản</label><input type="text" value={editingLabor.bankAccount} onChange={(e) => setEditingLabor({...editingLabor, bankAccount: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Người nhận *</label><input type="text" required value={editingLabor.bankInfo} onChange={(e) => setEditingLabor({...editingLabor, bankInfo: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+              <div><label className="block font-bold mb-1">Số tài khoản</label><CustomSelect value={editingLabor.bankAccount} onChange={(e) => setEditingLabor({...editingLabor, bankAccount: e.target.value})} searchable={true} allowCustomInput={true} placeholder="" className="w-full border rounded-lg p-2 bg-white text-xs">{laborBankAccounts.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}</CustomSelect></div>
+              <div><label className="block font-bold mb-1">Người nhận *</label><CustomSelect value={editingLabor.bankInfo} onChange={(e) => setEditingLabor({...editingLabor, bankInfo: e.target.value})} searchable={true} allowCustomInput={true} placeholder="" className="w-full border rounded-lg p-2 bg-white font-bold text-xs">{laborBankInfos.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}</CustomSelect></div>
             </div>
             <div className="grid grid-cols-1 gap-3">
               <div>
