@@ -1264,15 +1264,20 @@ export const ProjectCostPlanPage: React.FC = () => {
       isCancelled = true;
     };
   }, [selectedProject, currentProjMaterialPlans, currentProjPurchasing]);
-  const currentProjExpenses = useMemo(() => 
-    expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => {
+  const currentProjExpenses = useMemo(() => {
+    const sortedOldestFirst = expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => {
       const dateA = a.date ? new Date(a.date).getTime() : 0;
       const dateB = b.date ? new Date(b.date).getTime() : 0;
-      if (dateA !== dateB) return dateB - dateA;
+      if (dateA !== dateB) return dateA - dateB;
       return Number(a.stt || 0) - Number(b.stt || 0);
-    }),
-    [expenses, selectedProject]
-  );
+    });
+    let currentBalance = 0;
+    const computed = sortedOldestFirst.map(exp => {
+      currentBalance = currentBalance + Number(exp.incomeAmount || 0) - Number(exp.totalAmount || 0);
+      return { ...exp, autoBalance: currentBalance };
+    });
+    return computed.reverse();
+  }, [expenses, selectedProject]);
 
   const expenseDateOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjExpenses.map(p => p.date).filter(Boolean)))], [currentProjExpenses]);
   const expenseContentOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjExpenses.map(p => p.content).filter(Boolean)))], [currentProjExpenses]);
@@ -1365,9 +1370,9 @@ export const ProjectCostPlanPage: React.FC = () => {
     const totalLab = currentProjLabor.reduce((sum, l) => sum + Number(l.totalAmount || 0), 0);
     const totalSpent = totalExp + totalLab;
     const fund = currentProjExpenses.reduce((sum, e) => sum + Number(e.incomeAmount || 0), 0);
-    const balanceExp = currentProjExpenses.find((e) => Number(e.balanceFund || 0) !== 0);
+    const balanceExp = currentProjExpenses[0]; // First is the newest after .reverse()
     const balance = balanceExp
-      ? Number(balanceExp.balanceFund || 0)
+      ? Number(balanceExp.autoBalance || 0)
       : fund - totalSpent;
     const missingCo = materialRows.filter(p => !p.docCo).length;
     const missingCq = materialRows.filter(p => !p.docCq).length;
@@ -1880,7 +1885,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     <td className="p-3 text-right text-slate-500">{(exp.taxAmount || 0).toLocaleString('vi-VN')}</td>
                     <td className="p-3 text-right font-bold text-rose-600">-{exp.totalAmount.toLocaleString('vi-VN')}</td>
                     <td className="p-3 text-right text-emerald-600 font-bold">{(exp.incomeAmount || 0) > 0 ? `+${exp.incomeAmount?.toLocaleString('vi-VN')}` : '-'}</td>
-                    <td className="p-3 text-right font-bold text-primary">{(exp.balanceFund || 0) > 0 ? exp.balanceFund?.toLocaleString('vi-VN') : '-'}</td>
+                    <td className="p-3 text-right font-bold text-primary">{(exp as any).autoBalance !== 0 ? (exp as any).autoBalance.toLocaleString('vi-VN') : '-'}</td>
                     <td className="p-3 text-slate-500 italic">{exp.notes || '-'}</td>
                     <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
                       {exp.invoiceUrl ? (
@@ -3103,7 +3108,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           <div className="grid grid-cols-3 gap-3">
             <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" value={String((newExpenseData as any).vatAmount || 0)} onChange={(e) => setNewExpenseData({...newExpenseData, vatAmount: Number(e.target.value)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" value={String((newExpenseData as any).incomeAmount || 0)} onChange={(e) => setNewExpenseData({...newExpenseData, incomeAmount: Number(e.target.value)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Tồn quỹ (đ)</label><input type="number" value={String((newExpenseData as any).balanceFund || 0)} onChange={(e) => setNewExpenseData({...newExpenseData, balanceFund: Number(e.target.value)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
+
           </div>
           {(() => {
             const liveQty = Number(newExpenseData.quantity || 0);
@@ -3194,7 +3199,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" value={String(editingExpense.taxAmount || 0)} onChange={(e) => setEditingExpense({...editingExpense, taxAmount: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" value={String(editingExpense.incomeAmount || 0)} onChange={(e) => setEditingExpense({...editingExpense, incomeAmount: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Tồn quỹ (đ)</label><input type="number" value={String(editingExpense.balanceFund || 0)} onChange={(e) => setEditingExpense({...editingExpense, balanceFund: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+
             </div>
             {(() => {
               const editQty = Number(editingExpense.quantity || 0);

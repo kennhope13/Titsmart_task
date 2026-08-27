@@ -286,6 +286,7 @@ export interface DocumentTrack {
   paymentStatus: string;
   isCompleted: boolean;
   notes?: string;
+  fileUrls?: string[];
 }
 
 export interface FieldLog {

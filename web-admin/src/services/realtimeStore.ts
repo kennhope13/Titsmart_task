@@ -443,8 +443,9 @@ const normalizeDocumentTrack = (doc: any): DocumentTrack => ({
   prepayPercent: Number(doc.prepayPercent ?? doc.prepay_percent ?? 0),
   prepayAmount: Number(doc.prepayAmount ?? doc.prepay_amount ?? 0),
   paymentStatus: doc.paymentStatus ?? doc.payment_status ?? '',
-  isCompleted: Boolean(doc.isCompleted ?? doc.is_completed ?? false),
+  isCompleted: !!(doc.isCompleted ?? doc.is_completed ?? false),
   notes: doc.notes || '',
+  fileUrls: doc.fileUrls ?? doc.file_urls ?? []
 });
 
 export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
