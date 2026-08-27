@@ -491,7 +491,7 @@ export const DocumentTrackingPage: React.FC = () => {
                <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10">
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
-                   <th className="px-2 py-2 text-center">Loại</th>
+                   <th className="px-2 py-2 text-center">Bên</th>
                    {!projectId && <th className="px-2 py-2">Dự án</th>}
                    <th className="px-2 py-2">Số hợp đồng</th>
                    <th className="px-2 py-2">Tên hợp đồng</th>
@@ -508,7 +508,15 @@ export const DocumentTrackingPage: React.FC = () => {
                 {filteredTracks.map(track => (
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
-                    <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${(track.docType || 'Giao') === 'Giao' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>{track.docType || 'Giao'}</span></td>
+                    <td className="px-2 py-2 text-center">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        track.side === 'Bên nhận' ? 'bg-emerald-50 text-emerald-600' :
+                        track.side === 'Bên gửi' ? 'bg-indigo-50 text-indigo-600' :
+                        'bg-amber-50 text-amber-600'
+                      }`}>
+                        {track.side || 'Bên trả'}
+                      </span>
+                    </td>
                     {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
@@ -572,7 +580,7 @@ export const DocumentTrackingPage: React.FC = () => {
                <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10">
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
-                   <th className="px-2 py-2 text-center">Loại</th>
+                   <th className="px-2 py-2 text-center">Bên</th>
                    {!projectId && <th className="px-2 py-2">Dự án</th>}
                    <th className="px-2 py-2">Số hợp đồng</th>
                    <th className="px-2 py-2">Tên hợp đồng</th>
@@ -588,7 +596,15 @@ export const DocumentTrackingPage: React.FC = () => {
                 {filteredTracks.map(track => (
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
                     <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
-                    <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${(track.docType || 'Giao') === 'Giao' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>{track.docType || 'Giao'}</span></td>
+                    <td className="px-2 py-2 text-center">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        track.side === 'Bên nhận' ? 'bg-emerald-50 text-emerald-600' :
+                        track.side === 'Bên gửi' ? 'bg-indigo-50 text-indigo-600' :
+                        'bg-amber-50 text-amber-600'
+                      }`}>
+                        {track.side || 'Bên trả'}
+                      </span>
+                    </td>
                     {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
                     <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
