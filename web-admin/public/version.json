@@ -1,9 +1,9 @@
 {
-  "version": "1.1.38",
+  "version": "1.1.39",
   "date": "27/8/2026",
   "notes": [
-    "Thêm bảng lưới xem toàn bộ ảnh nhật ký hiện trường (click vào mục ảnh).",
-    "Khắc phục lỗi bảng nhật ký hiện trường không cuộn được trên màn hình nhỏ gây mất dòng dữ liệu.",
-    "Sửa lỗi giật lag, tối ưu giao diện hiển thị."
+    "Cải tiến logic Import Excel: Tự động giữ nguyên định dạng và số thứ tự (STT) gốc.",
+    "Nâng cấp trường Người phụ trách / Nguồn quỹ: Cho phép nhập tay trực tiếp hoặc chọn tên có sẵn.",
+    "Sửa lỗi hiển thị thiếu mũi tên (dropdown) trong form Quản lý chi phí."
   ]
 }
