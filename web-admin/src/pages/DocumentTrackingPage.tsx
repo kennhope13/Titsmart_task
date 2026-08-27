@@ -642,11 +642,12 @@ export const DocumentTrackingPage: React.FC = () => {
               prepayAmount: prepayAmt,
               paymentStatus: newDoc.paymentStatus || 'Chưa thanh toán',
               isCompleted: !!newDoc.isCompleted,
-              notes: newDoc.notes || ''
+              notes: newDoc.notes || '',
+              docType: newDoc.docType || 'Giao'
             });
             triggerToast('Thêm hồ sơ mới thành công', 'success');
             setIsNewDocOpen(false);
-            setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: ''});
+            setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: '', docType: 'Giao'});
           } catch (err) {
             console.error(err);
             triggerToast('Lỗi khi thêm hồ sơ mới', 'warning');
