@@ -2318,7 +2318,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block font-bold mb-1">Đơn vị tính</label><input type="text" value={newPlanData.unit} onChange={(e) => setNewPlanData({...newPlanData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" value={newPlanData.contractVolume} onChange={(e) => setNewPlanData({...newPlanData, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" step="any" value={newPlanData.contractVolume} onChange={(e) => setNewPlanData({...newPlanData, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block font-bold mb-1">Mã hiệu / Quy cách</label><input type="text" value={newPlanData.techSpecModel} onChange={(e) => setNewPlanData({...newPlanData, techSpecModel: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -2462,7 +2462,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingPlan.unit} onChange={(e) => setEditingPlan({...editingPlan, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                  <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" value={editingPlan.contractVolume} onChange={(e) => setEditingPlan({...editingPlan, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                  <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" step="any" value={editingPlan.contractVolume} onChange={(e) => setEditingPlan({...editingPlan, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block font-bold mb-1">Mã hiệu / Quy cách</label><input type="text" value={editingPlan.techSpecModel} onChange={(e) => setEditingPlan({...editingPlan, techSpecModel: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -2801,13 +2801,13 @@ export const ProjectCostPlanPage: React.FC = () => {
             <>
               <div className="grid grid-cols-4 gap-3">
                 <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newPurchasingData.unit} onChange={(e) => setNewPurchasingData({...newPurchasingData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" value={String(newPurchasingData.volumeContract)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeContract: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" value={String(newPurchasingData.volumeOrder)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeOrder: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" value={String(newPurchasingData.unitPrice)} onChange={(e) => setNewPurchasingData({...newPurchasingData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" step="any" value={String(newPurchasingData.volumeContract)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeContract: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" step="any" value={String(newPurchasingData.volumeOrder)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeOrder: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={String(newPurchasingData.unitPrice)} onChange={(e) => setNewPurchasingData({...newPurchasingData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
-                <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" value={String(newPurchasingData.vatRate)} onChange={(e) => setNewPurchasingData({...newPurchasingData, vatRate: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" min="0" max="100" value={String(Math.round((newPurchasingData.prepayPercent || 0) * 100))} onChange={(e) => setNewPurchasingData({...newPurchasingData, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" step="any" value={String(newPurchasingData.vatRate)} onChange={(e) => setNewPurchasingData({...newPurchasingData, vatRate: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" step="any" min="0" max="100" value={String(Math.round((newPurchasingData.prepayPercent || 0) * 100))} onChange={(e) => setNewPurchasingData({...newPurchasingData, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
               </div>
               <div>
                 <label className="block font-bold mb-1">Ngày dự kiến có hàng</label>
@@ -2921,13 +2921,13 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-4 gap-3">
               <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingPurchasing.unit} onChange={(e) => setEditingPurchasing({...editingPurchasing, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" value={String(editingPurchasing.volumeContract)} onChange={(e) => setEditingPurchasing({...editingPurchasing, volumeContract: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" value={String(editingPurchasing.volumeOrder)} onChange={(e) => setEditingPurchasing({...editingPurchasing, volumeOrder: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" value={String(editingPurchasing.unitPrice)} onChange={(e) => setEditingPurchasing({...editingPurchasing, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+              <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" step="any" value={String(editingPurchasing.volumeContract)} onChange={(e) => setEditingPurchasing({...editingPurchasing, volumeContract: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" step="any" value={String(editingPurchasing.volumeOrder)} onChange={(e) => setEditingPurchasing({...editingPurchasing, volumeOrder: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={String(editingPurchasing.unitPrice)} onChange={(e) => setEditingPurchasing({...editingPurchasing, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
-              <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" value={String(editingPurchasing.vatRate)} onChange={(e) => setEditingPurchasing({...editingPurchasing, vatRate: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" min="0" max="100" value={String(Math.round((editingPurchasing.prepayPercent || 0) * 100))} onChange={(e) => setEditingPurchasing({...editingPurchasing, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" step="any" value={String(editingPurchasing.vatRate)} onChange={(e) => setEditingPurchasing({...editingPurchasing, vatRate: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" step="any" min="0" max="100" value={String(Math.round((editingPurchasing.prepayPercent || 0) * 100))} onChange={(e) => setEditingPurchasing({...editingPurchasing, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
             </div>
             <div>
               <label className="block font-bold mb-1">Ngày dự kiến có hàng</label>
@@ -3066,12 +3066,12 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newExpenseData.unit} onChange={(e) => setNewExpenseData({...newExpenseData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Số lượng</label><input type="number" value={String(newExpenseData.quantity)} onChange={(e) => setNewExpenseData({...newExpenseData, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" value={String(newExpenseData.unitPrice)} onChange={(e) => setNewExpenseData({...newExpenseData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+            <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={String(newExpenseData.quantity)} onChange={(e) => setNewExpenseData({...newExpenseData, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={String(newExpenseData.unitPrice)} onChange={(e) => setNewExpenseData({...newExpenseData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" value={String((newExpenseData as any).vatAmount || 0)} onChange={(e) => setNewExpenseData({...newExpenseData, vatAmount: Number(e.target.value)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" value={String((newExpenseData as any).incomeAmount || 0)} onChange={(e) => setNewExpenseData({...newExpenseData, incomeAmount: Number(e.target.value)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={String((newExpenseData as any).vatAmount || 0)} onChange={(e) => setNewExpenseData({...newExpenseData, vatAmount: Number(e.target.value)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={String((newExpenseData as any).incomeAmount || 0)} onChange={(e) => setNewExpenseData({...newExpenseData, incomeAmount: Number(e.target.value)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
 
           </div>
           {(() => {
@@ -3157,12 +3157,12 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingExpense.unit} onChange={(e) => setEditingExpense({...editingExpense, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Số lượng</label><input type="number" value={String(editingExpense.quantity)} onChange={(e) => setEditingExpense({...editingExpense, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" value={String(editingExpense.unitPrice)} onChange={(e) => setEditingExpense({...editingExpense, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+              <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={String(editingExpense.quantity)} onChange={(e) => setEditingExpense({...editingExpense, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" step="any" value={String(editingExpense.unitPrice)} onChange={(e) => setEditingExpense({...editingExpense, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" value={String(editingExpense.taxAmount || 0)} onChange={(e) => setEditingExpense({...editingExpense, taxAmount: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" value={String(editingExpense.incomeAmount || 0)} onChange={(e) => setEditingExpense({...editingExpense, incomeAmount: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={String(editingExpense.taxAmount || 0)} onChange={(e) => setEditingExpense({...editingExpense, taxAmount: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={String(editingExpense.incomeAmount || 0)} onChange={(e) => setEditingExpense({...editingExpense, incomeAmount: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
 
             </div>
             {(() => {

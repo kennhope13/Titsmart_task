@@ -22,6 +22,7 @@ import usersRoutes from './routes/users.routes';
 import activityLogsRoutes from './routes/activityLogs.routes';
 import accountingRoutes from './routes/accounting.routes';
 import fieldLogsRoutes from './routes/fieldLogs.routes';
+import uploadRoutes from './routes/upload.routes';
 
 // Routes
 app.use('/api/projects', projectRoutes);
@@ -32,6 +33,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/activity-logs', activityLogsRoutes);
 app.use('/api/accounting', accountingRoutes);
 app.use('/api/field-logs', fieldLogsRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.resolve(__dirname, '../../storage/uploads')));
