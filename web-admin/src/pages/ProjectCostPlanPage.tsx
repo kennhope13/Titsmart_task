@@ -3095,7 +3095,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   placeholder="Chọn hoặc tự nhập..."
                   value={newExpenseData.spenderName || ''}
                   onChange={(e) => setNewExpenseData({...newExpenseData, spenderName: e.target.value})}
-                  className="w-full border rounded-lg p-2 pr-8 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none"
+                  className="w-full border rounded-lg p-2 pr-8 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
                 />
                 <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xl">
                   expand_more
@@ -3106,11 +3106,19 @@ export const ProjectCostPlanPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-bold mb-1">Loại nội dung</label>
-              <CustomSelect value={newExpenseData.content} onChange={(e) => setNewExpenseData({...newExpenseData, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs">
-                {expenseContentTypes.map((type, i) => (
-                  <option key={i} value={type}>{type}</option>
-                ))}
-              </CustomSelect>
+              <div className="relative">
+                <input
+                  type="text"
+                  list="expense-content-types"
+                  placeholder="Chọn hoặc tự nhập..."
+                  value={newExpenseData.content}
+                  onChange={(e) => setNewExpenseData({...newExpenseData, content: e.target.value})}
+                  className="w-full border rounded-lg p-2 pr-8 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
+                />
+                <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xl">
+                  expand_more
+                </span>
+              </div>
             </div>
             <div><label className="block font-bold mb-1">Diễn giải/ Chi tiết *</label><input type="text" required placeholder="VD: Mua keo non, tắc kê đan..." value={newExpenseData.description} onChange={(e) => setNewExpenseData({...newExpenseData, description: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
@@ -3194,7 +3202,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     placeholder="Chọn hoặc tự nhập..."
                     value={editingExpense.spenderName || ''}
                     onChange={(e) => setEditingExpense({...editingExpense, spenderName: e.target.value})}
-                    className="w-full border rounded-lg p-2 pr-8 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none"
+                    className="w-full border rounded-lg p-2 pr-8 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
                   />
                   <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xl">
                     expand_more
@@ -3205,11 +3213,19 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-bold mb-1">Loại nội dung</label>
-                <CustomSelect value={editingExpense.content} onChange={(e) => setEditingExpense({...editingExpense, content: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs">
-                  {expenseContentTypes.map((type, i) => (
-                    <option key={i} value={type}>{type}</option>
-                  ))}
-                </CustomSelect>
+                <div className="relative">
+                  <input
+                    type="text"
+                    list="expense-content-types"
+                    placeholder="Chọn hoặc tự nhập..."
+                    value={editingExpense.content}
+                    onChange={(e) => setEditingExpense({...editingExpense, content: e.target.value})}
+                    className="w-full border rounded-lg p-2 pr-8 bg-white text-xs focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
+                  />
+                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xl">
+                    expand_more
+                  </span>
+                </div>
               </div>
               <div><label className="block font-bold mb-1">Diễn giải/ Chi tiết *</label><input type="text" required value={editingExpense.description} onChange={(e) => setEditingExpense({...editingExpense, description: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
