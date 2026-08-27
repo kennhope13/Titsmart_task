@@ -370,14 +370,8 @@ export const FieldLogsPage: React.FC = () => {
         </button>
       , portalNode)}
 
-        <div className={`flex flex-col flex-1 ${logsByProject.length === 0 ? '' : 'p-6'}`}>
-          {logsByProject.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 bg-white flex-1 text-slate-400">
-              <span className="material-symbols-outlined text-5xl">photo_library</span>
-              <p className="text-sm font-bold">Chưa có ảnh hiện trường</p>
-              <p className="text-xs">Nhấn <strong className="text-primary">Upload ảnh</strong> để thêm ảnh cho dự án</p>
-            </div>
-          ) : selectedProject ? (
+        <div className={`flex flex-col flex-1 ${(logsByProject.length === 0 && !selectedProject) ? '' : 'p-6'}`}>
+          {selectedProject ? (
               <div className="flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 flex-1 overflow-hidden">
                 <div className="flex items-center px-6 py-4 border-b border-slate-200 bg-slate-50 sticky top-0 z-10">
                   {!projectId && (
@@ -401,7 +395,13 @@ export const FieldLogsPage: React.FC = () => {
                     onEditLogClick={(log) => setEditLog(log)}
                   />
                 </div>
-              ) : (
+              ) : logsByProject.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 bg-white flex-1 text-slate-400">
+              <span className="material-symbols-outlined text-5xl">photo_library</span>
+              <p className="text-sm font-bold">Chưa có ảnh hiện trường</p>
+              <p className="text-xs">Nhấn <strong className="text-primary">Upload ảnh</strong> để thêm ảnh cho dự án</p>
+            </div>
+          ) : (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {logsByProject.map(([projectCode, logs]) => {
                   const latestLog = logs[0];
