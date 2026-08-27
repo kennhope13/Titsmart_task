@@ -445,42 +445,6 @@ export const ProjectCostPlanPage: React.FC = () => {
           .join(' ');
         const normalizedWorkbookPreview = normalizeImportText(workbookPreviewText);
         
-  const laborWorkerNames = useMemo(() => {
-    const names = new Set<string>();
-    laborPayrolls.forEach(l => { if (l.workerName?.trim()) names.add(l.workerName.trim()); });
-    return Array.from(names);
-  }, [laborPayrolls]);
-
-  const laborContents = useMemo(() => {
-    const contents = new Set<string>();
-    laborPayrolls.forEach(l => { if (l.content?.trim()) contents.add(l.content.trim()); });
-    return Array.from(contents);
-  }, [laborPayrolls]);
-
-  const laborDescriptions = useMemo(() => {
-    const desc = new Set<string>();
-    laborPayrolls.forEach(l => { if (l.description?.trim()) desc.add(l.description.trim()); });
-    return Array.from(desc);
-  }, [laborPayrolls]);
-
-  const laborUnits = useMemo(() => {
-    const units = new Set<string>();
-    laborPayrolls.forEach(l => { if (l.unit?.trim()) units.add(l.unit.trim()); });
-    return Array.from(units);
-  }, [laborPayrolls]);
-
-  const laborBankAccounts = useMemo(() => {
-    const accounts = new Set<string>();
-    laborPayrolls.forEach(l => { if (l.bankAccount?.trim()) accounts.add(l.bankAccount.trim()); });
-    return Array.from(accounts);
-  }, [laborPayrolls]);
-
-  const laborBankInfos = useMemo(() => {
-    const infos = new Set<string>();
-    laborPayrolls.forEach(l => { if (l.bankInfo?.trim()) infos.add(l.bankInfo.trim()); });
-    return Array.from(infos);
-  }, [laborPayrolls]);
-
   // ------------------------------------------------------------------
         // Smart validation: nhận diện file hợp lệ theo nhiều tiêu chí
         // ------------------------------------------------------------------
@@ -1301,6 +1265,42 @@ export const ProjectCostPlanPage: React.FC = () => {
       isCancelled = true;
     };
   }, [selectedProject, currentProjMaterialPlans, currentProjPurchasing]);
+  const laborWorkerNames = useMemo(() => {
+    const names = new Set<string>();
+    laborPayrolls.forEach(l => { if (l.workerName?.trim()) names.add(l.workerName.trim()); });
+    return Array.from(names);
+  }, [laborPayrolls]);
+
+  const laborContents = useMemo(() => {
+    const contents = new Set<string>();
+    laborPayrolls.forEach(l => { if (l.content?.trim()) contents.add(l.content.trim()); });
+    return Array.from(contents);
+  }, [laborPayrolls]);
+
+  const laborDescriptions = useMemo(() => {
+    const desc = new Set<string>();
+    laborPayrolls.forEach(l => { if (l.description?.trim()) desc.add(l.description.trim()); });
+    return Array.from(desc);
+  }, [laborPayrolls]);
+
+  const laborUnits = useMemo(() => {
+    const units = new Set<string>();
+    laborPayrolls.forEach(l => { if (l.unit?.trim()) units.add(l.unit.trim()); });
+    return Array.from(units);
+  }, [laborPayrolls]);
+
+  const laborBankAccounts = useMemo(() => {
+    const accounts = new Set<string>();
+    laborPayrolls.forEach(l => { if (l.bankAccount?.trim()) accounts.add(l.bankAccount.trim()); });
+    return Array.from(accounts);
+  }, [laborPayrolls]);
+
+  const laborBankInfos = useMemo(() => {
+    const infos = new Set<string>();
+    laborPayrolls.forEach(l => { if (l.bankInfo?.trim()) infos.add(l.bankInfo.trim()); });
+    return Array.from(infos);
+  }, [laborPayrolls]);
+
   const currentProjExpenses = useMemo(() => {
     const sortedOldestFirst = expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => {
       const dateA = a.date ? new Date(a.date).getTime() : 0;

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 
 interface CustomSelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
+  placeholder?: string;
   value?: string | number;
   onChange?: (e: any) => void;
   children?: React.ReactNode;
