@@ -7,6 +7,7 @@ interface CustomSelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectEl
   onChange?: (e: any) => void;
   children?: React.ReactNode;
   searchable?: boolean;
+  allowCustomInput?: boolean;
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -17,6 +18,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   disabled = false,
   required = false,
   searchable = false,
+    allowCustomInput = false,
   ...rest
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -172,16 +174,23 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             style={{ color: "inherit", fontWeight: "inherit", fontSize: "inherit", margin: 0, padding: 0 }}
             placeholder={isOpen ? "Nhập để tìm kiếm..." : "-- Chọn --"}
             disabled={disabled}
-            value={isOpen ? searchTerm : (typeof displayLabel === "string" ? displayLabel : extractText(displayLabel)) || ""}
+            value={isOpen ? searchTerm : (allowCustomInput ? String(value || "") : ((typeof displayLabel === "string" ? displayLabel : extractText(displayLabel)) || ""))}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               if (!isOpen) openDropdown();
+              if (allowCustomInput && onChange) {
+                onChange({ target: { value: e.target.value } } as any);
+              }
             }}
             onFocus={() => openDropdown()} onClick={(e) => { e.stopPropagation(); openDropdown(); }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && filteredOptions.length > 0) {
+              if (e.key === "Enter") {
                 e.preventDefault();
-                handleSelect(filteredOptions[0].value);
+                if (filteredOptions.length > 0) {
+                  handleSelect(filteredOptions[0].value);
+                } else if (allowCustomInput) {
+                  handleSelect(searchTerm);
+                }
               }
             }}
           />

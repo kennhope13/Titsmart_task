@@ -561,5 +561,5 @@ input[type="number"] {
 .electron-drag { -webkit-app-region: drag; }
 .electron-no-drag { -webkit-app-region: no-drag; }
 
-input[list]::-webkit-calendar-picker-indicator { opacity: 0 !important; cursor: pointer !important; }
+
 
