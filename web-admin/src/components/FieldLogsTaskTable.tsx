@@ -119,6 +119,10 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
 
   return (
     <div className="flex-1 overflow-auto bg-white">
+      <div className="bg-amber-100 p-2 text-xs text-amber-800 font-mono">
+        [DEBUG] displayTasks: {displayTasks.length}, groupedTasks: {groupedTasks.length}.
+        STTs in 107: {groupedTasks.filter(t => t.stt?.startsWith('107')).map(t => t.stt).join(', ')}
+      </div>
       <table className="w-full text-left text-sm text-slate-600 border-collapse">
         <thead className="bg-slate-50 text-xs uppercase text-slate-500 font-bold sticky top-0 z-20 shadow-sm">
           <tr>
