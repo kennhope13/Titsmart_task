@@ -8,6 +8,7 @@ import { Toast } from '../components/common/Toast';
 import { DocumentTrack } from '../types';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { FileUpload } from '../components/common/FileUpload';
 
 export const DocumentTrackingPage: React.FC = () => {
   const {
@@ -498,6 +499,7 @@ export const DocumentTrackingPage: React.FC = () => {
                    <th className="px-2 py-2">Người nhận</th>
                    <th className="px-2 py-2 text-center">Ngày gửi</th>
                    <th className="px-2 py-2 text-center">Ngày nhận</th>
+                   <th className="px-2 py-2 text-center">File đính kèm</th>
                    <th className="px-2 py-2 text-center">Hồ sơ</th>
                    <th className="px-2 py-2 text-center">Thao tác</th>
                  </tr>
@@ -517,6 +519,16 @@ export const DocumentTrackingPage: React.FC = () => {
                     </td>
                     <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.sendDate ? 'bg-slate-100 text-slate-700' : 'text-slate-300'}`}>{track.sendDate ? new Date(track.sendDate).toLocaleDateString('vi-VN') : '-'}</span></td>
                     <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.receiveDate ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-300'}`}>{track.receiveDate ? new Date(track.receiveDate).toLocaleDateString('vi-VN') : '-'}</span></td>
+                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                      {track.fileUrls && track.fileUrls.length > 0 ? (
+                        <a href={track.fileUrls[0]} target="_blank" rel="noreferrer" title="Xem file đính kèm" className="relative inline-flex items-center justify-center w-7 h-7 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+                          <span className="material-symbols-outlined text-[16px]">attach_file</span>
+                          {track.fileUrls.length > 1 && <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] font-bold px-1 rounded-full">{track.fileUrls.length}</span>}
+                        </a>
+                      ) : (
+                        <span className="text-slate-300">-</span>
+                      )}
+                    </td>
                     <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'text-emerald-700' : 'text-amber-700'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
                     
                     <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
@@ -568,6 +580,7 @@ export const DocumentTrackingPage: React.FC = () => {
                    <th className="px-2 py-2 text-center">Tạm ứng</th>
                    <th className="px-2 py-2 text-center">Thanh toán</th>
                    <th className="px-2 py-2">Ghi chú</th>
+                   <th className="px-2 py-2 text-center">File</th>
                    <th className="px-2 py-2 text-center">Thao tác</th>
                  </tr>
                </thead>
@@ -586,6 +599,16 @@ export const DocumentTrackingPage: React.FC = () => {
                     </td>
                     <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.paymentStatus?.includes('Đã') ? 'text-emerald-700' : 'text-rose-700'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
                     <td className="px-2 py-2 text-[11px] text-slate-500 line-clamp-2">{track.notes || '-'}</td>
+                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                      {track.fileUrls && track.fileUrls.length > 0 ? (
+                        <a href={track.fileUrls[0]} target="_blank" rel="noreferrer" title="Xem file đính kèm" className="relative inline-flex items-center justify-center w-7 h-7 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+                          <span className="material-symbols-outlined text-[16px]">attach_file</span>
+                          {track.fileUrls.length > 1 && <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] font-bold px-1 rounded-full">{track.fileUrls.length}</span>}
+                        </a>
+                      ) : (
+                        <span className="text-slate-300">-</span>
+                      )}
+                    </td>
                     <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1.5">
                         <button onClick={() => updateDocumentTrack(track.id, { isCompleted: !track.isCompleted })} title="Đánh dấu hoàn tất" className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${track.isCompleted ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-300 border border-slate-200 hover:text-slate-500'}`}><span className="material-symbols-outlined text-base">task_alt</span></button>
@@ -643,11 +666,12 @@ export const DocumentTrackingPage: React.FC = () => {
               paymentStatus: newDoc.paymentStatus || 'Chưa thanh toán',
               isCompleted: !!newDoc.isCompleted,
               notes: newDoc.notes || '',
+              fileUrls: newDoc.fileUrls || [],
               docType: newDoc.docType || 'Giao'
             });
             triggerToast('Thêm hồ sơ mới thành công', 'success');
             setIsNewDocOpen(false);
-            setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: '', docType: 'Giao'});
+            setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: '', fileUrls: [], docType: 'Giao'});
           } catch (err) {
             console.error(err);
             triggerToast('Lỗi khi thêm hồ sơ mới', 'warning');
@@ -716,6 +740,7 @@ export const DocumentTrackingPage: React.FC = () => {
             <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={newDoc.isCompleted} onChange={(e) => setNewDoc({...newDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
           </div>
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newDoc.notes} onChange={(e) => setNewDoc({...newDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+          <FileUpload multiple label="File đính kèm" value={newDoc.fileUrls} onChange={(urls) => setNewDoc({...newDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} />
           <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewDocOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Thêm hồ sơ mới</button></div>
         </form>
       </Modal>
@@ -793,6 +818,7 @@ export const DocumentTrackingPage: React.FC = () => {
               <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={editingDoc.isCompleted} onChange={(e) => setEditingDoc({...editingDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
             </div>
             <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingDoc.notes} onChange={(e) => setEditingDoc({...editingDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <FileUpload multiple label="File đính kèm" value={editingDoc.fileUrls} onChange={(urls) => setEditingDoc({...editingDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} />
             <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingDoc(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Cập nhật</button></div>
           </form>
         )}

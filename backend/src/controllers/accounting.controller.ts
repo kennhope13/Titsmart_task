@@ -481,7 +481,9 @@ const formatDocumentTrack = (p: any) => ({
   prepayAmount: Number(p.prepay_amount),
   paymentStatus: p.payment_status,
   isCompleted: p.is_completed,
-  notes: p.notes
+  notes: p.notes,
+  docType: p.doc_type,
+  fileUrls: p.file_urls
 });
 
 export const getDocumentTracks = async (req: Request, res: Response) => {
@@ -503,7 +505,7 @@ export const getDocumentTracks = async (req: Request, res: Response) => {
 export const createDocumentTrack = async (req: Request, res: Response) => {
   console.log('API HIT: /api/accounting/document-tracks');
   try {
-    const { projectCode, sendDate, receiveDate, contractValue, prepayPercent, prepayAmount, isCompleted, contractNo, contractName, receiverName, paymentStatus, ...data } = req.body;
+    const { projectCode, sendDate, receiveDate, contractValue, prepayPercent, prepayAmount, isCompleted, contractNo, contractName, receiverName, paymentStatus, docType, fileUrls, ...data } = req.body;
     const project_id = projectCode ? await resolveProjectId(projectCode) : null;
 
     const p = await prisma.documentTrack.create({
@@ -526,6 +528,8 @@ export const createDocumentTrack = async (req: Request, res: Response) => {
         payment_status: paymentStatus || '',
         is_completed: isCompleted || false,
         notes: data.notes || '',
+        doc_type: docType || 'Giao',
+        file_urls: fileUrls || [],
       },
       include: { project: true }
     });
@@ -536,7 +540,7 @@ export const createDocumentTrack = async (req: Request, res: Response) => {
 export const updateDocumentTrack = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { projectCode, sendDate, receiveDate, contractValue, prepayPercent, prepayAmount, isCompleted, contractNo, contractName, receiverName, paymentStatus, ...data } = req.body;
+    const { projectCode, sendDate, receiveDate, contractValue, prepayPercent, prepayAmount, isCompleted, contractNo, contractName, receiverName, paymentStatus, docType, fileUrls, ...data } = req.body;
     
     const updateData: any = {};
     if (projectCode !== undefined) updateData.project_id = projectCode ? await resolveProjectId(projectCode) : null;
@@ -557,6 +561,8 @@ export const updateDocumentTrack = async (req: Request, res: Response) => {
     if (paymentStatus !== undefined) updateData.payment_status = paymentStatus;
     if (isCompleted !== undefined) updateData.is_completed = isCompleted;
     if (data.notes !== undefined) updateData.notes = data.notes;
+    if (docType !== undefined) updateData.doc_type = docType;
+    if (fileUrls !== undefined) updateData.file_urls = fileUrls;
 
     const p = await prisma.documentTrack.update({
       where: { id },
