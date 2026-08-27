@@ -31,33 +31,36 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!event.target.files || event.target.files.length === 0) return;
-      setError('');
       setIsUploading(true);
       if (onUploadStateChange) onUploadStateChange(true);
       
-      const formData = new FormData();
+      const newUrls: string[] = [];
       const filesToUpload = multiple ? Array.from(event.target.files) : [event.target.files[0]];
       
       for (const file of filesToUpload) {
-        formData.append('files', file);
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `documents/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('titsmart-images')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          alert(`Lỗi tải file. Vui lòng đảm bảo bạn đã tạo Storage Bucket tên "titsmart-images" trên Supabase và bật Public.`);
+          continue;
+        }
+
+        const { data } = supabase.storage
+          .from('titsmart-images')
+          .getPublicUrl(filePath);
+          
+        newUrls.push(data.publicUrl);
       }
-
-      const apiUrl = import.meta.env.VITE_API_URL || '/api';
-      const response = await fetch(`${apiUrl}/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed with status ' + response.status);
-      }
-
-      const data = await response.json();
-      const newUrls: string[] = data.urls || [];
       
       const updatedValues = multiple ? [...localValues, ...newUrls] : [newUrls[0]];
       setLocalValues(updatedValues);
-      setError('');
       
       if (onChange) {
         if (multiple) {
@@ -68,7 +71,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
       }
     } catch (error) {
       console.error('Lỗi khi tải file:', error);
-      setError('Đã xảy ra lỗi khi tải file lên. Vui lòng kiểm tra lại kết nối.');
+      alert('Đã xảy ra lỗi khi tải file lên.');
     } finally {
       setIsUploading(false);
       if (onUploadStateChange) onUploadStateChange(false);

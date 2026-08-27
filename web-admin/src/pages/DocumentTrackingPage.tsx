@@ -22,6 +22,8 @@ export const DocumentTrackingPage: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [fileViewerUrls, setFileViewerUrls] = useState<string[] | null>(null);
+
   const [confirmConfig, setConfirmConfig] = useState({
     isOpen: false,
     title: '',
@@ -380,32 +382,6 @@ export const DocumentTrackingPage: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden p-0 space-y-0">
       {/* TABS & TABLE */}
       <section className="bg-white flex flex-col flex-1 min-w-0 min-h-0 border-y border-slate-200 rounded-none shadow-none overflow-hidden">
-          <div className="w-full flex items-center justify-between border-b border-slate-200 bg-white px-4">
-            <div className="flex items-center gap-4">
-              {[
-              { id: 'overview', label: 'Thông tin Giao nhận', icon: 'local_shipping', count: filteredTracks.length },
-              { id: 'finance', label: 'Tạm ứng & Thanh toán', icon: 'payments', count: filteredTracks.filter(t => !t.paymentStatus?.includes('Đã')).length }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`app-tab-button flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-bold border-b-2 transition-all whitespace-nowrap ${
-                    activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px] leading-none">{tab.icon}</span>
-                  {tab.label}
-                  
-                </button>
-              ))}
-            </div>
-            <div className="text-[11px] font-bold text-slate-500 flex flex-wrap gap-2 py-2">
-              <span>{filteredTracks.length} hồ sơ</span>
-              <span>{summary.paidCount} đã thanh toán</span>
-              <span>{summary.totalPrepayVal.toLocaleString('vi-VN')} đ tạm ứng</span>
-            </div>
-          </div>
 
           <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap">
             <div className="flex items-center gap-3">
@@ -419,7 +395,7 @@ export const DocumentTrackingPage: React.FC = () => {
                   <CustomSelect
                     value={filterProjectCode}
                     onChange={e => setFilterProjectCode(e.target.value)}
-                    className="min-w-[100px] max-w-[150px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
+                    className="min-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
                   >
                     <option value="all">Tất cả</option>
                     {docProjectOptions.map(opt => (
@@ -473,29 +449,31 @@ export const DocumentTrackingPage: React.FC = () => {
           </div>
 
         <div className="overflow-auto custom-scrollbar flex-1">
-          {activeTab === 'overview' && (
-            <table className="doc-fit-table w-full text-left border-collapse">
-               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10">
+          <table className="doc-fit-table w-full text-left border-collapse ">
+               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10 leading-tight">
                  <tr>
-                   <th className="px-2 py-2 text-center">STT</th>
-                   <th className="px-2 py-2 text-center">Bên</th>
-                   {!projectId && <th className="px-2 py-2">Dự án</th>}
-                   <th className="px-2 py-2">Số hợp đồng</th>
-                   <th className="px-2 py-2">Tên hợp đồng</th>
-                   <th className="px-2 py-2">Công ty / Đối tác</th>
-                   <th className="px-2 py-2">Người nhận</th>
-                   <th className="px-2 py-2 text-center">Ngày gửi</th>
-                   <th className="px-2 py-2 text-center">Ngày nhận</th>
-                   <th className="px-2 py-2 text-center">File đính kèm</th>
-                   <th className="px-2 py-2 text-center">Hồ sơ</th>
-                   <th className="px-2 py-2 text-center">Thao tác</th>
+                   <th className="p-1 text-center whitespace-nowrap">STT</th>
+                   <th className="p-1 text-center whitespace-nowrap">Bên</th>
+                   {!projectId && <th className="p-1 whitespace-nowrap">Dự án</th>}
+                   <th className="p-1 min-w-[90px]">Số hợp đồng</th>
+                   <th className="p-1 min-w-[150px]">Tên hợp đồng</th>
+                   <th className="p-1 min-w-[120px]">Công ty / Đối tác</th>
+                   <th className="p-1 min-w-[80px]">Người nhận</th>
+                   <th className="p-1 text-center whitespace-nowrap">Ngày gửi</th>
+                   <th className="p-1 text-center whitespace-nowrap">Ngày nhận</th>
+                   <th className="p-1 text-right min-w-[90px]">Giá trị HĐ (đ)</th>
+                   <th className="p-1 text-center min-w-[70px]">Tạm ứng</th>
+                   <th className="p-1 text-center min-w-[80px]">Thanh toán</th>
+                   <th className="p-1 text-center whitespace-nowrap">File</th>
+                   <th className="p-1 text-center whitespace-nowrap">Hồ sơ</th>
+                   <th className="p-1 text-center whitespace-nowrap">Thao tác</th>
                  </tr>
                </thead>
-               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {filteredTracks.map(track => (
+               <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 leading-tight">
+                {filteredTracks.map((track, index) => (
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
-                    <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
-                    <td className="px-2 py-2 text-center">
+                    <td className="px-1 py-1 text-center font-bold text-slate-400 w-6">{index + 1}</td>
+                    <td className="px-1 py-1 text-center">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         track.side === 'Bên nhận' ? 'bg-emerald-50 text-emerald-600' :
                         track.side === 'Bên gửi' ? 'bg-indigo-50 text-indigo-600' :
@@ -504,103 +482,35 @@ export const DocumentTrackingPage: React.FC = () => {
                         {track.side || 'Bên trả'}
                       </span>
                     </td>
-                    {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
-                    <td className="px-2 py-2 font-mono text-[11px] whitespace-nowrap">{track.contractNo || '-'}</td>
-                    <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
-                    <td className="px-2 py-2 font-bold text-slate-800">{track.company || '-'}</td>
-                    <td className="px-2 py-2">
+                    {!projectId && <td className="px-1 py-1 text-[13px] font-bold text-slate-600">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
+                    <td className="px-1 py-1 font-mono text-[11px] break-words break-all">{track.contractNo || '-'}</td>
+                    <td className="px-1 py-1"><div className="font-extrabold text-slate-900 leading-snug max-w-[160px] whitespace-normal line-clamp-2" title={track.contractName}>{track.contractName}</div></td>
+                    <td className="px-1 py-1"><div className="font-bold text-slate-800 max-w-[130px] whitespace-normal line-clamp-2" title={track.company}>{track.company || '-'}</div></td>
+                    <td className="px-1 py-1">
                       <div className="font-semibold text-slate-700">{track.receiverName || '-'}</div>
                       <div className="text-[10px] text-slate-500 font-mono mt-0.5">{track.phone || ''}</div>
                     </td>
-                    <td className="px-2 py-2 text-center whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.sendDate ? 'bg-slate-100 text-slate-700' : 'text-slate-300'}`}>{track.sendDate ? new Date(track.sendDate).toLocaleDateString('vi-VN') : '-'}</span></td>
-                    <td className="px-2 py-2 text-center whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.receiveDate ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-300'}`}>{track.receiveDate ? new Date(track.receiveDate).toLocaleDateString('vi-VN') : '-'}</span></td>
-                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
-                      {track.fileUrls && track.fileUrls.length > 0 ? (
-                        <a href={track.fileUrls[0]} target="_blank" rel="noreferrer" title="Xem file đính kèm" className="relative inline-flex items-center justify-center w-7 h-7 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
-                          <span className="material-symbols-outlined text-[16px]">attach_file</span>
-                          {track.fileUrls.length > 1 && <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] font-bold px-1 rounded-full">{track.fileUrls.length}</span>}
-                        </a>
-                      ) : (
-                        <span className="text-slate-300">-</span>
-                      )}
-                    </td>
-                    <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'text-emerald-700' : 'text-amber-700'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
-                    
-                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button onClick={() => updateDocumentTrack(track.id, { isCompleted: !track.isCompleted })} title="Đánh dấu hoàn tất" className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${track.isCompleted ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-300 border border-slate-200 hover:text-slate-500'}`}><span className="material-symbols-outlined text-base">task_alt</span></button>
-                        <button onClick={() => {
-                          setConfirmConfig({
-                            isOpen: true,
-                            title: 'Xóa thông tin theo dõi hồ sơ',
-                            message: `Bạn chắc chắn muốn xóa hồ sơ hợp đồng "${track.contractNo || track.contractName || 'này'}"?`,
-                            onConfirm: () => {
-                              deleteDocumentTrack(track.id);
-                              setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-                            },
-                            isDestructive: true,
-                            confirmText: 'Xóa'
-                          });
-                        }} title="Xóa hồ sơ" className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg"><span className="material-symbols-outlined text-base">delete</span></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          {activeTab === 'finance' && (
-            <table className="doc-fit-table w-full text-left border-collapse">
-               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10">
-                 <tr>
-                   <th className="px-2 py-2 text-center">STT</th>
-                   <th className="px-2 py-2 text-center">Bên</th>
-                   {!projectId && <th className="px-2 py-2">Dự án</th>}
-                   <th className="px-2 py-2">Số hợp đồng</th>
-                   <th className="px-2 py-2">Tên hợp đồng</th>
-                   <th className="px-2 py-2 text-right">Giá trị HĐ (đ)</th>
-                   <th className="px-2 py-2 text-center">Tạm ứng</th>
-                   <th className="px-2 py-2 text-center">Thanh toán</th>
-                   <th className="px-2 py-2">Ghi chú</th>
-                   <th className="px-2 py-2 text-center">File</th>
-                   <th className="px-2 py-2 text-center">Thao tác</th>
-                 </tr>
-               </thead>
-               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {filteredTracks.map(track => (
-                  <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
-                    <td className="px-2 py-2 text-center font-bold text-slate-400">{track.stt || '-'}</td>
-                    <td className="px-2 py-2 text-center">
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                        track.side === 'Bên nhận' ? 'bg-emerald-50 text-emerald-600' :
-                        track.side === 'Bên gửi' ? 'bg-indigo-50 text-indigo-600' :
-                        'bg-amber-50 text-amber-600'
-                      }`}>
-                        {track.side || 'Bên trả'}
-                      </span>
-                    </td>
-                    {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
-                    <td className="px-2 py-2 font-mono text-[11px] whitespace-nowrap">{track.contractNo || '-'}</td>
-                    <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
-                    <td className="px-2 py-2 text-right font-bold text-slate-950">{(track.contractValue || 0).toLocaleString('vi-VN')}</td>
-                    <td className="px-2 py-2 text-center">
+                    <td className="px-1 py-1 text-center whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.sendDate ? 'bg-slate-100 text-slate-700' : 'text-slate-300'}`}>{track.sendDate ? new Date(track.sendDate).toLocaleDateString('vi-VN') : '-'}</span></td>
+                    <td className="px-1 py-1 text-center whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.receiveDate ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-300'}`}>{track.receiveDate ? new Date(track.receiveDate).toLocaleDateString('vi-VN') : '-'}</span></td>
+                    <td className="px-1 py-1 text-right font-bold text-slate-950">{(track.contractValue || 0).toLocaleString('vi-VN')}</td>
+                    <td className="px-1 py-1 text-center">
                       <div className="font-bold text-blue-700">{(track.prepayPercent ? (track.prepayPercent * 100).toFixed(1) : '0')}%</div>
                       <div className="text-[10px] text-slate-500 mt-0.5">{(track.prepayAmount || 0).toLocaleString('vi-VN')}đ</div>
                     </td>
-                    <td className="px-2 py-2 text-center"><span className={`text-[10px] font-bold ${track.paymentStatus?.includes('Đã') ? 'text-emerald-700' : 'text-rose-700'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
-                    <td className="px-2 py-2 text-[11px] text-slate-500 line-clamp-2">{track.notes || '-'}</td>
-                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-1 py-1 text-center"><span className={`text-[10px] font-bold ${track.paymentStatus?.includes('Đã') ? 'text-emerald-700' : 'text-rose-700'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
+                    <td className="px-1 py-1 text-center" onClick={(e) => e.stopPropagation()}>
                       {track.fileUrls && track.fileUrls.length > 0 ? (
-                        <a href={track.fileUrls[0]} target="_blank" rel="noreferrer" title="Xem file đính kèm" className="relative inline-flex items-center justify-center w-7 h-7 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
-                          <span className="material-symbols-outlined text-[16px]">attach_file</span>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setFileViewerUrls(track.fileUrls || []); }} title="Xem file đính kèm" className="relative inline-flex items-center justify-center w-7 h-7 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+                          <span className="material-symbols-outlined text-[16px]">description</span>
                           {track.fileUrls.length > 1 && <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] font-bold px-1 rounded-full">{track.fileUrls.length}</span>}
-                        </a>
+                        </button>
                       ) : (
                         <span className="text-slate-300">-</span>
                       )}
                     </td>
-                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-1 py-1 text-center"><span className={`text-[10px] font-bold ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'text-emerald-700' : 'text-amber-700'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
+                    
+                    <td className="px-1 py-1 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1.5">
                         <button onClick={() => updateDocumentTrack(track.id, { isCompleted: !track.isCompleted })} title="Đánh dấu hoàn tất" className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${track.isCompleted ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-300 border border-slate-200 hover:text-slate-500'}`}><span className="material-symbols-outlined text-base">task_alt</span></button>
                         <button onClick={() => {
@@ -622,7 +532,7 @@ export const DocumentTrackingPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
-          )}
+
         </div>
 
       </section>
@@ -663,12 +573,11 @@ export const DocumentTrackingPage: React.FC = () => {
             triggerToast('Thêm hồ sơ mới thành công', 'success');
             setIsNewDocOpen(false);
             setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: '', fileUrls: [], docType: 'Giao'});
-          } catch (err) {
-            console.error(err);
-            triggerToast('Lỗi khi thêm hồ sơ mới', 'warning');
+          } catch (err: any) {
+            triggerToast('Lỗi khi thêm hồ sơ: ' + (err.message || 'Xin thử lại'), 'warning');
           }
         }} className="space-y-3 text-xs">
-          <div className="grid grid-cols-2 gapx-2 py-2">
+          <div className="grid grid-cols-2 gapx-1 py-1">
             <div className="min-w-0">
               <label className="block font-bold mb-1 truncate">Phân loại hồ sơ *</label>
               <CustomSelect required value={newDoc.docType || 'Giao'} onChange={(e) => setNewDoc({...newDoc, docType: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold mb-3">
@@ -685,11 +594,11 @@ export const DocumentTrackingPage: React.FC = () => {
             </div>
             <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={newDoc.contractName} onChange={(e) => setNewDoc({...newDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
-          <div className="grid grid-cols-2 gapx-2 py-2">
+          <div className="grid grid-cols-2 gapx-1 py-1">
             <div><label className="block font-bold mb-1">Mã/Số Hợp đồng</label><input type="text" value={newDoc.contractNo} onChange={(e) => setNewDoc({...newDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Công ty / Đối tác nhận *</label><input type="text" required value={newDoc.company} onChange={(e) => setNewDoc({...newDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           </div>
-          <div className="grid grid-cols-3 gapx-2 py-2">
+          <div className="grid grid-cols-3 gapx-1 py-1">
             <div><label className="block font-bold mb-1">Người nhận trực tiếp</label><input type="text" value={newDoc.receiverName} onChange={(e) => setNewDoc({...newDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">SĐT người nhận</label><input type="text" value={newDoc.phone} onChange={(e) => setNewDoc({...newDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
@@ -703,12 +612,12 @@ export const DocumentTrackingPage: React.FC = () => {
             </div>
           </div>
           <div><label className="block font-bold mb-1">Địa chỉ nhận hồ sơ</label><input type="text" value={newDoc.address} onChange={(e) => setNewDoc({...newDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="grid grid-cols-2 gapx-2 py-2">
+          <div className="grid grid-cols-2 gapx-1 py-1">
             <div><label className="block font-bold mb-1">Ngày gửi đi</label><input type="date" value={newDoc.sendDate} onChange={(e) => setNewDoc({...newDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Ngày nhận</label><input type="date" value={newDoc.receiveDate} onChange={(e) => setNewDoc({...newDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           </div>
-          <div className="grid grid-cols-3 gapx-2 py-2 bg-slate-50 p-2 rounded-lg border">
-            <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" value={newDoc.contractValue} onChange={(e) => setNewDoc({...newDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
+          <div className="grid grid-cols-3 gapx-1 py-1 bg-slate-50 p-2 rounded-lg border">
+            <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={newDoc.contractValue} onChange={(e) => setNewDoc({...newDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
             <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={(newDoc.prepayPercent || 0) * 100} onChange={(e) => setNewDoc({...newDoc, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
               <label className="block font-bold mb-1">Thanh toán</label>
@@ -718,7 +627,7 @@ export const DocumentTrackingPage: React.FC = () => {
               </CustomSelect>
             </div>
           </div>
-          <div className="grid grid-cols-2 gapx-2 py-2">
+          <div className="grid grid-cols-2 gapx-1 py-1">
             <div>
               <label className="block font-bold mb-1">Trạng thái hồ sơ</label>
               <CustomSelect value={newDoc.docStatus} onChange={(e) => setNewDoc({...newDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
@@ -751,7 +660,7 @@ export const DocumentTrackingPage: React.FC = () => {
             });
             setEditingDoc(null);
           }} className="space-y-3 text-xs">
-            <div className="grid grid-cols-2 gapx-2 py-2">
+            <div className="grid grid-cols-2 gapx-1 py-1">
               <div className="min-w-0">
                 <label className="block font-bold mb-1 truncate">Dự án *</label>
                 <CustomSelect required value={editingDoc.projectCode || projects.find(p => p.id === (editingDoc as any).projectId)?.code || ''} onChange={(e) => setEditingDoc({...editingDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold truncate">
@@ -763,11 +672,11 @@ export const DocumentTrackingPage: React.FC = () => {
               </div>
               <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={editingDoc.contractName} onChange={(e) => setEditingDoc({...editingDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
-            <div className="grid grid-cols-2 gapx-2 py-2">
+            <div className="grid grid-cols-2 gapx-1 py-1">
               <div><label className="block font-bold mb-1">Số HĐ</label><input type="text" value={editingDoc.contractNo} onChange={(e) => setEditingDoc({...editingDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Công ty nhận *</label><input type="text" required value={editingDoc.company} onChange={(e) => setEditingDoc({...editingDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             </div>
-            <div className="grid grid-cols-3 gapx-2 py-2">
+            <div className="grid grid-cols-3 gapx-1 py-1">
               <div><label className="block font-bold mb-1">Người nhận</label><input type="text" value={editingDoc.receiverName} onChange={(e) => setEditingDoc({...editingDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">SĐT nhận</label><input type="text" value={editingDoc.phone} onChange={(e) => setEditingDoc({...editingDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div>
@@ -781,12 +690,12 @@ export const DocumentTrackingPage: React.FC = () => {
               </div>
             </div>
             <div><label className="block font-bold mb-1">Địa chỉ</label><input type="text" value={editingDoc.address} onChange={(e) => setEditingDoc({...editingDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div className="grid grid-cols-2 gapx-2 py-2">
+            <div className="grid grid-cols-2 gapx-1 py-1">
               <div><label className="block font-bold mb-1">Ngày gửi</label><input type="date" value={editingDoc.sendDate} onChange={(e) => setEditingDoc({...editingDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Ngày nhận</label><input type="date" value={editingDoc.receiveDate || ''} onChange={(e) => setEditingDoc({...editingDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             </div>
-            <div className="grid grid-cols-3 gapx-2 py-2 bg-slate-50 p-2 rounded-lg border">
-              <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" value={editingDoc.contractValue} onChange={(e) => setEditingDoc({...editingDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
+            <div className="grid grid-cols-3 gapx-1 py-1 bg-slate-50 p-2 rounded-lg border">
+              <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={editingDoc.contractValue} onChange={(e) => setEditingDoc({...editingDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
               <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={(editingDoc.prepayPercent || 0) * 100} onChange={(e) => setEditingDoc({...editingDoc, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div>
                 <label className="block font-bold mb-1">Thanh toán</label>
@@ -796,7 +705,7 @@ export const DocumentTrackingPage: React.FC = () => {
                 </CustomSelect>
               </div>
             </div>
-            <div className="grid grid-cols-2 gapx-2 py-2">
+            <div className="grid grid-cols-2 gapx-1 py-1">
               <div>
                 <label className="block font-bold mb-1">Trạng thái hồ sơ</label>
                 <CustomSelect value={editingDoc.docStatus} onChange={(e) => setEditingDoc({...editingDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
@@ -825,6 +734,31 @@ export const DocumentTrackingPage: React.FC = () => {
         confirmText={confirmConfig.confirmText}
       />
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
+
+      {fileViewerUrls && (
+        <Modal isOpen={true} onClose={() => setFileViewerUrls(null)} title="Tài liệu đính kèm" size="xl">
+          <div className="flex flex-col space-y-4">
+            {fileViewerUrls.map((url, index) => {
+              const isImage = url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
+              return (
+                <div key={index} className="flex flex-col border rounded p-2">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-semibold truncate w-3/4">Tài liệu {index + 1}</span>
+                    <a href={`${url}?download=`} download target="_blank" rel="noreferrer" className="flex items-center gap-1.5 bg-primary text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm">
+                      <span className="material-symbols-outlined text-[14px]">download</span> Tải về
+                    </a>
+                  </div>
+                  {isImage ? (
+                    <img src={url} alt={`File ${index + 1}`} className="w-full object-contain max-h-[60vh] bg-slate-100" />
+                  ) : (
+                    <iframe src={url} className="w-full h-[60vh] bg-slate-100" title={`File ${index + 1}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Modal>
+      )}
     </div>
     </>
   );
