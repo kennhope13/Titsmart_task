@@ -474,20 +474,7 @@ export const DocumentTrackingPage: React.FC = () => {
 
         <div className="overflow-auto custom-scrollbar flex-1">
           {activeTab === 'overview' && (
-            <table className="doc-fit-table w-full table-fixed text-left border-collapse">
-              <colgroup>
-                <col style={{ width: '4%' }} />
-                <col style={{ width: '7%' }} />
-                {!projectId && <col style={{ width: '11%' }} />}
-                <col style={{ width: !projectId ? '10%' : '14%' }} />
-                <col style={{ width: !projectId ? '15%' : '19%' }} />
-                <col style={{ width: !projectId ? '11%' : '14%' }} />
-                <col style={{ width: !projectId ? '10%' : '13%' }} />
-                <col style={{ width: '8%' }} />
-                <col style={{ width: '8%' }} />
-                <col style={{ width: '9%' }} />
-                <col style={{ width: '7%' }} />
-              </colgroup>
+            <table className="doc-fit-table w-full text-left border-collapse">
                <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10">
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
@@ -517,16 +504,16 @@ export const DocumentTrackingPage: React.FC = () => {
                         {track.side || 'Bên trả'}
                       </span>
                     </td>
-                    {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
-                    <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
+                    {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
+                    <td className="px-2 py-2 font-mono text-[11px] whitespace-nowrap">{track.contractNo || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2 font-bold text-slate-800">{track.company || '-'}</td>
                     <td className="px-2 py-2">
-                      <div className="font-semibold text-slate-700 truncate">{track.receiverName || '-'}</div>
-                      <div className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">{track.phone || ''}</div>
+                      <div className="font-semibold text-slate-700">{track.receiverName || '-'}</div>
+                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">{track.phone || ''}</div>
                     </td>
-                    <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.sendDate ? 'bg-slate-100 text-slate-700' : 'text-slate-300'}`}>{track.sendDate ? new Date(track.sendDate).toLocaleDateString('vi-VN') : '-'}</span></td>
-                    <td className="px-2 py-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.receiveDate ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-300'}`}>{track.receiveDate ? new Date(track.receiveDate).toLocaleDateString('vi-VN') : '-'}</span></td>
+                    <td className="px-2 py-2 text-center whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.sendDate ? 'bg-slate-100 text-slate-700' : 'text-slate-300'}`}>{track.sendDate ? new Date(track.sendDate).toLocaleDateString('vi-VN') : '-'}</span></td>
+                    <td className="px-2 py-2 text-center whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.receiveDate ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-300'}`}>{track.receiveDate ? new Date(track.receiveDate).toLocaleDateString('vi-VN') : '-'}</span></td>
                     <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
                       {track.fileUrls && track.fileUrls.length > 0 ? (
                         <a href={track.fileUrls[0]} target="_blank" rel="noreferrer" title="Xem file đính kèm" className="relative inline-flex items-center justify-center w-7 h-7 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
@@ -564,19 +551,7 @@ export const DocumentTrackingPage: React.FC = () => {
           )}
 
           {activeTab === 'finance' && (
-            <table className="doc-fit-table w-full table-fixed text-left border-collapse">
-              <colgroup>
-                <col style={{ width: '4%' }} />
-                <col style={{ width: '7%' }} />
-                {!projectId && <col style={{ width: '12%' }} />}
-                <col style={{ width: !projectId ? '10%' : '14%' }} />
-                <col style={{ width: !projectId ? '16%' : '21%' }} />
-                <col style={{ width: !projectId ? '12%' : '15%' }} />
-                <col style={{ width: '8%' }} />
-                <col style={{ width: '9%' }} />
-                <col style={{ width: '15%' }} />
-                <col style={{ width: '7%' }} />
-              </colgroup>
+            <table className="doc-fit-table w-full text-left border-collapse">
                <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10">
                  <tr>
                    <th className="px-2 py-2 text-center">STT</th>
@@ -605,8 +580,8 @@ export const DocumentTrackingPage: React.FC = () => {
                         {track.side || 'Bên trả'}
                       </span>
                     </td>
-                    {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600 truncate">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
-                    <td className="px-2 py-2 font-mono text-[11px]">{track.contractNo || '-'}</td>
+                    {!projectId && <td className="px-2 py-2 text-[13px] font-bold text-slate-600">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
+                    <td className="px-2 py-2 font-mono text-[11px] whitespace-nowrap">{track.contractNo || '-'}</td>
                     <td className="px-2 py-2 font-extrabold text-slate-900 leading-snug">{track.contractName}</td>
                     <td className="px-2 py-2 text-right font-bold text-slate-950">{(track.contractValue || 0).toLocaleString('vi-VN')}</td>
                     <td className="px-2 py-2 text-center">
