@@ -1914,20 +1914,23 @@ export const ProjectCostPlanPage: React.FC = () => {
  </div> <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    <tr>
-                      <th className="p-3 w-12 text-center">STT</th>
-                      <th className="p-3">Ngày chi</th>
-                      <th className="p-3">Người phụ trách</th>
-                      <th className="p-3 min-w-56">Nội dung / Diễn giải</th>
-                    <th className="p-3 w-16 text-left">ĐVT</th>
-                    <th className="p-3 text-right">Số lượng</th>
+                  <tr>
+                    <th className="p-3 w-12 text-center">STT</th>
+                    <th className="p-3 min-w-[90px]">Ngày</th>
+                    <th className="p-3 min-w-[120px]">Người PT / Họ tên</th>
+                    <th className="p-3 min-w-56">Nội dung / Diễn giải</th>
+                    <th className="p-3 w-12 text-left">ĐVT</th>
+                    <th className="p-3 text-right">SL</th>
                     <th className="p-3 text-right">Đơn giá (đ)</th>
                     <th className="p-3 text-right">VAT</th>
-                    <th className="p-3 text-right">Thành tiền (đ)</th>
-                    <th className="p-3 text-right">Thực thu (đ)</th>
-                    <th className="p-3 text-right">Tồn quỹ (đ)</th>
-                    <th className="p-3">Ghi chú</th>
+                    <th className="p-3 text-right min-w-[100px]">Thành tiền (đ)</th>
+                    <th className="p-3 text-right min-w-[90px]">Thực thu (đ)</th>
+                    <th className="p-3 text-right min-w-[100px]">Tồn quỹ (đ)</th>
+                    <th className="p-3 min-w-[150px]">Tài khoản & Người nhận</th>
+                    <th className="p-3 min-w-[100px]">Ghi chú</th>
+                    <th className="p-3 min-w-[100px]">Tình trạng</th>
                     <th className="p-3 text-center">Hóa đơn</th>
+                    <th className="p-3 text-center">CCCD</th>
                     <th className="p-3 text-center w-24">Thao tác</th>
                   </tr>
                 </thead>
@@ -1951,12 +1954,15 @@ export const ProjectCostPlanPage: React.FC = () => {
                             <td className="p-3 text-right font-bold text-rose-600">{exp.totalAmount ? exp.totalAmount.toLocaleString('vi-VN') : '-'}</td>
                             <td className="p-3 text-right font-bold text-emerald-600">{exp.incomeAmount ? exp.incomeAmount.toLocaleString('vi-VN') : '-'}</td>
                             <td className="p-3 text-right font-bold text-slate-700">{exp.autoBalance ? exp.autoBalance.toLocaleString('vi-VN') : '0'}</td>
+                            <td className="p-3 text-slate-400">-</td>
                             <td className="p-3 text-[11px] max-w-[150px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
+                            <td className="p-3 text-slate-400">-</td>
                             <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
                               {exp.invoiceUrl ? (
                                 <button onClick={() => setPreviewImage(exp.invoiceUrl!)} className="text-[10px] text-primary hover:underline font-bold">Xem hóa đơn</button>
                               ) : <span className="text-slate-300">-</span>}
                             </td>
+                            <td className="p-3 text-slate-400 text-center">-</td>
                             <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
                               <button onClick={() => setDeleteConfirm({ isOpen: true, id: exp.id, type: 'expense', title: 'Xóa phiếu chi', itemName: `phiếu chi "${exp.content}"` })} className="w-7 h-7 inline-flex items-center justify-center rounded-lg hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors" title="Xóa">
                                 <span className="material-symbols-outlined text-base">delete</span>
@@ -1978,11 +1984,16 @@ export const ProjectCostPlanPage: React.FC = () => {
                             <td className="p-3 text-left">{lab.unit}</td>
                             <td className="p-3 text-right">{lab.quantity || '-'}</td>
                             <td className="p-3 text-right">{lab.unitPrice ? lab.unitPrice.toLocaleString('vi-VN') : '-'}</td>
-                            <td className="p-3 text-right">-</td>
+                            <td className="p-3 text-right text-slate-400">-</td>
                             <td className="p-3 text-right font-bold text-rose-600">{lab.totalAmount ? lab.totalAmount.toLocaleString('vi-VN') : '-'}</td>
-                            <td className="p-3 text-right font-bold text-emerald-600">-</td>
+                            <td className="p-3 text-right text-slate-400">-</td>
                             <td className="p-3 text-right font-bold text-slate-700">{lab.autoBalance ? lab.autoBalance.toLocaleString('vi-VN') : '0'}</td>
-                            <td className="p-3 text-[11px] max-w-[150px] truncate" title={lab.paymentStatus}>
+                            <td className="p-3">
+                              <div className="font-bold text-slate-900">{lab.bankInfo}</div>
+                              <div className="font-mono text-[10px] text-slate-500 mt-0.5">{lab.bankAccount}</div>
+                            </td>
+                            <td className="p-3 text-slate-400">-</td>
+                            <td className="p-3 text-[11px] truncate" title={lab.paymentStatus}>
                               <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold border ${
                                 lab.paymentStatus === 'Đã thanh toán' 
                                   ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
@@ -1991,13 +2002,14 @@ export const ProjectCostPlanPage: React.FC = () => {
                                 {lab.paymentStatus}
                               </span>
                             </td>
+                            <td className="p-3 text-slate-400 text-center">-</td>
                             <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
                               <div className="flex flex-col gap-0.5">
                                 {lab.idCardFrontUrl ? (
-                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardFrontUrl!); }} className="text-[9px] text-blue-600 hover:underline font-bold">CCCD trước</button>
+                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardFrontUrl!); }} className="text-[9px] text-blue-600 hover:underline font-bold">Mặt trước</button>
                                 ) : null}
                                 {lab.idCardBackUrl ? (
-                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardBackUrl!); }} className="text-[9px] text-blue-600 hover:underline font-bold">CCCD sau</button>
+                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewImage(lab.idCardBackUrl!); }} className="text-[9px] text-blue-600 hover:underline font-bold">Mặt sau</button>
                                 ) : null}
                                 {!lab.idCardFrontUrl && !lab.idCardBackUrl && <span className="text-slate-300">-</span>}
                               </div>
@@ -2012,7 +2024,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                       }
                     })}
                     {combinedCashFlow.length === 0 && (
-                      <tr><td colSpan={14} className="p-8 text-center text-slate-400">Chưa có giao dịch phiếu chi nào.</td></tr>
+                      <tr><td colSpan={17} className="p-8 text-center text-slate-400">Chưa có giao dịch phiếu chi nào.</td></tr>
                     )}
                   </tbody>
             </table>
