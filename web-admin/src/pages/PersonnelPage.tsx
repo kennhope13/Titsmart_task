@@ -8,7 +8,7 @@ import { CustomSelect } from '@/components/common/CustomSelect';
 const filters = [
   { key: 'all', label: 'Tất cả' },
   { key: 'manager', label: 'Quản lý' },
-  { key: 'worker', label: 'Nhân viên/Thợ' },
+  { key: 'worker', label: 'Nhân viên' },
   { key: 'active', label: 'Đang hoạt động' },
   { key: 'locked', label: 'Bị khóa' },
 ];
@@ -21,7 +21,7 @@ export const PersonnelPage: React.FC = () => {
   const [lockedIds, setLockedIds] = useState<string[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState('Nhân viên/Thợ');
+  const [role, setRole] = useState('Nhân viên');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [selectedProjectCodes, setSelectedProjectCodes] = useState<string[]>([]);
@@ -72,7 +72,7 @@ export const PersonnelPage: React.FC = () => {
     setEditingPersonId(null);
     setName('');
     setPhone('');
-    setRole('Nhân viên/Thợ');
+    setRole('Nhân viên');
     setUsername('');
     setPassword('');
     setSelectedProjectCodes([]);
@@ -107,7 +107,8 @@ export const PersonnelPage: React.FC = () => {
       self.findIndex((item) => item.code === value.code) === assignedIndex
     );
 
-    const rawRole = (engineer as any).role || engineer.title?.trim() || 'Nhân viên';
+    let rawRole = (engineer as any).role || engineer.title?.trim() || 'Nhân viên';
+    if (rawRole === 'Nhân viên/Thợ') rawRole = 'Nhân viên';
     
     const removeAccents = (str: string) => {
       return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
@@ -116,10 +117,15 @@ export const PersonnelPage: React.FC = () => {
     const cleanRole = removeAccents(rawRole).toUpperCase().replace(/\s+/g, '-');
     const cleanName = removeAccents(engineer.name).toUpperCase().replace(/\s+/g, '-');
 
+    let legacyCode = engineer.code || '';
+    if (legacyCode.includes('/THO')) {
+      legacyCode = legacyCode.replace('/THO', '');
+    }
+
     return {
       ...engineer,
       assignedProjects,
-      code: engineer.code || `TSM-${cleanRole}-${cleanName}`,
+      code: legacyCode || `TSM-${cleanRole}-${cleanName}`,
       
       team: assignedProjects[0]?.name || 'Chưa gán dự án',
       locked: (engineer as any).isLocked || false,
@@ -153,7 +159,7 @@ export const PersonnelPage: React.FC = () => {
     setEditingPersonId(person.id);
     setName(person.name || '');
     setPhone(person.phone || '');
-    setRole(person.role || 'Nhân viên/Thợ');
+    setRole(person.role || 'Nhân viên');
     setUsername((person as any).username || '');
     setPassword('');
     setSelectedProjectCodes(person.assignedProjects.map((project: any) => project.code));
@@ -351,7 +357,7 @@ export const PersonnelPage: React.FC = () => {
               <CustomSelect value={role} onChange={(event) => setRole(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                 <option value="Quản lý dự án">Quản lý dự án</option>
                 <option value="Kỹ sư hiện trường">Kỹ sư hiện trường</option>
-                <option value="Nhân viên/Thợ">Nhân viên/Thợ</option>
+                <option value="Nhân viên">Nhân viên</option>
               </CustomSelect>
             </div>
             <div className="space-y-1">

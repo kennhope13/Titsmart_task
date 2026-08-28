@@ -157,7 +157,7 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
       if (rawRole === 'Quản trị viên') englishRole = 'admin';
       if (rawRole === 'Quản lý dự án') englishRole = 'pm';
       if (rawRole === 'Kỹ sư hiện trường') englishRole = 'engineer';
-      if (rawRole === 'Nhân viên/Thợ') englishRole = 'staff';
+      if (rawRole === 'Nhân viên') englishRole = 'staff';
 
       const user: AuthUser = {
         id: data.user.id,
