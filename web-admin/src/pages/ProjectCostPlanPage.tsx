@@ -1137,6 +1137,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   const [parentPurchasingIdForNew, setParentPurchasingIdForNew] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<ProjectExpense | null>(null);
   const [isNewExpenseOpen, setIsNewExpenseOpen] = useState(false);
+  const [isSaveAndContinue, setIsSaveAndContinue] = useState(false);
   const [editingLabor, setEditingLabor] = useState<LaborPayroll | null>(null);
   const [isNewLaborOpen, setIsNewLaborOpen] = useState(false);
   const [triggerAddDoc, setTriggerAddDoc] = useState(false);
@@ -3035,8 +3036,22 @@ export const ProjectCostPlanPage: React.FC = () => {
               notes: newExpenseData.notes || '',
               invoiceUrl: newExpenseData.invoiceUrl || ''
             });
-            setIsNewExpenseOpen(false);
-            setNewExpenseData({stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', spenderName: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''});
+            if (isSaveAndContinue) {
+              setNewExpenseData({
+                ...newExpenseData,
+                stt: String(Number(newExpenseData.stt || currentProjExpenses.length) + 1),
+                description: '',
+                unit: 'cái',
+                quantity: 1,
+                unitPrice: 0,
+                taxAmount: 0,
+                incomeAmount: 0
+              });
+              setIsSaveAndContinue(false);
+            } else {
+              setIsNewExpenseOpen(false);
+              setNewExpenseData({stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', spenderName: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''});
+            }
             triggerToast('Đã thêm Chi phí thành công!', 'success');
           } catch (err: any) {
             triggerToast(err.message || 'Lỗi khi thêm chi phí!', 'warning');
@@ -3112,7 +3127,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
           </div>
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newExpenseData.notes} onChange={(e) => setNewExpenseData({...newExpenseData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewExpenseOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu phiếu chi</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewExpenseOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" onClick={() => setIsSaveAndContinue(true)} className="px-5 py-1.5 bg-indigo-500 hover:bg-indigo-600 transition-colors text-white rounded-lg font-bold">Lưu & Thêm TB khác</button><button type="submit" onClick={() => setIsSaveAndContinue(false)} className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu phiếu chi</button></div>
         </form>
       </Modal>
 
@@ -3132,6 +3147,24 @@ export const ProjectCostPlanPage: React.FC = () => {
             });
             setEditingExpense(null);
             triggerToast('Đã cập nhật Chi phí thành công!', 'success');
+            if (isSaveAndContinue) {
+              setIsSaveAndContinue(false);
+              setNewExpenseData({
+                stt: String(currentProjExpenses.length + 1),
+                date: editingExpense.date || new Date().toISOString().split('T')[0],
+                content: editingExpense.content || 'Vật tư/ thiết bị',
+                description: '',
+                spenderName: editingExpense.spenderName || '',
+                unit: 'cái',
+                quantity: 1,
+                unitPrice: 0,
+                taxAmount: 0,
+                incomeAmount: 0,
+                notes: editingExpense.notes || '',
+                invoiceUrl: editingExpense.invoiceUrl || ''
+              });
+              setTimeout(() => setIsNewExpenseOpen(true), 100);
+            }
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={editingExpense.date} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -3203,7 +3236,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               </div>
             </div>
             <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingExpense.notes} onChange={(e) => setEditingExpense({...editingExpense, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingExpense(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu thay đổi</button></div>
+            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingExpense(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" onClick={() => setIsSaveAndContinue(true)} className="px-5 py-1.5 bg-indigo-500 hover:bg-indigo-600 transition-colors text-white rounded-lg font-bold">Lưu & Thêm TB khác</button><button type="submit" onClick={() => setIsSaveAndContinue(false)} className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu thay đổi</button></div>
           </form>
         )}
       </Modal>
