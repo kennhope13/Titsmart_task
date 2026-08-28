@@ -1137,6 +1137,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   const [parentPurchasingIdForNew, setParentPurchasingIdForNew] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<ProjectExpense | null>(null);
   const [isNewExpenseOpen, setIsNewExpenseOpen] = useState(false);
+  const [additionalItems, setAdditionalItems] = useState<any[]>([]);
   const [editingLabor, setEditingLabor] = useState<LaborPayroll | null>(null);
   const [isNewLaborOpen, setIsNewLaborOpen] = useState(false);
   const [triggerAddDoc, setTriggerAddDoc] = useState(false);
@@ -3035,8 +3036,35 @@ export const ProjectCostPlanPage: React.FC = () => {
               notes: newExpenseData.notes || '',
               invoiceUrl: newExpenseData.invoiceUrl || ''
             });
+
+            if (additionalItems.length > 0) {
+              await Promise.all(additionalItems.map((item, idx) => {
+                const itemQty = Number(item.quantity || 1);
+                const itemPrice = Number(item.unitPrice || 0);
+                const itemVat = Number(item.taxAmount || 0);
+                return addExpense({
+                  projectCode: selectedProject,
+                  stt: String(currentProjExpenses.length + 2 + idx),
+                  date: newExpenseData.date || new Date().toISOString().split('T')[0],
+                  content: newExpenseData.content || 'Vật tư/ thiết bị',
+                  description: item.description || '',
+                  spenderName: newExpenseData.spenderName || '',
+                  unit: item.unit || 'cái',
+                  quantity: itemQty,
+                  unitPrice: itemPrice,
+                  taxAmount: itemVat,
+                  totalAmount: itemQty * itemPrice + itemVat,
+                  incomeAmount: Number(item.incomeAmount || 0),
+                  balanceFund: 0,
+                  notes: newExpenseData.notes || '',
+                  invoiceUrl: newExpenseData.invoiceUrl || ''
+                });
+              }));
+            }
+
             setIsNewExpenseOpen(false);
             setNewExpenseData({stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', spenderName: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''});
+            setAdditionalItems([]);
             triggerToast('Đã thêm Chi phí thành công!', 'success');
           } catch (err: any) {
             triggerToast(err.message || 'Lỗi khi thêm chi phí!', 'warning');
@@ -3069,6 +3097,28 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={String(newExpenseData.quantity)} onChange={(e) => setNewExpenseData({...newExpenseData, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={String(newExpenseData.unitPrice)} onChange={(e) => setNewExpenseData({...newExpenseData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
+          
+          {additionalItems.map((item, index) => (
+            <div key={index} className="pt-3 mt-3 border-t border-slate-200 relative">
+              <button type="button" onClick={() => setAdditionalItems(prev => prev.filter((_, i) => i !== index))} className="absolute right-0 top-3 text-rose-500 hover:text-rose-700 p-1">
+                <span className="material-symbols-outlined text-sm">delete</span>
+              </button>
+              <div className="grid grid-cols-2 gap-3 pr-8">
+                <div><label className="block font-bold mb-1 text-slate-500">Diễn giải/ Chi tiết *</label><input type="text" required value={item.description} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].description = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><label className="block font-bold mb-1 text-slate-500">ĐVT</label><input type="text" value={item.unit} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unit = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Số lượng</label><input type="number" step="any" value={String(item.quantity)} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].quantity = Number(e.target.value); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Đơn giá</label><input type="number" step="any" value={String(item.unitPrice)} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unitPrice = Number(e.target.value); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                </div>
+              </div>
+            </div>
+          ))}
+          <div className="pt-2">
+            <button type="button" onClick={() => setAdditionalItems([...additionalItems, { description: '', unit: 'cái', quantity: 1, unitPrice: 0, taxAmount: 0, incomeAmount: 0 }])} className="flex items-center gap-1 text-primary hover:text-blue-700 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg w-fit">
+              <span className="material-symbols-outlined text-[16px]">add</span> Thêm thiết bị khác
+            </button>
+          </div>
+
           <div className="grid grid-cols-3 gap-3">
             <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={String((newExpenseData as any).vatAmount || 0)} onChange={(e) => setNewExpenseData({...newExpenseData, vatAmount: Number(e.target.value)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={String((newExpenseData as any).incomeAmount || 0)} onChange={(e) => setNewExpenseData({...newExpenseData, incomeAmount: Number(e.target.value)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -3112,25 +3162,50 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
           </div>
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newExpenseData.notes} onChange={(e) => setNewExpenseData({...newExpenseData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewExpenseOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu phiếu chi</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewExpenseOpen(false); setAdditionalItems([]); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit"  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu phiếu chi</button></div>
         </form>
       </Modal>
 
       {/* Edit Expense Modal */}
       <Modal isOpen={!!editingExpense} onClose={() => setEditingExpense(null)} title="Cập nhật Phiếu Chi Công trình">
         {editingExpense && (
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const qty = Number(editingExpense.quantity || 1);
+          <form onSubmit={async (e) => { e.preventDefault(); const qty = Number(editingExpense.quantity || 1);
             const price = Number(editingExpense.unitPrice || 0);
             const vat = Number(editingExpense.taxAmount || 0);
             const total = qty * price + vat;
 
-            updateExpense(editingExpense.id, {
+            await updateExpense(editingExpense.id, {
               ...editingExpense,
               totalAmount: total
             });
+            
+            if (additionalItems.length > 0) {
+              await Promise.all(additionalItems.map((item, idx) => {
+                const itemQty = Number(item.quantity || 1);
+                const itemPrice = Number(item.unitPrice || 0);
+                const itemVat = Number(item.taxAmount || 0);
+                return addExpense({
+                  projectCode: selectedProject,
+                  stt: String(currentProjExpenses.length + 1 + idx),
+                  date: editingExpense.date || new Date().toISOString().split('T')[0],
+                  content: editingExpense.content || 'Vật tư/ thiết bị',
+                  description: item.description || '',
+                  spenderName: editingExpense.spenderName || '',
+                  unit: item.unit || 'cái',
+                  quantity: itemQty,
+                  unitPrice: itemPrice,
+                  taxAmount: itemVat,
+                  totalAmount: itemQty * itemPrice + itemVat,
+                  incomeAmount: Number(item.incomeAmount || 0),
+                  balanceFund: 0,
+                  notes: editingExpense.notes || '',
+                  invoiceUrl: editingExpense.invoiceUrl || ''
+                });
+              }));
+            }
+
             setEditingExpense(null);
+            setAdditionalItems([]);
             triggerToast('Đã cập nhật Chi phí thành công!', 'success');
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
@@ -3160,6 +3235,28 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={String(editingExpense.quantity)} onChange={(e) => setEditingExpense({...editingExpense, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" step="any" value={String(editingExpense.unitPrice)} onChange={(e) => setEditingExpense({...editingExpense, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
+            
+          {additionalItems.map((item, index) => (
+            <div key={index} className="pt-3 mt-3 border-t border-slate-200 relative">
+              <button type="button" onClick={() => setAdditionalItems(prev => prev.filter((_, i) => i !== index))} className="absolute right-0 top-3 text-rose-500 hover:text-rose-700 p-1">
+                <span className="material-symbols-outlined text-sm">delete</span>
+              </button>
+              <div className="grid grid-cols-2 gap-3 pr-8">
+                <div><label className="block font-bold mb-1 text-slate-500">Diễn giải/ Chi tiết *</label><input type="text" required value={item.description} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].description = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><label className="block font-bold mb-1 text-slate-500">ĐVT</label><input type="text" value={item.unit} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unit = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Số lượng</label><input type="number" step="any" value={String(item.quantity)} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].quantity = Number(e.target.value); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Đơn giá</label><input type="number" step="any" value={String(item.unitPrice)} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unitPrice = Number(e.target.value); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                </div>
+              </div>
+            </div>
+          ))}
+          <div className="pt-2">
+            <button type="button" onClick={() => setAdditionalItems([...additionalItems, { description: '', unit: 'cái', quantity: 1, unitPrice: 0, taxAmount: 0, incomeAmount: 0 }])} className="flex items-center gap-1 text-primary hover:text-blue-700 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg w-fit">
+              <span className="material-symbols-outlined text-[16px]">add</span> Thêm thiết bị khác
+            </button>
+          </div>
+
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={String(editingExpense.taxAmount || 0)} onChange={(e) => setEditingExpense({...editingExpense, taxAmount: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={String(editingExpense.incomeAmount || 0)} onChange={(e) => setEditingExpense({...editingExpense, incomeAmount: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -3203,7 +3300,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               </div>
             </div>
             <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingExpense.notes} onChange={(e) => setEditingExpense({...editingExpense, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingExpense(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu thay đổi</button></div>
+            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setEditingExpense(null); setAdditionalItems([]); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit"  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu thay đổi</button></div>
           </form>
         )}
       </Modal>
