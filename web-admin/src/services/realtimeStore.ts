@@ -31,7 +31,7 @@ const getAuthUser = () => {
 
 const filterByProject = (items: any[], codeField: string) => {
   const user = getAuthUser();
-  if (!user || user.role === 'admin' || user.role === 'pm' || !Array.isArray(items)) return items;
+  if (!user || ['admin', 'pm', 'Quản trị viên', 'Quản lý dự án', 'Giám đốc'].includes(user.role) || !Array.isArray(items)) return items;
   const assigned = user.projectCodes || [];
   return items.filter(item => assigned.includes(item[codeField]));
 };
@@ -1609,15 +1609,15 @@ export function setupRealtimeSync() {
   const debouncedRefresh = () => {
     if (refreshTimeout) clearTimeout(refreshTimeout);
     refreshTimeout = setTimeout(() => {
-      console.log('[Realtime] Đang đồng bộ dữ liệu...');
-      const store = useRealtimeStore.getState();
-      store.fetchProjects();
-      store.fetchAccounting();
-      store.fetchMaterials(undefined);
-      store.fetchTasks(undefined);
-      store.fetchIssues(undefined);
-      store.fetchEngineers();
-      store.fetchActivityLogs();
+      console.log('[Realtime] Đã nhận tín hiệu thay đổi data. Tạm tắt auto-fetch để tiết kiệm Egress 5GB. Vui lòng F5 nếu cần.');
+      // const store = useRealtimeStore.getState();
+      // store.fetchProjects();
+      // store.fetchAccounting();
+      // store.fetchMaterials(undefined);
+      // store.fetchTasks(undefined);
+      // store.fetchIssues(undefined);
+      // store.fetchEngineers();
+      // store.fetchActivityLogs();
     }, 2000);
   };
 
