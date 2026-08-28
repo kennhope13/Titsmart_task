@@ -3169,9 +3169,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       {/* Edit Expense Modal */}
       <Modal isOpen={!!editingExpense} onClose={() => setEditingExpense(null)} title="Cập nhật Phiếu Chi Công trình">
         {editingExpense && (
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const qty = Number(editingExpense.quantity || 1);
+          <form onSubmit={async (e) => { e.preventDefault(); const qty = Number(editingExpense.quantity || 1);
             const price = Number(editingExpense.unitPrice || 0);
             const vat = Number(editingExpense.taxAmount || 0);
             const total = qty * price + vat;
