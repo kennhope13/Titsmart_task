@@ -150,16 +150,27 @@ export const ProjectManagementPage: React.FC = () => {
   };
 
   const resolveProjectMemberNames = (project: Project) => {
+    const codeMatch = (project.code || '').trim();
+    const nameMatch = (project.name || '').trim();
+
+    const matches = (mp: { code?: string; name?: string }) => {
+      const mpCode = (mp.code || '').trim();
+      const mpName = (mp.name || '').trim();
+      if (codeMatch && mpCode && codeMatch === mpCode) return true;
+      if (!codeMatch && nameMatch && mpName && nameMatch === mpName) return true;
+      return false;
+    };
+
     const memberFromManaged = engineers
-      .filter((eng) => eng.managedProjects?.some((mp) => mp.code === project.code))
+      .filter((eng) => eng.managedProjects?.some(matches))
       .map((eng) => eng.name);
 
     const memberFromAssigned = engineers
-      .filter((eng) => eng.memberProjects?.some((mp) => mp.code === project.code))
+      .filter((eng) => eng.memberProjects?.some(matches))
       .map((eng) => eng.name);
 
     const memberFromProjectCodes = engineers
-      .filter((eng) => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(project.code))
+      .filter((eng) => Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => codeMatch && (c || '').trim() === codeMatch))
       .map((eng) => eng.name);
 
     const combined = Array.from(new Set([...memberFromManaged, ...memberFromAssigned, ...memberFromProjectCodes]));

@@ -1126,6 +1126,27 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
         await api.projects.delete(id);
 
+        // Clean up project from assigned engineers
+        const projectCodeStr = (projectToDelete.code || '').trim();
+        const projectNameStr = (projectToDelete.name || '').trim();
+        const affectedEngineers = get().engineers.filter(eng => {
+          const hasManaged = eng.managedProjects?.some(p => p.code ? p.code.trim() === projectCodeStr : p.name.trim() === projectNameStr);
+          const hasMember = eng.memberProjects?.some(p => p.code ? p.code.trim() === projectCodeStr : p.name.trim() === projectNameStr);
+          const hasCode = Array.isArray(eng.projectCodes) && projectCodeStr && eng.projectCodes.some(c => c.trim() === projectCodeStr);
+          return hasManaged || hasMember || hasCode;
+        });
+
+        if (affectedEngineers.length > 0) {
+          await Promise.all(affectedEngineers.map(eng => {
+            const keepProject = (p: any) => p.code ? p.code.trim() !== projectCodeStr : p.name.trim() !== projectNameStr;
+            return api.engineers.update(eng.id, {
+              managedProjects: eng.managedProjects?.filter(keepProject) || [],
+              memberProjects: eng.memberProjects?.filter(keepProject) || [],
+              projectCodes: Array.isArray(eng.projectCodes) && projectCodeStr ? eng.projectCodes.filter(c => c.trim() !== projectCodeStr) : (eng.projectCodes || [])
+            });
+          }));
+        }
+
         set((state) => {
           const projectCode = projectToDelete.code;
           const nextProjects = state.projects.filter((p) => p.id !== id);
