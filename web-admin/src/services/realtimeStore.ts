@@ -1184,7 +1184,20 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const nextLaborPayrolls = state.laborPayrolls.filter((p) => p.projectCode !== projectCode);
           const nextFieldLogs = state.fieldLogs.filter((l) => l.projectCode !== projectCode);
 
+          // Update engineers in local state
+          const nextEngineers = state.engineers.map(eng => {
+            if (!affectedEngineers.some(affected => affected.id === eng.id)) return eng;
+            const keepProject = (p: any) => p.code ? p.code.trim() !== projectCodeStr : p.name.trim() !== projectNameStr;
+            return {
+              ...eng,
+              managedProjects: eng.managedProjects?.filter(keepProject) || [],
+              memberProjects: eng.memberProjects?.filter(keepProject) || [],
+              projectCodes: Array.isArray(eng.projectCodes) && projectCodeStr ? eng.projectCodes.filter(c => c.trim() !== projectCodeStr) : (eng.projectCodes || [])
+            };
+          });
+
           persistAndNotify({
+            engineers: nextEngineers,
             projects: nextProjects,
             tasks: nextTasks,
             materials: nextMaterials,
@@ -1197,6 +1210,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           });
 
           return {
+            engineers: nextEngineers,
             projects: nextProjects,
             tasks: nextTasks,
             materials: nextMaterials,
