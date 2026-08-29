@@ -319,7 +319,17 @@ export const FieldLogsPage: React.FC = () => {
   const projectName = (code: string) => projects.find(p => p.code === code)?.name || code;
   const totalImages = visibleLogs.reduce((sum, l) => sum + l.images.length, 0);
 
-  const handleDeleteLog = async (log: FieldLog) => {\n    if (window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) {\n      try {\n        await deleteFieldLog(log.id);\n      } catch (err) {\n        alert("Lỗi khi xóa nhật ký.");\n      }\n    }\n  };\n\n  const handleUpload = async (input: { projectCode: string; note: string; images: string[]; taskId?: string }) => {
+    const handleDeleteLog = async (log: FieldLog) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) {
+      try {
+        await deleteFieldLog(log.id);
+      } catch (err) {
+        alert("Lỗi khi xóa nhật ký.");
+      }
+    }
+  };
+
+  const handleUpload = async (input: { projectCode: string; note: string; images: string[]; taskId?: string }) => {
     await addFieldLog(input);
     await fetchFieldLogs();
   };
