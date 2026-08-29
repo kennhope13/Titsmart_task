@@ -2022,8 +2022,8 @@ export const ProjectCostPlanPage: React.FC = () => {
       {/* MODALS */}
       {/* Xem ảnh Modal */}
       <Modal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} title="Xem hình ảnh hóa đơn/chứng từ" size="xl" icon="image">
-        <div className="flex justify-center items-center bg-slate-50 rounded-lg overflow-hidden min-h-[400px] max-h-[80vh] relative p-4 border border-slate-200 m-4">
-          {previewImage && <img src={previewImage} alt="Hóa đơn" className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-100" />}
+        <div className="flex justify-center bg-slate-50 rounded-lg relative border border-slate-200">
+          {previewImage && <img src={previewImage} alt="Hóa đơn" className="w-full h-auto object-contain shadow-sm rounded" />}
         </div>
       </Modal>
 
