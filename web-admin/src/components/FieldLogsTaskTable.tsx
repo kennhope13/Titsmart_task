@@ -15,7 +15,8 @@ const CustomLightbox: React.FC<{ images: string[]; index: number; onClose: () =>
   </div>
 );
 
-const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => void; onEditLogClick: (log: FieldLog) => void }> = ({
+const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => void; onEditLogClick: (log: FieldLog) => void; onDeleteLogClick?: (log: FieldLog) => void }> = ({
+
   task, logs, onClose, onEditLogClick
 }) => {
   return (
@@ -68,7 +69,7 @@ interface FieldLogsTaskTableProps {
   onEditLogClick: (log: FieldLog) => void;
 }
 
-export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selectedProject, logs, onAddLogClick, onEditLogClick }) => {
+export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selectedProject, logs, onAddLogClick, onEditLogClick, onDeleteLogClick }) => {
   const { tasks } = useRealtimeStore();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   
@@ -246,6 +247,9 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                           ))}
                           <button onClick={() => onAddLogClick(t.id)} className="w-10 h-10 rounded flex items-center justify-center border border-dashed border-slate-300 text-slate-400 hover:text-primary hover:border-primary transition-colors hover:bg-primary/5 ml-1" title="Thêm ảnh">
                             <span className="material-symbols-outlined text-lg">add_a_photo</span>
+                          </button>
+                          <button onClick={() => setViewAllLogsTask(t)} className="w-10 h-10 rounded flex items-center justify-center border border-slate-200 text-slate-400 hover:text-primary hover:border-primary transition-colors hover:bg-primary/5 ml-1 bg-slate-50" title="Quản lý nhật ký (Sửa/Xóa)">
+                            <span className="material-symbols-outlined text-lg">edit_square</span>
                           </button>
                         </>
                       ) : (
