@@ -770,7 +770,7 @@ const hasSyncedRef = useRef(false);
             const isRoman = romanRegex.test(cleanStt);
             const startsWithPhan = String(itemName || '').trim().toUpperCase().startsWith('PHẦN ');
             const hasNoVolumeAndUnit = (volVal === 0 || !volVal) && (!cleanUnitVal || cleanUnitVal === '');
-            const isSection = startsWithPhan || (hasNoDot && isMainSectionName(itemName)) || (hasNoDot && hasNoVolumeAndUnit && isRoman);
+            const isSection = startsWithPhan || isMainSectionName(itemName) || (hasNoDot && hasNoVolumeAndUnit);
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${itemName}`;

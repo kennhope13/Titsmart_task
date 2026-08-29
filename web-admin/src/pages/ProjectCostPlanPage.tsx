@@ -625,7 +625,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               const startsWithPhan = content.trim().toUpperCase().startsWith('PHẦN ');
               const cleanUnitVal = String(row[unitCol] || '').replace(/^[-–—_.\s]+$/, '').trim();
               const hasNoVolumeAndUnit = (volumeContract === 0 || !volumeContract) && (!cleanUnitVal || cleanUnitVal === '');
-              const isSection = startsWithPhan || (hasNoDot && isMainSectionName(content)) || (hasNoDot && hasNoVolumeAndUnit && isRoman);
+              const isSection = startsWithPhan || isMainSectionName(content) || (hasNoDot && hasNoVolumeAndUnit);
 
               let effectiveStt = stt;
               if (isSection) {
