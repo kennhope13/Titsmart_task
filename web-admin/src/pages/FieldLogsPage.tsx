@@ -240,12 +240,6 @@ const UploadModal: React.FC<{
           </div>
 
           <div className="flex flex-shrink-0 items-center border-t border-slate-100 bg-slate-50/60 px-5 py-4">
-            {editLog && onDelete && (
-              <button type="button" onClick={async () => { if (window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) { await onDelete(editLog.id); onClose(); } }}
-                className="flex items-center gap-1.5 rounded-lg bg-rose-500 px-4 py-2 text-[13px] font-bold text-white hover:bg-rose-600 transition-colors">
-                <span className="material-symbols-outlined text-sm">delete</span> Xóa
-              </button>
-            )}
             <div className="flex gap-2 ml-auto">
               <button type="button" onClick={onClose}
                 className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-[13px] font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
