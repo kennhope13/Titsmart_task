@@ -419,6 +419,11 @@ export const api = {
       };
     },
     delete: async (id: string) => {
+      const { data } = await supabase.from('field_logs').select('photos').eq('id', id).single();
+      if (data && data.photos && data.photos.length > 0) {
+        const paths = data.photos.map((url: any) => typeof url === 'string' ? url.split('titsmart-images/')[1] : null).filter(Boolean);
+        if (paths.length > 0) await supabase.storage.from('titsmart-images').remove(paths);
+      }
       const { error } = await supabase.from('field_logs').delete().eq('id', id);
       if (error) throw error;
       return { success: true };
@@ -429,6 +434,14 @@ export const api = {
       if (data.taskId !== undefined) payload.task_id = data.taskId || null;
       if (data.images || data.existingImages) {
         payload.photos = [...(data.existingImages || []), ...(data.images || [])];
+        const { data: oldData } = await supabase.from('field_logs').select('photos').eq('id', id).single();
+        if (oldData && oldData.photos) {
+           const removed = oldData.photos.filter((url: any) => !payload.photos.includes(url));
+           if (removed.length > 0) {
+              const paths = removed.map((url: any) => typeof url === 'string' ? url.split('titsmart-images/')[1] : null).filter(Boolean);
+              if (paths.length > 0) await supabase.storage.from('titsmart-images').remove(paths);
+           }
+        }
       }
       const { data: result, error } = await supabase.from('field_logs').update(payload).eq('id', id).select().single();
       if (error) throw error;
