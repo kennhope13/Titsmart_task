@@ -91,7 +91,8 @@ const UploadModal: React.FC<{
   onClose: () => void;
   onUpload: (input: { projectCode: string; note: string; images: string[]; taskId?: string }) => Promise<void>;
   onUpdate?: (id: string, input: { note: string; images: string[]; existingImages: string[]; taskId?: string }) => Promise<void>;
-}> = ({ defaultProjectCode, defaultTaskId, projects, editLog, onClose, onUpload, onUpdate }) => {
+  onDelete?: (id: string) => Promise<void>;
+}> = ({ defaultProjectCode, defaultTaskId, projects, editLog, onClose, onUpload, onUpdate, onDelete }) => {
   const [projectCode, setProjectCode] = useState(editLog?.projectCode || defaultProjectCode || '');
   const [note, setNote] = useState(editLog?.note || '');
   const [taskId, setTaskId] = useState(editLog?.taskId || defaultTaskId || '');
@@ -179,14 +180,11 @@ const UploadModal: React.FC<{
             {/* Dự án */}
             <div>
               <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">
-                Dự án <span className="text-rose-500 normal-case font-normal">*</span>
+                Dự án
               </label>
-              <CustomSelect required value={projectCode}
-                onChange={e => setProjectCode(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                <option value="">-- Chọn dự án --</option>
-                {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
-              </CustomSelect>
+              <div className="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm font-semibold text-slate-700">
+                {projects.find(p => p.code === projectCode)?.name || projectCode}
+              </div>
             </div>
 
             {/* Ảnh */}
@@ -221,18 +219,17 @@ const UploadModal: React.FC<{
               <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">Ghi chú</label>
               
           <div>
-            <label className="mb-2 block text-[13px] font-bold text-slate-700">Đầu mục công việc (Tùy chọn)</label>
-            <select
+            <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">Đầu mục công việc</label>
+            <CustomSelect
               value={taskId}
               onChange={(e) => setTaskId(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all"
-              disabled={!projectCode}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
               <option value="">-- Không liên kết --</option>
               {tasks.filter(t => t.projectCode === projectCode).map(t => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <textarea rows={2} value={note} onChange={e => setNote(e.target.value)}
                 placeholder="Mô tả nội dung hiện trường (tùy chọn)..."
@@ -242,23 +239,31 @@ const UploadModal: React.FC<{
             {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-[13px] font-bold text-rose-600">{error}</p>}
           </div>
 
-          <div className="flex flex-shrink-0 justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-4">
-            <button type="button" onClick={onClose}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-[13px] font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
-            <button type="submit" disabled={isUploading}
-              className="flex items-center gap-2.5 rounded-lg bg-primary px-5 py-2 text-[13px] font-bold text-white shadow-sm hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
-              {isUploading ? (
-                <>
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                  Đang upload...
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined text-sm">upload</span>
-                  Upload
-                </>
-              )}
-            </button>
+          <div className="flex flex-shrink-0 items-center border-t border-slate-100 bg-slate-50/60 px-5 py-4">
+            {editLog && onDelete && (
+              <button type="button" onClick={async () => { if (window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) { await onDelete(editLog.id); onClose(); } }}
+                className="flex items-center gap-1.5 rounded-lg bg-rose-500 px-4 py-2 text-[13px] font-bold text-white hover:bg-rose-600 transition-colors">
+                <span className="material-symbols-outlined text-sm">delete</span> Xóa
+              </button>
+            )}
+            <div className="flex gap-2 ml-auto">
+              <button type="button" onClick={onClose}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-[13px] font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
+              <button type="submit" disabled={isUploading}
+                className="flex items-center gap-2.5 rounded-lg bg-primary px-5 py-2 text-[13px] font-bold text-white shadow-sm hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
+                {isUploading ? (
+                  <>
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                    Đang upload...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-sm">{editLog ? 'save' : 'upload'}</span>
+                    {editLog ? 'Lưu' : 'Upload'}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -464,6 +469,10 @@ export const FieldLogsPage: React.FC = () => {
           onUpdate={async (id, input) => {
             if (updateFieldLog) await updateFieldLog(id, input);
             await fetchFieldLogs();
+          }}
+          onDelete={async (id) => {
+            await deleteFieldLog(id);
+            setEditLog(null);
           }}
         />
       )}
