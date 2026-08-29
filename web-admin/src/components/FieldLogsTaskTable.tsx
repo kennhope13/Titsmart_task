@@ -212,7 +212,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
               const allImagesForTask = taskLogs.flatMap(l => l.images);
 
               return (
-                <tr key={t.id} className="hover:bg-slate-50 transition-colors group">
+                <tr key={t.id} onClick={(e) => { e.stopPropagation(); setViewAllLogsTask(t); }} className="hover:bg-slate-50 transition-colors group cursor-pointer">
                   <td className={`py-3 px-4 border-r border-slate-200 text-center font-mono text-xs ${depth === 1 ? 'font-bold text-slate-600' : 'text-slate-400'}`}>
                     {t.computedStt || t.stt}
                   </td>
@@ -228,32 +228,32 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                         <>
                           <div className="flex gap-1.5 flex-wrap">
                             {allImagesForTask.slice(0, 4).map((img, i) => (
-                              <div key={i} onClick={() => openLightbox(allImagesForTask, i)} className="w-10 h-10 rounded overflow-hidden border border-slate-200 cursor-pointer hover:border-primary">
+                              <div key={i}  className="w-10 h-10 rounded overflow-hidden border border-slate-200 cursor-pointer hover:border-primary">
                                 <img src={img} className="w-full h-full object-cover" alt="log" />
                               </div>
                             ))}
                             {allImagesForTask.length > 4 && (
-                              <div onClick={() => setViewAllLogsTask(t as Task)} className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-200 cursor-pointer">
+                              <div  className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-200 cursor-pointer">
                                 +{allImagesForTask.length - 4}
                               </div>
                             )}
                           </div>
                           {taskLogs.map(l => (
                              l.note && (
-                                <button key={l.id} onClick={() => onEditLogClick(l)} className="text-[11px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 ml-1 hover:bg-amber-100 truncate max-w-[120px]" title={l.note}>
+                                <button key={l.id} onClick={(e) => { e.stopPropagation(); onEditLogClick(l); }} className="text-[11px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 ml-1 hover:bg-amber-100 truncate max-w-[120px]" title={l.note}>
                                   {l.note}
                                 </button>
                              )
                           ))}
-                          <button onClick={() => onAddLogClick(t.id)} className="w-10 h-10 rounded flex items-center justify-center border border-dashed border-slate-300 text-slate-400 hover:text-primary hover:border-primary transition-colors hover:bg-primary/5 ml-1" title="Thêm ảnh">
+                          <button onClick={(e) => { e.stopPropagation(); onAddLogClick(t.id); }} className="w-10 h-10 rounded flex items-center justify-center border border-dashed border-slate-300 text-slate-400 hover:text-primary hover:border-primary transition-colors hover:bg-primary/5 ml-1" title="Thêm ảnh">
                             <span className="material-symbols-outlined text-lg">add_a_photo</span>
                           </button>
-                          <button onClick={() => setViewAllLogsTask(t)} className="w-10 h-10 rounded flex items-center justify-center border border-slate-200 text-slate-400 hover:text-primary hover:border-primary transition-colors hover:bg-primary/5 ml-1 bg-slate-50" title="Quản lý nhật ký (Sửa/Xóa)">
+                          <button onClick={(e) => { e.stopPropagation(); setViewAllLogsTask(t); }} className="w-10 h-10 rounded flex items-center justify-center border border-slate-200 text-slate-400 hover:text-primary hover:border-primary transition-colors hover:bg-primary/5 ml-1 bg-slate-50" title="Quản lý nhật ký (Sửa/Xóa)">
                             <span className="material-symbols-outlined text-lg">edit_square</span>
                           </button>
                         </>
                       ) : (
-                        <button onClick={() => onAddLogClick(t.id)} className="w-10 h-10 rounded flex items-center justify-center border border-dashed border-slate-300 text-slate-400 hover:text-primary hover:border-primary transition-colors hover:bg-primary/5" title="Thêm ảnh">
+                        <button onClick={(e) => { e.stopPropagation(); onAddLogClick(t.id); }} className="w-10 h-10 rounded flex items-center justify-center border border-dashed border-slate-300 text-slate-400 hover:text-primary hover:border-primary transition-colors hover:bg-primary/5" title="Thêm ảnh">
                           <span className="material-symbols-outlined text-lg">add_a_photo</span>
                         </button>
                       )}
