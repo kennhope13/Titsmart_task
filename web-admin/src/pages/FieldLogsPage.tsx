@@ -134,7 +134,7 @@ const UploadModal: React.FC<{
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectCode) { setError('Vui lòng chọn dự án'); return; }
-    if (files.length === 0 && existingImages.length === 0) { setError('Vui lòng chọn ít nhất 1 ảnh'); return; }
+    if (files.length === 0 && existingImages.length === 0 && !editLog) { setError('Vui lòng chọn ít nhất 1 ảnh'); return; }
     setIsUploading(true);
     setError('');
     try {
