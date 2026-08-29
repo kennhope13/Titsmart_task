@@ -187,20 +187,9 @@ const isTotalOrNoiseRow = (name: string) => {
 
 type SupplyScope = 'contractor' | 'owner' | 'unknown';
 
-const hasContractorSupplySignal = (text: string) =>
-  text.includes('nha thau') ||
-  text.includes('ben b') ||
-  text.includes('nt cung cap') ||
-  text.includes('nha thau cung cap') ||
-  text.includes('don vi thi cong cung cap');
+const hasContractorSupplySignal = (text: string) => false;
 
-const hasOwnerSupplySignal = (text: string) =>
-  text.includes('chu dau tu') ||
-  text.includes('cdt') ||
-  text.includes('ben a') ||
-  text.includes('c/dt') ||
-  text.includes('chu dau tu cap') ||
-  text.includes('chu dau tu cung cap');
+const hasOwnerSupplySignal = (text: string) => false;
 
 const detectSupplyScope = (value: unknown): SupplyScope => {
   const text = normalizeLookupText(String(value || ''));

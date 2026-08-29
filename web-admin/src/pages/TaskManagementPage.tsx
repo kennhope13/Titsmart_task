@@ -745,11 +745,7 @@ const hasSyncedRef = useRef(false);
 
           const isMainSectionName = (name: string): boolean => {
             const norm = name.toLowerCase();
-            return norm.includes('phần vttb') || 
-                   norm.includes('cung cấp') || 
-                   norm.includes('chủ đầu tư') || 
-                   norm.includes('nhà thầu') || 
-                   norm.startsWith('phần ');
+            return norm.startsWith('phần ');
           };
 
           for (let i = startRow; i < rows.length; i++) {
@@ -1084,13 +1080,8 @@ const hasSyncedRef = useRef(false);
         );
 
         const normalizeVn = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/\u0111/g, 'd').replace(/đ/g,'d');
-        const sectionIsContractor =
-          (sectionInMaterial && (sectionInMaterial.supplyScope === 'contractor' || normalizeVn(sectionInMaterial.jobContent || '').includes('nha thau cung cap') || normalizeVn(sectionInMaterial.jobContent || '').includes('ben b cung cap'))) ||
-          normalizeVn(finalSectionName).includes('nha thau cung cap') || normalizeVn(finalSectionName).includes('ben b cung cap');
-
-        const sectionIsOwner =
-          (sectionInMaterial && (sectionInMaterial.supplyScope === 'owner' || normalizeVn(sectionInMaterial.jobContent || '').includes('chu dau tu') || normalizeVn(sectionInMaterial.jobContent || '').includes('nha dau tu') || normalizeVn(sectionInMaterial.jobContent || '').includes('ben a') || normalizeVn(sectionInMaterial.jobContent || '').includes('ban a'))) ||
-          normalizeVn(finalSectionName).includes('chu dau tu') || normalizeVn(finalSectionName).includes('nha dau tu') || normalizeVn(finalSectionName).includes('ben a') || normalizeVn(finalSectionName).includes('ban a');
+        const sectionIsContractor = sectionInMaterial && sectionInMaterial.supplyScope === 'contractor';
+        const sectionIsOwner = sectionInMaterial && sectionInMaterial.supplyScope === 'owner';
 
         // Nếu chưa có section này trong MaterialPlan, tạo section trước
         let sectionMaterialId = sectionInMaterial?.id;

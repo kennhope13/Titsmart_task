@@ -576,11 +576,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           
           const isMainSectionName = (name: string): boolean => {
             const norm = name.toLowerCase();
-            return norm.includes('phần vttb') || 
-                   norm.includes('cung cấp') || 
-                   norm.includes('chủ đầu tư') || 
-                   norm.includes('nhà thầu') || 
-                   norm.startsWith('phần ');
+            return norm.startsWith("phần ");
           };
 
           wb.SheetNames.forEach((sheetName) => {
@@ -633,10 +629,10 @@ export const ProjectCostPlanPage: React.FC = () => {
 
               let effectiveStt = stt;
               if (isSection) {
-                currentSectionSupplyScope = (normalizeImportText(content).includes('nha thau') || normalizeImportText(content).includes('ben b')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu') || normalizeImportText(content).includes('nha dau tu') || normalizeImportText(content).includes('ben a') || normalizeImportText(content).includes('ban a')) ? 'owner' : 'unknown';
+                currentSectionSupplyScope = "unknown";
               }
               
-              const rowSupplyScope = (normalizeImportText(content).includes('nha thau') || normalizeImportText(content).includes('ben b')) ? 'contractor' : (normalizeImportText(content).includes('chu dau tu') || normalizeImportText(content).includes('nha dau tu') || normalizeImportText(content).includes('ben a') || normalizeImportText(content).includes('ban a')) ? 'owner' : 'unknown';
+              const rowSupplyScope = "unknown";
               const supplyScope = isSection ? currentSectionSupplyScope : (rowSupplyScope !== 'unknown' ? rowSupplyScope : currentSectionSupplyScope);
 
               const rowId = crypto.randomUUID();

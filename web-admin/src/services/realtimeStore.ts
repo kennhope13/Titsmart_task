@@ -332,8 +332,6 @@ const deriveSupplyScope = (plan: any): 'contractor' | 'owner' | 'unknown' => {
   const explicit = plan.supplyScope ?? plan.supply_scope;
   if (explicit === 'contractor' || explicit === 'owner') return explicit;
   const text = normalizeVietnamese([plan.notes, plan.jobContent, plan.job_content, plan.content].filter(Boolean).join(' '));
-  if (text.includes('chu dau tu cung cap') || text.includes('chu dau tu cap') || text.includes('[owner]')) return 'owner';
-  if (text.includes('nha thau cung cap') || text.includes('do nha thau cung cap') || text.includes('[contractor]')) return 'contractor';
   return 'unknown';
 };
 
