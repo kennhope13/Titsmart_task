@@ -1499,7 +1499,7 @@ const displayTasks = tasks.filter((t) => {
             </button>
           )}
           <div className="min-w-0 flex-1 flex items-center gap-3">
-            <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase whitespace-nowrap flex-shrink-0">QUẢN LÝ TIẾN ĐỘ CÔNG VIỆC</h2>
+            <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase whitespace-nowrap flex-shrink-0">QUẢN LÝ TIẾN ĐỘ CÔNG VIỆC <span className="text-[10px] text-slate-400 font-mono font-normal tracking-normal lowercase ml-1">v1.1.88</span></h2>
             {selectedProjectFromUrl && (
               <div className="inline-flex min-w-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[13px] font-bold text-slate-700">
                 <span className="truncate">Dự án: {currentProject?.name || selectedProjectFromUrl}</span>
