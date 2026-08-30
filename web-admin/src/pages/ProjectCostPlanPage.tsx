@@ -1899,7 +1899,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-tight">
                   <tr>
-                    <th className="px-2 py-1.5 w-8 text-center">STT</th>
+                    
                     <th className="px-2 py-1.5 w-[70px]">Ngày</th>
                     <th className="px-2 py-1.5 min-w-[90px]">Người PT/Tên</th>
                     <th className="px-2 py-1.5 min-w-[180px]">Nội dung / Diễn giải</th>
@@ -1924,7 +1924,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                         const exp = record as any;
                         return (
                           <tr key={'exp_'+exp.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingExpense(exp)}>
-                            <td className="px-2 py-1.5 text-center font-bold text-slate-400">{exp.stt || '-'}</td>
+                            
                             <td className="px-2 py-1.5 font-semibold text-slate-900 whitespace-nowrap">{exp.date ? exp.date.substring(2) : '-'}</td>
                             <td className="px-2 py-1.5 font-semibold line-clamp-2" title={exp.spenderName}>{exp.spenderName || '-'}</td>
                             <td className="px-2 py-1.5">
@@ -1958,7 +1958,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                         const lab = record as any;
                         return (
                           <tr key={'lab_'+lab.id} className="hover:bg-blue-50/50 bg-blue-50/20 transition-colors align-middle cursor-pointer" onClick={() => setEditingLabor({...lab, date: lab.date || new Date().toISOString().split('T')[0]})}>
-                            <td className="px-2 py-1.5 text-center font-bold text-blue-400">{lab.stt || '-'}</td>
+                            
                             <td className="px-2 py-1.5 font-semibold text-blue-900 whitespace-nowrap">{lab.date ? lab.date.substring(2) : '-'}</td>
                             <td className="px-2 py-1.5 font-bold text-blue-800 line-clamp-2" title={lab.workerName}>{lab.workerName || '-'}</td>
                             <td className="px-2 py-1.5">

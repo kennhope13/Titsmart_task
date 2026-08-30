@@ -105,9 +105,9 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
         <table className="w-max text-left border-collapse">
           <thead className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
             <tr>
-              <th className="sticky left-0 z-20 w-[36px] bg-slate-50 border-r border-slate-200/70 px-1 py-1.5 text-center">STT</th>
+              
               <th className="w-[85px] px-1.5 py-1.5 text-center">Ngày chi</th>
-              <th className="sticky left-[36px] z-20 w-[160px] bg-slate-50 border-r border-slate-200/70 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Nội dung / Diễn giải</th>
+              <th className="sticky left-0 z-20 w-[160px] bg-slate-50 border-r border-slate-200/70 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Nội dung / Diễn giải</th>
               <th className="w-[45px] px-1 py-1.5 text-center">ĐVT</th>
               <th className="w-[65px] px-1.5 py-1.5 text-right">Số lượng</th>
               <th className="w-[90px] px-1.5 py-1.5 text-right">Đơn giá (đ)</th>
@@ -122,9 +122,9 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
           <tbody className="divide-y divide-slate-100 bg-white text-xs text-slate-700">
             {filteredData.map((exp) => (
               <tr key={exp.id} className="group align-middle transition-colors hover:bg-blue-50/30">
-                <td className="sticky left-0 z-10 w-[36px] bg-white group-hover:bg-blue-50/30 border-r border-slate-100 px-1 py-1 text-center font-bold text-slate-400">{exp.stt || '-'}</td>
+                
                 <td className="w-[85px] px-1.5 py-1 text-center font-semibold text-slate-900 whitespace-nowrap">{exp.date}</td>
-                <td className="sticky left-[36px] z-10 w-[160px] bg-white group-hover:bg-blue-50/30 border-r border-slate-100 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                <td className="sticky left-0 z-10 w-[160px] bg-white group-hover:bg-blue-50/30 border-r border-slate-100 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                   <div className="w-[145px] truncate font-bold text-slate-900">{exp.content}</div>
                   <div className="w-[145px] truncate mt-0.5 text-[11px] leading-relaxed text-slate-500">{exp.description}</div>
                   {exp.notes && <div className="mt-1 inline-block rounded border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Ghi chú: {exp.notes}</div>}

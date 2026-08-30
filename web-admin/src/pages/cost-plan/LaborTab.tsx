@@ -74,9 +74,9 @@ export const LaborTab: React.FC<LaborTabProps> = ({
         <table className="w-max text-left border-collapse">
           <thead className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
             <tr>
-              <th className="sticky left-0 z-20 w-[36px] bg-slate-50 border-r border-slate-200/70 px-1 py-1.5 text-center">STT</th>
+              
               <th className="w-[85px] px-1.5 py-1.5 text-center">Ngày làm</th>
-              <th className="sticky left-[36px] z-20 w-[160px] bg-slate-50 border-r border-slate-200/70 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Họ tên</th>
+              <th className="sticky left-0 z-20 w-[160px] bg-slate-50 border-r border-slate-200/70 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Họ tên</th>
               <th className="w-[160px] px-1.5 py-1">Nội dung / Diễn giải</th>
               <th className="w-[45px] px-1 py-1.5 text-center">ĐVT</th>
               <th className="w-[65px] px-1.5 py-1.5 text-right">Số lượng</th>
@@ -91,9 +91,9 @@ export const LaborTab: React.FC<LaborTabProps> = ({
           <tbody className="divide-y divide-slate-100 bg-white text-xs text-slate-700">
             {filteredData.map((lab) => (
               <tr key={lab.id} className="group align-middle transition-colors hover:bg-blue-50/30">
-                <td className="sticky left-0 z-10 w-[36px] bg-white group-hover:bg-blue-50/30 border-r border-slate-100 px-1 py-1 text-center font-bold text-slate-400">{lab.stt || '-'}</td>
+                
                 <td className="w-[85px] px-1.5 py-1 text-center font-semibold text-slate-900 whitespace-nowrap">{lab.date}</td>
-                <td className="sticky left-[36px] z-20 w-[160px] bg-white group-hover:bg-blue-50/30 border-r border-slate-100 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                <td className="sticky left-0 z-20 w-[160px] bg-white group-hover:bg-blue-50/30 border-r border-slate-100 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                   <div className="w-[145px] truncate font-extrabold text-slate-900">{lab.workerName || '-'}</div>
                 </td>
                 <td className="w-[160px] px-1.5 py-1">
