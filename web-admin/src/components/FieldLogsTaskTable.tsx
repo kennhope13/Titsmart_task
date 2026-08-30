@@ -67,6 +67,7 @@ interface FieldLogsTaskTableProps {
   logs: FieldLog[];
   onAddLogClick: (taskId: string) => void;
   onEditLogClick: (log: FieldLog) => void;
+  onDeleteLogClick?: (log: FieldLog) => void;
 }
 
 export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selectedProject, logs, onAddLogClick, onEditLogClick, onDeleteLogClick }) => {
@@ -217,7 +218,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                     {t.computedStt || t.stt}
                   </td>
                   <td className={`py-3 px-4 ${fontStyle}`}>
-                    <div className="flex items-center gap-2" style={{ paddingLeft: `${(depth - 1) * 1.5}rem` }}>
+                    <div className="flex items-center gap-2" style={{ paddingLeft: `${Math.max(0, depth - 1) * 1.5}rem` }}>
                       {depth > 1 && <span className="material-symbols-outlined text-slate-300 text-sm">subdirectory_arrow_right</span>}
                       {t.name}
                     </div>
