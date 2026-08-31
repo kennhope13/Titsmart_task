@@ -713,10 +713,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     addTasksBatch: async (batchData) => {
       try {
-        const createdTasks = await Promise.all(batchData.map(t => api.tasks.create(t)));
+        const createdTasks = await api.tasks.createBatch(batchData);
         set((state) => {
           const nextTasks = [...createdTasks, ...state.tasks];
-          const changedProjectCodes = Array.from(new Set(createdTasks.map((task) => task.projectCode)));
+          const changedProjectCodes = Array.from(new Set(createdTasks.map((task: any) => task.projectCode)));
           const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, changedProjectCodes);
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
@@ -1213,17 +1213,15 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         console.error('Failed to delete project', e);
       }
     },
-
     addMaterialPlansBatch: async (plansData) => {
       try {
-        const createdMatsRaw = await Promise.all(plansData.map(p => api.accounting.createMaterialPlan(p)));
-        const createdMats = createdMatsRaw.map(r => r ? normalizeMaterialPlan(r) : null).filter(Boolean) as ProjectMaterialPlan[];
+        const createdPlans = await api.accounting.createMaterialPlanBatch(plansData);
         set((state) => {
-          const nextMats = [...createdMats, ...state.materialPlans];
-          persistAndNotify({ materialPlans: nextMats });
-          return { materialPlans: nextMats };
+          const nextPlans = [...createdPlans, ...state.materialPlans];
+          persistAndNotify({ materialPlans: nextPlans });
+          return { materialPlans: nextPlans };
         });
-        return createdMats;
+        return createdPlans;
       } catch (e) {
         console.error('Failed to add material plans batch', e);
         return [];
@@ -1231,8 +1229,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
     addPurchasingsBatch: async (plansData) => {
       try {
-        const createdPursRaw = await Promise.all(plansData.map(p => api.accounting.createPurchasing(p)));
-        const createdPurs = createdPursRaw.map(r => r ? normalizePurchasingPlan(r) : null).filter(Boolean) as ProjectPurchasing[];
+        const createdPurs = await api.accounting.createPurchasingBatch(plansData);
         set((state) => {
           const nextPurs = [...createdPurs, ...state.purchasingPlans];
           persistAndNotify({ purchasingPlans: nextPurs });
@@ -1607,16 +1604,16 @@ export function setupRealtimeSync() {
   const debouncedRefresh = () => {
     if (refreshTimeout) clearTimeout(refreshTimeout);
     refreshTimeout = setTimeout(() => {
-      console.log('[Realtime] Đã nhận tín hiệu thay đổi data. Tạm tắt auto-fetch để tiết kiệm Egress 5GB. Vui lòng F5 nếu cần.');
-      // const store = useRealtimeStore.getState();
-      // store.fetchProjects();
-      // store.fetchAccounting();
-      // store.fetchMaterials(undefined);
-      // store.fetchTasks(undefined);
-      // store.fetchIssues(undefined);
-      // store.fetchEngineers();
-      // store.fetchActivityLogs();
-    }, 2000);
+      console.log('[Realtime] Đã nhận tín hiệu thay đổi data. Tự động cập nhật dữ liệu...');
+      const store = useRealtimeStore.getState();
+      store.fetchProjects();
+      store.fetchAccounting();
+      store.fetchMaterials(undefined);
+      store.fetchTasks(undefined);
+      store.fetchIssues(undefined);
+      store.fetchEngineers();
+      store.fetchFieldLogs();
+    }, 1000);
   };
 
   realtimeChannel = supabase

@@ -149,4 +149,13 @@ app.commandLine.appendSwitch('disable-http2');
 app.whenReady().then(() => {
   createWindow();
   setupAutoUpdater();
+
+  // Clear cache on startup to avoid sticky Chromium caches in Electron
+  if (mainWindow) {
+    mainWindow.webContents.session.clearCache().then(() => {
+      console.log('[Electron] Session cache cleared successfully');
+    }).catch(err => {
+      console.error('[Electron] Failed to clear session cache:', err);
+    });
+  }
 });

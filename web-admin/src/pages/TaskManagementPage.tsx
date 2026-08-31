@@ -641,7 +641,7 @@ const hasSyncedRef = useRef(false);
 
         for (const sheetName of wb.SheetNames) {
           const sheet = wb.Sheets[sheetName];
-          const rows = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
+          const rows = XLSX.utils.sheet_to_json<any>(sheet, { header: 1, defval: '' });
           if (!rows || rows.length === 0) continue;
 
           const codeUpper = sheetName.toUpperCase().replace(/\s+/g, '_');
@@ -754,7 +754,7 @@ const hasSyncedRef = useRef(false);
 
             const itemName = r[nameCol] || r[sttCol];
             if (!itemName || String(itemName).trim().length === 0) continue;
-            if (!/[a-zA-ZÀ-ỹ]/.test(String(itemName))) continue;
+            // Remove aggressive regex
 
             const sttVal = r[sttCol] ? String(r[sttCol]).trim() : '';
             const volVal = volCol >= 0 ? (typeof r[volCol] === 'number' ? r[volCol] : (parseFloat(r[volCol]) || 0)) : 0;
@@ -768,12 +768,13 @@ const hasSyncedRef = useRef(false);
             const cleanStt = String(sttVal || '').trim().replace(/\.$/, '');
             const hasNoDot = !cleanStt.includes('.');
             const isRoman = romanRegex.test(cleanStt);
-            const startsWithPhan = String(itemName || '').trim().toUpperCase().startsWith('PHẦN ');
+            const actualName = r[nameCol] ? String(r[nameCol]) : String(itemName);
+            const startsWithPhan = actualName.trim().toUpperCase().startsWith('PHẦN ');
             const hasNoVolumeAndUnit = (volVal === 0 || !volVal) && (!cleanUnitVal || cleanUnitVal === '');
-            const isSection = (startsWithPhan || isMainSectionName(itemName) || hasNoDot) && hasNoVolumeAndUnit;
+            const isSection = (startsWithPhan || isMainSectionName(actualName) || hasNoDot) && hasNoVolumeAndUnit;
 
             if (isSection) {
-              currentSection = `${sttVal ? sttVal + '. ' : ''}${itemName}`;
+              currentSection = `${sttVal ? sttVal + '. ' : ''}${actualName}`;
             }
 
             const rawPurchaseStatus = purchaseCol >= 0 && r[purchaseCol] ? String(r[purchaseCol]) : 'Chưa đặt hàng';

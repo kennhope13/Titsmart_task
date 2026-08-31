@@ -93,6 +93,20 @@ export const api = {
       if (error) throw error;
       return toCamelCase(result);
     },
+    createBatch: async (dataArray: any[]) => {
+      const payloads = dataArray.map(data => {
+        const payload = toSnakeCase(data);
+        if (payload.parent_id === '') payload.parent_id = null;
+        if (payload.assigned_engineer_id === '') payload.assigned_engineer_id = null;
+        if (payload.assigner_id === '') payload.assigner_id = null;
+        if (payload.reviewer_id === '') payload.reviewer_id = null;
+        return payload;
+      });
+
+      const { data: result, error } = await supabase.from('tasks').insert(payloads).select();
+      if (error) throw error;
+      return mapArray(result || []);
+    },
     update: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
       if (payload.parent_id === '') payload.parent_id = null;
@@ -253,6 +267,12 @@ export const api = {
       if (error) throw error;
       return toCamelCase(result);
     },
+    createMaterialPlanBatch: async (dataArray: any[]) => {
+      const payloads = dataArray.map(toSnakeCase);
+      const { data: result, error } = await supabase.from('material_plans').insert(payloads).select();
+      if (error) throw error;
+      return mapArray(result || []);
+    },
     updateMaterialPlan: async (id: string, data: any) => {
       const { data: result, error } = await supabase.from('material_plans').update(toSnakeCase(data)).eq('id', id).select().single();
       if (error) throw error;
@@ -284,6 +304,24 @@ export const api = {
         throw error;
       }
       return toCamelCase(result);
+    },
+    createPurchasingBatch: async (dataArray: any[]) => {
+      const payloads = dataArray.map(toSnakeCase);
+      const { data: result, error } = await supabase.from('purchasing_plans').insert(payloads).select();
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          console.warn('Fallback: saving batch without parent_id because columns are missing in DB');
+          payloads.forEach(p => {
+             delete p.parent_id;
+             delete p.material_plan_id;
+          });
+          const { data: retryResult, error: retryError } = await supabase.from('purchasing_plans').insert(payloads).select();
+          if (retryError) throw retryError;
+          return retryResult.map((r: any, i: number) => toCamelCase({ ...r, parent_id: dataArray[i].parentId, material_plan_id: dataArray[i].materialPlanId }));
+        }
+        throw error;
+      }
+      return mapArray(result || []);
     },
     updatePurchasing: async (id: string, data: any) => {
       const payload = toSnakeCase(data);

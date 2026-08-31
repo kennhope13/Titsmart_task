@@ -10,6 +10,7 @@ import { ImageUpload } from '../components/common/ImageUpload';
 import { ProjectMaterialPlan, ProjectPurchasing, ProjectExpense, LaborPayroll , calculateAutoProgressRatio, PURCHASE_STATUS_OPTIONS } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { MaterialAndPurchasingTab } from './cost-plan/MaterialAndPurchasingTab';
+import { supabase } from '../lib/supabase';
 
 import { DocumentCertificateTab } from './cost-plan/DocumentCertificateTab';
 import { CustomSelect } from '@/components/common/CustomSelect';
@@ -74,7 +75,7 @@ const getSectionForMaterialPlan = (plan: ProjectMaterialPlan, allPlans: ProjectM
   visited.add(plan.id);
 
   if (isSectionMarker(plan.stt, plan.notes)) return plan;
-  
+
   if (plan.parentId) {
     const parent = allPlans.find(p => p.id === plan.parentId);
     if (parent) {
@@ -82,19 +83,19 @@ const getSectionForMaterialPlan = (plan: ProjectMaterialPlan, allPlans: ProjectM
       return getSectionForMaterialPlan(parent, allPlans, visited);
     }
   }
-  
+
   const orderTagValue = (notes?: string): number | null => {
     const m = String(notes || '').match(/\[order:([\d.]+)\]/);
     return m ? parseFloat(m[1]) : null;
   };
-  
+
   const myPos = orderTagValue(plan.notes);
   if (myPos === null) return null;
-  
+
   const sections = allPlans.filter(p => isSectionMarker(p.stt, p.notes));
   let bestSec = null;
   let bestSecPos = -1;
-  
+
   sections.forEach(sec => {
     const secPos = orderTagValue(sec.notes);
     if (secPos !== null && secPos <= myPos && secPos > bestSecPos) {
@@ -102,7 +103,7 @@ const getSectionForMaterialPlan = (plan: ProjectMaterialPlan, allPlans: ProjectM
       bestSec = sec;
     }
   });
-  
+
   return bestSec;
 };
 
@@ -111,6 +112,7 @@ const isEffectiveContractorPlan = (plan: ProjectMaterialPlan, allPlans: ProjectM
 };
 
 export const ProjectCostPlanPage: React.FC = () => {
+  console.log('[DEBUG_VERSION] v1.1.89 - Realtime and fix regex enabled');
   const {
     projects,
     materialPlans,
@@ -122,9 +124,11 @@ export const ProjectCostPlanPage: React.FC = () => {
     addTask,
     addTasksBatch,
     addMaterialPlan,
+    addMaterialPlansBatch,
     updateMaterialPlan,
     deleteMaterialPlan,
     addPurchasingPlan,
+    addPurchasingsBatch,
     updatePurchasingPlan,
     deletePurchasingPlan,
     addExpense,
@@ -150,6 +154,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   // Pending tasks waiting for user confirmation before being created
   const [pendingTaskItems, setPendingTaskItems] = useState<Array<any>>([]);
+  const [debugText, setDebugText] = useState<string>('');
   const [showCreateTaskConfirm, setShowCreateTaskConfirm] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
@@ -166,7 +171,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     if (!existing) return;
 
     const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-    const matchingMaterial = materialPlans.find(m => 
+    const matchingMaterial = materialPlans.find(m =>
       (existing.materialPlanId && m.id === existing.materialPlanId) ||
       (m.projectCode === existing.projectCode && norm(m.stt) === norm(existing.stt) && norm(m.jobContent) === norm(existing.content))
     );
@@ -191,9 +196,9 @@ export const ProjectCostPlanPage: React.FC = () => {
           triggerToast(`Không tìm thấy mục tương ứng trong Kế hoạch vật tư! (STT: ${existing.stt}, Nội dung: ${existing.content})`, 'warning');
         }
 
-        const matchingTask = tasks.find(t => 
-          t.projectCode === existing.projectCode && 
-          norm(t.stt) === norm(existing.stt) && 
+        const matchingTask = tasks.find(t =>
+          t.projectCode === existing.projectCode &&
+          norm(t.stt) === norm(existing.stt) &&
           norm(t.name) === norm(existing.content)
         );
         if (matchingTask) {
@@ -212,22 +217,22 @@ export const ProjectCostPlanPage: React.FC = () => {
           await updateMaterialPlan(matchingMaterial.id, { orderedStatus: updates.orderStatus || 'Chưa đặt hàng' });
         }
 
-        const matchingTask = tasks.find(t => 
-          t.projectCode === existing.projectCode && 
-          norm(t.stt) === norm(existing.stt) && 
+        const matchingTask = tasks.find(t =>
+          t.projectCode === existing.projectCode &&
+          norm(t.stt) === norm(existing.stt) &&
           norm(t.name) === norm(existing.content)
         );
         if (matchingTask) {
           const newPurch = updates.orderStatus || 'Chưa đặt hàng';
           const taskUpdates: Record<string, any> = { purchaseStatus: newPurch };
-          
+
           if (!matchingTask.isSectionHeader) {
             const nextProgress = calculateAutoProgressRatio(newPurch, matchingTask.constrStatus);
             taskUpdates.progress = nextProgress;
             taskUpdates.isDone = nextProgress >= 1;
             taskUpdates.status = nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm';
           }
-          
+
           updateTask(matchingTask.id, taskUpdates);
         }
       }
@@ -249,9 +254,9 @@ export const ProjectCostPlanPage: React.FC = () => {
 
       // Đồng bộ STT, tên, đơn vị, khối lượng sang Purchasing + Task
       if (updates.stt !== undefined || updates.jobContent !== undefined || updates.unit !== undefined || updates.contractVolume !== undefined) {
-        const matchingPurchasing = purchasingPlans.find(p => 
-          p.projectCode === existing.projectCode && 
-          norm(p.stt) === norm(existing.stt) && 
+        const matchingPurchasing = purchasingPlans.find(p =>
+          p.projectCode === existing.projectCode &&
+          norm(p.stt) === norm(existing.stt) &&
           norm(p.content) === norm(existing.jobContent)
         );
         if (matchingPurchasing) {
@@ -263,9 +268,9 @@ export const ProjectCostPlanPage: React.FC = () => {
           });
         }
 
-        const matchingTask = tasks.find(t => 
-          t.projectCode === existing.projectCode && 
-          norm(t.stt) === norm(existing.stt) && 
+        const matchingTask = tasks.find(t =>
+          t.projectCode === existing.projectCode &&
+          norm(t.stt) === norm(existing.stt) &&
           norm(t.name) === norm(existing.jobContent)
         );
         if (matchingTask) {
@@ -280,9 +285,9 @@ export const ProjectCostPlanPage: React.FC = () => {
 
       // Đồng bộ Ghi chú / Vướng mắc sang Task
       if (updates.issueContent !== undefined || updates.issueStatus !== undefined || updates.notes !== undefined) {
-        const matchingTask = tasks.find(t => 
-          t.projectCode === existing.projectCode && 
-          norm(t.stt) === norm(existing.stt) && 
+        const matchingTask = tasks.find(t =>
+          t.projectCode === existing.projectCode &&
+          norm(t.stt) === norm(existing.stt) &&
           norm(t.name) === norm(existing.jobContent)
         );
         if (matchingTask) {
@@ -302,9 +307,9 @@ export const ProjectCostPlanPage: React.FC = () => {
 
       // Đồng bộ trạng thái đặt hàng / thi công sang Purchasing + Task
       if (updates.orderedStatus !== undefined || updates.progressStatus !== undefined) {
-        const matchingTask = tasks.find(t => 
-          t.projectCode === existing.projectCode && 
-          norm(t.stt) === norm(existing.stt) && 
+        const matchingTask = tasks.find(t =>
+          t.projectCode === existing.projectCode &&
+          norm(t.stt) === norm(existing.stt) &&
           norm(t.name) === norm(existing.jobContent)
         );
         if (matchingTask) {
@@ -332,9 +337,9 @@ export const ProjectCostPlanPage: React.FC = () => {
         }
 
         if (updates.orderedStatus !== undefined) {
-          const matchingPurchasing = purchasingPlans.find(p => 
-            p.projectCode === existing.projectCode && 
-            norm(p.stt) === norm(existing.stt) && 
+          const matchingPurchasing = purchasingPlans.find(p =>
+            p.projectCode === existing.projectCode &&
+            norm(p.stt) === norm(existing.stt) &&
             norm(p.content) === norm(existing.jobContent)
           );
           if (matchingPurchasing) {
@@ -350,7 +355,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   const confirmDeleteAction = () => {
     if (!deleteConfirm) return;
     const { id, type } = deleteConfirm;
-    
+
     if (type === 'material') {
       const plan = materialPlans.find(p => p.id === id);
       if (plan) {
@@ -367,7 +372,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             if (matchingPurchasing) deletePurchasingPlan(matchingPurchasing.id);
           }
         }
-        
+
         // Đồng bộ xóa sang Quản lý tiến độ
         const matchingTask = tasks.find(t => t.projectCode === plan.projectCode && t.name === plan.jobContent);
         if (matchingTask) deleteTask(matchingTask.id);
@@ -382,12 +387,12 @@ export const ProjectCostPlanPage: React.FC = () => {
           matPlan = materialPlans.find(m => m.id === pPlan.materialPlanId);
         } else {
           const key = normalizePlanKey(pPlan.stt, pPlan.content, pPlan.parentId);
-          matPlan = materialPlans.find(m => 
+          matPlan = materialPlans.find(m =>
             m.projectCode === pPlan.projectCode &&
             normalizePlanKey(m.stt, m.jobContent, m.parentId) === key
           );
         }
-        
+
         if (matPlan) {
           deleteMaterialPlan(matPlan.id);
           // Đồng bộ xóa sang Quản lý tiến độ
@@ -444,7 +449,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           })
           .join(' ');
         const normalizedWorkbookPreview = normalizeImportText(workbookPreviewText);
-        
+
   // ------------------------------------------------------------------
         // Smart validation: nhận diện file hợp lệ theo nhiều tiêu chí
         // ------------------------------------------------------------------
@@ -499,7 +504,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           if (fileInputRef.current) fileInputRef.current.value = '';
           return;
         }
-        
+
         const parseExcelDate = (dateVal: any) => {
           if (!dateVal) return '';
           if (typeof dateVal === 'string') return dateVal;
@@ -521,16 +526,16 @@ export const ProjectCostPlanPage: React.FC = () => {
 
         const baselineKey = (stt: string, content: string) =>
           `${stt.trim()}|${normalizeImportText(content).replace(/\\s+/g, ' ')}`;
-        
+
         // Dùng getState() để lấy dữ liệu MỚI NHẤT từ store, tránh stale closure
         const freshState = useRealtimeStore.getState();
-        
+
         const materialBaselineMap = new Map(
           freshState.materialPlans
             .filter((plan) => plan.projectCode === selectedProject)
             .map((plan) => [baselineKey(plan.stt || '', plan.jobContent || ''), plan])
         );
-        
+
         const purchasingBaselineMap = new Map(
           freshState.purchasingPlans
             .filter((plan) => plan.projectCode === selectedProject)
@@ -546,8 +551,9 @@ export const ProjectCostPlanPage: React.FC = () => {
         const importAppendixWorkbook = () => {
           let appendixMaterialCount = 0;
           let appendixPurchasingCount = 0;
-          const purchasingPromises: Promise<string | undefined>[] = [];
-          const materialPromises: Promise<any>[] = [];
+          const purchasingPayloads: any[] = [];
+          const materialPayloads: any[] = [];
+          const debugLogs: string[] = [];
 
           const findAppendixHeaderRow = (rows: any[][]) => {
             for (let i = 0; i < Math.min(rows.length, 30); i++) {
@@ -569,11 +575,12 @@ export const ProjectCostPlanPage: React.FC = () => {
           const pendingTasks: any[] = [];
           let globalOrder = 0; // thứ tự tuyệt đối trong file, dùng để sort sau
           let currentSectionSupplyScope: 'contractor' | 'owner' | 'unknown' = 'unknown'; // Theo dõi supplyScope của section hiện tại cho các hạng mục con
+          let currentSectionName = 'Mục chung';
 
           let currentMainSectionId: string | undefined = undefined;
           let currentSubSectionId: string | undefined = undefined;
           const sttIdMap = new Map<string, string>();
-          
+
           const isMainSectionName = (name: string): boolean => {
             const norm = name.toLowerCase();
             return norm.startsWith("phần ");
@@ -582,6 +589,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           wb.SheetNames.forEach((sheetName) => {
             const rows = XLSX.utils.sheet_to_json<any[]>(wb.Sheets[sheetName], { header: 1, defval: '' });
             const headerRowIndex = findAppendixHeaderRow(rows);
+            debugLogs.push(`[DEBUG] Sheet:${sheetName} | headerRowIndex:${headerRowIndex}`);
             if (headerRowIndex === -1) return;
 
             const headerRow = rows[headerRowIndex] || [];
@@ -589,6 +597,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             const contentCol = getColumnIndex(headerRow, ['noi dung', 'mo ta cong viec'], 1);
             const volumeCol = getColumnIndex(headerRow, ['khoi luong'], 2);
             const unitCol = getColumnIndex(headerRow, ['don vi tinh', 'dvt'], 3);
+            debugLogs.push(`[DEBUG] cols -> sttCol:${sttCol}, contentCol:${contentCol}, volumeCol:${volumeCol}, unitCol:${unitCol}`);
             const modelCol = getColumnIndex(headerRow, ['ma hieu', 'model'], -1);
             const originCol = getColumnIndex(headerRow, ['nguon san xuat', 'xuat xu'], -1);
             const unitPriceCol = getColumnIndex(headerRow, ['don gia'], modelCol >= 0 ? 6 : 4);
@@ -602,9 +611,10 @@ export const ProjectCostPlanPage: React.FC = () => {
 
             const parsedRows = rows.slice(headerRowIndex + 1);
             parsedRows.forEach((row, index) => {
-              const content = String(row[contentCol] || '').trim();
+              const actualContent = row[contentCol] !== undefined ? String(row[contentCol]) : String(row[sttCol] || '');
+              const content = actualContent.trim();
               if (!content) return;
-              if (!/[a-zA-ZÀ-ỹ]/.test(content)) return;
+              // Remove aggressive regex
 
               const stt = String(row[sttCol] || '').trim();
               const volumeContract = numVal(row[volumeCol]);
@@ -627,11 +637,16 @@ export const ProjectCostPlanPage: React.FC = () => {
               const hasNoVolumeAndUnit = (volumeContract === 0 || !volumeContract) && (!cleanUnitVal || cleanUnitVal === '');
               const isSection = (startsWithPhan || isMainSectionName(content) || hasNoDot) && hasNoVolumeAndUnit;
 
+              if (stt.startsWith('26') || stt.startsWith('27')) {
+                debugLogs.push(`[DEBUG] Row:${index + headerRowIndex + 2} | STT:${stt} | isSec:${isSection} | vol:${volumeContract} | unit:${cleanUnitVal} | hasNoVolUnit:${hasNoVolumeAndUnit} | content:${content.substring(0,30)}`);
+              }
+
               let effectiveStt = stt;
               if (isSection) {
                 currentSectionSupplyScope = "unknown";
+                currentSectionName = `${stt ? stt + '. ' : ''}${content}`;
               }
-              
+
               const rowSupplyScope = "unknown";
               const supplyScope = isSection ? currentSectionSupplyScope : (rowSupplyScope !== 'unknown' ? rowSupplyScope : currentSectionSupplyScope);
 
@@ -689,7 +704,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   notes: existingMaterial.notes || baseNote,
                 });
               } else {
-                materialPromises.push(addMaterialPlan({
+                materialPayloads.push({
                   id: rowId,
                   parentId: parentId,
                   projectCode: selectedProject,
@@ -706,7 +721,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   issueContent: '',
                   supplyScope,
                   notes: baseNote,
-                }));
+                });
                 materialBaselineMap.set(rowKey, { id: rowId, projectCode: selectedProject, stt: effectiveStt, jobContent: content, unit: String(row[unitCol] || ''), contractVolume: volumeContract } as ProjectMaterialPlan);
               }
               appendixMaterialCount++;
@@ -733,7 +748,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     notes: existingPurchasing.notes || baseNote,
                   });
                 } else {
-                  purchasingPromises.push(addPurchasingPlan({
+                  purchasingPayloads.push({
                     id: rowId,
                     parentId: parentId,
                     projectCode: selectedProject,
@@ -753,7 +768,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     contractStatus: 'Đã có phụ lục',
                     invoiceStatus: 'Chưa xuất',
                     notes: baseNote,
-                  }));
+                  });
                   purchasingBaselineMap.set(rowKey, { id: rowId, projectCode: selectedProject, stt: effectiveStt, content, unit: String(row[unitCol] || ''), volumeContract, volumeOrder: 0, unitPrice, vatRate, vatAmount: computedVatAmount, totalAmount: totalWithVat, prepayPercent: 0, prepayAmount: 0, remainingAmount: totalWithVat, orderStatus: '', contractStatus: '', invoiceStatus: '' } as ProjectPurchasing);
                 }
                 appendixPurchasingCount++;
@@ -762,7 +777,6 @@ export const ProjectCostPlanPage: React.FC = () => {
               const existingTask = taskBaselineMap.get(rowKey);
               if (!existingTask) {
                 const projName = projects.find(p => p.code === selectedProject)?.name || selectedProject;
-                const currentSectionName = isSection ? content : (pendingTasks.slice().reverse().find((task) => task.isSectionHeader)?.name || 'Khác');
                 pendingTasks.push({
                   id: rowId,
                   parentId: parentId,
@@ -787,17 +801,31 @@ export const ProjectCostPlanPage: React.FC = () => {
             });
           });
 
-          return { appendixMaterialCount, appendixPurchasingCount, pendingTasks, purchasingPromises, materialPromises };
+          setDebugText(debugLogs.join('\n'));
+          return { appendixMaterialCount, appendixPurchasingCount, pendingTasks, purchasingPayloads, materialPayloads };
         };
 
         if (isAppendixWorkbook) {
-          const { appendixMaterialCount, appendixPurchasingCount, pendingTasks, purchasingPromises, materialPromises } = importAppendixWorkbook();
-          await Promise.all([...purchasingPromises, ...materialPromises]);
+          const { appendixMaterialCount, appendixPurchasingCount, pendingTasks, purchasingPayloads, materialPayloads } = importAppendixWorkbook();
+          if (purchasingPayloads.length > 0) await addPurchasingsBatch(purchasingPayloads);
+          if (materialPayloads.length > 0) await addMaterialPlansBatch(materialPayloads);
+
           if (appendixMaterialCount === 0 && appendixPurchasingCount === 0) {
             triggerToast('Không tìm thấy bảng phụ lục PL01 hợp lệ trong file Excel này.', 'warning');
           } else {
             // Tự động tạo Tasks ngay — không cần hỏi
             if (pendingTasks.length > 0) {
+              // Debug logging
+              const debugPayload = {
+                user: "DEBUG_BROWSER",
+                action: JSON.stringify(pendingTasks.map(t => ({ stt: t.stt, name: t.name, isSectionHeader: t.isSectionHeader }))),
+                project: selectedProject
+              };
+              supabase.from('activity_logs').insert([debugPayload]).then(({ error }) => {
+                if (error) console.error('Debug log error:', error);
+                else console.log('Debug log inserted successfully!');
+              });
+
               addTasksBatch(pendingTasks);
               triggerToast(
                 `Đã nhập phụ lục PL01 cho dự án ${selectedProject}: ${appendixMaterialCount} dòng vật tư, ${appendixPurchasingCount} dòng mua hàng, ${pendingTasks.length} công việc đã được đồng bộ tự động.`,
@@ -843,13 +871,13 @@ export const ProjectCostPlanPage: React.FC = () => {
             const headerRow1 = rows[startRow - 2] || [];
             const headerRow2 = rows[startRow - 1] || [];
             const headerRow3 = rows[startRow] || [];
-            
+
             const findIdx = (keywords: string[], fallback: number) => {
               for (let col = 0; col < 30; col++) {
                 const combined = [headerRow1[col], headerRow2[col], headerRow3[col]]
                   .map(c => String(c || '').trim().toLowerCase())
                   .join(' ');
-                
+
                 if (keywords.some((k: string) => combined.includes(k))) {
                   return col;
                 }
@@ -878,7 +906,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             rows.slice(startRow).forEach(row => {
               const jobContent = row[idxContent];
               if (!jobContent) return;
-              
+
               const stt = String(row[idxSTT] || '');
               const contentStr = String(jobContent);
               const rKey = baselineKey(stt, contentStr);
@@ -1092,7 +1120,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       else if (activeTab === 'EXPENSE') outletContext.setSubTitle('Chi phí công trình');
       else outletContext.setSubTitle('');
     }
-    
+
     // Clear subtitle when component unmounts (e.g. switching to another main tab)
     return () => {
       if (outletContext?.setSubTitle) {
@@ -1176,10 +1204,10 @@ export const ProjectCostPlanPage: React.FC = () => {
     // Let's ensure owner sections without matPlan are removed if they have no valid children.
     projectPurchasing.forEach(plan => {
       if (validIds.has(plan.id) && isSectionMarker(plan.stt, plan.notes)) {
-        const matPlan = plan.materialPlanId 
+        const matPlan = plan.materialPlanId
           ? currentProjMaterialPlans.find(m => m.id === plan.materialPlanId)
           : currentProjMaterialPlans.find(m => normalizePlanKey(m.stt, m.jobContent) === normalizePlanKey(plan.stt, plan.content));
-        
+
         if (!matPlan) { /* owner check removed */ }
       }
     });
@@ -1200,8 +1228,8 @@ export const ProjectCostPlanPage: React.FC = () => {
 
       const missingPlans = contractorPlans.filter(plan => {
         if (syncingIdsRef.current.has(plan.id)) return false;
-        return !currentProjPurchasing.some(p => 
-          p.materialPlanId === plan.id || 
+        return !currentProjPurchasing.some(p =>
+          p.materialPlanId === plan.id ||
           (norm(p.stt) === norm(plan.stt) && norm(p.content) === norm(plan.jobContent))
         );
       });
@@ -1220,7 +1248,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
       for (const plan of missingPlans) {
         if (isCancelled) break;
-        
+
         syncingIdsRef.current.add(plan.id);
         const parentId = findPurchasingParentId(plan.parentId);
 
@@ -1321,17 +1349,17 @@ export const ProjectCostPlanPage: React.FC = () => {
         (exp.content || '').toLowerCase().includes(q) ||
         (exp.description || '').toLowerCase().includes(q) ||
         (exp.notes || '').toLowerCase().includes(q);
-        
-      const matchColumn = 
+
+      const matchColumn =
         (expenseFilterDate === 'all' || exp.date === expenseFilterDate) &&
         (expenseFilterContent === 'all' || exp.content === expenseFilterContent) &&
         (expenseFilterUnit === 'all' || exp.unit === expenseFilterUnit);
-        
+
       return matchSearch && matchColumn;
     });
   }, [currentProjExpenses, searchQuery, expenseFilterDate, expenseFilterContent, expenseFilterUnit]);
 
-  const currentProjLabor = useMemo(() => 
+  const currentProjLabor = useMemo(() =>
     laborPayrolls.filter(p => p.projectCode === selectedProject).sort((a, b) => sttSortValue(a.stt) - sttSortValue(b.stt)),
     [laborPayrolls, selectedProject]
   );
@@ -1349,12 +1377,12 @@ export const ProjectCostPlanPage: React.FC = () => {
         (lab.content || '').toLowerCase().includes(q) ||
         (lab.description || '').toLowerCase().includes(q) ||
         (lab.workerName || '').toLowerCase().includes(q);
-        
-      const matchColumn = 
+
+      const matchColumn =
         (laborFilterDate === 'all' || lab.date === laborFilterDate) &&
         (laborFilterContent === 'all' || lab.content === laborFilterContent) &&
         (laborFilterUnit === 'all' || lab.unit === laborFilterUnit);
-        
+
       return matchSearch && matchColumn;
     });
   }, [currentProjLabor, searchQuery, laborFilterDate, laborFilterContent, laborFilterUnit]);
@@ -1377,7 +1405,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   const combinedCashFlow = useMemo(() => {
     const e = filteredProjExpenses.map(exp => ({ ...exp, isLabor: false }));
     const l = filteredProjLabor.map(lab => ({ ...lab, isLabor: true }));
-    
+
     const combined = [...e, ...l].sort((a, b) => {
         return sttSortValue(a.stt) - sttSortValue(b.stt);
       });
@@ -1476,7 +1504,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   const handleExportExcel = () => {
     let data: any[] = [];
     let sheetName = '';
-    
+
     if ((activeTab === 'TECH' || activeTab === 'DOCS' || activeTab === 'FINANCE')) {
       data = currentProjMaterialPlans.map(p => {
         const norm = (s?: string) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -1518,7 +1546,6 @@ export const ProjectCostPlanPage: React.FC = () => {
       sheetName = "VatTuVaMuaHang";
     }else if (activeTab === 'EXPENSE') {
       data = currentProjExpenses.map(e => ({
-        'STT': e.stt,
         'Ngày': e.date,
         'Nội dung': e.content,
         'Diễn giải': e.description,
@@ -1587,13 +1614,19 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
+      {debugText && (
+        <div className="bg-red-50 border-b-2 border-red-500 p-4 text-xs font-mono text-red-950 whitespace-pre-wrap select-all z-[9999] relative">
+          <div className="font-bold text-sm mb-2">DEBUG IMPORT REPORT (VUI LÒNG CHỤP HÌNH GỬI TÔI):</div>
+          {debugText}
+        </div>
+      )}
       {/* Hidden file input for Excel import */}
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleImportExcel} 
-        accept=".xlsx,.xls,.csv,.pdf,.doc,.docx" 
-        className="hidden" 
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImportExcel}
+        accept=".xlsx,.xls,.csv,.pdf,.doc,.docx"
+        className="hidden"
       />
 
       {/* HEADER SECTION */}
@@ -1607,9 +1640,9 @@ export const ProjectCostPlanPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border border-slate-200">
               <span className="text-[13px] font-bold text-slate-500 uppercase px-2 whitespace-nowrap">Dự án:</span>
-              <CustomSelect 
-                value={selectedProject} 
-                onChange={(e) => setSelectedProject(e.target.value)} 
+              <CustomSelect
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
                 className="bg-white border border-slate-200 px-3 py-1.5 rounded-md text-[13px] font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
               >
                 {projectOptions.length === 0 ? (
@@ -1635,12 +1668,12 @@ export const ProjectCostPlanPage: React.FC = () => {
             { id: 'FINANCE', label: 'Thanh toán', icon: 'payments', show: user?.role !== 'engineer' },
             { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long', show: user?.role !== 'engineer' },
           ].filter(t => t.show).map(tab => (
-            <button 
+            <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 py-1.5 text-[12px] font-bold border-b-2 transition-all ${
-                activeTab === tab.id 
-                  ? 'border-primary text-primary' 
+                activeTab === tab.id
+                  ? 'border-primary text-primary'
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
@@ -1652,34 +1685,34 @@ export const ProjectCostPlanPage: React.FC = () => {
 
         {true && (
           <div className="flex gap-2 pb-1.5">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleImportExcel} 
-              accept=".xlsx,.xls,.csv" 
-              className="hidden" 
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImportExcel}
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
             />
-            <button 
+            <button
               onClick={() => {
                 if (!selectedProject) {
                   triggerToast('Vui lòng khởi tạo dự án trước khi nhập dữ liệu!', 'warning');
                   return;
                 }
                 fileInputRef.current?.click();
-              }} 
+              }}
               className="flex items-center gap-2 border border-slate-200 bg-white px-2.5 py-1.5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
             >
               <span className="material-symbols-outlined text-sm">file_upload</span>
               Nhập Excel
             </button>
-            <button 
+            <button
               onClick={() => {
                 if (!selectedProject) {
                   triggerToast('Vui lòng khởi tạo dự án trước khi xuất dữ liệu!', 'warning');
                   return;
                 }
                 handleExportExcel();
-              }} 
+              }}
               className="flex items-center gap-2 border border-slate-200 bg-white px-2.5 py-1.5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
             >
               <span className="material-symbols-outlined text-sm">file_download</span>
@@ -1687,7 +1720,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             </button>
 
             {(activeTab !== 'TECH' && activeTab !== 'DOCS' && activeTab !== 'FINANCE' && activeTab !== 'EXPENSE') && activeTab !== 'PURCHASING' && (
-              <button 
+              <button
                 onClick={() => {
                   if (!selectedProject) {
                     triggerToast('Vui lòng khởi tạo dự án trước khi thêm dữ liệu!', 'warning');
@@ -1699,7 +1732,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     else setIsNewExpenseOpen(true);
                   }
                   else if (activeTab === 'DOCUMENTS') setTriggerAddDoc(true);
-                }} 
+                }}
                 className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs"
               >
                 <span className="material-symbols-outlined text-sm">add</span>
@@ -1712,7 +1745,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
       {/* TAB CONTENTS */}
       <div className="bg-white border-x border-b border-slate-200 shadow-xs overflow-hidden flex-1">
-        
+
         {/* MATERIAL PLAN TAB */}
         {(activeTab === 'TECH' || activeTab === 'DOCS' || activeTab === 'FINANCE') && (
           <MaterialAndPurchasingTab
@@ -1753,27 +1786,27 @@ export const ProjectCostPlanPage: React.FC = () => {
         )}
 
         {/* DOCUMENTS TAB */}
-        
+
 
 
         {/* EXPENSE TAB */}
         {activeTab === 'EXPENSE' && (
           <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-white flex flex-col" id="expense-unified-view">
-            
-            
+
+
             {/* 1. BẢNG TỔNG QUAN */}
             <div className="shrink-0 w-full overflow-x-auto">
-              <CostPlanSummaryTable 
-                expenses={currentProjExpenses} 
-                labors={currentProjLabor} 
+              <CostPlanSummaryTable
+                expenses={currentProjExpenses}
+                labors={currentProjLabor}
                 onAllocateFund={(name, amount) => {
                   if (name === 'KHÁC') return;
-                  
+
                   let targetName = name;
                   let currentTotalFund = 0;
                   let personExpenses: any[] = [];
                   let title = '';
-                  
+
                   if (name === '__PROJECT__') {
                     personExpenses = currentProjExpenses.filter(e => e.spenderName === 'DỰ ÁN' && e.content === 'Quỹ Công Trình');
                     currentTotalFund = currentProjExpenses.reduce((acc, curr) => acc + (curr.incomeAmount || 0), 0);
@@ -1789,28 +1822,28 @@ export const ProjectCostPlanPage: React.FC = () => {
                     currentTotalFund = personExpenses.reduce((acc, curr) => acc + (curr.incomeAmount || 0), 0);
                     title = `Tổng Quỹ cho [${targetName.toUpperCase()}]`;
                   }
-                  
+
                   let newTotal = 0;
-                  
+
                   if (amount !== undefined) {
                     newTotal = amount;
                   } else {
                     const input = window.prompt(`Cập nhật ${title}:\n(Nhập số tiền, hiện tại là: ${currentTotalFund.toLocaleString('vi-VN')})`, currentTotalFund.toString());
                     if (input === null) return;
-                    
+
                     newTotal = parseInt(input.replace(/[,.]/g, ''), 10);
                     if (isNaN(newTotal)) {
                       triggerToast('Số tiền không hợp lệ', 'warning');
                       return;
                     }
                   }
-                  
+
                   const diff = newTotal - currentTotalFund;
                   if (diff === 0) return;
-                  
+
                   const adjustmentContent = name === '__PROJECT__' ? 'Quỹ Công Trình' : 'Cấp quỹ';
                   const adjustmentRecord = personExpenses.find(e => e.content === adjustmentContent && (e.totalAmount || 0) === 0);
-                  
+
                   if (adjustmentRecord) {
                     updateExpense(adjustmentRecord.id, {
                       ...adjustmentRecord,
@@ -1845,7 +1878,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
                       <span className="material-symbols-outlined text-[16px]">filter_list</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <span className="text-slate-500 font-medium whitespace-nowrap">Ngày chi:</span>
                       <CustomSelect
@@ -1858,7 +1891,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                         ))}
                       </CustomSelect>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <span className="text-slate-500 font-medium whitespace-nowrap">Nội dung:</span>
                       <CustomSelect
@@ -1873,7 +1906,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                         })}
                       </CustomSelect>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
                       <CustomSelect
@@ -1887,8 +1920,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                       </CustomSelect>
                     </div>
                   </div>
-                 
-                    <button 
+
+                    <button
                       onClick={() => setIsNewExpenseOpen(true)}
                       className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary-dark transition-colors shadow-sm ml-auto"
                     >
@@ -1899,7 +1932,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-tight">
                   <tr>
-                    
+
                     <th className="px-2 py-1.5 w-[70px]">Ngày</th>
                     <th className="px-2 py-1.5 min-w-[90px]">Người PT/Tên</th>
                     <th className="px-2 py-1.5 min-w-[180px]">Nội dung / Diễn giải</th>
@@ -1915,7 +1948,6 @@ export const ProjectCostPlanPage: React.FC = () => {
                     <th className="px-2 py-1.5 text-center w-[50px]">H.Đơn</th>
                     <th className="px-2 py-1.5 text-center w-[50px]">CCCD</th>
                     <th className="px-2 py-1.5 min-w-[80px]">Ghi chú</th>
-                    <th className="px-2 py-1.5 text-center w-14">Xóa</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-[12px] text-slate-700 leading-tight">
@@ -1924,7 +1956,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                         const exp = record as any;
                         return (
                           <tr key={'exp_'+exp.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingExpense(exp)}>
-                            
+
                             <td className="px-2 py-1.5 font-semibold text-slate-900 whitespace-nowrap">{exp.date ? exp.date.substring(2) : '-'}</td>
                             <td className="px-2 py-1.5 font-semibold line-clamp-2" title={exp.spenderName}>{exp.spenderName || '-'}</td>
                             <td className="px-2 py-1.5">
@@ -1947,18 +1979,13 @@ export const ProjectCostPlanPage: React.FC = () => {
                             </td>
                             <td className="px-2 py-1.5 text-slate-400 text-center">-</td>
                             <td className="px-2 py-1.5 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
-                            <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
-                              <button onClick={() => setDeleteConfirm({ isOpen: true, id: exp.id, type: 'expense', title: 'Xóa phiếu chi', itemName: `phiếu chi "${exp.content}"` })} className="w-6 h-6 inline-flex items-center justify-center rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors" title="Xóa">
-                                <span className="material-symbols-outlined text-[15px]">delete</span>
-                              </button>
-                            </td>
                           </tr>
                         );
                       } else {
                         const lab = record as any;
                         return (
                           <tr key={'lab_'+lab.id} className="hover:bg-blue-50/50 bg-blue-50/20 transition-colors align-middle cursor-pointer" onClick={() => setEditingLabor({...lab, date: lab.date || new Date().toISOString().split('T')[0]})}>
-                            
+
                             <td className="px-2 py-1.5 font-semibold text-blue-900 whitespace-nowrap">{lab.date ? lab.date.substring(2) : '-'}</td>
                             <td className="px-2 py-1.5 font-bold text-blue-800 line-clamp-2" title={lab.workerName}>{lab.workerName || '-'}</td>
                             <td className="px-2 py-1.5">
@@ -1978,8 +2005,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                             </td>
                             <td className="px-2 py-1.5 text-[10px]" title={lab.paymentStatus}>
                               <span className={`inline-flex px-1 py-0.5 rounded text-[10px] whitespace-nowrap font-bold border ${
-                                lab.paymentStatus === 'Đã thanh toán' 
-                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                                lab.paymentStatus === 'Đã thanh toán'
+                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
                                   : 'bg-amber-50 text-amber-600 border-amber-200'
                               }`}>
                                 {lab.paymentStatus === 'Đã thanh toán' ? 'Đã T.Toán' : 'Chưa T.Toán'}
@@ -1998,11 +2025,6 @@ export const ProjectCostPlanPage: React.FC = () => {
                               </div>
                             </td>
                             <td className="px-2 py-1.5 text-slate-400">-</td>
-                            <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
-                              <button onClick={() => setDeleteConfirm({ isOpen: true, id: lab.id, type: 'labor', title: 'Xóa công nhật', itemName: `công nhật "${lab.workerName}"` })} className="w-6 h-6 inline-flex items-center justify-center rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors" title="Xóa">
-                                <span className="material-symbols-outlined text-[15px]">delete</span>
-                              </button>
-                            </td>
                           </tr>
                         );
                       }
@@ -2013,7 +2035,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   </tbody>
             </table>
             </div>
-          
+
             </div>
             </div>
 )}
@@ -2043,7 +2065,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         <form onSubmit={async (e) => {
           e.preventDefault();
           const parentId = isCreatingSectionHeader ? null : (parentPlanIdForNew || sectionPlanIdForNew || null);
-          
+
           // Auto STT: La Mã cho đầu mục lớn, số thứ tự cho hạng mục nhỏ
           const autoStt = newPlanData.stt || '';
 
@@ -2091,16 +2113,16 @@ export const ProjectCostPlanPage: React.FC = () => {
                 const findPurchasingMatch = (matId: string): string | undefined => {
                   const exactMatch = currentProjPurchasing.find(p => p.materialPlanId === matId);
                   if (exactMatch) return exactMatch.id;
-                  
+
                   const matNode = currentProjMaterialPlans.find(p => p.id === matId);
                   if (!matNode) return undefined;
-                  
+
                   const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
                   const matchingPurchasing = currentProjPurchasing.find(
                     p => norm(p.stt) === norm(matNode.stt) && norm(p.content) === norm(matNode.jobContent)
                   );
                   if (matchingPurchasing) return matchingPurchasing.id;
-                  
+
                   if (matNode.parentId) return findPurchasingMatch(matNode.parentId);
                   return undefined;
                 };
@@ -2163,12 +2185,12 @@ export const ProjectCostPlanPage: React.FC = () => {
               // Tìm Task ID tương ứng với parentObj (vì parentId hiện tại là ID của MaterialPlan)
               // Cần ưu tiên task nằm trong cùng sectionName
               const isParentSec = isSectionMarker(parentObj.stt, parentObj.notes);
-              const pTask = tasks.find(t => 
-                t.projectCode === selectedProject && 
-                t.name === parentObj.jobContent && 
+              const pTask = tasks.find(t =>
+                t.projectCode === selectedProject &&
+                t.name === parentObj.jobContent &&
                 (isParentSec ? t.isSectionHeader : (!t.isSectionHeader && t.sectionName === currentSectionName))
               ) || tasks.find(t => t.projectCode === selectedProject && t.name === parentObj.jobContent);
-              
+
               if (pTask) {
                 taskParentId = pTask.id;
               }
@@ -2365,7 +2387,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               </div>
             </>
           )}
-          
+
           {isCreatingSectionHeader && (
             <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 mb-3">
               <input
@@ -2527,7 +2549,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           const unitPrice = Number(newPurchasingData.unitPrice || 0);
           const vat = Number(newPurchasingData.vatRate || 10);
           const prepayPct = Number(newPurchasingData.prepayPercent || 0);
-          
+
           const effectiveVol = orderVol > 0 ? orderVol : contractVol;
           const rawTotal = effectiveVol * unitPrice;
           const taxAmt = rawTotal * (vat / 100);
@@ -2623,12 +2645,12 @@ export const ProjectCostPlanPage: React.FC = () => {
             const parentPurchasing = currentProjPurchasing.find(p => p.id === parentId);
             if (parentPurchasing) {
               const isParentSec = isSectionMarker(parentPurchasing.stt, '');
-              const pTask = tasks.find(t => 
-                t.projectCode === selectedProject && 
-                t.name === parentPurchasing.content && 
+              const pTask = tasks.find(t =>
+                t.projectCode === selectedProject &&
+                t.name === parentPurchasing.content &&
                 (isParentSec ? t.isSectionHeader : (!t.isSectionHeader && t.sectionName === currentSectionName))
               ) || tasks.find(t => t.projectCode === selectedProject && t.name === parentPurchasing.content);
-              
+
               if (pTask) {
                 taskParentId = pTask.id;
               }
@@ -3093,7 +3115,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={String(newExpenseData.quantity)} onChange={(e) => setNewExpenseData({...newExpenseData, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={String(newExpenseData.unitPrice)} onChange={(e) => setNewExpenseData({...newExpenseData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
-          
+
           {additionalItems.map((item, index) => (
             <div key={index} className="pt-3 mt-3 border-t border-slate-200 relative">
               <button type="button" onClick={() => setAdditionalItems(prev => prev.filter((_, i) => i !== index))} className="absolute right-0 top-3 text-rose-500 hover:text-rose-700 p-1">
@@ -3174,7 +3196,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               ...editingExpense,
               totalAmount: total
             });
-            
+
             if (additionalItems.length > 0) {
               await Promise.all(additionalItems.map((item, idx) => {
                 const itemQty = Number(item.quantity || 1);
@@ -3231,7 +3253,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={String(editingExpense.quantity)} onChange={(e) => setEditingExpense({...editingExpense, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" step="any" value={String(editingExpense.unitPrice)} onChange={(e) => setEditingExpense({...editingExpense, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
-            
+
           {additionalItems.map((item, index) => (
             <div key={index} className="pt-3 mt-3 border-t border-slate-200 relative">
               <button type="button" onClick={() => setAdditionalItems(prev => prev.filter((_, i) => i !== index))} className="absolute right-0 top-3 text-rose-500 hover:text-rose-700 p-1">
@@ -3356,7 +3378,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 gap-3">
             <div>
-              <ImageUpload 
+              <ImageUpload
                 label="Ảnh CCCD (Tải lên cả 2 mặt)"
                 multiple={true}
                 value={[newLaborData.idCardFrontUrl, newLaborData.idCardBackUrl].filter(Boolean) as string[]}
@@ -3416,7 +3438,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 gap-3">
               <div>
-                <ImageUpload 
+                <ImageUpload
                   label="Ảnh CCCD (Tải lên cả 2 mặt)"
                   multiple={true}
                   value={[editingLabor.idCardFrontUrl, editingLabor.idCardBackUrl].filter(Boolean) as string[]}

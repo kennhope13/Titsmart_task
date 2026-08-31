@@ -22,7 +22,7 @@ const TEXT = {
   onHold: 'T\u1ea1m d\u1eebng',
   noProjectFound: 'Kh\u00f4ng c\u00f3 d\u1ef1 \u00e1n ph\u00f9 h\u1ee3p',
   noProject: 'Ch\u01b0a c\u00f3 d\u1ef1 \u00e1n n\u00e0o',
-  deleteProject: 'X\u00f3a d\u1ef1 \u00e1n',
+  deleteProject: 'Xóa dự án',
   cancel: 'H\u1ee7y',
   create: 'T\u1ea1o D\u1ef1 \u00e1n',
   importProjectTitle: 'Nh\u1eadp file / Kh\u1edfi t\u1ea1o D\u1ef1 \u00e1n',
@@ -67,7 +67,7 @@ const deriveProjectsFromTasks = (tasks: Task[]): Project[] => {
     const current = projectMap.get(task.projectCode);
     const isDone = task.isDone || task.progress >= 1;
     const taskProg = isDone ? 1 : (task.progress || 0);
-    
+
     if (!current) {
       projectMap.set(task.projectCode, {
         id: 'derived-' + task.projectCode,
@@ -196,13 +196,13 @@ export const ProjectManagementPage: React.FC = () => {
       const totalTasks = projectTasks.length || project.totalTasks;
       const completedTasks = projectTasks.filter((task) => task.isDone || task.progress >= 1).length || project.completedTasks;
       const memberNames = resolveProjectMemberNames(project);
-      
+
       let progress = project.progressPercent;
       if (projectTasks.length > 0) {
         const totalProgress = projectTasks.reduce((sum, task) => sum + (task.isDone ? 1 : (task.progress || 0)), 0);
         progress = Math.round((totalProgress / projectTasks.length) * 100);
       }
-      
+
       const projMaterialPlans = materialPlans.filter((plan) => plan.projectCode === project.code);
       const totalMaterials = projMaterialPlans.length;
       const completedMaterials = projMaterialPlans.filter((plan) => {
@@ -211,7 +211,7 @@ export const ProjectManagementPage: React.FC = () => {
         return status.includes('hoan thanh') || ordered.includes('nhan du') || status.includes('da co hang') || status.includes('da giao');
       }).length;
       const materialProgress = totalMaterials > 0 ? Math.round((completedMaterials / totalMaterials) * 100) : 0;
-      
+
       const totalPurchasing = purchasingPlans.filter((item) => item.projectCode === project.code).reduce((sum, item) => sum + (item.totalAmount || 0), 0);
       const totalExp = expenses.filter((item) => item.projectCode === project.code).reduce((sum, item) => sum + (item.totalAmount || 0), 0);
       const totalLab = laborPayrolls.filter((item) => item.projectCode === project.code).reduce((sum, item) => sum + (item.totalAmount || 0), 0);
@@ -233,7 +233,7 @@ export const ProjectManagementPage: React.FC = () => {
       };
     });
   }, [displayProjects, tasks, materialPlans, purchasingPlans, expenses, laborPayrolls]);
-  
+
   const openProjectTasks = (project: Project) => navigate(`/projects/${project.id}`);
 
   const applyImportedProject = (data: WebOcrExtractedData) => {
@@ -312,7 +312,7 @@ export const ProjectManagementPage: React.FC = () => {
       let currentMainSectionId: string | undefined = undefined;
       let currentSubSectionId: string | undefined = undefined;
       const sttIdMap = new Map<string, string>();
-      
+
 
 
 
@@ -329,15 +329,15 @@ export const ProjectManagementPage: React.FC = () => {
       });
 
       const existingTaskKeys = new Set(tasks.filter((task) => task.projectCode === code).map((task) => `${task.parentId || 'root'}|${task.stt.trim()}|${task.name.trim().toLowerCase()}`));
-      
+
       const importedTasks: Task[] = [];
-      
+
       tasksWithIds.forEach((item, index) => {
 
         const sttVal = (item.stt || '').trim();
         if (!/[a-zA-ZÀ-ỹ]/.test(item.name || '')) return;
         const isSection = item.isSectionHeader;
-        
+
         let parentId = undefined;
         if (isSection) {
           currentMainSectionId = item.id;
@@ -506,7 +506,7 @@ export const ProjectManagementPage: React.FC = () => {
   const [editProjClient, setEditProjClient] = useState('');
   const [editProjContractValue, setEditProjContractValue] = useState('');
   const [editSelectedEngineerIds, setEditSelectedEngineerIds] = useState<string[]>([]);
-  
+
   const toggleEditEngineerId = (id: string) => {
     setEditSelectedEngineerIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
@@ -517,21 +517,21 @@ export const ProjectManagementPage: React.FC = () => {
     setEditProjLocation(project.location || '');
     setEditProjClient(project.client || '');
     setEditProjContractValue(project.contractValue ? String(project.contractValue) : '');
-    
+
     // Resolve engineers from the engineers array since database doesn't store project.members
     const assignedEngineers = engineers
       .filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(project.code))
       .map(eng => eng.id);
-      
+
     const allMemberIds = Array.from(new Set([...(project.members || []), ...assignedEngineers]));
     setEditSelectedEngineerIds(allMemberIds);
   };
-  
+
   const handleEditProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectToEdit) return;
     if (!editProjName.trim()) return;
-    
+
     setLoading(true);
     setLoadingMessage('Đang cập nhật dự án...');
     try {
@@ -550,15 +550,15 @@ export const ProjectManagementPage: React.FC = () => {
       };
 
       await updateProject(projectToEdit.id, payload);
-      
+
       // Update engineer project codes if members changed
       const oldMembers = Array.from(new Set([
-        ...(projectToEdit.members || []), 
+        ...(projectToEdit.members || []),
         ...engineers.filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(projectToEdit.code)).map(eng => eng.id)
       ]));
       const addedMembers = editSelectedEngineerIds.filter(id => !oldMembers.includes(id));
       const removedMembers = oldMembers.filter(id => !editSelectedEngineerIds.includes(id));
-      
+
       for (const id of addedMembers) {
         const eng = engineers.find(e => e.id === id);
         if (eng && (!eng.projectCodes || !eng.projectCodes.includes(projectToEdit.code))) {
@@ -616,7 +616,7 @@ export const ProjectManagementPage: React.FC = () => {
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2">{TEXT.projectManagement}</h1>
         </div>
 
-        
+
           <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
           <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-[13px] font-bold border border-blue-100 whitespace-nowrap">
             {displayProjects.length} dự án
@@ -865,8 +865,3 @@ export const ProjectManagementPage: React.FC = () => {
     </div>
   );
 };
-
-
-
-
-

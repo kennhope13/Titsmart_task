@@ -7,4 +7,4 @@ code = code.replace(/<td className="px-2 py-1\.5 text-center font-bold text-slat
 code = code.replace(/<td className="px-2 py-1\.5 text-center font-bold text-blue-400">\{lab\.stt \|\| '-'}<\/td>/g, '');
 
 fs.writeFileSync(file, code);
-console.log('Done ProjectCostPlanPage');
+console.log('Regex replace done');
