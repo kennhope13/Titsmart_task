@@ -1,11 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
-import { triggerToast } from '../components/common/GlobalNotificationToast';
 
 export const TaskAssignmentPage: React.FC = () => {
   const { tasks, projects, engineers, updateTask } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
+
+  const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
+  const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+    setToastState({ show: true, message, type });
+    setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -15,7 +20,7 @@ export const TaskAssignmentPage: React.FC = () => {
 
   // Lọc các task "Chưa làm" hoặc "Chưa nhận việc" và chưa có assignedEngineerId
   const unassignedTasks = useMemo(() => {
-    let filtered = tasks.filter(t => !t.isSectionHeader && (!t.assignedEngineerId || t.status === 'Chưa làm' || t.status === 'Chưa nhận việc'));
+    let filtered = tasks.filter(t => !t.isSectionHeader && (!t.assignedEngineerId || t.status === 'Chưa làm' || t.status === 'Chờ nhận việc'));
     
     if (filterProjectCode !== 'all') {
       filtered = filtered.filter(t => t.projectCode === filterProjectCode);
@@ -184,7 +189,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 >
                   <option value="">-- Chọn nhân viên / kỹ sư --</option>
                   {engineers.map(e => (
-                    <option key={e.id} value={e.id}>{e.name} {e.position ? `(${e.position})` : ''}</option>
+                    <option key={e.id} value={e.id}>{e.name}</option>
                   ))}
                 </select>
               </div>
@@ -199,6 +204,20 @@ export const TaskAssignmentPage: React.FC = () => {
                 Xác nhận
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {toastState.show && (
+        <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-5">
+          <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-white font-medium ${
+            toastState.type === 'success' ? 'bg-emerald-600' :
+            toastState.type === 'warning' ? 'bg-amber-500' : 'bg-blue-500'
+          }`}>
+            <span className="material-icons-outlined">
+              {toastState.type === 'success' ? 'check_circle' : toastState.type === 'warning' ? 'warning' : 'info'}
+            </span>
+            {toastState.message}
           </div>
         </div>
       )}
