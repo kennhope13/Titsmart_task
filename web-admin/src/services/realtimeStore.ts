@@ -730,6 +730,13 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updateTask: async (id, updatedFields) => {
+      // Optimistic update
+      set((state) => {
+        const nextTasks = state.tasks.map((t) => (t.id === id ? { ...t, ...updatedFields } : t));
+        const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, state.tasks.find(t=>t.id===id)?.projectCode ? [state.tasks.find(t=>t.id===id)!.projectCode] : []);
+        persistAndNotify({ tasks: nextTasks, projects: nextProjects });
+        return { tasks: nextTasks, projects: nextProjects };
+      });
       try {
         const updatedTask = await api.tasks.update(id, updatedFields);
         set((state) => {
@@ -738,9 +745,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity('Đã chỉnh sửa thông tin công việc: ' + updatedTask.name, updatedTask.projectName || updatedTask.projectCode);
+        get().logActivity('Đã chỉnh sửa thông tin công việc', updatedTask.projectName || updatedTask.projectCode);
       } catch (e) {
         console.error('Failed to update task', e);
+        // Rollback can be added here if needed
       }
     },
 

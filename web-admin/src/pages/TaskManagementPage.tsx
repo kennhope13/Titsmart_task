@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore } from '../services/authStore';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
@@ -83,9 +84,11 @@ const escapeHtml = (value: unknown) => String(value ?? '')
 
 
 
-const taskStatusFromProgress = (progress: number): Task['status'] => (
-  progress >= 1 ? 'Ho\u00e0n th\u00e0nh' : progress > 0 ? '\u0110ang l\u00e0m' : 'Ch\u01b0a l\u00e0m'
-) as Task['status'];
+const taskStatusFromProgress = (progress: number, currentStatus?: Task['status']): Task['status'] => {
+  if (currentStatus === 'Chờ nhận việc' && progress === 0) return 'Chờ nhận việc';
+  if (currentStatus === 'Chờ nghiệm thu' && progress >= 1) return 'Chờ nghiệm thu';
+  return (progress >= 1 ? 'Hoàn thành' : progress > 0 ? 'Đang làm' : 'Chưa làm') as Task['status'];
+};
 
 const sttSortParts = (value?: string) => {
   const text = String(value || '').trim();
@@ -150,6 +153,7 @@ const truncateText = (text: string, maxLength: number = 40): string => {
 
 export const TaskManagementPage: React.FC = () => {
   const navigate = useNavigate();
+  const authStore = useAuthStore();
   const { projectId } = useParams();
   const [searchParams] = useSearchParams();
   const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addMaterialPlansBatch, addPurchasingPlan, addPurchasingsBatch, materialPlans, purchasingPlans, deleteMaterialPlan, deletePurchasingPlan, updateMaterialPlan, updatePurchasingPlan } = useRealtimeStore();
@@ -282,6 +286,7 @@ const hasSyncedRef = useRef(false);
   // Detailed Attribute Filters
   const [filterPurchase, setFilterPurchase] = useState<string>('all');
   const [filterConstr, setFilterConstr] = useState<string>('all');
+  const [assignFilter, setAssignFilter] = useState<'all'|'mine'|'delegated'>('all');
 
   // Collapsed sections state: Set of sectionName strings that are collapsed
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -321,6 +326,8 @@ const hasSyncedRef = useRef(false);
   // Edit Task Modal state
   const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [assigningTask, setAssigningTask] = useState<Task | null>(null);
+  const [assigningUserIds, setAssigningUserIds] = useState<string[]>([]);
 
   const [editingCell, setEditingCell] = useState<{ id: string; field: keyof Task } | null>(null);
   const [tempValue, setTempValue] = useState<any>('');
@@ -353,7 +360,7 @@ const hasSyncedRef = useRef(false);
       [field]: finalValue,
       ...(field === 'progress' ? {
         isDone: nextProgress >= 1,
-        status: taskStatusFromProgress(task.isSectionHeader ? 0 : nextProgress),
+        status: taskStatusFromProgress(task.isSectionHeader ? 0 : nextProgress, task.status),
       } : {})
     });
     setEditingCell(null);
@@ -369,7 +376,7 @@ const hasSyncedRef = useRef(false);
   const [editIssue, setEditIssue] = useState('');
   const [editIssueStatus, setEditIssueStatus] = useState('');
   const [editNotes, setEditNotes] = useState('');
-  const [editEngineerId, setEditEngineerId] = useState(engineers[0]?.id || '');
+  const [editEngineerId, setEditEngineerId] = useState('');
   const [editParentId, setEditParentId] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -384,7 +391,7 @@ const hasSyncedRef = useRef(false);
   const [unit, setUnit] = useState('');
   const [purchaseStatus, setPurchaseStatus] = useState('Chưa đặt hng');
   const [constrStatus, setConstrStatus] = useState('Chưa thi cng');
-  const [engineerId, setEngineerId] = useState(engineers[0]?.id || '');
+  const [engineerId, setEngineerId] = useState('');
   const [isSectionHeader, setIsSectionHeader] = useState(false);
   const [ocrIssueDraft, setOcrIssueDraft] = useState('');
   const [parentIdSelect, setParentIdSelect] = useState<string>('default');
@@ -478,7 +485,7 @@ const hasSyncedRef = useRef(false);
     setEditIssue(cleanIssue(t.issue) || '');
     setEditIssueStatus(t.issueStatus || '');
     setEditNotes(t.notes || '');
-    setEditEngineerId(t.assignedEngineerId || engineers[0]?.id || '');
+    setEditEngineerId(t.assignedEngineerId || '');
     setEditParentId(t.parentId || '');
     setIsEditTaskModalOpen(true);
   };
@@ -502,12 +509,12 @@ const hasSyncedRef = useRef(false);
       constrStatus: editConstrStatus,
       progress: nextProgress,
       isDone: !editingTask.isSectionHeader && nextProgress >= 1,
-      status: taskStatusFromProgress(!editingTask.isSectionHeader ? nextProgress : 0),
+      status: taskStatusFromProgress(!editingTask.isSectionHeader ? nextProgress : 0, editingTask.status),
       issue: editIssue,
       issueStatus: editIssueStatus,
       notes: editNotes,
       assignedEngineerId: editEngineerId,
-      assignedEngineerName: eng ? eng.name : editingTask.assignedEngineerName,
+      assignedEngineerName: editEngineerId ? (eng?.name || '') : '',
       parentId: editParentId || undefined,
     });
 
@@ -1046,7 +1053,7 @@ const hasSyncedRef = useRef(false);
       volume: isSectionHeader ? 0 : volume,
       unit: isSectionHeader ? '' : unit,
       progress: nextProgress,
-      status: taskStatusFromProgress(isSectionHeader ? 0 : nextProgress),
+      status: taskStatusFromProgress(isSectionHeader ? 0 : nextProgress, 'Chưa làm'),
       purchaseStatus: isSectionHeader ? '' : purchaseStatus,
       constrStatus: isSectionHeader ? '' : constrStatus,
       isDone: !isSectionHeader && nextProgress >= 1,
@@ -1323,6 +1330,10 @@ const displayTasks = tasks.filter((t) => {
     const matchesUnit = filterUnit === 'all' || t.unit === filterUnit;
         const matchesPurchase = filterPurchase === 'all' || t.purchaseStatus === filterPurchase;
     const matchesConstr = filterConstr === 'all' || t.constrStatus === filterConstr;
+    const currentUser = authStore?.user;
+    const matchesAssign = assignFilter === 'all' || 
+      (assignFilter === 'mine' && t.assignedEngineerId?.includes(currentUser?.id || '')) ||
+      (assignFilter === 'delegated' && t.assignerId === currentUser?.id);
     const matchesSearch =
       t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (cleanIssue(t.issue) && cleanIssue(t.issue).toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -1333,6 +1344,7 @@ const displayTasks = tasks.filter((t) => {
       matchesUnit &&
             matchesPurchase &&
       matchesConstr &&
+      matchesAssign &&
       matchesSearch
     );
   });
@@ -1661,6 +1673,7 @@ const displayTasks = tasks.filter((t) => {
                 <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
                 <th className="py-2 px-1 w-[115px] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
                 <th className="py-2 px-1 w-[140px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
+                <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">GIAO VIỆC</th>
                 <th className="sticky right-0 z-20 bg-slate-50 bg-clip-padding py-2 px-1 w-[150px] min-w-[150px] border-b border-l border-slate-200 whitespace-nowrap shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">GHI CHÚ</th>
               </tr>
             </thead>
@@ -1675,7 +1688,7 @@ const displayTasks = tasks.filter((t) => {
                     return (
                       <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
                         <td onClick={() => handleOpenEditModal(t)} className="sticky left-0 z-10 py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{(t as any).computedStt || t.stt}</td>
-                        <td colSpan={8} className="sticky z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" style={{ left: "var(--stt-width)" }}>
+                        <td colSpan={9} className="sticky z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" style={{ left: "var(--stt-width)" }}>
                           <div className="flex items-start gap-2 whitespace-normal break-words">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}
@@ -1793,6 +1806,36 @@ const displayTasks = tasks.filter((t) => {
                           ))}
                         </CustomSelect>
                       </td>
+                      <td 
+  className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors"
+  onClick={(e) => {
+    if (authStore.user?.role === 'admin' || authStore.user?.role === 'Quản trị viên') {
+      e.stopPropagation();
+      setAssigningTask(t);
+      const parts = t.assignedEngineerName?.split('|') || [];
+      const idsString = parts.length > 1 ? parts[1] : t.assignedEngineerId;
+      setAssigningUserIds(idsString ? idsString.split(',') : []);
+    }
+  }}
+>
+                        <div className="flex flex-col gap-1 items-center justify-center pointer-events-none">
+                          {t.assignedEngineerId && (t.assignedEngineerName?.split('|')[0] || '').split(',').filter((n: string) => n.trim()).map((name: string, i: number) => (
+                            <span key={i} className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1 rounded truncate w-full max-w-[100px]" title={name.trim()}>{name.trim()}</span>
+                          ))}
+                          
+                          {(t.assignedEngineerName?.includes('|' + (authStore.user?.id || '')) || t.assignedEngineerId === authStore.user?.id) && t.status === 'Chờ nhận việc' && (
+                            <button onClick={(e) => { e.stopPropagation(); handleUpdateTaskSync(t.id, { status: 'Đang làm', progress: 0.05, constrStatus: 'Đang thi công' }); }} className="text-[9px] bg-emerald-500 pointer-events-auto hover:bg-emerald-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nhận việc</button>
+                          )}
+                          {(t.assignedEngineerName?.includes('|' + (authStore.user?.id || '')) || t.assignedEngineerId === authStore.user?.id) && (t.status === 'Đang làm' || t.status === 'Chưa làm') && (
+                            <button onClick={(e) => { e.stopPropagation(); handleUpdateTaskSync(t.id, { status: 'Chờ nghiệm thu', progress: 1, constrStatus: 'Đã hoàn thành' }); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Báo cáo xong</button>
+                          )}
+                          {(authStore.user?.role === 'admin' || authStore.user?.role === 'Quản trị viên') && t.status === 'Chờ nghiệm thu' && (
+                            <button onClick={(e) => { e.stopPropagation(); handleUpdateTaskSync(t.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' }); }} className="text-[9px] bg-purple-500 pointer-events-auto hover:bg-purple-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nghiệm thu</button>
+                          )}
+                          
+                          
+                        </div>
+                      </td>
                       <td className={`sticky right-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-l border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-slate-500 whitespace-normal break-words leading-tight`} title={cleanNotes(t.notes)}>
                         {editingCell?.id === t.id && editingCell?.field === 'notes' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-700 font-bold focus:outline-primary text-[10px]" />
@@ -1814,6 +1857,64 @@ const displayTasks = tasks.filter((t) => {
 
       </section>
       {/* end-task-management-screen */}
+      
+      {/* ASSIGN TASK MODAL */}
+      <Modal
+        isOpen={!!assigningTask}
+        onClose={() => { setAssigningTask(null); setAssigningUserIds([]); }}
+        title="Giao việc cho nhân viên"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 font-medium">Chọn một hoặc nhiều nhân viên cho hạng mục: <strong className="text-primary">{assigningTask?.name}</strong></p>
+          <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1 bg-slate-50">
+            {engineers.map(eng => {
+              const isChecked = assigningUserIds.includes(eng.id);
+              return (
+                <label key={eng.id} className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded cursor-pointer transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={isChecked}
+                    onChange={(e) => {
+                      if (e.target.checked) setAssigningUserIds(prev => [...prev, eng.id]);
+                      else setAssigningUserIds(prev => prev.filter(id => id !== eng.id));
+                    }}
+                    className="rounded border-slate-300 text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <div className="text-sm font-bold text-slate-700">{eng.name}</div>
+                    <div className="text-xs text-slate-500">{eng.title || 'Nhân viên'}</div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-100">
+            <button onClick={() => { setAssigningTask(null); setAssigningUserIds([]); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
+            <button 
+              onClick={() => {
+                if (!assigningTask) return;
+                const selectedEngs = engineers.filter(e => assigningUserIds.includes(e.id));
+                const names = selectedEngs.map(e => e.name).join(', ');
+                const ids = selectedEngs.map(e => e.id).join(',');
+                const firstId = selectedEngs.length > 0 ? selectedEngs[0].id : '';
+                handleUpdateTaskSync(assigningTask.id, {
+                  assignedEngineerId: firstId,
+                  assignedEngineerName: names + (ids ? '|' + ids : ''),
+                  assignerId: authStore.user?.id,
+                  status: ids ? 'Chờ nhận việc' : assigningTask.status
+                });
+                setAssigningTask(null);
+                setAssigningUserIds([]);
+                triggerToast('Đã giao việc thành công!', 'success');
+              }}
+              className="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg shadow-sm transition-all"
+            >
+              Lưu phân công
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* EDIT TASK MODAL */}
       <Modal
         isOpen={isEditTaskModalOpen}
@@ -1836,7 +1937,7 @@ const displayTasks = tasks.filter((t) => {
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Khối lượng</label><input type="number" step="any" value={editVolume} onChange={(e) => setEditVolume(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị tính (ĐVT)</label><input type="text" value={editUnit} onChange={(e) => setEditUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">TT Đặt hàng</label><CustomSelect disabled title="Được đồng bộ tự động từ tab Vật tư" value={editPurchaseStatus} onChange={(e) => setEditPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div><div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><CustomSelect value={editConstrStatus} onChange={(e) => setEditConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-red-600 mb-1">Vướng mắc / Tồn đọng</label><input type="text" placeholder="VD: Thiếu vật tư cáp..." value={editIssue} onChange={(e) => setEditIssue(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none bg-red-50/30 text-red-700 font-medium" /></div><div><label className="block font-bold text-slate-700 mb-1">Trạng thái xử lý</label><input type="text" placeholder="VD: Yêu cầu cấp bổ sung..." value={editIssueStatus} onChange={(e) => setEditIssueStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div></div>
-            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Ghi chú thêm cho dòng công việc" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Kỹ sư phụ trách</label><CustomSelect value={editEngineerId} onChange={(e) => setEditEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{engineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}</CustomSelect></div></div>
+            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Ghi chú thêm cho dòng công việc" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Kỹ sư phụ trách</label><CustomSelect value={editEngineerId} onChange={(e) => setEditEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"><option value="">-- Chưa giao --</option>{engineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}</CustomSelect></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tiến độ tự tính (%)</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">{calculateAutoProgressPercent(editPurchaseStatus, editConstrStatus)}%</div></div><div><label className="block font-bold text-slate-700 mb-1">Hoàn thành</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-bold text-slate-800">{calculateAutoProgressRatio(editPurchaseStatus, editConstrStatus) >= 1 ? 'Đã hoàn thành' : 'Chưa hoàn thành'}</div></div></div>
           </>)}
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setIsEditTaskModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">Lưu Thay Đổi</button></div>
@@ -1961,6 +2062,7 @@ const displayTasks = tasks.filter((t) => {
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">{'K\u1ef9 s\u01b0 Ph\u1ee5 tr\u00e1ch'}</label>
                   <CustomSelect value={engineerId} onChange={(e) => setEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                    <option value="">-- Chưa giao --</option>
                     {engineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}
                   </CustomSelect>
                 </div>
