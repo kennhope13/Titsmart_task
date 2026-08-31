@@ -78,7 +78,7 @@ export const TaskAssignmentPage: React.FC = () => {
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
       <div className="flex justify-between items-center bg-white px-4 py-3 border-b border-slate-200">
         <h1 className="text-lg font-bold text-slate-800 uppercase flex items-center gap-2">
-          <span className="material-icons-outlined text-primary">assignment_ind</span>
+          <span className="material-symbols-outlined text-primary">assignment_add</span>
           Phân Công Công Việc
         </h1>
         <div className="flex items-center gap-4">
@@ -99,7 +99,7 @@ export const TaskAssignmentPage: React.FC = () => {
               selectedTaskIds.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >
-            <span className="material-icons-outlined text-base">send</span>
+            <span className="material-symbols-outlined text-base">send</span>
             Giao {selectedTaskIds.length > 0 ? selectedTaskIds.length : ''} việc
           </button>
         </div>
@@ -166,17 +166,17 @@ export const TaskAssignmentPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <span className="material-icons-outlined text-primary">assignment_ind</span>
+                <span className="material-symbols-outlined text-primary">assignment_add</span>
                 Giao việc cho nhân viên
               </h2>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
-                <span className="material-icons-outlined">close</span>
+                <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             
             <div className="px-6 py-6 flex flex-col gap-4">
               <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm font-medium border border-blue-100 flex items-center gap-2">
-                <span className="material-icons-outlined text-blue-500">info</span>
+                <span className="material-symbols-outlined text-blue-500">info</span>
                 Bạn đang chọn giao {selectedTaskIds.length} đầu mục công việc.
               </div>
               
@@ -200,7 +200,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 Hủy
               </button>
               <button onClick={handleAssign} className="px-6 py-2 rounded-lg text-sm font-bold text-white bg-primary hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">
-                <span className="material-icons-outlined text-base">check_circle</span>
+                <span className="material-symbols-outlined text-base">check_circle</span>
                 Xác nhận
               </button>
             </div>
@@ -214,7 +214,7 @@ export const TaskAssignmentPage: React.FC = () => {
             toastState.type === 'success' ? 'bg-emerald-600' :
             toastState.type === 'warning' ? 'bg-amber-500' : 'bg-blue-500'
           }`}>
-            <span className="material-icons-outlined">
+            <span className="material-symbols-outlined">
               {toastState.type === 'success' ? 'check_circle' : toastState.type === 'warning' ? 'warning' : 'info'}
             </span>
             {toastState.message}
