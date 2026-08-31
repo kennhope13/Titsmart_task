@@ -166,6 +166,26 @@ export const TaskManagementPage: React.FC = () => {
 
   const selectedProjectFromUrl = resolvedProjectCode || searchParams.get('project') || '';
 
+  const handleAcceptTask = async (task: Task) => {
+    handleUpdateTaskSync(task.id, { status: 'Đang làm', progress: 0.05, constrStatus: 'Đang thi công' });
+    triggerToast('Đã xác nhận nhận việc!', 'success');
+    
+    // Log activity to inform Admin
+    const store = useRealtimeStore.getState();
+    const userName = authStore.user?.name || authStore.user?.username || 'Một nhân sự';
+    store.logActivity(`Nhân sự ${userName} đã XÁC NHẬN NHẬN VIỆC hạng mục: "${task.name}"`, task.projectName || task.projectCode);
+    
+    // Also add explicit notification to Admin (assigner) if possible
+    if (store.addNotification) {
+      await store.addNotification({
+        title: 'Nhân sự đã nhận việc',
+        message: `${userName} đã xác nhận nhận công việc "${task.name}" thuộc dự án ${task.projectCode}.`,
+        type: 'task_assigned',
+        icon: 'check_circle'
+      });
+    }
+  };
+
   // Đồng bộ trạng thái Mua hàng / Thi công từ tab Quản lý Công việc sang tab Kế hoạch Vật tư & Mua hàng
     const handleUpdateTaskSync = (id: string, updates: Partial<Task>) => {
     updateTask(id, updates);
@@ -1827,7 +1847,7 @@ const displayTasks = tasks.filter((t) => {
                             ))}
                             
                             {(t.assignedEngineerName?.includes('|' + (authStore.user?.id || '')) || t.assignedEngineerId === authStore.user?.id) && t.status === 'Chờ nhận việc' && (
-                              <button onClick={(e) => { e.stopPropagation(); handleUpdateTaskSync(t.id, { status: 'Đang làm', progress: 0.05, constrStatus: 'Đang thi công' }); }} className="text-[9px] bg-emerald-500 pointer-events-auto hover:bg-emerald-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nhận việc</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleAcceptTask(t); }} className="text-[9px] bg-emerald-500 pointer-events-auto hover:bg-emerald-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nhận việc</button>
                             )}
                             {(t.assignedEngineerName?.includes('|' + (authStore.user?.id || '')) || t.assignedEngineerId === authStore.user?.id) && (t.status === 'Đang làm' || t.status === 'Chưa làm') && (
                               <button onClick={(e) => { e.stopPropagation(); handleUpdateTaskSync(t.id, { status: 'Chờ nghiệm thu', progress: 1, constrStatus: 'Đã hoàn thành' }); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Báo cáo xong</button>

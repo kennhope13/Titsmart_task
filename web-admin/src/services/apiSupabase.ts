@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
+import { NotificationItem } from '../types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -492,4 +493,34 @@ export const api = {
       };
     },
   },
+  notifications: {
+    create: async (data: Omit<NotificationItem, 'id' | 'timestamp' | 'read'>) => {
+      const payload = {
+        title: data.title,
+        message: data.message,
+        type: data.type,
+        icon: data.icon,
+        read: false,
+        timestamp: new Date().toISOString()
+      };
+      const { data: result, error } = await supabase.from('notifications').insert(payload).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    getAll: async () => {
+      const { data, error } = await supabase.from('notifications').select('*').order('timestamp', { ascending: false }).limit(50);
+      if (error) throw error;
+      return mapArray(data || []);
+    },
+    markRead: async (id: string) => {
+      const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    },
+    clear: async () => {
+      const { error } = await supabase.from('notifications').delete().neq('id', '0');
+      if (error) throw error;
+      return { success: true };
+    }
+  }
 };
