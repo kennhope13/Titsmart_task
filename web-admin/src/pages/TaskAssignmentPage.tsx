@@ -17,22 +17,27 @@ export const TaskAssignmentPage: React.FC = () => {
   const [selectedEngineerId, setSelectedEngineerId] = useState('');
   
   const [filterProjectCode, setFilterProjectCode] = useState('all');
+  const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned'>('unassigned');
 
-  // Lọc các task "Chưa làm" hoặc "Chưa nhận việc" và chưa có assignedEngineerId
-  const unassignedTasks = useMemo(() => {
-    let filtered = tasks.filter(t => !t.isSectionHeader && (!t.assignedEngineerId || t.status === 'Chưa làm' || t.status === 'Chờ nhận việc'));
+  const displayedTasks = useMemo(() => {
+    let filtered = tasks.filter(t => !t.isSectionHeader);
+    if (activeTab === 'unassigned') {
+      filtered = filtered.filter(t => !t.assignedEngineerId || t.status === 'Chưa làm' || t.status === 'Chờ nhận việc');
+    } else {
+      filtered = filtered.filter(t => t.assignedEngineerId && t.status !== 'Chưa làm' && t.status !== 'Chờ nhận việc');
+    }
     
     if (filterProjectCode !== 'all') {
       filtered = filtered.filter(t => t.projectCode === filterProjectCode);
     }
     return filtered;
-  }, [tasks, filterProjectCode]);
+  }, [tasks, filterProjectCode, activeTab]);
 
   const handleToggleSelectAll = () => {
-    if (selectedTaskIds.length === unassignedTasks.length && unassignedTasks.length > 0) {
+    if (selectedTaskIds.length === displayedTasks.length && displayedTasks.length > 0) {
       setSelectedTaskIds([]);
     } else {
-      setSelectedTaskIds(unassignedTasks.map(t => t.id));
+      setSelectedTaskIds(displayedTasks.map(t => t.id));
     }
   };
 
@@ -77,9 +82,25 @@ export const TaskAssignmentPage: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
       <div className="flex justify-between items-center bg-white px-4 py-3 border-b border-slate-200">
-        <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">
-          PHÂN CÔNG CÔNG VIỆC
-        </h1>
+        <div className="flex items-center">
+          <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">
+            PHÂN CÔNG CÔNG VIỆC
+          </h1>
+          <div className="flex bg-slate-100 rounded-lg p-1 ml-6">
+            <button 
+              onClick={() => { setActiveTab('unassigned'); setSelectedTaskIds([]); }}
+              className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${activeTab === 'unassigned' ? 'bg-white shadow text-primary' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Cần phân công
+            </button>
+            <button 
+              onClick={() => { setActiveTab('assigned'); setSelectedTaskIds([]); }}
+              className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${activeTab === 'assigned' ? 'bg-white shadow text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Đã nhận / Đang làm
+            </button>
+          </div>
+        </div>
         <div className="flex items-center gap-4">
           <select 
             value={filterProjectCode} 
@@ -91,16 +112,18 @@ export const TaskAssignmentPage: React.FC = () => {
               <option key={p.id} value={p.code}>{p.name}</option>
             ))}
           </select>
-          <button 
-            disabled={selectedTaskIds.length === 0}
-            onClick={() => setIsModalOpen(true)}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded text-sm font-bold shadow-sm transition-all ${
-              selectedTaskIds.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            }`}
-          >
-            <span className="material-symbols-outlined text-base">send</span>
-            Giao {selectedTaskIds.length > 0 ? selectedTaskIds.length : ''} việc
-          </button>
+          {activeTab === 'unassigned' && (
+            <button 
+              disabled={selectedTaskIds.length === 0}
+              onClick={() => setIsModalOpen(true)}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded text-sm font-bold shadow-sm transition-all ${
+                selectedTaskIds.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">send</span>
+              Giao {selectedTaskIds.length > 0 ? selectedTaskIds.length : ''} việc
+            </button>
+          )}
         </div>
       </div>
 
@@ -109,45 +132,65 @@ export const TaskAssignmentPage: React.FC = () => {
           <table className="w-full text-left border-collapse text-sm min-w-[1000px]">
             <thead className="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase sticky top-0 z-10 shadow-[0_1px_0_0_#e2e8f0]">
               <tr>
-                <th className="sticky left-0 z-20 py-2.5 px-3 w-[50px] min-w-[50px] bg-slate-50 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                  <input 
-                    type="checkbox" 
-                    className="w-4 h-4 cursor-pointer accent-primary"
-                    checked={unassignedTasks.length > 0 && selectedTaskIds.length === unassignedTasks.length}
-                    onChange={handleToggleSelectAll}
-                  />
-                </th>
+                {activeTab === 'unassigned' && (
+                  <th className="sticky left-0 z-20 py-2.5 px-3 w-[50px] min-w-[50px] bg-slate-50 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 cursor-pointer accent-primary"
+                      checked={displayedTasks.length > 0 && selectedTaskIds.length === displayedTasks.length}
+                      onChange={handleToggleSelectAll}
+                    />
+                  </th>
+                )}
                 <th className="py-2.5 px-4 w-[250px] border-r border-slate-200">Dự án</th>
                 <th className="py-2.5 px-4 border-r border-slate-200">Nội dung công việc</th>
+                <th className="py-2.5 px-4 w-40 border-r border-slate-200">Người phụ trách</th>
+                <th className="py-2.5 px-4 w-32 border-r border-slate-200">Trạng thái</th>
                 <th className="py-2.5 px-4 w-20 text-center border-r border-slate-200">KL</th>
                 <th className="py-2.5 px-4 w-20 text-center">ĐVT</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {unassignedTasks.length === 0 ? (
+              {displayedTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-500 font-medium italic">Không có công việc nào đang chờ phân công</td>
+                  <td colSpan={7} className="py-8 text-center text-slate-500 font-medium italic">Không có công việc nào</td>
                 </tr>
               ) : (
-                unassignedTasks.map((t, idx) => {
+                displayedTasks.map((t, idx) => {
                   const p = projects.find(proj => proj.code === t.projectCode);
                   const isChecked = selectedTaskIds.includes(t.id);
                   return (
-                    <tr key={t.id} className={`hover:bg-blue-50/50 transition-colors cursor-pointer ${isChecked ? 'bg-blue-50/50' : 'bg-white'}`} onClick={() => handleToggleTask(t.id)}>
-                      <td className={`sticky left-0 z-10 py-2.5 px-3 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isChecked ? 'bg-blue-50' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
-                        <input 
-                          type="checkbox" 
-                          className="w-4 h-4 cursor-pointer accent-primary"
-                          checked={isChecked}
-                          onChange={() => handleToggleTask(t.id)}
-                        />
-                      </td>
+                    <tr key={t.id} className={`hover:bg-blue-50/50 transition-colors cursor-pointer ${isChecked && activeTab === 'unassigned' ? 'bg-blue-50/50' : 'bg-white'}`} onClick={() => { if (activeTab === 'unassigned') handleToggleTask(t.id); }}>
+                      {activeTab === 'unassigned' && (
+                        <td className={`sticky left-0 z-10 py-2.5 px-3 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isChecked ? 'bg-blue-50' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
+                          <input 
+                            type="checkbox" 
+                            className="w-4 h-4 cursor-pointer accent-primary"
+                            checked={isChecked}
+                            onChange={() => handleToggleTask(t.id)}
+                          />
+                        </td>
+                      )}
                       <td className="py-2.5 px-4 font-bold text-slate-700 text-[11px] uppercase border-r border-slate-200">{p ? p.name : t.projectCode}</td>
                       <td className="py-2.5 px-4 font-medium text-slate-800 text-xs border-l border-slate-200 flex flex-col">
                         <span>{t.name}</span>
                         {t.sectionName && t.sectionName !== t.name && (
                           <span className="text-[10px] text-slate-500 mt-1">{t.sectionName}</span>
                         )}
+                      </td>
+                      <td className="py-2.5 px-4 text-xs font-bold text-slate-700 border-l border-slate-200">
+                        {t.assignedEngineerName ? t.assignedEngineerName.split('|')[0] : <span className="text-slate-400 font-normal italic">Chưa có</span>}
+                      </td>
+                      <td className="py-2.5 px-4 border-l border-slate-200">
+                        <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
+                          t.status === 'Chờ nhận việc' ? 'bg-amber-100 text-amber-700' :
+                          t.status === 'Đang làm' ? 'bg-blue-100 text-blue-700' :
+                          t.status === 'Chờ nghiệm thu' ? 'bg-emerald-100 text-emerald-700' :
+                          t.status === 'Hoàn thành' ? 'bg-emerald-100 text-emerald-700' :
+                          'bg-slate-100 text-slate-500'
+                        }`}>
+                          {t.status || 'Chưa làm'}
+                        </span>
                       </td>
                       <td className="py-2.5 px-4 text-center text-slate-600 font-medium text-xs border-l border-slate-200">{t.volume}</td>
                       <td className="py-2.5 px-4 text-center text-slate-600 font-medium text-xs border-l border-slate-200">{t.unit}</td>
