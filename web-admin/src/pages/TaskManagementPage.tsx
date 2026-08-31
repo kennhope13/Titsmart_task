@@ -855,8 +855,8 @@ const hasSyncedRef = useRef(false);
               sectionName: currentSection,
               parentId: parentId,
               notes: '',
-              assignedEngineerId: engineers[0]?.id || '',
-              assignedEngineerName: engineers[0]?.name || '',
+              assignedEngineerId: '',
+              assignedEngineerName: '',
             });
 
             if (isSection) {
