@@ -8,10 +8,9 @@ export const GlobalNotificationToast: React.FC = () => {
   useEffect(() => {
     if (notifications.length > 0) {
       const latest = notifications[0];
-      // Only show toast if the notification was created within the last 5 seconds (avoid popup spam on page load)
-      const parts = latest.id.split('-');
-      const timestampPart = parts.length > 1 ? parseInt(parts[1], 10) : 0;
-      const isRecent = Date.now() - timestampPart < 5000;
+      // Only show toast if the notification was created within the last 15 seconds
+      const notificationTime = new Date(latest.timestamp || '').getTime();
+      const isRecent = !isNaN(notificationTime) && (Date.now() - notificationTime < 15000);
 
       if (!latest.read && isRecent) {
         setToast({ show: true, message: `${latest.title}: ${latest.message}` });
