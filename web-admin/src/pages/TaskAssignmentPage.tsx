@@ -105,12 +105,12 @@ export const TaskAssignmentPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <table className="w-full text-left border-collapse text-sm">
+      <div className="flex-1 overflow-hidden flex flex-col border-t border-slate-200">
+        <div className="w-full h-full overflow-auto custom-scrollbar bg-white">
+          <table className="w-full text-left border-collapse text-sm min-w-[1000px]">
             <thead className="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase sticky top-0 z-10 shadow-[0_1px_0_0_#e2e8f0]">
               <tr>
-                <th className="py-2.5 px-3 w-10 text-center">
+                <th className="sticky left-0 z-20 py-2.5 px-3 w-[50px] min-w-[50px] bg-slate-50 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                   <input 
                     type="checkbox" 
                     className="w-4 h-4 cursor-pointer accent-primary"
@@ -118,10 +118,10 @@ export const TaskAssignmentPage: React.FC = () => {
                     onChange={handleToggleSelectAll}
                   />
                 </th>
-                <th className="py-2.5 px-4 w-[250px] border-l border-slate-200">Dự án</th>
-                <th className="py-2.5 px-4 border-l border-slate-200">Nội dung công việc</th>
-                <th className="py-2.5 px-4 w-20 text-center border-l border-slate-200">KL</th>
-                <th className="py-2.5 px-4 w-20 text-center border-l border-slate-200">ĐVT</th>
+                <th className="py-2.5 px-4 w-[250px] border-r border-slate-200">Dự án</th>
+                <th className="py-2.5 px-4 border-r border-slate-200">Nội dung công việc</th>
+                <th className="py-2.5 px-4 w-20 text-center border-r border-slate-200">KL</th>
+                <th className="py-2.5 px-4 w-20 text-center">ĐVT</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -134,8 +134,8 @@ export const TaskAssignmentPage: React.FC = () => {
                   const p = projects.find(proj => proj.code === t.projectCode);
                   const isChecked = selectedTaskIds.includes(t.id);
                   return (
-                    <tr key={t.id} className={`hover:bg-blue-50/50 transition-colors cursor-pointer ${isChecked ? 'bg-blue-50/50' : ''}`} onClick={() => handleToggleTask(t.id)}>
-                      <td className="py-2.5 px-3 text-center" onClick={e => e.stopPropagation()}>
+                    <tr key={t.id} className={`hover:bg-blue-50/50 transition-colors cursor-pointer ${isChecked ? 'bg-blue-50/50' : 'bg-white'}`} onClick={() => handleToggleTask(t.id)}>
+                      <td className={`sticky left-0 z-10 py-2.5 px-3 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isChecked ? 'bg-blue-50' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
                         <input 
                           type="checkbox" 
                           className="w-4 h-4 cursor-pointer accent-primary"
@@ -143,7 +143,7 @@ export const TaskAssignmentPage: React.FC = () => {
                           onChange={() => handleToggleTask(t.id)}
                         />
                       </td>
-                      <td className="py-2.5 px-4 font-bold text-slate-700 text-[11px] uppercase border-l border-slate-200">{p ? p.name : t.projectCode}</td>
+                      <td className="py-2.5 px-4 font-bold text-slate-700 text-[11px] uppercase border-r border-slate-200">{p ? p.name : t.projectCode}</td>
                       <td className="py-2.5 px-4 font-medium text-slate-800 text-xs border-l border-slate-200 flex flex-col">
                         <span>{t.name}</span>
                         {t.sectionName && t.sectionName !== t.name && (
