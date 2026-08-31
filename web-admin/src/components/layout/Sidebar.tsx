@@ -97,6 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         items: [
           { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
           { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
+          { label: 'Giao việc tổng hợp', path: '/task-assignment', icon: 'assignment_ind' },
           { label: 'Tổng kho', path: '/materials', icon: 'warehouse' },
           { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
           { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' }
