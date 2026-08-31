@@ -31,8 +31,11 @@ const getAuthUser = () => {
 
 const filterByProject = (items: any[], codeField: string) => {
   const user = getAuthUser();
-  if (!user || ['admin', 'pm', 'Quản trị viên', 'Quản lý dự án', 'Giám đốc'].includes(user.role) || !Array.isArray(items)) return items;
-  const assigned = user.projectCodes || [];
+  if (!user || !Array.isArray(items)) return items;
+  const role = (user.role || '').trim().toLowerCase();
+  if (['admin', 'pm', 'quản trị viên', 'quản lý dự án', 'giám đốc'].includes(role)) return items;
+  
+  const assigned = Array.isArray(user.projectCodes) ? user.projectCodes : [];
   return items.filter(item => assigned.includes(item[codeField]));
 };
 import { supabase } from '../lib/supabase';
