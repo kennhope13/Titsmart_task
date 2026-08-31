@@ -97,6 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         items: [
           { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
           { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
+          { label: 'Công việc của tôi', path: '/my-tasks', icon: 'checklist' },
           { label: 'Phân công công việc', path: '/task-assignment', icon: 'assignment_add' },
           { label: 'Tổng kho', path: '/materials', icon: 'warehouse' },
           { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
@@ -113,6 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         items: [
           { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
           { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
+          { label: 'Công việc của tôi', path: '/my-tasks', icon: 'checklist' },
           { label: 'Tổng kho', path: '/materials', icon: 'warehouse' }
         ]
       }];
@@ -125,6 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         collapsible: false,
         items: [
           { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
+          { label: 'Công việc của tôi', path: '/my-tasks', icon: 'checklist' },
           { label: 'Tổng kho', path: '/materials', icon: 'warehouse' }
         ]
       }];
@@ -135,7 +138,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       title: '',
       collapsible: false,
       items: [
-        { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' }
+        { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
+        { label: 'Công việc của tôi', path: '/my-tasks', icon: 'checklist' }
       ]
     }];
   };
