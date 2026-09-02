@@ -27,6 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
   const isExpanded = isExpandedProp || (sidebarHoverToExpand && isHovered) || showNotifPopover || showUserPopover;
   const navigate = useNavigate();
   const unreadCount = notifications.filter((item) => !item.read).length;
+  const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
   const sidebarRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -180,23 +181,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           </div>
         </div>
 
-        <div className={`relative transition-opacity duration-300 flex-shrink-0 pr-1 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
-          <button
-            onClick={() => {
-              setShowNotifPopover(!showNotifPopover);
-              setShowUserPopover(false);
-            }}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors relative
-              ${showNotifPopover ? 'text-primary bg-blue-50' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'}`}
-          >
-            <span className="material-symbols-outlined text-[20px]">notifications</span>
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-            )}
-          </button>
-        </div>
+        {isAdmin && (
+          <div className={`relative transition-opacity duration-300 flex-shrink-0 pr-1 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
+            <button
+              onClick={() => {
+                setShowNotifPopover(!showNotifPopover);
+                setShowUserPopover(false);
+              }}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors relative
+                ${showNotifPopover ? 'text-primary bg-blue-50' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'}`}
+            >
+              <span className="material-symbols-outlined text-[20px]">notifications</span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+              )}
+            </button>
+          </div>
+        )}
 
-        {showNotifPopover && (
+        {isAdmin && showNotifPopover && (
           <div className="absolute top-full left-3 right-3 mt-2 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50">
             <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
