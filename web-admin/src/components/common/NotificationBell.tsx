@@ -30,7 +30,7 @@ export const NotificationBell: React.FC = () => {
   if (!isAdmin) return null;
 
   return (
-    <div ref={popoverRef} className="fixed bottom-20 right-6 z-[60]">
+    <div ref={popoverRef} className="fixed top-3 right-6 z-[60]">
       <button
         onClick={() => setShowPopover(!showPopover)}
         className={`w-12 h-12 rounded-full flex items-center justify-center transition-all relative shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-slate-200
@@ -43,7 +43,7 @@ export const NotificationBell: React.FC = () => {
       </button>
 
       {showPopover && (
-        <div className="absolute bottom-full right-0 mb-3 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50 w-[320px]">
+        <div className="absolute top-full right-0 mt-3 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50 w-[320px]">
           <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
             {notifications.length > 0 && (

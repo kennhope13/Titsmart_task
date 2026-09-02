@@ -563,3 +563,9 @@ input[type="number"] {
 
 
 
+
+/* Ensure the page header has enough padding on the right for the floating Notification Bell */
+
+.page-has-floating-bell > div > div.border-b {
+  padding-right: 5rem !important;
+}
