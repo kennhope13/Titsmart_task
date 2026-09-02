@@ -26,6 +26,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const options: { value: string | number; label: React.ReactNode; className?: string }[] = [];
 
@@ -46,7 +47,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current && 
+        !containerRef.current.contains(target) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(target))
+      ) {
         setIsOpen(false);
       }
     };
@@ -96,7 +102,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const handleSelect = (val: string | number) => {
     setIsOpen(false);
     if (onChange) {
-      onChange({ target: { value: val } } as any);
+      setTimeout(() => {
+        onChange({ target: { value: val } } as any);
+      }, 0);
     }
   };
 
@@ -140,6 +148,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   const dropdownEl = isOpen && !disabled ? (
     <div
+      ref={dropdownRef}
       style={dropdownStyle}
       className="bg-white rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 py-1 max-h-60 overflow-auto custom-scrollbar text-left"
     >
@@ -150,12 +159,13 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         filteredOptions.map((option, idx) => (
           <div
             key={String(option.value) + idx}
-            className={`px-3 py-1.5 cursor-pointer transition-colors ${fontSizeClass} ${
+            className={`px-3 py-2 cursor-pointer transition-colors ${fontSizeClass} ${
               String(value) === String(option.value)
                 ? 'bg-blue-50 text-primary font-semibold'
                 : 'text-slate-700 hover:bg-slate-50'
             }`}
             onMouseDown={(e) => { e.preventDefault(); handleSelect(option.value); }}
+            onClick={(e) => { e.preventDefault(); handleSelect(option.value); }}
           >
             {option.label}
           </div>
