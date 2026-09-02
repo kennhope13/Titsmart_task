@@ -30,20 +30,20 @@ export const NotificationBell: React.FC = () => {
   if (!isAdmin) return null;
 
   return (
-    <div ref={popoverRef} className="fixed top-3 right-6 z-[60]">
+    <div ref={popoverRef} className="fixed bottom-20 right-6 z-[60]">
       <button
         onClick={() => setShowPopover(!showPopover)}
-        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all relative shadow-sm border border-slate-200
+        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all relative shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-slate-200
           ${showPopover ? 'bg-primary text-white border-primary' : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-primary'}`}
       >
-        <span className="material-symbols-outlined text-[22px]">notifications</span>
+        <span className="material-symbols-outlined text-[24px]">notifications</span>
         {unreadCount > 0 && (
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+          <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
         )}
       </button>
 
       {showPopover && (
-        <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50 w-[320px]">
+        <div className="absolute bottom-full right-0 mb-3 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50 w-[320px]">
           <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
             {notifications.length > 0 && (
