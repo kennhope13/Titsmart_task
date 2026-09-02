@@ -57,10 +57,10 @@ export const ProjectDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-slate-100">
+    <div className="flex-col h-full bg-slate-50 flex overflow-hidden">
       {/* Top Project Bar */}
-      <div className={`bg-white border-b border-slate-200 pl-3 py-3 md:py-0 md:h-12 flex flex-col sm:flex-row sm:items-center justify-between gap-2 flex-shrink-0 shadow-sm pr-[4.5rem]`}>
-        <div className="flex items-center h-full gap-2 overflow-hidden">
+      <div className="bg-white border-b border-slate-200 pl-4 pr-[4.5rem] py-4 md:py-3 lg:py-0 lg:min-h-[3rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 shrink-0 flex-wrap">
+        <div className="flex items-center flex-wrap gap-2">
           <Link to="/projects" className="page-title text-lg font-extrabold text-slate-900 hover:text-primary transition-colors border-l-4 border-primary pl-2 uppercase shrink-0 cursor-pointer">
             {project.name}
           </Link>
