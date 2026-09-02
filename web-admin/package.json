@@ -1,7 +1,7 @@
 {
   "name": "buildcore-pro-web-admin",
   "private": true,
-  "version": "1.2.19",
+  "version": "1.2.20",
   "description": "TITSMART Project Manager",
   "type": "module",
   "main": "dist-electron/main.js",
@@ -14,7 +14,7 @@
     "publish:win": "vite build && electron-builder --win --publish always"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.2",
+    "@supabase/supabase-js": "^2.114.0",
     "@tanstack/react-query": "^5.28.9",
     "@types/uuid": "^10.0.0",
     "axios": "^1.18.1",
