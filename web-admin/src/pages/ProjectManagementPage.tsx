@@ -400,8 +400,8 @@ export const ProjectManagementPage: React.FC = () => {
           isSectionHeader: isSection,
           sectionName: isSection ? item.name : (importedTasks.slice().reverse().find((t) => t.isSectionHeader)?.name || ''),
           notes: [item.notes, TEXT.importNote].filter(Boolean).join(' | '),
-          assignedEngineerId: engineers[0]?.id || '',
-          assignedEngineerName: engineers[0]?.name || '',
+          assignedEngineerId: '',
+          assignedEngineerName: '',
         });
       });
 
