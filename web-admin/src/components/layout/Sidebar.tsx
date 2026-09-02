@@ -32,7 +32,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-        setShowNotifPopover(false);
         setShowUserPopover(false);
       }
     };
@@ -228,7 +227,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           <button
             onClick={() => {
               setShowUserPopover(!showUserPopover);
-              setShowNotifPopover(false);
             }}
             className={`flex items-center rounded-xl transition-all overflow-hidden whitespace-normal h-10
               ${isExpanded ? 'w-full px-3 py-3 gap-3 h-auto' : 'w-10 justify-center gap-0'}
