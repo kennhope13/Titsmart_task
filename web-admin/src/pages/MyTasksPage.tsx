@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
 
@@ -171,3 +172,4 @@ export const MyTasksPage: React.FC = () => {
     </div>
   );
 };
+
