@@ -1412,7 +1412,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                         onChange={(e) => { onUpdateMaterial(plan.id, { ...plan, techSpecStatus: e.target.value }) }}
                                         className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${style}`}
                                       >
-                                        <option value="">Chưa xác định</option>
+                                        <option value="">&nbsp;</option>
                                         <option value="Đáp ứng">Đáp ứng</option>
                                         <option value="Chưa đáp ứng">Chưa đáp ứng</option>
                                         <option value="Đang xem xét">Đang xem xét</option>

@@ -102,9 +102,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const handleSelect = (val: string | number) => {
     setIsOpen(false);
     if (onChange) {
-      setTimeout(() => {
-        onChange({ target: { value: val } } as any);
-      }, 0);
+      // Đảm bảo trình duyệt kịp vẽ lại (đóng dropdown) trước khi xử lý state nặng
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          onChange({ target: { value: val } } as any);
+        });
+      });
     }
   };
 

@@ -109,6 +109,15 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
           data = signUpRes.data;
           error = null;
         }
+      } else {
+        // If signup failed, capture the error so we know why auto-register failed
+        if (signUpRes.error.message.includes('already registered')) {
+            // Already registered means it's truly a wrong password
+            console.error('Supabase signup error (already exists):', signUpRes.error.message);
+        } else {
+            console.error('Supabase signup error:', signUpRes.error.message);
+            return { ok: false, error: 'Lỗi đăng ký tự động: ' + signUpRes.error.message };
+        }
       }
     }
 
