@@ -292,7 +292,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
       finalValue = tempValue === true || tempValue === 'true' || tempValue === 'Có';
     }
 
-    onUpdate(id, { ...plan, [field]: finalValue });
+    onUpdate(id, { [field]: finalValue });
     setEditingCell(null);
   };
 
@@ -782,7 +782,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             return (
                               <CustomSelect
                                 value={currentStatus}
-                                onChange={(e) => { onUpdate(plan.id, { ...plan, techSpecStatus: e.target.value === 'Chưa xác định' ? '' : e.target.value }) }}
+                                onChange={(e) => { onUpdate(plan.id, { techSpecStatus: e.target.value === 'Chưa xác định' ? '' : e.target.value }) }}
                                 className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${style}`}
                               >
                                 {['Chưa xác định', 'Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét'].map(opt => (
@@ -804,7 +804,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             return (
                               <CustomSelect
                                 value={status}
-                                onChange={(e) => { onUpdate(plan.id, { ...plan, progressStatus: e.target.value }) }}
+                                onChange={(e) => { onUpdate(plan.id, { progressStatus: e.target.value }) }}
                                 className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${style}`}
                               >
                                 {CONSTRUCTION_STATUS_OPTIONS.map(opt => <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>)}
@@ -843,7 +843,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             return (
                               <CustomSelect
                                 value={currentStatus}
-                                onChange={(e) => { onUpdate(plan.id, { ...plan, orderedStatus: e.target.value }) }}
+                                onChange={(e) => { onUpdate(plan.id, { orderedStatus: e.target.value }) }}
                                 className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${btnStyle}`}
                               >
                                 {PURCHASE_STATUS_OPTIONS.map(opt => <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>)}
@@ -909,7 +909,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       <td className="p-0 align-top text-center border-r border-slate-200">
                         <button
                           type="button"
-                          onClick={() => onUpdate(plan.id, { ...plan, docCo: !plan.docCo })}
+                          onClick={() => onUpdate(plan.id, { docCo: !plan.docCo })}
                           className="flex items-center justify-center w-full h-[38px] transition-colors"
                         >
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.docCo ? '#10b981' : '#cbd5e1'} strokeWidth="2">
@@ -922,7 +922,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       <td className="p-0 align-top text-center border-r border-slate-200">
                         <button
                           type="button"
-                          onClick={() => onUpdate(plan.id, { ...plan, docCq: !plan.docCq })}
+                          onClick={() => onUpdate(plan.id, { docCq: !plan.docCq })}
                           className="flex items-center justify-center w-full h-[38px] transition-colors"
                         >
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.docCq ? '#10b981' : '#cbd5e1'} strokeWidth="2">
@@ -935,7 +935,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       <td className="p-0 align-top text-center border-r border-slate-200">
                         <button
                           type="button"
-                          onClick={() => onUpdate(plan.id, { ...plan, docFireInspection: !plan.docFireInspection })}
+                          onClick={() => onUpdate(plan.id, { docFireInspection: !plan.docFireInspection })}
                           className="flex items-center justify-center w-full h-[38px] transition-colors"
                         >
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.docFireInspection ? '#10b981' : '#cbd5e1'} strokeWidth="2">
@@ -948,7 +948,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                       <td className="p-0 align-top text-center border-r border-slate-200">
                         <button
                           type="button"
-                          onClick={() => onUpdate(plan.id, { ...plan, dispatchToSite: !plan.dispatchToSite })}
+                          onClick={() => onUpdate(plan.id, { dispatchToSite: !plan.dispatchToSite })}
                           className="flex items-center justify-center w-full h-[38px] transition-colors"
                         >
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" stroke={plan.dispatchToSite ? '#10b981' : '#cbd5e1'} strokeWidth="2">

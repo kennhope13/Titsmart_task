@@ -733,7 +733,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         const newText = typeof tempValue === 'string' ? tempValue.trim() : tempValue;
         finalValue = existingDocData ? `${newText} [DOC-DATA] ${existingDocData}` : newText;
       }
-      onUpdateMaterial(id, { ...plan, [field === 'fileName' ? 'notes' : field]: finalValue });
+      onUpdateMaterial(id, { [field === 'fileName' ? 'notes' : field]: finalValue });
     }
     setEditingCell(null);
   };
@@ -1406,7 +1406,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     return (
                                       <CustomSelect
                                         value={currentStatus}
-                                        onChange={(e) => { onUpdateMaterial(plan.id, { ...plan, techSpecStatus: e.target.value === 'Chưa xác định' ? '' : e.target.value }) }}
+                                        onChange={(e) => { onUpdateMaterial(plan.id, { techSpecStatus: e.target.value === 'Chưa xác định' ? '' : e.target.value }) }}
                                         className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${style}`}
                                       >
                                         {['Chưa xác định', 'Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét'].map(opt => (
@@ -1444,7 +1444,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     return (
                                       <CustomSelect
                                         value={currentStatus}
-                                        onChange={(e) => { onUpdateMaterial(plan.id, { ...plan, orderedStatus: e.target.value }) }}
+                                        onChange={(e) => { onUpdateMaterial(plan.id, { orderedStatus: e.target.value }) }}
                                         className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${btnStyle}`}
                                       >
                                         {PURCHASE_STATUS_OPTIONS.map(opt => <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>)}
