@@ -335,7 +335,6 @@ export const ProjectManagementPage: React.FC = () => {
       tasksWithIds.forEach((item, index) => {
 
         const sttVal = (item.stt || '').trim();
-        if (!/[a-zA-ZÀ-ỹ]/.test(item.name || '')) return;
         const isSection = item.isSectionHeader;
 
         let parentId = undefined;
