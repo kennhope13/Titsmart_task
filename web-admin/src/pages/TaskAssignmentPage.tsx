@@ -81,7 +81,7 @@ export const TaskAssignmentPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
-      <div className="flex justify-between items-center bg-white px-4 py-3 border-b border-slate-200">
+      <div className="flex justify-between items-center bg-white pl-4 pr-[4.5rem] py-3 border-b border-slate-200">
         <div className="flex items-center">
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">
             PHÂN CÔNG CÔNG VIỆC
