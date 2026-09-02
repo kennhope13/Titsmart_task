@@ -23,9 +23,6 @@ export const GlobalNotificationToast: React.FC = () => {
   }, [notifications]);
 
   if (!toast.show) return null;
-  
-  const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
-  if (!isAdmin) return null;
 
   return (
     <div
