@@ -290,7 +290,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const hasNoDot = !cleanStt.includes('.');
     const startsWithPhan = name.trim().toUpperCase().startsWith('PHẦN ') && !name.trim().toUpperCase().startsWith('PHẦN MỀM');
     const hasNoVolumeAndUnit = (volume === 0 || !volume) && (!cleanUnitVal || cleanUnitVal === '');
-    const isSectionHeader = startsWithPhan || (hasNoDot && hasNoVolumeAndUnit && isMainSectionName(name)) || (hasNoDot && hasNoVolumeAndUnit && isRomanOrAlphaSection);
+    const isSectionHeader = hasNoDot && (startsWithPhan || (hasNoVolumeAndUnit && isMainSectionName(name)) || (hasNoVolumeAndUnit && isRomanOrAlphaSection));
     const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
     
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
@@ -633,7 +633,7 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
       const hasNoDot = !cleanStt.includes('.');
       const startsWithPhan = name.toUpperCase().startsWith('PHẦN ') && !name.toUpperCase().startsWith('PHẦN MỀM');
       const hasNoVolumeAndUnit = (volume === 0 || !volume) && (!cleanUnitVal || cleanUnitVal === '');
-      const isSectionHeader = startsWithPhan || (hasNoDot && hasNoVolumeAndUnit && isMainSectionName(name)) || (hasNoDot && hasNoVolumeAndUnit && isRomanOrAlphaSection);
+      const isSectionHeader = hasNoDot && (startsWithPhan || (hasNoVolumeAndUnit && isMainSectionName(name)) || (hasNoVolumeAndUnit && isRomanOrAlphaSection));
 
       const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
       const headerSupplyScope = isSectionHeader ? detectSupplyScope(cells.join(' ')) : 'unknown';

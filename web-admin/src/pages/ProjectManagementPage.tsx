@@ -351,23 +351,28 @@ export const ProjectManagementPage: React.FC = () => {
               isSubFolder = true;
             }
           }
-          if (isSubFolder) {
-            parentId = currentMainSectionId;
-            currentSubSectionId = item.id;
-          } else {
-            let foundDottedParent = false;
-            if (sttVal.includes('.')) {
-              const parts = sttVal.split('.');
-              parts.pop();
-              const parentStt = parts.join('.');
-              if (sttIdMap.has(parentStt)) {
-                parentId = sttIdMap.get(parentStt);
-                foundDottedParent = true;
-              }
+          
+          let foundDottedParent = false;
+          if (sttVal.includes('.')) {
+            const parts = sttVal.split('.');
+            parts.pop();
+            const parentStt = parts.join('.');
+            if (sttIdMap.has(parentStt)) {
+              parentId = sttIdMap.get(parentStt);
+              foundDottedParent = true;
             }
-            if (!foundDottedParent) {
+          }
+          
+          if (!foundDottedParent) {
+            if (sttVal && !sttVal.includes('.')) {
+              parentId = currentMainSectionId;
+            } else {
               parentId = currentSubSectionId || currentMainSectionId;
             }
+          }
+
+          if (isSubFolder) {
+            currentSubSectionId = item.id;
           }
         }
 

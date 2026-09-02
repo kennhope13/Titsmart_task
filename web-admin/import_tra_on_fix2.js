@@ -114,7 +114,7 @@ async function runImport() {
       const startsWithPhan = content.trim().toUpperCase().startsWith('PHẦN ');
       const cleanUnitVal = String(row[unitCol] || '').replace(/^[-–—_.\s]+$/, '').trim();
       const hasNoVolumeAndUnit = (volumeContract === 0 || !volumeContract) && (!cleanUnitVal || cleanUnitVal === '');
-      const isSection = (startsWithPhan || isMainSectionName(content) || hasNoDot) && hasNoVolumeAndUnit;
+      const isSection = (startsWithPhan || isMainSectionName(content) || hasNoDot) && hasNoVolumeAndUnit && hasNoDot;
 
       if (isSection) {
         currentSectionName = `${stt ? stt + '. ' : ''}${content}`;
@@ -137,23 +137,28 @@ async function runImport() {
             isSubFolder = true;
           }
         }
-        if (isSubFolder) {
-          parentId = currentMainSectionId;
-          currentSubSectionId = rowId;
-        } else {
-          let foundDottedParent = false;
-          if (stt.includes('.')) {
-            const parts = stt.split('.');
-            parts.pop();
-            const parentStt = parts.join('.');
-            if (sttIdMap.has(parentStt)) {
-              parentId = sttIdMap.get(parentStt);
-              foundDottedParent = true;
-            }
+        
+        let foundDottedParent = false;
+        if (stt.includes('.')) {
+          const parts = stt.split('.');
+          parts.pop();
+          const parentStt = parts.join('.');
+          if (sttIdMap.has(parentStt)) {
+            parentId = sttIdMap.get(parentStt);
+            foundDottedParent = true;
           }
-          if (!foundDottedParent) {
+        }
+        
+        if (!foundDottedParent) {
+          if (stt && !stt.includes('.')) {
+            parentId = currentMainSectionId;
+          } else {
             parentId = currentSubSectionId || currentMainSectionId;
           }
+        }
+        
+        if (isSubFolder) {
+          currentSubSectionId = rowId;
         }
       }
 

@@ -798,7 +798,7 @@ const hasSyncedRef = useRef(false);
             const actualName = r[nameCol] ? String(r[nameCol]) : String(itemName);
             const startsWithPhan = actualName.trim().toUpperCase().startsWith('PHẦN ');
             const hasNoVolumeAndUnit = (volVal === 0 || !volVal) && (!cleanUnitVal || cleanUnitVal === '');
-            const isSection = (startsWithPhan || isMainSectionName(actualName) || hasNoDot) && hasNoVolumeAndUnit;
+            const isSection = (startsWithPhan || isMainSectionName(actualName) || hasNoDot) && hasNoVolumeAndUnit && hasNoDot;
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${actualName}`;
@@ -827,23 +827,28 @@ const hasSyncedRef = useRef(false);
                    isSubFolder = true;
                  }
                }
-               if (isSubFolder) {
-                 parentId = currentMainSectionId;
-                 currentSubSectionId = taskId;
-               } else {
-                 let foundDottedParent = false;
-                 if (sttVal.includes('.')) {
-                   const parts = sttVal.split('.');
-                   parts.pop();
-                   const parentStt = parts.join('.');
-                   if (sttIdMap.has(parentStt)) {
-                     parentId = sttIdMap.get(parentStt);
-                     foundDottedParent = true;
-                   }
+               
+               let foundDottedParent = false;
+               if (sttVal.includes('.')) {
+                 const parts = sttVal.split('.');
+                 parts.pop();
+                 const parentStt = parts.join('.');
+                 if (sttIdMap.has(parentStt)) {
+                   parentId = sttIdMap.get(parentStt);
+                   foundDottedParent = true;
                  }
-                 if (!foundDottedParent) {
+               }
+               
+               if (!foundDottedParent) {
+                 if (sttVal && !sttVal.includes('.')) {
+                   parentId = currentMainSectionId;
+                 } else {
                    parentId = currentSubSectionId || currentMainSectionId;
                  }
+               }
+               
+               if (isSubFolder) {
+                 currentSubSectionId = taskId;
                }
             }
 
