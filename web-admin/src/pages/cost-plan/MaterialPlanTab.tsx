@@ -783,7 +783,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                               <CustomSelect
                                 value={currentStatus}
                                 onChange={(e) => { onUpdate(plan.id, { ...plan, techSpecStatus: e.target.value === 'Chưa xác định' ? '' : e.target.value }) }}
-                                className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${style}`}
+                                className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${style}`}
                               >
                                 {['Chưa xác định', 'Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét'].map(opt => (
                                   <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>
@@ -805,7 +805,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                               <CustomSelect
                                 value={status}
                                 onChange={(e) => { onUpdate(plan.id, { ...plan, progressStatus: e.target.value }) }}
-                                className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${style}`}
+                                className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${style}`}
                               >
                                 {CONSTRUCTION_STATUS_OPTIONS.map(opt => <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>)}
                               </CustomSelect>
@@ -844,7 +844,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                               <CustomSelect
                                 value={currentStatus}
                                 onChange={(e) => { onUpdate(plan.id, { ...plan, orderedStatus: e.target.value }) }}
-                                className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${btnStyle}`}
+                                className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${btnStyle}`}
                               >
                                 {PURCHASE_STATUS_OPTIONS.map(opt => <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>)}
                               </CustomSelect>
