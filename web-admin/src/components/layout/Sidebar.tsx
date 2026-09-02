@@ -203,12 +203,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                   to={item.path}
                   end={item.path === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg text-xs font-semibold transition-all overflow-hidden whitespace-nowrap h-10
+                    `flex items-center gap-3 rounded-lg text-xs transition-all overflow-hidden whitespace-nowrap h-10
                     ${isExpanded ? 'w-full px-3' : 'w-10'}
                     ${
                       isActive
-                        ? 'text-primary bg-blue-50'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        ? 'text-primary bg-blue-100 font-bold shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-semibold'
                     }`
                   }
                 >
@@ -246,7 +246,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
             </button>
 
           {showUserPopover && (
-            <div className="absolute bottom-full left-3 mb-2 w-52 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50">
+            <div className="absolute bottom-full left-2 mb-2 w-40 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50">
               <div className="p-1.5 space-y-0.5">
                 <button 
                   onClick={() => {
