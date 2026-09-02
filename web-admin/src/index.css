@@ -561,3 +561,18 @@ input[type="number"] {
 .electron-drag { -webkit-app-region: drag; }
 .electron-no-drag { -webkit-app-region: no-drag;
 }
+/* Fix Electron drag region overlapping buttons */
+main > div > header,
+main > div > section.border-b:first-child,
+main > div > div.border-b.bg-white:first-child {
+  position: relative;
+  z-index: 40 !important;
+  -webkit-app-region: drag;
+}
+
+main > div > header *,
+main > div > section.border-b:first-child *,
+main > div > div.border-b.bg-white:first-child * {
+  -webkit-app-region: no-drag;
+}
+

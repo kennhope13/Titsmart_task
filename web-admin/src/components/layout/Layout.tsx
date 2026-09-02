@@ -24,7 +24,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       
       <div className={`${isSidebarExpanded ? 'ml-[240px]' : 'ml-[56px]'} flex flex-col h-screen flex-1 overflow-hidden transition-all duration-300 ease-in-out relative`}>
         <NotificationBell />
-        <main className="flex-1 bg-slate-50 flex flex-col w-full max-w-full overflow-hidden page-has-floating-bell pt-8">{children}</main>
+        <main className="flex-1 bg-slate-50 flex flex-col w-full max-w-full overflow-hidden page-has-floating-bell">{children}</main>
       </div>
       <BackToTop />
     </div>
