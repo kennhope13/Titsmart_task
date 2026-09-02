@@ -769,7 +769,7 @@ export const MaterialTrackingPage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 h-full bg-slate-50 relative overflow-hidden">
             {!projectId && (
-        <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3 pr-4`}>
+        <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3 pr-24`}>
           <div className="flex items-center gap-4">
             <div>
               <div className="flex items-center gap-3">
@@ -809,7 +809,7 @@ export const MaterialTrackingPage: React.FC = () => {
       )}
 
       {projectId && portalNode && createPortal(
-        <div className="flex flex-wrap gap-2 pr-4">
+        <div className="flex flex-wrap gap-2">
           <input 
             type="file" 
             ref={fileInputRef} 

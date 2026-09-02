@@ -17,6 +17,8 @@ import { ActivityLogPage } from './pages/ActivityLogPage';
 import { FieldLogsPage } from './pages/FieldLogsPage';
 import { ProjectCostPlanPage } from './pages/ProjectCostPlanPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
+import { TaskAssignmentPage } from './pages/TaskAssignmentPage';
+import { MyTasksPage } from './pages/MyTasksPage';
 
 import { UpdateNotifier } from './components/common/UpdateNotifier';
 import { GlobalNotificationToast } from './components/common/GlobalNotificationToast';
@@ -73,6 +75,8 @@ export const App: React.FC = () => {
         <Route element={<ProtectedLayout />}>
           <Route path="/" element={<Navigate to="/projects" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/task-assignment" element={<TaskAssignmentPage />} />
+          <Route path="/my-tasks" element={<MyTasksPage />} />
           <Route path="/projects" element={<ProjectManagementPage />} />
           <Route path="/projects/:projectId" element={<ProjectDetailPage />}>
             <Route path="tasks" element={<TaskManagementPage />} />

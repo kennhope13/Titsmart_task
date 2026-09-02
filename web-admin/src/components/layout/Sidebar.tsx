@@ -21,18 +21,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
   const currentProject = projects.find(p => p.id === currentProjectId || p.code === currentProjectId);
 
   const [isHovered, setIsHovered] = useState(false);
-  const [showNotifPopover, setShowNotifPopover] = useState(false);
   const [showUserPopover, setShowUserPopover] = useState(false);
   
-  const isExpanded = isExpandedProp || (sidebarHoverToExpand && isHovered) || showNotifPopover || showUserPopover;
+  const isExpanded = isExpandedProp || (sidebarHoverToExpand && isHovered) || showUserPopover;
   const navigate = useNavigate();
   const unreadCount = notifications.filter((item) => !item.read).length;
+  const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
   const sidebarRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-        setShowNotifPopover(false);
         setShowUserPopover(false);
       }
     };
@@ -62,9 +61,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
     if (currentProject) {
       const baseProjectItems = [
           { label: 'Tiến độ Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'fact_check' },
-          { label: 'Vật tư & Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'account_balance_wallet' },
+          { label: 'Vật tư & Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'account_balance_wallet', requireAdmin: true },
           { label: 'Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'file_present', requireAdmin: true },
-          { label: 'Kho Dự án', path: `/projects/${currentProject.id}/inventory`, icon: 'inventory_2' },
+          { label: 'Kho Dự án', path: `/projects/${currentProject.id}/inventory`, icon: 'inventory_2', requireAdmin: true },
           { label: 'Nhật ký Hiện trường', path: `/projects/${currentProject.id}/field-logs`, icon: 'add_a_photo' }
         ];
 
@@ -97,6 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         items: [
           { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
           { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
+          { label: 'Công việc', path: '/my-tasks', icon: 'checklist' },
           { label: 'Tổng kho', path: '/materials', icon: 'warehouse' },
           { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
           { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' }
@@ -112,6 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         items: [
           { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
           { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
+          { label: 'Công việc', path: '/my-tasks', icon: 'checklist' },
           { label: 'Tổng kho', path: '/materials', icon: 'warehouse' }
         ]
       }];
@@ -124,6 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         collapsible: false,
         items: [
           { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
+          { label: 'Công việc', path: '/my-tasks', icon: 'checklist' },
           { label: 'Tổng kho', path: '/materials', icon: 'warehouse' }
         ]
       }];
@@ -134,7 +136,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       title: '',
       collapsible: false,
       items: [
-        { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' }
+        { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
+        { label: 'Công việc', path: '/my-tasks', icon: 'checklist' }
       ]
     }];
   };
@@ -174,53 +177,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
             </div>
           </div>
         </div>
-
-        <div className={`relative transition-opacity duration-300 flex-shrink-0 pr-1 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
-          <button
-            onClick={() => {
-              setShowNotifPopover(!showNotifPopover);
-              setShowUserPopover(false);
-            }}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors relative
-              ${showNotifPopover ? 'text-primary bg-blue-50' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'}`}
-          >
-            <span className="material-symbols-outlined text-[20px]">notifications</span>
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-            )}
-          </button>
-        </div>
-
-        {showNotifPopover && (
-          <div className="absolute top-full left-3 right-3 mt-2 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50">
-            <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
-              <button onClick={clearNotifications} className="text-[11px] text-primary font-bold hover:underline">Xóa tất cả</button>
-            </div>
-            <div className="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-100">
-              {notifications.length === 0 ? (
-                <div className="p-6 text-center text-slate-500 text-xs">Không có thông báo nào</div>
-              ) : (
-                notifications.map(notification => (
-                  <div
-                    key={notification.id}
-                    onClick={() => markNotificationRead(notification.id)}
-                    className={`p-3 text-xs hover:bg-slate-50 cursor-pointer flex gap-3 ${!notification.read ? 'bg-blue-50/50 font-medium' : 'opacity-70'}`}
-                  >
-                    <span className="material-symbols-outlined text-primary text-base flex-shrink-0">{notification.icon || 'info'}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2 mb-0.5">
-                        <span className="font-bold text-slate-800 truncate">{notification.title}</span>
-                        <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">{notification.timestamp}</span>
-                      </div>
-                      <p className="text-slate-600 leading-tight">{notification.message}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       <nav className="flex-1 w-[240px] px-2 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">
@@ -270,7 +226,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           <button
             onClick={() => {
               setShowUserPopover(!showUserPopover);
-              setShowNotifPopover(false);
             }}
             className={`flex items-center rounded-xl transition-all overflow-hidden whitespace-normal h-10
               ${isExpanded ? 'w-full px-3 py-3 gap-3 h-auto' : 'w-10 justify-center gap-0'}

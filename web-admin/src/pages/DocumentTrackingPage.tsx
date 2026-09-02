@@ -308,7 +308,7 @@ export const DocumentTrackingPage: React.FC = () => {
       
       {/* HEADER SECTION */}
             {!projectId && (
-        <section className="border-b border-slate-200 bg-white shadow-sm px-6 pr-4 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <section className="border-b border-slate-200 bg-white shadow-sm px-6 pr-24 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
             <h1 className="page-header-title text-lg text-slate-900 border-l-4 border-primary pl-2 uppercase">Theo dõi Hồ sơ gửi đi</h1>
           </div>
@@ -347,7 +347,7 @@ export const DocumentTrackingPage: React.FC = () => {
       )}
 
       {projectId && portalNode && createPortal(
-        <div className="flex flex-wrap gap-2 pr-4">
+        <div className="flex flex-wrap gap-2">
           <input 
             type="file" 
             ref={fileInputRef} 

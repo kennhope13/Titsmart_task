@@ -206,6 +206,8 @@ interface RealtimeStoreState {
 
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
+  addNotification: (notif: Omit<NotificationItem, 'id' | 'timestamp' | 'read'>) => Promise<void>;
+  fetchNotifications: () => Promise<void>;
   addProject: (proj: Omit<Project, 'id'>) => Promise<Project | undefined>;
   updateProject: (id: string, proj: Partial<Project>) => Promise<Project | undefined>;
   deleteProject: (id: string) => Promise<void>;
@@ -1121,19 +1123,51 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       });
     },
 
-    markNotificationRead: (id) => {
-      set((state) => {
-        const nextNotifs = state.notifications.map((n) => (n.id === id ? { ...n, read: true } : n));
-        persistAndNotify({ notifications: nextNotifs });
-        return { notifications: nextNotifs };
-      });
+    markNotificationRead: async (id) => {
+      try {
+        await api.notifications.markRead(id);
+        set((state) => {
+          const nextNotifs = state.notifications.map((n) => (n.id === id ? { ...n, read: true } : n));
+          persistAndNotify({ notifications: nextNotifs });
+          return { notifications: nextNotifs };
+        });
+      } catch (e) {
+        console.error('Failed to mark read', e);
+      }
     },
 
-    clearNotifications: () => {
-      set((state) => {
-        persistAndNotify({ notifications: [] });
-        return { notifications: [] };
-      });
+    clearNotifications: async () => {
+      try {
+        await api.notifications.clear();
+        set((state) => {
+          persistAndNotify({ notifications: [] });
+          return { notifications: [] };
+        });
+      } catch (e) {
+        console.error('Failed to clear notifications', e);
+      }
+    },
+
+    addNotification: async (notif) => {
+      try {
+        const createdNotif = await api.notifications.create(notif);
+        set((state) => {
+          const nextNotifs = [createdNotif, ...state.notifications];
+          persistAndNotify({ notifications: nextNotifs });
+          return { notifications: nextNotifs };
+        });
+      } catch (e) {
+        console.error('Failed to add notification', e);
+      }
+    },
+
+    fetchNotifications: async () => {
+      try {
+        const notifs = await api.notifications.getAll();
+        set({ notifications: notifs });
+      } catch (e) {
+        console.error('Failed to fetch notifications', e);
+      }
     },
 
     addProject: async (projData) => {
@@ -1624,6 +1658,7 @@ export function setupRealtimeSync() {
       store.fetchIssues(undefined);
       store.fetchEngineers();
       store.fetchFieldLogs();
+      store.fetchNotifications();
     }, 1000);
   };
 

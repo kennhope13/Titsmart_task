@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useRealtimeStore } from '../../services/realtimeStore';
+import { useAuthStore } from '../../services/authStore';
 
 export const GlobalNotificationToast: React.FC = () => {
   const notifications = useRealtimeStore((state) => state.notifications);
+  const user = useAuthStore(state => state.user);
   const [toast, setToast] = useState<{ show: boolean, message: string }>({ show: false, message: '' });
 
   useEffect(() => {
     if (notifications.length > 0) {
       const latest = notifications[0];
-      // Only show toast if the notification was created within the last 5 seconds (avoid popup spam on page load)
-      const parts = latest.id.split('-');
-      const timestampPart = parts.length > 1 ? parseInt(parts[1], 10) : 0;
-      const isRecent = Date.now() - timestampPart < 5000;
+      // Only show toast if the notification was created within the last 15 seconds
+      const notificationTime = new Date(latest.timestamp || '').getTime();
+      const isRecent = !isNaN(notificationTime) && (Date.now() - notificationTime < 15000);
 
       if (!latest.read && isRecent) {
         setToast({ show: true, message: `${latest.title}: ${latest.message}` });
@@ -25,7 +26,7 @@ export const GlobalNotificationToast: React.FC = () => {
 
   return (
     <div
-      className="fixed top-20 left-6 lg:left-24 z-[9999] flex flex-col gap-1 bg-white px-5 py-4 rounded-xl shadow-2xl transition-all duration-300 opacity-100 border border-slate-100 min-w-[300px]"
+      className="fixed bottom-24 right-6 z-[9999] flex flex-col gap-1 bg-white px-5 py-4 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 min-w-[300px]"
       style={{ animation: 'slideIn 0.3s ease-out' }}
     >
       <div className="flex items-center gap-3">
