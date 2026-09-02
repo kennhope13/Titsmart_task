@@ -81,7 +81,7 @@ export const TaskAssignmentPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
-      <div className="flex justify-between items-center bg-white pl-4 pr-[4.5rem] py-3 border-b border-slate-200">
+      <div className="bg-white border-b border-slate-200 pl-3 pr-[4.5rem] py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 shadow-sm">
         <div className="flex items-center">
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">
             PHÂN CÔNG CÔNG VIỆC
@@ -105,7 +105,7 @@ export const TaskAssignmentPage: React.FC = () => {
           <select 
             value={filterProjectCode} 
             onChange={(e) => setFilterProjectCode(e.target.value)}
-            className="border border-slate-300 rounded px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-primary font-medium"
+            className="border border-slate-300 rounded px-3 h-[36px] text-sm bg-white focus:outline-none focus:border-primary font-medium cursor-pointer"
           >
             <option value="all">-- Tất cả Dự án --</option>
             {projects.map(p => (
