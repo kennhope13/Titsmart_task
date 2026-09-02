@@ -162,11 +162,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         filteredOptions.map((option, idx) => (
           <div
             key={String(option.value) + idx}
-            className={`px-3 py-2 cursor-pointer transition-colors ${fontSizeClass} ${
+            className={`px-3 py-2 cursor-pointer transition-colors ${fontSizeClass} ${option.className || ''} ${
               String(value) === String(option.value)
                 ? 'bg-blue-50 text-primary font-semibold'
-                : 'text-slate-700 hover:bg-slate-50'
-            }`}
+                : 'hover:bg-slate-50'
+            } ${!option.className ? 'text-slate-700' : ''}`}
             onMouseDown={(e) => { e.preventDefault(); handleSelect(option.value); }}
             onClick={(e) => { e.preventDefault(); handleSelect(option.value); }}
           >

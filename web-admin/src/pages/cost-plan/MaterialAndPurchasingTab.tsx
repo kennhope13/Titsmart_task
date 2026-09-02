@@ -1401,21 +1401,17 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <td className="w-[125px] p-0 align-middle text-slate-600 border-r border-slate-200">
                                 <div className="p-1">
                                   {(() => {
-                                    const status = plan.techSpecStatus || '';
-                                    let style = 'border-slate-200 bg-slate-50 text-slate-500';
-                                    if (status === 'Đáp ứng') style = 'border-emerald-200 bg-emerald-50 text-emerald-700';
-                                    else if (status === 'Chưa đáp ứng') style = 'border-red-200 bg-red-50 text-red-700';
-                                    else if (status === 'Đang xem xét') style = 'border-amber-200 bg-amber-50 text-amber-700';
+                                    const currentStatus = plan.techSpecStatus || 'Chưa xác định';
+                                    const style = getStatusColorStyle(currentStatus);
                                     return (
                                       <CustomSelect
-                                        value={status}
-                                        onChange={(e) => { onUpdateMaterial(plan.id, { ...plan, techSpecStatus: e.target.value }) }}
+                                        value={currentStatus}
+                                        onChange={(e) => { onUpdateMaterial(plan.id, { ...plan, techSpecStatus: e.target.value === 'Chưa xác định' ? '' : e.target.value }) }}
                                         className={`w-full font-bold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm rounded-md transition-colors ${style}`}
                                       >
-                                        <option value="">&nbsp;</option>
-                                        <option value="Đáp ứng">Đáp ứng</option>
-                                        <option value="Chưa đáp ứng">Chưa đáp ứng</option>
-                                        <option value="Đang xem xét">Đang xem xét</option>
+                                        {['Chưa xác định', 'Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét'].map(opt => (
+                                          <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>
+                                        ))}
                                       </CustomSelect>
                                     );
                                   })()}
