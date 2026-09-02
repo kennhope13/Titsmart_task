@@ -1583,7 +1583,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 <CustomSelect
                                   value={pRecord?.contractStatus || 'Chưa ký'}
                                   onChange={(e) => { if (pRecord) onUpdatePurchasing(pRecord.id, { ...pRecord, contractStatus: e.target.value }) }}
-                                  className={`w-full font-bold text-[11px] px-1.5 py-1 border border-slate-200 rounded-md focus:outline-primary ${getStatusColorStyle(pRecord?.contractStatus || 'Chưa ký')}`}
+                                  className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(pRecord?.contractStatus || 'Chưa ký')}`}
                                 >
                                   <option value="Chưa ký" className={getStatusColorStyle('Chưa ký')}>Chưa ký</option>
                                   <option value="Đã ký" className={getStatusColorStyle('Đã ký')}>Đã ký</option>
@@ -1611,7 +1611,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 <CustomSelect
                                   value={pRecord?.invoiceStatus || 'Chưa xuất'}
                                   onChange={(e) => { if (pRecord) onUpdatePurchasing(pRecord.id, { ...pRecord, invoiceStatus: e.target.value }) }}
-                                  className={`w-full font-bold text-[11px] px-1.5 py-1 border border-slate-200 rounded-md focus:outline-primary ${getStatusColorStyle(pRecord?.invoiceStatus || 'Chưa xuất')}`}
+                                  className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(pRecord?.invoiceStatus || 'Chưa xuất')}`}
                                 >
                                   <option value="Chưa xuất" className={getStatusColorStyle('Chưa xuất')}>Chưa xuất</option>
                                   <option value="Đã xuất" className={getStatusColorStyle('Đã xuất')}>Đã xuất</option>
