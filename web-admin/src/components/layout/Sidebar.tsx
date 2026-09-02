@@ -21,10 +21,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
   const currentProject = projects.find(p => p.id === currentProjectId || p.code === currentProjectId);
 
   const [isHovered, setIsHovered] = useState(false);
-  const [showNotifPopover, setShowNotifPopover] = useState(false);
   const [showUserPopover, setShowUserPopover] = useState(false);
   
-  const isExpanded = isExpandedProp || (sidebarHoverToExpand && isHovered) || showNotifPopover || showUserPopover;
+  const isExpanded = isExpandedProp || (sidebarHoverToExpand && isHovered) || showUserPopover;
   const navigate = useNavigate();
   const unreadCount = notifications.filter((item) => !item.read).length;
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
@@ -180,55 +179,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
             </div>
           </div>
         </div>
-
-        {isAdmin && (
-          <div className={`relative transition-opacity duration-300 flex-shrink-0 pr-1 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
-            <button
-              onClick={() => {
-                setShowNotifPopover(!showNotifPopover);
-                setShowUserPopover(false);
-              }}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors relative
-                ${showNotifPopover ? 'text-primary bg-blue-50' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'}`}
-            >
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-              )}
-            </button>
-          </div>
-        )}
-
-        {isAdmin && showNotifPopover && (
-          <div className="absolute top-full left-3 right-3 mt-2 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50">
-            <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
-              <button onClick={clearNotifications} className="text-[11px] text-primary font-bold hover:underline">Xóa tất cả</button>
-            </div>
-            <div className="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-100">
-              {notifications.length === 0 ? (
-                <div className="p-6 text-center text-slate-500 text-xs">Không có thông báo nào</div>
-              ) : (
-                notifications.map(notification => (
-                  <div
-                    key={notification.id}
-                    onClick={() => markNotificationRead(notification.id)}
-                    className={`p-3 text-xs hover:bg-slate-50 cursor-pointer flex gap-3 ${!notification.read ? 'bg-blue-50/50 font-medium' : 'opacity-70'}`}
-                  >
-                    <span className="material-symbols-outlined text-primary text-base flex-shrink-0">{notification.icon || 'info'}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2 mb-0.5">
-                        <span className="font-bold text-slate-800 truncate">{notification.title}</span>
-                        <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">{notification.timestamp}</span>
-                      </div>
-                      <p className="text-slate-600 leading-tight">{notification.message}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       <nav className="flex-1 w-[240px] px-2 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">

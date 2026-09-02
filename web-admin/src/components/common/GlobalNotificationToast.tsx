@@ -29,7 +29,7 @@ export const GlobalNotificationToast: React.FC = () => {
 
   return (
     <div
-      className="fixed top-20 left-6 lg:left-24 z-[9999] flex flex-col gap-1 bg-white px-5 py-4 rounded-xl shadow-2xl transition-all duration-300 opacity-100 border border-slate-100 min-w-[300px]"
+      className="fixed top-20 right-6 z-[9999] flex flex-col gap-1 bg-white px-5 py-4 rounded-xl shadow-2xl transition-all duration-300 opacity-100 border border-slate-100 min-w-[300px]"
       style={{ animation: 'slideIn 0.3s ease-out' }}
     >
       <div className="flex items-center gap-3">
