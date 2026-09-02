@@ -1,10 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
 
 export const TaskAssignmentPage: React.FC = () => {
   const { tasks, projects, engineers, updateTask } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
+  const location = useLocation();
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -17,7 +20,13 @@ export const TaskAssignmentPage: React.FC = () => {
   const [selectedEngineerId, setSelectedEngineerId] = useState('');
   
   const [filterProjectCode, setFilterProjectCode] = useState('all');
-  const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned'>('unassigned');
+  const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned' | 'my-tasks'>(() => (location.state as any)?.tab || 'unassigned');
+
+  useEffect(() => {
+    if ((location.state as any)?.tab) {
+      setActiveTab((location.state as any).tab);
+    }
+  }, [location.state]);
 
   const displayedTasks = useMemo(() => {
     let filtered = tasks.filter(t => !t.isSectionHeader);
@@ -86,20 +95,7 @@ export const TaskAssignmentPage: React.FC = () => {
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">
             PHÂN CÔNG CÔNG VIỆC
           </h1>
-          <div className="flex bg-slate-100 rounded-lg p-1 sm:ml-6 shrink-0">
-            <button 
-              onClick={() => { setActiveTab('unassigned'); setSelectedTaskIds([]); }}
-              className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${activeTab === 'unassigned' ? 'bg-white shadow text-primary' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Cần phân công
-            </button>
-            <button 
-              onClick={() => { setActiveTab('assigned'); setSelectedTaskIds([]); }}
-              className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${activeTab === 'assigned' ? 'bg-white shadow text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Đã nhận / Đang làm
-            </button>
-          </div>
+          <SharedTaskTabs activeTab={activeTab as any} onTabChange={(t) => { setActiveTab(t); setSelectedTaskIds([]); }} />
         </div>
         <div className="flex items-center gap-4">
           <select 

@@ -96,8 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         items: [
           { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
           { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
-          { label: 'Công việc của tôi', path: '/my-tasks', icon: 'checklist' },
-          { label: 'Phân công công việc', path: '/task-assignment', icon: 'assignment_add' },
+          { label: 'C�ng vi?c', path: '/my-tasks', icon: 'checklist' },
           { label: 'Tổng kho', path: '/materials', icon: 'warehouse' },
           { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
           { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' }
@@ -113,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         items: [
           { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
           { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
-          { label: 'Công việc của tôi', path: '/my-tasks', icon: 'checklist' },
+          { label: 'C�ng vi?c', path: '/my-tasks', icon: 'checklist' },
           { label: 'Tổng kho', path: '/materials', icon: 'warehouse' }
         ]
       }];
@@ -126,7 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         collapsible: false,
         items: [
           { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
-          { label: 'Công việc của tôi', path: '/my-tasks', icon: 'checklist' },
+          { label: 'C�ng vi?c', path: '/my-tasks', icon: 'checklist' },
           { label: 'Tổng kho', path: '/materials', icon: 'warehouse' }
         ]
       }];
@@ -138,7 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       collapsible: false,
       items: [
         { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
-        { label: 'Công việc của tôi', path: '/my-tasks', icon: 'checklist' }
+        { label: 'C�ng vi?c', path: '/my-tasks', icon: 'checklist' }
       ]
     }];
   };
@@ -318,3 +317,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
     </aside>
   );
 };
+
+
+
+
