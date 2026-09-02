@@ -81,12 +81,12 @@ export const TaskAssignmentPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
-      <div className="bg-white border-b border-slate-200 pl-3 pr-[4.5rem] py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 shadow-sm">
-        <div className="flex items-center">
-          <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">
+      <div className="bg-white border-b border-slate-200 pl-3 pr-[4.5rem] py-4 md:py-3 lg:py-0 lg:min-h-[3rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0 shadow-sm flex-wrap">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 flex-wrap">
+          <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">
             PHÂN CÔNG CÔNG VIỆC
           </h1>
-          <div className="flex bg-slate-100 rounded-lg p-1 ml-6">
+          <div className="flex bg-slate-100 rounded-lg p-1 sm:ml-6 shrink-0">
             <button 
               onClick={() => { setActiveTab('unassigned'); setSelectedTaskIds([]); }}
               className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${activeTab === 'unassigned' ? 'bg-white shadow text-primary' : 'text-slate-500 hover:text-slate-700'}`}
