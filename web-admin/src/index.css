@@ -559,14 +559,5 @@ input[type="number"] {
 .no-drag-region { -webkit-app-region: no-drag; }
 
 .electron-drag { -webkit-app-region: drag; }
-.electron-no-drag { -webkit-app-region: no-drag; }
-
-
-
-
-
-
-
-
-  
+.electron-no-drag { -webkit-app-region: no-drag;
 }
