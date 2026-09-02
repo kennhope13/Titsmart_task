@@ -27,10 +27,8 @@ export const NotificationBell: React.FC = () => {
     };
   }, [showPopover]);
 
-  if (!isAdmin) return null;
-
   return (
-    <div ref={popoverRef} className="absolute top-[13px] right-4 z-[60]">
+    <div ref={popoverRef} className="absolute top-[6px] right-5 z-[60]">
       <button
         onClick={() => setShowPopover(!showPopover)}
         className={`w-[36px] h-[36px] rounded-md flex items-center justify-center transition-all relative border 
