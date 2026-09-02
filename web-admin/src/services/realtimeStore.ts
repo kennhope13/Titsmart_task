@@ -955,6 +955,12 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updateMaterial: async (id, updatedFields) => {
+      // Optimistic update
+      set((state) => {
+        const nextMats = state.materials.map((m) => (m.id === id ? { ...m, ...updatedFields } : m));
+        persistAndNotify({ materials: nextMats });
+        return { materials: nextMats };
+      });
       try {
         const updated = await api.materials.update(id, updatedFields);
         set((state) => {
@@ -969,6 +975,12 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updateMaterialStatus: async (id, status) => {
+      // Optimistic update
+      set((state) => {
+        const nextMats = state.materials.map((m) => (m.id === id ? { ...m, status } : m));
+        persistAndNotify({ materials: nextMats });
+        return { materials: nextMats };
+      });
       try {
         const updated = await api.materials.update(id, { status });
         set((state) => {
@@ -1303,8 +1315,14 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updateMaterialPlan: async (id, fields) => {
+      const oldPlan = get().materialPlans.find((p) => p.id === id);
+      // Optimistic update
+      set((state) => {
+        const nextPlans = state.materialPlans.map((p) => (p.id === id ? { ...p, ...fields } : p));
+        persistAndNotify({ materialPlans: nextPlans });
+        return { materialPlans: nextPlans };
+      });
       try {
-        const oldPlan = get().materialPlans.find((p) => p.id === id);
         const updated = normalizeMaterialPlan(await api.accounting.updateMaterialPlan(id, fields));
         set((state) => {
           const nextPlans = state.materialPlans.map((p) => (p.id === id ? updated : p));
@@ -1361,8 +1379,14 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updatePurchasingPlan: async (id, fields) => {
+      const oldPlan = get().purchasingPlans.find((p) => p.id === id);
+      // Optimistic update
+      set((state) => {
+        const nextPurs = state.purchasingPlans.map((p) => (p.id === id ? { ...p, ...fields } : p));
+        persistAndNotify({ purchasingPlans: nextPurs });
+        return { purchasingPlans: nextPurs };
+      });
       try {
-        const oldPlan = get().purchasingPlans.find((p) => p.id === id);
         const updated = normalizePurchasingPlan(await api.accounting.updatePurchasing(id, fields));
         set((state) => {
           const nextPurs = state.purchasingPlans.map((p) => (p.id === id ? updated : p));
