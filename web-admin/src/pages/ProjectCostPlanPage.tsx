@@ -1939,7 +1939,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                       <span className="material-symbols-outlined text-[16px]">add</span>
                       Thêm phiếu chi
                     </button>
- </div> <div className="overflow-x-auto">
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-tight">
                   <tr>
