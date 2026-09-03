@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
-import { useAuthStore } from '../services/authStore';
+import { useAuthStore, hasPermission } from '../services/authStore';
 import { Project, Task } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
@@ -647,7 +647,7 @@ export const ProjectManagementPage: React.FC = () => {
               className="w-full pl-9 pr-3 h-[38px] border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
             />
           </div>
-          { (user?.role === 'admin' || user?.role === 'pm') ? (
+          { hasPermission(user, "CREATE_PROJECTS") ? (
           <button
             type="button"
             onClick={() => setIsNewProjectModalOpen(true)}
@@ -766,17 +766,17 @@ export const ProjectManagementPage: React.FC = () => {
                   </div>
 
                   {/* Nút sửa/xóa — hiện khi hover */}
-                  {user?.role === 'admin' && (
+                  { (hasPermission(user, "EDIT_PROJECTS") || hasPermission(user, "DELETE_PROJECTS")) && (
                     <div className="absolute top-2 right-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                      <button
+                      {hasPermission(user, "EDIT_PROJECTS") && (<button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); openEditModal(project); }}
                         title="Sửa tên dự án"
                         className="rounded p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition"
                       >
                         <span className="material-symbols-outlined text-[16px]">edit</span>
-                      </button>
-                      <button
+                      </button>)}
+                      {hasPermission(user, "DELETE_PROJECTS") && (<button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
                         title={TEXT.deleteProject}
@@ -784,7 +784,7 @@ export const ProjectManagementPage: React.FC = () => {
                         className="rounded p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition"
                       >
                         <span className="material-symbols-outlined text-[16px]">delete</span>
-                      </button>
+                      </button>)}
                     </div>
                   )}
                 </div>

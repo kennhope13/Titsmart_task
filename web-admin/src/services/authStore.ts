@@ -1,4 +1,55 @@
 import { create } from 'zustand';
+import { Permission } from '../types';
+
+export const getDefaultPermissions = (role: string): Permission[] => {
+  if (role === 'admin' || role === 'Quản trị viên') {
+    return [
+      'VIEW_PROJECTS', 'CREATE_PROJECTS', 'EDIT_PROJECTS', 'DELETE_PROJECTS',
+      'VIEW_TASKS', 'IMPORT_TASKS', 'EDIT_TASKS', 'ASSIGN_TASKS', 'UPDATE_TASK_PROGRESS', 'APPROVE_TASKS',
+      'VIEW_MATERIALS', 'IMPORT_MATERIALS', 'EDIT_MATERIALS', 'UPDATE_MATERIAL_STATUS',
+      'VIEW_FINANCE', 'EDIT_PRICES', 'VIEW_PAYMENTS', 'EDIT_PAYMENTS', 'VIEW_EXPENSES', 'EDIT_EXPENSES',
+      'VIEW_DOCUMENTS', 'MANAGE_DOCUMENTS',
+      'VIEW_USERS', 'MANAGE_USERS', 'MANAGE_PERMISSIONS', 'MANAGE_PAYROLL',
+      'EXPORT_DATA'
+    ];
+  }
+  if (role === 'pm' || role === 'Quản lý dự án') {
+    return [
+      'VIEW_PROJECTS', 'CREATE_PROJECTS', 'EDIT_PROJECTS',
+      'VIEW_TASKS', 'IMPORT_TASKS', 'EDIT_TASKS', 'ASSIGN_TASKS', 'UPDATE_TASK_PROGRESS', 'APPROVE_TASKS',
+      'VIEW_MATERIALS', 'IMPORT_MATERIALS', 'EDIT_MATERIALS', 'UPDATE_MATERIAL_STATUS',
+      'VIEW_FINANCE', 'VIEW_PAYMENTS', 'VIEW_EXPENSES', 'EDIT_EXPENSES',
+      'VIEW_DOCUMENTS', 'MANAGE_DOCUMENTS',
+      'VIEW_USERS', 'MANAGE_PAYROLL',
+      'EXPORT_DATA'
+    ];
+  }
+  if (role === 'engineer' || role === 'Kỹ sư hiện trường') {
+    return [
+      'VIEW_PROJECTS',
+      'VIEW_TASKS', 'UPDATE_TASK_PROGRESS',
+      'VIEW_MATERIALS', 'UPDATE_MATERIAL_STATUS',
+      'VIEW_DOCUMENTS', 'MANAGE_DOCUMENTS',
+      'VIEW_USERS'
+    ];
+  }
+  // staff
+  return [
+    'VIEW_PROJECTS',
+    'VIEW_TASKS',
+    'VIEW_MATERIALS',
+    'VIEW_DOCUMENTS',
+    'VIEW_USERS'
+  ];
+};
+
+export const hasPermission = (user: AuthUser | null | undefined, perm: Permission): boolean => {
+  if (!user) return false;
+  // If user is the hardcoded superadmin
+  if (user.username === 'admin') return true;
+  return user.permissions?.includes(perm) || false;
+};
+
 
 export interface AuthUser {
   id: string;
@@ -10,6 +61,7 @@ export interface AuthUser {
   phone: string;
   avatar?: string;
   projectCodes?: string[];
+  permissions?: import('../types').Permission[];
 }
 
 export interface DemoAccount {
@@ -177,6 +229,7 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
         email: data.user.email || email,
         phone: engineerData?.phone || account?.phone || '',
         projectCodes: engineerData?.project_codes || [],
+        permissions: engineerData?.permissions || getDefaultPermissions(englishRole),
       };
       localStorage.setItem(SESSION_KEY, JSON.stringify(user));
       set({ user });

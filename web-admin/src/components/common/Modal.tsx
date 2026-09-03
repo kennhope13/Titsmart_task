@@ -20,7 +20,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
-      <div className={`bg-white rounded-lg shadow-2xl border border-outline-variant w-full ${modalSizeClasses[size]} overflow-hidden flex flex-col max-h-[90vh]`}>
+      <div className={`bg-white rounded-lg shadow-2xl border border-outline-variant w-full ${modalSizeClasses[size]} overflow-hidden flex flex-col max-h-[95vh]`}>
         {/* Modal Header */}
         <div className="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
           <h3 className="text-lg font-bold text-primary flex items-center gap-2">
@@ -36,7 +36,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         </div>
 
         {/* Modal Content */}
-        <div className="p-6 overflow-y-auto custom-scrollbar flex-1">{children}</div>
+        <div className="p-4 overflow-y-auto custom-scrollbar flex-1">{children}</div>
       </div>
     </div>
   );

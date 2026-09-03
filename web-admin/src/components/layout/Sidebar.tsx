@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useRealtimeStore } from '../../services/realtimeStore';
-import { useAuthStore } from '../../services/authStore';
+import { useAuthStore, hasPermission } from '../../services/authStore';
 import { useUIStore } from '../../services/uiStore';
 
 interface SidebarProps {
@@ -55,22 +55,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
     }));
   };
 
+  
   const getNavGroups = () => {
-    const role = user?.role || 'staff';
-    
     if (currentProject) {
       const baseProjectItems = [
-          { label: 'Tiến độ Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'fact_check' },
-          { label: 'Vật tư & Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'account_balance_wallet', requireAdmin: true },
-          { label: 'Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'file_present', requireAdmin: true },
-          { label: 'Kho Dự án', path: `/projects/${currentProject.id}/inventory`, icon: 'inventory_2', requireAdmin: true },
-          { label: 'Nhật ký Hiện trường', path: `/projects/${currentProject.id}/field-logs`, icon: 'add_a_photo' }
+          { label: 'Tiến độ Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'fact_check', req: 'VIEW_TASKS' },
+          { label: 'Vật tư & Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'account_balance_wallet', req: 'VIEW_FINANCE' },
+          { label: 'Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'file_present', req: 'VIEW_DOCUMENTS' },
+          { label: 'Kho Dự án', path: `/projects/${currentProject.id}/inventory`, icon: 'inventory_2', req: 'VIEW_MATERIALS' },
+          { label: 'Nhật ký Hiện trường', path: `/projects/${currentProject.id}/field-logs`, icon: 'add_a_photo', req: 'VIEW_TASKS' } // Or any specific permission for field logs
         ];
 
-        const projectItems = baseProjectItems.filter(item => {
-          if (item.requireAdmin && (role === 'staff' || role === 'engineer')) return false;
-          return true;
-        });
+      const projectItems = baseProjectItems.filter(item => hasPermission(user, item.req as any));
 
       return [
         {
@@ -78,68 +74,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           collapsible: false,
           items: [
             { label: 'Tất cả dự án', path: '/projects', icon: 'arrow_back' }
-          ]
+          ].filter(() => hasPermission(user, 'VIEW_PROJECTS'))
         },
         {
           title: currentProject.name,
           collapsible: false,
           items: projectItems
         }
-      ];
+      ].filter(group => group.items.length > 0);
     }
 
-    // Admin sees everything
-    if (role === 'admin') {
-      return [{
-        title: '',
-        collapsible: false,
-        items: [
-          { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
-          { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
-          { label: 'Công việc', path: '/my-tasks', icon: 'checklist' },
-          { label: 'Tổng kho', path: '/materials', icon: 'warehouse' },
-          { label: 'Nhân sự', path: '/personnel', icon: 'groups' },
-          { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history' }
-        ]
-      }];
-    }
+    const mainItems = [
+      { label: 'Tổng quan', path: '/dashboard', icon: 'analytics', req: 'VIEW_PROJECTS' },
+      { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower', req: 'VIEW_PROJECTS' },
+      { label: 'Công việc', path: '/my-tasks', icon: 'checklist', req: 'VIEW_TASKS' },
+      { label: 'Tổng kho', path: '/materials', icon: 'warehouse', req: 'VIEW_MATERIALS' },
+      { label: 'Nhân sự', path: '/personnel', icon: 'groups', req: 'VIEW_USERS' },
+      { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history', req: 'VIEW_USERS' } // Admin/View users
+    ];
 
-    // PM sees Dashboard, Projects, Materials, but NOT Personnel/System
-    if (role === 'pm') {
-      return [{
-        title: '',
-        collapsible: false,
-        items: [
-          { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
-          { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
-          { label: 'Công việc', path: '/my-tasks', icon: 'checklist' },
-          { label: 'Tổng kho', path: '/materials', icon: 'warehouse' }
-        ]
-      }];
-    }
-
-    // Engineer sees Projects, Materials
-    if (role === 'engineer') {
-      return [{
-        title: '',
-        collapsible: false,
-        items: [
-          { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
-          { label: 'Công việc', path: '/my-tasks', icon: 'checklist' },
-          { label: 'Tổng kho', path: '/materials', icon: 'warehouse' }
-        ]
-      }];
-    }
-
-    // Staff only sees Projects
     return [{
       title: '',
       collapsible: false,
-      items: [
-        { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower' },
-        { label: 'Công việc', path: '/my-tasks', icon: 'checklist' }
-      ]
-    }];
+      items: mainItems.filter(item => hasPermission(user, item.req as any))
+    }].filter(group => group.items.length > 0);
   };
 
   const navGroups = getNavGroups();

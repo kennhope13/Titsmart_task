@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { useRealtimeStore } from '../services/realtimeStore';
-import { useAuthStore } from '../services/authStore';
+import { useAuthStore, hasPermission } from '../services/authStore';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
