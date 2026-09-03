@@ -1374,12 +1374,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 ) : ((() => {
                                   const inventoryMatch = plan.techSpecModel ? materials.find(m => plan.techSpecModel.toLowerCase().includes(m.code?.toLowerCase() || 'NO_MATCH') || (m.code && m.code.toLowerCase().includes(plan.techSpecModel.toLowerCase()))) : null;
                                   return (
-                                    <div onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-between break-words px-1 text-slate-600 relative group/cell" title={plan.techSpecModel || 'Click để nhập mã'}>
-                                      <div className="flex-1 text-center text-slate-700">
+                                    <div onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex flex-col items-center justify-center break-words px-1 py-0.5 text-slate-600 relative group/cell" title={plan.techSpecModel || 'Click để nhập mã'}>
+                                      <div className="text-center text-slate-700 w-full">
                                         {plan.techSpecModel || <span className="text-slate-300 italic font-normal">...</span>}
                                       </div>
                                       {inventoryMatch && (
-                                        <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-center pr-1 opacity-80 group-hover/cell:opacity-100 transition-opacity">
+                                        <div className="mt-0.5 opacity-80 group-hover/cell:opacity-100 transition-opacity">
                                           <span className="text-[9px] bg-green-100 text-green-700 px-1 py-0.5 rounded shadow-sm border border-green-200 font-bold whitespace-nowrap" title={`Tồn kho: ${inventoryMatch.currentStock || 0} ${inventoryMatch.unit || ''}`}>
                                             Kho: {inventoryMatch.currentStock || 0}
                                           </span>
