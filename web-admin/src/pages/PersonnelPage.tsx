@@ -379,7 +379,23 @@ export const PersonnelPage: React.FC = () => {
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={editingPersonId ? "••••••••" : "Nhập mật khẩu"} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
           </div>
 
-          {role !== 'Quản lý dự án' && (
+          
+          
+            
+<div className="pt-6 mt-4 flex justify-end gap-3 border-t border-slate-100">
+            <button type="button" onClick={closeForm} className="px-5 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-colors">Hủy</button>
+            <button
+              type="submit"
+              disabled={submitting || projects.length === 0 || !name.trim()}
+              className="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:opacity-90 disabled:opacity-50 shadow-sm transition-all"
+            >
+              {submitting ? 'Đang xử lý...' : (editingPersonId ? 'Lưu thay đổi' : 'Thêm nhân sự')}
+            </button>
+          </div>
+</div>
+<div className="lg:w-[60%] border-t lg:border-t-0 lg:border-l lg:pl-6 border-slate-100">
+<div className="mt-2">
+{role !== 'Quản lý dự án' && (
             <div>
               <label className="block text-[13px] font-bold text-slate-700 mb-1.5">
                 Phân quyền Dự án <span className="text-red-500">*</span>
@@ -399,10 +415,8 @@ export const PersonnelPage: React.FC = () => {
               )}
             </div>
           )}
-          
-            </div>
-<div className="lg:w-[60%] border-t lg:border-t-0 lg:border-l lg:pl-6 border-slate-100">
-<div className="mt-2">
+<div className="border-t border-slate-100 my-4"></div>
+
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-[13px] font-bold text-slate-700 uppercase">Phân quyền chi tiết</h3>
                 <button type="button" onClick={() => setPermissions(getDefaultPermissions(role))} className="text-xs font-semibold text-primary hover:underline">Tick theo vai trò mẫu</button>
@@ -460,17 +474,7 @@ export const PersonnelPage: React.FC = () => {
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'MANAGE_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Quản lý hồ sơ</label>
                 </div></div></div></div>
 </div>
-<div className="pt-6 mt-4 flex justify-end gap-3 border-t border-slate-100">
-            <button type="button" onClick={closeForm} className="px-5 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-colors">Hủy</button>
-            <button
-              type="submit"
-              disabled={submitting || projects.length === 0 || !name.trim()}
-              className="bg-primary text-white px-5 py-2 rounded-lg text-sm font-bold hover:opacity-90 disabled:opacity-50 shadow-sm transition-all"
-            >
-              {submitting ? 'Đang xử lý...' : (editingPersonId ? 'Lưu thay đổi' : 'Thêm nhân sự')}
-            </button>
-          </div>
-        </form>
+</form>
       </Modal>
       {deletingPerson && (
         <Modal isOpen={!!deletingPerson} onClose={() => setDeletingPerson(null)} title="Xác nhận xóa">
