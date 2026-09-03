@@ -185,8 +185,13 @@ export const api = {
       return toCamelCase(result);
     },
     update: async (id: string, data: any) => {
-      const { data: result, error } = await supabase.from('materials').update(toSnakeCase(data)).eq('id', id).select().single();
-      if (error) throw error;
+      const payload = toSnakeCase(data);
+      if (Object.keys(payload).length === 0) return { id };
+      const { data: result, error } = await supabase.from('materials').update(payload).eq('id', id).select().single();
+      if (error) {
+        if (error.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
+        throw error;
+      }
       return toCamelCase(result);
     },
     delete: async (id: string) => {
@@ -275,8 +280,13 @@ export const api = {
       return mapArray(result || []);
     },
     updateMaterialPlan: async (id: string, data: any) => {
-      const { data: result, error } = await supabase.from('material_plans').update(toSnakeCase(data)).eq('id', id).select().single();
-      if (error) throw error;
+      const payload = toSnakeCase(data);
+      if (Object.keys(payload).length === 0) return { id };
+      const { data: result, error } = await supabase.from('material_plans').update(payload).eq('id', id).select().single();
+      if (error) {
+        if (error.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
+        throw error;
+      }
       return toCamelCase(result);
     },
     deleteMaterialPlan: async (id: string) => {
@@ -326,13 +336,18 @@ export const api = {
     },
     updatePurchasing: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
+      if (Object.keys(payload).length === 0) return { id };
       const { data: result, error } = await supabase.from('purchasing_plans').update(payload).eq('id', id).select().single();
       if (error) {
+        if (error.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
           delete payload.parent_id;
           delete payload.material_plan_id;
           const { data: retryResult, error: retryError } = await supabase.from('purchasing_plans').update(payload).eq('id', id).select().single();
-          if (retryError) throw retryError;
+          if (retryError) {
+            if (retryError.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
+            throw retryError;
+          }
           return toCamelCase({ ...retryResult, parent_id: data.parentId, material_plan_id: data.materialPlanId });
         }
         throw error;
