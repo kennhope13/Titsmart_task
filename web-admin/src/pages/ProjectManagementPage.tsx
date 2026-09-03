@@ -123,6 +123,7 @@ export const ProjectManagementPage: React.FC = () => {
   } = useRealtimeStore();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'on_hold'>('all');
 
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
@@ -185,13 +186,19 @@ export const ProjectManagementPage: React.FC = () => {
   const displayProjects = useMemo(() => {
     const merged = [...projects, ...deriveProjectsFromTasks(tasks).filter((derived) => !projects.some((project) => project.code === derived.code))];
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return merged;
+    
     return merged.filter((project) => {
+      // Lọc theo trạng thái
+      const matchStatus = statusFilter === 'all' || project.status === statusFilter;
+      if (!matchStatus) return false;
+
+      // Lọc theo tìm kiếm
+      if (!q) return true;
       const memberNames = resolveProjectMemberNames(project).join(' ');
       return [project.name, project.code, project.location, project.client, project.managerName, memberNames]
         .some((value) => String(value || '').toLowerCase().includes(q));
     });
-  }, [projects, tasks, searchQuery, engineers]);
+  }, [projects, tasks, searchQuery, statusFilter, engineers]);
 
   const enhancedProjects = useMemo(() => {
     return displayProjects.map((project) => {
@@ -634,7 +641,34 @@ export const ProjectManagementPage: React.FC = () => {
 
 
           <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
-          <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-[13px] font-bold border border-blue-100 whitespace-nowrap">
+            <div className="hidden lg:flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+              <button
+                onClick={() => setStatusFilter('all')}
+                className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all ${statusFilter === 'all' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Tất cả
+              </button>
+              <button
+                onClick={() => setStatusFilter('active')}
+                className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all ${statusFilter === 'active' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Đang triển khai
+              </button>
+              <button
+                onClick={() => setStatusFilter('completed')}
+                className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all ${statusFilter === 'completed' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Hoàn thành
+              </button>
+              <button
+                onClick={() => setStatusFilter('on_hold')}
+                className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all ${statusFilter === 'on_hold' ? 'bg-white shadow-sm text-amber-600' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Tạm dừng
+              </button>
+            </div>
+
+            <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-[13px] font-bold border border-blue-100 whitespace-nowrap">
             {displayProjects.length} dự án
           </span>
           <div className="relative w-full sm:w-64 flex items-center">
