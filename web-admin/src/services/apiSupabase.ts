@@ -91,7 +91,19 @@ export const api = {
       if (payload.reviewer_id === '') payload.reviewer_id = null;
 
       const { data: result, error } = await supabase.from('tasks').insert(payload).select().single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete payload.is_section_header;
+          delete payload.section_name;
+          delete payload.project_name;
+          delete payload.assigned_engineer_name;
+          delete payload.assigner_name;
+          const { data: retryResult, error: retryError } = await supabase.from('tasks').insert(payload).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase({ ...data, ...retryResult });
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     createBatch: async (dataArray: any[]) => {
@@ -105,7 +117,26 @@ export const api = {
       });
 
       const { data: result, error } = await supabase.from('tasks').insert(payloads).select();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          console.warn('Fallback: saving tasks batch without new columns because they are missing in DB');
+          payloads.forEach(p => {
+             delete p.is_section_header;
+             delete p.section_name;
+             delete p.project_name;
+             delete p.assigned_engineer_name;
+             delete p.assigner_name;
+          });
+          const { data: retryResult, error: retryError } = await supabase.from('tasks').insert(payloads).select();
+          if (retryError) throw retryError;
+          // Merge back the local properties that were dropped
+          return mapArray(retryResult || []).map((t: any, i: number) => ({
+             ...dataArray[i],
+             ...t
+          }));
+        }
+        throw error;
+      }
       return mapArray(result || []);
     },
     update: async (id: string, data: any) => {
@@ -116,7 +147,23 @@ export const api = {
       if (payload.reviewer_id === '') payload.reviewer_id = null;
 
       const { data: result, error } = await supabase.from('tasks').update(payload).eq('id', id).select().single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete payload.is_section_header;
+          delete payload.section_name;
+          delete payload.project_name;
+          delete payload.assigned_engineer_name;
+          delete payload.assigner_name;
+          const { data: retryResult, error: retryError } = await supabase.from('tasks').update(payload).eq('id', id).select().single();
+          if (retryError) {
+             if (retryError.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
+             throw retryError;
+          }
+          return toCamelCase({ ...data, ...retryResult });
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     delete: async (id: string) => {
