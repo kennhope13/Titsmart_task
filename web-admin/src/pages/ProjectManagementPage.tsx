@@ -660,12 +660,6 @@ export const ProjectManagementPage: React.FC = () => {
               >
                 Hoàn thành
               </button>
-              <button
-                onClick={() => setStatusFilter('on_hold')}
-                className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all ${statusFilter === 'on_hold' ? 'bg-white shadow-sm text-amber-600' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Tạm dừng
-              </button>
             </div>
 
             <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-[13px] font-bold border border-blue-100 whitespace-nowrap">
