@@ -57,6 +57,29 @@ const sttSortValue = (value?: string) => {
   return firstNumber ? Number(firstNumber) : Number.MAX_SAFE_INTEGER;
 };
 
+const parseDateValue = (dStr?: string) => {
+  if (!dStr) return 0;
+  const s = String(dStr).trim();
+  const parts = s.split(/[-/]/);
+  if (parts.length === 3) {
+    let p0 = parseInt(parts[0], 10);
+    let p1 = parseInt(parts[1], 10);
+    let p2 = parseInt(parts[2], 10);
+    if (p0 > 1000) return new Date(p0, p1 - 1, p2).getTime();
+    if (p2 > 1000) return new Date(p2, p1 - 1, p0).getTime();
+    if (p0 > 31) return new Date(2000 + p0, p1 - 1, p2).getTime();
+    if (p2 > 31) return new Date(2000 + p2, p1 - 1, p0).getTime();
+    
+    const currentYear = new Date().getFullYear() % 100;
+    if (Math.abs(p0 - currentYear) <= Math.abs(p2 - currentYear)) {
+      return new Date(2000 + p0, p1 - 1, p2).getTime();
+    } else {
+      return new Date(2000 + p2, p1 - 1, p0).getTime();
+    }
+  }
+  return new Date(s).getTime() || 0;
+};
+
 const normalizePlanKey = (stt?: string, content?: string, _parentId?: string) =>
   `${String(stt || '').trim()}|${String(content || '').trim().toLowerCase()}`;
 
@@ -1407,6 +1430,9 @@ export const ProjectCostPlanPage: React.FC = () => {
     const l = filteredProjLabor.map(lab => ({ ...lab, isLabor: true }));
 
     const combined = [...e, ...l].sort((a, b) => {
+        const dateA = parseDateValue(a.date);
+        const dateB = parseDateValue(b.date);
+        if (dateA !== dateB) return dateA - dateB;
         return sttSortValue(a.stt) - sttSortValue(b.stt);
       });
 
@@ -1960,6 +1986,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     <th className="px-2 py-1.5 text-center w-[50px]">H.Đơn</th>
                     <th className="px-2 py-1.5 text-center w-[50px]">CCCD</th>
                     <th className="px-2 py-1.5 min-w-[80px]">Ghi chú</th>
+                    <th className="px-2 py-1.5 text-center w-[40px]"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-[12px] text-slate-700 leading-tight">
@@ -1991,6 +2018,11 @@ export const ProjectCostPlanPage: React.FC = () => {
                             </td>
                             <td className="px-2 py-1.5 text-slate-400 text-center">-</td>
                             <td className="px-2 py-1.5 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
+                            <td className="px-2 py-1.5 text-center" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: exp.id, type: 'expense', title: 'Xóa phiếu chi', itemName: `khoản chi "${exp.content}"` }); }}>
+                              <button className="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded-md hover:bg-rose-50 flex items-center justify-center mx-auto" title="Xóa khoản chi này">
+                                <span className="material-symbols-outlined text-[14px]">delete</span>
+                              </button>
+                            </td>
                           </tr>
                         );
                       } else {
@@ -2037,6 +2069,11 @@ export const ProjectCostPlanPage: React.FC = () => {
                               </div>
                             </td>
                             <td className="px-2 py-1.5 text-slate-400">-</td>
+                            <td className="px-2 py-1.5 text-center" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: lab.id, type: 'labor', title: 'Xóa nhân công', itemName: `nhân công "${lab.workerName}"` }); }}>
+                              <button className="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded-md hover:bg-rose-50 flex items-center justify-center mx-auto" title="Xóa nhân công này">
+                                <span className="material-symbols-outlined text-[14px]">delete</span>
+                              </button>
+                            </td>
                           </tr>
                         );
                       }
