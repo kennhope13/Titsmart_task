@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useRealtimeStore } from '../../services/realtimeStore';
 import { ProjectMaterialPlan, ProjectPurchasing, getStatusColorStyle, getTextColorStyle, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { decodeModels, encodeModels, ModelEntry } from './DocumentCertificateTab';
@@ -305,6 +306,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   activeSubTab
 }) => {
   const subTab = activeSubTab || 'TECH';
+  const materials = useRealtimeStore(state => state.materials);
   const [filterParent, setFilterParent] = useState('all');
   const [filterUnit, setFilterUnit] = useState('all');
   const [filterProgress, setFilterProgress] = useState('all');
@@ -1369,11 +1371,24 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     autoFocus
                                     className="w-full text-center bg-white text-slate-700 focus:outline-primary px-1 py-1 box-border outline-none shadow-sm border-none h-[28px] rounded"
                                   />
-                                ) : (
-                                  <div onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-center break-words px-1 text-slate-600" title={plan.techSpecModel || 'Click để nhập'}>
-                                    {plan.techSpecModel || <span className="text-slate-300 italic">...</span>}
-                                  </div>
-                                )}
+                                ) : ((() => {
+                                  const inventoryMatch = plan.techSpecModel ? materials.find(m => plan.techSpecModel.toLowerCase().includes(m.code?.toLowerCase() || 'NO_MATCH') || (m.code && m.code.toLowerCase().includes(plan.techSpecModel.toLowerCase()))) : null;
+                                  return (
+                                    <div onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-between break-words px-1 text-slate-600 relative group/cell" title={plan.techSpecModel || 'Click để nhập mã'}>
+                                      <div className="flex-1 text-center text-slate-700">
+                                        {plan.techSpecModel || <span className="text-slate-300 italic font-normal">...</span>}
+                                      </div>
+                                      {inventoryMatch && (
+                                        <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-center pr-1 opacity-80 group-hover/cell:opacity-100 transition-opacity">
+                                          <span className="text-[9px] bg-green-100 text-green-700 px-1 py-0.5 rounded shadow-sm border border-green-200 font-bold whitespace-nowrap" title={`Tồn kho: ${inventoryMatch.currentStock || 0} ${inventoryMatch.unit || ''}`}>
+                                            Kho: {inventoryMatch.currentStock || 0}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()
+                                  )}
                               </td>
                               <td className="bg-white group-hover:bg-slate-50 border-r border-slate-200 p-0 text-center text-[11px] align-middle">
                                 {editingCell?.id === plan.id && editingCell?.field === 'techSpecOrigin' && !editingCell.isPurchasing ? (
