@@ -267,6 +267,7 @@ export interface LaborPayroll {
 
 export interface DocumentTrack {
   id: string;
+  projectId?: string;
   stt: string;
   contractNo: string;
   contractName: string;

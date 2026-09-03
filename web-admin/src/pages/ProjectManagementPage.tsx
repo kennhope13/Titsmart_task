@@ -119,6 +119,7 @@ export const ProjectManagementPage: React.FC = () => {
     expenses,
     laborPayrolls,
     updateProject,
+    isFetchingProjects
   } = useRealtimeStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -660,7 +661,13 @@ export const ProjectManagementPage: React.FC = () => {
       </section>
 
       <div className="p-6">
-        {enhancedProjects.length === 0 ? (
+        {isFetchingProjects ? (
+          <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center">
+            <span className="material-symbols-outlined text-5xl text-primary animate-spin">refresh</span>
+            <h3 className="mt-3 font-bold text-slate-700">Đang tải dữ liệu...</h3>
+            <p className="text-slate-500 text-sm mt-1">Vui lòng chờ trong giây lát</p>
+          </div>
+        ) : enhancedProjects.length === 0 ? (
           <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl">
             <span className="material-symbols-outlined text-5xl text-slate-300">folder_open</span>
             <h3 className="mt-3 font-bold text-slate-700">{searchQuery ? TEXT.noProjectFound : TEXT.noProject}</h3>

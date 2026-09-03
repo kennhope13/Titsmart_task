@@ -155,6 +155,7 @@ const recalculateProjectsFromTasks = (projects: Project[], tasks: Task[], projec
 interface RealtimeStoreState {
   lastMutationTime: number;
   markMutation: () => void;
+  isFetchingProjects: boolean;
   // State
   projects: Project[];
   tasks: Task[];
@@ -433,6 +434,7 @@ const normalizeLaborPayroll = (lab: any): LaborPayroll => ({
 
 const normalizeDocumentTrack = (doc: any): DocumentTrack => ({
   id: doc.id,
+  projectId: doc.projectId ?? doc.project_id ?? undefined,
   projectCode: doc.projectCode || doc.project?.code || '',
   stt: doc.stt || '',
   contractNo: doc.contractNo ?? doc.contract_no ?? '',
@@ -504,6 +506,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   return {
     lastMutationTime: 0,
     markMutation: () => set({ lastMutationTime: Date.now() }),
+    isFetchingProjects: true, // default to true
     projects: [],
     tasks: [],
     materials: inventorySeed.materials,
@@ -521,6 +524,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     fetchProjects: async () => {
       try {
+        set({ isFetchingProjects: true });
         const projects = await api.projects.getAll();
         // Lọc bỏ project nội bộ "Kho Công Ty" khỏi danh sách dự án
         let filtered = Array.isArray(projects)
@@ -528,9 +532,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           : projects;
         
         filtered = filterByProject(filtered, 'code');
-        set({ projects: filtered });
+        set({ projects: filtered, isFetchingProjects: false });
       } catch (e) {
         console.error('Failed to fetch projects', e);
+        set({ isFetchingProjects: false });
       }
     },
 
@@ -1538,15 +1543,47 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     addDocumentTrack: async (trackData) => {
+      const tempId = `temp-${Date.now()}`;
+      const optimisticDoc: DocumentTrack = {
+        ...trackData,
+        id: tempId,
+        stt: trackData.stt || '',
+        contractNo: trackData.contractNo || '',
+        contractName: trackData.contractName || '',
+        company: trackData.company || '',
+        receiverName: trackData.receiverName || '',
+        phone: trackData.phone || '',
+        address: trackData.address || '',
+        sendDate: trackData.sendDate || '',
+        docStatus: trackData.docStatus || 'Chưa ký',
+        contractValue: trackData.contractValue || 0,
+        prepayPercent: trackData.prepayPercent || 0,
+        prepayAmount: trackData.prepayAmount || 0,
+        paymentStatus: trackData.paymentStatus || 'Chưa thanh toán',
+        isCompleted: !!trackData.isCompleted,
+        projectId: get().projects.find(p => p.code === trackData.projectCode)?.id
+      };
+
+      set((state) => {
+        const nextTracks = [optimisticDoc, ...state.documentTracks];
+        persistAndNotify({ documentTracks: nextTracks });
+        return { documentTracks: nextTracks };
+      });
+
       try {
         const created = normalizeDocumentTrack(await api.accounting.createDocumentTrack(trackData));
         set((state) => {
-          const nextTracks = [created, ...state.documentTracks];
+          const nextTracks = state.documentTracks.map(d => d.id === tempId ? created : d);
           get().logActivity('Thêm mới hồ sơ gửi đi: ' + (created.contractName || ''), 'COMPANY');
           persistAndNotify({ documentTracks: nextTracks });
           return { documentTracks: nextTracks };
         });
       } catch (e) {
+        set((state) => {
+          const nextTracks = state.documentTracks.filter(d => d.id !== tempId);
+          persistAndNotify({ documentTracks: nextTracks });
+          return { documentTracks: nextTracks };
+        });
         console.error('Failed to add document track', e);
         throw e;
       }

@@ -192,6 +192,8 @@ export const DocumentTrackingPage: React.FC = () => {
     return proj ? proj.code : '';
   }, [projectId, projects]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Filters state
   const [filterProjectCode, setFilterProjectCode] = useState('all');
 
@@ -519,7 +521,7 @@ export const DocumentTrackingPage: React.FC = () => {
                             title: 'Xóa thông tin theo dõi hồ sơ',
                             message: `Bạn chắc chắn muốn xóa hồ sơ hợp đồng "${track.contractNo || track.contractName || 'này'}"?`,
                             onConfirm: () => {
-                              deleteDocumentTrack(track.id);
+deleteDocumentTrack(track.id);
                               setConfirmConfig(prev => ({ ...prev, isOpen: false }));
                             },
                             isDestructive: true,
@@ -543,6 +545,8 @@ export const DocumentTrackingPage: React.FC = () => {
       <Modal isOpen={isNewDocOpen} onClose={() => setIsNewDocOpen(false)} title="Thêm thông tin Hồ Sơ Gửi Đi mới">
         <form onSubmit={async (e) => {
           e.preventDefault();
+          if (isSubmitting) return;
+          setIsSubmitting(true);
           try {
             const val = Number(newDoc.contractValue || 0);
             const prepayPct = Number(newDoc.prepayPercent || 0);
@@ -575,6 +579,8 @@ export const DocumentTrackingPage: React.FC = () => {
             setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: '', fileUrls: [], docType: 'Giao'});
           } catch (err: any) {
             triggerToast('Lỗi khi thêm hồ sơ: ' + (err.message || 'Xin thử lại'), 'warning');
+          } finally {
+            setIsSubmitting(false);
           }
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gapx-1 py-1">
@@ -641,24 +647,38 @@ export const DocumentTrackingPage: React.FC = () => {
           </div>
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newDoc.notes} onChange={(e) => setNewDoc({...newDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           <FileUpload multiple label="File đính kèm" value={newDoc.fileUrls} onChange={(urls) => setNewDoc({...newDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} />
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewDocOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Thêm hồ sơ mới</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2">
+            <button disabled={isSubmitting} type="button" onClick={() => setIsNewDocOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100 disabled:opacity-50">Hủy</button>
+            <button disabled={isSubmitting} type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50">
+              {isSubmitting && <span className="material-symbols-outlined text-[14px] animate-spin">refresh</span>}
+              {isSubmitting ? 'Đang thêm...' : 'Thêm hồ sơ mới'}
+            </button>
+          </div>
         </form>
       </Modal>
 
       {/* Edit Doc Modal */}
       <Modal isOpen={!!editingDoc} onClose={() => setEditingDoc(null)} title="Cập nhật Theo dõi Hồ sơ Gửi Đi">
         {editingDoc && (
-          <form onSubmit={(e) => {
+          <form onSubmit={async (e) => {
             e.preventDefault();
-            const val = Number(editingDoc.contractValue || 0);
-            const prepayPct = Number(editingDoc.prepayPercent || 0);
-            const prepayAmt = val * prepayPct;
+            if (isSubmitting) return;
+            setIsSubmitting(true);
+            try {
+              const val = Number(editingDoc.contractValue || 0);
+              const prepayPct = Number(editingDoc.prepayPercent || 0);
+              const prepayAmt = val * prepayPct;
 
-            updateDocumentTrack(editingDoc.id, {
-              ...editingDoc,
-              prepayAmount: prepayAmt
-            });
-            setEditingDoc(null);
+              await updateDocumentTrack(editingDoc.id, {
+                ...editingDoc,
+                prepayAmount: prepayAmt
+              });
+              setEditingDoc(null);
+            } catch (err: any) {
+              triggerToast('Lỗi khi cập nhật hồ sơ: ' + (err.message || 'Xin thử lại'), 'warning');
+            } finally {
+              setIsSubmitting(false);
+            }
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gapx-1 py-1">
               <div className="min-w-0">
@@ -719,7 +739,13 @@ export const DocumentTrackingPage: React.FC = () => {
             </div>
             <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingDoc.notes} onChange={(e) => setEditingDoc({...editingDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <FileUpload multiple label="File đính kèm" value={editingDoc.fileUrls} onChange={(urls) => setEditingDoc({...editingDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} />
-            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingDoc(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Cập nhật</button></div>
+            <div className="pt-3 border-t flex justify-end gap-2">
+              <button disabled={isSubmitting} type="button" onClick={() => setEditingDoc(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100 disabled:opacity-50">Hủy</button>
+              <button disabled={isSubmitting} type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50">
+                {isSubmitting && <span className="material-symbols-outlined text-[14px] animate-spin">refresh</span>}
+                {isSubmitting ? 'Đang lưu...' : 'Cập nhật'}
+              </button>
+            </div>
           </form>
         )}
       </Modal>
