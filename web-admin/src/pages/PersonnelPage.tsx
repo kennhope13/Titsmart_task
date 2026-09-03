@@ -345,7 +345,9 @@ export const PersonnelPage: React.FC = () => {
       </div>
 
       <Modal size='xl' isOpen={isFormOpen} onClose={closeForm} title={editingPersonId ? 'Chỉnh sửa nhân sự' : 'Thêm nhân sự'}>
-        <form onSubmit={handleSavePerson} className="p-2 space-y-4">
+        <form onSubmit={handleSavePerson} className="p-2">
+<div className="flex flex-col lg:flex-row gap-6">
+<div className="lg:w-[40%] space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-[13px] font-bold text-slate-700">Họ tên <span className="text-red-500">*</span></label>
@@ -398,7 +400,9 @@ export const PersonnelPage: React.FC = () => {
             </div>
           )}
           
-            <div className="col-span-2 mt-4 border-t pt-4">
+            </div>
+<div className="lg:w-[60%] border-t lg:border-t-0 lg:border-l lg:pl-6 border-slate-100">
+<div className="mt-2">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-[13px] font-bold text-slate-700 uppercase">Phân quyền chi tiết</h3>
                 <button type="button" onClick={() => setPermissions(getDefaultPermissions(role))} className="text-xs font-semibold text-primary hover:underline">Tick theo vai trò mẫu</button>
@@ -454,10 +458,9 @@ export const PersonnelPage: React.FC = () => {
                   <h4 className="text-xs font-bold text-slate-500 uppercase border-b pb-1">Hồ sơ & Tài liệu</h4>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'VIEW_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Xem hồ sơ</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'MANAGE_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Quản lý hồ sơ</label>
-                </div>
-              </div>
-            </div>
-            <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                </div></div></div></div>
+</div>
+<div className="pt-6 mt-4 flex justify-end gap-3 border-t border-slate-100">
             <button type="button" onClick={closeForm} className="px-5 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-colors">Hủy</button>
             <button
               type="submit"
