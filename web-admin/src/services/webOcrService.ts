@@ -249,7 +249,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
 
   const isMainSectionName = (nameStr: string): boolean => {
     const norm = nameStr.toLowerCase();
-    return norm.includes('phần vttb') || norm.startsWith('phần ');
+    return norm.includes('phần vttb') || norm.includes('cung cấp') || norm.includes('nhà thầu') || norm.includes('chủ đầu tư') || norm.startsWith('phần ');
   };
 
   for (let index = headerIndex + 1; index < rows.length; index += 1) {
@@ -579,7 +579,7 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
 
   const isMainSectionName = (nameStr: string): boolean => {
     const norm = nameStr.toLowerCase();
-    return norm.includes('phần vttb') || norm.startsWith('phần ');
+    return norm.includes('phần vttb') || norm.includes('cung cấp') || norm.includes('nhà thầu') || norm.includes('chủ đầu tư') || norm.startsWith('phần ');
   };
 
   const tableTasks: WebOcrTableTask[] = [];
