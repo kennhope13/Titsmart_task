@@ -249,7 +249,8 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
 
   const isMainSectionName = (nameStr: string): boolean => {
     const norm = nameStr.toLowerCase();
-    return norm.includes('phần vttb') || norm.includes('cung cấp') || norm.includes('nhà thầu') || norm.includes('chủ đầu tư') || norm.startsWith('phần ');
+    const isAllCaps = nameStr === nameStr.toUpperCase() && /[A-ZÀ-Ỹ]/.test(nameStr);
+    return norm.includes('phần vttb') || norm.startsWith('phần ') || isAllCaps;
   };
 
   for (let index = headerIndex + 1; index < rows.length; index += 1) {
@@ -579,7 +580,8 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
 
   const isMainSectionName = (nameStr: string): boolean => {
     const norm = nameStr.toLowerCase();
-    return norm.includes('phần vttb') || norm.includes('cung cấp') || norm.includes('nhà thầu') || norm.includes('chủ đầu tư') || norm.startsWith('phần ');
+    const isAllCaps = nameStr === nameStr.toUpperCase() && /[A-ZÀ-Ỹ]/.test(nameStr);
+    return norm.includes('phần vttb') || norm.startsWith('phần ') || isAllCaps;
   };
 
   const tableTasks: WebOcrTableTask[] = [];
