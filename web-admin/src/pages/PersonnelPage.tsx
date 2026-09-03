@@ -289,6 +289,7 @@ export const PersonnelPage: React.FC = () => {
                     </td>
                     <td className="p-3 font-mono font-bold text-primary break-all">{person.code}</td>
                     <td className="p-3 text-slate-700 font-semibold break-all">{person.username || '-'}</td>
+                    <td className="p-3 font-medium text-slate-800 break-words">{(person as any).title || person.role}</td>
                     <td className="p-3 break-words">
                       <span className={`text-[11px] font-bold ${
                         person.role === 'Quản trị viên' ? 'text-purple-700' :
