@@ -183,6 +183,22 @@ export const ProjectManagementPage: React.FC = () => {
     return [];
   };
 
+  const counts = useMemo(() => {
+    const merged = [...projects, ...deriveProjectsFromTasks(tasks).filter((derived) => !projects.some((project) => project.code === derived.code))];
+    const q = searchQuery.trim().toLowerCase();
+    const filteredBySearch = merged.filter((project) => {
+      if (!q) return true;
+      const memberNames = resolveProjectMemberNames(project).join(' ');
+      return [project.name, project.code, project.location, project.client, project.managerName, memberNames]
+        .some((value) => String(value || '').toLowerCase().includes(q));
+    });
+    return {
+      all: filteredBySearch.length,
+      active: filteredBySearch.filter(p => p.status === 'active').length,
+      completed: filteredBySearch.filter(p => p.status === 'completed').length,
+    };
+  }, [projects, tasks, searchQuery, engineers]);
+
   const displayProjects = useMemo(() => {
     const merged = [...projects, ...deriveProjectsFromTasks(tasks).filter((derived) => !projects.some((project) => project.code === derived.code))];
     const q = searchQuery.trim().toLowerCase();
@@ -646,25 +662,21 @@ export const ProjectManagementPage: React.FC = () => {
                 onClick={() => setStatusFilter('all')}
                 className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all ${statusFilter === 'all' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                Tất cả
+                Tất cả <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.all}</span>
               </button>
               <button
                 onClick={() => setStatusFilter('active')}
                 className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all ${statusFilter === 'active' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                Đang triển khai
+                Đang triển khai <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.active}</span>
               </button>
               <button
                 onClick={() => setStatusFilter('completed')}
                 className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all ${statusFilter === 'completed' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                Hoàn thành
+                Hoàn thành <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.completed}</span>
               </button>
             </div>
-
-            <span className="px-3 py-1.5 rounded-full bg-blue-50 text-primary text-[13px] font-bold border border-blue-100 whitespace-nowrap">
-            {displayProjects.length} dự án
-          </span>
           <div className="relative w-full sm:w-64 flex items-center">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
             <input
