@@ -183,41 +183,10 @@ export const ProjectManagementPage: React.FC = () => {
     return [];
   };
 
-  const counts = useMemo(() => {
+  const allEnhancedProjects = useMemo(() => {
     const merged = [...projects, ...deriveProjectsFromTasks(tasks).filter((derived) => !projects.some((project) => project.code === derived.code))];
-    const q = searchQuery.trim().toLowerCase();
-    const filteredBySearch = merged.filter((project) => {
-      if (!q) return true;
-      const memberNames = resolveProjectMemberNames(project).join(' ');
-      return [project.name, project.code, project.location, project.client, project.managerName, memberNames]
-        .some((value) => String(value || '').toLowerCase().includes(q));
-    });
-    return {
-      all: filteredBySearch.length,
-      active: filteredBySearch.filter(p => p.status === 'active').length,
-      completed: filteredBySearch.filter(p => p.status === 'completed').length,
-    };
-  }, [projects, tasks, searchQuery, engineers]);
-
-  const displayProjects = useMemo(() => {
-    const merged = [...projects, ...deriveProjectsFromTasks(tasks).filter((derived) => !projects.some((project) => project.code === derived.code))];
-    const q = searchQuery.trim().toLowerCase();
     
-    return merged.filter((project) => {
-      // Lọc theo trạng thái
-      const matchStatus = statusFilter === 'all' || project.status === statusFilter;
-      if (!matchStatus) return false;
-
-      // Lọc theo tìm kiếm
-      if (!q) return true;
-      const memberNames = resolveProjectMemberNames(project).join(' ');
-      return [project.name, project.code, project.location, project.client, project.managerName, memberNames]
-        .some((value) => String(value || '').toLowerCase().includes(q));
-    });
-  }, [projects, tasks, searchQuery, statusFilter, engineers]);
-
-  const enhancedProjects = useMemo(() => {
-    return displayProjects.map((project) => {
+    return merged.map((project) => {
       const projectTasks = tasks.filter((task) => task.projectCode === project.code && !task.isSectionHeader);
       const totalTasks = projectTasks.length || project.totalTasks;
       const completedTasks = projectTasks.filter((task) => task.isDone || task.progress >= 1).length || project.completedTasks;
@@ -258,7 +227,34 @@ export const ProjectManagementPage: React.FC = () => {
         missingDocsCount
       };
     });
-  }, [displayProjects, tasks, materialPlans, purchasingPlans, expenses, laborPayrolls]);
+  }, [projects, tasks, materialPlans, purchasingPlans, expenses, laborPayrolls, engineers]);
+
+  const counts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const filteredBySearch = allEnhancedProjects.filter((project) => {
+      if (!q) return true;
+      return [project.name, project.code, project.location, project.client, project.managerName, project.memberNames.join(' ')]
+        .some((value) => String(value || '').toLowerCase().includes(q));
+    });
+    return {
+      all: filteredBySearch.length,
+      active: filteredBySearch.filter(p => p.status === 'active').length,
+      completed: filteredBySearch.filter(p => p.status === 'completed').length,
+    };
+  }, [allEnhancedProjects, searchQuery]);
+
+  const enhancedProjects = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    
+    return allEnhancedProjects.filter((project) => {
+      const matchStatus = statusFilter === 'all' || project.status === statusFilter;
+      if (!matchStatus) return false;
+
+      if (!q) return true;
+      return [project.name, project.code, project.location, project.client, project.managerName, project.memberNames.join(' ')]
+        .some((value) => String(value || '').toLowerCase().includes(q));
+    });
+  }, [allEnhancedProjects, searchQuery, statusFilter]);
 
   const openProjectTasks = (project: Project) => navigate(`/projects/${project.id}`);
 
