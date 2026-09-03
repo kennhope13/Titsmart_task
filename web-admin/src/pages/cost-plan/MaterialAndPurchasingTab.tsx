@@ -1372,7 +1372,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     className="w-full text-center bg-white text-slate-700 focus:outline-primary px-1 py-1 box-border outline-none shadow-sm border-none h-[28px] rounded"
                                   />
                                 ) : ((() => {
-                                  const inventoryMatch = plan.techSpecModel ? materials.find(m => m.code?.toLowerCase() === plan.techSpecModel?.toLowerCase()) : null;
+                                  const inventoryMatch = plan.techSpecModel ? materials.find(m => plan.techSpecModel.toLowerCase().includes(m.code?.toLowerCase() || 'NO_MATCH') || (m.code && m.code.toLowerCase().includes(plan.techSpecModel.toLowerCase()))) : null;
                                   return (
                                     <div onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-between break-words px-1 text-slate-600 relative group/cell" title={plan.techSpecModel || 'Click để nhập mã'}>
                                       <div className="flex-1 text-center text-slate-700">
