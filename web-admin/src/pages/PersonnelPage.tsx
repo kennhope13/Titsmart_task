@@ -363,26 +363,31 @@ export const PersonnelPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-[13px] font-bold text-slate-700">Vai trò</label>
-              <CustomSelect value={role} onChange={(event) => { const newRole = event.target.value; setRole(newRole); setPermissions(getDefaultPermissions(newRole)); }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
-                <option value="Quản lý dự án">Quản lý dự án</option>
-                <option value="Kỹ sư hiện trường">Kỹ sư hiện trường</option>
-                <option value="Nhân viên">Nhân viên</option>
-              </CustomSelect>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[13px] font-bold text-slate-700">Chức danh hiển thị</label>
+                <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="VD: Trưởng phòng..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[13px] font-bold text-slate-700">Cấp bậc hệ thống</label>
+                <CustomSelect value={role} onChange={(event) => { const newRole = event.target.value; setRole(newRole); setPermissions(getDefaultPermissions(newRole)); }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+                  <option value="Quản lý dự án">Quản lý dự án</option>
+                  <option value="Kỹ sư hiện trường">Kỹ sư hiện trường</option>
+                  <option value="Nhân viên">Nhân viên</option>
+                </CustomSelect>
+              </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-[13px] font-bold text-slate-700">Tên đăng nhập</label>
-              <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Nhập tên đăng nhập" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[13px] font-bold text-slate-700">Tên đăng nhập</label>
+                <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Nhập tên đăng nhập" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[13px] font-bold text-slate-700">Mật khẩu {editingPersonId && <span className="text-slate-400 font-normal text-[11px]">(Bỏ trống nếu không đổi)</span>}</label>
+                <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={editingPersonId ? "••••••••" : "Nhập mật khẩu"} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
+              </div>
             </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[13px] font-bold text-slate-700">Mật khẩu {editingPersonId && <span className="text-slate-400 font-normal">(Bỏ trống nếu không đổi)</span>}</label>
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={editingPersonId ? "••••••••" : "Nhập mật khẩu"} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
-          </div>
-
           
           
             
