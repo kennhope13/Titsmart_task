@@ -1698,9 +1698,9 @@ const displayTasks = tasks.filter((t) => {
                 <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
                 <th className="py-2 px-1 w-[115px] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
                 <th className="py-2 px-1 w-[140px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
-                {(authStore.user?.role === 'admin' || authStore.user?.role === 'Quản trị viên') && (
-                  <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">GIAO VIỆC</th>
-                )}
+                {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
+                    <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">GIAO VIỆC</th>
+                  )}
                 <th className="sticky right-0 z-20 bg-slate-50 bg-clip-padding py-2 px-1 w-[150px] min-w-[150px] border-b border-l border-slate-200 whitespace-nowrap shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">GHI CHÚ</th>
               </tr>
             </thead>
@@ -1833,11 +1833,11 @@ const displayTasks = tasks.filter((t) => {
                           ))}
                         </CustomSelect>
                       </td>
-                      {(authStore.user?.role === 'admin' || authStore.user?.role === 'Quản trị viên') && (
-                        <td 
+                      {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
+                          <td 
                           className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors"
                           onClick={(e) => {
-                            if (authStore.user?.role === 'admin' || authStore.user?.role === 'Quản trị viên') {
+                            if (hasPermission(authStore.user, 'ASSIGN_TASKS')) {
                               e.stopPropagation();
                               setAssigningTask(t);
                               const parts = t.assignedEngineerName?.split('|') || [];
@@ -1857,7 +1857,7 @@ const displayTasks = tasks.filter((t) => {
                             {(t.assignedEngineerName?.includes('|' + (authStore.user?.id || '')) || t.assignedEngineerId === authStore.user?.id) && (t.status === 'Đang làm' || t.status === 'Chưa làm') && (
                               <button onClick={(e) => { e.stopPropagation(); handleUpdateTaskSync(t.id, { status: 'Chờ nghiệm thu', progress: 1, constrStatus: 'Đã hoàn thành' }); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Báo cáo xong</button>
                             )}
-                            {(authStore.user?.role === 'admin' || authStore.user?.role === 'Quản trị viên') && t.status === 'Chờ nghiệm thu' && (
+                            {hasPermission(authStore.user, 'APPROVE_TASKS') && t.status === 'Chờ nghiệm thu' && (
                               <button onClick={(e) => { e.stopPropagation(); handleUpdateTaskSync(t.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' }); }} className="text-[9px] bg-purple-500 pointer-events-auto hover:bg-purple-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nghiệm thu</button>
                             )}
                             

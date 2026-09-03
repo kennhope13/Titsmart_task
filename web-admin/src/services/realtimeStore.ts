@@ -1376,10 +1376,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ materialPlans: nextPlans });
           return { materialPlans: nextPlans };
         });
-      } catch (e: any) {
-        console.error('Failed to update material plan', e);
-        if (typeof window !== 'undefined') alert('Lỗi lưu vật tư: ' + (e.message || String(e)));
-      }
+        } catch (e: any) {
+          console.error('Failed to update material plan', e);
+          if (typeof window !== 'undefined') alert('Lỗi lưu vật tư: ' + (e.message || e.details || JSON.stringify(e)));
+        }
     },
 
     deleteMaterialPlan: async (id) => {

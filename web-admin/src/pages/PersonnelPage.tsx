@@ -1,8 +1,9 @@
 import { Permission } from '../types';
-import { getDefaultPermissions } from '../services/authStore';
+import { getDefaultPermissions, hasPermission } from '../services/authStore';
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore } from '../services/authStore';
 import { Toast } from '../components/common/Toast';
 import { Modal } from '../components/common/Modal';
 import { CustomSelect } from '@/components/common/CustomSelect';
@@ -23,8 +24,8 @@ export const PersonnelPage: React.FC = () => {
   const [lockedIds, setLockedIds] = useState<string[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [title, setTitle] = useState('');
-  const [role, setRole] = useState('Nhân viên');
+  const user = useAuthStore(state => state.user);
+  const [role, setRole] = useState(user?.role || 'Nhân viên');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [selectedProjectCodes, setSelectedProjectCodes] = useState<string[]>([]);
@@ -76,7 +77,6 @@ export const PersonnelPage: React.FC = () => {
     setEditingPersonId(null);
     setName('');
     setPhone('');
-    setTitle('');
     setRole('Nhân viên');
     setUsername('');
     setPassword('');
@@ -166,7 +166,6 @@ export const PersonnelPage: React.FC = () => {
     setName(person.name || '');
     setPermissions((person.permissions?.length ?? 0) > 0 ? person.permissions! : getDefaultPermissions(person.role || 'Nhân viên'));
     setPhone(person.phone || '');
-    setTitle((person as any).title || person.role || '');
     setRole(person.role || 'Nhân viên');
     setUsername((person as any).username || '');
     setPassword('');
@@ -187,7 +186,6 @@ export const PersonnelPage: React.FC = () => {
         await updateEngineer(editingPersonId, {
           name: name.trim(),
           phone,
-          title: title || role,
           role,
           ...(username ? { username: username.trim() } : {}),
           ...(password ? { password } : {}),
@@ -199,7 +197,6 @@ export const PersonnelPage: React.FC = () => {
         await createEngineer({
           name: name.trim(),
           phone,
-          title: title || role,
           role,
           username: username.trim(),
           password,
@@ -275,7 +272,7 @@ export const PersonnelPage: React.FC = () => {
             </div>
           <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative">
             <table className="w-full text-xs text-left border-collapse">
-              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Họ tên</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Mã NV</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Chức danh</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Cấp bậc</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Dự án</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">SĐT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Chức năng</th></tr></thead>
+              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Họ tên</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Mã NV</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Vai trò / Chức danh</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Dự án</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">SĐT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th>{hasPermission(user, 'MANAGE_USERS') && <th className="text-left p-3 bg-slate-50 whitespace-nowrap">Chức năng</th>}</tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {people.map((person, index) => (
                   <tr
@@ -289,7 +286,6 @@ export const PersonnelPage: React.FC = () => {
                     </td>
                     <td className="p-3 font-mono font-bold text-primary break-all">{person.code}</td>
                     <td className="p-3 text-slate-700 font-semibold break-all">{person.username || '-'}</td>
-                    <td className="p-3 font-medium text-slate-800 break-words">{(person as any).title || person.role}</td>
                     <td className="p-3 break-words">
                       <span className={`text-[11px] font-bold ${
                         person.role === 'Quản trị viên' ? 'text-purple-700' :
@@ -364,19 +360,9 @@ export const PersonnelPage: React.FC = () => {
             </div>
           </div>
           
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[13px] font-bold text-slate-700">Chức danh hiển thị</label>
-                <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="VD: Trưởng phòng..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[13px] font-bold text-slate-700">Cấp bậc hệ thống</label>
-                <CustomSelect value={role} onChange={(event) => { const newRole = event.target.value; setRole(newRole); setPermissions(getDefaultPermissions(newRole)); }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
-                  <option value="Quản lý dự án">Quản lý dự án</option>
-                  <option value="Kỹ sư hiện trường">Kỹ sư hiện trường</option>
-                  <option value="Nhân viên">Nhân viên</option>
-                </CustomSelect>
-              </div>
+            <div className="space-y-1 mb-3">
+              <label className="text-[13px] font-bold text-slate-700">Vai trò / Chức danh</label>
+              <input value={role} onChange={(event) => setRole(event.target.value)} placeholder="Nhập chức danh (VD: Quản trị viên, Trưởng phòng...)" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
