@@ -181,7 +181,7 @@ const isLikelyTableHeader = (cells: string[]) => {
 const isTotalOrNoiseRow = (name: string) => {
   const lookup = normalizeLookupText(name).trim();
   if (!lookup) return true;
-  return lookup.includes('tong cong') || lookup === 'cong' || lookup.includes('bang chi tiet') || lookup.includes('gia tri hop dong') || /\bthue\b/.test(lookup) || /\bvat\b/.test(lookup) || lookup.includes('chiet khau') || /^\d+$/.test(lookup) || lookup === 'stt';
+  return lookup.includes('tong cong') || lookup === 'cong' || lookup.includes('bang chi tiet') || lookup.includes('gia tri hop dong') || /\bthue\b/.test(lookup)  || lookup.includes('chiet khau') || /^\d+$/.test(lookup) || lookup === 'stt';
 };
 
 
