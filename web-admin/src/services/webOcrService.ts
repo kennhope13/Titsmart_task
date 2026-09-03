@@ -179,6 +179,7 @@ const isLikelyTableHeader = (cells: string[]) => {
 };
 
 const isTotalOrNoiseRow = (name: string) => {
+  if (!/[a-zA-ZÀ-ỹ0-9]/.test(name)) return true;
   const lookup = normalizeLookupText(name).trim();
   if (!lookup) return true;
   return lookup.includes('tong cong') || lookup === 'cong' || lookup.includes('bang chi tiet') || lookup.includes('gia tri hop dong') || /\bthue\b/.test(lookup) || lookup.includes('chiet khau') || /^[\d\s.,]+$/.test(lookup) || lookup === 'stt';
@@ -265,7 +266,6 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const stt = String(cells[sttCol] || '').trim();
     const name = String(cells[nameCol] || cells.find((cell, cellIndex) => cellIndex !== sttCol && normalizeLookupText(cell) !== 'stt') || '').trim();
     if (!name || isTotalOrNoiseRow(name) || isNoiseStt(stt)) continue;
-    if (!/[a-zA-ZÀ-ỹ1]/.test(name)) continue;
     if (normalizeLookupText(stt) === 'stt') continue;
 
     const volume = volumeCol >= 0 ? parseNumberValue(cells[volumeCol] || '') : 0;
