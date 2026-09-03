@@ -173,7 +173,7 @@ const getTableColumnIndex = (header: string[], candidates: string[], fallback: n
 const isLikelyTableHeader = (cells: string[]) => {
   const normalized = Array.from(cells || []).map(normalizeLookupText);
   const hasStt = normalized.some((cell) => cell === 'stt' || cell === 'tt' || cell.includes('stt'));
-  const hasContent = normalized.some((cell) => cell.includes('noi dung') || cell.includes('hang muc') || cell.includes('dien giai') || cell.includes('mo ta'));
+  const hasContent = normalized.some((cell) => cell.includes('noi dung') || cell.includes('hang muc') || cell.includes('dien giai') || cell.includes('mo ta') || cell.includes('cong viec'));
   const hasQuantity = normalized.some((cell) => cell.includes('khoi luong') || cell.includes('so luong') || cell.includes('don vi') || cell.includes('dvt'));
   return hasStt && hasContent && hasQuantity;
 };
@@ -184,6 +184,10 @@ const isTotalOrNoiseRow = (name: string) => {
   return lookup.includes('tong cong') || lookup === 'cong' || lookup.includes('bang chi tiet') || lookup.includes('gia tri hop dong') || /\bthue\b/.test(lookup) || lookup.includes('chiet khau') || /^[\d\s.,]+$/.test(lookup) || lookup === 'stt';
 };
 
+const isNoiseStt = (sttStr: string) => {
+  const lookup = normalizeLookupText(sttStr).trim();
+  return lookup.includes('tong cong') || lookup === 'cong' || /\bthue\b/.test(lookup) || lookup.includes('chiet khau');
+};
 
 type SupplyScope = 'contractor' | 'owner' | 'unknown';
 
@@ -259,7 +263,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const rowText = cells.map((cell) => String(cell || '')).join(' ');
     const stt = String(cells[sttCol] || '').trim();
     const name = String(cells[nameCol] || cells.find((cell, cellIndex) => cellIndex !== sttCol && normalizeLookupText(cell) !== 'stt') || '').trim();
-    if (!name || isTotalOrNoiseRow(name) || isTotalOrNoiseRow(stt)) continue;
+    if (!name || isTotalOrNoiseRow(name) || isNoiseStt(stt)) continue;
     if (!/[a-zA-ZÀ-ỹ1]/.test(name)) continue;
     if (normalizeLookupText(stt) === 'stt') continue;
 
@@ -611,7 +615,7 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
 
       const stt = String(cells[sttCol] || '').trim();
       const name = String(cells[nameCol] || cells.find((cell, cellIdx) => cellIdx !== sttCol && cell !== undefined) || '').trim();
-      if (!name || isTotalOrNoiseRow(name) || isTotalOrNoiseRow(stt)) continue;
+      if (!name || isTotalOrNoiseRow(name) || isNoiseStt(stt)) continue;
 
       const sttLookup = normalizeLookupText(stt).toUpperCase();
       const hasValidStt = romanRegex.test(sttLookup) || alphaSectionRegex.test(sttLookup) || /^\d+$/.test(sttLookup) || /^\d+(?:\.\d+)+$/.test(sttLookup) || alphaNumericRegex.test(sttLookup.replace(/\s/g, ''));
