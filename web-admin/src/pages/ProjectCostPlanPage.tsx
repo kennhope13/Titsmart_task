@@ -1432,7 +1432,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     const combined = [...e, ...l].sort((a, b) => {
         const dateA = parseDateValue(a.date);
         const dateB = parseDateValue(b.date);
-        if (dateA !== dateB) return dateA - dateB;
+        if (dateA !== dateB) return dateA - dateB; // Sắp xếp tăng dần để tính toán
         return sttSortValue(a.stt) - sttSortValue(b.stt);
       });
 
@@ -1445,7 +1445,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       }
       return { ...record, autoBalance: currentBalance };
     });
-    return computed;
+    return computed.reverse(); // Đảo ngược để hiển thị mới nhất lên đầu
   }, [filteredProjExpenses, filteredProjLabor]);
 
   const expenseContentTypes = useMemo(() => {
