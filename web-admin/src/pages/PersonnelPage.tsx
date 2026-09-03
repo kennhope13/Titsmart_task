@@ -345,10 +345,10 @@ export const PersonnelPage: React.FC = () => {
       </div>
 
       <Modal size='xl' isOpen={isFormOpen} onClose={closeForm} title={editingPersonId ? 'Chỉnh sửa nhân sự' : 'Thêm nhân sự'}>
-        <form onSubmit={handleSavePerson} className="p-2">
-<div className="flex flex-col lg:flex-row gap-6">
-<div className="lg:w-[40%] space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSavePerson} className="p-1">
+<div className="flex flex-col lg:flex-row gap-4">
+<div className="lg:w-[40%] space-y-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[13px] font-bold text-slate-700">Họ tên <span className="text-red-500">*</span></label>
               <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nhập họ tên" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" required />
@@ -359,7 +359,7 @@ export const PersonnelPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[13px] font-bold text-slate-700">Vai trò</label>
               <CustomSelect value={role} onChange={(event) => setRole(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
@@ -382,7 +382,7 @@ export const PersonnelPage: React.FC = () => {
           
           
             
-<div className="pt-6 mt-4 flex justify-end gap-3 border-t border-slate-100">
+<div className="pt-4 mt-3 flex justify-end gap-3 border-t border-slate-100">
             <button type="button" onClick={closeForm} className="px-5 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-colors">Hủy</button>
             <button
               type="submit"
@@ -393,7 +393,7 @@ export const PersonnelPage: React.FC = () => {
             </button>
           </div>
 </div>
-<div className="lg:w-[60%] border-t lg:border-t-0 lg:border-l lg:pl-6 border-slate-100">
+<div className="lg:w-[60%] border-t lg:border-t-0 lg:border-l lg:pl-4 border-slate-100">
 <div className="mt-2">
 {role !== 'Quản lý dự án' && (
             <div>
@@ -415,15 +415,15 @@ export const PersonnelPage: React.FC = () => {
               )}
             </div>
           )}
-<div className="border-t border-slate-100 my-4"></div>
+<div className="border-t border-slate-100 my-2"></div>
 
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-2">
                 <h3 className="text-[13px] font-bold text-slate-700 uppercase">Phân quyền chi tiết</h3>
                 <button type="button" onClick={() => setPermissions(getDefaultPermissions(role))} className="text-xs font-semibold text-primary hover:underline">Tick theo vai trò mẫu</button>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 {/* DỰ ÁN */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-500 uppercase border-b pb-1">Dự án & Tổng quan</h4>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_PROJECTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_PROJECTS']) : setPermissions(p => p.filter(x => x !== 'VIEW_PROJECTS'))} className="accent-primary w-3.5 h-3.5"/>Xem danh sách dự án</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('CREATE_PROJECTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'CREATE_PROJECTS']) : setPermissions(p => p.filter(x => x !== 'CREATE_PROJECTS'))} className="accent-primary w-3.5 h-3.5"/>Tạo dự án mới</label>
@@ -431,7 +431,7 @@ export const PersonnelPage: React.FC = () => {
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('DELETE_PROJECTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'DELETE_PROJECTS']) : setPermissions(p => p.filter(x => x !== 'DELETE_PROJECTS'))} className="accent-primary w-3.5 h-3.5"/>Xóa dự án</label>
                 </div>
                 {/* TIẾN ĐỘ */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-500 uppercase border-b pb-1">Tiến độ công việc</h4>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_TASKS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_TASKS']) : setPermissions(p => p.filter(x => x !== 'VIEW_TASKS'))} className="accent-primary w-3.5 h-3.5"/>Xem tiến độ</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('IMPORT_TASKS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'IMPORT_TASKS']) : setPermissions(p => p.filter(x => x !== 'IMPORT_TASKS'))} className="accent-primary w-3.5 h-3.5"/>Nhập Excel/OCR</label>
@@ -441,7 +441,7 @@ export const PersonnelPage: React.FC = () => {
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('APPROVE_TASKS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'APPROVE_TASKS']) : setPermissions(p => p.filter(x => x !== 'APPROVE_TASKS'))} className="accent-primary w-3.5 h-3.5"/>Nghiệm thu công việc</label>
                 </div>
                 {/* VẬT TƯ */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-500 uppercase border-b pb-1">Kế hoạch Vật tư</h4>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_MATERIALS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_MATERIALS']) : setPermissions(p => p.filter(x => x !== 'VIEW_MATERIALS'))} className="accent-primary w-3.5 h-3.5"/>Xem danh sách vật tư</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('IMPORT_MATERIALS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'IMPORT_MATERIALS']) : setPermissions(p => p.filter(x => x !== 'IMPORT_MATERIALS'))} className="accent-primary w-3.5 h-3.5"/>Nhập Excel vật tư</label>
@@ -449,7 +449,7 @@ export const PersonnelPage: React.FC = () => {
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('UPDATE_MATERIAL_STATUS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'UPDATE_MATERIAL_STATUS']) : setPermissions(p => p.filter(x => x !== 'UPDATE_MATERIAL_STATUS'))} className="accent-primary w-3.5 h-3.5"/>Cập nhật trạng thái</label>
                 </div>
                 {/* TÀI CHÍNH */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-500 uppercase border-b pb-1">Tài chính & Hợp đồng</h4>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_FINANCE')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_FINANCE']) : setPermissions(p => p.filter(x => x !== 'VIEW_FINANCE'))} className="accent-primary w-3.5 h-3.5"/>Xem bảng giá</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('EDIT_PRICES')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'EDIT_PRICES']) : setPermissions(p => p.filter(x => x !== 'EDIT_PRICES'))} className="accent-primary w-3.5 h-3.5"/>Cập nhật giá, VAT</label>
@@ -459,7 +459,7 @@ export const PersonnelPage: React.FC = () => {
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('EDIT_EXPENSES')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'EDIT_EXPENSES']) : setPermissions(p => p.filter(x => x !== 'EDIT_EXPENSES'))} className="accent-primary w-3.5 h-3.5"/>Quản lý chi phí công trình</label>
                 </div>
                 {/* HỆ THỐNG */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-500 uppercase border-b pb-1">Nhân sự & Hệ thống</h4>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_USERS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_USERS']) : setPermissions(p => p.filter(x => x !== 'VIEW_USERS'))} className="accent-primary w-3.5 h-3.5"/>Xem nhân sự</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_USERS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_USERS']) : setPermissions(p => p.filter(x => x !== 'MANAGE_USERS'))} className="accent-primary w-3.5 h-3.5"/>Quản lý nhân sự</label>
@@ -468,7 +468,7 @@ export const PersonnelPage: React.FC = () => {
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('EXPORT_DATA')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'EXPORT_DATA']) : setPermissions(p => p.filter(x => x !== 'EXPORT_DATA'))} className="accent-primary w-3.5 h-3.5"/>Xuất báo cáo (Excel/PDF)</label>
                 </div>
                 {/* HỒ SƠ */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-500 uppercase border-b pb-1">Hồ sơ & Tài liệu</h4>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'VIEW_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Xem hồ sơ</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'MANAGE_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Quản lý hồ sơ</label>
