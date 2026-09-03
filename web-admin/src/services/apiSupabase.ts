@@ -118,24 +118,28 @@ export const api = {
 
       const { data: result, error } = await supabase.from('tasks').insert(payloads).select();
       if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
-          console.warn('Fallback: saving tasks batch without new columns because they are missing in DB');
-          payloads.forEach(p => {
-             delete p.is_section_header;
-             delete p.section_name;
-             delete p.project_name;
-             delete p.assigned_engineer_name;
-             delete p.assigner_name;
-          });
-          const { data: retryResult, error: retryError } = await supabase.from('tasks').insert(payloads).select();
-          if (retryError) throw retryError;
-          // Merge back the local properties that were dropped
-          return mapArray(retryResult || []).map((t: any, i: number) => ({
-             ...dataArray[i],
-             ...t
-          }));
-        }
-        throw error;
+        console.warn('Fallback: saving tasks batch without new columns. Error was:', error);
+        payloads.forEach(p => {
+           delete p.is_section_header;
+           delete p.section_name;
+           delete p.project_name;
+           delete p.assigned_engineer_name;
+           delete p.assigner_name;
+           delete p.reviewer_id;
+           delete p.reviewer_name;
+           delete p.assigner_id;
+           delete p.due_date;
+           delete p.priority;
+           delete p.created_at;
+           delete p.issue;
+           delete p.issue_status;
+        });
+        const { data: retryResult, error: retryError } = await supabase.from('tasks').insert(payloads).select();
+        if (retryError) throw retryError;
+        return mapArray(retryResult || []).map((t: any, i: number) => ({
+           ...dataArray[i],
+           ...t
+        }));
       }
       return mapArray(result || []);
     },

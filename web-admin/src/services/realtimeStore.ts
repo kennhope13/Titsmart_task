@@ -753,8 +753,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         if (createdTasks.length > 0) {
           get().logActivity(`Đã nhập khẩu ${createdTasks.length} hạng mục công việc từ file Excel`, createdTasks[0].projectName || 'Tiến độ', 'Excel Sync');
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error('Failed to add tasks batch', e);
+        alert('Lỗi DB khi lưu Công việc: ' + (e.message || JSON.stringify(e)));
       }
     },
 
