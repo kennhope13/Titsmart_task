@@ -1919,10 +1919,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                         ))}
                       </CustomSelect>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 ml-auto">
-                    <div className="relative w-48 shrink-0">
+                    <div className="relative w-48 shrink-0 ml-2">
                       <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[14px]">search</span>
                       <input
                         type="text"
@@ -1932,14 +1930,15 @@ export const ProjectCostPlanPage: React.FC = () => {
                         className="w-full pl-8 pr-3 py-1 bg-slate-100 border-none rounded text-xs focus:ring-1 focus:ring-primary focus:bg-white transition-all outline-none"
                       />
                     </div>
-                    <button
-                      onClick={() => setIsNewExpenseOpen(true)}
-                      className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary-dark transition-colors shadow-sm"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">add</span>
-                      Thêm phiếu chi
-                    </button>
                   </div>
+
+                  <button
+                    onClick={() => setIsNewExpenseOpen(true)}
+                    className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary-dark transition-colors shadow-sm ml-auto"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">add</span>
+                    Thêm phiếu chi
+                  </button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
