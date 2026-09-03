@@ -285,7 +285,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const hasValidStt = romanRegex.test(sttLookup) || alphaSectionRegex.test(sttLookup) || numericParentRegex.test(sttLookup) || decimalItemRegex.test(sttLookup) || alphaNumericRegex.test(sttLookup.replace(/\s/g, ''));
     
     // Bỏ qua các dòng không có STT hợp lệ (như dòng Thuế VAT, Tiền thuế...)
-    if (!hasValidStt) continue;
+    if (!hasValidStt && stt !== '') continue;
     
     const cleanUnitVal = unit.replace(/^[-–—_.\s]+$/, '').trim();
     // A section header is ONLY a roman numeral if the file has roman numerals, OR if it has [section] in notes.
@@ -621,7 +621,7 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
 
       const sttLookup = normalizeLookupText(stt).toUpperCase();
       const hasValidStt = romanRegex.test(sttLookup) || alphaSectionRegex.test(sttLookup) || /^\d+$/.test(sttLookup) || /^\d+(?:\.\d+)+$/.test(sttLookup) || alphaNumericRegex.test(sttLookup.replace(/\s/g, ''));
-      if (!hasValidStt) continue;
+      if (!hasValidStt && stt !== '') continue;
 
       const volume = volumeCol >= 0 ? parseNumberValue(cells[volumeCol] || '') : 0;
       const unit = unitCol >= 0 ? String(cells[unitCol] || '').trim() : '';
