@@ -162,7 +162,7 @@ export const PersonnelPage: React.FC = () => {
   const openEditModal = (person: typeof people[number]) => {
     setEditingPersonId(person.id);
     setName(person.name || '');
-    setPermissions(person.permissions || getDefaultPermissions(person.role || 'Nhân viên'));
+    setPermissions(person.permissions?.length > 0 ? person.permissions : getDefaultPermissions(person.role || 'Nhân viên'));
     setPhone(person.phone || '');
     setRole(person.role || 'Nhân viên');
     setUsername((person as any).username || '');
