@@ -108,6 +108,8 @@ export const ProjectManagementPage: React.FC = () => {
     addTasksBatch,
     addMaterialPlan,
     addPurchasingPlan,
+    addMaterialPlansBatch,
+    addPurchasingsBatch,
     deleteProject,
     addEngineer,
     updateEngineer,
@@ -293,18 +295,20 @@ export const ProjectManagementPage: React.FC = () => {
 
     // Cập nhật projectCodes cho các kỹ sư được gán vào dự án
     if (selectedEngineerIds.length > 0) {
-      for (const engId of selectedEngineerIds) {
+      const engineerPromises = selectedEngineerIds.map(engId => {
         const eng = engineers.find(e => e.id === engId);
         if (eng) {
           const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
           if (!currentCodes.includes(code)) {
-            await updateEngineer(engId, {
+            return updateEngineer(engId, {
               name: eng.name,
               projectCodes: [...currentCodes, code]
             });
           }
         }
-      }
+        return Promise.resolve();
+      });
+      await Promise.all(engineerPromises);
     }
 
     if (pendingProjectTasks.length > 0) {
@@ -412,7 +416,7 @@ export const ProjectManagementPage: React.FC = () => {
           .filter((plan) => plan.projectCode === code)
           .map((plan) => `${String(plan.stt || '').trim()}|${String(plan.jobContent || '').trim().toLowerCase()}`)
       );
-
+      const newMaterialPlans = [];
       for (const [index, item] of tasksWithIds.filter((item) => item.name?.trim()).entries()) {
         const key = `${String(item.stt || '').trim()}|${String(item.name || '').trim().toLowerCase()}`;
         if (existingMaterialPlanKeys.has(key)) continue;
@@ -423,10 +427,10 @@ export const ProjectManagementPage: React.FC = () => {
         const parentId = matchingTask ? matchingTask.parentId : undefined;
         const isSection = matchingTask ? matchingTask.isSectionHeader : false;
 
-        const supplyScope = item.supplyScope === 'owner' ? 'owner' : item.supplyScope === 'contractor' ? 'contractor' : 'unknown';
+        const supplyScope: 'contractor' | 'owner' | 'unknown' = item.supplyScope === 'owner' ? 'owner' : item.supplyScope === 'contractor' ? 'contractor' : 'unknown';
         const supplyLabel = supplyScope === 'owner' ? 'Chủ đầu tư cung cấp' : supplyScope === 'contractor' ? 'Nhà thầu cung cấp' : '';
         const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
-        await addMaterialPlan({
+        newMaterialPlans.push({
           id: rowId,
           parentId: parentId,
           projectCode: code,
@@ -450,12 +454,16 @@ export const ProjectManagementPage: React.FC = () => {
           notes: [orderTag, isSection ? '[section]' : '', supplyScope !== 'unknown' ? `[${supplyScope}]` : '', item.notes, supplyLabel, TEXT.materialSyncNote].filter(Boolean).join(' | '),
         });
       }
+      if (newMaterialPlans.length > 0) {
+        await addMaterialPlansBatch(newMaterialPlans);
+      }
 
       const existingPurchasingKeys = new Set(
         purchasingPlans
           .filter((plan) => plan.projectCode === code)
           .map((plan) => `${String(plan.stt || '').trim()}|${String(plan.content || '').trim().toLowerCase()}`)
       );
+      const newPurchasingPlans = [];
       for (const [index, item] of tasksWithIds.filter((item) => item.name?.trim()).entries()) {
         const key = `${String(item.stt || '').trim()}|${String(item.name || '').trim().toLowerCase()}`;
         if (existingPurchasingKeys.has(key)) continue;
@@ -467,7 +475,7 @@ export const ProjectManagementPage: React.FC = () => {
         const isSection = matchingTask ? matchingTask.isSectionHeader : false;
 
         const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
-        await addPurchasingPlan({
+        newPurchasingPlans.push({
           id: rowId,
           parentId: parentId,
           projectCode: code,
@@ -488,6 +496,9 @@ export const ProjectManagementPage: React.FC = () => {
           invoiceStatus: 'Chưa xuất',
           notes: [orderTag, isSection ? '[section]' : '', item.notes, 'Đồng bộ từ phụ lục khi tạo dự án'].filter(Boolean).join(' | '),
         });
+      }
+      if (newPurchasingPlans.length > 0) {
+        await addPurchasingsBatch(newPurchasingPlans);
       }
     }
 
