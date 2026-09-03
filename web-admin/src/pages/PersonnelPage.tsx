@@ -344,7 +344,7 @@ export const PersonnelPage: React.FC = () => {
       </section>
       </div>
 
-      <Modal isOpen={isFormOpen} onClose={closeForm} title={editingPersonId ? 'Chỉnh sửa nhân sự' : 'Thêm nhân sự'}>
+      <Modal size='xl' isOpen={isFormOpen} onClose={closeForm} title={editingPersonId ? 'Chỉnh sửa nhân sự' : 'Thêm nhân sự'}>
         <form onSubmit={handleSavePerson} className="p-2 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
