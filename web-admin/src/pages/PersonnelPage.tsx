@@ -362,7 +362,7 @@ export const PersonnelPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[13px] font-bold text-slate-700">Vai trò</label>
-              <CustomSelect value={role} onChange={(event) => setRole(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+              <CustomSelect value={role} onChange={(event) => { const newRole = event.target.value; setRole(newRole); setPermissions(getDefaultPermissions(newRole)); }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                 <option value="Quản lý dự án">Quản lý dự án</option>
                 <option value="Kỹ sư hiện trường">Kỹ sư hiện trường</option>
                 <option value="Nhân viên">Nhân viên</option>
@@ -419,7 +419,7 @@ export const PersonnelPage: React.FC = () => {
 
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-[13px] font-bold text-slate-700 uppercase">Phân quyền chi tiết</h3>
-                <button type="button" onClick={() => setPermissions(getDefaultPermissions(role))} className="text-xs font-semibold text-primary hover:underline">Tick theo vai trò mẫu</button>
+                
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 {/* DỰ ÁN */}
