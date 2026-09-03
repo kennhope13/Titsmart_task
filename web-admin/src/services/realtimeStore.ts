@@ -189,8 +189,8 @@ interface RealtimeStoreState {
   updateTaskProgress: (id: string, progress: number, isDone: boolean) => void;
   assignEngineer: (taskId: string, engineerId: string, engineerName: string) => void;
   addEngineer: (engineer: Omit<Engineer, 'id'>) => Engineer;
-  createEngineer: (input: { name: string; phone?: string; email?: string; title?: string; role?: string; username?: string; password?: string; isLocked?: boolean; projectCodes?: string[] }) => Promise<Engineer>;
-  updateEngineer: (id: string, input: { name: string; phone?: string; title?: string; role?: string; username?: string; password?: string; isLocked?: boolean; projectCodes?: string[] }) => Promise<Engineer>;
+  createEngineer: (input: { name: string; phone?: string; email?: string; title?: string; role?: string; username?: string; password?: string; isLocked?: boolean; projectCodes?: string[]; permissions?: import('../types').Permission[] }) => Promise<Engineer>;
+  updateEngineer: (id: string, input: { name: string; phone?: string; title?: string; role?: string; username?: string; password?: string; isLocked?: boolean; projectCodes?: string[]; permissions?: import('../types').Permission[] }) => Promise<Engineer>;
   deleteEngineer: (id: string) => Promise<void>;
   deleteTask: (id: string) => void;
 
@@ -843,6 +843,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         email: input.email,
         title: input.title,
         projectCodes: input.projectCodes,
+          permissions: input.permissions,
       });
       // Nạp lại danh sách để đồng bộ managedProjects và id thật từ DB
       const engineers = await api.engineers.getAll();
@@ -864,6 +865,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         phone: input.phone,
         title: input.title,
         projectCodes: input.projectCodes,
+          permissions: input.permissions,
       });
       const engineers = await api.engineers.getAll();
       set(() => {

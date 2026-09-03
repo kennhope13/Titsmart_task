@@ -1,3 +1,5 @@
+import { Permission } from '../types';
+import { getDefaultPermissions } from '../services/authStore';
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
@@ -25,6 +27,7 @@ export const PersonnelPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [selectedProjectCodes, setSelectedProjectCodes] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
@@ -76,6 +79,7 @@ export const PersonnelPage: React.FC = () => {
     setUsername('');
     setPassword('');
     setSelectedProjectCodes([]);
+    setPermissions([]);
   };
 
   const closeForm = () => {
@@ -184,6 +188,7 @@ export const PersonnelPage: React.FC = () => {
           ...(username ? { username: username.trim() } : {}),
           ...(password ? { password } : {}),
           projectCodes: selectedProjectCodes,
+            permissions,
         });
         triggerToast(`Đã cập nhật nhân sự "${name.trim()}" thành công!`, 'success');
       } else {
@@ -195,6 +200,7 @@ export const PersonnelPage: React.FC = () => {
           username: username.trim(),
           password,
           projectCodes: selectedProjectCodes,
+            permissions,
         });
         triggerToast(`Đã thêm nhân sự "${name.trim()}" và gán ${selectedProjectCodes.length} dự án!`, 'success');
       }
