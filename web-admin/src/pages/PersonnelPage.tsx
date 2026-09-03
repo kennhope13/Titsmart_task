@@ -79,7 +79,7 @@ export const PersonnelPage: React.FC = () => {
     setUsername('');
     setPassword('');
     setSelectedProjectCodes([]);
-    setPermissions([]);
+    setPermissions(getDefaultPermissions('Nhân viên'));
   };
 
   const closeForm = () => {
@@ -162,6 +162,7 @@ export const PersonnelPage: React.FC = () => {
   const openEditModal = (person: typeof people[number]) => {
     setEditingPersonId(person.id);
     setName(person.name || '');
+    setPermissions(person.permissions || getDefaultPermissions(person.role || 'Nhân viên'));
     setPhone(person.phone || '');
     setRole(person.role || 'Nhân viên');
     setUsername((person as any).username || '');
