@@ -23,6 +23,7 @@ export const PersonnelPage: React.FC = () => {
   const [lockedIds, setLockedIds] = useState<string[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [title, setTitle] = useState('');
   const [role, setRole] = useState('Nhân viên');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -75,6 +76,7 @@ export const PersonnelPage: React.FC = () => {
     setEditingPersonId(null);
     setName('');
     setPhone('');
+    setTitle('');
     setRole('Nhân viên');
     setUsername('');
     setPassword('');
@@ -164,6 +166,7 @@ export const PersonnelPage: React.FC = () => {
     setName(person.name || '');
     setPermissions((person.permissions?.length ?? 0) > 0 ? person.permissions! : getDefaultPermissions(person.role || 'Nhân viên'));
     setPhone(person.phone || '');
+    setTitle((person as any).title || person.role || '');
     setRole(person.role || 'Nhân viên');
     setUsername((person as any).username || '');
     setPassword('');
@@ -184,7 +187,7 @@ export const PersonnelPage: React.FC = () => {
         await updateEngineer(editingPersonId, {
           name: name.trim(),
           phone,
-          title: role,
+          title: title || role,
           role,
           ...(username ? { username: username.trim() } : {}),
           ...(password ? { password } : {}),
@@ -196,7 +199,7 @@ export const PersonnelPage: React.FC = () => {
         await createEngineer({
           name: name.trim(),
           phone,
-          title: role,
+          title: title || role,
           role,
           username: username.trim(),
           password,
@@ -272,7 +275,7 @@ export const PersonnelPage: React.FC = () => {
             </div>
           <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative">
             <table className="w-full text-xs text-left border-collapse">
-              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Họ tên</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Mã NV</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Vai trò</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Dự án</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">SĐT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Chức năng</th></tr></thead>
+              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Họ tên</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Mã NV</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Chức danh</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Cấp bậc</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Dự án</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">SĐT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Chức năng</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {people.map((person, index) => (
                   <tr
