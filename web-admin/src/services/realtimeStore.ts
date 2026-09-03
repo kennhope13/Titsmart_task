@@ -153,6 +153,9 @@ const recalculateProjectsFromTasks = (projects: Project[], tasks: Task[], projec
 };
 
 interface RealtimeStoreState {
+  lastMutationTime: number;
+  markMutation: () => void;
+  // State
   projects: Project[];
   tasks: Task[];
   materials: Material[];
@@ -499,6 +502,8 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   };
 
   return {
+    lastMutationTime: 0,
+    markMutation: () => set({ lastMutationTime: Date.now() }),
     projects: [],
     tasks: [],
     materials: inventorySeed.materials,
@@ -530,9 +535,14 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     fetchTasks: async (projectId) => {
+      const fetchStartTime = Date.now();
       try {
         const tasks = await api.tasks.getAll(projectId);
-        set({ tasks: filterByProject(tasks, 'projectCode') });
+        if (get().lastMutationTime > fetchStartTime) {
+          console.log('[Realtime] Skipping tasks overwrite because local mutation occurred');
+        } else {
+          set({ tasks: filterByProject(tasks, 'projectCode') });
+        }
       } catch (e) {
         console.error('Failed to fetch tasks', e);
       }
@@ -663,18 +673,27 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     fetchAccounting: async () => {
+      const fetchStartTime = Date.now();
       const nextState: any = {};
 
-      // Tải từng bảng độc lập — 1 bảng lỗi không ảnh hưởng bảng khác
+      // Tải từng bảng độc lập để 1 bảng lỗi không ảnh hưởng bảng khác
       try {
         const materialPlans = await api.accounting.getMaterialPlans();
-        if (Array.isArray(materialPlans)) nextState.materialPlans = filterByProject(materialPlans.map(normalizeMaterialPlan), 'projectCode');
+        if (get().lastMutationTime > fetchStartTime) {
+          console.log('[Realtime] Skipping materialPlans overwrite because local mutation occurred');
+        } else if (Array.isArray(materialPlans)) {
+          nextState.materialPlans = filterByProject(materialPlans.map(normalizeMaterialPlan), 'projectCode');
+        }
         console.log('[Accounting] Loaded material_plans:', materialPlans?.length || 0);
       } catch (e) { console.error('[Accounting] Failed material_plans', e); }
 
       try {
         const purchasingPlans = await api.accounting.getPurchasings();
-        if (Array.isArray(purchasingPlans)) nextState.purchasingPlans = filterByProject(purchasingPlans.map(normalizePurchasingPlan), 'projectCode');
+        if (get().lastMutationTime > fetchStartTime) {
+          console.log('[Realtime] Skipping purchasingPlans overwrite because local mutation occurred');
+        } else if (Array.isArray(purchasingPlans)) {
+          nextState.purchasingPlans = filterByProject(purchasingPlans.map(normalizePurchasingPlan), 'projectCode');
+        }
         console.log('[Accounting] Loaded purchasing_plans:', purchasingPlans?.length || 0);
       } catch (e) { console.error('[Accounting] Failed purchasing_plans', e); }
 
@@ -735,6 +754,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updateTask: async (id, updatedFields) => {
+      get().markMutation();
       // Optimistic update
       set((state) => {
         const nextTasks = state.tasks.map((t) => (t.id === id ? { ...t, ...updatedFields } : t));
@@ -758,6 +778,8 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updateTaskProgress: async (id, progress, isDone) => {
+      get().markMutation();
+      // Optimistic update
       try {
         const updatedTask = await api.tasks.update(id, {
           progress,
@@ -955,6 +977,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updateMaterial: async (id, updatedFields) => {
+      get().markMutation();
       // Optimistic update
       set((state) => {
         const nextMats = state.materials.map((m) => (m.id === id ? { ...m, ...updatedFields } : m));
@@ -975,6 +998,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updateMaterialStatus: async (id, status) => {
+      get().markMutation();
       // Optimistic update
       set((state) => {
         const nextMats = state.materials.map((m) => (m.id === id ? { ...m, status } : m));
@@ -1315,6 +1339,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updateMaterialPlan: async (id, fields) => {
+      get().markMutation();
       const oldPlan = get().materialPlans.find((p) => p.id === id);
       // Optimistic update
       set((state) => {
@@ -1379,6 +1404,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updatePurchasingPlan: async (id, fields) => {
+      get().markMutation();
       const oldPlan = get().purchasingPlans.find((p) => p.id === id);
       // Optimistic update
       set((state) => {
