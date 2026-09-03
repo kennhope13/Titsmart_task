@@ -2386,7 +2386,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block font-bold mb-1">Đơn vị tính</label><input type="text" value={newPlanData.unit} onChange={(e) => setNewPlanData({...newPlanData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" step="any" value={newPlanData.contractVolume} onChange={(e) => setNewPlanData({...newPlanData, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" step="any" value={newPlanData.contractVolume} onChange={(e) => setNewPlanData({...newPlanData, contractVolume: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block font-bold mb-1">Mã hiệu / Quy cách</label><input type="text" value={newPlanData.techSpecModel} onChange={(e) => setNewPlanData({...newPlanData, techSpecModel: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -2530,7 +2530,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingPlan.unit} onChange={(e) => setEditingPlan({...editingPlan, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                  <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" step="any" value={editingPlan.contractVolume} onChange={(e) => setEditingPlan({...editingPlan, contractVolume: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                  <div><label className="block font-bold mb-1">Khối lượng HĐ</label><input type="number" step="any" value={editingPlan.contractVolume} onChange={(e) => setEditingPlan({...editingPlan, contractVolume: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block font-bold mb-1">Mã hiệu / Quy cách</label><input type="text" value={editingPlan.techSpecModel} onChange={(e) => setEditingPlan({...editingPlan, techSpecModel: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -2869,13 +2869,13 @@ export const ProjectCostPlanPage: React.FC = () => {
             <>
               <div className="grid grid-cols-4 gap-3">
                 <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newPurchasingData.unit} onChange={(e) => setNewPurchasingData({...newPurchasingData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" step="any" value={String(newPurchasingData.volumeContract)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeContract: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" step="any" value={String(newPurchasingData.volumeOrder)} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeOrder: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={String(newPurchasingData.unitPrice)} onChange={(e) => setNewPurchasingData({...newPurchasingData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" step="any" value={newPurchasingData.volumeContract} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeContract: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" step="any" value={newPurchasingData.volumeOrder} onChange={(e) => setNewPurchasingData({...newPurchasingData, volumeOrder: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={newPurchasingData.unitPrice} onChange={(e) => setNewPurchasingData({...newPurchasingData, unitPrice: (e.target.value as any)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
-                <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" step="any" value={String(newPurchasingData.vatRate)} onChange={(e) => setNewPurchasingData({...newPurchasingData, vatRate: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" step="any" min="0" max="100" value={String(Math.round((newPurchasingData.prepayPercent || 0) * 100))} onChange={(e) => setNewPurchasingData({...newPurchasingData, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" step="any" value={newPurchasingData.vatRate} onChange={(e) => setNewPurchasingData({...newPurchasingData, vatRate: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" step="any" min="0" max="100" value={newPurchasingData.prepayPercent ? Math.round(newPurchasingData.prepayPercent * 100) : ''} onChange={(e) => setNewPurchasingData({...newPurchasingData, prepayPercent: (e.target.value as any) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
               </div>
               <div>
                 <label className="block font-bold mb-1">Ngày dự kiến có hàng</label>
@@ -2989,13 +2989,13 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-4 gap-3">
               <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingPurchasing.unit} onChange={(e) => setEditingPurchasing({...editingPurchasing, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" step="any" value={String(editingPurchasing.volumeContract)} onChange={(e) => setEditingPurchasing({...editingPurchasing, volumeContract: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" step="any" value={String(editingPurchasing.volumeOrder)} onChange={(e) => setEditingPurchasing({...editingPurchasing, volumeOrder: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={String(editingPurchasing.unitPrice)} onChange={(e) => setEditingPurchasing({...editingPurchasing, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+              <div><label className="block font-bold mb-1">KL Hợp đồng</label><input type="number" step="any" value={editingPurchasing.volumeContract} onChange={(e) => setEditingPurchasing({...editingPurchasing, volumeContract: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">KL Đơn đặt</label><input type="number" step="any" value={editingPurchasing.volumeOrder} onChange={(e) => setEditingPurchasing({...editingPurchasing, volumeOrder: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={editingPurchasing.unitPrice} onChange={(e) => setEditingPurchasing({...editingPurchasing, unitPrice: (e.target.value as any)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
-              <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" step="any" value={String(editingPurchasing.vatRate)} onChange={(e) => setEditingPurchasing({...editingPurchasing, vatRate: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" step="any" min="0" max="100" value={String(Math.round((editingPurchasing.prepayPercent || 0) * 100))} onChange={(e) => setEditingPurchasing({...editingPurchasing, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Thuế suất VAT (%)</label><input type="number" step="any" value={editingPurchasing.vatRate} onChange={(e) => setEditingPurchasing({...editingPurchasing, vatRate: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Tỷ lệ Tạm ứng (%)</label><input type="number" step="any" min="0" max="100" value={editingPurchasing.prepayPercent ? Math.round(editingPurchasing.prepayPercent * 100) : ''} onChange={(e) => setEditingPurchasing({...editingPurchasing, prepayPercent: (e.target.value as any) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
             </div>
             <div>
               <label className="block font-bold mb-1">Ngày dự kiến có hàng</label>
@@ -3161,8 +3161,8 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newExpenseData.unit} onChange={(e) => setNewExpenseData({...newExpenseData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={String(newExpenseData.quantity)} onChange={(e) => setNewExpenseData({...newExpenseData, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={String(newExpenseData.unitPrice)} onChange={(e) => setNewExpenseData({...newExpenseData, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+            <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={newExpenseData.quantity} onChange={(e) => setNewExpenseData({...newExpenseData, quantity: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={newExpenseData.unitPrice} onChange={(e) => setNewExpenseData({...newExpenseData, unitPrice: (e.target.value as any)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
 
           {additionalItems.map((item, index) => (
@@ -3174,8 +3174,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <div><label className="block font-bold mb-1 text-slate-500">Diễn giải/ Chi tiết *</label><input type="text" required value={item.description} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].description = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
                 <div className="grid grid-cols-3 gap-3">
                   <div><label className="block font-bold mb-1 text-slate-500">ĐVT</label><input type="text" value={item.unit} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unit = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
-                  <div><label className="block font-bold mb-1 text-slate-500">Số lượng</label><input type="number" step="any" value={String(item.quantity)} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].quantity = Number(e.target.value); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
-                  <div><label className="block font-bold mb-1 text-slate-500">Đơn giá</label><input type="number" step="any" value={String(item.unitPrice)} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unitPrice = Number(e.target.value); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Số lượng</label><input type="number" step="any" value={item.quantity} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].quantity = (e.target.value as any); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Đơn giá</label><input type="number" step="any" value={item.unitPrice} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unitPrice = (e.target.value as any); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
                 </div>
               </div>
             </div>
@@ -3187,8 +3187,8 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={String((newExpenseData as any).vatAmount || 0)} onChange={(e) => setNewExpenseData({...newExpenseData, vatAmount: Number(e.target.value)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={String((newExpenseData as any).incomeAmount || 0)} onChange={(e) => setNewExpenseData({...newExpenseData, incomeAmount: Number(e.target.value)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={(newExpenseData as any).vatAmount || 0} onChange={(e) => setNewExpenseData({...newExpenseData, vatAmount: (e.target.value as any)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={(newExpenseData as any).incomeAmount || 0} onChange={(e) => setNewExpenseData({...newExpenseData, incomeAmount: (e.target.value as any)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
 
           </div>
           {(() => {
@@ -3299,8 +3299,8 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingExpense.unit} onChange={(e) => setEditingExpense({...editingExpense, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={String(editingExpense.quantity)} onChange={(e) => setEditingExpense({...editingExpense, quantity: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" step="any" value={String(editingExpense.unitPrice)} onChange={(e) => setEditingExpense({...editingExpense, unitPrice: Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+              <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={editingExpense.quantity} onChange={(e) => setEditingExpense({...editingExpense, quantity: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" step="any" value={editingExpense.unitPrice} onChange={(e) => setEditingExpense({...editingExpense, unitPrice: (e.target.value as any)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
 
           {additionalItems.map((item, index) => (
@@ -3312,8 +3312,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <div><label className="block font-bold mb-1 text-slate-500">Diễn giải/ Chi tiết *</label><input type="text" required value={item.description} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].description = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
                 <div className="grid grid-cols-3 gap-3">
                   <div><label className="block font-bold mb-1 text-slate-500">ĐVT</label><input type="text" value={item.unit} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unit = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
-                  <div><label className="block font-bold mb-1 text-slate-500">Số lượng</label><input type="number" step="any" value={String(item.quantity)} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].quantity = Number(e.target.value); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
-                  <div><label className="block font-bold mb-1 text-slate-500">Đơn giá</label><input type="number" step="any" value={String(item.unitPrice)} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unitPrice = Number(e.target.value); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Số lượng</label><input type="number" step="any" value={item.quantity} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].quantity = (e.target.value as any); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Đơn giá</label><input type="number" step="any" value={item.unitPrice} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unitPrice = (e.target.value as any); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
                 </div>
               </div>
             </div>
@@ -3325,8 +3325,8 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={String(editingExpense.taxAmount || 0)} onChange={(e) => setEditingExpense({...editingExpense, taxAmount: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={String(editingExpense.incomeAmount || 0)} onChange={(e) => setEditingExpense({...editingExpense, incomeAmount: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={editingExpense.taxAmount || 0} onChange={(e) => setEditingExpense({...editingExpense, taxAmount: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={editingExpense.incomeAmount || 0} onChange={(e) => setEditingExpense({...editingExpense, incomeAmount: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
 
             </div>
             {(() => {
@@ -3416,7 +3416,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div><label className="block font-bold mb-1">ĐVT</label><CustomSelect value={newLaborData.unit} onChange={(e) => setNewLaborData({...newLaborData, unit: e.target.value})} searchable={true} allowCustomInput={true} placeholder="" className="w-full border rounded-lg p-2 bg-white text-xs">
     {laborUnits.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}
   </CustomSelect></div>
-            <div><label className="block font-bold mb-1">Số công/Số lượng</label><input type="number" step="0.5" value={newLaborData.quantity} onChange={(e) => setNewLaborData({...newLaborData, quantity: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Số công/Số lượng</label><input type="number" step="0.5" value={newLaborData.quantity} onChange={(e) => setNewLaborData({...newLaborData, quantity: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1">Đơn giá công nhật (đ)</label><input type="text" value={newLaborData.unitPrice?.toLocaleString('vi-VN') || ''} onChange={(e) => setNewLaborData({...newLaborData, unitPrice: Number(e.target.value.replace(/[^0-9]/g, ''))})} className="w-full border rounded-lg p-2 font-bold bg-white text-right text-primary" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
@@ -3478,7 +3478,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               <div><label className="block font-bold mb-1">ĐVT</label><CustomSelect value={editingLabor.unit} onChange={(e) => setEditingLabor({...editingLabor, unit: e.target.value})} searchable={true} allowCustomInput={true} placeholder="" className="w-full border rounded-lg p-2 bg-white text-xs">
     {laborUnits.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}
   </CustomSelect></div>
-              <div><label className="block font-bold mb-1">Số công</label><input type="number" step="0.5" value={editingLabor.quantity} onChange={(e) => setEditingLabor({...editingLabor, quantity: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Số công</label><input type="number" step="0.5" value={editingLabor.quantity} onChange={(e) => setEditingLabor({...editingLabor, quantity: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Đơn giá</label><input type="text" value={editingLabor.unitPrice?.toLocaleString('vi-VN') || ''} onChange={(e) => setEditingLabor({...editingLabor, unitPrice: Number(e.target.value.replace(/[^0-9]/g, ''))})} className="w-full border rounded-lg p-2 font-bold bg-white text-right text-primary" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-lg border">
