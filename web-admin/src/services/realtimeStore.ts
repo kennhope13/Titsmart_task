@@ -1357,6 +1357,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       });
       try {
         const updated = normalizeMaterialPlan(await api.accounting.updateMaterialPlan(id, fields));
+        get().markMutation();
         set((state) => {
           const nextPlans = state.materialPlans.map((p) => (p.id === id ? updated : p));
           
