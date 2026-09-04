@@ -298,6 +298,8 @@ const hasSyncedRef = useRef(false);
   const [selectedProjectCode, setSelectedProjectCode] = useState<string>('all');
   const [selectedRomanSection, setSelectedRomanSection] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   // Column Filters
   const [filterSection, setFilterSection] = useState<string>('all');
@@ -543,7 +545,7 @@ const hasSyncedRef = useRef(false);
       // syncTaskStatusToCostPlan(editingTask, editPurchaseStatus, editConstrStatus);
     }
 
-    triggerToast('Đã cập nhật công việc thành công!', 'success');
+    triggerToast(`Đã cập nhật \"${editName}\" thành công!`, 'success');
     setIsEditTaskModalOpen(false);
     setEditingTask(null);
   };
@@ -622,7 +624,7 @@ const hasSyncedRef = useRef(false);
       );
       if (matchingPurchasing) deletePurchasingPlan(matchingPurchasing.id);
     }
-    triggerToast('Đã xóa hạng mục thành công!', 'success');
+    triggerToast(`Đã xóa \"${task.name}\" thành công!`, 'success');
     setDeleteConfirm({ isOpen: false, task: null });
   };
 
@@ -1280,7 +1282,7 @@ const hasSyncedRef = useRef(false);
       return;
     }
 
-    triggerToast('Đã tạo Hạng mục thành công!', 'success');
+    triggerToast(`Đã thêm \"${name}\" thành công!`, 'success');
     setIsNewTaskModalOpen(false);
     setIsSectionHeader(false);
     setSectionSelect('default');
@@ -1950,7 +1952,7 @@ const displayTasks = tasks.filter((t) => {
         onClose={() => setIsEditTaskModalOpen(false)}
         title={editingTask?.isSectionHeader ? 'Chỉnh sửa Đầu mục cha' : 'Chỉnh sửa Hạng mục Thi công'}
       >
-        <form onSubmit={handleSaveEditTask} className="space-y-3 text-xs">
+        <form onSubmit={async (e) => { e.preventDefault(); if (loading || isSubmittingRef.current) return; isSubmittingRef.current = true; setLoading(true); try { await handleSaveEditTask(e); } finally { isSubmittingRef.current = false; setLoading(false); } }} className="space-y-3 text-xs">
           <div className="grid grid-cols-3 gap-3">
             <div><label className="block font-bold text-slate-700 mb-1">STT / Mã</label><input type="text" value={editStt} onChange={(e) => setEditStt(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono font-bold" /></div>
             <div className="col-span-2"><label className="block font-bold text-slate-700 mb-1">Dự án</label><input type="text" disabled value={editingTask?.projectName || ''} className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-100 font-bold text-slate-500 cursor-not-allowed" /></div>
@@ -1969,13 +1971,13 @@ const displayTasks = tasks.filter((t) => {
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Ghi chú thêm cho dòng công việc" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Kỹ sư phụ trách</label><CustomSelect value={editEngineerId} onChange={(e) => setEditEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"><option value="">-- Chưa giao --</option>{engineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}</CustomSelect></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tiến độ tự tính (%)</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">{calculateAutoProgressPercent(editPurchaseStatus, editConstrStatus)}%</div></div><div><label className="block font-bold text-slate-700 mb-1">Hoàn thành</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-bold text-slate-800">{calculateAutoProgressRatio(editPurchaseStatus, editConstrStatus) >= 1 ? 'Đã hoàn thành' : 'Chưa hoàn thành'}</div></div></div>
           </>)}
-          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setIsEditTaskModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">Lưu Thay Đổi</button></div>
+          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setIsEditTaskModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90 disabled:opacity-50">Lưu Thay Đổi</button></div>
         </form>
       </Modal>
 
       {/* SLEEK NEW TASK MODAL */}
       <Modal isOpen={isNewTaskModalOpen} onClose={() => setIsNewTaskModalOpen(false)} title={isSectionHeader ? 'Th\u00eam \u0110\u1ea7u m\u1ee5c l\u1edbn' : 'Th\u00eam H\u1ea1ng m\u1ee5c nh\u1ecf'} size="xl">
-        <form onSubmit={handleCreateTask} className="space-y-3.5 text-xs">
+        <form onSubmit={async (e) => { e.preventDefault(); if (loading || isSubmittingRef.current) return; isSubmittingRef.current = true; setLoading(true); try { await handleCreateTask(e); } finally { isSubmittingRef.current = false; setLoading(false); } }} className="space-y-3.5 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">{'Thu\u1ed9c D\u1ef1 \u00e1n'}</label>
@@ -2121,7 +2123,7 @@ const displayTasks = tasks.filter((t) => {
             <button type="button" onClick={() => setIsNewTaskModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">
               Huy
             </button>
-            <button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">
+            <button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90 disabled:opacity-50">
               {isSectionHeader ? 'L\u01b0u \u0110\u1ea7u m\u1ee5c l\u1edbn' : 'L\u01b0u H\u1ea1ng m\u1ee5c nh\u1ecf'}
             </button>
           </div>
@@ -2130,7 +2132,7 @@ const displayTasks = tasks.filter((t) => {
 
       {/* NEW PROJECT MODAL */}
       <Modal isOpen={isNewProjectModalOpen} onClose={() => setIsNewProjectModalOpen(false)} title="Khởi tạo Dự n / Cng trnh Mới">
-        <form onSubmit={handleCreateProject} className="space-y-3 text-xs">
+        <form onSubmit={async (e) => { e.preventDefault(); if (loading || isSubmittingRef.current) return; isSubmittingRef.current = true; setLoading(true); try { await handleCreateProject(e); } finally { isSubmittingRef.current = false; setLoading(false); } }} className="space-y-3 text-xs">
           <div>
             <label className="block font-bold text-slate-700 mb-1">Tn Dự n / Cng trnh Mới *</label>
             <input
@@ -2214,7 +2216,7 @@ const displayTasks = tasks.filter((t) => {
             >
               Hủy
             </button>
-            <button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">
+            <button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90 disabled:opacity-50">
               Tạo Dự n
             </button>
           </div>

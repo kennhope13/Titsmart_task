@@ -179,6 +179,8 @@ export const ProjectCostPlanPage: React.FC = () => {
   const [pendingTaskItems, setPendingTaskItems] = useState<Array<any>>([]);
   const [debugText, setDebugText] = useState<string>('');
   const [showCreateTaskConfirm, setShowCreateTaskConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
     id: string;
@@ -401,7 +403,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         if (matchingTask) deleteTask(matchingTask.id);
       }
       deleteMaterialPlan(id);
-      triggerToast('Đã xóa Kế hoạch vật tư thành công!', 'success');
+      triggerToast(`Đã xóa \"${deleteConfirm?.itemName || 'hạng mục'}\" thành công!`, 'success');
     } else if (type === 'purchasing') {
       const pPlan = purchasingPlans.find(p => p.id === id);
       if (pPlan) {
@@ -424,13 +426,13 @@ export const ProjectCostPlanPage: React.FC = () => {
         }
       }
       deletePurchasingPlan(id);
-      triggerToast('Đã xóa Mua sắm hàng hóa thành công!', 'success');
+      triggerToast(`Đã xóa \"${deleteConfirm?.itemName || 'mục'}\" thành công!`, 'success');
     } else if (type === 'expense') {
       deleteExpense(id);
-      triggerToast('Đã xóa Chi phí dự án thành công!', 'success');
+      triggerToast(`Đã xóa \"${deleteConfirm?.itemName || 'mục'}\" thành công!`, 'success');
     } else if (type === 'labor') {
       deleteLaborPayroll(id);
-      triggerToast('Đã xóa Lương công nhật thành công!', 'success');
+      triggerToast(`Đã xóa \"${deleteConfirm?.itemName || 'nhân công'}\" thành công!`, 'success');
     }
     setDeleteConfirm(null);
   };
@@ -2454,7 +2456,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           )}
 
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newPlanData.notes} onChange={(e) => setNewPlanData({...newPlanData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setIsCreatingSectionHeader(false); setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true}); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">{isCreatingSectionHeader ? 'Lưu Đầu Mục' : 'Thêm Hạng Mục'}</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setIsCreatingSectionHeader(false); setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true}); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">{isCreatingSectionHeader ? 'Lưu Đầu Mục' : 'Thêm Hạng Mục'}</button></div>
         </form>
       </Modal>
 
@@ -2581,7 +2583,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingPlan.notes} onChange={(e) => setEditingPlan({...editingPlan, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               </>
             )}
-            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setEditingPlan(null); setIsCreatingSectionHeader(false); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Cập nhật</button></div>
+            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setEditingPlan(null); setIsCreatingSectionHeader(false); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">Cập nhật</button></div>
           </form>
         )}
       </Modal>
@@ -2953,7 +2955,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <label className="block font-bold mb-1">Ghi chú</label>
             <input type="text" placeholder="Nhập ghi chú (nếu có)" value={newPurchasingData.notes} onChange={(e) => setNewPurchasingData({...newPurchasingData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs" />
           </div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewPurchasingOpen(false); setParentPurchasingIdForNew(null); setIsCreatingSectionHeader(false); setNewPurchasingData({stt: '', content: '', unit: 'bộ', volumeContract: 0, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''}); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">{isCreatingSectionHeader ? 'Lưu Đầu Mục' : 'Thêm Hạng Mục'}</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewPurchasingOpen(false); setParentPurchasingIdForNew(null); setIsCreatingSectionHeader(false); setNewPurchasingData({stt: '', content: '', unit: 'bộ', volumeContract: 0, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''}); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">{isCreatingSectionHeader ? 'Lưu Đầu Mục' : 'Thêm Hạng Mục'}</button></div>
         </form>
       </Modal>
 
@@ -3071,7 +3073,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               <label className="block font-bold mb-1">Ghi chú</label>
               <input type="text" placeholder="Nhập ghi chú (nếu có)" value={editingPurchasing.notes} onChange={(e) => setEditingPurchasing({...editingPurchasing, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white text-xs" />
             </div>
-            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingPurchasing(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Cập nhật</button></div>
+            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingPurchasing(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">Cập nhật</button></div>
           </form>
         )}
       </Modal>
@@ -3229,7 +3231,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
           </div>
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newExpenseData.notes} onChange={(e) => setNewExpenseData({...newExpenseData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewExpenseOpen(false); setAdditionalItems([]); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit"  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu phiếu chi</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewExpenseOpen(false); setAdditionalItems([]); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}   className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">Lưu phiếu chi</button></div>
         </form>
       </Modal>
 
@@ -3367,7 +3369,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               </div>
             </div>
             <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingExpense.notes} onChange={(e) => setEditingExpense({...editingExpense, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setEditingExpense(null); setAdditionalItems([]); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit"  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu thay đổi</button></div>
+            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setEditingExpense(null); setAdditionalItems([]); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}   className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">Lưu thay đổi</button></div>
           </form>
         )}
       </Modal>
@@ -3445,7 +3447,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               <option value="Đã thanh toán">Đã thanh toán</option>
             </CustomSelect>
           </div>
-          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewLaborOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu</button></div>
+          <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewLaborOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">Lưu</button></div>
         </form>
       </Modal>
 
@@ -3505,7 +3507,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <option value="Đã thanh toán">Đã thanh toán</option>
               </CustomSelect>
             </div>
-            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingLabor(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold">Lưu cập nhật</button></div>
+            <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingLabor(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">Lưu cập nhật</button></div>
           </form>
         )}
       </Modal>

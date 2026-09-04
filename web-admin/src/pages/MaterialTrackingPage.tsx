@@ -68,6 +68,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [loadingMessage, setLoadingMessage] = useState('');
 
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -260,8 +261,9 @@ export const MaterialTrackingPage: React.FC = () => {
             } finally {
               setLoading(false);
               setLoadingMessage('');
-            }
-          };
+      isSubmittingRef.current = false;
+    }
+  };
           await doImport();
           return; // Exit here for OVERVIEW so it doesn't trigger the toast at the bottom
         } else {
@@ -353,7 +355,11 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!transferMaterial || !transferTargetProject || transferQuantity <= 0) return;
+    if (!transferMaterial || !transferTargetProject || transferQuantity <= 0 || loading || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setLoading(true);
+    setLoadingMessage('Đang xử lý...');
+    try {
     
     const targetProjectObj = projects.find(p => p.code === transferTargetProject);
     const targetProjectName = targetProjectObj ? targetProjectObj.name : 'Kho Tổng';
@@ -436,8 +442,15 @@ export const MaterialTrackingPage: React.FC = () => {
     };
     await addInventoryTransaction(importTx);
     logActivity('Chuyển kho', targetProjectName);
-    triggerToast('Chuyển kho thành công!', 'success');
+    triggerToast(`Đã chuyển \"${transferMaterial.name}\" thành công!`, 'success');
     setIsTransferModalOpen(false);
+    } catch (error: any) {
+      triggerToast(error.message || 'Lỗi khi chuyển kho!', 'warning');
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+      isSubmittingRef.current = false;
+    }
   };
 
   
@@ -563,16 +576,20 @@ export const MaterialTrackingPage: React.FC = () => {
     setEditUnitPrice(material.unitPrice || 0);
   };
 
-  const handleSaveMaterial = (event: React.FormEvent) => {
+  const handleSaveMaterial = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!editingMaterial) return;
+    if (!editingMaterial || loading || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setLoading(true);
+    setLoadingMessage('Đang xử lý...');
+    try {
 
     // Recalculate current stock based on new initial stock and transactions
     const totalImp = editingMaterial.totalImport || 0;
     const totalExp = editingMaterial.totalExport || 0;
     const currentStock = editInitialStock + totalImp - totalExp;
 
-    updateMaterial(editingMaterial.id, {
+    await updateMaterial(editingMaterial.id, {
       status: editPurchaseStatus,
       constrStatus: editConstrStatus,
       supplier: editSupplier,
@@ -582,6 +599,14 @@ export const MaterialTrackingPage: React.FC = () => {
       unitPrice: editUnitPrice,
     });
     setEditingMaterial(null);
+      triggerToast(`Đã cập nhật \"${editingMaterial.name}\" thành công!`, 'success');
+    } catch (error: any) {
+      triggerToast(error.message || 'Lỗi khi cập nhật!', 'warning');
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+      isSubmittingRef.current = false;
+    }
   };
 
   const handleExportExcel = () => {
@@ -640,8 +665,11 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const handleAddMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     if (!matName) {
       triggerToast('Vui lòng nhập tên vật tư!', 'warning');
+      isSubmittingRef.current = false;
       return;
     }
 
@@ -680,8 +708,11 @@ export const MaterialTrackingPage: React.FC = () => {
       specs: description.trim(),
     };
     
-    const created = await addMaterial(newMat);
-    if (created && volume > 0) {
+    setLoading(true);
+    setLoadingMessage('Đang xử lý...');
+    try {
+      const created = await addMaterial(newMat);
+      if (created && volume > 0) {
       await addInventoryTransaction({
         materialId: created.id as string,
         materialCode: created.code,
@@ -706,6 +737,14 @@ export const MaterialTrackingPage: React.FC = () => {
     setSupplier('');
     setPurchaseStatus('Chưa đặt hàng');
     setConstrStatus('Chưa thi công');
+      triggerToast(`Đã thêm vật tư \"${matName}\" thành công!`, 'success');
+    } catch (error: any) {
+      triggerToast(error.message || 'Lỗi khi thêm vật tư!', 'warning');
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+      isSubmittingRef.current = false;
+    }
   };
 
   const handleOpenTransaction = (type: 'IMPORT' | 'EXPORT') => {
@@ -724,8 +763,13 @@ export const MaterialTrackingPage: React.FC = () => {
     const material = materials.find(m => m.id === txMaterialId);
     if (!material) return;
 
-    const commitTransaction = () => {
-      addInventoryTransaction({
+    const commitTransaction = async () => {
+      if (loading || isSubmittingRef.current) return;
+      isSubmittingRef.current = true;
+      setLoading(true);
+      setLoadingMessage('Đang xử lý...');
+      try {
+        await addInventoryTransaction({
         type: transactionType,
         date: txDate,
         materialId: material.id,
@@ -743,9 +787,17 @@ export const MaterialTrackingPage: React.FC = () => {
         volume: material.volume || 0,
         unitPrice: material.unitPrice || 0,
         supplier: material.supplier || '',
-      } as any);
-      setIsTransactionModalOpen(false);
-    };
+        } as any);
+        setIsTransactionModalOpen(false);
+        triggerToast(`Thêm nhật ký ${transactionType === 'IMPORT' ? 'Nhập' : 'Xuất'} cho \"${material.name}\" thành công!`, 'success');
+      } catch (error: any) {
+        triggerToast(error.message || 'Lỗi khi thêm nhật ký!', 'warning');
+      } finally {
+        setLoading(false);
+        setLoadingMessage('');
+      isSubmittingRef.current = false;
+    }
+  };
 
     if (transactionType === 'EXPORT') {
       const current = material.currentStock !== undefined ? material.currentStock : (material.initialStock || 0);
@@ -1096,7 +1148,7 @@ export const MaterialTrackingPage: React.FC = () => {
               <div><label className="block font-bold text-slate-700 mb-1">Đơn giá</label><input type="number" step="any" value={editUnitPrice} onChange={(event) => setEditUnitPrice(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
             </div>
             <div><label className="block font-bold text-slate-700 mb-1">Nhà cung cấp mặc định</label><input type="text" value={editSupplier} onChange={(event) => setEditSupplier(event.target.value)} placeholder="VD: Kho công ty, nhà cung cấp A..." className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
-          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setEditingMaterial(null)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">Lưu cập nhật</button></div>
+          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setEditingMaterial(null)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading} className="px-5 py-1.5 bg-primary disabled:opacity-50 text-white rounded-lg font-bold hover:opacity-90">Lưu cập nhật</button></div>
           </form>
         )}
       </Modal>
@@ -1120,7 +1172,7 @@ export const MaterialTrackingPage: React.FC = () => {
           <div><label className="block font-bold text-slate-700 mb-1">Mô tả / quy cách</label><input type="text" placeholder="VD: chống nhiễu, chống cháy..." value={description} onChange={(event) => setDescription(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Nhà cung cấp mặc định</label><input type="text" placeholder="VD: Kho công ty" value={supplier} onChange={(event) => setSupplier(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
           <div className="grid grid-cols-3 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Số lượng nhập ban đầu</label><input type="number" step="any" min="0" value={volume} onChange={(event) => setVolume(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị</label><input type="text" value={unit} onChange={(event) => setUnit(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn giá</label><input type="number" step="any" value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div></div>
-          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setIsPlaceOrderModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90">Tạo mới</button></div>
+          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setIsPlaceOrderModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading} className="px-5 py-1.5 bg-primary disabled:opacity-50 text-white rounded-lg font-bold hover:opacity-90">Tạo mới</button></div>
         </form>
       </Modal>
 
@@ -1171,7 +1223,7 @@ export const MaterialTrackingPage: React.FC = () => {
           </div>
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
             <button type="button" onClick={() => setIsTransactionModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button>
-            <button type="submit" className={`px-5 py-1.5 text-white rounded-lg font-bold hover:opacity-90 ${transactionType === 'IMPORT' ? 'bg-emerald-600' : 'bg-amber-500'}`}>
+            <button type="submit" disabled={loading} className={`px-5 py-1.5 text-white disabled:opacity-50 rounded-lg font-bold hover:opacity-90 ${transactionType === 'IMPORT' ? 'bg-emerald-600' : 'bg-amber-500'}`}>
               Lưu {transactionType === 'IMPORT' ? 'Nhập Kho' : 'Xuất Kho'}
             </button>
           </div>
@@ -1203,7 +1255,7 @@ export const MaterialTrackingPage: React.FC = () => {
           </div>
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
             <button type="button" onClick={() => setIsTransferModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button>
-            <button type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90 flex items-center gap-1">
+            <button type="submit" disabled={loading} className="px-5 py-1.5 bg-primary disabled:opacity-50 text-white rounded-lg font-bold hover:opacity-90 flex items-center gap-1">
               <span className="material-symbols-outlined text-[16px]">swap_horiz</span>
               Thực hiện chuyển
             </button>
