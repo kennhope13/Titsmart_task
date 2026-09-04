@@ -501,7 +501,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       const m = String(notes || '').match(/\[order:([\d.]+)\]/);
       return m ? parseFloat(m[1]) : null;
     };
-    const originalOrderMap = new Map<string, number>(filtered.map((r, i) => [r.id, orderTagValue(r.notes) ?? (1000000 - i)]));
+    const originalOrderMap = new Map<string, number>(filtered.map((r, i) => [r.id, orderTagValue(r.notes) ?? i]));
 
     const resolveParentId = (plan: ProjectMaterialPlan): string | undefined => {
       if (plan.stt && plan.stt.includes('.')) {
@@ -590,14 +590,29 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       const secA = getSectionIndexForItem(a);
       const secB = getSectionIndexForItem(b);
       if (secA !== secB) return secA - secB;
+      
       const aIsSec = isParentRow(a) ? 0 : 1;
       const bIsSec = isParentRow(b) ? 0 : 1;
       if (aIsSec !== bIsSec) return aIsSec - bIsSec;
-      const ap = numericSttParts(a.stt), bp = numericSttParts(b.stt);
-      for (let i = 0; i < Math.max(ap.length, bp.length); i++) {
-        const diff = (ap[i] ?? -1) - (bp[i] ?? -1);
-        if (diff !== 0) return diff;
+      
+      const hasSttA = !!String(a.stt || '').trim();
+      const hasSttB = !!String(b.stt || '').trim();
+
+      // Nếu cả hai đều có STT, ưu tiên sắp xếp theo STT
+      if (hasSttA && hasSttB) {
+        const ap = numericSttParts(a.stt), bp = numericSttParts(b.stt);
+        for (let i = 0; i < Math.max(ap.length, bp.length); i++) {
+          const diff = (ap[i] ?? -1) - (bp[i] ?? -1);
+          if (diff !== 0) return diff;
+        }
+        return 0;
       }
+      
+      // Nếu một trong hai hoặc cả hai không có STT, giữ nguyên thứ tự ban đầu từ Excel (orderTagValue)
+      const posA = originalOrderMap.get(a.id) ?? 0;
+      const posB = originalOrderMap.get(b.id) ?? 0;
+      if (posA !== posB) return posA - posB;
+      
       return 0;
     });
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
