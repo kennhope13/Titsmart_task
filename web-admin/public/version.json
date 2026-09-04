@@ -1,8 +1,7 @@
 {
-  "version": "1.2.68",
+  "version": "1.2.69",
   "date": "04/09/2026",
   "notes": [
-    "Thêm tính năng So sánh dự án tại tab Tổng quan chung: Cho phép tick chọn và lọc song song nhiều dự án trên biểu đồ.",
-    "Bổ sung thanh Tìm kiếm dự án ngay trong menu bộ lọc so sánh để thao tác nhanh chóng hơn."
+    "Cải thiện giao diện nút bộ lọc So sánh dự án tại tab Tổng quan chung: Đồng bộ thiết kế (bo góc, viền) với hệ thống và chuyển vị trí sang sát tiêu đề để dễ thao tác hơn."
   ]
 }
