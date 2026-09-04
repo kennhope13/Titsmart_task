@@ -37,6 +37,7 @@ export const ProjectDetailPage: React.FC = () => {
 
   // Tabs for the project detail view
   const baseTabs = [
+      { label: 'Tổng quan', path: `/projects/${project.id}/overview`, icon: 'dashboard' },
       { label: 'Tiến độ Công việc', path: `/projects/${project.id}/tasks`, icon: 'fact_check' },
       { label: 'Vật tư & Chi phí', path: `/projects/${project.id}/cost-plan`, icon: 'account_balance_wallet' },
       { label: 'Hồ sơ', path: `/projects/${project.id}/documents`, icon: 'file_present', requireAdmin: true },
@@ -54,7 +55,7 @@ export const ProjectDetailPage: React.FC = () => {
 
   const isExactBaseRoute = location.pathname.replace(/\/$/, '') === `/projects/${projectId}`;
   if (isExactBaseRoute) {
-    return <Navigate to={`/projects/${project.id}/tasks`} replace />;
+    return <Navigate to={`/projects/${project.id}/overview`} replace />;
   }
 
   return (
