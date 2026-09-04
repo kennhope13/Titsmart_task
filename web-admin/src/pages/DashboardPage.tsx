@@ -3,14 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Cell, Tooltip, Legend, LabelList } from 'recharts';
 
-export const DashboardPage: React.FC = () => {
-  const navigate = useNavigate();
+const RealtimeClock = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  return (
+    <>{currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} - {currentTime.toLocaleDateString('vi-VN')}</>
+  );
+};
+
+export const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
   const { 
     projects, 
     engineers, 
@@ -123,7 +130,7 @@ export const DashboardPage: React.FC = () => {
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2">TỔNG QUAN CHUNG</h1>
           <div className="hidden sm:flex text-sm font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full items-center gap-2 ml-2">
             <span className="material-symbols-outlined text-[18px]">schedule</span>
-            {currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} - {currentTime.toLocaleDateString('vi-VN')}
+            <RealtimeClock />
           </div>
         </div>
       </section>
