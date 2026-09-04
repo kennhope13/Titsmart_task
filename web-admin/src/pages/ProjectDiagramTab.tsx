@@ -214,7 +214,7 @@ export const ProjectDiagramTab: React.FC = () => {
                         <FileUpload 
                           key={resetKey}
                           label=""
-                          buttonText="Thêm ảnh"
+                          buttonText="Tải sơ đồ"
                           buttonIcon="add_photo_alternate"
                           variant="light"
                           multiple={true}
