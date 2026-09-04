@@ -13,7 +13,8 @@ export const DashboardPage: React.FC = () => {
     materialPlans, 
     purchasingPlans, 
     expenses, 
-    laborPayrolls 
+    laborPayrolls,
+    issues
   } = useRealtimeStore();
 
   // 1. CHUẨN BỊ DỮ LIỆU TỔNG HỢP CỦA TẤT CẢ DỰ ÁN
@@ -74,40 +75,34 @@ export const DashboardPage: React.FC = () => {
       }));
   }, [enhancedProjects]);
 
-  // 3. BIỂU ĐỒ 3: THỐNG KÊ CÔNG VIỆC THEO DỰ ÁN
-  const taskStatData = useMemo(() => {
+  // 3. BIỂU ĐỒ 3: TIẾN ĐỘ VẬT TƯ (TỈ LỆ VỀ CÔNG TRƯỜNG)
+  const materialData = useMemo(() => {
+    return enhancedProjects
+      .filter(p => p.status !== 'completed' && p.status !== 'on_hold')
+      .sort((a, b) => b.materialProgress - a.materialProgress)
+      .slice(0, 10)
+      .map(p => ({
+        name: p.name,
+        "Vật tư về bãi (%)": p.materialProgress
+      }));
+  }, [enhancedProjects]);
+
+  // 4. BIỂU ĐỒ 4: TÌNH TRẠNG VƯỚNG MẮC / SỰ CỐ
+  const issueData = useMemo(() => {
     return enhancedProjects.map(p => {
-      const pTasks = tasks.filter(t => t.projectCode === p.code && !t.isSectionHeader);
-      const completed = pTasks.filter(t => t.status === 'Hoàn thành').length;
-      const inProgress = pTasks.filter(t => t.status === 'Đang làm' || t.status === 'Chờ vật tư' || t.status === 'Chờ khách hàng' || t.status === 'Chờ nghiệm thu').length;
-      const notStarted = pTasks.filter(t => !t.status || t.status === 'Chưa làm' || t.status === 'Chờ nhận việc' || t.status === 'Tạm dừng').length;
+      const pIssues = issues.filter(i => i.projectCode === p.code);
+      const open = pIssues.filter(i => i.status === 'OPEN').length;
+      const processing = pIssues.filter(i => i.status === 'PROCESSING').length;
+      const resolved = pIssues.filter(i => i.status === 'RESOLVED').length;
       return {
         name: p.name,
-        'Hoàn thành': completed,
-        'Đang xử lý': inProgress,
-        'Chưa bắt đầu': notStarted,
-        total: pTasks.length
+        'Tồn đọng': open,
+        'Đang xử lý': processing,
+        'Đã khắc phục': resolved,
+        total: pIssues.length
       };
     }).sort((a, b) => b.total - a.total).slice(0, 10);
-  }, [enhancedProjects, tasks]);
-
-  // 4. BIỂU ĐỒ 4: SỐ LƯỢNG NHÂN SỰ THEO DỰ ÁN
-  const projectPersonnelData = useMemo(() => {
-    return enhancedProjects.map(p => {
-      let count = 0;
-      engineers.forEach(e => {
-        const isManaged = e.managedProjects?.some(mp => mp.code === p.code);
-        const isMember = e.memberProjects?.some(mp => mp.code === p.code);
-        if (isManaged || isMember) {
-          count++;
-        }
-      });
-      return {
-        name: p.name,
-        'Số nhân sự': count
-      };
-    }).sort((a, b) => b['Số nhân sự'] - a['Số nhân sự']).slice(0, 10);
-  }, [enhancedProjects, engineers]);
+  }, [enhancedProjects, issues]);
 
   const ChartBox = ({ title, children, span = 1, onClick }: { title: string, children: React.ReactNode, span?: number, onClick?: () => void }) => (
     <div 
@@ -173,32 +168,36 @@ export const DashboardPage: React.FC = () => {
               </ResponsiveContainer>
             </ChartBox>
 
-            <ChartBox title="TIẾN ĐỘ CÔNG VIỆC CHI TIẾT (THEO DỰ ÁN)" onClick={() => navigate("/tasks")}>
+            <ChartBox title="TỈ LỆ VẬT TƯ VỀ CÔNG TRƯỜNG (%)" onClick={() => navigate("/materials")}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={taskStatData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout="vertical">
+                <BarChart data={materialData} margin={{ top: 10, right: 40, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                  <XAxis type="number" hide />
+                  <XAxis type="number" domain={[0, 100]} hide />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={10} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                  <Bar dataKey="Hoàn thành" stackId="a" fill="#10b981" barSize={20} />
-                  <Bar dataKey="Đang xử lý" stackId="a" fill="#3b82f6" barSize={20} />
-                  <Bar dataKey="Chưa bắt đầu" stackId="a" fill="#94a3b8" barSize={20} radius={[0, 4, 4, 0]} />
+                  <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(val: number) => [`${val}%`, 'Đã về']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="Vật tư về bãi (%)" fill="#14b8a6" radius={[0, 4, 4, 0]} maxBarSize={20}>
+                    <LabelList dataKey="Vật tư về bãi (%)" position="right" formatter={(val: number) => `${val}%`} style={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </ChartBox>
 
-            <ChartBox title="SỐ LƯỢNG NHÂN SỰ ĐƯỢC PHÂN BỔ (THEO DỰ ÁN)" onClick={() => navigate("/personnel")}>
+            <ChartBox title="THỐNG KÊ SỰ CỐ / VƯỚNG MẮC" onClick={() => navigate("/activity-log")}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={projectPersonnelData} margin={{ top: 10, right: 40, left: 0, bottom: 0 }} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                  <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Bar dataKey="Số nhân sự" fill="#0284c7" radius={[0, 4, 4, 0]} maxBarSize={20}>
-                    <LabelList dataKey="Số nhân sự" position="right" formatter={(val: number) => `${val} người`} style={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} />
-                  </Bar>
-                </BarChart>
+                {issueData.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-slate-400">Không có dữ liệu sự cố</div>
+                ) : (
+                  <BarChart data={issueData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={10} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                    <Bar dataKey="Tồn đọng" stackId="a" fill="#ef4444" barSize={20} />
+                    <Bar dataKey="Đang xử lý" stackId="a" fill="#f59e0b" barSize={20} />
+                    <Bar dataKey="Đã khắc phục" stackId="a" fill="#22c55e" barSize={20} radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                )}
               </ResponsiveContainer>
             </ChartBox>
 
