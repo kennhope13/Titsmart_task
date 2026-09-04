@@ -34,6 +34,8 @@ export const DocumentTrackingPage: React.FC = () => {
   });
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
+  const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
     setToastState({ show: true, message, type });
     setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);

@@ -19,6 +19,8 @@ const filters = [
 export const PersonnelPage: React.FC = () => {
   const { engineers, projects, createEngineer, updateEngineer, deleteEngineer, fetchProjects } = useRealtimeStore();
   const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [lockedIds, setLockedIds] = useState<string[]>([]);
@@ -346,7 +348,7 @@ export const PersonnelPage: React.FC = () => {
       </div>
 
       <Modal size='xl' isOpen={isFormOpen} onClose={closeForm} title={editingPersonId ? 'Chỉnh sửa nhân sự' : 'Thêm nhân sự'}>
-        <form onSubmit={handleSavePerson} className="p-1">
+        <form onSubmit={async (e) => { e.preventDefault(); if (loading || isSubmittingRef.current) return; isSubmittingRef.current = true; setLoading(true); try { await handleSavePerson(e); } finally { isSubmittingRef.current = false; setLoading(false); } }} className="p-1">
 <div className="flex flex-col lg:flex-row gap-4">
 <div className="lg:w-[40%] space-y-3">
           <div className="grid grid-cols-2 gap-3">
