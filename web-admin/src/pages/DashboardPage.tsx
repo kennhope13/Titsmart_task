@@ -1,10 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Cell, Tooltip, Legend, LabelList } from 'recharts';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const { 
     projects, 
     engineers, 
@@ -115,6 +121,10 @@ export const DashboardPage: React.FC = () => {
       <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm pl-3 pr-14 py-4 md:py-3 lg:py-0 lg:min-h-[3rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0 flex-wrap">
         <div className="flex items-center gap-4">
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2">TỔNG QUAN CHUNG</h1>
+          <div className="hidden sm:flex text-sm font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full items-center gap-2 ml-2">
+            <span className="material-symbols-outlined text-[18px]">schedule</span>
+            {currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} - {currentTime.toLocaleDateString('vi-VN')}
+          </div>
         </div>
       </section>
 
