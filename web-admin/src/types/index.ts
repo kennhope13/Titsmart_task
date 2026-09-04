@@ -5,7 +5,7 @@ export type Permission =
   | 'VIEW_FINANCE' | 'EDIT_PRICES' | 'VIEW_PAYMENTS' | 'EDIT_PAYMENTS' | 'VIEW_EXPENSES' | 'EDIT_EXPENSES'
   | 'VIEW_DOCUMENTS' | 'MANAGE_DOCUMENTS'
   | 'VIEW_USERS' | 'MANAGE_USERS' | 'MANAGE_PERMISSIONS' | 'MANAGE_PAYROLL'
-  | 'EXPORT_DATA';
+  | 'EXPORT_DATA' | 'MANAGE_INVENTORY' | 'VIEW_FIELD_LOGS' | 'MANAGE_FIELD_LOGS' | 'VIEW_ISSUES' | 'MANAGE_ISSUES' | 'VIEW_ACTIVITY_LOG';
 
 export type TaskStatus = 'Chưa làm' | 'Đang làm' | 'Chờ vật tư' | 'Chờ khách hàng' | 'Chờ nghiệm thu' | 'Hoàn thành' | 'Tạm dừng' | 'Chờ nhận việc';
 export type TaskPriority = 'Low' | 'Medium' | 'High';
