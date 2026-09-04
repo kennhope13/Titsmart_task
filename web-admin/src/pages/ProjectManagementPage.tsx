@@ -8,7 +8,6 @@ import { Toast } from '../components/common/Toast';
 import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { WebOcrExtractedData } from '../services/webOcrService';
-import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 
 const todayStamp = () => new Date().toISOString().split('T')[0];
 
@@ -699,61 +698,6 @@ export const ProjectManagementPage: React.FC = () => {
       </section>
 
       <div className="p-6">
-        {/* SO SÁNH CÁC DỰ ÁN */}
-        {!isFetchingProjects && enhancedProjects.length > 0 && !searchQuery && statusFilter === 'active' && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
-            {/* Biểu đồ Tiến độ các dự án */}
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-lg text-slate-400">bar_chart</span>
-                So sánh Tiến độ Dự án (%)
-              </h3>
-              <div className="h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={enhancedProjects.slice(0, 10)} margin={{ top: 10, right: 10, left: -20, bottom: 5 }} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                    <XAxis type="number" domain={[0, 100]} hide />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} width={120} />
-                    <Tooltip 
-                      cursor={{ fill: '#f8fafc' }}
-                      formatter={(value: number) => [`${value}%`, 'Tiến độ']}
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
-                    <Bar dataKey="progress" radius={[0, 4, 4, 0]} maxBarSize={20}>
-                      {enhancedProjects.slice(0, 10).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.progress >= 100 ? '#10b981' : entry.progress >= 60 ? '#3b82f6' : entry.progress >= 30 ? '#f59e0b' : '#94a3b8'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Biểu đồ Chi phí các dự án */}
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-lg text-slate-400">payments</span>
-                So sánh Chi phí Dự án
-              </h3>
-              <div className="h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={[...enhancedProjects].sort((a,b) => (b.totalCost || 0) - (a.totalCost || 0)).slice(0, 10)} margin={{ top: 10, right: 10, left: -20, bottom: 5 }} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                    <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} width={120} />
-                    <Tooltip 
-                      cursor={{ fill: '#f8fafc' }}
-                      formatter={(value: number) => [new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value), 'Chi phí']}
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
-                    <Bar dataKey="totalCost" fill="#f43f5e" radius={[0, 4, 4, 0]} maxBarSize={20} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        )}
-
         {isFetchingProjects ? (
           <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center">
               <svg className="animate-spin h-12 w-12 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
