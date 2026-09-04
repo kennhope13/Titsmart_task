@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
-import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Cell, Tooltip, Legend, LabelList } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Cell, Tooltip, Legend, LabelList, PieChart, Pie } from 'recharts';
 
 
 export const DashboardPage: React.FC = () => {
@@ -86,15 +86,18 @@ export const DashboardPage: React.FC = () => {
       }));
   }, [enhancedProjects]);
 
-  // 5. BIỂU ĐỒ 4: TẢI NHÂN SỰ
-  const engineerWorkloadData = useMemo(() => {
-    const data = engineers.map(e => ({
-       name: e.name, 
-       'Dự án quản lý': (e.managedProjects || []).length,
-       'Dự án tham gia': (e.memberProjects || []).length
-    })).sort((a,b) => (b['Dự án quản lý'] + b['Dự án tham gia']) - (a['Dự án quản lý'] + a['Dự án tham gia'])).slice(0, 10);
-    return data;
-  }, [engineers]);
+  // 4. BIỂU ĐỒ 4: CƠ CẤU CHI PHÍ
+  const costBreakdownData = useMemo(() => {
+    const totalPurchasing = purchasingPlans.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+    const totalExp = expenses.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+    const totalLab = laborPayrolls.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+
+    return [
+      { name: 'Mua sắm vật tư', value: totalPurchasing, fill: '#0ea5e9' },
+      { name: 'Chi phí khác', value: totalExp, fill: '#f43f5e' },
+      { name: 'Lương nhân công', value: totalLab, fill: '#8b5cf6' }
+    ].filter(d => d.value > 0);
+  }, [purchasingPlans, expenses, laborPayrolls]);
 
   const ChartBox = ({ title, children, span = 1, onClick }: { title: string, children: React.ReactNode, span?: number, onClick?: () => void }) => (
     <div 
@@ -129,7 +132,7 @@ export const DashboardPage: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 auto-rows-[350px]">
             
-            <ChartBox title="1. TIẾN ĐỘ THI CÔNG (%)" onClick={() => navigate("/projects")}>
+            <ChartBox title="TIẾN ĐỘ THI CÔNG (%)" onClick={() => navigate("/projects")}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={progressData} margin={{ top: 10, right: 40, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
@@ -146,7 +149,7 @@ export const DashboardPage: React.FC = () => {
               </ResponsiveContainer>
             </ChartBox>
 
-            <ChartBox title="2. TỔNG CHI PHÍ THỰC TẾ (VNĐ)" onClick={() => navigate("/cost-plan")}>
+            <ChartBox title="TỔNG CHI PHÍ THỰC TẾ (VNĐ)" onClick={() => navigate("/cost-plan")}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={costData} margin={{ top: 10, right: 90, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
@@ -160,7 +163,7 @@ export const DashboardPage: React.FC = () => {
               </ResponsiveContainer>
             </ChartBox>
 
-            <ChartBox title="3. TỈ LỆ VẬT TƯ VỀ CÔNG TRƯỜNG (%)" onClick={() => navigate("/materials")}>
+            <ChartBox title="TỈ LỆ VẬT TƯ VỀ CÔNG TRƯỜNG (%)" onClick={() => navigate("/materials")}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={materialData} margin={{ top: 10, right: 40, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
@@ -174,17 +177,33 @@ export const DashboardPage: React.FC = () => {
               </ResponsiveContainer>
             </ChartBox>
 
-            <ChartBox title="4. PHÂN BỔ NHÂN SỰ" onClick={() => navigate("/personnel")}>
+            <ChartBox title="CƠ CẤU TỔNG CHI PHÍ TOÀN DỰ ÁN" onClick={() => navigate("/cost-plan")}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={engineerWorkloadData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
-                  <YAxis type="number" tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={10} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                  <Bar dataKey="Dự án quản lý" stackId="a" fill="#0284c7" barSize={25} radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="Dự án tham gia" stackId="a" fill="#38bdf8" barSize={25} radius={[4, 4, 0, 0]} />
-                </BarChart>
+                {costBreakdownData.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-slate-400">Chưa có dữ liệu chi phí</div>
+                ) : (
+                  <PieChart>
+                    <Pie
+                      data={costBreakdownData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={110}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {costBreakdownData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(val: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)} 
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }} iconType="circle" />
+                  </PieChart>
+                )}
               </ResponsiveContainer>
             </ChartBox>
 
