@@ -164,9 +164,9 @@ const splitTableLine = (line: string) => {
   return line.split(/\s{2,}|\s*[|;]\s*/).map(cleanCSVArtifacts).filter(Boolean);
 };
 
-const getTableColumnIndex = (header: string[], candidates: string[], fallback: number) => {
+const getTableColumnIndex = (header: string[], candidates: string[], fallback: number, startIndex: number = 0) => {
   const normalized = Array.from(header || []).map(normalizeLookupText);
-  const found = normalized.findIndex((cell) => candidates.some((candidate) => cell.includes(candidate)));
+  const found = normalized.findIndex((cell, index) => index >= startIndex && candidates.some((candidate) => cell.includes(candidate)));
   return found >= 0 ? found : fallback;
 };
 
@@ -235,9 +235,9 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
   const unitCol = getTableColumnIndex(header, ['don vi tinh', 'don vi', 'dvt'], 3);
   const unitPriceCol = getTableColumnIndex(header, ['don gia'], 4);
   const preTaxCol = getTableColumnIndex(header, ['thanh tien truoc thue', 'thanh tien'], unitPriceCol + 1);
-  const vatRateCol = getTableColumnIndex(header, ['thue vat', 'vat'], preTaxCol + 1);
+  const vatRateCol = getTableColumnIndex(header, ['thue vat', 'vat'], preTaxCol + 1, preTaxCol + 1);
   const vatAmountCol = vatRateCol + 1;
-  const totalCol = getTableColumnIndex(header, ['tong tien', 'thanh tien sau thue'], vatAmountCol + 1);
+  const totalCol = getTableColumnIndex(header, ['tong tien', 'thanh tien sau thue'], vatAmountCol + 1, vatAmountCol + 1);
   const notesCol = getTableColumnIndex(header, ['ghi chu'], -1);
   const supplyCol = getTableColumnIndex(header, ['nguon cung cap', 'ben cung cap', 'don vi cung cap', 'cung cap', 'phan cung cap', 'nha thau', 'chu dau tu'], -1);
   const modelCol = getTableColumnIndex(header, ['ma hieu', 'model', 'ky ma hieu'], -1);
@@ -593,9 +593,9 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
     const unitCol = getTableColumnIndex(header, ['don vi tinh', 'don vi', 'dvt'], 3);
     const unitPriceCol = getTableColumnIndex(header, ['don gia'], 4);
     const preTaxCol = getTableColumnIndex(header, ['thanh tien truoc thue', 'thanh tien'], unitPriceCol + 1);
-    const vatRateCol = getTableColumnIndex(header, ['thue vat', 'vat'], preTaxCol + 1);
+    const vatRateCol = getTableColumnIndex(header, ['thue vat', 'vat'], preTaxCol + 1, preTaxCol + 1);
     const vatAmountCol = vatRateCol + 1;
-    const totalCol = getTableColumnIndex(header, ['tong tien', 'thanh tien sau thue'], vatAmountCol + 1);
+    const totalCol = getTableColumnIndex(header, ['tong tien', 'thanh tien sau thue'], vatAmountCol + 1, vatAmountCol + 1);
     const notesCol = getTableColumnIndex(header, ['ghi chu'], -1);
     const supplyCol = getTableColumnIndex(header, ['nguon cung cap', 'ben cung cap', 'don vi cung cap', 'cung cap', 'phan cung cap', 'nha thau', 'chu dau tu'], -1);
     const modelCol = getTableColumnIndex(header, ['ma hieu', 'model', 'ky ma hieu'], -1);
