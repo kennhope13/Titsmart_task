@@ -377,18 +377,7 @@ export const DocumentTrackingPage: React.FC = () => {
             <span className="material-symbols-outlined text-[14px]">add</span>
             Thêm hồ sơ mới
           </button>
-          {hasPermission(user, 'VIEW_PROJECT_DIAGRAM') && (
-            <button 
-              onClick={() => {
-                 setDiagramUploadUrl(projects.find(p => p.id === projectId || p.code === projectId)?.diagramUrl ? [projects.find(p => p.id === projectId || p.code === projectId)!.diagramUrl!] : []);
-                 setIsDiagramModalOpen(true);
-              }}
-              className="flex items-center gap-1.5 border border-indigo-200 bg-indigo-50 text-indigo-700 h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-indigo-100 transition-colors shadow-sm"
-            >
-              <span className="material-symbols-outlined text-[14px]">account_tree</span>
-              Sơ đồ dự án
-            </button>
-          )}
+          
         </div>
       , portalNode)}
 
@@ -808,42 +797,7 @@ deleteDocumentTrack(track.id);
         </Modal>
       )}
     </div>
-      <Modal isOpen={isDiagramModalOpen} onClose={() => setIsDiagramModalOpen(false)} title="Sơ đồ dự án">
-        <div className="p-4 flex flex-col gap-4">
-          {diagramUploadUrl[0] && (
-            <div className="border rounded-lg overflow-hidden bg-slate-100 flex justify-center items-center p-2 relative group">
-              <a href={diagramUploadUrl[0]} target="_blank" rel="noreferrer" className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-md shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-              </a>
-              {diagramUploadUrl[0].toLowerCase().includes('.pdf') ? (
-                <iframe src={diagramUploadUrl[0]} className="w-full h-[60vh]" title="Sơ đồ dự án" />
-              ) : (
-                <img src={diagramUploadUrl[0]} alt="Sơ đồ dự án" className="max-w-full max-h-[60vh] object-contain" />
-              )}
-            </div>
-          )}
-          
-          {hasPermission(user, 'MANAGE_DOCUMENTS') && (
-            <div className="mt-2 border-t pt-4">
-              <FileUpload 
-                label={diagramUploadUrl[0] ? "Cập nhật Sơ đồ mới (Ảnh hoặc PDF)" : "Tải lên Sơ đồ dự án (Ảnh hoặc PDF)"} 
-                value={diagramUploadUrl} 
-                onChange={async (urls) => {
-                  const newUrlArray = Array.isArray(urls) ? urls : [urls];
-                  const newUrl = newUrlArray[0] || '';
-                  setDiagramUploadUrl(newUrl ? [newUrl] : []);
-                  
-                  const proj = projects.find(p => p.id === projectId || p.code === projectId);
-                  if (proj && newUrl !== proj.diagramUrl) {
-                    await updateProject(proj.id, { diagramUrl: newUrl });
-                    triggerToast('Đã lưu sơ đồ dự án!', 'success');
-                  }
-                }} 
-              />
-            </div>
-          )}
-        </div>
-      </Modal>
+      
     </>
   );
 };

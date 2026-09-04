@@ -41,12 +41,14 @@ export const ProjectDetailPage: React.FC = () => {
       { label: 'Tiến độ Công việc', path: `/projects/${project.id}/tasks`, icon: 'fact_check' },
       { label: 'Vật tư & Chi phí', path: `/projects/${project.id}/cost-plan`, icon: 'account_balance_wallet' },
       { label: 'Hồ sơ', path: `/projects/${project.id}/documents`, icon: 'file_present', requireAdmin: true },
+      { label: 'Sơ đồ dự án', path: `/projects/${project.id}/diagram`, icon: 'account_tree', reqPerm: 'VIEW_PROJECT_DIAGRAM' },
       { label: 'Kho Dự án', path: `/projects/${project.id}/inventory`, icon: 'inventory_2' },
       { label: 'Nhật ký Hiện trường', path: `/projects/${project.id}/field-logs`, icon: 'add_a_photo' }
     ];
 
     const tabs = baseTabs.filter(tab => {
       if (tab.requireAdmin && !hasPermission(user, 'VIEW_DOCUMENTS')) return false;
+      if (tab.reqPerm && !hasPermission(user, tab.reqPerm as any)) return false;
       return true;
     });
 
