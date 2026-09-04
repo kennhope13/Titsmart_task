@@ -44,6 +44,9 @@ export const ProjectOverviewTab: React.FC = () => {
   const projLogs = fieldLogs ? fieldLogs.filter(l => l.projectCode === project.code) : [];
   const totalLogs = projLogs.length;
 
+  // --- 6. NHÂN SỰ ---
+  const assignedEngineers = engineers.filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(project.code));
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
   };
@@ -59,8 +62,8 @@ export const ProjectOverviewTab: React.FC = () => {
   return (
     <div className="p-6 space-y-6 overflow-y-auto bg-slate-50 flex-1">
       
-      {/* 5 SUMMARY CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* 6 SUMMARY CARDS */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         
         {/* 1. Tiến độ */}
         <div onClick={() => navigate(`/projects/${project.id}/tasks`)} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-pointer hover:shadow-md transition-shadow group">
@@ -154,6 +157,25 @@ export const ProjectOverviewTab: React.FC = () => {
               <div className="bg-purple-500 h-1.5 rounded-full w-full opacity-30"></div>
             </div>
             <p className="text-[11px] text-slate-400 font-medium">nhật ký</p>
+          </div>
+        </div>
+
+        {/* 6. Nhân sự tham gia */}
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-default hover:shadow-md transition-shadow group">
+          <div className="flex justify-between items-start">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-indigo-600 transition-colors">Nhân sự tham gia</p>
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500 shrink-0 group-hover:bg-indigo-100 transition-colors">
+              <span className="material-symbols-outlined text-lg">groups</span>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-[26px] leading-tight font-black text-slate-800">{assignedEngineers.length}</h3>
+          </div>
+          <div className="mt-2">
+            <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
+              <div className="bg-indigo-500 h-1.5 rounded-full w-full opacity-30"></div>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium">người</p>
           </div>
         </div>
       </div>
