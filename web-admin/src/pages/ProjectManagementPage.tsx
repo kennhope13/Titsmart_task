@@ -611,7 +611,7 @@ export const ProjectManagementPage: React.FC = () => {
       }
 
       logActivity(`Cập nhật thông tin dự án: ${editProjName.trim()}`, editProjName.trim());
-      triggerToast('Cập nhật dự án thành công', 'success');
+      triggerToast(`Đã cập nhật dự án \"${projectToEdit.name}\" thành công!`, 'success');
       setProjectToEdit(null);
     } catch (error) {
       console.error(error);

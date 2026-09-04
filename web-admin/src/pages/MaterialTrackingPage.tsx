@@ -442,7 +442,7 @@ export const MaterialTrackingPage: React.FC = () => {
     };
     await addInventoryTransaction(importTx);
     logActivity('Chuyển kho', targetProjectName);
-    triggerToast('Chuyển kho thành công!', 'success');
+    triggerToast(`Đã chuyển \"${transferMaterial.name}\" thành công!`, 'success');
     setIsTransferModalOpen(false);
     } catch (error: any) {
       triggerToast(error.message || 'Lỗi khi chuyển kho!', 'warning');
@@ -599,7 +599,7 @@ export const MaterialTrackingPage: React.FC = () => {
       unitPrice: editUnitPrice,
     });
     setEditingMaterial(null);
-      triggerToast('Cập nhật vật tư thành công!', 'success');
+      triggerToast(`Đã cập nhật \"${editingMaterial.name}\" thành công!`, 'success');
     } catch (error: any) {
       triggerToast(error.message || 'Lỗi khi cập nhật!', 'warning');
     } finally {
@@ -737,7 +737,7 @@ export const MaterialTrackingPage: React.FC = () => {
     setSupplier('');
     setPurchaseStatus('Chưa đặt hàng');
     setConstrStatus('Chưa thi công');
-      triggerToast('Đã thêm vật tư mới thành công!', 'success');
+      triggerToast(`Đã thêm vật tư \"${matName}\" thành công!`, 'success');
     } catch (error: any) {
       triggerToast(error.message || 'Lỗi khi thêm vật tư!', 'warning');
     } finally {
@@ -789,7 +789,7 @@ export const MaterialTrackingPage: React.FC = () => {
         supplier: material.supplier || '',
         } as any);
         setIsTransactionModalOpen(false);
-        triggerToast(`Thêm nhật ký ${transactionType === 'IMPORT' ? 'Nhập' : 'Xuất'} thành công!`, 'success');
+        triggerToast(`Thêm nhật ký ${transactionType === 'IMPORT' ? 'Nhập' : 'Xuất'} cho \"${material.name}\" thành công!`, 'success');
       } catch (error: any) {
         triggerToast(error.message || 'Lỗi khi thêm nhật ký!', 'warning');
       } finally {

@@ -403,7 +403,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         if (matchingTask) deleteTask(matchingTask.id);
       }
       deleteMaterialPlan(id);
-      triggerToast('Đã xóa Kế hoạch vật tư thành công!', 'success');
+      triggerToast(`Đã xóa \"${deleteConfirm?.itemName || 'hạng mục'}\" thành công!`, 'success');
     } else if (type === 'purchasing') {
       const pPlan = purchasingPlans.find(p => p.id === id);
       if (pPlan) {
@@ -426,13 +426,13 @@ export const ProjectCostPlanPage: React.FC = () => {
         }
       }
       deletePurchasingPlan(id);
-      triggerToast('Đã xóa Mua sắm hàng hóa thành công!', 'success');
+      triggerToast(`Đã xóa \"${deleteConfirm?.itemName || 'mục'}\" thành công!`, 'success');
     } else if (type === 'expense') {
       deleteExpense(id);
-      triggerToast('Đã xóa Chi phí dự án thành công!', 'success');
+      triggerToast(`Đã xóa \"${deleteConfirm?.itemName || 'mục'}\" thành công!`, 'success');
     } else if (type === 'labor') {
       deleteLaborPayroll(id);
-      triggerToast('Đã xóa Lương công nhật thành công!', 'success');
+      triggerToast(`Đã xóa \"${deleteConfirm?.itemName || 'nhân công'}\" thành công!`, 'success');
     }
     setDeleteConfirm(null);
   };

@@ -576,7 +576,7 @@ deleteDocumentTrack(track.id);
               fileUrls: newDoc.fileUrls || [],
               docType: newDoc.docType || 'Giao'
             });
-            triggerToast('Thêm hồ sơ mới thành công', 'success');
+            triggerToast(`Đã thêm hồ sơ \"${newDoc.contractNo || newDoc.contractName || 'hồ sơ mới'}\" thành công!`, 'success');
             setIsNewDocOpen(false);
             setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: '', fileUrls: [], docType: 'Giao'});
           } catch (err: any) {
@@ -675,7 +675,7 @@ deleteDocumentTrack(track.id);
                 ...editingDoc,
                 prepayAmount: prepayAmt
               });
-              triggerToast('Cập nhật hồ sơ thành công!', 'success');
+              triggerToast(`Đã cập nhật hồ sơ \"${editingDoc.contractNo || editingDoc.contractName || 'hồ sơ'}\" thành công!`, 'success');
               setEditingDoc(null);
             } catch (err: any) {
               triggerToast('Lỗi khi cập nhật hồ sơ: ' + (err.message || 'Xin thử lại'), 'warning');

@@ -545,7 +545,7 @@ const hasSyncedRef = useRef(false);
       // syncTaskStatusToCostPlan(editingTask, editPurchaseStatus, editConstrStatus);
     }
 
-    triggerToast('Đã cập nhật công việc thành công!', 'success');
+    triggerToast(`Đã cập nhật \"${editName}\" thành công!`, 'success');
     setIsEditTaskModalOpen(false);
     setEditingTask(null);
   };
@@ -624,7 +624,7 @@ const hasSyncedRef = useRef(false);
       );
       if (matchingPurchasing) deletePurchasingPlan(matchingPurchasing.id);
     }
-    triggerToast('Đã xóa hạng mục thành công!', 'success');
+    triggerToast(`Đã xóa \"${task.name}\" thành công!`, 'success');
     setDeleteConfirm({ isOpen: false, task: null });
   };
 
@@ -1282,7 +1282,7 @@ const hasSyncedRef = useRef(false);
       return;
     }
 
-    triggerToast('Đã tạo Hạng mục thành công!', 'success');
+    triggerToast(`Đã thêm \"${name}\" thành công!`, 'success');
     setIsNewTaskModalOpen(false);
     setIsSectionHeader(false);
     setSectionSelect('default');
