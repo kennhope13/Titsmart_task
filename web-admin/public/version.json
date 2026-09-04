@@ -1,10 +1,8 @@
 {
-  "version": "1.2.64",
+  "version": "1.2.65",
   "date": "04/09/2026",
   "notes": [
-    "Cập nhật toàn diện giao diện Tổng quan Dự án (Dashboard riêng cho từng dự án).",
-    "Ra mắt bộ 6 thẻ lối tắt thống kê nhanh: Tiến độ, Chi phí, Hồ sơ, Vật tư, Nhân sự, Nhật ký.",
-    "Bổ sung Biểu đồ Chi phí trực quan và Dòng thời gian Nhật ký hiện trường mới nhất.",
-    "Khắc phục sự cố không hiển thị biểu tượng loading (spinner) trên phần mềm máy tính (Electron)."
+    "Tối ưu hóa hệ thống thông báo: Hiển thị đích danh tên hạng mục, vật tư, hoặc hồ sơ vừa được Thêm/Sửa/Xóa thành công.",
+    "Nâng cấp độ tin cậy của Kho Vật tư: Tự động phát hiện và cảnh báo tức thì khi người dùng nhập trùng Mã vật tư đã tồn tại."
   ]
 }
