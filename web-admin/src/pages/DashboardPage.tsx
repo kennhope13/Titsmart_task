@@ -101,10 +101,10 @@ export const DashboardPage: React.FC = () => {
       onClick={onClick}
     >
       <div className={`h-1 w-full ${onClick ? 'bg-slate-100 group-hover:bg-blue-400' : 'bg-slate-100'} transition-colors`} />
-      <div className="bg-white border-b border-slate-100 px-4 py-3 flex justify-between items-center">
+      <div className="bg-white border-b border-slate-100 px-3 py-2 flex justify-between items-center">
         <span className={`text-sm font-extrabold text-slate-800 truncate ${onClick ? 'group-hover:text-primary transition-colors' : ''}`}>{title}</span>
       </div>
-      <div className="flex-1 min-h-0 relative p-3 pb-4 pr-4">
+      <div className="flex-1 min-h-0 relative p-2">
         {children}
       </div>
     </div>
@@ -118,7 +118,7 @@ export const DashboardPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+      <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4">
         
         {enhancedProjects.length === 0 ? (
            <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl">
@@ -126,7 +126,7 @@ export const DashboardPage: React.FC = () => {
              <h3 className="mt-3 font-bold text-slate-700">Chưa có dự án nào</h3>
            </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-[350px]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 auto-rows-[350px]">
             
             <ChartBox title="1. TIẾN ĐỘ THI CÔNG (%)" onClick={() => navigate("/projects")}>
               <ResponsiveContainer width="100%" height="100%">
