@@ -353,7 +353,10 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!transferMaterial || !transferTargetProject || transferQuantity <= 0) return;
+    if (!transferMaterial || !transferTargetProject || transferQuantity <= 0 || loading) return;
+    setLoading(true);
+    setLoadingMessage('Đang xử lý...');
+    try {
     
     const targetProjectObj = projects.find(p => p.code === transferTargetProject);
     const targetProjectName = targetProjectObj ? targetProjectObj.name : 'Kho Tổng';
@@ -438,6 +441,10 @@ export const MaterialTrackingPage: React.FC = () => {
     logActivity('Chuyển kho', targetProjectName);
     triggerToast('Chuyển kho thành công!', 'success');
     setIsTransferModalOpen(false);
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+    }
   };
 
   
@@ -563,16 +570,19 @@ export const MaterialTrackingPage: React.FC = () => {
     setEditUnitPrice(material.unitPrice || 0);
   };
 
-  const handleSaveMaterial = (event: React.FormEvent) => {
+  const handleSaveMaterial = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!editingMaterial) return;
+    if (!editingMaterial || loading) return;
+    setLoading(true);
+    setLoadingMessage('Đang xử lý...');
+    try {
 
     // Recalculate current stock based on new initial stock and transactions
     const totalImp = editingMaterial.totalImport || 0;
     const totalExp = editingMaterial.totalExport || 0;
     const currentStock = editInitialStock + totalImp - totalExp;
 
-    updateMaterial(editingMaterial.id, {
+    await updateMaterial(editingMaterial.id, {
       status: editPurchaseStatus,
       constrStatus: editConstrStatus,
       supplier: editSupplier,
@@ -582,6 +592,10 @@ export const MaterialTrackingPage: React.FC = () => {
       unitPrice: editUnitPrice,
     });
     setEditingMaterial(null);
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+    }
   };
 
   const handleExportExcel = () => {
@@ -640,6 +654,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const handleAddMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (!matName) {
       triggerToast('Vui lòng nhập tên vật tư!', 'warning');
       return;
@@ -680,8 +695,11 @@ export const MaterialTrackingPage: React.FC = () => {
       specs: description.trim(),
     };
     
-    const created = await addMaterial(newMat);
-    if (created && volume > 0) {
+    setLoading(true);
+    setLoadingMessage('Đang xử lý...');
+    try {
+      const created = await addMaterial(newMat);
+      if (created && volume > 0) {
       await addInventoryTransaction({
         materialId: created.id as string,
         materialCode: created.code,
@@ -706,6 +724,10 @@ export const MaterialTrackingPage: React.FC = () => {
     setSupplier('');
     setPurchaseStatus('Chưa đặt hàng');
     setConstrStatus('Chưa thi công');
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+    }
   };
 
   const handleOpenTransaction = (type: 'IMPORT' | 'EXPORT') => {
@@ -724,8 +746,12 @@ export const MaterialTrackingPage: React.FC = () => {
     const material = materials.find(m => m.id === txMaterialId);
     if (!material) return;
 
-    const commitTransaction = () => {
-      addInventoryTransaction({
+    const commitTransaction = async () => {
+      if (loading) return;
+      setLoading(true);
+      setLoadingMessage('Đang xử lý...');
+      try {
+        await addInventoryTransaction({
         type: transactionType,
         date: txDate,
         materialId: material.id,
@@ -743,8 +769,12 @@ export const MaterialTrackingPage: React.FC = () => {
         volume: material.volume || 0,
         unitPrice: material.unitPrice || 0,
         supplier: material.supplier || '',
-      } as any);
-      setIsTransactionModalOpen(false);
+        } as any);
+        setIsTransactionModalOpen(false);
+      } finally {
+        setLoading(false);
+        setLoadingMessage('');
+      }
     };
 
     if (transactionType === 'EXPORT') {
