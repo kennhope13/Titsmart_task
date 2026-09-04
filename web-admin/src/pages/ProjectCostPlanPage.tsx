@@ -591,9 +591,9 @@ export const ProjectCostPlanPage: React.FC = () => {
             }
             return -1;
           };
-          const getColumnIndex = (headerRow: any[], candidates: string[], fallback: number) => {
+          const getColumnIndex = (headerRow: any[], candidates: string[], fallback: number, startIndex: number = 0) => {
             const normalizedHeader = headerRow.map(normalizeImportText);
-            const found = normalizedHeader.findIndex((cell) => candidates.some((candidate) => cell.includes(candidate)));
+            const found = normalizedHeader.findIndex((cell, index) => index >= startIndex && candidates.some((candidate) => cell.includes(candidate)));
             return found >= 0 ? found : fallback;
           };
 
@@ -626,10 +626,10 @@ export const ProjectCostPlanPage: React.FC = () => {
             const modelCol = getColumnIndex(headerRow, ['ma hieu', 'model'], -1);
             const originCol = getColumnIndex(headerRow, ['nguon san xuat', 'xuat xu'], -1);
             const unitPriceCol = getColumnIndex(headerRow, ['don gia'], modelCol >= 0 ? 6 : 4);
-            const preTaxCol = getColumnIndex(headerRow, ['thanh tien'], unitPriceCol + 1);
-            const vatRateCol = getColumnIndex(headerRow, ['thue vat'], preTaxCol + 1);
+            const preTaxCol = getColumnIndex(headerRow, ['thanh tien truoc thue', 'thanh tien'], unitPriceCol + 1);
+            const vatRateCol = getColumnIndex(headerRow, ['thue vat', 'vat'], preTaxCol + 1, preTaxCol + 1);
             const vatAmountCol = vatRateCol + 1;
-            const totalCol = getColumnIndex(headerRow, ['tong tien'], vatAmountCol + 1);
+            const totalCol = getColumnIndex(headerRow, ['tong tien', 'thanh tien sau thue'], vatAmountCol + 1, vatAmountCol + 1);
             const notesCol = getColumnIndex(headerRow, ['ghi chu'], totalCol + 1);
 
             const hasPrices = unitPriceCol !== -1 || totalCol !== -1;
