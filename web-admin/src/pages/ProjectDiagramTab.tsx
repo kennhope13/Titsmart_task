@@ -45,11 +45,11 @@ export const ProjectDiagramTab: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-slate-50 p-6 overflow-y-auto custom-scrollbar">
-      <div className="max-w-5xl mx-auto w-full flex flex-col gap-6">
+      <div className="w-full h-full flex flex-col gap-6">
         
         
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col gap-4 flex-1">
           {(pendingUrl || diagramUrl) ? (
             <div className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50 flex justify-center items-center p-2 relative group min-h-[400px]">
               <a href={pendingUrl || diagramUrl} target="_blank" rel="noreferrer" className="absolute top-4 right-4 bg-white/90 text-slate-700 hover:text-primary hover:bg-white p-2 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all">
