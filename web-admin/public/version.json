@@ -1,7 +1,8 @@
 {
-  "version": "1.2.69",
+  "version": "1.2.70",
   "date": "04/09/2026",
   "notes": [
-    "Cải thiện giao diện nút bộ lọc So sánh dự án tại tab Tổng quan chung: Đồng bộ thiết kế (bo góc, viền) với hệ thống và chuyển vị trí sang sát tiêu đề để dễ thao tác hơn."
+    "Cập nhật form Khởi tạo/Chỉnh sửa dự án: Thay thế ô 'Giá trị hợp đồng' thành 'Hạng mục'.",
+    "Tự động trích xuất thông minh: Hệ thống nay đã có thể tự động bóc tách 'Hạng mục' khi người dùng kéo thả file Phụ lục Excel."
   ]
 }
