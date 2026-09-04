@@ -5,6 +5,7 @@ import { useAuthStore, hasPermission } from '../services/authStore';
 import { FileUpload } from '../components/common/FileUpload';
 import { createPortal } from 'react-dom';
 import { Toast } from '../components/common/Toast';
+import { Modal } from '../components/common/Modal';
 
 export const ProjectDiagramTab: React.FC = () => {
   const { projectId } = useParams();
@@ -26,6 +27,7 @@ export const ProjectDiagramTab: React.FC = () => {
     setPortalNode(document.getElementById('project-header-actions'));
   }, []);
   
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'info' | 'warning' }>({ show: false, message: '', type: 'success' });
 
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -94,7 +96,7 @@ export const ProjectDiagramTab: React.FC = () => {
                 
                 return (
                   <div key={idx} className="border border-slate-200 bg-slate-50 rounded-xl overflow-hidden shadow-sm flex flex-col relative group">
-                    <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm cursor-pointer group-hover:bg-slate-100 transition-colors" onClick={() => window.open(url, '_blank')} title="Nhấn để xem ảnh lớn">
+                    <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm cursor-pointer group-hover:bg-slate-100 transition-colors" onClick={() => setViewerUrl(url)} title="Nhấn để xem ảnh lớn">
                       {isPdf ? (
                         <iframe src={url} className="w-full h-full bg-white rounded" title={`Sơ đồ dự án ${idx + 1}`} />
                       ) : (
@@ -216,6 +218,24 @@ export const ProjectDiagramTab: React.FC = () => {
           )}
 
         </div>
+        
+        {viewerUrl && (
+          <Modal isOpen={true} onClose={() => setViewerUrl(null)} title="Chi tiết sơ đồ" size="xl">
+            <div className="flex flex-col border rounded-lg p-2">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-semibold text-slate-700 truncate w-3/4">Sơ đồ dự án</span>
+                <a href={`${viewerUrl}?download=`} download target="_blank" rel="noreferrer" className="flex items-center gap-1.5 bg-primary text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm">
+                  <span className="material-symbols-outlined text-[14px]">download</span> Tải về
+                </a>
+              </div>
+              {viewerUrl.toLowerCase().includes('.pdf') ? (
+                <iframe src={viewerUrl} className="w-full h-[70vh] bg-slate-100 rounded" title="Sơ đồ dự án" />
+              ) : (
+                <img src={viewerUrl} alt="Sơ đồ dự án" className="w-full object-contain max-h-[70vh] bg-slate-100 rounded" />
+              )}
+            </div>
+          </Modal>
+        )}
         <Toast show={toast.show} message={toast.message} type={toast.type} />
       </div>
     </div>
