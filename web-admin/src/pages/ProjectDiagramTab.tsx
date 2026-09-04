@@ -145,7 +145,7 @@ export const ProjectDiagramTab: React.FC = () => {
           {/* The Upload Modal */}
           {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setIsModalOpen(false); setPendingUrls([]); setResetKey(Date.now()); }} />
               <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
                 
                 {/* Modal Header */}
@@ -154,7 +154,7 @@ export const ProjectDiagramTab: React.FC = () => {
                     <span className="material-symbols-outlined text-base text-primary">add_a_photo</span>
                     Upload sơ đồ dự án
                   </h3>
-                  <button onClick={() => setIsModalOpen(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
+                  <button onClick={() => { setIsModalOpen(false); setPendingUrls([]); setResetKey(Date.now()); }} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
                     <span className="material-symbols-outlined text-lg">close</span>
                   </button>
                 </div>
@@ -187,7 +187,7 @@ export const ProjectDiagramTab: React.FC = () => {
                           buttonIcon="add_photo_alternate"
                           variant="light"
                           multiple={true}
-                          value={[]} 
+                          value={pendingUrls} 
                           onChange={handleUpload} 
                         />
                       </div>
@@ -198,7 +198,7 @@ export const ProjectDiagramTab: React.FC = () => {
                   {/* Modal Footer */}
                   <div className="flex flex-shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
                     <button 
-                      onClick={() => setIsModalOpen(false)} 
+                      onClick={() => { setIsModalOpen(false); setPendingUrls([]); setResetKey(Date.now()); }} 
                       className="rounded-lg border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50 transition shadow-sm"
                     >
                       Hủy
