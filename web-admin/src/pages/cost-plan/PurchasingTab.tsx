@@ -22,7 +22,8 @@ const numberText = (value: unknown) => {
 const percentText = (value: unknown) => {
   const n = Number(value || 0);
   if (!n) return '';
-  return n <= 1 ? `${Math.round(n * 100)}%` : `${n}%`;
+  const val = (n > 0 && n <= 1) ? n * 100 : n;
+  return `${Math.round(val * 100) / 100}%`;
 };
 const isSectionRow = (pur: ProjectPurchasing) => String(pur.notes || '').toLowerCase().includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(pur.stt || '').trim());
 const cleanNotes = (value?: string) => {
@@ -769,7 +770,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'vatRate', pur.vatRate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-normal break-words leading-tight">{percentText(pur.vatRate)}</span>
+                          <span onClick={() => startEditing(pur.id, 'vatRate', pur.vatRate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-nowrap overflow-hidden text-ellipsis leading-tight">{percentText(pur.vatRate)}</span>
                         )}
                       </td>
 
@@ -842,7 +843,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                             className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 focus:outline-primary"
                           />
                         ) : (
-                          <span onClick={() => startEditing(pur.id, 'prepayPercent', pur.prepayPercent)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-normal break-words leading-tight">{percentText(pur.prepayPercent)}</span>
+                          <span onClick={() => startEditing(pur.id, 'prepayPercent', pur.prepayPercent)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-nowrap overflow-hidden text-ellipsis leading-tight">{percentText(pur.prepayPercent)}</span>
                         )}
                       </td>
 

@@ -104,6 +104,13 @@ const showNumber = (value?: number) => {
   return n ? n.toLocaleString('vi-VN') : '';
 };
 
+const showPercent = (value?: number) => {
+  if (value === null || value === undefined) return '-';
+  const n = Number(value);
+  const val = (n > 0 && n <= 1) ? n * 100 : n;
+  return `${Math.round(val * 100) / 100}%`;
+};
+
 const hasDocFiles = (plan: ProjectMaterialPlan, type: 'CO' | 'CQ' | 'PCCC' | 'STAMP'): boolean => {
   if (!plan.issueContent || !plan.issueContent.includes('[DOC-DATA]')) return false;
   try {
@@ -1535,7 +1542,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     className="w-full text-center bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none border-none rounded"
                                   />
                                 ) : (
-                                  <span onClick={() => pRecord && startEditing(plan.id, 'vatRate', pRecord.vatRate, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5" title={showNumber(pRecord?.vatRate)}>{pRecord?.vatRate !== undefined ? `${pRecord.vatRate}%` : '-'}</span>
+                                  <span onClick={() => pRecord && startEditing(plan.id, 'vatRate', pRecord.vatRate, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 whitespace-nowrap overflow-hidden text-ellipsis" title={showNumber(pRecord?.vatRate)}>{showPercent(pRecord?.vatRate)}</span>
                                 )}
                               </td>
                               {/* TIỀN VAT */}
@@ -1559,7 +1566,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     className="w-full text-center bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none border-none rounded"
                                   />
                                 ) : (
-                                  <span onClick={() => pRecord && startEditing(plan.id, 'prepayPercent', pRecord.prepayPercent, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5" title={showNumber(pRecord?.prepayPercent)}>{pRecord?.prepayPercent !== undefined ? `${pRecord.prepayPercent}%` : '-'}</span>
+                                  <span onClick={() => pRecord && startEditing(plan.id, 'prepayPercent', pRecord.prepayPercent, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 whitespace-nowrap overflow-hidden text-ellipsis" title={showNumber(pRecord?.prepayPercent)}>{showPercent(pRecord?.prepayPercent)}</span>
                                 )}
                               </td>
                               {/* THỰC CHI */}
