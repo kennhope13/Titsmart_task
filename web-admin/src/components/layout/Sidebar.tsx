@@ -64,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           { label: 'Vật tư & Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'account_balance_wallet', req: 'VIEW_FINANCE' },
           { label: 'Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'file_present', req: 'VIEW_DOCUMENTS' },
           { label: 'Kho Dự án', path: `/projects/${currentProject.id}/inventory`, icon: 'inventory_2', req: 'VIEW_MATERIALS' },
-          { label: 'Nhật ký Hiện trường', path: `/projects/${currentProject.id}/field-logs`, icon: 'add_a_photo', req: 'VIEW_TASKS' } // Or any specific permission for field logs
+          { label: 'Nhật ký Hiện trường', path: `/projects/${currentProject.id}/field-logs`, icon: 'add_a_photo', req: 'VIEW_FIELD_LOGS' }
         ];
 
       const projectItems = baseProjectItems.filter(item => hasPermission(user, item.req as any));
@@ -91,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       { label: 'Công việc', path: '/my-tasks', icon: 'checklist', req: 'VIEW_TASKS' },
       { label: 'Tổng kho', path: '/materials', icon: 'warehouse', req: 'VIEW_MATERIALS' },
       { label: 'Nhân sự', path: '/personnel', icon: 'groups', req: 'VIEW_USERS' },
-      { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history', req: 'VIEW_USERS' } // Admin/View users
+      { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history', req: 'VIEW_ACTIVITY_LOG' }
     ];
 
     return [{
