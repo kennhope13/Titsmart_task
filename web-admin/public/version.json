@@ -1,11 +1,12 @@
 {
-  "version": "1.2.75",
+  "version": "1.2.76",
   "date": "04/09/2026",
   "notes": [
     "Cải tiến giao diện Danh sách dự án: Hiển thị trực tiếp thông tin 'Hạng mục' trên từng thẻ dự án giúp người dùng dễ dàng theo dõi và bao quát thông tin nhanh chóng."
   ],
-  "releaseDate": "2026-09-04T16:32:22.592Z",
+  "releaseDate": "2026-09-04T16:36:32.826Z",
   "changes": [
-    "Fix lỗi nhận diện import VAT trực tiếp từ màn hình chi phí"
+    "Tích hợp tính năng cải tiến sơ đồ dự án (Project Diagram Improvements)",
+    "Hoàn thiện bản sửa lỗi đọc nhầm VAT khi import từ màn hình chi phí"
   ]
 }
