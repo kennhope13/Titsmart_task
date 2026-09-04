@@ -15,25 +15,28 @@ export const ProjectDiagramTab: React.FC = () => {
 
   // We can just use the project's diagramUrl directly from the store
   const diagramUrl = project?.diagramUrl;
+  const [pendingUrl, setPendingUrl] = useState<string>('');
 
-  const handleUpload = async (urls: string | string[]) => {
-    if (!project) return;
-    
+  const handleUpload = (urls: string | string[]) => {
     const newUrlArray = Array.isArray(urls) ? urls : [urls];
     const newUrl = newUrlArray[0] || '';
-    
-    if (newUrl !== project.diagramUrl) {
-      setIsSaving(true);
-      try {
-        const updated = await updateProject(project.id, { diagramUrl: newUrl });
-        if (!updated) {
-          alert('Không thể lưu sơ đồ! Lỗi Database: Bảng "projects" chưa có cột "diagram_url".\nVui lòng vào Supabase Dashboard thêm cột "diagram_url" (kiểu text) vào bảng "projects".');
-        }
-      } catch (err) {
-        console.error('Failed to save diagram', err);
+    setPendingUrl(newUrl);
+  };
+
+  const handleSave = async () => {
+    if (!project || !pendingUrl || pendingUrl === project.diagramUrl) return;
+    setIsSaving(true);
+    try {
+      const updated = await updateProject(project.id, { diagramUrl: pendingUrl });
+      if (!updated) {
+        alert('Không thể lưu sơ đồ! Lỗi Database: Bảng "projects" chưa có cột "diagram_url".\nVui lòng vào Supabase Dashboard thêm cột "diagram_url" (kiểu text) vào bảng "projects".');
+      } else {
+        setPendingUrl('');
       }
-      setIsSaving(false);
+    } catch (err) {
+      console.error('Failed to save diagram', err);
     }
+    setIsSaving(false);
   };
 
   if (!project) {
@@ -47,15 +50,15 @@ export const ProjectDiagramTab: React.FC = () => {
         
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col gap-4">
-          {diagramUrl ? (
+          {(pendingUrl || diagramUrl) ? (
             <div className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50 flex justify-center items-center p-2 relative group min-h-[400px]">
-              <a href={diagramUrl} target="_blank" rel="noreferrer" className="absolute top-4 right-4 bg-white/90 text-slate-700 hover:text-primary hover:bg-white p-2 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all">
+              <a href={pendingUrl || diagramUrl} target="_blank" rel="noreferrer" className="absolute top-4 right-4 bg-white/90 text-slate-700 hover:text-primary hover:bg-white p-2 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all">
                 <span className="material-symbols-outlined text-[20px]">open_in_new</span>
               </a>
-              {diagramUrl.toLowerCase().includes('.pdf') ? (
-                <iframe src={diagramUrl} className="w-full h-[70vh] bg-white rounded" title="Sơ đồ dự án" />
+              {(pendingUrl || diagramUrl || '').toLowerCase().includes('.pdf') ? (
+                <iframe src={pendingUrl || diagramUrl} className="w-full h-[70vh] bg-white rounded" title="Sơ đồ dự án" />
               ) : (
-                <img src={diagramUrl} alt="Sơ đồ dự án" className="max-w-full max-h-[70vh] object-contain rounded" />
+                <img src={pendingUrl || diagramUrl} alt="Sơ đồ dự án" className="max-w-full max-h-[70vh] object-contain rounded" />
               )}
             </div>
           ) : (
@@ -68,11 +71,25 @@ export const ProjectDiagramTab: React.FC = () => {
           {hasPermission(user, 'MANAGE_DOCUMENTS') && (
             <div className="mt-4 border-t border-slate-100 pt-6">
               <div className="max-w-xl">
-                <FileUpload 
-                  label={diagramUrl ? "Cập nhật Sơ đồ mới (Ảnh hoặc PDF)" : "Tải lên Sơ đồ dự án (Ảnh hoặc PDF)"} 
-                  value={diagramUrl ? [diagramUrl] : []} 
-                  onChange={handleUpload} 
-                />
+                <div className="flex items-end gap-4">
+                  <div className="flex-1">
+                    <FileUpload 
+                      label={(pendingUrl || diagramUrl) ? "Cập nhật Sơ đồ mới (Ảnh hoặc PDF)" : "Tải lên Sơ đồ dự án (Ảnh hoặc PDF)"} 
+                      value={pendingUrl ? [pendingUrl] : diagramUrl ? [diagramUrl] : []} 
+                      onChange={handleUpload} 
+                    />
+                  </div>
+                  {pendingUrl && pendingUrl !== diagramUrl && (
+                    <button 
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="h-10 px-6 bg-primary text-white font-bold text-sm rounded-lg hover:opacity-90 disabled:opacity-50 transition-all shadow-sm shrink-0 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">save</span>
+                      {isSaving ? 'Đang lưu...' : 'Lưu sơ đồ'}
+                    </button>
+                  )}
+                </div>
                 {isSaving && <p className="text-xs text-primary font-medium mt-2 animate-pulse">Đang lưu...</p>}
               </div>
             </div>
