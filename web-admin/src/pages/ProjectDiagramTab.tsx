@@ -41,12 +41,7 @@ export const ProjectDiagramTab: React.FC = () => {
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-slate-50 p-6 overflow-y-auto custom-scrollbar">
       <div className="max-w-5xl mx-auto w-full flex flex-col gap-6">
         
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 uppercase">Sơ đồ dự án</h2>
-            <p className="text-sm text-slate-500 mt-1">Xem hoặc cập nhật sơ đồ hệ thống, mặt bằng của dự án.</p>
-          </div>
-        </div>
+        
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col gap-4">
           {diagramUrl ? (
