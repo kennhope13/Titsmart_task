@@ -74,30 +74,40 @@ export const DashboardPage: React.FC = () => {
       }));
   }, [enhancedProjects]);
 
-  // 4. BIỂU ĐỒ 3: TIẾN ĐỘ VẬT TƯ (Bar Chart)
-  const materialData = useMemo(() => {
-    return enhancedProjects
-      .filter(p => p.status !== 'completed')
-      .sort((a, b) => b.materialProgress - a.materialProgress)
-      .slice(0, 10)
-      .map(p => ({
+  // 3. BIỂU ĐỒ 3: THỐNG KÊ CÔNG VIỆC THEO DỰ ÁN
+  const taskStatData = useMemo(() => {
+    return enhancedProjects.map(p => {
+      const pTasks = tasks.filter(t => t.projectCode === p.code && !t.isSectionHeader);
+      const completed = pTasks.filter(t => t.status === 'Hoàn thành').length;
+      const inProgress = pTasks.filter(t => t.status === 'Đang làm' || t.status === 'Chờ vật tư' || t.status === 'Chờ khách hàng' || t.status === 'Chờ nghiệm thu').length;
+      const notStarted = pTasks.filter(t => !t.status || t.status === 'Chưa làm' || t.status === 'Chờ nhận việc' || t.status === 'Tạm dừng').length;
+      return {
         name: p.name,
-        "Vật tư về bãi (%)": p.materialProgress
-      }));
-  }, [enhancedProjects]);
+        'Hoàn thành': completed,
+        'Đang xử lý': inProgress,
+        'Chưa bắt đầu': notStarted,
+        total: pTasks.length
+      };
+    }).sort((a, b) => b.total - a.total).slice(0, 10);
+  }, [enhancedProjects, tasks]);
 
-  // 4. BIỂU ĐỒ 4: CƠ CẤU CHI PHÍ
-  const costBreakdownData = useMemo(() => {
-    const totalPurchasing = purchasingPlans.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
-    const totalExp = expenses.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
-    const totalLab = laborPayrolls.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
-
-    return [
-      { name: 'Mua sắm vật tư', value: totalPurchasing, fill: '#0ea5e9' },
-      { name: 'Chi phí khác', value: totalExp, fill: '#f43f5e' },
-      { name: 'Lương nhân công', value: totalLab, fill: '#8b5cf6' }
-    ].filter(d => d.value > 0);
-  }, [purchasingPlans, expenses, laborPayrolls]);
+  // 4. BIỂU ĐỒ 4: SỐ LƯỢNG NHÂN SỰ THEO DỰ ÁN
+  const projectPersonnelData = useMemo(() => {
+    return enhancedProjects.map(p => {
+      let count = 0;
+      engineers.forEach(e => {
+        const isManaged = e.managedProjects?.some(mp => mp.code === p.code);
+        const isMember = e.memberProjects?.some(mp => mp.code === p.code);
+        if (isManaged || isMember) {
+          count++;
+        }
+      });
+      return {
+        name: p.name,
+        'Số nhân sự': count
+      };
+    }).sort((a, b) => b['Số nhân sự'] - a['Số nhân sự']).slice(0, 10);
+  }, [enhancedProjects, engineers]);
 
   const ChartBox = ({ title, children, span = 1, onClick }: { title: string, children: React.ReactNode, span?: number, onClick?: () => void }) => (
     <div 
@@ -163,47 +173,32 @@ export const DashboardPage: React.FC = () => {
               </ResponsiveContainer>
             </ChartBox>
 
-            <ChartBox title="TỈ LỆ VẬT TƯ VỀ CÔNG TRƯỜNG (%)" onClick={() => navigate("/materials")}>
+            <ChartBox title="TIẾN ĐỘ CÔNG VIỆC CHI TIẾT (THEO DỰ ÁN)" onClick={() => navigate("/tasks")}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={materialData} margin={{ top: 10, right: 40, left: 0, bottom: 0 }} layout="vertical">
+                <BarChart data={taskStatData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                  <XAxis type="number" domain={[0, 100]} hide />
+                  <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(val: number) => [`${val}%`, 'Đã về']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Bar dataKey="Vật tư về bãi (%)" fill="#14b8a6" radius={[0, 4, 4, 0]} maxBarSize={20}>
-                    <LabelList dataKey="Vật tư về bãi (%)" position="right" formatter={(val: number) => `${val}%`} style={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} />
-                  </Bar>
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={10} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                  <Bar dataKey="Hoàn thành" stackId="a" fill="#10b981" barSize={20} />
+                  <Bar dataKey="Đang xử lý" stackId="a" fill="#3b82f6" barSize={20} />
+                  <Bar dataKey="Chưa bắt đầu" stackId="a" fill="#94a3b8" barSize={20} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartBox>
 
-            <ChartBox title="CƠ CẤU TỔNG CHI PHÍ TOÀN DỰ ÁN" onClick={() => navigate("/cost-plan")}>
+            <ChartBox title="SỐ LƯỢNG NHÂN SỰ ĐƯỢC PHÂN BỔ (THEO DỰ ÁN)" onClick={() => navigate("/personnel")}>
               <ResponsiveContainer width="100%" height="100%">
-                {costBreakdownData.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-slate-400">Chưa có dữ liệu chi phí</div>
-                ) : (
-                  <PieChart>
-                    <Pie
-                      data={costBreakdownData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={70}
-                      outerRadius={110}
-                      paddingAngle={5}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {costBreakdownData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(val: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)} 
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
-                    <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }} iconType="circle" />
-                  </PieChart>
-                )}
+                <BarChart data={projectPersonnelData} margin={{ top: 10, right: 40, left: 0, bottom: 0 }} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="Số nhân sự" fill="#0284c7" radius={[0, 4, 4, 0]} maxBarSize={20}>
+                    <LabelList dataKey="Số nhân sự" position="right" formatter={(val: number) => `${val} người`} style={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} />
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </ChartBox>
 
