@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
@@ -29,6 +29,8 @@ export const ProjectOverviewTab: React.FC = () => {
   const projMaterials = materialPlans.filter(m => m.projectCode === project.code);
   const totalMatEstimate = projMaterials.reduce((sum, m) => sum + (m.contractVolume || 0), 0);
   const totalMatActual = projMaterials.reduce((sum, m) => sum + (m.orderedVolume || 0), 0);
+  const matPercent = totalMatEstimate > 0 ? Math.min(Math.round((totalMatActual / totalMatEstimate) * 100), 100) : 0;
+  
   
   const assignedEngineers = engineers.filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(project.code));
 
@@ -49,50 +51,78 @@ export const ProjectOverviewTab: React.FC = () => {
       {/* SUMMARY CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Progress Card */}
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-[52px] h-[52px] rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
-            <span className="material-symbols-outlined text-2xl">fact_check</span>
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px]">
+          <div className="flex justify-between items-start">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tiến độ công việc</p>
+            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
+              <span className="material-symbols-outlined text-lg">fact_check</span>
+            </div>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tiến độ công việc</p>
             <h3 className="text-[26px] leading-tight font-black text-slate-800">{progressPercent}%</h3>
-            <p className="text-[12px] text-slate-400 font-medium mt-1">{completedTasks} / {totalTasks} công việc</p>
+          </div>
+          <div className="mt-2">
+            <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
+              <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${progressPercent}%` }}></div>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium">{completedTasks} / {totalTasks} công việc</p>
           </div>
         </div>
 
         {/* Budget Card */}
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-[52px] h-[52px] rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-            <span className="material-symbols-outlined text-2xl">account_balance_wallet</span>
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px]">
+          <div className="flex justify-between items-start">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tổng chi phí</p>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500">
+              <span className="material-symbols-outlined text-lg">account_balance_wallet</span>
+            </div>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tổng chi phí</p>
             <h3 className="text-[22px] leading-tight font-black text-slate-800 truncate" title={formatCurrency(totalExpense)}>{formatCurrency(totalExpense)}</h3>
-            <p className="text-[12px] text-slate-400 font-medium mt-1">{budgetPercent}% hợp đồng</p>
+          </div>
+          <div className="mt-2">
+            <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
+              <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${budgetPercent}%` }}></div>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium">{budgetPercent}% hợp đồng</p>
           </div>
         </div>
 
         {/* Materials Card */}
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-[52px] h-[52px] rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
-            <span className="material-symbols-outlined text-2xl">inventory_2</span>
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px]">
+          <div className="flex justify-between items-start">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Vật tư đã xuất</p>
+            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500">
+              <span className="material-symbols-outlined text-lg">inventory_2</span>
+            </div>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Vật tư đã xuất</p>
             <h3 className="text-[22px] leading-tight font-black text-slate-800 truncate" title={totalMatActual.toLocaleString('vi-VN')}>{totalMatActual.toLocaleString('vi-VN')}</h3>
-            <p className="text-[12px] text-slate-400 font-medium mt-1">Dự toán: {totalMatEstimate.toLocaleString('vi-VN')}</p>
+          </div>
+          <div className="mt-2">
+            <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
+              <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${matPercent}%` }}></div>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium">Dự toán: {totalMatEstimate.toLocaleString('vi-VN')}</p>
           </div>
         </div>
 
         {/* Personnel Card */}
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-[52px] h-[52px] rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
-            <span className="material-symbols-outlined text-2xl">groups</span>
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px]">
+          <div className="flex justify-between items-start">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Nhân sự tham gia</p>
+            <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-500">
+              <span className="material-symbols-outlined text-lg">groups</span>
+            </div>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Nhân sự tham gia</p>
             <h3 className="text-[26px] leading-tight font-black text-slate-800">{assignedEngineers.length}</h3>
-            <p className="text-[12px] text-slate-400 font-medium mt-1">người</p>
+          </div>
+          <div className="mt-2">
+            <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
+              <div className="bg-purple-500 h-1.5 rounded-full w-full opacity-30"></div>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium">người</p>
           </div>
         </div>
       </div>
