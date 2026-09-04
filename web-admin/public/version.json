@@ -1,8 +1,8 @@
 {
-  "version": "1.2.67",
+  "version": "1.2.68",
   "date": "04/09/2026",
   "notes": [
-    "Sửa lỗi hiển thị sai số thứ tự đối với các công việc/hạng mục tự do: Hiện tại các mục không có số thứ tự sẽ được giữ nguyên đúng vị trí như trong file phụ lục, không bị đẩy lộn xộn xuống đáy danh sách.",
-    "Cập nhật các thay đổi, sửa lỗi nhỏ về hiển thị kho vật tư theo code đối tác"
+    "Thêm tính năng So sánh dự án tại tab Tổng quan chung: Cho phép tick chọn và lọc song song nhiều dự án trên biểu đồ.",
+    "Bổ sung thanh Tìm kiếm dự án ngay trong menu bộ lọc so sánh để thao tác nhanh chóng hơn."
   ]
 }
