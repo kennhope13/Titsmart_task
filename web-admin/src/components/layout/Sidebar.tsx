@@ -59,6 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
   const getNavGroups = () => {
     if (currentProject) {
       const baseProjectItems = [
+          { label: 'Tổng quan', path: `/projects/${currentProject.id}/overview`, icon: 'dashboard', req: 'VIEW_PROJECTS' },
           { label: 'Tiến độ Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'fact_check', req: 'VIEW_TASKS' },
           { label: 'Vật tư & Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'account_balance_wallet', req: 'VIEW_FINANCE' },
           { label: 'Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'file_present', req: 'VIEW_DOCUMENTS' },
