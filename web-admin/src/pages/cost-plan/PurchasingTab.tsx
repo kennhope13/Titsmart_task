@@ -438,7 +438,6 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.orderVolume}</th>
                 <th style={{ width: 75, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.unitPrice}</th>
                 <th style={{ width: 42, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.vatRate}</th>
-                <th style={{ width: 72, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.vatAmount}</th>
                 <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.total}</th>
                 <th style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.orderStatus}</th>
                 <th style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.contractStatus}</th>
@@ -773,9 +772,6 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                           <span onClick={() => startEditing(pur.id, 'vatRate', pur.vatRate)} className="cursor-pointer hover:bg-slate-100 px-1 py-2 rounded flex items-center min-h-[32px] w-full justify-center whitespace-nowrap overflow-hidden text-ellipsis leading-tight">{percentText(pur.vatRate)}</span>
                         )}
                       </td>
-
-                      {/* TIỀN THUẾ */}
-                      <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono whitespace-normal break-words leading-tight">{money(computedVat(pur))}</td>
 
                       {/* THÀNH TIỀN */}
                       <td className="border-r border-slate-200 px-1.5 py-1 text-center font-mono font-extrabold text-primary whitespace-normal break-words leading-tight">{money(computedTotal(pur))}</td>

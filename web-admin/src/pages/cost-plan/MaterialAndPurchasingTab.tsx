@@ -1084,7 +1084,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐH</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">ĐƠN GIÁ MUA</th>
                   <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">VAT %</th>
-                  <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TIỀN VAT</th>
                   <th rowSpan={2} style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THÀNH TIỀN MUA</th>
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">% TẠM ỨNG</th>
                   <th rowSpan={2} style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THỰC CHI (đ)</th>
@@ -1544,10 +1543,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 ) : (
                                   <span onClick={() => pRecord && startEditing(plan.id, 'vatRate', pRecord.vatRate, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 whitespace-nowrap overflow-hidden text-ellipsis" title={showNumber(pRecord?.vatRate)}>{showPercent(pRecord?.vatRate)}</span>
                                 )}
-                              </td>
-                              {/* TIỀN VAT */}
-                              <td className="p-1.5 align-middle text-right font-mono text-slate-500 border-r border-slate-200 leading-tight">
-                                {showNumber(pRecord?.vatAmount) || '-'}
                               </td>
                               {/* THÀNH TIỀN MUA */}
                               <td className="p-1.5 align-middle text-right font-mono font-bold text-slate-800 border-r border-slate-200 leading-tight">
