@@ -1,4 +1,4 @@
-export type Permission = 
+export type Permission = 'VIEW_PROJECT_DIAGRAM' 
   | 'VIEW_PROJECTS' | 'CREATE_PROJECTS' | 'EDIT_PROJECTS' | 'DELETE_PROJECTS'
   | 'VIEW_TASKS' | 'IMPORT_TASKS' | 'EDIT_TASKS' | 'ASSIGN_TASKS' | 'UPDATE_TASK_PROGRESS' | 'APPROVE_TASKS'
   | 'VIEW_MATERIALS' | 'IMPORT_MATERIALS' | 'EDIT_MATERIALS' | 'UPDATE_MATERIAL_STATUS'
@@ -58,6 +58,7 @@ export interface Task {
 }
 
 export interface Project {
+  diagramUrl?: string;
   id: string;
   code: string;
   name: string;

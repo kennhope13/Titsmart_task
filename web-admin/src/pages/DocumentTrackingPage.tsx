@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { useParams, useOutletContext } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore, hasPermission } from '../services/authStore';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { DocumentTrack } from '../types';
@@ -11,14 +12,7 @@ import { CustomSelect } from '@/components/common/CustomSelect';
 import { FileUpload } from '../components/common/FileUpload';
 
 export const DocumentTrackingPage: React.FC = () => {
-  const {
-    documentTracks,
-    projects,
-    addDocumentTrack,
-    updateDocumentTrack,
-    deleteDocumentTrack,
-    logActivity
-  } = useRealtimeStore();
+  const { documentTracks, projects, updateProject, addDocumentTrack, updateDocumentTrack, deleteDocumentTrack, logActivity } = useRealtimeStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -187,6 +181,7 @@ export const DocumentTrackingPage: React.FC = () => {
   };
 
   const { projectId } = useParams();
+  const { user } = useAuthStore();
 
   const resolvedProjectCode = useMemo(() => {
     if (!projectId) return '';
@@ -195,6 +190,8 @@ export const DocumentTrackingPage: React.FC = () => {
   }, [projectId, projects]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDiagramModalOpen, setIsDiagramModalOpen] = useState(false);
+  const [diagramUploadUrl, setDiagramUploadUrl] = useState<string[]>([]);
 
   // Filters state
   const [filterProjectCode, setFilterProjectCode] = useState('all');
