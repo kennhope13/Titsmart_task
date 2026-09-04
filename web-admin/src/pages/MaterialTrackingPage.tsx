@@ -676,13 +676,19 @@ export const MaterialTrackingPage: React.FC = () => {
     const maxStt = materials.reduce((max, m) => Math.max(max, m.stt || 0), 0);
     const nextStt = maxStt + 1;
 
-    let finalCode = newMatCode;
-    if (!finalCode) {
+        let finalCode = newMatCode.trim();
+    const usedCodes = new Set(materials.map(m => (m.code || '').toLowerCase()));
+    if (finalCode) {
+      if (usedCodes.has(finalCode.toLowerCase())) {
+        triggerToast('Mã vật tư này đã tồn tại trong kho!', 'warning');
+        isSubmittingRef.current = false;
+        return;
+      }
+    } else {
       let suffixNum = 0;
       let codeBase = description ? `${matName}-${description}` : matName;
       finalCode = generateMaterialCode(codeBase);
-      const usedCodes = new Set(materials.map(m => m.code));
-      while (usedCodes.has(finalCode)) {
+      while (usedCodes.has(finalCode.toLowerCase())) {
         suffixNum++;
         finalCode = generateMaterialCode(codeBase, String(suffixNum));
       }
