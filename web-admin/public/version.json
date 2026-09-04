@@ -1,8 +1,7 @@
 {
-  "version": "1.2.70",
+  "version": "1.2.71",
   "date": "04/09/2026",
   "notes": [
-    "Cập nhật form Khởi tạo/Chỉnh sửa dự án: Thay thế ô 'Giá trị hợp đồng' thành 'Hạng mục'.",
-    "Tự động trích xuất thông minh: Hệ thống nay đã có thể tự động bóc tách 'Hạng mục' khi người dùng kéo thả file Phụ lục Excel."
+    "Cải tiến giao diện Danh sách dự án: Hiển thị trực tiếp thông tin 'Hạng mục' trên từng thẻ dự án giúp người dùng dễ dàng theo dõi và bao quát thông tin nhanh chóng."
   ]
 }
