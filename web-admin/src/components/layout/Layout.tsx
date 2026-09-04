@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { useUIStore } from '../../services/uiStore';
 import { BackToTop } from '../common/BackToTop';
 import { NotificationBell } from '../common/NotificationBell';
+import { RealtimeClock } from '../common/RealtimeClock';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,6 +24,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Sidebar isExpanded={isSidebarExpanded} toggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)} />
       
       <div className={`${isSidebarExpanded ? 'ml-[170px]' : 'ml-[56px]'} flex flex-col h-screen flex-1 overflow-hidden transition-all duration-300 ease-in-out relative`}>
+        <div className="absolute top-[6px] right-14 z-[60]">
+          <RealtimeClock />
+        </div>
         <NotificationBell />
         <main className="flex-1 bg-slate-50 flex flex-col w-full max-w-full overflow-hidden page-has-floating-bell">{children}</main>
       </div>
