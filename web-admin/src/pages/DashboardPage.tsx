@@ -149,25 +149,24 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-slate-50 overflow-hidden text-slate-800">
-      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm pl-3 pr-14 py-2 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 flex-wrap relative">
-        <div className="flex items-center gap-4 flex-1">
-          <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter']">TỔNG QUAN CHUNG</h1>
-        </div>
-        
-        <div className="flex-1 flex justify-center md:absolute md:left-1/2 md:-translate-x-1/2 w-full md:w-auto" ref={filterRef}>
-          <button 
-            onClick={() => setIsFilterOpen(!isFilterOpen)} 
-            className="flex items-center justify-between w-full md:w-72 px-4 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-          >
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px] text-slate-400">filter_list</span>
-              <span>{selectedProjects.length === 0 ? 'So sánh tất cả dự án' : `Đang so sánh ${selectedProjects.length} dự án`}</span>
-            </div>
-            <span className="material-symbols-outlined text-[20px] text-slate-400">{isFilterOpen ? 'expand_less' : 'expand_more'}</span>
-          </button>
+      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm pl-3 pr-14 py-2 md:h-12 flex flex-col md:flex-row justify-start items-start md:items-center gap-4 shrink-0 flex-wrap relative">
+        <div className="flex items-center gap-6">
+          <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter'] whitespace-nowrap">TỔNG QUAN CHUNG</h1>
           
-          {isFilterOpen && (
-            <div className="absolute top-full mt-2 w-full md:w-80 bg-white border border-slate-200 shadow-xl rounded-lg z-50 overflow-hidden flex flex-col left-0 md:left-1/2 md:-translate-x-1/2">
+          <div className="relative" ref={filterRef}>
+            <button 
+              onClick={() => setIsFilterOpen(!isFilterOpen)} 
+              className="flex items-center justify-between w-64 md:w-72 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            >
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px] text-slate-400">filter_list</span>
+                <span>{selectedProjects.length === 0 ? 'So sánh tất cả dự án' : `Đang so sánh ${selectedProjects.length} dự án`}</span>
+              </div>
+              <span className="material-symbols-outlined text-[20px] text-slate-400">{isFilterOpen ? 'expand_less' : 'expand_more'}</span>
+            </button>
+            
+            {isFilterOpen && (
+              <div className="absolute top-full left-0 mt-2 w-72 md:w-80 bg-white border border-slate-200 shadow-xl rounded-lg z-50 overflow-hidden flex flex-col">
               <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <span className="font-bold text-sm text-slate-700">Chọn dự án so sánh</span>
                 <button 
@@ -220,6 +219,7 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
         </div>
       </section>
 
