@@ -133,7 +133,7 @@ export const ProjectManagementPage: React.FC = () => {
   const [newProjCode, setNewProjCode] = useState('');
   const [newProjLocation, setNewProjLocation] = useState('');
   const [newProjClient, setNewProjClient] = useState('');
-  const [newProjContractValue, setNewProjContractValue] = useState('');
+  const [newProjCategory, setNewProjCategory] = useState('');
   const [selectedEngineerIds, setSelectedEngineerIds] = useState<string[]>([]);
   const [pendingProjectTasks, setPendingProjectTasks] = useState<NonNullable<WebOcrExtractedData['tableTasks']>>([]);
   const [loading, setLoading] = useState(false);
@@ -267,12 +267,12 @@ export const ProjectManagementPage: React.FC = () => {
     }
     const location = data.location || getImportedFieldValue(data, ['dia diem cong trinh', 'dia diem xay dung', 'dia diem', 'vi tri', 'dia chi']);
     const client = getImportedFieldValue(data, ['chu dau tu', 'khach hang', 'ben giao thau']);
-    const contractValue = getImportedFieldValue(data, ['gia tri hop dong', 'gia tri phu luc', 'tong gia tri']);
+    const category = getImportedFieldValue(data, ['hang muc', 'hạng mục', 'loai cong trinh', 'phan loai']);
     setNewProjName(projectName);
     setNewProjCode(slugProjectCode(projectName));
     setNewProjLocation(location);
     setNewProjClient(client);
-    setNewProjContractValue(contractValue.replace(/[^0-9]/g, ''));
+    setNewProjCategory(category);
     setPendingProjectTasks(data.tableTasks || []);
     setIsNewProjectModalOpen(true);
     triggerToast(data.tableTasks?.length ? `${TEXT.importedToForm} (${data.tableTasks.length} \u0111\u1ea7u m\u1ee5c)` : TEXT.importedToForm, 'info');
@@ -295,7 +295,7 @@ export const ProjectManagementPage: React.FC = () => {
       name: newProjName.trim(),
       client: newProjClient.trim() || undefined,
       location: newProjLocation.trim(),
-      contractValue: Number(newProjContractValue) || undefined,
+      notes: newProjCategory.trim() || undefined,
       progressPercent: 0,
       status: 'active',
       activeTeams: 0,
@@ -529,7 +529,7 @@ export const ProjectManagementPage: React.FC = () => {
     setNewProjCode('');
     setNewProjLocation('');
     setNewProjClient('');
-    setNewProjContractValue('');
+    setNewProjCategory('');
     setSelectedEngineerIds([]);
     setPendingProjectTasks([]);
     } finally {
@@ -540,7 +540,7 @@ export const ProjectManagementPage: React.FC = () => {
   const [editProjName, setEditProjName] = useState('');
   const [editProjLocation, setEditProjLocation] = useState('');
   const [editProjClient, setEditProjClient] = useState('');
-  const [editProjContractValue, setEditProjContractValue] = useState('');
+  const [editProjCategory, setEditProjCategory] = useState('');
   const [editSelectedEngineerIds, setEditSelectedEngineerIds] = useState<string[]>([]);
 
   const toggleEditEngineerId = (id: string) => {
@@ -552,7 +552,7 @@ export const ProjectManagementPage: React.FC = () => {
     setEditProjName(project.name);
     setEditProjLocation(project.location || '');
     setEditProjClient(project.client || '');
-    setEditProjContractValue(project.contractValue ? String(project.contractValue) : '');
+    setEditProjCategory(project.notes || '');
 
     // Resolve engineers from the engineers array since database doesn't store project.members
     const assignedEngineers = engineers
@@ -578,7 +578,7 @@ export const ProjectManagementPage: React.FC = () => {
         name: editProjName.trim(),
         location: editProjLocation.trim(),
         client: editProjClient.trim() || undefined,
-        contractValue: Number(editProjContractValue) || undefined,
+        notes: editProjCategory.trim() || undefined,
         managerId: editSelectedEngineerIds[0],
         managerName: managerName,
         members: editSelectedEngineerIds,
@@ -866,8 +866,8 @@ export const ProjectManagementPage: React.FC = () => {
               <input value={editProjClient} onChange={(e) => setEditProjClient(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" />
             </div>
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Giá trị hợp đồng</label>
-              <input value={editProjContractValue} onChange={(e) => setEditProjContractValue(e.target.value)} inputMode="numeric" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" />
+              <label className="block font-bold text-slate-700 mb-1">Hạng mục</label>
+              <input value={editProjCategory} onChange={(e) => setEditProjCategory(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" />
             </div>
           </div>
           <div>
@@ -904,7 +904,7 @@ export const ProjectManagementPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label className="block font-bold text-slate-700 mb-1">Chủ đầu tư</label><input value={newProjClient} onChange={(event) => setNewProjClient(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div>
-            <div><label className="block font-bold text-slate-700 mb-1">Giá trị hợp đồng</label><input value={newProjContractValue} onChange={(event) => setNewProjContractValue(event.target.value)} inputMode="numeric" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div>
+            <div><label className="block font-bold text-slate-700 mb-1">Hạng mục</label><input value={newProjCategory} onChange={(event) => setNewProjCategory(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div>
           </div>
           <div>
             <label className="block font-bold text-slate-700 mb-1">Nhân sự</label>

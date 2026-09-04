@@ -64,7 +64,8 @@ export interface Project {
   name: string;
   client?: string; // Chủ đầu tư
   location: string;
-  contractValue?: number; // Giá trị
+  contractValue?: number;
+  notes?: string;
   progressPercent: number;
   status: 'active' | 'completed' | 'on_hold';
   activeTeams?: number;
