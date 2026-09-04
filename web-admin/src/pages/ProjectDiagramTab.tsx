@@ -94,7 +94,7 @@ export const ProjectDiagramTab: React.FC = () => {
                 
                 return (
                   <div key={idx} className="border border-slate-200 bg-slate-50 rounded-xl overflow-hidden shadow-sm flex flex-col relative group">
-                    <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm">
+                    <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm cursor-pointer group-hover:bg-slate-100 transition-colors" onClick={() => window.open(url, '_blank')} title="Nhấn để xem ảnh lớn">
                       {isPdf ? (
                         <iframe src={url} className="w-full h-full bg-white rounded" title={`Sơ đồ dự án ${idx + 1}`} />
                       ) : (
@@ -103,16 +103,14 @@ export const ProjectDiagramTab: React.FC = () => {
                     </div>
                     
                     <div className="p-3 border-t border-slate-200/60 bg-white flex items-center justify-between">
-                      <span className="text-xs font-medium text-slate-600 truncate mr-2" title={url}>
-                        `Sơ đồ ${idx + 1}`
-                      </span>
+                      <span className="text-sm font-bold text-slate-700 truncate mr-2" title={url}>{`Sơ đồ ${idx + 1}`}</span>
                       
                       <div className="flex items-center gap-1 shrink-0">
-                        <a href={url} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-primary p-1.5 rounded-md hover:bg-slate-100 transition-colors" title="Mở thẻ mới">
+                        <a href={url} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-primary p-2 rounded-lg hover:bg-slate-200 transition-colors" title="Mở thẻ mới">
                           <span className="material-symbols-outlined text-[18px] block">open_in_new</span>
                         </a>
                         {hasPermission(user, 'MANAGE_DOCUMENTS') && (
-                          <button onClick={() => handleDelete(idx)} className="text-rose-400 hover:text-rose-600 p-1.5 rounded-md hover:bg-rose-50 transition-colors" title="Xóa sơ đồ">
+                          <button onClick={() => handleDelete(idx)} className="text-slate-400 hover:text-rose-500 p-2 rounded-lg hover:bg-rose-50 transition-colors" title="Xóa sơ đồ">
                             <span className="material-symbols-outlined text-[18px] block">delete</span>
                           </button>
                         )}
