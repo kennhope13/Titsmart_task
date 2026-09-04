@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../services/authStore';
 import { FileUpload } from '../components/common/FileUpload';
+import { createPortal } from 'react-dom';
+import { useEffect } from 'react';
 import { Toast } from '../components/common/Toast';
 
 export const ProjectDiagramTab: React.FC = () => {
@@ -18,6 +20,11 @@ export const ProjectDiagramTab: React.FC = () => {
   
   const [pendingUrls, setPendingUrls] = useState<string[]>([]);
   const [resetKey, setResetKey] = useState<number>(Date.now());
+  const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalNode(document.getElementById('project-header-actions'));
+  }, []);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'info' | 'warning' }>({ show: false, message: '', type: 'success' });
 
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
