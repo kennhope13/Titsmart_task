@@ -94,20 +94,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
       
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <input 
-            type="file" 
-            accept="*/*"
-            multiple={multiple}
-            onChange={handleUpload}
-            disabled={isUploading}
-            className="block w-full text-sm text-slate-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-lg file:border-0
-              file:text-sm file:font-semibold
-              file:bg-primary/10 file:text-primary
-              hover:file:bg-primary/20
-              disabled:opacity-50 cursor-pointer"
-          />
+          <label className={`cursor-pointer relative overflow-hidden inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary font-semibold text-sm rounded-lg hover:bg-primary/20 transition-colors ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <span className="material-symbols-outlined text-[18px]">upload</span>
+            Tải lên tệp
+            <input 
+              type="file" 
+              accept="*/*"
+              multiple={multiple}
+              onChange={handleUpload}
+              disabled={isUploading}
+              className="absolute inset-0 w-[200%] h-[200%] -top-[50%] -left-[50%] opacity-0 cursor-pointer"
+            />
+          </label>
         </div>
         
         {localValues.length > 0 && (
