@@ -18,6 +18,20 @@ export const DashboardPage: React.FC = () => {
     documentTracks
   } = useRealtimeStore();
 
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // 1. CHUẨN BỊ DỮ LIỆU TỔNG HỢP CỦA TẤT CẢ DỰ ÁN
   const enhancedProjects = useMemo(() => {
     return projects.map((project) => {
@@ -52,9 +66,14 @@ export const DashboardPage: React.FC = () => {
     });
   }, [projects, tasks, materialPlans, purchasingPlans, expenses, laborPayrolls]);
 
+  const displayEnhancedProjects = useMemo(() => {
+    if (selectedProjects.length === 0) return enhancedProjects;
+    return enhancedProjects.filter(p => selectedProjects.includes(p.code));
+  }, [enhancedProjects, selectedProjects]);
+
   // 2. BIỂU ĐỒ 1: TIẾN ĐỘ DỰ ÁN (Bar Chart)
   const progressData = useMemo(() => {
-    return enhancedProjects
+    return displayEnhancedProjects
       .filter(p => p.status !== 'completed' && p.status !== 'on_hold')
       .sort((a, b) => b.progress - a.progress)
       .slice(0, 10)
@@ -62,11 +81,11 @@ export const DashboardPage: React.FC = () => {
         name: p.name,
         "Tiến độ (%)": p.progress
       }));
-  }, [enhancedProjects]);
+  }, [displayEnhancedProjects]);
 
   // 3. BIỂU ĐỒ 2: CHI PHÍ DỰ ÁN (Bar Chart)
   const costData = useMemo(() => {
-    return enhancedProjects
+    return displayEnhancedProjects
       .filter(p => p.status !== 'completed')
       .sort((a, b) => b.totalCost - a.totalCost)
       .slice(0, 10)
@@ -74,11 +93,11 @@ export const DashboardPage: React.FC = () => {
         name: p.name,
         "Tổng chi (VNĐ)": p.totalCost
       }));
-  }, [enhancedProjects]);
+  }, [displayEnhancedProjects]);
 
   // 3. BIỂU ĐỒ 3: TIẾN ĐỘ THANH TOÁN / GIẢI NGÂN
   const paymentData = useMemo(() => {
-    return enhancedProjects.map(p => {
+    return displayEnhancedProjects.map(p => {
       // Dùng dữ liệu từ Hồ sơ thanh toán (documentTracks)
       const pDocs = documentTracks.filter(d => d.projectCode === p.code);
       const totalContract = pDocs.reduce((sum, d) => sum + (d.contractValue || 0), 0) || (p.contractValue || 0);
@@ -93,11 +112,11 @@ export const DashboardPage: React.FC = () => {
         total: totalContract
       };
     }).filter(d => d.total > 0).sort((a, b) => b.total - a.total).slice(0, 10);
-  }, [enhancedProjects, documentTracks]);
+  }, [displayEnhancedProjects, documentTracks]);
 
   // 4. BIỂU ĐỒ 4: TÌNH TRẠNG SỰ CỐ / VƯỚNG MẮC
   const issueData = useMemo(() => {
-    return enhancedProjects.map(p => {
+    return displayEnhancedProjects.map(p => {
       const pIssues = issues.filter(i => i.projectCode === p.code);
       const open = pIssues.filter(i => i.status === 'OPEN').length;
       const processing = pIssues.filter(i => i.status === 'PROCESSING').length;
@@ -110,7 +129,7 @@ export const DashboardPage: React.FC = () => {
         total: pIssues.length
       };
     }).sort((a, b) => b.total - a.total).slice(0, 10);
-  }, [enhancedProjects, issues]);
+  }, [displayEnhancedProjects, issues]);
 
   const ChartBox = ({ title, children, span = 1, onClick }: { title: string, children: React.ReactNode, span?: number, onClick?: () => void }) => (
     <div 
@@ -133,11 +152,60 @@ export const DashboardPage: React.FC = () => {
         <div className="flex items-center gap-4">
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2">TỔNG QUAN CHUNG</h1>
         </div>
+        <div className="flex items-center gap-2 relative" ref={filterRef}>
+          <button 
+            onClick={() => setIsFilterOpen(!isFilterOpen)} 
+            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-sm font-medium hover:bg-slate-50 focus:outline-none"
+          >
+            <span className="material-symbols-outlined text-[18px] text-slate-500">filter_list</span>
+            {selectedProjects.length === 0 ? 'So sánh tất cả dự án' : `Đang so sánh ${selectedProjects.length} dự án`}
+            <span className="material-symbols-outlined text-[18px] text-slate-500">{isFilterOpen ? 'expand_less' : 'expand_more'}</span>
+          </button>
+          
+          {isFilterOpen && (
+            <div className="absolute top-full right-0 mt-2 w-72 bg-white border border-slate-200 shadow-xl rounded-lg z-50 overflow-hidden flex flex-col">
+              <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <span className="font-bold text-sm text-slate-700">Chọn dự án so sánh</span>
+                <button 
+                  onClick={() => setSelectedProjects([])}
+                  className="text-xs text-primary hover:underline font-medium"
+                >
+                  Bỏ chọn tất cả
+                </button>
+              </div>
+              <div className="max-h-64 overflow-y-auto p-2">
+                {projects.length === 0 ? (
+                  <div className="p-4 text-center text-slate-400 text-sm">Chưa có dự án nào</div>
+                ) : (
+                  projects.map(proj => (
+                    <label key={proj.code} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
+                        checked={selectedProjects.includes(proj.code)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedProjects([...selectedProjects, proj.code]);
+                          } else {
+                            setSelectedProjects(selectedProjects.filter(c => c !== proj.code));
+                          }
+                        }}
+                      />
+                      <span className="text-sm text-slate-700 group-hover:text-slate-900 truncate" title={proj.name}>
+                        {proj.name}
+                      </span>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4">
         
-        {enhancedProjects.length === 0 ? (
+        {displayEnhancedProjects.length === 0 ? (
            <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl">
              <span className="material-symbols-outlined text-5xl text-slate-300">folder_open</span>
              <h3 className="mt-3 font-bold text-slate-700">Chưa có dự án nào</h3>
