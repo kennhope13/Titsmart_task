@@ -142,39 +142,30 @@ export const ProjectDiagramTab: React.FC = () => {
             </div>
           )}
 
-          {hasPermission(user, 'MANAGE_DOCUMENTS') && (
-            <div className="mt-auto border-t border-slate-100 pt-6">
-              <div className="max-w-2xl bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-[20px]">upload_file</span>
-                  Thêm sơ đồ mới
-                </h3>
-                <div className="flex items-end gap-4">
-                  <div className="flex-1">
-                    <FileUpload 
-                      key={resetKey}
-                      label=""
-                      buttonText="Upload ảnh"
-                      buttonIcon="add_a_photo"
-                      variant="solid"
-                      multiple={true}
-                      value={[]} 
-                      onChange={handleUpload} 
-                    />
-                  </div>
-                  {pendingUrls.length > 0 && (
-                    <button 
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="h-10 px-6 bg-primary text-white font-bold text-sm rounded-lg hover:opacity-90 disabled:opacity-50 transition-all shadow-sm shrink-0 flex items-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">save</span>
-                      {isSaving ? 'Đang lưu...' : `Lưu ${pendingUrls.length} sơ đồ`}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
+          {hasPermission(user, 'MANAGE_DOCUMENTS') && portalNode && createPortal(
+            <div className="flex items-center gap-2">
+              <FileUpload 
+                key={resetKey}
+                label=""
+                buttonText="Upload ảnh"
+                buttonIcon="add_a_photo"
+                variant="solid"
+                multiple={true}
+                value={[]} 
+                onChange={handleUpload} 
+              />
+              {pendingUrls.length > 0 && (
+                <button 
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="h-[36px] px-4 bg-emerald-600 text-white font-bold text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">save</span>
+                  {isSaving ? 'Đang lưu...' : `Lưu ${pendingUrls.length} sơ đồ`}
+                </button>
+              )}
+            </div>,
+            portalNode
           )}
         </div>
         <Toast show={toast.show} message={toast.message} type={toast.type} />
