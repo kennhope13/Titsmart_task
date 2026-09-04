@@ -343,18 +343,6 @@ export const DocumentTrackingPage: React.FC = () => {
               <span className="material-symbols-outlined text-sm">add</span>
               Thêm hồ sơ mới
             </button>
-          {hasPermission(user, 'VIEW_PROJECT_DIAGRAM') && (
-            <button 
-              onClick={() => {
-                 setDiagramUploadUrl(projects.find(p => p.id === projectId || p.code === projectId)?.diagramUrl ? [projects.find(p => p.id === projectId || p.code === projectId)!.diagramUrl!] : []);
-                 setIsDiagramModalOpen(true);
-              }}
-              className="flex items-center gap-1.5 border border-indigo-200 bg-indigo-50 text-indigo-700 h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-indigo-100 transition-colors shadow-sm"
-            >
-              <span className="material-symbols-outlined text-[14px]">account_tree</span>
-              Sơ đồ dự án
-            </button>
-          )}
           </div>
         </section>
       )}
@@ -389,6 +377,18 @@ export const DocumentTrackingPage: React.FC = () => {
             <span className="material-symbols-outlined text-[14px]">add</span>
             Thêm hồ sơ mới
           </button>
+          {hasPermission(user, 'VIEW_PROJECT_DIAGRAM') && (
+            <button 
+              onClick={() => {
+                 setDiagramUploadUrl(projects.find(p => p.id === projectId || p.code === projectId)?.diagramUrl ? [projects.find(p => p.id === projectId || p.code === projectId)!.diagramUrl!] : []);
+                 setIsDiagramModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 border border-indigo-200 bg-indigo-50 text-indigo-700 h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-indigo-100 transition-colors shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[14px]">account_tree</span>
+              Sơ đồ dự án
+            </button>
+          )}
         </div>
       , portalNode)}
 
