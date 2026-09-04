@@ -1392,82 +1392,74 @@ const displayTasks = tasks.filter((t) => {
   };
 
   const groupedTasks = React.useMemo(() => {
-    const groups: { [key: string]: Task[] } = {};
-    const order: string[] = [];
-    displayTasks.forEach((t) => {
-      const sec = t.sectionName || 'Không có hạng mục';
-      if (!groups[sec]) {
-        groups[sec] = [];
-        order.push(sec);
-      }
-      groups[sec].push(t);
-    });
-
-    order.sort((a, b) => {
-      if (a === 'Không có hạng mục') return 1;
-      if (b === 'Không có hạng mục') return -1;
-      const leftHeader = groups[a].find((task) => task.isSectionHeader) || groups[a][0];
-      const rightHeader = groups[b].find((task) => task.isSectionHeader) || groups[b][0];
-      return compareTaskStt(leftHeader?.stt, rightHeader?.stt);
-    });
-
     const flattened: any[] = [];
-    order.forEach((sec, groupIndex) => {
-      const sectionHeader = groups[sec].find(t => t.isSectionHeader);
-      const items = groups[sec].filter(t => !t.isSectionHeader);
-      
-      const resolveParentId = (item: any) => {
-          if (item.stt && item.stt.includes('.')) {
-            const parts = item.stt.split('.');
-            parts.pop();
-            const parentStt = parts.join('.');
-            const parentItem = items.find((r: any) => r.stt === parentStt);
-            if (parentItem) return parentItem.id;
-          }
-          return item.parentId;
-        };
+    const map = new Map<string, any>();
+    const roots: any[] = [];
 
-        const map = new Map<string, any>();
-        const roots: any[] = [];
-        items.forEach(t => map.set(t.id, { ...t, children: [] }));
-        items.forEach(t => {
-          const resolvedParentId = resolveParentId(t);
-          if (resolvedParentId && map.has(resolvedParentId)) {
-            map.get(resolvedParentId)!.children.push(map.get(t.id));
-          } else {
-            roots.push(map.get(t.id));
-          }
-        });
-      
-      const flattenTree = (nodes: any[], depth: number = 0, prefix: string = '', sectionKey: string = '') => {
-        nodes.sort((a, b) => {
-          const sttCompare = compareTaskStt(a.stt, b.stt);
-          if (sttCompare !== 0) return sttCompare;
-          return a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' });
-        });
-        nodes.forEach((node, idx) => {
-          const currentNum = (idx + 1).toString();
-          const computedStt = node.stt || (depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum));
-          flattened.push({ ...node, depth, computedStt, _sectionKey: sectionKey });
-          flattenTree(node.children, depth + 1, computedStt, sectionKey);
-        });
-      };
-      
-      if (sectionHeader) {
-        flattened.push({ ...sectionHeader, depth: 0, computedStt: sectionHeader.stt || '', _sectionKey: sec });
-      } else if (sec === 'Không có hạng mục') {
-        flattened.push({ 
-          id: 'dummy-no-section', 
-          name: '[Không có hạng mục]', 
-          isSectionHeader: true, 
-          depth: 0, 
-          computedStt: '', 
-          _sectionKey: sec,
-          projectCode: items[0]?.projectCode || ''
-        });
+    // Initialize map with all displayTasks
+    displayTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
+
+    // Resolve parent globally for all tasks
+    const resolveParentId = (item: any) => {
+      // Dựa vào STT để tìm cha (VD: 1.1 -> cha là 1)
+      if (item.stt && item.stt.includes('.')) {
+        const parts = item.stt.split('.');
+        parts.pop();
+        const parentStt = parts.join('.');
+        const parentItem = displayTasks.find((r) => r.stt === parentStt);
+        if (parentItem && map.has(parentItem.id)) return parentItem.id;
       }
-      flattenTree(roots, sectionHeader || sec === 'Không có hạng mục' ? 1 : 0, '', sec);
+      return item.parentId;
+    };
+
+    displayTasks.forEach((t) => {
+      // Mặc định các isSectionHeader sẽ luôn là root nodes vì file excel thường coi hạng mục lớn là cao nhất.
+      if (t.isSectionHeader) {
+        roots.push(map.get(t.id));
+      } else {
+        const resolvedParentId = resolveParentId(t);
+        if (resolvedParentId && map.has(resolvedParentId)) {
+          map.get(resolvedParentId)!.children.push(map.get(t.id));
+        } else {
+          roots.push(map.get(t.id));
+        }
+      }
     });
+
+    let currentSectionKey = '';
+    const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '') => {
+      // Sort theo STT
+      nodes.sort((a, b) => {
+        const sttCompare = compareTaskStt(a.stt, b.stt);
+        if (sttCompare !== 0) return sttCompare;
+        return a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' });
+      });
+
+      nodes.forEach((node, idx) => {
+        if (node.isSectionHeader) {
+          currentSectionKey = node.sectionName || node.name || '';
+        }
+
+        let displayDepth = currentDepth;
+        if (currentDepth === 0 && !node.isSectionHeader && currentSectionKey !== '') {
+          displayDepth = 1; // Indent if under a section header
+        }
+
+        const currentNum = (idx + 1).toString();
+        const computedStt = node.stt || (displayDepth === 1 ? currentNum : (displayDepth > 1 ? `${prefix}.${currentNum}` : currentNum));
+
+        flattened.push({ 
+          ...node, 
+          depth: displayDepth, 
+          computedStt, 
+          _sectionKey: currentSectionKey || 'Khác' 
+        });
+
+        flattenTree(node.children, displayDepth + 1, computedStt);
+      });
+    };
+
+    flattenTree(roots, 0, '');
     return flattened;
   }, [displayTasks]);
 
