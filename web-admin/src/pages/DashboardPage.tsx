@@ -56,7 +56,7 @@ export const DashboardPage: React.FC = () => {
       .sort((a, b) => b.progress - a.progress)
       .slice(0, 10)
       .map(p => ({
-        name: p.name.length > 25 ? p.name.substring(0, 25) + '...' : p.name,
+        name: p.name,
         "Tiến độ (%)": p.progress
       }));
   }, [enhancedProjects]);
@@ -68,7 +68,7 @@ export const DashboardPage: React.FC = () => {
       .sort((a, b) => b.totalCost - a.totalCost)
       .slice(0, 10)
       .map(p => ({
-        name: p.name.length > 25 ? p.name.substring(0, 25) + '...' : p.name,
+        name: p.name,
         "Tổng chi (VNĐ)": p.totalCost
       }));
   }, [enhancedProjects]);
@@ -80,7 +80,7 @@ export const DashboardPage: React.FC = () => {
       .sort((a, b) => b.materialProgress - a.materialProgress)
       .slice(0, 10)
       .map(p => ({
-        name: p.name.length > 25 ? p.name.substring(0, 25) + '...' : p.name,
+        name: p.name,
         "Vật tư về bãi (%)": p.materialProgress
       }));
   }, [enhancedProjects]);
@@ -88,7 +88,7 @@ export const DashboardPage: React.FC = () => {
   // 5. BIỂU ĐỒ 4: TẢI NHÂN SỰ
   const engineerWorkloadData = useMemo(() => {
     const data = engineers.map(e => ({
-       name: e.name.split(' ').pop() || e.name, 
+       name: e.name, 
        'Dự án quản lý': (e.managedProjects || []).length,
        'Dự án tham gia': (e.memberProjects || []).length
     })).sort((a,b) => (b['Dự án quản lý'] + b['Dự án tham gia']) - (a['Dự án quản lý'] + a['Dự án tham gia'])).slice(0, 10);
@@ -120,25 +120,20 @@ export const DashboardPage: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
         
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-slate-800">So sánh các Dự án đang triển khai</h2>
-          <p className="text-sm text-slate-500">Dữ liệu được tổng hợp tự động theo thời gian thực từ các bảng biểu thành phần</p>
-        </div>
-
         {enhancedProjects.length === 0 ? (
            <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl">
              <span className="material-symbols-outlined text-5xl text-slate-300">folder_open</span>
              <h3 className="mt-3 font-bold text-slate-700">Chưa có dự án nào</h3>
            </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-[300px]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-[350px]">
             
             <ChartBox title="1. TIẾN ĐỘ THI CÔNG (%)" onClick={() => navigate("/projects")}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={progressData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} layout="vertical">
+                <BarChart data={progressData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                   <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#475569' }} hide />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={130} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
                   <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(val: number) => [`${val}%`, 'Tiến độ']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                   <Bar dataKey="Tiến độ (%)" radius={[0, 4, 4, 0]} maxBarSize={20}>
                     {progressData.map((entry, index) => (
@@ -151,10 +146,10 @@ export const DashboardPage: React.FC = () => {
 
             <ChartBox title="2. TỔNG CHI PHÍ THỰC TẾ (VNĐ)" onClick={() => navigate("/cost-plan")}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={costData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} layout="vertical">
+                <BarChart data={costData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                   <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={130} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
                   <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(val: number) => [new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val), 'Tổng chi']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                   <Bar dataKey="Tổng chi (VNĐ)" fill="#f43f5e" radius={[0, 4, 4, 0]} maxBarSize={20} />
                 </BarChart>
@@ -163,10 +158,10 @@ export const DashboardPage: React.FC = () => {
 
             <ChartBox title="3. TỈ LỆ VẬT TƯ VỀ CÔNG TRƯỜNG (%)" onClick={() => navigate("/materials")}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={materialData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} layout="vertical">
+                <BarChart data={materialData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                   <XAxis type="number" domain={[0, 100]} hide />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={130} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
                   <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(val: number) => [`${val}%`, 'Đã về']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                   <Bar dataKey="Vật tư về bãi (%)" fill="#14b8a6" radius={[0, 4, 4, 0]} maxBarSize={20} />
                 </BarChart>
