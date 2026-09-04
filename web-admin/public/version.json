@@ -1,9 +1,10 @@
-﻿{
-  "version": "1.2.63",
-  "date": "03/09/2026",
+{
+  "version": "1.2.64",
+  "date": "04/09/2026",
   "notes": [
-    "Tối ưu lại hệ thống phân quyền: Chức danh/Vai trò giờ có thể tự nhập tay thay vì chọn cứng trong danh sách.",
-    "Bảo mật quyền linh hoạt: Chức năng (Giao việc, Nghiệm thu, Xem nhân sự...) giờ phụ thuộc 100% vào các ô chức năng đã tích cho nhân viên đó.",
-    "Khắc phục lỗi 'Lỗi lưu vật tư: [object Object]' và hoàn thiện hệ thống thông báo lỗi chi tiết từ máy chủ."
+    "Cập nhật toàn diện giao diện Tổng quan Dự án (Dashboard riêng cho từng dự án).",
+    "Ra mắt bộ 6 thẻ lối tắt thống kê nhanh: Tiến độ, Chi phí, Hồ sơ, Vật tư, Nhân sự, Nhật ký.",
+    "Bổ sung Biểu đồ Chi phí trực quan và Dòng thời gian Nhật ký hiện trường mới nhất.",
+    "Khắc phục sự cố không hiển thị biểu tượng loading (spinner) trên phần mềm máy tính (Electron)."
   ]
 }
