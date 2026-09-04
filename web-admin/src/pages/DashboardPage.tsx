@@ -14,7 +14,8 @@ export const DashboardPage: React.FC = () => {
     purchasingPlans, 
     expenses, 
     laborPayrolls,
-    issues
+    issues,
+    documentTracks
   } = useRealtimeStore();
 
   // 1. CHUẨN BỊ DỮ LIỆU TỔNG HỢP CỦA TẤT CẢ DỰ ÁN
@@ -75,24 +76,24 @@ export const DashboardPage: React.FC = () => {
       }));
   }, [enhancedProjects]);
 
-  // 3. BIỂU ĐỒ 3: CHI TIẾT TRẠNG THÁI CÔNG VIỆC (Điểm nghẽn)
-  const taskStatusData = useMemo(() => {
+  // 3. BIỂU ĐỒ 3: TIẾN ĐỘ THANH TOÁN / GIẢI NGÂN
+  const paymentData = useMemo(() => {
     return enhancedProjects.map(p => {
-      const pTasks = tasks.filter(t => t.projectCode === p.code && !t.isSectionHeader);
-      const waitingMaterial = pTasks.filter(t => t.status === 'Chờ vật tư').length;
-      const waitingAcceptance = pTasks.filter(t => t.status === 'Chờ nghiệm thu' || t.status === 'Chờ khách hàng').length;
-      const inProgress = pTasks.filter(t => t.status === 'Đang làm').length;
-      const notStarted = pTasks.filter(t => t.status === 'Chưa làm' || t.status === 'Chờ nhận việc').length;
+      // Dùng dữ liệu từ Hồ sơ thanh toán (documentTracks)
+      const pDocs = documentTracks.filter(d => d.projectCode === p.code);
+      const totalContract = pDocs.reduce((sum, d) => sum + (d.contractValue || 0), 0) || (p.contractValue || 0);
+      const totalPaid = pDocs.reduce((sum, d) => sum + (d.prepayAmount || 0), 0);
+      
+      // Hoặc nếu người dùng muốn tính Dòng tiền = Tổng Hợp đồng (Project) - Tổng chi phí thực tế
+      // Nhưng theo mô tả: "So sánh [Tổng giá trị Hợp đồng] với [Số tiền đã nhận/thanh toán]"
       return {
         name: p.name,
-        'Chờ vật tư': waitingMaterial,
-        'Chờ nghiệm thu': waitingAcceptance,
-        'Đang làm': inProgress,
-        'Chưa làm': notStarted,
-        total: pTasks.length
+        'Tổng Hợp đồng': totalContract,
+        'Đã giải ngân': totalPaid,
+        total: totalContract
       };
-    }).sort((a, b) => b.total - a.total).slice(0, 10);
-  }, [enhancedProjects, tasks]);
+    }).filter(d => d.total > 0).sort((a, b) => b.total - a.total).slice(0, 10);
+  }, [enhancedProjects, documentTracks]);
 
   // 4. BIỂU ĐỒ 4: TÌNH TRẠNG SỰ CỐ / VƯỚNG MẮC
   const issueData = useMemo(() => {
@@ -175,19 +176,23 @@ export const DashboardPage: React.FC = () => {
               </ResponsiveContainer>
             </ChartBox>
 
-            <ChartBox title="CHI TIẾT TRẠNG THÁI CÔNG VIỆC (ĐIỂM NGHẼN)" onClick={() => navigate("/tasks")}>
+            <ChartBox title="TIẾN ĐỘ THANH TOÁN / GIẢI NGÂN (VNĐ)" onClick={() => navigate("/documents")}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={taskStatusData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                  <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={10} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                  <Bar dataKey="Chờ vật tư" stackId="a" fill="#ef4444" barSize={20} />
-                  <Bar dataKey="Chờ nghiệm thu" stackId="a" fill="#f59e0b" barSize={20} />
-                  <Bar dataKey="Đang làm" stackId="a" fill="#3b82f6" barSize={20} />
-                  <Bar dataKey="Chưa làm" stackId="a" fill="#94a3b8" barSize={20} radius={[0, 4, 4, 0]} />
-                </BarChart>
+                {paymentData.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-slate-400">Không có dữ liệu hợp đồng</div>
+                ) : (
+                  <BarChart data={paymentData} margin={{ top: 10, right: 90, left: 0, bottom: 0 }} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(val: number) => [new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)]} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={10} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                    <Bar dataKey="Tổng Hợp đồng" fill="#94a3b8" barSize={12} radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="Đã giải ngân" fill="#10b981" barSize={12} radius={[0, 4, 4, 0]}>
+                      <LabelList dataKey="Đã giải ngân" position="right" formatter={(val: number) => new Intl.NumberFormat('vi-VN').format(val) + ' ₫'} style={{ fontSize: 11, fill: '#10b981', fontWeight: 600 }} />
+                    </Bar>
+                  </BarChart>
+                )}
               </ResponsiveContainer>
             </ChartBox>
 
