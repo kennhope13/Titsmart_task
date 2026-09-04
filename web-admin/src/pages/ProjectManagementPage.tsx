@@ -767,6 +767,13 @@ export const ProjectManagementPage: React.FC = () => {
                       </p>
                     )}
 
+                    {project.notes && (
+                      <p className="text-[11px] text-slate-500 truncate mt-[-4px]" title={project.notes}>
+                        <span className="font-semibold text-slate-400">Hạng mục: </span>
+                        {project.notes}
+                      </p>
+                    )}
+
                     {/* Nhân sự dự án */}
                     <div className="mt-1.5 pt-1.5 border-t border-slate-100/50">
                       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5">
