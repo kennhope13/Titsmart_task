@@ -75,19 +75,26 @@ export const DashboardPage: React.FC = () => {
       }));
   }, [enhancedProjects]);
 
-  // 3. BIỂU ĐỒ 3: TIẾN ĐỘ VẬT TƯ (TỈ LỆ VỀ CÔNG TRƯỜNG)
-  const materialData = useMemo(() => {
-    return enhancedProjects
-      .filter(p => p.status !== 'completed' && p.status !== 'on_hold')
-      .sort((a, b) => b.materialProgress - a.materialProgress)
-      .slice(0, 10)
-      .map(p => ({
+  // 3. BIỂU ĐỒ 3: CHI TIẾT TRẠNG THÁI CÔNG VIỆC (Điểm nghẽn)
+  const taskStatusData = useMemo(() => {
+    return enhancedProjects.map(p => {
+      const pTasks = tasks.filter(t => t.projectCode === p.code && !t.isSectionHeader);
+      const waitingMaterial = pTasks.filter(t => t.status === 'Chờ vật tư').length;
+      const waitingAcceptance = pTasks.filter(t => t.status === 'Chờ nghiệm thu' || t.status === 'Chờ khách hàng').length;
+      const inProgress = pTasks.filter(t => t.status === 'Đang làm').length;
+      const notStarted = pTasks.filter(t => t.status === 'Chưa làm' || t.status === 'Chờ nhận việc').length;
+      return {
         name: p.name,
-        "Vật tư về bãi (%)": p.materialProgress
-      }));
-  }, [enhancedProjects]);
+        'Chờ vật tư': waitingMaterial,
+        'Chờ nghiệm thu': waitingAcceptance,
+        'Đang làm': inProgress,
+        'Chưa làm': notStarted,
+        total: pTasks.length
+      };
+    }).sort((a, b) => b.total - a.total).slice(0, 10);
+  }, [enhancedProjects, tasks]);
 
-  // 4. BIỂU ĐỒ 4: TÌNH TRẠNG VƯỚNG MẮC / SỰ CỐ
+  // 4. BIỂU ĐỒ 4: TÌNH TRẠNG SỰ CỐ / VƯỚNG MẮC
   const issueData = useMemo(() => {
     return enhancedProjects.map(p => {
       const pIssues = issues.filter(i => i.projectCode === p.code);
@@ -168,16 +175,18 @@ export const DashboardPage: React.FC = () => {
               </ResponsiveContainer>
             </ChartBox>
 
-            <ChartBox title="TỈ LỆ VẬT TƯ VỀ CÔNG TRƯỜNG (%)" onClick={() => navigate("/materials")}>
+            <ChartBox title="CHI TIẾT TRẠNG THÁI CÔNG VIỆC (ĐIỂM NGHẼN)" onClick={() => navigate("/tasks")}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={materialData} margin={{ top: 10, right: 40, left: 0, bottom: 0 }} layout="vertical">
+                <BarChart data={taskStatusData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                  <XAxis type="number" domain={[0, 100]} hide />
+                  <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(val: number) => [`${val}%`, 'Đã về']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Bar dataKey="Vật tư về bãi (%)" fill="#14b8a6" radius={[0, 4, 4, 0]} maxBarSize={20}>
-                    <LabelList dataKey="Vật tư về bãi (%)" position="right" formatter={(val: number) => `${val}%`} style={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} />
-                  </Bar>
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={10} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                  <Bar dataKey="Chờ vật tư" stackId="a" fill="#ef4444" barSize={20} />
+                  <Bar dataKey="Chờ nghiệm thu" stackId="a" fill="#f59e0b" barSize={20} />
+                  <Bar dataKey="Đang làm" stackId="a" fill="#3b82f6" barSize={20} />
+                  <Bar dataKey="Chưa làm" stackId="a" fill="#94a3b8" barSize={20} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartBox>
