@@ -16,6 +16,13 @@ export const ProjectDiagramTab: React.FC = () => {
   // We can just use the project's diagramUrl directly from the store
   const diagramUrl = project?.diagramUrl;
   const [pendingUrl, setPendingUrl] = useState<string>('');
+  const [resetKey, setResetKey] = useState<number>(Date.now());
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'info' | 'warning' }>({ show: false, message: '', type: 'success' });
+
+  const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
+  };
 
   const handleUpload = (urls: string | string[]) => {
     const newUrlArray = Array.isArray(urls) ? urls : [urls];
@@ -32,6 +39,8 @@ export const ProjectDiagramTab: React.FC = () => {
         alert('Không thể lưu sơ đồ! Lỗi Database: Bảng "projects" chưa có cột "diagram_url".\nVui lòng vào Supabase Dashboard thêm cột "diagram_url" (kiểu text) vào bảng "projects".');
       } else {
         setPendingUrl('');
+        setResetKey(Date.now());
+        triggerToast('Lưu sơ đồ dự án thành công!', 'success');
       }
     } catch (err) {
       console.error('Failed to save diagram', err);
@@ -74,8 +83,9 @@ export const ProjectDiagramTab: React.FC = () => {
                 <div className="flex items-end gap-4">
                   <div className="flex-1">
                     <FileUpload 
-                      label={(pendingUrl || diagramUrl) ? "Cập nhật Sơ đồ mới (Ảnh hoặc PDF)" : "Tải lên Sơ đồ dự án (Ảnh hoặc PDF)"} 
-                      value={pendingUrl ? [pendingUrl] : diagramUrl ? [diagramUrl] : []} 
+                      key={resetKey}
+                      label={diagramUrl ? "Cập nhật Sơ đồ mới (Ảnh hoặc PDF)" : "Tải lên Sơ đồ dự án (Ảnh hoặc PDF)"} 
+                      value={[]} 
                       onChange={handleUpload} 
                     />
                   </div>
@@ -95,7 +105,8 @@ export const ProjectDiagramTab: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
+            <Toast show={toast.show} message={toast.message} type={toast.type} />
+    </div>
     </div>
   );
 };
