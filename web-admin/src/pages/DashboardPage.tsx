@@ -20,6 +20,7 @@ export const DashboardPage: React.FC = () => {
 
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [projectSearchQuery, setProjectSearchQuery] = useState('');
   const filterRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -173,13 +174,28 @@ export const DashboardPage: React.FC = () => {
                   Bỏ chọn tất cả
                 </button>
               </div>
+              <div className="p-2 border-b border-slate-100 bg-white">
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                  <input 
+                    type="text" 
+                    placeholder="Tìm kiếm dự án..." 
+                    className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-shadow"
+                    value={projectSearchQuery}
+                    onChange={(e) => setProjectSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
               <div className="max-h-64 overflow-y-auto p-2">
                 {projects.length === 0 ? (
                   <div className="p-4 text-center text-slate-400 text-sm">Chưa có dự án nào</div>
                 ) : (
-                  projects.map(proj => (
-                    <label key={proj.code} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded cursor-pointer group">
-                      <input 
+                  projects.filter(p => p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()) || p.code.toLowerCase().includes(projectSearchQuery.toLowerCase())).length === 0 ? (
+                    <div className="p-4 text-center text-slate-400 text-sm">Không tìm thấy dự án</div>
+                  ) : (
+                    projects.filter(p => p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()) || p.code.toLowerCase().includes(projectSearchQuery.toLowerCase())).map(proj => (
+                      <label key={proj.code} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded cursor-pointer group">
+                        <input 
                         type="checkbox" 
                         className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
                         checked={selectedProjects.includes(proj.code)}
@@ -196,6 +212,7 @@ export const DashboardPage: React.FC = () => {
                       </span>
                     </label>
                   ))
+                  )
                 )}
               </div>
             </div>
