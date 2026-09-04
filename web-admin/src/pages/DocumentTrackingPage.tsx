@@ -675,6 +675,7 @@ deleteDocumentTrack(track.id);
                 ...editingDoc,
                 prepayAmount: prepayAmt
               });
+              triggerToast('Cập nhật hồ sơ thành công!', 'success');
               setEditingDoc(null);
             } catch (err: any) {
               triggerToast('Lỗi khi cập nhật hồ sơ: ' + (err.message || 'Xin thử lại'), 'warning');
