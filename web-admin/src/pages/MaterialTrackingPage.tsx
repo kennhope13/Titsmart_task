@@ -1029,7 +1029,7 @@ export const MaterialTrackingPage: React.FC = () => {
                               icon: 'delete',
                               isDestructive: true,
                               confirmText: 'Xóa',
-                              onConfirm: () => deleteMaterial(material.id),
+                              onConfirm: () => { deleteMaterial(material.id); triggerToast(`Đã xóa vật tư "${material.name}" thành công!`, 'success'); },
                             });
                           }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title="Xóa vật tư">
                             <span className="material-symbols-outlined text-base">delete</span>
