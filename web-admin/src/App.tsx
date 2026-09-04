@@ -17,6 +17,7 @@ import { ActivityLogPage } from './pages/ActivityLogPage';
 import { FieldLogsPage } from './pages/FieldLogsPage';
 import { ProjectCostPlanPage } from './pages/ProjectCostPlanPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
+import { ProjectOverviewTab } from './pages/ProjectOverviewTab';
 import { TaskAssignmentPage } from './pages/TaskAssignmentPage';
 import { MyTasksPage } from './pages/MyTasksPage';
 
@@ -79,6 +80,8 @@ export const App: React.FC = () => {
           <Route path="/my-tasks" element={<MyTasksPage />} />
           <Route path="/projects" element={<ProjectManagementPage />} />
           <Route path="/projects/:projectId" element={<ProjectDetailPage />}>
+            <Route index element={<ProjectOverviewTab />} />
+            <Route path="overview" element={<ProjectOverviewTab />} />
             <Route path="tasks" element={<TaskManagementPage />} />
             <Route path="field-logs" element={<FieldLogsPage />} />
             <Route path="cost-plan" element={<ProjectCostPlanPage />} />
