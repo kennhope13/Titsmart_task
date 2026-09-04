@@ -46,55 +46,53 @@ export const ProjectOverviewTab: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6 overflow-y-auto bg-slate-50 flex-1">
-      <h2 className="text-xl font-bold text-slate-800 border-l-4 border-primary pl-3">Tổng quan Dự án: {project.name}</h2>
-      
       {/* SUMMARY CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Progress Card */}
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+          <div className="w-[52px] h-[52px] rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
             <span className="material-symbols-outlined text-2xl">fact_check</span>
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tiến độ công việc</p>
-            <h3 className="text-2xl font-black text-slate-800">{progressPercent}%</h3>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">{completedTasks} / {totalTasks} công việc</p>
+            <h3 className="text-[26px] leading-tight font-black text-slate-800">{progressPercent}%</h3>
+            <p className="text-[12px] text-slate-400 font-medium mt-1">{completedTasks} / {totalTasks} công việc</p>
           </div>
         </div>
 
         {/* Budget Card */}
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+          <div className="w-[52px] h-[52px] rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
             <span className="material-symbols-outlined text-2xl">account_balance_wallet</span>
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tổng chi phí</p>
-            <h3 className="text-lg font-black text-slate-800 truncate" title={formatCurrency(totalExpense)}>{formatCurrency(totalExpense)}</h3>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">{budgetPercent}% hợp đồng</p>
+            <h3 className="text-[22px] leading-tight font-black text-slate-800 truncate" title={formatCurrency(totalExpense)}>{formatCurrency(totalExpense)}</h3>
+            <p className="text-[12px] text-slate-400 font-medium mt-1">{budgetPercent}% hợp đồng</p>
           </div>
         </div>
 
         {/* Materials Card */}
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+          <div className="w-[52px] h-[52px] rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
             <span className="material-symbols-outlined text-2xl">inventory_2</span>
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Vật tư đã xuất</p>
-            <h3 className="text-lg font-black text-slate-800 truncate" title={totalMatActual.toLocaleString('vi-VN')}>{totalMatActual.toLocaleString('vi-VN')}</h3>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">Dự toán: {totalMatEstimate.toLocaleString('vi-VN')}</p>
+            <h3 className="text-[22px] leading-tight font-black text-slate-800 truncate" title={totalMatActual.toLocaleString('vi-VN')}>{totalMatActual.toLocaleString('vi-VN')}</h3>
+            <p className="text-[12px] text-slate-400 font-medium mt-1">Dự toán: {totalMatEstimate.toLocaleString('vi-VN')}</p>
           </div>
         </div>
 
         {/* Personnel Card */}
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+          <div className="w-[52px] h-[52px] rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
             <span className="material-symbols-outlined text-2xl">groups</span>
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Nhân sự tham gia</p>
-            <h3 className="text-2xl font-black text-slate-800">{assignedEngineers.length}</h3>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">người</p>
+            <h3 className="text-[26px] leading-tight font-black text-slate-800">{assignedEngineers.length}</h3>
+            <p className="text-[12px] text-slate-400 font-medium mt-1">người</p>
           </div>
         </div>
       </div>
