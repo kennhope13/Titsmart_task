@@ -25,7 +25,10 @@ export const ProjectDiagramTab: React.FC = () => {
     if (newUrl !== project.diagramUrl) {
       setIsSaving(true);
       try {
-        await updateProject(project.id, { diagramUrl: newUrl });
+        const updated = await updateProject(project.id, { diagramUrl: newUrl });
+        if (!updated) {
+          alert('Không thể lưu sơ đồ! Lỗi Database: Bảng "projects" chưa có cột "diagram_url".\nVui lòng vào Supabase Dashboard thêm cột "diagram_url" (kiểu text) vào bảng "projects".');
+        }
       } catch (err) {
         console.error('Failed to save diagram', err);
       }
