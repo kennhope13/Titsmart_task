@@ -314,7 +314,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const [filterModel, setFilterModel] = useState('all');
   const [filterOrigin, setFilterOrigin] = useState('all');
   const [filterDocs, setFilterDocs] = useState('all');
-  const [filterExpectedDate, setFilterExpectedDate] = useState('all');
+  const [filterExpectedDateFrom, setFilterExpectedDateFrom] = useState('');
+  const [filterExpectedDateTo, setFilterExpectedDateTo] = useState('');
   const [filterContractStatus, setFilterContractStatus] = useState('all');
   const [filterPaymentDate, setFilterPaymentDate] = useState('all');
   const [filterInvoiceStatus, setFilterInvoiceStatus] = useState('all');
@@ -407,11 +408,15 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
          return p.progressStatus === filterProgress;
       });
     }
-    if (filterExpectedDate && filterExpectedDate !== 'all') {
+    if (filterExpectedDateFrom || filterExpectedDateTo) {
       filtered = filtered.filter(p => {
          const notes = String(p.notes || '').toLowerCase();
          if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
-         return p.expectedDate === filterExpectedDate;
+         if (!p.expectedDate) return false;
+         
+         const fromCheck = filterExpectedDateFrom ? p.expectedDate >= filterExpectedDateFrom : true;
+         const toCheck = filterExpectedDateTo ? p.expectedDate <= filterExpectedDateTo : true;
+         return fromCheck && toCheck;
       });
     }
     if (filterContractStatus && filterContractStatus !== 'all') {
@@ -943,17 +948,13 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             {subTab === 'TECH' && (
               <div className="flex items-center gap-1.5">
                 <span className="text-slate-500 font-medium whitespace-nowrap">Ngày có hàng:</span>
-                <CustomSelect
-                  value={filterExpectedDate}
-                  onChange={e => setFilterExpectedDate(e.target.value)}
-                  className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
-                >
-                  {expectedDateOptions.map(opt => {
-                    let label = opt;
-                    if (label && label.length > 20) label = label.slice(0, 20) + '...';
-                    return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
-                  })}
-                </CustomSelect>
+                  <div className="flex items-center gap-1.5 border border-slate-200 rounded px-1 py-0.5 bg-white shadow-sm">
+                    <span className="text-slate-400 font-medium whitespace-nowrap text-[11px] ml-1">Từ</span>
+                    <input type="date" value={filterExpectedDateFrom} onChange={e => setFilterExpectedDateFrom(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer" />
+                    <span className="text-slate-300">|</span>
+                    <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
+                    <input type="date" value={filterExpectedDateTo} onChange={e => setFilterExpectedDateTo(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer" />
+                  </div>
               </div>
             )}
 

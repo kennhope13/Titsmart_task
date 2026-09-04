@@ -1160,12 +1160,14 @@ export const ProjectCostPlanPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('ALL');
 
   // Expense Tab Filters
-  const [expenseFilterDate, setExpenseFilterDate] = useState('all');
+  const [expenseFilterDateFrom, setExpenseFilterDateFrom] = useState('');
+  const [expenseFilterDateTo, setExpenseFilterDateTo] = useState('');
   const [expenseFilterContent, setExpenseFilterContent] = useState('all');
   const [expenseFilterUnit, setExpenseFilterUnit] = useState('all');
 
   // Labor Tab Filters
-  const [laborFilterDate, setLaborFilterDate] = useState('all');
+  const [laborFilterDateFrom, setLaborFilterDateFrom] = useState('');
+  const [laborFilterDateTo, setLaborFilterDateTo] = useState('');
   const [laborFilterContent, setLaborFilterContent] = useState('all');
   const [laborFilterUnit, setLaborFilterUnit] = useState('all');
 
@@ -1376,13 +1378,14 @@ export const ProjectCostPlanPage: React.FC = () => {
         (exp.notes || '').toLowerCase().includes(q);
 
       const matchColumn =
-        (expenseFilterDate === 'all' || exp.date === expenseFilterDate) &&
+        (!expenseFilterDateFrom || (exp.date && exp.date >= expenseFilterDateFrom)) &&
+        (!expenseFilterDateTo || (exp.date && exp.date <= expenseFilterDateTo)) &&
         (expenseFilterContent === 'all' || exp.content === expenseFilterContent) &&
         (expenseFilterUnit === 'all' || exp.unit === expenseFilterUnit);
 
       return matchSearch && matchColumn;
     });
-  }, [currentProjExpenses, searchQuery, expenseFilterDate, expenseFilterContent, expenseFilterUnit]);
+  }, [currentProjExpenses, searchQuery, expenseFilterDateFrom, expenseFilterDateTo, expenseFilterContent, expenseFilterUnit]);
 
   const currentProjLabor = useMemo(() =>
     laborPayrolls.filter(p => p.projectCode === selectedProject).sort((a, b) => sttSortValue(a.stt) - sttSortValue(b.stt)),
@@ -1404,13 +1407,14 @@ export const ProjectCostPlanPage: React.FC = () => {
         (lab.workerName || '').toLowerCase().includes(q);
 
       const matchColumn =
-        (laborFilterDate === 'all' || lab.date === laborFilterDate) &&
+        (!laborFilterDateFrom || (lab.date && lab.date >= laborFilterDateFrom)) &&
+        (!laborFilterDateTo || (lab.date && lab.date <= laborFilterDateTo)) &&
         (laborFilterContent === 'all' || lab.content === laborFilterContent) &&
         (laborFilterUnit === 'all' || lab.unit === laborFilterUnit);
 
       return matchSearch && matchColumn;
     });
-  }, [currentProjLabor, searchQuery, laborFilterDate, laborFilterContent, laborFilterUnit]);
+  }, [currentProjLabor, searchQuery, laborFilterDateFrom, laborFilterDateTo, laborFilterContent, laborFilterUnit]);
 
   const expenseSpenderNames = useMemo(() => {
     const names = new Set<string>();
@@ -1909,15 +1913,13 @@ export const ProjectCostPlanPage: React.FC = () => {
 
                     <div className="flex items-center gap-2">
                       <span className="text-slate-500 font-medium whitespace-nowrap">Ngày chi:</span>
-                      <CustomSelect
-                        value={expenseFilterDate}
-                        onChange={e => setExpenseFilterDate(e.target.value)}
-                        className="min-w-[70px] max-w-[120px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
-                      >
-                        {expenseDateOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
-                        ))}
-                      </CustomSelect>
+                      <div className="flex items-center gap-1.5 border border-slate-200 rounded px-1 py-0.5 bg-white shadow-sm">
+                        <span className="text-slate-400 font-medium whitespace-nowrap text-[11px] ml-1">Từ</span>
+                        <input type="date" value={expenseFilterDateFrom} onChange={e => setExpenseFilterDateFrom(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer" />
+                        <span className="text-slate-300">|</span>
+                        <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
+                        <input type="date" value={expenseFilterDateTo} onChange={e => setExpenseFilterDateTo(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer" />
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-2">
