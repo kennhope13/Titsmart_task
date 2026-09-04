@@ -377,6 +377,7 @@ export const DocumentTrackingPage: React.FC = () => {
             <span className="material-symbols-outlined text-[14px]">add</span>
             Thêm hồ sơ mới
           </button>
+          
         </div>
       , portalNode)}
 
@@ -796,6 +797,7 @@ deleteDocumentTrack(track.id);
         </Modal>
       )}
     </div>
+      
     </>
   );
 };

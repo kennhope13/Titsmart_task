@@ -2,16 +2,19 @@ import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 
 interface FileUploadProps {
-  label: string;
+  label?: string;
   name?: string;
   value?: string | string[];
   onChange?: (urls: string | string[]) => void;
   className?: string;
   multiple?: boolean;
   onUploadStateChange?: (isUploading: boolean) => void;
+  buttonText?: string;
+  buttonIcon?: string;
+  variant?: 'light' | 'solid';
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: initialValue, onChange, className = '', multiple = false, onUploadStateChange }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: initialValue, onChange, className = '', multiple = false, onUploadStateChange, buttonText = 'Tải lên tệp', buttonIcon = 'upload', variant = 'light' }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   
@@ -89,25 +92,23 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
 
   return (
     <div className={className}>
-      <label className="block text-xs font-bold text-slate-700 mb-1">{label}</label>
+      {label && <label className="block text-xs font-bold text-slate-700 mb-1">{label}</label>}
       {name && <input type="hidden" name={name} value={multiple ? localValues.join(',') : localValues[0] || ''} />}
       
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <input 
-            type="file" 
-            accept="*/*"
-            multiple={multiple}
-            onChange={handleUpload}
-            disabled={isUploading}
-            className="block w-full text-sm text-slate-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-lg file:border-0
-              file:text-sm file:font-semibold
-              file:bg-primary/10 file:text-primary
-              hover:file:bg-primary/20
-              disabled:opacity-50 cursor-pointer"
-          />
+          <label className={`cursor-pointer relative overflow-hidden inline-flex items-center gap-2 px-4 py-2 font-semibold text-sm rounded-lg transition-all ${variant === 'solid' ? 'bg-primary text-white hover:bg-primary/90 shadow-sm' : 'bg-primary/10 text-primary hover:bg-primary/20'} ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <span className="material-symbols-outlined text-[18px]">{buttonIcon}</span>
+            {buttonText}
+            <input 
+              type="file" 
+              accept="*/*"
+              multiple={multiple}
+              onChange={handleUpload}
+              disabled={isUploading}
+              className="absolute inset-0 w-[200%] h-[200%] -top-[50%] -left-[50%] opacity-0 cursor-pointer"
+            />
+          </label>
         </div>
         
         {localValues.length > 0 && (

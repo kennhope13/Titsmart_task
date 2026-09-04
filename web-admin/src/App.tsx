@@ -7,6 +7,7 @@ import { LoginPage } from './pages/LoginPage';
 import { LoginPageVariant } from './pages/LoginPageVariant';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProjectManagementPage } from './pages/ProjectManagementPage';
+import { ProjectDiagramTab } from './pages/ProjectDiagramTab';
 import { TaskManagementPage } from './pages/TaskManagementPage';
 import { MaterialTrackingPage } from './pages/MaterialTrackingPage';
 import { IssueResolutionPage } from './pages/IssueResolutionPage';
@@ -87,6 +88,7 @@ export const App: React.FC = () => {
             <Route path="cost-plan" element={<ProjectCostPlanPage />} />
             <Route path="inventory" element={<MaterialTrackingPage />} />
             <Route path="documents" element={<DocumentTrackingPage />} />
+            <Route path="diagram" element={<ProjectDiagramTab />} />
           </Route>
           <Route path="/tasks" element={<TaskManagementPage />} />
           <Route path="/document-tracking" element={<DocumentTrackingPage />} />
