@@ -146,7 +146,10 @@ export const ProjectDiagramTab: React.FC = () => {
                   <div className="flex-1">
                     <FileUpload 
                       key={resetKey}
-                      label="Chọn một hoặc nhiều ảnh/PDF"
+                      label=""
+                      buttonText="Upload ảnh"
+                      buttonIcon="add_a_photo"
+                      variant="solid"
                       multiple={true}
                       value={[]} 
                       onChange={handleUpload} 
