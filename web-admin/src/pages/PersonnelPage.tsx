@@ -472,6 +472,7 @@ export const PersonnelPage: React.FC = () => {
                 {/* HỒ SƠ */}
                 <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-500 uppercase border-b pb-1">Hồ sơ & Tài liệu</h4>
+                  <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_PROJECT_DIAGRAM')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_PROJECT_DIAGRAM']) : setPermissions(p => p.filter(x => x !== 'VIEW_PROJECT_DIAGRAM'))} className="accent-primary w-3.5 h-3.5"/>Xem sơ đồ dự án</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'VIEW_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Xem hồ sơ</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'MANAGE_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Quản lý hồ sơ</label>
                 </div></div></div></div>
