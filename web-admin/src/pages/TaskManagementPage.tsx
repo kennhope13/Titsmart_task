@@ -1395,7 +1395,7 @@ const displayTasks = tasks.filter((t) => {
     const groups: { [key: string]: Task[] } = {};
     const order: string[] = [];
     displayTasks.forEach((t) => {
-      const sec = t.sectionName || 'Khc';
+      const sec = t.sectionName || 'Không có hạng mục';
       if (!groups[sec]) {
         groups[sec] = [];
         order.push(sec);
@@ -1404,6 +1404,8 @@ const displayTasks = tasks.filter((t) => {
     });
 
     order.sort((a, b) => {
+      if (a === 'Không có hạng mục') return 1;
+      if (b === 'Không có hạng mục') return -1;
       const leftHeader = groups[a].find((task) => task.isSectionHeader) || groups[a][0];
       const rightHeader = groups[b].find((task) => task.isSectionHeader) || groups[b][0];
       return compareTaskStt(leftHeader?.stt, rightHeader?.stt);
@@ -1453,8 +1455,18 @@ const displayTasks = tasks.filter((t) => {
       
       if (sectionHeader) {
         flattened.push({ ...sectionHeader, depth: 0, computedStt: sectionHeader.stt || '', _sectionKey: sec });
+      } else if (sec === 'Không có hạng mục') {
+        flattened.push({ 
+          id: 'dummy-no-section', 
+          name: '[Không có hạng mục]', 
+          isSectionHeader: true, 
+          depth: 0, 
+          computedStt: '', 
+          _sectionKey: sec,
+          projectCode: items[0]?.projectCode || ''
+        });
       }
-      flattenTree(roots, sectionHeader ? 1 : 0, '', sec);
+      flattenTree(roots, sectionHeader || sec === 'Không có hạng mục' ? 1 : 0, '', sec);
     });
     return flattened;
   }, [displayTasks]);
