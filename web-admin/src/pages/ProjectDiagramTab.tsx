@@ -6,6 +6,7 @@ import { FileUpload } from '../components/common/FileUpload';
 import { createPortal } from 'react-dom';
 import { Toast } from '../components/common/Toast';
 import { Modal } from '../components/common/Modal';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 export const ProjectDiagramTab: React.FC = () => {
   const { projectId } = useParams();
@@ -34,6 +35,7 @@ export const ProjectDiagramTab: React.FC = () => {
   const [resetKey, setResetKey] = useState<number>(Date.now());
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setPortalNode(document.getElementById('project-header-actions'));
@@ -112,13 +114,16 @@ export const ProjectDiagramTab: React.FC = () => {
     setIsSaving(false);
   };
   
-  const handleDelete = async (idxToRemove: number) => {
-    if (!project || !window.confirm('Bạn có chắc chắn muốn xóa sơ đồ này?')) return;
-    
+  const handleDelete = (idxToRemove: number) => {
+    setDeleteIndex(idxToRemove);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteIndex === null || !project) return;
     setIsSaving(true);
     try {
       const newSaved = [...savedDiagrams];
-      newSaved.splice(idxToRemove, 1);
+      newSaved.splice(deleteIndex, 1);
       const combinedUrls = newSaved.length > 0 ? JSON.stringify(newSaved) : '';
       const updated = await updateProject(project.id, { diagramUrl: combinedUrls });
       if (updated) {
@@ -128,6 +133,7 @@ export const ProjectDiagramTab: React.FC = () => {
       console.error('Failed to delete diagram', err);
     }
     setIsSaving(false);
+    setDeleteIndex(null);
   };
 
   if (!project) {
@@ -257,6 +263,15 @@ export const ProjectDiagramTab: React.FC = () => {
 
         </div>
         
+        <ConfirmModal
+          isOpen={deleteIndex !== null}
+          onClose={() => setDeleteIndex(null)}
+          onConfirm={confirmDelete}
+          title="Xác nhận xóa"
+          message="Bạn có chắc chắn muốn xóa sơ đồ này? Thao tác này không thể hoàn tác."
+          confirmText="Xóa sơ đồ"
+          icon="delete"
+        />
         {viewerItem && (
           <Modal isOpen={true} onClose={() => setViewerItem(null)} title="Chi tiết sơ đồ" size="xl">
             <div className="flex flex-col border rounded-lg p-2">
