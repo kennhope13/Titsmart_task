@@ -1,11 +1,14 @@
 {
-  "version": "1.2.83",
+  "version": "1.2.84",
   "date": "04/09/2026",
   "notes": [
     "Cải tiến giao diện Danh sách dự án: Hiển thị trực tiếp thông tin 'Hạng mục' trên từng thẻ dự án giúp người dùng dễ dàng theo dõi và bao quát thông tin nhanh chóng."
   ],
-  "releaseDate": "2026-09-05T04:46:56.490Z",
+  "releaseDate": "2026-09-05T05:15:00.059Z",
   "changes": [
-    "Đồng bộ CSS form Upload ảnh hiện trường với chuẩn Modal chung của hệ thống"
+    "Thêm tính năng Chấm công (Check-in/Check-out) trên Web Admin",
+    "Nhân viên có thể chấm công vào/ra ca, đính kèm ảnh hiện trường",
+    "Admin có thể xem toàn bộ lịch sử chấm công của tất cả nhân viên",
+    "Thông báo realtime đến admin khi nhân viên check-in/check-out"
   ]
 }

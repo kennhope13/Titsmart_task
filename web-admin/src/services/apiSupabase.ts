@@ -588,5 +588,54 @@ export const api = {
       if (error) throw error;
       return { success: true };
     }
+  },
+  attendance: {
+    getAll: async () => {
+      const { data, error } = await supabase.from('attendance_logs').select('*').order('check_in_time', { ascending: false });
+      if (error) throw error;
+      return mapArray(data || []);
+    },
+    getByUser: async (userId: string) => {
+      const { data, error } = await supabase.from('attendance_logs').select('*').eq('user_id', userId).order('check_in_time', { ascending: false });
+      if (error) throw error;
+      return mapArray(data || []);
+    },
+    getToday: async (userId: string) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { data, error } = await supabase.from('attendance_logs').select('*').eq('user_id', userId).gte('check_in_time', today.toISOString()).order('check_in_time', { ascending: false });
+      if (error) throw error;
+      return mapArray(data || []);
+    },
+    checkIn: async (input: { userId: string; userName: string; projectId?: string; projectName?: string; checkInImage?: string; notes?: string }) => {
+      const payload = {
+        user_id: input.userId,
+        user_name: input.userName,
+        project_id: input.projectId || null,
+        project_name: input.projectName || null,
+        check_in_time: new Date().toISOString(),
+        check_in_image: input.checkInImage || null,
+        notes: input.notes || null,
+      };
+      const { data, error } = await supabase.from('attendance_logs').insert(payload).select().single();
+      if (error) throw error;
+      return toCamelCase(data);
+    },
+    checkOut: async (id: string, input: { checkOutImage?: string; notes?: string }) => {
+      const payload: any = {
+        check_out_time: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      if (input.checkOutImage) payload.check_out_image = input.checkOutImage;
+      if (input.notes) payload.notes = input.notes;
+      const { data, error } = await supabase.from('attendance_logs').update(payload).eq('id', id).select().single();
+      if (error) throw error;
+      return toCamelCase(data);
+    },
+    delete: async (id: string) => {
+      const { error } = await supabase.from('attendance_logs').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    }
   }
 };

@@ -21,6 +21,7 @@ import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { ProjectOverviewTab } from './pages/ProjectOverviewTab';
 import { TaskAssignmentPage } from './pages/TaskAssignmentPage';
 import { MyTasksPage } from './pages/MyTasksPage';
+import { AttendancePage } from './pages/AttendancePage';
 
 import { UpdateNotifier } from './components/common/UpdateNotifier';
 import { GlobalNotificationToast } from './components/common/GlobalNotificationToast';
@@ -98,6 +99,7 @@ export const App: React.FC = () => {
           <Route path="/issues" element={<IssueResolutionPage />} />
           <Route path="/personnel" element={<PersonnelPage />} />
           <Route path="/activity-log" element={<ActivityLogPage />} />
+          <Route path="/attendance" element={<AttendancePage />} />
           <Route path="/account" element={<AccountPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
