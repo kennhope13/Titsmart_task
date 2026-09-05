@@ -15,6 +15,7 @@ import { PersonnelPage } from './pages/PersonnelPage';
 import { AccountPage } from './pages/AccountPage';
 import { DocumentTrackingPage } from './pages/DocumentTrackingPage';
 import { ActivityLogPage } from './pages/ActivityLogPage';
+import { OfficeCostsPage } from './pages/OfficeCostsPage';
 import { FieldLogsPage } from './pages/FieldLogsPage';
 import { ProjectCostPlanPage } from './pages/ProjectCostPlanPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
@@ -100,6 +101,7 @@ export const App: React.FC = () => {
           <Route path="/personnel" element={<PersonnelPage />} />
           <Route path="/activity-log" element={<ActivityLogPage />} />
           <Route path="/attendance" element={<AttendancePage />} />
+          <Route path="/office-costs" element={<OfficeCostsPage />} />
           <Route path="/account" element={<AccountPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
