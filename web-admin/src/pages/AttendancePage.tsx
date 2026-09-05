@@ -216,12 +216,12 @@ export const AttendancePage: React.FC = () => {
         )}
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+      <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col bg-slate-50">
         {/* Check-in / Check-out Card */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-lg">fingerprint</span>
-            <h2 className="text-sm font-extrabold text-slate-800">
+        <div className="bg-white border-b border-slate-200 shadow-xs shrink-0 flex flex-col">
+          <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2 shrink-0">
+            <span className="material-symbols-outlined text-primary text-[18px]">fingerprint</span>
+            <h2 className="text-[13px] font-extrabold text-slate-800 uppercase tracking-wide">
               {activeSession ? 'Đang trong ca làm việc' : 'Bắt đầu ca làm việc'}
             </h2>
             {activeSession && (
@@ -232,7 +232,7 @@ export const AttendancePage: React.FC = () => {
             )}
           </div>
 
-          <div className="p-5">
+          <div className="p-4 shrink-0">
             {activeSession ? (
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div className="flex-1 space-y-1">
@@ -250,9 +250,9 @@ export const AttendancePage: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setShowCheckOutModal(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-lg shadow-sm transition-colors"
+                  className="flex items-center gap-2 px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-lg shadow-sm transition-colors"
                 >
-                  <span className="material-symbols-outlined text-lg">logout</span>
+                  <span className="material-symbols-outlined text-[18px]">logout</span>
                   Check-out (Ra ca)
                 </button>
               </div>
@@ -264,7 +264,7 @@ export const AttendancePage: React.FC = () => {
                     <select
                       value={selectedProject}
                       onChange={e => setSelectedProject(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white"
                     >
                       <option value="">-- Không chọn dự án --</option>
                       {projects.map(p => (
@@ -279,27 +279,27 @@ export const AttendancePage: React.FC = () => {
                       value={notes}
                       onChange={e => setNotes(e.target.value)}
                       placeholder="VD: Làm ca sáng, bảo trì..."
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Ảnh hiện trường (tùy chọn)</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Ảnh hiện trường (tùy chọn)</label>
                   <div className="flex items-center gap-3">
                     {checkInImage ? (
-                      <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200">
+                      <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 shadow-sm">
                         <img src={checkInImage} alt="preview" className="w-full h-full object-cover" />
-                        <button onClick={() => setCheckInImage(null)} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] flex items-center justify-center">
+                        <button onClick={() => setCheckInImage(null)} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] flex items-center justify-center shadow">
                           <span className="material-symbols-outlined text-[10px]">close</span>
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-1.5 px-3 py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition text-xs"
+                        className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-slate-300 rounded-lg text-slate-500 hover:text-primary hover:border-primary transition text-xs font-semibold bg-slate-50"
                       >
-                        <span className="material-symbols-outlined text-base">add_a_photo</span>
+                        <span className="material-symbols-outlined text-[16px]">add_a_photo</span>
                         Chọn ảnh
                       </button>
                     )}
@@ -307,18 +307,20 @@ export const AttendancePage: React.FC = () => {
                   </div>
                 </div>
 
-                <button
-                  onClick={handleCheckIn}
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-blue-800 text-white font-bold text-sm rounded-lg shadow-sm disabled:opacity-50 transition-colors"
-                >
-                  {isSubmitting ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                  ) : (
-                    <span className="material-symbols-outlined text-lg">login</span>
-                  )}
-                  Check-in (Vào ca)
-                </button>
+                <div className="pt-2 border-t border-slate-100 flex justify-end">
+                  <button
+                    onClick={handleCheckIn}
+                    disabled={isSubmitting}
+                    className="flex items-center gap-2 px-6 py-2 bg-primary hover:bg-blue-800 text-white font-bold text-sm rounded-lg shadow-sm disabled:opacity-50 transition-colors"
+                  >
+                    {isSubmitting ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                    ) : (
+                      <span className="material-symbols-outlined text-[18px]">login</span>
+                    )}
+                    Check-in (Vào ca)
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -326,103 +328,116 @@ export const AttendancePage: React.FC = () => {
 
         {/* Filters for Admin */}
         {tab === 'all' && isAdmin && (
-          <div className="flex flex-wrap items-center gap-3">
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Ngày</label>
+          <div className="px-4 py-2 border-b border-slate-200 bg-white flex flex-wrap items-center gap-3 shrink-0 shadow-xs relative z-10">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-slate-400 text-[18px]">calendar_month</span>
               <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
+                className="px-2.5 py-1 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50" />
             </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Nhân viên</label>
+            <div className="h-4 w-px bg-slate-200"></div>
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-slate-400 text-[18px]">person</span>
               <select value={filterUser} onChange={e => setFilterUser(e.target.value)}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white min-w-[180px]">
-                <option value="">Tất cả</option>
+                className="px-2.5 py-1 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 min-w-[150px]">
+                <option value="">Tất cả nhân viên</option>
                 {engineers.map(e => (
                   <option key={e.id} value={e.id}>{e.name}</option>
                 ))}
               </select>
             </div>
-            <div className="ml-auto text-xs text-slate-500 font-semibold">
+            <div className="ml-auto px-2.5 py-1 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200">
               {filteredLogs.length} bản ghi
             </div>
           </div>
         )}
 
-        {/* Attendance Table */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-lg">list_alt</span>
-            <h2 className="text-sm font-extrabold text-slate-800">Lịch sử chấm công</h2>
+        {/* Attendance Table Area */}
+        <div className="flex-1 overflow-hidden flex flex-col bg-white">
+          <div className="px-4 py-2 border-b border-slate-200 bg-slate-50 flex items-center gap-2 shrink-0">
+            <span className="material-symbols-outlined text-primary text-[18px]">list_alt</span>
+            <h2 className="text-[13px] font-extrabold text-slate-800 uppercase tracking-wide">Lịch sử chấm công</h2>
           </div>
 
-          {loading ? (
-            <div className="p-8 text-center text-slate-400">
-              <span className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-primary inline-block" />
-            </div>
-          ) : filteredLogs.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-sm">Chưa có dữ liệu chấm công</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 text-xs text-slate-500 uppercase">
-                    {tab === 'all' && <th className="px-4 py-2.5 text-left font-bold">Nhân viên</th>}
-                    <th className="px-4 py-2.5 text-left font-bold">Ngày</th>
-                    <th className="px-4 py-2.5 text-left font-bold">Vào ca</th>
-                    <th className="px-4 py-2.5 text-left font-bold">Ra ca</th>
-                    <th className="px-4 py-2.5 text-left font-bold">Thời gian</th>
-                    <th className="px-4 py-2.5 text-left font-bold">Dự án</th>
-                    <th className="px-4 py-2.5 text-left font-bold">Ghi chú</th>
-                    <th className="px-4 py-2.5 text-center font-bold">Ảnh</th>
-                    {isAdmin && <th className="px-4 py-2.5 text-center font-bold">Xóa</th>}
+          <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative">
+            {loading ? (
+              <div className="p-8 text-center text-slate-400 flex flex-col items-center justify-center h-full">
+                <span className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-primary mb-2" />
+                <span className="text-xs">Đang tải...</span>
+              </div>
+            ) : filteredLogs.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm flex flex-col items-center justify-center h-full">
+                <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">history_toggle_off</span>
+                <span className="font-semibold text-[13px]">Chưa có dữ liệu chấm công</span>
+              </div>
+            ) : (
+              <table className="w-full text-[13px] text-left border-collapse">
+                <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200">
+                  <tr>
+                    {tab === 'all' && <th className="p-3 font-bold bg-slate-50 whitespace-nowrap">Nhân viên</th>}
+                    <th className="p-3 font-bold bg-slate-50 whitespace-nowrap">Ngày</th>
+                    <th className="p-3 font-bold bg-slate-50 whitespace-nowrap">Vào ca</th>
+                    <th className="p-3 font-bold bg-slate-50 whitespace-nowrap">Ra ca</th>
+                    <th className="p-3 font-bold bg-slate-50 whitespace-nowrap">Thời gian</th>
+                    <th className="p-3 font-bold bg-slate-50 whitespace-nowrap">Dự án</th>
+                    <th className="p-3 font-bold bg-slate-50 whitespace-nowrap">Ghi chú</th>
+                    <th className="p-3 text-center font-bold bg-slate-50 whitespace-nowrap">Ảnh</th>
+                    {isAdmin && <th className="p-3 text-center font-bold bg-slate-50 whitespace-nowrap">Xóa</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredLogs.map(log => (
-                    <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
                       {tab === 'all' && (
-                        <td className="px-4 py-2.5 font-semibold text-slate-800 whitespace-nowrap">{log.userName}</td>
+                        <td className="p-3 font-semibold text-slate-800 whitespace-nowrap">{log.userName}</td>
                       )}
-                      <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap">{formatDate(log.checkInTime)}</td>
-                      <td className="px-4 py-2.5">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700">
+                      <td className="p-3 text-slate-600 whitespace-nowrap font-medium">{formatDate(log.checkInTime)}</td>
+                      <td className="p-3 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-green-200 bg-green-50 text-green-700 font-bold text-xs">
                           <span className="material-symbols-outlined text-[14px]">login</span>
                           {formatTime(log.checkInTime)}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td className="p-3 whitespace-nowrap">
                         {log.checkOutTime ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-700">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-red-200 bg-red-50 text-red-700 font-bold text-xs">
                             <span className="material-symbols-outlined text-[14px]">logout</span>
                             {formatTime(log.checkOutTime)}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-amber-200 bg-amber-50 text-amber-700 font-bold text-[11px]">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                             Đang làm
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-slate-600 font-semibold whitespace-nowrap">
+                      <td className="p-3 text-slate-700 font-bold whitespace-nowrap">
                         {getDuration(log.checkInTime, log.checkOutTime)}
                       </td>
-                      <td className="px-4 py-2.5 text-slate-600 text-xs max-w-[150px] truncate">{log.projectName || '—'}</td>
-                      <td className="px-4 py-2.5 text-slate-500 text-xs max-w-[120px] truncate">{log.notes || '—'}</td>
-                      <td className="px-4 py-2.5 text-center">
-                        <div className="flex items-center justify-center gap-1">
+                      <td className="p-3 text-slate-600 max-w-[200px] truncate" title={log.projectName}>
+                        {log.projectName || <span className="text-slate-400">—</span>}
+                      </td>
+                      <td className="p-3 text-slate-600 max-w-[200px] truncate" title={log.notes}>
+                        {log.notes || <span className="text-slate-400">—</span>}
+                      </td>
+                      <td className="p-3 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-2">
                           {log.checkInImage && (
-                            <a href={log.checkInImage} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-[11px] font-bold">Vào</a>
+                            <a href={log.checkInImage} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:text-blue-700 transition-colors bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[11px] font-bold">
+                              <span className="material-symbols-outlined text-[12px]">image</span> Vào
+                            </a>
                           )}
                           {log.checkOutImage && (
-                            <a href={log.checkOutImage} target="_blank" rel="noopener noreferrer" className="text-red-600 hover:underline text-[11px] font-bold">Ra</a>
+                            <a href={log.checkOutImage} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors bg-red-50 px-2 py-0.5 rounded border border-red-100 text-[11px] font-bold">
+                              <span className="material-symbols-outlined text-[12px]">image</span> Ra
+                            </a>
                           )}
-                          {!log.checkInImage && !log.checkOutImage && <span className="text-slate-300">—</span>}
+                          {!log.checkInImage && !log.checkOutImage && <span className="text-slate-300 text-xs">—</span>}
                         </div>
                       </td>
                       {isAdmin && (
-                        <td className="px-4 py-2.5 text-center">
-                          <button onClick={() => setDeleteId(log.id)} className="text-slate-400 hover:text-red-500 transition-colors">
-                            <span className="material-symbols-outlined text-lg">delete</span>
+                        <td className="p-3 text-center whitespace-nowrap">
+                          <button onClick={() => setDeleteId(log.id)} className="w-7 h-7 rounded-full inline-flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
                           </button>
                         </td>
                       )}
@@ -430,8 +445,8 @@ export const AttendancePage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
