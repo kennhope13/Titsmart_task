@@ -5,6 +5,7 @@ import { api } from '../services/apiSupabase';
 import { supabase } from '../lib/supabase';
 import { Modal } from '../components/common/Modal';
 import { ConfirmModal } from '../components/common/ConfirmModal';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 interface AttendanceLog {
   id: string;
@@ -261,16 +262,17 @@ export const AttendancePage: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-end gap-3 w-full">
                 <div className="flex-1 min-w-[200px]">
                   <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Dự án (tùy chọn)</label>
-                  <select
+                  <CustomSelect
                     value={selectedProject}
                     onChange={e => setSelectedProject(e.target.value)}
+                    searchable={true}
                     className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white"
                   >
                     <option value="">-- Không chọn dự án --</option>
                     {projects.map(p => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
                 
                 <div className="flex-1 min-w-[200px]">
@@ -335,13 +337,14 @@ export const AttendancePage: React.FC = () => {
             <div className="h-4 w-px bg-slate-200"></div>
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-slate-400 text-[18px]">person</span>
-              <select value={filterUser} onChange={e => setFilterUser(e.target.value)}
+              <CustomSelect value={filterUser} onChange={e => setFilterUser(e.target.value)}
+                searchable={true}
                 className="px-2.5 py-1 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 min-w-[150px]">
                 <option value="">Tất cả nhân viên</option>
                 {engineers.map(e => (
                   <option key={e.id} value={e.id}>{e.name}</option>
                 ))}
-              </select>
+              </CustomSelect>
             </div>
             <div className="ml-auto px-2.5 py-1 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200">
               {filteredLogs.length} bản ghi
