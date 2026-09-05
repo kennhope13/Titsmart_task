@@ -92,7 +92,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       { label: 'Công việc', path: '/my-tasks', icon: 'checklist', req: 'VIEW_TASKS' },
       { label: 'Tổng kho', path: '/materials', icon: 'warehouse', req: 'VIEW_MATERIALS' },
       { label: 'Chi phí văn phòng', path: '/office-costs', icon: 'account_balance_wallet', req: 'VIEW_EXPENSES' },
-      { label: 'Chi phí văn phòng', path: '/office-costs', icon: 'account_balance_wallet', req: 'VIEW_EXPENSES' },
       { label: 'Nhân sự', path: '/personnel', icon: 'groups', req: 'VIEW_USERS' },
       { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history', req: 'VIEW_ACTIVITY_LOG' }
     ];

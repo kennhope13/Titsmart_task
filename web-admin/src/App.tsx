@@ -99,6 +99,7 @@ export const App: React.FC = () => {
           <Route path="/issues" element={<IssueResolutionPage />} />
           <Route path="/personnel" element={<PersonnelPage />} />
           <Route path="/activity-log" element={<ActivityLogPage />} />
+          <Route path="/office-costs" element={<OfficeCostsPage />} />
           <Route path="/account" element={<AccountPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
