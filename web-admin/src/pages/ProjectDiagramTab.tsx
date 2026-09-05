@@ -229,7 +229,7 @@ export const ProjectDiagramTab: React.FC = () => {
                     buttonText={editingIndex !== null ? "Tải lại sơ đồ (Thay thế)" : "Tải sơ đồ"}
                     buttonIcon="add_photo_alternate"
                     variant="light"
-                    multiple={editingIndex === null}
+                    multiple={true}
                     value={pendingUrls} 
                     onChange={handleUpload} 
                   />

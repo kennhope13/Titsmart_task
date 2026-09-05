@@ -1,11 +1,11 @@
 {
-  "version": "1.2.80",
+  "version": "1.2.81",
   "date": "04/09/2026",
   "notes": [
     "Cải tiến giao diện Danh sách dự án: Hiển thị trực tiếp thông tin 'Hạng mục' trên từng thẻ dự án giúp người dùng dễ dàng theo dõi và bao quát thông tin nhanh chóng."
   ],
-  "releaseDate": "2026-09-05T04:20:33.974Z",
+  "releaseDate": "2026-09-05T04:22:22.780Z",
   "changes": [
-    "Thu gọn chiều cao phần thanh tiêu đề của card sơ đồ"
+    "Cho phép upload nhiều file sơ đồ cùng lúc kể cả khi đang ở chế độ chỉnh sửa"
   ]
 }
