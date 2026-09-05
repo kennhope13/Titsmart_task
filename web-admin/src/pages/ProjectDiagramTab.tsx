@@ -144,7 +144,7 @@ export const ProjectDiagramTab: React.FC = () => {
             <div className="border-2 border-dashed border-slate-200 rounded-xl p-16 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50">
               <span className="material-symbols-outlined text-6xl mb-4 text-slate-300">account_tree</span>
               <p className="font-medium text-slate-500 text-lg">Chưa có sơ đồ dự án nào</p>
-              <p className="text-sm text-slate-400 mt-2">Hãy bấm vào nút Upload ảnh trên thanh tiêu đề</p>
+              <p className="text-sm text-slate-400 mt-2">Hãy bấm vào nút Tải sơ đồ trên thanh tiêu đề</p>
             </div>
           )}
 
@@ -155,7 +155,7 @@ export const ProjectDiagramTab: React.FC = () => {
               className="h-[36px] px-4 bg-primary text-white font-bold text-sm rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
-              Upload ảnh
+              Tải sơ đồ
             </button>,
             portalNode
           )}
