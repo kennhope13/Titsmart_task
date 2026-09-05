@@ -257,70 +257,67 @@ export const AttendancePage: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="space-y-4 max-w-3xl">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Dự án (tùy chọn)</label>
-                    <select
-                      value={selectedProject}
-                      onChange={e => setSelectedProject(e.target.value)}
-                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white"
-                    >
-                      <option value="">-- Không chọn dự án --</option>
-                      {projects.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Ghi chú</label>
-                    <input
-                      type="text"
-                      value={notes}
-                      onChange={e => setNotes(e.target.value)}
-                      placeholder="VD: Làm ca sáng, bảo trì..."
-                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-                    />
-                  </div>
+              <div className="flex flex-col sm:flex-row items-end gap-3 w-full">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Dự án (tùy chọn)</label>
+                  <select
+                    value={selectedProject}
+                    onChange={e => setSelectedProject(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+                  >
+                    <option value="">-- Không chọn dự án --</option>
+                    {projects.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Ghi chú</label>
+                  <input
+                    type="text"
+                    value={notes}
+                    onChange={e => setNotes(e.target.value)}
+                    placeholder="VD: Làm ca sáng, bảo trì..."
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Ảnh hiện trường (tùy chọn)</label>
-                  <div className="flex items-center gap-3">
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Ảnh</label>
+                  <div className="flex items-center">
                     {checkInImage ? (
-                      <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+                      <div className="relative w-9 h-9 rounded overflow-hidden border border-slate-200 shadow-sm">
                         <img src={checkInImage} alt="preview" className="w-full h-full object-cover" />
-                        <button onClick={() => setCheckInImage(null)} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] flex items-center justify-center shadow">
+                        <button onClick={() => setCheckInImage(null)} className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 text-white text-[8px] flex items-center justify-center shadow">
                           <span className="material-symbols-outlined text-[10px]">close</span>
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-slate-300 rounded-lg text-slate-500 hover:text-primary hover:border-primary transition text-xs font-semibold bg-slate-50"
+                        className="flex items-center justify-center w-9 h-9 border border-dashed border-slate-300 rounded text-slate-400 hover:text-primary hover:border-primary bg-slate-50 transition-colors"
+                        title="Chọn ảnh hiện trường"
                       >
-                        <span className="material-symbols-outlined text-[16px]">add_a_photo</span>
-                        Chọn ảnh
+                        <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
                       </button>
                     )}
                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileSelect(e, 'in')} />
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 flex justify-end">
-                  <button
-                    onClick={handleCheckIn}
-                    disabled={isSubmitting}
-                    className="flex items-center gap-2 px-6 py-2 bg-primary hover:bg-blue-800 text-white font-bold text-sm rounded-lg shadow-sm disabled:opacity-50 transition-colors"
-                  >
-                    {isSubmitting ? (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                    ) : (
-                      <span className="material-symbols-outlined text-[18px]">login</span>
-                    )}
-                    Check-in (Vào ca)
-                  </button>
-                </div>
+                <button
+                  onClick={handleCheckIn}
+                  disabled={isSubmitting}
+                  className="flex items-center gap-1.5 px-5 h-9 bg-primary hover:bg-blue-800 text-white font-bold text-sm rounded-lg shadow-sm disabled:opacity-50 transition-colors shrink-0"
+                >
+                  {isSubmitting ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  ) : (
+                    <span className="material-symbols-outlined text-[18px]">login</span>
+                  )}
+                  Check-in
+                </button>
               </div>
             )}
           </div>
