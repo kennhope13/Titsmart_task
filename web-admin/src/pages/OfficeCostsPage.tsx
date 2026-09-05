@@ -99,7 +99,7 @@ export const OfficeCostsPage: React.FC = () => {
           )}
         </div>
       </section>
-      <div className="flex-1 overflow-auto p-4 custom-scrollbar flex flex-col gap-4">
+      <div className="flex-1 p-4 flex flex-col gap-4 min-h-0 overflow-hidden">
         
         {/* TỔNG QUAN CHI PHÍ */}
         <div className="shrink-0 w-full overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-200">
@@ -141,7 +141,7 @@ export const OfficeCostsPage: React.FC = () => {
         </div>
 
         {/* BẢNG CHI PHÍ */}
-        <div className="flex-1 bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden flex flex-col min-h-[400px]">
+        <div className="flex-1 bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden flex flex-col min-h-0">
           <div className="flex items-center gap-3 p-3 bg-white border-b border-slate-200 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap text-xs">Bộ lọc:</span>
@@ -179,7 +179,7 @@ export const OfficeCostsPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="overflow-x-auto">
+          <div className="flex-1 overflow-auto custom-scrollbar relative">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-tight">
                 <tr>
