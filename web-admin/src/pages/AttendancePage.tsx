@@ -57,6 +57,7 @@ export const AttendancePage: React.FC = () => {
   const [filterUser, setFilterUser] = useState('');
   const [checkInImage, setCheckInImage] = useState<string | null>(null);
   const [checkOutImage, setCheckOutImage] = useState<string | null>(null);
+  const [viewImage, setViewImage] = useState<string | null>(null);
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [checkOutNotes, setCheckOutNotes] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -419,14 +420,14 @@ export const AttendancePage: React.FC = () => {
                       <td className="p-3 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2">
                           {log.checkInImage && (
-                            <a href={log.checkInImage} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:text-blue-700 transition-colors bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[11px] font-bold">
+                            <button onClick={() => setViewImage(log.checkInImage || null)} className="flex items-center gap-1 text-primary hover:text-blue-700 transition-colors bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[11px] font-bold">
                               <span className="material-symbols-outlined text-[12px]">image</span> Vào
-                            </a>
+                            </button>
                           )}
                           {log.checkOutImage && (
-                            <a href={log.checkOutImage} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors bg-red-50 px-2 py-0.5 rounded border border-red-100 text-[11px] font-bold">
+                            <button onClick={() => setViewImage(log.checkOutImage || null)} className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors bg-red-50 px-2 py-0.5 rounded border border-red-100 text-[11px] font-bold">
                               <span className="material-symbols-outlined text-[12px]">image</span> Ra
-                            </a>
+                            </button>
                           )}
                           {!log.checkInImage && !log.checkOutImage && <span className="text-slate-300 text-xs">—</span>}
                         </div>
@@ -446,6 +447,22 @@ export const AttendancePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* View Image Modal */}
+      <Modal isOpen={!!viewImage} onClose={() => setViewImage(null)} title="Ảnh hiện trường" icon="image" size="lg">
+        {viewImage && (
+          <div className="flex flex-col gap-4">
+            <div className="bg-slate-100 rounded-lg overflow-hidden border border-slate-200 flex items-center justify-center min-h-[300px]">
+              <img src={viewImage} alt="Attendance" className="max-w-full max-h-[70vh] object-contain" />
+            </div>
+            <div className="flex justify-end border-t border-slate-100 pt-3">
+              <button onClick={() => setViewImage(null)} className="px-5 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors text-sm">
+                Đóng
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Check-out Modal */}
       <Modal isOpen={showCheckOutModal} onClose={() => setShowCheckOutModal(false)} title="Check-out (Ra ca)" icon="logout" size="md">
