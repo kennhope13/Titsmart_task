@@ -591,46 +591,45 @@ export const api = {
   },
   attendance: {
     getAll: async () => {
-      const { data, error } = await supabase.from('activity_logs').select('*').eq('icon', 'ATTENDANCE_SESSION').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('activity_logs').select('*').eq('icon', 'ATTENDANCE_SESSION').order('timestamp', { ascending: false });
       if (error) throw error;
       return (data || []).map(row => {
         try {
           const payload = JSON.parse(row.action);
-          return {
-            id: row.id,
-            userId: row.user_id,
-            userName: row.user_name,
-            projectId: row.project_id,
-            projectName: row.project_name,
-            ...payload
-          };
+          return { id: row.id, ...payload };
         } catch { return null; }
       }).filter(Boolean);
     },
     getByUser: async (userId: string) => {
-      const { data, error } = await supabase.from('activity_logs').select('*').eq('icon', 'ATTENDANCE_SESSION').eq('user_id', userId).order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('activity_logs').select('*').eq('icon', 'ATTENDANCE_SESSION').order('timestamp', { ascending: false });
       if (error) throw error;
       return (data || []).map(row => {
         try {
           const payload = JSON.parse(row.action);
-          return { id: row.id, userId: row.user_id, userName: row.user_name, projectId: row.project_id, projectName: row.project_name, ...payload };
+          if (payload.userId !== userId) return null;
+          return { id: row.id, ...payload };
         } catch { return null; }
       }).filter(Boolean);
     },
     getToday: async (userId: string) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const { data, error } = await supabase.from('activity_logs').select('*').eq('icon', 'ATTENDANCE_SESSION').eq('user_id', userId).gte('created_at', today.toISOString()).order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('activity_logs').select('*').eq('icon', 'ATTENDANCE_SESSION').gte('timestamp', today.toISOString()).order('timestamp', { ascending: false });
       if (error) throw error;
       return (data || []).map(row => {
         try {
           const payload = JSON.parse(row.action);
-          return { id: row.id, userId: row.user_id, userName: row.user_name, projectId: row.project_id, projectName: row.project_name, ...payload };
+          if (payload.userId !== userId) return null;
+          return { id: row.id, ...payload };
         } catch { return null; }
       }).filter(Boolean);
     },
     checkIn: async (input: { userId: string; userName: string; projectId?: string; projectName?: string; checkInImage?: string; notes?: string }) => {
       const payloadData = {
+        userId: input.userId,
+        userName: input.userName,
+        projectId: input.projectId || null,
+        projectName: input.projectName || null,
         checkInTime: new Date().toISOString(),
         checkOutTime: null,
         checkInImage: input.checkInImage || null,
@@ -638,17 +637,15 @@ export const api = {
         notes: input.notes || null,
       };
       const payload = {
-        user_id: input.userId,
-        user_name: input.userName,
-        project_id: input.projectId || null,
-        project_name: input.projectName || null,
+        user: input.userName,
+        project: input.projectName || '',
         icon: 'ATTENDANCE_SESSION',
         action: JSON.stringify(payloadData),
-        created_at: payloadData.checkInTime,
+        timestamp: payloadData.checkInTime,
       };
       const { data, error } = await supabase.from('activity_logs').insert(payload).select().single();
       if (error) throw error;
-      return { id: data.id, userId: data.user_id, userName: data.user_name, projectId: data.project_id, projectName: data.project_name, ...payloadData } as any;
+      return { id: data.id, ...payloadData } as any;
     },
     checkOut: async (id: string, input: { checkOutImage?: string; notes?: string }) => {
       const { data: row, error: fetchErr } = await supabase.from('activity_logs').select('action').eq('id', id).single();
@@ -660,7 +657,7 @@ export const api = {
       
       const { data, error } = await supabase.from('activity_logs').update({ action: JSON.stringify(payloadData) }).eq('id', id).select().single();
       if (error) throw error;
-      return { id: data.id, userId: data.user_id, userName: data.user_name, projectId: data.project_id, projectName: data.project_name, ...payloadData } as any;
+      return { id: data.id, ...payloadData } as any;
     },
     delete: async (id: string) => {
       const { error } = await supabase.from('activity_logs').delete().eq('id', id);
