@@ -221,58 +221,40 @@ export const AttendancePage: React.FC = () => {
       </header>
 
       <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col bg-slate-50">
-        {/* Check-in / Check-out Card */}
-        <div className="bg-white border-b border-slate-200 shadow-xs shrink-0 flex flex-col">
-          <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2 shrink-0">
-            <span className="material-symbols-outlined text-primary text-[18px]">fingerprint</span>
-            <h2 className="text-[13px] font-extrabold text-slate-800 uppercase tracking-wide">
-              {activeSession ? 'Đang trong ca làm việc' : 'Bắt đầu ca làm việc'}
+        {/* Check-in / Check-out Bar */}
+        <div className="bg-white border-b border-slate-200 shadow-xs shrink-0">
+          <div className="px-4 py-3 flex items-center gap-3 flex-wrap">
+            <span className="material-symbols-outlined text-primary text-[20px]">fingerprint</span>
+            <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide flex-1 min-w-[200px]">
+              {activeSession ? 'Đang trong ca làm việc' : 'Quản lý chấm công'}
             </h2>
-            {activeSession && (
-              <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-100 text-green-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                Đang làm
-              </span>
-            )}
-          </div>
 
-          <div className="p-4 shrink-0">
             {activeSession ? (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 max-w-3xl">
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm text-slate-600">
-                    <span className="font-bold text-slate-800">Giờ vào:</span> {formatDateTime(activeSession.checkInTime)}
-                  </p>
-                  {activeSession.projectName && (
-                    <p className="text-sm text-slate-600">
-                      <span className="font-bold text-slate-800">Dự án:</span> {activeSession.projectName}
-                    </p>
-                  )}
-                  {activeSession.notes && (
-                    <p className="text-xs text-slate-500">Ghi chú: {activeSession.notes}</p>
-                  )}
-                </div>
+              <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  Đang làm
+                </span>
+                <p className="text-sm text-slate-600">
+                  <span className="hidden sm:inline">Giờ vào: </span>
+                  <span className="font-bold text-slate-800">{formatDateTime(activeSession.checkInTime)}</span>
+                </p>
                 <button
                   onClick={() => setShowCheckOutModal(true)}
-                  className="flex items-center gap-2 px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-lg shadow-sm transition-colors shrink-0"
+                  className="flex items-center gap-2 px-5 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-lg shadow-sm transition-colors shrink-0"
                 >
                   <span className="material-symbols-outlined text-[18px]">logout</span>
                   Check-out (Ra ca)
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
-                <p className="text-sm text-slate-600 flex-1">
-                  Hiện chưa có ca làm việc nào đang chạy. Hãy bắt đầu!
-                </p>
-                <button
-                  onClick={() => setShowCheckInModal(true)}
-                  className="flex items-center gap-2 px-6 py-2 bg-primary hover:bg-blue-800 text-white font-bold text-sm rounded-lg shadow-sm transition-colors shrink-0"
-                >
-                  <span className="material-symbols-outlined text-[18px]">login</span>
-                  Check-in (Vào ca)
-                </button>
-              </div>
+              <button
+                onClick={() => setShowCheckInModal(true)}
+                className="flex items-center gap-2 px-6 py-1.5 bg-primary hover:bg-blue-800 text-white font-bold text-sm rounded-lg shadow-sm transition-colors shrink-0"
+              >
+                <span className="material-symbols-outlined text-[18px]">login</span>
+                Check-in (Vào ca)
+              </button>
             )}
           </div>
         </div>
