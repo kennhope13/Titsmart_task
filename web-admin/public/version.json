@@ -1,11 +1,11 @@
 {
-  "version": "1.2.82",
+  "version": "1.2.83",
   "date": "04/09/2026",
   "notes": [
     "Cải tiến giao diện Danh sách dự án: Hiển thị trực tiếp thông tin 'Hạng mục' trên từng thẻ dự án giúp người dùng dễ dàng theo dõi và bao quát thông tin nhanh chóng."
   ],
-  "releaseDate": "2026-09-05T04:33:48.994Z",
+  "releaseDate": "2026-09-05T04:46:56.490Z",
   "changes": [
-    "Đồng bộ form hỏi xác nhận xóa sơ đồ thành modal chuẩn thay vì popup hệ thống"
+    "Đồng bộ CSS form Upload ảnh hiện trường với chuẩn Modal chung của hệ thống"
   ]
 }

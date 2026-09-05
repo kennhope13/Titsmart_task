@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom';
 import { FieldLog } from '../types';
 import { FieldLogsTaskTable } from '../components/FieldLogsTaskTable';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { Modal } from '../components/common/Modal';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 import { supabase } from '../lib/supabase';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -162,109 +164,89 @@ const UploadModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-800">
-            <span className="material-symbols-outlined text-base text-primary">add_a_photo</span>
-            {editLog ? 'Sửa ảnh hiện trường' : 'Upload ảnh hiện trường'}
-          </h3>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
-            <span className="material-symbols-outlined text-lg">close</span>
-          </button>
+    <Modal isOpen={true} onClose={onClose} title={editLog ? 'Sửa ảnh hiện trường' : 'Upload ảnh hiện trường'} icon="add_a_photo" size="md">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-2">
+        {/* Dự án */}
+        <div>
+          <label className="block font-bold text-slate-700 mb-1">Dự án</label>
+          <div className="w-full px-3 py-2 border border-slate-200 bg-slate-100 rounded-lg text-slate-500 cursor-not-allowed">
+            {projects.find(p => p.code === projectCode)?.name || projectCode}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex-1 space-y-4 overflow-y-auto p-5">
-            {/* Dự án */}
-            <div>
-              <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">
-                Dự án
-              </label>
-              <div className="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm font-semibold text-slate-700">
-                {projects.find(p => p.code === projectCode)?.name || projectCode}
-              </div>
-            </div>
-
-            {/* Ảnh */}
-            <div>
-              <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">
-                Ảnh hiện trường <span className="text-rose-500 normal-case font-normal">*</span>
-              </label>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {previews.map((url, i) => (
-                  <div key={i} className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                    <img src={url} alt="preview" className="h-full w-full object-cover" />
-                    <button type="button" onClick={() => removeFile(i)}
-                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow hover:bg-red-600">
-                      ✕
-                    </button>
-                  </div>
-                ))}
-                <button type="button" onClick={() => fileInputRef.current?.click()}
-                  className="flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:bg-slate-50 hover:text-primary transition">
-                  <span className="material-symbols-outlined mb-0.5 text-lg">add_photo_alternate</span>
-                  <span className="text-[10px] font-bold">Thêm ảnh</span>
+        {/* Ảnh */}
+        <div>
+          <label className="block font-bold text-slate-700 mb-1">Ảnh hiện trường *</label>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {previews.map((url, i) => (
+              <div key={i} className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                <img src={url} alt="preview" className="h-full w-full object-cover" />
+                <button type="button" onClick={() => removeFile(i)}
+                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow hover:bg-red-600">
+                  <span className="material-symbols-outlined text-[12px]">close</span>
                 </button>
               </div>
-              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
-              {files.length > 0 && (
-                <p className="mt-2 text-[11px] font-semibold text-slate-500">{files.length} ảnh đã chọn</p>
-              )}
-            </div>
-
-            {/* Ghi chú */}
-            <div>
-              <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">Ghi chú</label>
-              
-          <div>
-            <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">Đầu mục công việc</label>
-            <CustomSelect
-              value={taskId}
-              onChange={(e) => setTaskId(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="">-- Không liên kết --</option>
-              {tasks.filter(t => t.projectCode === projectCode).map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </CustomSelect>
+            ))}
+            <button type="button" onClick={() => fileInputRef.current?.click()}
+              className="flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:bg-slate-50 hover:text-primary transition">
+              <span className="material-symbols-outlined mb-0.5 text-lg">add_photo_alternate</span>
+              <span className="text-[10px] font-bold">Thêm ảnh</span>
+            </button>
           </div>
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
+          {files.length > 0 && (
+            <p className="mt-2 text-[11px] font-semibold text-slate-500">{files.length} ảnh đã chọn</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block font-bold text-slate-700 mb-1">Đầu mục công việc</label>
+          <CustomSelect
+            value={taskId}
+            onChange={(e) => setTaskId(e.target.value)}
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+          >
+            <option value="">-- Không liên kết --</option>
+            {tasks.filter(t => t.projectCode === projectCode).map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </CustomSelect>
+        </div>
+
+        {/* Ghi chú */}
+        <div>
+          <label className="block font-bold text-slate-700 mb-1">Ghi chú</label>
           <textarea rows={2} value={note} onChange={e => setNote(e.target.value)}
-                placeholder="Mô tả nội dung hiện trường (tùy chọn)..."
-                className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-            </div>
+            placeholder="Mô tả nội dung hiện trường (tùy chọn)..."
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none" />
+        </div>
 
-            {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-[13px] font-bold text-rose-600">{error}</p>}
-          </div>
+        {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-[13px] font-bold text-rose-600">{error}</p>}
 
-          <div className="flex flex-shrink-0 items-center border-t border-slate-100 bg-slate-50/60 px-5 py-4">
-            <div className="flex gap-2 ml-auto">
-              <button type="button" onClick={onClose}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-[13px] font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
-              <button type="submit" disabled={isUploading}
-                className="flex items-center gap-2.5 rounded-lg bg-primary px-5 py-2 text-[13px] font-bold text-white shadow-sm hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
-                {isUploading ? (
-                  <>
-                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                    Đang upload...
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-sm">{editLog ? 'save' : 'upload'}</span>
-                    {editLog ? 'Lưu' : 'Upload'}
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-200">
+          <button type="button" onClick={onClose}
+            className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors">
+            Hủy
+          </button>
+          <button type="submit" disabled={isUploading}
+            className="px-4 py-2 bg-primary text-white font-bold rounded-lg hover:bg-blue-800 disabled:opacity-50 transition-colors flex items-center gap-2">
+            {isUploading ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                Đang lưu...
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-[18px]">upload</span>
+                {editLog ? 'Cập nhật' : 'Upload'}
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 };
-
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export const FieldLogsPage: React.FC = () => {
@@ -482,22 +464,15 @@ export const FieldLogsPage: React.FC = () => {
       )}
 
       {/* Confirm delete */}
-      {deletingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeletingId(null)} />
-          <div className="relative w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 text-center shadow-2xl ring-1 ring-slate-200">
-            <span className="material-symbols-outlined text-4xl text-rose-500">delete_forever</span>
-            <p className="text-sm font-bold text-slate-800">Xóa báo cáo này?</p>
-            <p className="text-xs text-slate-500">Các ảnh trong báo cáo sẽ bị xóa vĩnh viễn.</p>
-            <div className="flex justify-center gap-3 pt-1">
-              <button onClick={() => setDeletingId(null)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-[13px] font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
-              <button onClick={handleDelete}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-[13px] font-bold text-white hover:bg-rose-700 active:scale-95">Xóa</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={deletingId !== null}
+        onClose={() => setDeletingId(null)}
+        onConfirm={handleDelete}
+        title="Xác nhận xóa"
+        message="Xóa báo cáo này? Các ảnh trong báo cáo sẽ bị xóa vĩnh viễn."
+        confirmText="Xóa báo cáo"
+        icon="delete"
+      />
     </div>
   );
 };
