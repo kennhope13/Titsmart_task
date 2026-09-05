@@ -128,9 +128,7 @@ export const ProjectDiagramTab: React.FC = () => {
                       <span className="text-sm font-bold text-slate-700 truncate mr-2" title={url}>{name}</span>
                       
                       <div className="flex items-center gap-1 shrink-0">
-                        <a href={url} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-primary p-2 rounded-lg hover:bg-slate-200 transition-colors" title="Mở thẻ mới">
-                          <span className="material-symbols-outlined text-[18px] block">open_in_new</span>
-                        </a>
+                        
                         {hasPermission(user, 'MANAGE_DOCUMENTS') && (
                           <button onClick={() => handleDelete(idx)} className="text-slate-400 hover:text-rose-500 p-2 rounded-lg hover:bg-rose-50 transition-colors" title="Xóa sơ đồ">
                             <span className="material-symbols-outlined text-[18px] block">delete</span>
