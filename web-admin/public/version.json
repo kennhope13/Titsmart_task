@@ -1,12 +1,11 @@
 {
-  "version": "1.2.76",
+  "version": "1.2.77",
   "date": "04/09/2026",
   "notes": [
     "Cải tiến giao diện Danh sách dự án: Hiển thị trực tiếp thông tin 'Hạng mục' trên từng thẻ dự án giúp người dùng dễ dàng theo dõi và bao quát thông tin nhanh chóng."
   ],
-  "releaseDate": "2026-09-04T16:36:32.826Z",
+  "releaseDate": "2026-09-05T03:27:04.015Z",
   "changes": [
-    "Tích hợp tính năng cải tiến sơ đồ dự án (Project Diagram Improvements)",
-    "Hoàn thiện bản sửa lỗi đọc nhầm VAT khi import từ màn hình chi phí"
+    "Căn giữa đồng hồ ngày giờ trên thanh tiêu đề ứng dụng"
   ]
 }
