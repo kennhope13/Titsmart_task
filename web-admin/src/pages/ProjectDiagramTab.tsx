@@ -115,9 +115,12 @@ export const ProjectDiagramTab: React.FC = () => {
                   <div key={idx} className="border border-slate-200 bg-slate-50 rounded-xl overflow-hidden shadow-sm flex flex-col relative group">
                     <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm cursor-pointer group-hover:bg-slate-100 transition-colors" onClick={() => setViewerItem({url, name})} title="Nhấn để xem ảnh lớn">
                       {isPdf ? (
-                        <iframe src={url} className="w-full h-full bg-white rounded" title={`Sơ đồ dự án ${idx + 1}`} />
+                        <div className="relative w-full h-full">
+                          <iframe src={url} className="w-full h-full bg-white rounded pointer-events-none" title={name} tabIndex={-1} />
+                          <div className="absolute inset-0 z-10 bg-transparent" />
+                        </div>
                       ) : (
-                        <img src={url} alt={`Sơ đồ dự án ${idx + 1}`} className="w-full h-full object-contain rounded" />
+                        <img src={url} alt={name} className="w-full h-full object-contain rounded" />
                       )}
                     </div>
                     
