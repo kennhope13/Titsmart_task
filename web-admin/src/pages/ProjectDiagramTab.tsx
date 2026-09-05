@@ -51,6 +51,24 @@ export const ProjectDiagramTab: React.FC = () => {
     setPendingUrls(newUrlArray.filter(Boolean));
   };
 
+  const handleEdit = async (idxToEdit: number) => {
+    if (!project) return;
+    const item = savedDiagrams[idxToEdit];
+    const newName = window.prompt('Nhập tên mới cho sơ đồ:', item.name);
+    if (newName && newName.trim() !== '' && newName !== item.name) {
+      setIsSaving(true);
+      try {
+        const newSaved = [...savedDiagrams];
+        newSaved[idxToEdit] = { ...newSaved[idxToEdit], name: newName.trim() };
+        const updated = await updateProject(project.id, { diagramUrl: JSON.stringify(newSaved) });
+        if (updated) triggerToast('Đã cập nhật tên sơ đồ!', 'success');
+      } catch (err) {
+        console.error('Failed to edit diagram name', err);
+      }
+      setIsSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!project || pendingUrls.length === 0) return;
     setIsSaving(true);
@@ -113,27 +131,32 @@ export const ProjectDiagramTab: React.FC = () => {
                 
                 return (
                   <div key={idx} className="border border-slate-200 bg-slate-50 rounded-xl overflow-hidden shadow-sm flex flex-col relative group">
-                    <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm cursor-pointer group-hover:bg-slate-100 transition-colors" onClick={() => setViewerItem({url, name})} title="Nhấn để xem ảnh lớn">
-                      {isPdf ? (
-                        <iframe src={url} className="w-full h-full bg-white rounded" title={`Sơ đồ dự án ${idx + 1}`} />
-                      ) : (
-                        <img src={url} alt={`Sơ đồ dự án ${idx + 1}`} className="w-full h-full object-contain rounded" />
-                      )}
-                    </div>
-                    
-                    <div className="p-3 border-t border-slate-200/60 bg-white flex items-center justify-between">
+                    <div className="p-3 border-b border-slate-200/60 bg-white flex items-center justify-between z-20 relative">
                       <span className="text-sm font-bold text-slate-700 truncate mr-2" title={url}>{name}</span>
                       
                       <div className="flex items-center gap-1 shrink-0">
-                        <a href={url} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-primary p-2 rounded-lg hover:bg-slate-200 transition-colors" title="Mở thẻ mới">
-                          <span className="material-symbols-outlined text-[18px] block">open_in_new</span>
-                        </a>
                         {hasPermission(user, 'MANAGE_DOCUMENTS') && (
-                          <button onClick={() => handleDelete(idx)} className="text-slate-400 hover:text-rose-500 p-2 rounded-lg hover:bg-rose-50 transition-colors" title="Xóa sơ đồ">
-                            <span className="material-symbols-outlined text-[18px] block">delete</span>
-                          </button>
+                          <>
+                            <button onClick={(e) => { e.stopPropagation(); handleEdit(idx); }} className="text-slate-400 hover:text-primary p-1.5 rounded-lg hover:bg-slate-100 transition-colors" title="Đổi tên">
+                              <span className="material-symbols-outlined text-[18px] block">edit</span>
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(idx); }} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors" title="Xóa sơ đồ">
+                              <span className="material-symbols-outlined text-[18px] block">delete</span>
+                            </button>
+                          </>
                         )}
                       </div>
+                    </div>
+
+                    <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm cursor-pointer group-hover:bg-slate-100 transition-colors" onClick={() => setViewerItem({url, name})} title="Nhấn để xem ảnh lớn">
+                      {isPdf ? (
+                        <div className="relative w-full h-full overflow-hidden rounded">
+                          <iframe src={`${url}#toolbar=0&navpanes=0&scrollbar=0`} className="w-[calc(100%+24px)] h-[calc(100%+24px)] -m-[12px] bg-white pointer-events-none" title={name} tabIndex={-1} />
+                          <div className="absolute inset-0 z-10 bg-transparent" />
+                        </div>
+                      ) : (
+                        <img src={url} alt={name} className="w-full h-full object-contain rounded" />
+                      )}
                     </div>
                   </div>
                 );
@@ -143,7 +166,7 @@ export const ProjectDiagramTab: React.FC = () => {
             <div className="border-2 border-dashed border-slate-200 rounded-xl p-16 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50">
               <span className="material-symbols-outlined text-6xl mb-4 text-slate-300">account_tree</span>
               <p className="font-medium text-slate-500 text-lg">Chưa có sơ đồ dự án nào</p>
-              <p className="text-sm text-slate-400 mt-2">Hãy bấm vào nút Upload ảnh trên thanh tiêu đề</p>
+              <p className="text-sm text-slate-400 mt-2">Hãy bấm vào nút Tải sơ đồ trên thanh tiêu đề</p>
             </div>
           )}
 
@@ -154,7 +177,7 @@ export const ProjectDiagramTab: React.FC = () => {
               className="h-[36px] px-4 bg-primary text-white font-bold text-sm rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
-              Upload ảnh
+              Tải sơ đồ
             </button>,
             portalNode
           )}
