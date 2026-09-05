@@ -148,7 +148,7 @@ export const ProjectDiagramTab: React.FC = () => {
                 
                 return (
                   <div key={idx} className="border border-slate-200 bg-slate-50 rounded-xl overflow-hidden shadow-sm flex flex-col relative group">
-                    <div className="p-3 border-b border-slate-200/60 bg-white flex items-center justify-between z-20 relative">
+                    <div className="px-3 py-1.5 border-b border-slate-200/60 bg-white flex items-center justify-between z-20 relative">
                       <span className="text-sm font-bold text-slate-700 truncate mr-2" title={url}>{name}</span>
                       
                       <div className="flex items-center gap-1 shrink-0">
