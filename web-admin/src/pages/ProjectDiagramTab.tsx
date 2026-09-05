@@ -199,94 +199,61 @@ export const ProjectDiagramTab: React.FC = () => {
             portalNode
           )}
 
-          {/* The Upload Modal */}
-          {isModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleCloseModal} />
-              <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
-                
-                {/* Modal Header */}
-                <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
-                  <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-800">
-                    <span className="material-symbols-outlined text-base text-primary">add_a_photo</span>
-                    Upload sơ đồ dự án
-                  </h3>
-                  <button onClick={handleCloseModal} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
-                    <span className="material-symbols-outlined text-lg">close</span>
-                  </button>
-                </div>
-
-                {/* Modal Body */}
-                <div className="flex flex-1 flex-col overflow-hidden">
-                  <div className="flex-1 space-y-5 overflow-y-auto p-5">
-                    
-                    {/* Project Name Field */}
-                    <div>
-                      <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">
-                        DỰ ÁN
-                      </label>
-                      <div className="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm font-semibold text-slate-700">
-                        {project.name}
-                      </div>
-                    </div>
-
-                    {/* Tên sơ đồ Field */}
-                    <div>
-                      <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-primary">
-                        TÊN SƠ ĐỒ
-                      </label>
-                      <input 
-                        type="text" 
-                        placeholder="Nhập tên sơ đồ (vd: Sơ đồ nguyên lý...)"
-                        value={diagramName}
-                        onChange={(e) => setDiagramName(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-slate-400 shadow-sm"
-                      />
-                    </div>
-
-                    {/* Image Upload Field */}
-                    <div>
-                      <label className="mb-2 block text-[11px] font-extrabold uppercase tracking-wider text-primary">
-                        SƠ ĐỒ DỰ ÁN <span className="text-rose-500 normal-case font-normal">*</span>
-                      </label>
-                      
-                      <div className="w-full">
-                        <FileUpload 
-                          key={resetKey}
-                          label=""
-                          buttonText={editingIndex !== null ? "Tải lại sơ đồ (Thay thế)" : "Tải sơ đồ"}
-                          buttonIcon="add_photo_alternate"
-                          variant="light"
-                          multiple={editingIndex === null}
-                          value={pendingUrls} 
-                          onChange={handleUpload} 
-                        />
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* Modal Footer */}
-                  <div className="flex flex-shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
-                    <button 
-                      onClick={handleCloseModal} 
-                      className="rounded-lg border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50 transition shadow-sm"
-                    >
-                      Hủy
-                    </button>
-                    <button 
-                      onClick={handleSave} 
-                      disabled={isSaving || pendingUrls.length === 0} 
-                      className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-white hover:bg-blue-800 disabled:opacity-50 transition shadow-sm"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">upload</span>
-                      {isSaving ? 'Đang lưu...' : (editingIndex !== null ? 'Cập nhật' : 'Upload')}
-                    </button>
-                  </div>
+                    {/* The Upload Modal */}
+          <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingIndex !== null ? 'Cập nhật sơ đồ' : 'Upload sơ đồ dự án'} icon="add_a_photo">
+            <div className="flex flex-col gap-4 py-2">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Dự án</label>
+                <div className="w-full px-3 py-2 border border-slate-200 bg-slate-100 rounded-lg text-slate-500 cursor-not-allowed">
+                  {project.name}
                 </div>
               </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Tên sơ đồ</label>
+                <input 
+                  type="text" 
+                  placeholder="Nhập tên sơ đồ (vd: Sơ đồ nguyên lý...)"
+                  value={diagramName}
+                  onChange={(e) => setDiagramName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Sơ đồ dự án *</label>
+                <div className="w-full">
+                  <FileUpload 
+                    key={resetKey}
+                    label=""
+                    buttonText={editingIndex !== null ? "Tải lại sơ đồ (Thay thế)" : "Tải sơ đồ"}
+                    buttonIcon="add_photo_alternate"
+                    variant="light"
+                    multiple={editingIndex === null}
+                    value={pendingUrls} 
+                    onChange={handleUpload} 
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-200">
+                <button 
+                  onClick={handleCloseModal} 
+                  className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button 
+                  onClick={handleSave} 
+                  disabled={isSaving || pendingUrls.length === 0} 
+                  className="px-4 py-2 bg-primary text-white font-bold rounded-lg hover:bg-blue-800 disabled:opacity-50 transition-colors flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">upload</span>
+                  {isSaving ? 'Đang lưu...' : (editingIndex !== null ? 'Cập nhật' : 'Upload')}
+                </button>
+              </div>
             </div>
-          )}
+          </Modal>
 
         </div>
         
