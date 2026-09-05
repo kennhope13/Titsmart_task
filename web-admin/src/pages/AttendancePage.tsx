@@ -113,7 +113,18 @@ export const AttendancePage: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchLogs(); }, [tab]);
+  useEffect(() => {
+    fetchLogs();
+    const channel = supabase.channel('attendance_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, () => {
+        fetchLogs();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tab]);
 
   const uploadImage = async (file: File): Promise<string> => {
     const ext = file.name.split('.').pop();
