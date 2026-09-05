@@ -105,8 +105,9 @@ export const AttendancePage: React.FC = () => {
       const url = await uploadImage(file);
       if (type === 'in') setCheckInImage(url);
       else setCheckOutImage(url);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Upload failed', err);
+      alert('Lỗi tải ảnh: ' + (err.message || JSON.stringify(err)));
     }
     e.target.value = '';
   };
@@ -118,7 +119,7 @@ export const AttendancePage: React.FC = () => {
       const proj = projects.find(p => p.id === selectedProject);
       const result = await api.attendance.checkIn({
         userId: user.id,
-        userName: user.name,
+        userName: user.name || user.username || 'Unknown',
         projectId: selectedProject || undefined,
         projectName: proj?.name,
         checkInImage: checkInImage || undefined,
@@ -137,8 +138,9 @@ export const AttendancePage: React.FC = () => {
         type: 'system',
         icon: 'login',
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error('Check-in failed', e);
+      alert('Lỗi chấm công: ' + (e.message || JSON.stringify(e)));
     }
     setIsSubmitting(false);
   };
@@ -164,8 +166,9 @@ export const AttendancePage: React.FC = () => {
         type: 'system',
         icon: 'logout',
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error('Check-out failed', e);
+      alert('Lỗi check-out: ' + (e.message || JSON.stringify(e)));
     }
     setIsSubmitting(false);
   };
