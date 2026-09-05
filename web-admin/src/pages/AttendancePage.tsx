@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { Modal } from '../components/common/Modal';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 import { CustomSelect } from '../components/common/CustomSelect';
+import * as XLSX from 'xlsx';
 
 interface AttendanceLog {
   id: string;
@@ -65,6 +66,28 @@ export const AttendancePage: React.FC = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const checkOutFileRef = useRef<HTMLInputElement>(null);
+
+  const handleExportExcel = () => {
+    if (!filteredLogs.length) return;
+    const exportData = filteredLogs.map((log, index) => ({
+      'STT': index + 1,
+      'Ngày': formatDate(log.checkInTime),
+      'Nhân viên': log.userName,
+      'Giờ vào': formatTime(log.checkInTime),
+      'Giờ ra': log.checkOutTime ? formatTime(log.checkOutTime) : '',
+      'Thời gian': log.checkOutTime ? getDuration(log.checkInTime, log.checkOutTime) : '',
+      'Dự án': log.projectName || '',
+      'Ghi chú': log.notes || '',
+      'Ảnh vào': log.checkInImage || '',
+      'Ảnh ra': log.checkOutImage || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'ChamCong');
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `BangChamCong_${today}.xlsx`);
+  };
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -279,8 +302,16 @@ export const AttendancePage: React.FC = () => {
                 ))}
               </CustomSelect>
             </div>
-            <div className="ml-auto px-2.5 py-1 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200">
-              {filteredLogs.length} bản ghi
+            <div className="ml-auto flex items-center gap-3">
+              <div className="px-2.5 py-1 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200">
+                {filteredLogs.length} bản ghi
+              </div>
+              {filteredLogs.length > 0 && (
+                <button onClick={handleExportExcel} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-sm">
+                  <span className="material-symbols-outlined text-[16px]">download</span>
+                  Xuất Excel
+                </button>
+              )}
             </div>
           </div>
         )}
