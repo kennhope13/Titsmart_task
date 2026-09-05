@@ -254,12 +254,12 @@ export const ActivityLogPage: React.FC = () => {
                               <span className="material-symbols-outlined text-primary/70 text-[18px]">calendar_month</span>
                               <span className="text-xs font-extrabold text-slate-700">{dateLabel}</span>
                               <span className="px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-bold text-slate-400 shadow-xs">
-                                {logs.length} thao tác
+                                {logs.filter(log => log.icon !== 'ATTENDANCE_SESSION').length} thao tác
                               </span>
                             </div>
                           </td>
                         </tr>
-                        {logs.map((log) => {
+                        {logs.filter(log => log.icon !== 'ATTENDANCE_SESSION').map((log) => {
                           globalIndex++;
                           const timeStr = parseTime(log.timestamp || '');
                           const actionInfo = getActionTypeInfo(log.action);
