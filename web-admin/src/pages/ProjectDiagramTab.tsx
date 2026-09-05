@@ -33,6 +33,7 @@ export const ProjectDiagramTab: React.FC = () => {
   const [diagramName, setDiagramName] = useState<string>('');
   const [resetKey, setResetKey] = useState<number>(Date.now());
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setPortalNode(document.getElementById('project-header-actions'));
@@ -51,42 +52,58 @@ export const ProjectDiagramTab: React.FC = () => {
     setPendingUrls(newUrlArray.filter(Boolean));
   };
 
-  const handleEdit = async (idxToEdit: number) => {
-    if (!project) return;
-    const item = savedDiagrams[idxToEdit];
-    const newName = window.prompt('Nhập tên mới cho sơ đồ:', item.name);
-    if (newName && newName.trim() !== '' && newName !== item.name) {
-      setIsSaving(true);
-      try {
-        const newSaved = [...savedDiagrams];
-        newSaved[idxToEdit] = { ...newSaved[idxToEdit], name: newName.trim() };
-        const updated = await updateProject(project.id, { diagramUrl: JSON.stringify(newSaved) });
-        if (updated) triggerToast('Đã cập nhật tên sơ đồ!', 'success');
-      } catch (err) {
-        console.error('Failed to edit diagram name', err);
-      }
-      setIsSaving(false);
-    }
+  const handleOpenEditModal = (idx: number) => {
+    setEditingIndex(idx);
+    setDiagramName(savedDiagrams[idx].name);
+    setPendingUrls([savedDiagrams[idx].url]);
+    setResetKey(Date.now());
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setPendingUrls([]);
+    setDiagramName('');
+    setEditingIndex(null);
+    setResetKey(Date.now());
   };
 
   const handleSave = async () => {
     if (!project || pendingUrls.length === 0) return;
     setIsSaving(true);
     try {
-      const newEntries = pendingUrls.map((url, idx) => ({
-        url,
-        name: diagramName.trim() ? (pendingUrls.length > 1 ? `${diagramName.trim()} ${idx + 1}` : diagramName.trim()) : `Sơ đồ mới ${idx + 1}`
-      }));
-      const combinedUrls = JSON.stringify([...savedDiagrams, ...newEntries]);
+      let combinedUrls: string;
+      if (editingIndex !== null) {
+        const newSaved = [...savedDiagrams];
+        // Replace the item with potentially new URL and new name
+        // If they uploaded multiple files, we just use the first one, or we can expand it. Let's expand if multiple.
+        if (pendingUrls.length === 1) {
+          newSaved[editingIndex] = {
+            url: pendingUrls[0],
+            name: diagramName.trim() || `Sơ đồ ${editingIndex + 1}`
+          };
+        } else {
+          // If they somehow uploaded multiple files during edit, replace the current one with multiple
+          const newEntries = pendingUrls.map((url, idx) => ({
+            url,
+            name: diagramName.trim() ? (pendingUrls.length > 1 ? `${diagramName.trim()} ${idx + 1}` : diagramName.trim()) : `Sơ đồ mới ${idx + 1}`
+          }));
+          newSaved.splice(editingIndex, 1, ...newEntries);
+        }
+        combinedUrls = JSON.stringify(newSaved);
+      } else {
+        const newEntries = pendingUrls.map((url, idx) => ({
+          url,
+          name: diagramName.trim() ? (pendingUrls.length > 1 ? `${diagramName.trim()} ${idx + 1}` : diagramName.trim()) : `Sơ đồ mới ${idx + 1}`
+        }));
+        combinedUrls = JSON.stringify([...savedDiagrams, ...newEntries]);
+      }
       
       const updated = await updateProject(project.id, { diagramUrl: combinedUrls });
       if (!updated) {
         alert('Không thể lưu sơ đồ! Lỗi Database: Bảng "projects" chưa có cột "diagram_url".');
       } else {
-        setPendingUrls([]);
-        setDiagramName('');
-        setResetKey(Date.now());
-        setIsModalOpen(false);
+        handleCloseModal();
         triggerToast('Lưu sơ đồ dự án thành công!', 'success');
       }
     } catch (err) {
@@ -137,7 +154,7 @@ export const ProjectDiagramTab: React.FC = () => {
                       <div className="flex items-center gap-1 shrink-0">
                         {hasPermission(user, 'MANAGE_DOCUMENTS') && (
                           <>
-                            <button onClick={(e) => { e.stopPropagation(); handleEdit(idx); }} className="text-slate-400 hover:text-primary p-1.5 rounded-lg hover:bg-slate-100 transition-colors" title="Đổi tên">
+                            <button onClick={(e) => { e.stopPropagation(); handleOpenEditModal(idx); }} className="text-slate-400 hover:text-primary p-1.5 rounded-lg hover:bg-slate-100 transition-colors" title="Đổi tên">
                               <span className="material-symbols-outlined text-[18px] block">edit</span>
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); handleDelete(idx); }} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors" title="Xóa sơ đồ">
@@ -173,7 +190,7 @@ export const ProjectDiagramTab: React.FC = () => {
           {/* Portal Button to trigger Modal */}
           {hasPermission(user, 'MANAGE_DOCUMENTS') && portalNode && createPortal(
             <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => { setEditingIndex(null); setDiagramName(''); setPendingUrls([]); setResetKey(Date.now()); setIsModalOpen(true); }}
               className="h-[36px] px-4 bg-primary text-white font-bold text-sm rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
@@ -185,7 +202,7 @@ export const ProjectDiagramTab: React.FC = () => {
           {/* The Upload Modal */}
           {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setIsModalOpen(false); setPendingUrls([]); setDiagramName(''); setResetKey(Date.now()); }} />
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleCloseModal} />
               <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
                 
                 {/* Modal Header */}
@@ -194,7 +211,7 @@ export const ProjectDiagramTab: React.FC = () => {
                     <span className="material-symbols-outlined text-base text-primary">add_a_photo</span>
                     Upload sơ đồ dự án
                   </h3>
-                  <button onClick={() => { setIsModalOpen(false); setPendingUrls([]); setDiagramName(''); setResetKey(Date.now()); }} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
+                  <button onClick={handleCloseModal} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition">
                     <span className="material-symbols-outlined text-lg">close</span>
                   </button>
                 </div>
@@ -237,10 +254,10 @@ export const ProjectDiagramTab: React.FC = () => {
                         <FileUpload 
                           key={resetKey}
                           label=""
-                          buttonText="Tải sơ đồ"
+                          buttonText={editingIndex !== null ? "Tải lại sơ đồ (Thay thế)" : "Tải sơ đồ"}
                           buttonIcon="add_photo_alternate"
                           variant="light"
-                          multiple={true}
+                          multiple={editingIndex === null}
                           value={pendingUrls} 
                           onChange={handleUpload} 
                         />
@@ -252,7 +269,7 @@ export const ProjectDiagramTab: React.FC = () => {
                   {/* Modal Footer */}
                   <div className="flex flex-shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
                     <button 
-                      onClick={() => { setIsModalOpen(false); setPendingUrls([]); setDiagramName(''); setResetKey(Date.now()); }} 
+                      onClick={handleCloseModal} 
                       className="rounded-lg border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50 transition shadow-sm"
                     >
                       Hủy
@@ -263,7 +280,7 @@ export const ProjectDiagramTab: React.FC = () => {
                       className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-white hover:bg-blue-800 disabled:opacity-50 transition shadow-sm"
                     >
                       <span className="material-symbols-outlined text-[18px]">upload</span>
-                      {isSaving ? 'Đang tải...' : 'Upload'}
+                      {isSaving ? 'Đang lưu...' : (editingIndex !== null ? 'Cập nhật' : 'Upload')}
                     </button>
                   </div>
                 </div>

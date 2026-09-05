@@ -106,4 +106,3 @@ code = code.replace(
 
 fs.writeFileSync('src/pages/ProjectDiagramTab.tsx', code);
 console.log('Success!');
-

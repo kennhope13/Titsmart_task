@@ -1,11 +1,11 @@
 {
-  "version": "1.2.77",
+  "version": "1.2.78",
   "date": "04/09/2026",
   "notes": [
     "Cải tiến giao diện Danh sách dự án: Hiển thị trực tiếp thông tin 'Hạng mục' trên từng thẻ dự án giúp người dùng dễ dàng theo dõi và bao quát thông tin nhanh chóng."
   ],
-  "releaseDate": "2026-09-05T03:27:04.015Z",
+  "releaseDate": "2026-09-05T04:08:39.140Z",
   "changes": [
-    "Căn giữa đồng hồ ngày giờ trên thanh tiêu đề ứng dụng"
+    "Chuyển tính năng Đổi tên sơ đồ sang dùng form giao diện chuẩn thay cho popup mặc định"
   ]
 }
