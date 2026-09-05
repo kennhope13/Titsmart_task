@@ -32,10 +32,13 @@ const getAuthUser = () => {
 const filterByProject = (items: any[], codeField: string) => {
   const user = getAuthUser();
   if (!user || !Array.isArray(items)) return items;
-  const role = (user.role || '').trim().toLowerCase();
-  if (['admin', 'pm', 'quản trị viên', 'quản lý dự án', 'giám đốc'].includes(role)) return items;
+  // Admin gốc luôn thấy tất cả
+  if (user.username === 'admin') return items;
   
   const assigned = Array.isArray(user.projectCodes) ? user.projectCodes : [];
+  // Nếu chưa gán dự án nào (mảng rỗng) → xem tất cả (dành cho PM/Giám đốc)
+  if (assigned.length === 0) return items;
+  // Lọc theo danh sách dự án được gán
   return items.filter(item => assigned.includes(item[codeField]));
 };
 import { supabase } from '../lib/supabase';
