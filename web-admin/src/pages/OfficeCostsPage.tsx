@@ -48,7 +48,7 @@ export const OfficeCostsPage: React.FC = () => {
 
   const expenseContentTypes = useMemo(() => {
     const types = new Set<string>();
-    types.add('Quỹ Công Trình');
+    types.add('Quỹ');
     types.add('Văn phòng phẩm');
     types.add('Vật tư/ thiết bị');
     types.add('Chi phí ăn ở/đi lại');
@@ -123,7 +123,7 @@ export const OfficeCostsPage: React.FC = () => {
                 projectCode: 'OFFICE',
                 stt: String(currentProjExpenses.length + 1),
                 date: new Date().toISOString().split('T')[0],
-                content: 'Quỹ Công Trình',
+                content: 'Quỹ',
                 description: `Cấp quỹ cho ${targetName}`,
                 spenderName: targetName,
                 unit: 'lần',
