@@ -324,6 +324,7 @@ export const MaterialTrackingPage: React.FC = () => {
   const [transferQuantity, setTransferQuantity] = useState(0);
 
   // Filter state
+  const [filterProject, setFilterProject] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterName, setFilterName] = useState('');
   const [filterUnit, setFilterUnit] = useState('');
@@ -517,6 +518,22 @@ export const MaterialTrackingPage: React.FC = () => {
     return Array.from(byCode.values());
   }, [materials, projects]);
 
+  const uniqueProjects = useMemo(() => {
+    const list: { code: string; name: string }[] = [];
+    const seen = new Set<string>();
+    materials.forEach(m => {
+      const code = m.projectCode || 'COMPANY';
+      if (!seen.has(code)) {
+        seen.add(code);
+        list.push({
+          code,
+          name: m.projectName || (code === 'COMPANY' ? 'Kho Tổng (Kho Công Ty)' : code)
+        });
+      }
+    });
+    return list.sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+  }, [materials]);
+
   const uniqueCategories = useMemo(() => Array.from(new Set(materials.map(m => m.category || 'Vật tư chung').filter(Boolean))).sort(), [materials]);
   const uniqueNames = useMemo(() => Array.from(new Set(materials.map(m => m.name || '').filter(Boolean))).sort(), [materials]);
   const uniqueUnits = useMemo(() => Array.from(new Set(materials.map(m => m.unit || '').filter(Boolean))).sort(), [materials]);
@@ -524,6 +541,7 @@ export const MaterialTrackingPage: React.FC = () => {
   const filteredMaterials = useMemo(() => {
     let result = materials.filter(m => {
       if (projectCodeFilter && m.projectCode !== projectCodeFilter) return false;
+      if (filterProject && m.projectCode !== filterProject) return false;
       if (filterCategory && (m.category || 'Vật tư chung') !== filterCategory) return false;
       if (filterName && m.name !== filterName) return false;
       if (filterUnit && m.unit !== filterUnit) return false;
@@ -550,7 +568,7 @@ export const MaterialTrackingPage: React.FC = () => {
     });
 
     return result;
-  }, [materials, activeTab, filterCategory, filterName, filterUnit, searchQuery]);
+  }, [materials, activeTab, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, searchQuery]);
 
   const imports = inventoryTransactions
     .filter(tx => tx.type === "IMPORT" && (!projectCodeFilter || materials.find(m => m.id === tx.materialId)?.projectCode === projectCodeFilter))
@@ -939,6 +957,17 @@ export const MaterialTrackingPage: React.FC = () => {
                 Lọc chi tiết:
               </div>
               
+              {!projectId && (
+                <CustomSelect 
+                  className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 min-w-[160px] max-w-[220px] truncate cursor-pointer hover:bg-slate-50 transition-colors font-semibold"
+                  value={filterProject}
+                  onChange={(e) => setFilterProject(e.target.value)}
+                >
+                  <option value="">Dự án: Tất cả</option>
+                  {uniqueProjects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
+                </CustomSelect>
+              )}
+
               <CustomSelect 
                 className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 min-w-[150px] max-w-[200px] truncate cursor-pointer hover:bg-slate-50 transition-colors"
                 value={filterCategory}

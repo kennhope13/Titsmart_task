@@ -1,9 +1,9 @@
 {
-  "version": "1.2.89",
+  "version": "1.2.90",
   "date": "2026-09-07",
   "notes": [
-    "Cho phép chỉnh sửa linh hoạt Tên vật tư, Mã vật tư, Mô tả/Quy cách, Danh mục, Tồn đầu kỳ, Đơn giá trong Kho tổng.",
-    "Tối ưu trải nghiệm: Bấm trực tiếp vào dòng vật tư bất kỳ để mở ngay Modal chỉnh sửa nhanh.",
-    "Loại bỏ các ô chọn trạng thái thi công / mua hàng không liên quan ra khỏi kho tổng."
+    "Bổ sung bộ lọc Dự án (Dự án: Tất cả) tại Kho tổng để quản lý và phân loại vật tư theo dự án hoặc kho công ty.",
+    "Bổ sung tính năng Nhập Danh mục khi thêm mới vật tư.",
+    "Tối ưu hóa bảng Vật tư & Chi phí và hệ thống thông báo tức thì cho người dùng."
   ]
 }
