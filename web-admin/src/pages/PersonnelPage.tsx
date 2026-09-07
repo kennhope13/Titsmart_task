@@ -104,7 +104,7 @@ export const PersonnelPage: React.FC = () => {
     
     if (engineer.projectCodes && Array.isArray(engineer.projectCodes)) {
       engineer.projectCodes.forEach((code: string) => {
-        const found = projects.find(p => p.code === code);
+        const found = projects.find(p => (p.code || '').trim().toUpperCase() === (code || '').trim().toUpperCase());
         if (found) {
           allAssigned.push({ code: found.code, name: found.name });
         }
@@ -113,8 +113,8 @@ export const PersonnelPage: React.FC = () => {
 
     // Filter out duplicates and projects that no longer exist in the projects list
     assignedProjects = allAssigned.filter((value, assignedIndex, self) => 
-      projects.some(p => p.code === value.code) && // Ensure project still exists
-      self.findIndex((item) => item.code === value.code) === assignedIndex
+      projects.some(p => (p.code || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase()) && // Ensure project still exists
+      self.findIndex((item) => (item.code || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase()) === assignedIndex
     );
 
     let rawRole = (engineer as any).role || engineer.title?.trim() || 'Nhân viên';
@@ -174,12 +174,13 @@ export const PersonnelPage: React.FC = () => {
     setUsername((person as any).username || '');
     setPassword('');
     
-    // Check original projectCodes from DB to see if it was empty (meaning all projects)
+    // Check original projectCodes from DB
     const rawProjectCodes = (person as any).projectCodes || (person as any).project_codes || [];
-    const hadNoProjectsAssigned = Array.isArray(rawProjectCodes) && rawProjectCodes.length === 0;
+    const codesToUse = Array.isArray(rawProjectCodes) && rawProjectCodes.length > 0
+      ? rawProjectCodes
+      : person.assignedProjects.map((project: any) => project.code);
     
-    setIsAllProjects(hadNoProjectsAssigned);
-    setSelectedProjectCodes(person.assignedProjects.map((project: any) => project.code));
+    setSelectedProjectCodes(codesToUse);
     setIsFormOpen(true);
   };
 
