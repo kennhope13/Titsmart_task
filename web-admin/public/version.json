@@ -1,7 +1,7 @@
 {
-  "version": "1.2.98",
+  "version": "1.2.99",
   "date": "2026-09-07",
   "notes": [
-    "Tự động tổng hợp và hiển thị đầy đủ các đầu mục cha 33 và 36 trên tất cả các trang Tiến độ và Kế hoạch."
+    "Cập nhật các tính năng và sửa lỗi mới nhất từ nhánh đối tác (Personnel & Project Management) đồng thời bảo toàn toàn bộ mã nguồn hiện tại."
   ]
 }
