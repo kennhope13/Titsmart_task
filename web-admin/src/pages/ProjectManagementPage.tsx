@@ -537,7 +537,7 @@ export const ProjectManagementPage: React.FC = () => {
 
     // Resolve engineers from the engineers array since database doesn't store project.members
     const assignedEngineers = engineers
-      .filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(project.code))
+      .filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => (c || '').trim().toUpperCase() === (project.code || '').trim().toUpperCase()))
       .map(eng => eng.id);
 
     const allMemberIds = Array.from(new Set([...(project.members || []), ...assignedEngineers]));
@@ -569,25 +569,33 @@ export const ProjectManagementPage: React.FC = () => {
       await updateProject(projectToEdit.id, payload);
 
       // Update engineer project codes if members changed
+      const projCodeUpper = (projectToEdit.code || '').trim().toUpperCase();
       const oldMembers = Array.from(new Set([
         ...(projectToEdit.members || []),
-        ...engineers.filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(projectToEdit.code)).map(eng => eng.id)
+        ...(projectToEdit.memberIds || []),
+        ...engineers.filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper)).map(eng => eng.id)
       ]));
       const addedMembers = editSelectedEngineerIds.filter(id => !oldMembers.includes(id));
       const removedMembers = oldMembers.filter(id => !editSelectedEngineerIds.includes(id));
 
       for (const id of addedMembers) {
         const eng = engineers.find(e => e.id === id);
-        if (eng && (!eng.projectCodes || !eng.projectCodes.includes(projectToEdit.code))) {
-          const newCodes = Array.isArray(eng.projectCodes) ? [...eng.projectCodes, projectToEdit.code] : [projectToEdit.code];
-          await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+        if (eng) {
+          const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
+          if (!currentCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper)) {
+            const newCodes = [...currentCodes, projectToEdit.code];
+            await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+          }
         }
       }
       for (const id of removedMembers) {
         const eng = engineers.find(e => e.id === id);
-        if (eng && eng.projectCodes && eng.projectCodes.includes(projectToEdit.code)) {
-          const newCodes = eng.projectCodes.filter(c => c !== projectToEdit.code);
-          await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+        if (eng) {
+          const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
+          if (currentCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper)) {
+            const newCodes = currentCodes.filter(c => (c || '').trim().toUpperCase() !== projCodeUpper);
+            await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+          }
         }
       }
 
