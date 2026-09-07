@@ -893,6 +893,15 @@ const hasSyncedRef = useRef(false);
             });
 
             if (isSection) {
+              importedMaterials.push({
+                projectCode: targetProjectCode,
+                stt: finalStt,
+                jobContent: String(itemName).trim(),
+                unit: '',
+                contractVolume: 0,
+                notes: '[section]'
+              });
+
               importedPurchasings.push({
                 projectCode: targetProjectCode,
                 stt: finalStt,
@@ -919,6 +928,7 @@ const hasSyncedRef = useRef(false);
                 jobContent: String(itemName).trim(),
                 unit: unitVal,
                 contractVolume: volVal,
+                notes: ''
               });
 
               importedPurchasings.push({
