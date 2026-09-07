@@ -39,7 +39,7 @@ const ProtectedLayout: React.FC = () => {
 };
 
 export const App: React.FC = () => {
-  const user = useAuthStore((state) => state.user);
+  const { user, refreshUser } = useAuthStore();
   const [loginStyle, setLoginStyle] = useState<'default' | 'variant'>(() => (localStorage.getItem('titsmart_login_style') as 'default' | 'variant') || 'default');
   const { fetchProjects, fetchTasks, fetchMaterials, fetchIssues, fetchEngineers, fetchActivityLogs, fetchAccounting, fetchFieldLogs } = useRealtimeStore();
 
@@ -54,6 +54,10 @@ export const App: React.FC = () => {
     ) : (
       <LoginPage onSwitchStyle={() => switchLoginStyle('variant')} />
     );
+
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
 
   useEffect(() => {
     if (!user) return;

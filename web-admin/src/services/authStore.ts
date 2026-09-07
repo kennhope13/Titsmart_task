@@ -122,13 +122,36 @@ interface AuthStoreState {
   updateUser: (user: AuthUser) => void;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthStoreState>((set) => ({
+export const useAuthStore = create<AuthStoreState>((set, get) => ({
   user: loadSession(),
   updateUser: (user) => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     set({ user });
+  },
+  refreshUser: async () => {
+    const current = get().user;
+    if (!current) return;
+    try {
+      const { data: engineerData } = await supabase
+        .from('engineers')
+        .select('*')
+        .eq('username', current.username)
+        .maybeSingle();
+      if (engineerData) {
+        const updatedUser = {
+          ...current,
+          projectCodes: engineerData.project_codes || [],
+          permissions: engineerData.permissions || current.permissions,
+        };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser));
+        set({ user: updatedUser });
+      }
+    } catch (e) {
+      console.error('Failed to refresh user', e);
+    }
   },
   login: async (usernameOrEmail, password) => {
     let email = usernameOrEmail.trim();
