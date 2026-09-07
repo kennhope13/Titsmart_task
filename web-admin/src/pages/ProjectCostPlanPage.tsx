@@ -85,7 +85,8 @@ const normalizePlanKey = (stt?: string, content?: string, _parentId?: string) =>
 
 const isSectionMarker = (stt?: string, notes?: string) => {
   const cleanStt = String(stt || '').trim().toUpperCase();
-  return String(notes || '').toLowerCase().includes('[section]') || romanToNumber(stt) !== null || /^[A-Z]{1,2}$/.test(cleanStt);
+  const hasNoDot = cleanStt.length > 0 && !cleanStt.includes('.');
+  return String(notes || '').toLowerCase().includes('[section]') || romanToNumber(stt) !== null || /^[A-Z]{1,2}$/.test(cleanStt) || (hasNoDot && /^\d+$/.test(cleanStt));
 };
 
 const isAutoSyncedMaterialPlan = (plan?: ProjectMaterialPlan) => {

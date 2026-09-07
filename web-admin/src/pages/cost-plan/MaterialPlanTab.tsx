@@ -30,7 +30,8 @@ const TEXT = {
 const isParentRow = (plan: ProjectMaterialPlan) => {
   const stt = String(plan.stt || '').trim().toUpperCase();
   const notes = String(plan.notes || '').toLowerCase();
-  return notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
+  const hasNoDot = stt.length > 0 && !stt.includes('.');
+  return notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (hasNoDot && /^\d+$/.test(stt));
 };
 
 const cleanNotes = (value?: string) => {

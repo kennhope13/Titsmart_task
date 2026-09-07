@@ -41,7 +41,8 @@ const TEXT = {
 const isParentRow = (plan: ProjectMaterialPlan) => {
   const stt = String(plan.stt || '').trim().toUpperCase();
   const notes = String(plan.notes || '').toLowerCase();
-  return notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
+  const hasNoDot = stt.length > 0 && !stt.includes('.');
+  return notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (hasNoDot && /^\d+$/.test(stt));
 };
 
 const cleanNotes = (value?: string) => {
@@ -341,11 +342,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   };
 
   const parentOptions = useMemo(() => {
-    const parents = data.filter(p => {
-      const stt = String(p.stt || '').trim();
-      const notes = String(p.notes || '').toLowerCase();
-      return notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
-    });
+    const parents = data.filter(p => isParentRow(p));
     return [{ id: 'all', label: 'Tất cả' }, ...parents.map(p => ({ id: p.id, label: p.jobContent }))];
   }, [data]);
   
@@ -396,29 +393,25 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     }
     if (filterModel && filterModel !== 'all') {
       filtered = filtered.filter(p => {
-         const notes = String(p.notes || '').toLowerCase();
-         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         if (isParentRow(p)) return true;
          return p.techSpecModel === filterModel;
       });
     }
     if (filterOrigin && filterOrigin !== 'all') {
       filtered = filtered.filter(p => {
-         const notes = String(p.notes || '').toLowerCase();
-         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         if (isParentRow(p)) return true;
          return p.techSpecOrigin === filterOrigin;
       });
     }
     if (filterProgress && filterProgress !== 'all') {
       filtered = filtered.filter(p => {
-         const notes = String(p.notes || '').toLowerCase();
-         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         if (isParentRow(p)) return true;
          return p.progressStatus === filterProgress;
       });
     }
     if (filterExpectedDateFrom || filterExpectedDateTo) {
       filtered = filtered.filter(p => {
-         const notes = String(p.notes || '').toLowerCase();
-         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         if (isParentRow(p)) return true;
          if (!p.expectedDate) return false;
          
          const fromCheck = filterExpectedDateFrom ? p.expectedDate >= filterExpectedDateFrom : true;
@@ -428,32 +421,28 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     }
     if (filterContractStatus && filterContractStatus !== 'all') {
       filtered = filtered.filter(p => {
-         const notes = String(p.notes || '').toLowerCase();
-         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         if (isParentRow(p)) return true;
          const purch = findPurchasingMatch(p);
          return purch?.contractStatus === filterContractStatus;
       });
     }
     if (filterPaymentDate && filterPaymentDate !== 'all') {
       filtered = filtered.filter(p => {
-         const notes = String(p.notes || '').toLowerCase();
-         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         if (isParentRow(p)) return true;
          const purch = findPurchasingMatch(p);
          return purch?.paymentDate === filterPaymentDate;
       });
     }
     if (filterInvoiceStatus && filterInvoiceStatus !== 'all') {
       filtered = filtered.filter(p => {
-         const notes = String(p.notes || '').toLowerCase();
-         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         if (isParentRow(p)) return true;
          const purch = findPurchasingMatch(p);
          return purch?.invoiceStatus === filterInvoiceStatus;
       });
     }
     if (filterDocs && filterDocs !== 'all') {
       filtered = filtered.filter(p => {
-         const notes = String(p.notes || '').toLowerCase();
-         if (notes.includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(p.stt || '').trim())) return true;
+         if (isParentRow(p)) return true;
          if (filterDocs === 'missing_co') return !p.docCo;
          if (filterDocs === 'missing_cq') return !p.docCq;
          if (filterDocs === 'missing_fire') return !p.docFireInspection;
