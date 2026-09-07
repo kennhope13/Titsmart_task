@@ -1,1 +1,9 @@
-{"version": "1.2.87"}
+{
+  "version": "1.2.88",
+  "date": "2026-09-07",
+  "notes": [
+    "Đồng bộ chuẩn phân cấp cây công việc (Root Section Hierarchy) cho tất cả các tab (Tiến độ công việc, Vật tư & Chi phí, Đặt hàng, Nhật ký hiện trường).",
+    "Sửa lỗi sắp xếp hiển thị thứ tự Phụ lục A (TTLL) và Phụ lục B (SCADA) cùng các đầu mục 33, 34, 35, 36, 37 chuẩn 100% theo file Excel gốc.",
+    "Bổ sung mutationGuard chống giật/reset trạng thái dropdown khi cập nhật thông tin."
+  ]
+}
