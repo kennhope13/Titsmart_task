@@ -1,118 +1,89 @@
-﻿const { createClient } = require("@supabase/supabase-js");
-const url = "https://nvdonaaxbtqjfmxtlgzb.supabase.co";
-const key = "sb_publishable_gzUeVF_f2jadDuuii66pCw_W_0xmqjg";
-const supabase = createClient(url, key);
+﻿const { createClient } = require('@supabase/supabase-js');
+const crypto = require('crypto');
+const supabase = createClient('https://nvdonaaxbtqjfmxtlgzb.supabase.co', 'sb_publishable_gzUeVF_f2jadDuuii66pCw_W_0xmqjg');
 
 async function run() {
-  const PC = "TRAM_BIEN_AP_110KV_PHUOC_TAN";
-
-  // Delete test record
-  await supabase.from("purchasing_plans").delete().eq("stt", "TEST").eq("project_code", PC);
-
-  // 1. Update ALL material_plans supply_scope to contractor
-  const { data: mats } = await supabase.from("material_plans").select("*").eq("project_code", PC);
-  console.log("Material plans to fix:", mats.length);
+  // 1. Get A and B ids
+  const { data: sections } = await supabase.from('tasks').select('id, stt')
+    .eq('project_code', 'TRAM_BIEN_AP_110KV_PHUOC_DONG_6')
+    .in('stt', ['A', 'B', '33', '34', '35', '37']);
   
-  for (const mat of mats) {
-    const { data, error } = await supabase.from("material_plans").update({ supply_scope: "contractor" }).eq("id", mat.id).select("id, stt, supply_scope");
-    if (error) console.error("ERR update mat", mat.stt, error.message);
-    else console.log("OK mat", data[0].stt, data[0].supply_scope);
+  const map = {};
+  sections.forEach(s => map[s.stt] = s.id);
+  console.log('Current IDs:', map);
+
+  const idA = map['A'];
+  const idB = sections.find(s => s.stt === 'B')?.id;
+  const id33 = map['33'];
+  const id34 = map['34'];
+  const id35 = map['35'];
+  const id37 = map['37'];
+
+  // 2. Create task 36 under B (missing header)
+  const id36 = crypto.randomUUID();
+  const { data: created36, error: err36 } = await supabase.from('tasks').insert({
+    id: id36,
+    stt: '36',
+    code: id36,
+    name: 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG',
+    project_code: 'TRAM_BIEN_AP_110KV_PHUOC_DONG_6',
+    project_name: 'Trạm biến áp 110kV Phước Đông 6',
+    volume: 0,
+    unit: '',
+    progress: 0,
+    status: 'Chưa làm',
+    purchase_status: 'Chưa đặt hàng',
+    constr_status: 'Chưa thi công',
+    is_done: false,
+    is_section_header: true,
+    section_name: '36. HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM',
+    parent_id: idB
+  }).select();
+  console.log('Created 36:', created36 ? 'OK' : 'FAIL', err36 || '');
+
+  // 3. Fix parent_id: 33 -> A, 34 -> A, 35 -> A
+  const { error: e1 } = await supabase.from('tasks').update({ parent_id: idA }).eq('id', id33);
+  const { error: e2 } = await supabase.from('tasks').update({ parent_id: idA }).eq('id', id34);
+  const { error: e3 } = await supabase.from('tasks').update({ parent_id: idA }).eq('id', id35);
+  console.log('33->A:', e1 || 'OK');
+  console.log('34->A:', e2 || 'OK');
+  console.log('35->A:', e3 || 'OK');
+
+  // 4. Fix parent_id: 37 -> B
+  const { error: e4 } = await supabase.from('tasks').update({ parent_id: idB }).eq('id', id37);
+  console.log('37->B:', e4 || 'OK');
+
+  // 5. Fix 33.1 parent -> 33 (currently pointing to A)
+  const { data: task33_1 } = await supabase.from('tasks').select('id')
+    .eq('project_code', 'TRAM_BIEN_AP_110KV_PHUOC_DONG_6').eq('stt', '33.1').single();
+  if (task33_1) {
+    const { error: e5 } = await supabase.from('tasks').update({ parent_id: id33 }).eq('id', task33_1.id);
+    console.log('33.1->33:', e5 || 'OK');
   }
 
-  // 2. Get existing purchasing
-  const { data: existPurs } = await supabase.from("purchasing_plans").select("*").eq("project_code", PC);
-  const existSttSet = new Set(existPurs.map(p => p.stt));
-  console.log("\nExisting purchasing STTs:", [...existSttSet]);
-
-  // 3. Create missing purchasing plans with proper parent_id and section tags
-  const matById = new Map(mats.map(m => [m.id, m]));
-  
-  for (const mat of mats) {
-    if (existSttSet.has(mat.stt)) {
-      // Update existing with parent linkage
-      const existPur = existPurs.find(p => p.stt === mat.stt);
-      if (existPur) {
-        let purParentId = null;
-        if (mat.parent_id) {
-          const parentMat = matById.get(mat.parent_id);
-          if (parentMat) {
-            const parentPur = existPurs.find(p => p.stt === parentMat.stt);
-            if (parentPur) purParentId = parentPur.id;
-          }
-        }
-        await supabase.from("purchasing_plans").update({
-          material_plan_id: mat.id,
-          parent_id: purParentId,
-          notes: mat.notes || ""
-        }).eq("id", existPur.id);
-        console.log("Updated existing pur", mat.stt);
-      }
-      continue;
-    }
-
-    // Find parent purchasing ID
-    let purParentId = null;
-    if (mat.parent_id) {
-      const parentMat = matById.get(mat.parent_id);
-      if (parentMat) {
-        // Check if parent already in existPurs or was just created
-        const parentPur = existPurs.find(p => p.stt === parentMat.stt);
-        if (parentPur) purParentId = parentPur.id;
-      }
-    }
-
-    const { data: created, error } = await supabase.from("purchasing_plans").insert({
-      project_code: PC,
-      stt: mat.stt,
-      content: mat.job_content,
-      unit: mat.unit || "",
-      volume_contract: mat.contract_volume || 0,
-      volume_order: 0,
-      unit_price: 0,
-      vat_rate: 0,
-      vat_amount: 0,
-      total_amount: 0,
-      prepay_percent: 0,
-      prepay_amount: 0,
-      remaining_amount: 0,
-      order_status: mat.ordered_status || "Chưa đặt hàng",
-      contract_status: "Chưa ký",
-      invoice_status: "Chưa xuất",
-      notes: mat.notes || "",
-      parent_id: purParentId,
-      material_plan_id: mat.id
-    }).select();
-    
-    if (error) console.error("ERR insert pur", mat.stt, error.message);
-    else {
-      console.log("OK created pur", mat.stt);
-      existPurs.push(created[0]);
-      existSttSet.add(mat.stt);
-    }
+  // 6. Fix 36.1 parent -> 36 (currently pointing to B)
+  const { data: task36_1 } = await supabase.from('tasks').select('id')
+    .eq('project_code', 'TRAM_BIEN_AP_110KV_PHUOC_DONG_6').eq('stt', '36.1').single();
+  if (task36_1) {
+    const { error: e6 } = await supabase.from('tasks').update({ parent_id: id36 }).eq('id', task36_1.id);
+    console.log('36.1->36:', e6 || 'OK');
   }
 
-  // 4. Second pass: fix parent_id for newly created records
-  const { data: allPurs } = await supabase.from("purchasing_plans").select("*").eq("project_code", PC);
-  console.log("\nSecond pass - fixing parent_ids...");
-  for (const pur of allPurs) {
-    const mat = mats.find(m => m.stt === pur.stt && m.job_content === pur.content);
-    if (mat && mat.parent_id) {
-      const parentMat = matById.get(mat.parent_id);
-      if (parentMat) {
-        const parentPur = allPurs.find(p => p.stt === parentMat.stt);
-        if (parentPur && pur.parent_id !== parentPur.id) {
-          await supabase.from("purchasing_plans").update({ parent_id: parentPur.id }).eq("id", pur.id);
-          console.log("Fixed parent for", pur.stt, "->", parentMat.stt);
-        }
-      }
-    }
-  }
+  // 7. Clean up test data
+  await supabase.from('tasks').delete().in('stt', ['A', '34']).eq('project_code', 'TRAM_BIEN_AP_110KV_PHUOC_DONG_6').neq('id', idA).neq('id', id34);
 
-  // 5. Verify
-  const { data: finalPurs } = await supabase.from("purchasing_plans").select("stt, parent_id, material_plan_id, notes").eq("project_code", PC);
-  console.log("\n=== FINAL RESULT ===");
-  console.log("Total purchasing plans:", finalPurs.length);
-  finalPurs.forEach(p => console.log(p.stt, "parent:", p.parent_id ? "YES" : "no", "matId:", p.material_plan_id ? "YES" : "no", "section:", (p.notes||"").includes("[section]")));
+  // 8. Verify final state
+  const { data: verify } = await supabase.from('tasks').select('stt, parent_id, name')
+    .eq('project_code', 'TRAM_BIEN_AP_110KV_PHUOC_DONG_6')
+    .in('stt', ['A', '33', '34', '35', 'B', '36', '37'])
+    .order('stt');
+  console.log('\n=== FINAL STATE ===');
+  verify.forEach(t => {
+    let parentLabel = 'ROOT';
+    if (t.parent_id === idA) parentLabel = 'A';
+    else if (t.parent_id === idB) parentLabel = 'B';
+    else if (t.parent_id) parentLabel = t.parent_id;
+    console.log(t.stt, '->', parentLabel, '|', t.name.substring(0, 50));
+  });
 }
-run().catch(console.error);
-
+run();

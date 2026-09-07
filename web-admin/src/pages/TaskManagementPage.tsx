@@ -1419,16 +1419,13 @@ const displayTasks = tasks.filter((t) => {
     };
 
     displayTasks.forEach((t) => {
-      // Mặc định các isSectionHeader sẽ luôn là root nodes vì file excel thường coi hạng mục lớn là cao nhất.
-      if (t.isSectionHeader) {
-        roots.push(map.get(t.id));
+      // Section header có parentId thì vẫn là con của parent (VD: 33, 34, 35 thuộc A)
+      // Chỉ section header KHÔNG có parentId mới là root (VD: A, B)
+      const resolvedParentId = resolveParentId(t);
+      if (resolvedParentId && map.has(resolvedParentId)) {
+        map.get(resolvedParentId)!.children.push(map.get(t.id));
       } else {
-        const resolvedParentId = resolveParentId(t);
-        if (resolvedParentId && map.has(resolvedParentId)) {
-          map.get(resolvedParentId)!.children.push(map.get(t.id));
-        } else {
-          roots.push(map.get(t.id));
-        }
+        roots.push(map.get(t.id));
       }
     });
 
