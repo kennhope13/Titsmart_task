@@ -163,8 +163,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
       const m = String(notes || '').match(/\[order:([\d.]+)\]/);
       return m ? parseFloat(m[1]) : null;
     };
-    const originalOrderMap = new Map<string, number>(filtered.map((r, i) => [r.id, orderTagValue(r.notes) ?? (1000000 - i)]));
-
+    const originalOrderMap = new Map<string, number>(filtered.map((r, i) => [r.id, orderTagValue(r.notes) ?? i]));
 
     const resolveParentId = (plan: ProjectMaterialPlan): string | undefined => {
       if (plan.stt && plan.stt.includes('.')) {
@@ -174,7 +173,21 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
         const parentItem = filtered.find(r => r.stt === parentStt);
         if (parentItem) return parentItem.id;
       }
-      return plan.parentId;
+      if (plan.parentId) return plan.parentId;
+      // Fallback for STT like 33.1: if no direct parent with stt "33", find closest section header preceding this item
+      const myPos = originalOrderMap.get(plan.id) ?? Infinity;
+      let bestSecId: string | undefined = undefined;
+      let bestSecPos = -1;
+      filtered.forEach(r => {
+        if (isParentRow(r)) {
+          const secPos = originalOrderMap.get(r.id) ?? Infinity;
+          if (secPos <= myPos && secPos > bestSecPos) {
+            bestSecPos = secPos;
+            bestSecId = r.id;
+          }
+        }
+      });
+      return bestSecId;
     };
 
     if (filterParent !== 'all') {

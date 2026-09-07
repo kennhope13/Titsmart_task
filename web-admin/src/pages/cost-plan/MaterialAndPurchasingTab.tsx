@@ -523,7 +523,21 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         const parentItem = filtered.find(r => r.stt === parentStt);
         if (parentItem) return parentItem.id;
       }
-      return plan.parentId;
+      if (plan.parentId) return plan.parentId;
+      // Fallback for STT like 33.1: if no direct parent with stt "33", find closest section header preceding this item
+      const myPos = originalOrderMap.get(plan.id) ?? Infinity;
+      let bestSecId: string | undefined = undefined;
+      let bestSecPos = -1;
+      filtered.forEach(r => {
+        if (isParentRow(r)) {
+          const secPos = originalOrderMap.get(r.id) ?? Infinity;
+          if (secPos <= myPos && secPos > bestSecPos) {
+            bestSecPos = secPos;
+            bestSecId = r.id;
+          }
+        }
+      });
+      return bestSecId;
     };
 
     if (filterParent !== 'all') {

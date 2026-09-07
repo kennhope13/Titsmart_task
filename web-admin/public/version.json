@@ -1,8 +1,8 @@
 {
-  "version": "1.2.91",
+  "version": "1.2.92",
   "date": "2026-09-07",
   "notes": [
-    "Sửa lỗi nhận diện đầu mục STT chữ cái dạng A, B, C... trong Phụ lục Vật tư & Chi phí.",
-    "Hỗ trợ phân nhóm đầu mục theo kí hiệu chữ (A, B, C...) đồng nhất với STT số và La Mã."
+    "Sửa triệt để lỗi phân cấp thư mục mục con dạng 33.1, 36.1 dưới đầu mục A, B.",
+    "Bổ sung cơ chế fallback tự động gán mục con về đầu mục gần nhất khi không tìm thấy dòng cha trực tiếp."
   ]
 }
