@@ -670,8 +670,8 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               let sttStyle = 'font-bold text-slate-400';
               
               if (depth === 1) {
-                rowBg = 'bg-slate-50';
-                stickyBg = 'bg-slate-50';
+                rowBg = 'bg-white';
+                stickyBg = 'bg-white';
                 fontStyle = 'font-bold text-slate-900';
                 sttStyle = 'font-bold text-slate-600';
               } else if (depth === 2) {

@@ -1,7 +1,7 @@
 {
-  "version": "1.2.99",
+  "version": "1.3.0",
   "date": "2026-09-07",
   "notes": [
-    "Cập nhật các tính năng và sửa lỗi mới nhất từ nhánh đối tác (Personnel & Project Management) đồng thời bảo toàn toàn bộ mã nguồn hiện tại."
+    "Chuyển toàn bộ nền của các dòng hạng mục con sang màu trắng đồng nhất, sạch sẽ và dễ nhìn."
   ]
 }

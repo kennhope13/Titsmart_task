@@ -1804,8 +1804,8 @@ const displayTasks = tasks.filter((t) => {
                   let sttStyle = "font-bold text-slate-400 text-xs";
                   
                   if (depth === 1) {
-                    rowBg = "bg-slate-50";
-                    stickyBg = "bg-slate-50";
+                    rowBg = "bg-white";
+                    stickyBg = "bg-white";
                     fontStyle = "font-bold text-slate-900 text-sm";
                     sttStyle = "font-bold text-slate-600 text-xs";
                   } else if (depth === 2) {
