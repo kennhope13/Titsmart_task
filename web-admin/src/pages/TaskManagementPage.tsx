@@ -830,11 +830,7 @@ const hasSyncedRef = useRef(false);
                }
                
                if (!foundDottedParent) {
-                 if (sttVal && !sttVal.includes('.')) {
-                   parentId = currentMainSectionId;
-                 } else {
-                   parentId = currentSubSectionId || currentMainSectionId;
-                 }
+                 parentId = currentSubSectionId || currentMainSectionId;
                }
                
                if (isSubFolder) {
