@@ -801,6 +801,7 @@ const hasSyncedRef = useRef(false);
             const startsWithPhan = actualName.trim().toUpperCase().startsWith('PHẦN ');
             const hasNoVolumeAndUnit = (volVal === 0 || !volVal) && (!cleanUnitVal || cleanUnitVal === '');
             const isSection = (startsWithPhan || isMainSectionName(actualName) || hasNoDot) && hasNoVolumeAndUnit && hasNoDot;
+            const isMainLevelSection = isSection && (isRoman || startsWithPhan || isMainSectionName(actualName) || !cleanStt);
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${actualName}`;
@@ -818,8 +819,13 @@ const hasSyncedRef = useRef(false);
             
             let parentId = undefined;
             if (isSection) {
-               currentMainSectionId = taskId;
-               currentSubSectionId = undefined;
+               if (isMainLevelSection) {
+                 currentMainSectionId = taskId;
+                 currentSubSectionId = undefined;
+               } else {
+                 currentSubSectionId = taskId;
+                 parentId = currentMainSectionId;
+               }
             } else {
                let isSubFolder = false;
                const nextRow = rows[i + 1];
