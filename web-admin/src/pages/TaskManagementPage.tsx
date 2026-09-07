@@ -764,8 +764,13 @@ const hasSyncedRef = useRef(false);
             const volVal = volCol >= 0 ? (typeof r[volCol] === 'number' ? r[volCol] : (parseFloat(r[volCol]) || 0)) : 0;
             const unitVal = unitCol >= 0 ? String(r[unitCol] || '').trim() : '';
 
-            // Bỏ qua dng tiu đề phụ hoặc dng rc
-            if (sttVal.toLowerCase() === 'stt' || String(itemName).toLowerCase().includes('mo ta cong viec moi thau')) continue;
+            // Bỏ qua dòng tiêu đề phụ hoặc dòng rác / tổng giá trị
+            const itemNameClean = String(itemName).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (sttVal.toLowerCase() === 'stt' || 
+                itemNameClean.includes('mo ta cong viec moi thau') ||
+                itemNameClean.includes('tong gia tri') ||
+                itemNameClean.includes('thue vat') ||
+                itemNameClean.startsWith('cong ')) continue;
 
             const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
             const cleanUnitVal = unitVal.replace(/^[-–—_.\s]+$/, '').trim();
