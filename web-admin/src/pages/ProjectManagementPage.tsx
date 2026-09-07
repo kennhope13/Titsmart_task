@@ -155,33 +155,14 @@ export const ProjectManagementPage: React.FC = () => {
   };
 
   const resolveProjectMemberNames = (project: Project) => {
-    const codeMatch = (project.code || '').trim();
-    const nameMatch = (project.name || '').trim();
+    const codeMatch = (project.code || '').trim().toUpperCase();
+    if (!codeMatch) return [];
 
-    const matches = (mp: { code?: string; name?: string }) => {
-      const mpCode = (mp.code || '').trim();
-      const mpName = (mp.name || '').trim();
-      if (codeMatch && mpCode && codeMatch === mpCode) return true;
-      if (!codeMatch && nameMatch && mpName && nameMatch === mpName) return true;
-      return false;
-    };
-
-    const memberFromManaged = engineers
-      .filter((eng) => eng.managedProjects?.some(matches))
+    const memberNames = engineers
+      .filter((eng) => Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => (c || '').trim().toUpperCase() === codeMatch))
       .map((eng) => eng.name);
 
-    const memberFromAssigned = engineers
-      .filter((eng) => eng.memberProjects?.some(matches))
-      .map((eng) => eng.name);
-
-    const memberFromProjectCodes = engineers
-      .filter((eng) => Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => codeMatch && (c || '').trim() === codeMatch))
-      .map((eng) => eng.name);
-
-    const combined = Array.from(new Set([...memberFromManaged, ...memberFromAssigned, ...memberFromProjectCodes]));
-    if (combined.length > 0) return combined;
-    if (project.managerName && project.managerName !== TEXT.unassigned) return [project.managerName];
-    return [];
+    return Array.from(new Set(memberNames));
   };
 
   const allEnhancedProjects = useMemo(() => {
@@ -556,7 +537,7 @@ export const ProjectManagementPage: React.FC = () => {
 
     // Resolve engineers from the engineers array since database doesn't store project.members
     const assignedEngineers = engineers
-      .filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(project.code))
+      .filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => (c || '').trim().toUpperCase() === (project.code || '').trim().toUpperCase()))
       .map(eng => eng.id);
 
     const allMemberIds = Array.from(new Set([...(project.members || []), ...assignedEngineers]));
@@ -588,25 +569,33 @@ export const ProjectManagementPage: React.FC = () => {
       await updateProject(projectToEdit.id, payload);
 
       // Update engineer project codes if members changed
+      const projCodeUpper = (projectToEdit.code || '').trim().toUpperCase();
       const oldMembers = Array.from(new Set([
         ...(projectToEdit.members || []),
-        ...engineers.filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(projectToEdit.code)).map(eng => eng.id)
+        ...(projectToEdit.memberIds || []),
+        ...engineers.filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper)).map(eng => eng.id)
       ]));
       const addedMembers = editSelectedEngineerIds.filter(id => !oldMembers.includes(id));
       const removedMembers = oldMembers.filter(id => !editSelectedEngineerIds.includes(id));
 
       for (const id of addedMembers) {
         const eng = engineers.find(e => e.id === id);
-        if (eng && (!eng.projectCodes || !eng.projectCodes.includes(projectToEdit.code))) {
-          const newCodes = Array.isArray(eng.projectCodes) ? [...eng.projectCodes, projectToEdit.code] : [projectToEdit.code];
-          await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+        if (eng) {
+          const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
+          if (!currentCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper)) {
+            const newCodes = [...currentCodes, projectToEdit.code];
+            await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+          }
         }
       }
       for (const id of removedMembers) {
         const eng = engineers.find(e => e.id === id);
-        if (eng && eng.projectCodes && eng.projectCodes.includes(projectToEdit.code)) {
-          const newCodes = eng.projectCodes.filter(c => c !== projectToEdit.code);
-          await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+        if (eng) {
+          const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
+          if (currentCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper)) {
+            const newCodes = currentCodes.filter(c => (c || '').trim().toUpperCase() !== projCodeUpper);
+            await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+          }
         }
       }
 
