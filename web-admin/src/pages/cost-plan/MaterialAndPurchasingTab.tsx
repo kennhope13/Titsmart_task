@@ -45,6 +45,11 @@ const isParentRow = (plan: ProjectMaterialPlan) => {
   return notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (hasNoDot && /^\d+$/.test(stt));
 };
 
+const isRootSectionRow = (plan: ProjectMaterialPlan) => {
+  const stt = String(plan.stt || '').trim().toUpperCase();
+  return /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (isParentRow(plan) && !plan.parentId);
+};
+
 const cleanNotes = (value?: string) => {
   return String(value || '')
     .replace(/\[order:[\d.]+\]/g, '')
