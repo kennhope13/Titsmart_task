@@ -772,7 +772,7 @@ const hasSyncedRef = useRef(false);
                 itemNameClean.includes('thue vat') ||
                 itemNameClean.startsWith('cong ')) continue;
 
-            const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+|[A-Z]{1,2})$/i;
+            const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|MỤC\s+[A-Z0-9]+)$/i;
             const cleanUnitVal = unitVal.replace(/^[-–—_.\s]+$/, '').trim();
             const cleanStt = String(sttVal || '').trim().replace(/\.$/, '');
             const hasNoDot = !cleanStt.includes('.');
@@ -781,7 +781,9 @@ const hasSyncedRef = useRef(false);
             const startsWithPhan = actualName.trim().toUpperCase().startsWith('PHẦN ');
             const hasNoVolumeAndUnit = (volVal === 0 || !volVal) && (!cleanUnitVal || cleanUnitVal === '');
             const isSection = (startsWithPhan || isMainSectionName(actualName) || hasNoDot) && hasNoVolumeAndUnit && hasNoDot;
-            const isMainLevelSection = isSection && (isRoman || startsWithPhan || isMainSectionName(actualName) || !cleanStt);
+
+            const isLetterHeader = /^[A-Z]{1,2}$/i.test(cleanStt);
+            const isMainLevelSection = isSection && (isLetterHeader || isRoman || startsWithPhan || !cleanStt);
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${actualName}`;
