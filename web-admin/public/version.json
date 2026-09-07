@@ -1,8 +1,8 @@
 {
-  "version": "1.2.93",
+  "version": "1.2.94",
   "date": "2026-09-07",
   "notes": [
-    "Cho phép hiển thị trực tiếp dòng Đầu mục số 33 và 36 thành thanh thư mục Folder riêng biệt trong Phụ lục Vật tư.",
-    "Hỗ trợ phân nhóm và rút gọn thư mục linh hoạt cho tất cả các đầu mục dạng số nguyên (33, 36...) bên dưới đầu mục chữ cái A, B."
+    "Sửa lỗi hiển thị đầu mục 33 và 36 thuộc nhóm chính A và B trong Phụ lục Vật tư & Chi phí.",
+    "Bổ sung cấu trúc phân cấp đa tầng (Root Section A, B -> Sub Section 33, 36 -> Items 33.1, 36.1) hoàn chỉnh."
   ]
 }

@@ -497,9 +497,14 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               const order: string[] = [];
               let currentSectionKey = '__default__';
 
+              const isRootSectionRow = (plan: ProjectMaterialPlan) => {
+                const stt = String(plan.stt || '').trim().toUpperCase();
+                return /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (isParentRow(plan) && !plan.parentId);
+              };
+
               // Group by section. True orphans go to __orphaned__
               filteredData.forEach(t => {
-                if (isParentRow(t)) {
+                if (isRootSectionRow(t)) {
                   currentSectionKey = t.id;
                   if (!groups[currentSectionKey]) {
                     groups[currentSectionKey] = [];
@@ -511,15 +516,13 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   const resolvedParentId = resolveParentId(t);
                   if (resolvedParentId && groups[resolvedParentId]) {
                     targetSection = resolvedParentId;
-                  } else if (getSectionIndexForItem(t) !== Infinity) {
-                    targetSection = currentSectionKey;
                   }
 
                   if (!groups[targetSection]) {
                     groups[targetSection] = [];
                     order.push(targetSection);
                   }
-                  groups[targetSection].push({ ...t, _isHeader: false });
+                  groups[targetSection].push({ ...t, _isHeader: isParentRow(t) });
                 }
               });
 
@@ -562,7 +565,8 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   nodes.forEach((node: any, idx: number) => {
                     const currentNum = (idx + 1).toString();
                     const computedStt = node.stt || (depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum));
-                    flattened.push({ ...node, depth, computedStt, isSec: false, _sectionKey: sectionKey });
+                    const isSec = node.isSec || isParentRow(node);
+                    flattened.push({ ...node, depth, computedStt, isSec, _sectionKey: sectionKey });
                     flattenTree(node.children, depth + 1, computedStt, sectionKey);
                   });
                 };

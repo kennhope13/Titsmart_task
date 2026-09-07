@@ -476,7 +476,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     };
 
     const isRootSectionRow = (plan: ProjectMaterialPlan) => {
-      return isParentRow(plan) && (plan.parentId === null || !plan.parentId);
+      const stt = String(plan.stt || '').trim().toUpperCase();
+      // Root sections are letters (A, B) or Roman (I, II) or explicitly marked sections without parentId
+      return /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (isParentRow(plan) && !plan.parentId);
     };
 
     const sectionSortKey = (r: ProjectMaterialPlan): number[] => {
@@ -1126,7 +1128,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               let currentSectionKey = '__default__';
 
               filteredData.forEach(t => {
-                if (isParentRow(t)) {
+                if (isRootSectionRow(t)) {
                   currentSectionKey = t.id;
                   if (!groups[currentSectionKey]) {
                     groups[currentSectionKey] = [];
@@ -1138,15 +1140,13 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   const resolvedParentId = resolveParentId(t);
                   if (resolvedParentId && groups[resolvedParentId]) {
                     targetSection = resolvedParentId;
-                  } else if (getSectionIndexForItem(t) !== Infinity) {
-                    targetSection = currentSectionKey;
                   }
 
                   if (!groups[targetSection]) {
                     groups[targetSection] = [];
                     order.push(targetSection);
                   }
-                  groups[targetSection].push({ ...t, _isHeader: false });
+                  groups[targetSection].push({ ...t, _isHeader: isParentRow(t) });
                 }
               });
 
@@ -1187,7 +1187,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   nodes.forEach((node: any, idx: number) => {
                     const currentNum = (idx + 1).toString();
                     const computedStt = node.stt || (depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum));
-                    flattened.push({ ...node, depth, computedStt, isSec: false, _sectionKey: sectionKey });
+                    const isSec = node.isSec || isParentRow(node);
+                    flattened.push({ ...node, depth, computedStt, isSec, _sectionKey: sectionKey });
                     flattenTree(node.children, depth + 1, computedStt, sectionKey);
                   });
                 };
