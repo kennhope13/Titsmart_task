@@ -84,70 +84,45 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
   }, [tasks, selectedProject]);
 
   const groupedTasks = useMemo(() => {
-    const groups: { [key: string]: Task[] } = {};
-    const order: string[] = [];
-    displayTasks.forEach((t) => {
-      const sec = t.sectionName || 'Khác';
-      if (!groups[sec]) {
-        groups[sec] = [];
-        order.push(sec);
-      }
-      groups[sec].push(t);
-    });
+    const map = new Map<string, any>();
+    const roots: any[] = [];
 
-    order.sort((a, b) => {
-      const leftHeader = groups[a].find((task) => task.isSectionHeader) || groups[a][0];
-      const rightHeader = groups[b].find((task) => task.isSectionHeader) || groups[b][0];
-      return compareTaskStt(leftHeader?.stt, rightHeader?.stt);
+    displayTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
+
+    const resolveParentId = (item: any) => {
+      if (item.stt && item.stt.includes('.')) {
+        const parts = item.stt.split('.');
+        parts.pop();
+        const parentStt = parts.join('.');
+        const parentItem = displayTasks.find((r) => r.stt === parentStt);
+        if (parentItem && map.has(parentItem.id)) return parentItem.id;
+      }
+      return item.parentId;
+    };
+
+    displayTasks.forEach((t) => {
+      const resolvedParentId = resolveParentId(t);
+      if (resolvedParentId && map.has(resolvedParentId)) {
+        map.get(resolvedParentId)!.children.push(map.get(t.id));
+      } else {
+        roots.push(map.get(t.id));
+      }
     });
 
     const flattened: any[] = [];
-    order.forEach((sec) => {
-      const sectionHeader = groups[sec].find(t => t.isSectionHeader);
-      const items = groups[sec].filter(t => !t.isSectionHeader);
-      
-      const resolveParentId = (item: any) => {
-          if (item.stt && item.stt.includes('.')) {
-            const parts = item.stt.split('.');
-            parts.pop();
-            const parentStt = parts.join('.');
-            const parentItem = items.find((r: any) => r.stt === parentStt);
-            if (parentItem) return parentItem.id;
-          }
-          return item.parentId;
-        };
+    const flattenTree = (nodes: any[], depth: number = 0) => {
+      nodes.sort((a, b) => {
+        const sttCompare = compareTaskStt(a.stt, b.stt);
+        if (sttCompare !== 0) return sttCompare;
+        return a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' });
+      });
+      nodes.forEach((node) => {
+        flattened.push({ ...node, depth });
+        flattenTree(node.children, depth + 1);
+      });
+    };
 
-        const map = new Map<string, any>();
-        const roots: any[] = [];
-        items.forEach(t => map.set(t.id, { ...t, children: [] }));
-        items.forEach(t => {
-          const resolvedParentId = resolveParentId(t);
-          if (resolvedParentId && map.has(resolvedParentId)) {
-            map.get(resolvedParentId)!.children.push(map.get(t.id));
-          } else {
-            roots.push(map.get(t.id));
-          }
-        });
-      
-      const flattenTree = (nodes: any[], depth: number = 0, prefix: string = '', sectionKey: string = '') => {
-        nodes.sort((a, b) => {
-          const sttCompare = compareTaskStt(a.stt, b.stt);
-          if (sttCompare !== 0) return sttCompare;
-          return a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' });
-        });
-        nodes.forEach((node, idx) => {
-          const currentNum = (idx + 1).toString();
-          const computedStt = node.stt || (depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum));
-          flattened.push({ ...node, depth, computedStt, _sectionKey: sectionKey });
-          flattenTree(node.children, depth + 1, computedStt, sectionKey);
-        });
-      };
-      
-      if (sectionHeader) {
-        flattened.push({ ...sectionHeader, depth: 0, computedStt: sectionHeader.stt || '', _sectionKey: sec });
-      }
-      flattenTree(roots, sectionHeader ? 1 : 0, '', sec);
-    });
+    flattenTree(roots, 0);
     return flattened;
   }, [displayTasks]);
 
