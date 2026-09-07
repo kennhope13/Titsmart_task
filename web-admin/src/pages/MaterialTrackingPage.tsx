@@ -1027,9 +1027,6 @@ export const MaterialTrackingPage: React.FC = () => {
                         <td className="p-3.5 text-slate-600 text-xs max-w-xs truncate" title={material.notes || ''}>{material.notes || '-'}</td>
                         <td className="p-3.5 text-center" onClick={(event) => event.stopPropagation()}>
                           <div className="flex justify-center gap-1.5">
-                            <button type="button" onClick={() => openEditMaterial(material)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-colors" title="Chỉnh sửa thông tin vật tư">
-                              <span className="material-symbols-outlined text-[15px]">edit</span>
-                            </button>
                             <button type="button" onClick={() => {
                               setTransferMaterial(material);
                               setIsTransferModalOpen(true);
