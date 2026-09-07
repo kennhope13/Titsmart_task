@@ -186,12 +186,12 @@ export const PersonnelPage: React.FC = () => {
   const handleSavePerson = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim() || submitting) return;
-    if (!isAllProjects && selectedProjectCodes.length === 0) {
+    if (selectedProjectCodes.length === 0) {
       triggerToast('Vui lòng chọn ít nhất 1 dự án cho nhân sự!', 'warning');
       return;
     }
     
-    const finalProjectCodes = isAllProjects ? [] : selectedProjectCodes;
+    const finalProjectCodes = selectedProjectCodes;
     
     setSubmitting(true);
     try {
