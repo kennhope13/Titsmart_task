@@ -779,7 +779,7 @@ const hasSyncedRef = useRef(false);
             const isRoman = romanRegex.test(cleanStt);
             const actualName = r[nameCol] ? String(r[nameCol]) : String(itemName);
             const startsWithPhan = actualName.trim().toUpperCase().startsWith('PHẦN ');
-            const hasNoVolumeAndUnit = (volVal === 0 || !volVal) && (!cleanUnitVal || cleanUnitVal === '');
+            const hasNoVolumeAndUnit = (volVal === 0 || !volVal) && (!cleanUnitVal || cleanUnitVal === '' || cleanUnitVal === '-' || cleanUnitVal === '–' || cleanUnitVal === '—');
             const isSection = (startsWithPhan || isMainSectionName(actualName) || hasNoDot) && hasNoVolumeAndUnit && hasNoDot;
 
             const isLetterHeader = /^[A-Z]{1,2}$/i.test(cleanStt);
@@ -1390,8 +1390,52 @@ const displayTasks = tasks.filter((t) => {
     const map = new Map<string, any>();
     const roots: any[] = [];
 
-    // Initialize map with all displayTasks
-    displayTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
+    // Synthesize missing parent section headers if any child items exist (e.g. 33.1 without 33)
+    const sttSet = new Set(displayTasks.map(t => String(t.stt || '').trim()));
+    const missingParents: any[] = [];
+    displayTasks.forEach(t => {
+      const stt = String(t.stt || '').trim();
+      if (stt.includes('.')) {
+        const parts = stt.split('.');
+        parts.pop();
+        const parentStt = parts.join('.');
+        if (parentStt && !sttSet.has(parentStt)) {
+          sttSet.add(parentStt);
+          let synthName = '';
+          if (parentStt === '33') {
+            synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+          } else if (parentStt === '36') {
+            synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+          } else {
+            synthName = `HẠNG MỤC ${parentStt}`;
+          }
+
+          missingParents.push({
+            id: `synth_sec_${parentStt}`,
+            stt: parentStt,
+            name: synthName,
+            projectCode: t.projectCode,
+            projectName: t.projectName,
+            isSectionHeader: true,
+            sectionName: t.sectionName,
+            parentId: t.parentId,
+            volume: 0,
+            unit: '',
+            progress: 0,
+            status: 'Chưa làm',
+            purchaseStatus: '',
+            constrStatus: '',
+            isDone: false,
+            notes: '[section]'
+          });
+        }
+      }
+    });
+
+    const fullTasks = [...missingParents, ...displayTasks];
+
+    // Initialize map with all fullTasks
+    fullTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
 
     // Resolve parent globally for all tasks
     const resolveParentId = (item: any) => {
@@ -1400,13 +1444,13 @@ const displayTasks = tasks.filter((t) => {
         const parts = item.stt.split('.');
         parts.pop();
         const parentStt = parts.join('.');
-        const parentItem = displayTasks.find((r) => r.stt === parentStt);
+        const parentItem = fullTasks.find((r) => r.stt === parentStt);
         if (parentItem && map.has(parentItem.id)) return parentItem.id;
       }
       return item.parentId;
     };
 
-    displayTasks.forEach((t) => {
+    fullTasks.forEach((t) => {
       // Section header có parentId thì vẫn là con của parent (VD: 33, 34, 35 thuộc A)
       // Chỉ section header KHÔNG có parentId mới là root (VD: A, B)
       const resolvedParentId = resolveParentId(t);
@@ -1418,6 +1462,18 @@ const displayTasks = tasks.filter((t) => {
     });
 
     let currentSectionKey = '';
+    const isTaskSectionHeader = (node: any) => {
+      if (node.isSectionHeader) return true;
+      const stt = String(node.stt || '').trim().toUpperCase();
+      const notes = String(node.notes || '').toLowerCase();
+      const hasNoDot = stt.length > 0 && !stt.includes('.');
+      const isSecPattern = notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (hasNoDot && /^\d+$/.test(stt));
+      const hasNoVol = !node.volume || node.volume === 0;
+      const unitStr = String(node.unit || '').trim();
+      const hasNoUnit = !unitStr || unitStr === '' || unitStr === '-' || unitStr === '–' || unitStr === '—';
+      return isSecPattern && (hasNoVol || hasNoUnit || !node.parentId);
+    };
+
     const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '') => {
       // Sort theo STT
       nodes.sort((a, b) => {
@@ -1427,12 +1483,13 @@ const displayTasks = tasks.filter((t) => {
       });
 
       nodes.forEach((node, idx) => {
-        if (node.isSectionHeader) {
+        const isSec = isTaskSectionHeader(node);
+        if (isSec) {
           currentSectionKey = node.sectionName || node.name || '';
         }
 
         let displayDepth = currentDepth;
-        if (currentDepth === 0 && !node.isSectionHeader && currentSectionKey !== '') {
+        if (currentDepth === 0 && !isSec && currentSectionKey !== '') {
           displayDepth = 1; // Indent if under a section header
         }
 
@@ -1441,6 +1498,7 @@ const displayTasks = tasks.filter((t) => {
 
         flattened.push({ 
           ...node, 
+          isSectionHeader: isSec,
           depth: displayDepth, 
           computedStt, 
           _sectionKey: currentSectionKey || 'Khác' 

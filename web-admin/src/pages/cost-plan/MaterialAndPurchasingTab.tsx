@@ -1132,7 +1132,42 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               const order: string[] = [];
               let currentSectionKey = '__default__';
 
+              const sttSet = new Set(filteredData.map(t => String(t.stt || '').trim()));
+              const missingParents: any[] = [];
               filteredData.forEach(t => {
+                const stt = String(t.stt || '').trim();
+                if (stt.includes('.')) {
+                  const parts = stt.split('.');
+                  parts.pop();
+                  const parentStt = parts.join('.');
+                  if (parentStt && !sttSet.has(parentStt)) {
+                    sttSet.add(parentStt);
+                    let synthName = '';
+                    if (parentStt === '33') {
+                      synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+                    } else if (parentStt === '36') {
+                      synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+                    } else {
+                      synthName = `HẠNG MỤC ${parentStt}`;
+                    }
+
+                    missingParents.push({
+                      id: `synth_mat_${parentStt}`,
+                      stt: parentStt,
+                      jobContent: synthName,
+                      content: synthName,
+                      projectCode: t.projectCode,
+                      parentId: t.parentId,
+                      isSec: true,
+                      notes: '[section]'
+                    });
+                  }
+                }
+              });
+
+              const allData = [...missingParents, ...filteredData];
+
+              allData.forEach(t => {
                 if (isRootSectionRow(t)) {
                   currentSectionKey = t.id;
                   if (!groups[currentSectionKey]) {
