@@ -1,8 +1,8 @@
 {
-  "version": "1.2.94",
+  "version": "1.2.95",
   "date": "2026-09-07",
   "notes": [
-    "Sửa lỗi hiển thị đầu mục 33 và 36 thuộc nhóm chính A và B trong Phụ lục Vật tư & Chi phí.",
-    "Bổ sung cấu trúc phân cấp đa tầng (Root Section A, B -> Sub Section 33, 36 -> Items 33.1, 36.1) hoàn chỉnh."
+    "Hiển thị rõ ràng Mã STT kèm Tên đầu mục (ví dụ: 33 - HỆ THỐNG THÔNG TIN LIÊN LẠC... và 36 - HỆ THỐNG SCADA...) trên thanh Folder.",
+    "Cho phép nội dung tên đầu mục tự động xuống dòng và tự nới rộng, không bị ẩn hay cắt ngắn."
   ]
 }

@@ -1722,7 +1722,9 @@ const displayTasks = tasks.filter((t) => {
                               <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                             </button>
                             <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                            <span onClick={() => handleOpenEditModal(t)} className="cursor-pointer hover:underline flex-1 break-words leading-tight pt-0.5">{t.name}</span>
+                            <span onClick={() => handleOpenEditModal(t)} className="cursor-pointer hover:underline flex-1 break-words leading-tight pt-0.5">
+                              {t.stt ? `${t.stt} - ` : ''}{t.name}
+                            </span>
                             <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-base">add_circle</span></button>
                             <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-base">delete</span></button>
                           </div>
