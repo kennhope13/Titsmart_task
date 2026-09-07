@@ -1395,7 +1395,7 @@ const displayTasks = tasks.filter((t) => {
 
     // Resolve parent globally for all tasks
     const resolveParentId = (item: any) => {
-      // Dựa vào STT để tìm cha (VD: 1.1 -> cha là 1)
+      if (item.parentId && map.has(item.parentId)) return item.parentId;
       if (item.stt && item.stt.includes('.')) {
         const parts = item.stt.split('.');
         parts.pop();
