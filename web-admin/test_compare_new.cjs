@@ -1,60 +1,18 @@
-import { Task } from '../types';
-
-export const toRoman = (num: number): string => {
-  if (num <= 0) return 'I';
-  const lookup: [string, number][] = [
-    ['M', 1000], ['CM', 900], ['D', 500], ['CD', 400],
-    ['C', 100], ['XC', 90], ['L', 50], ['XL', 40],
-    ['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]
-  ];
-  let roman = '';
-  let n = num;
-  for (const [letter, value] of lookup) {
-    while (n >= value) {
-      roman += letter;
-      n -= value;
-    }
-  }
+﻿const extractLeadingRomanNumber = (text) => {
+  const match = text.trim().match(/^([IVXLCDM]+)(?:[\s.)-]|$)/i);
+  if (!match) return null;
+  const roman = match[1].toUpperCase();
   return roman;
 };
 
-export const fromRoman = (roman: string): number => {
-  const values: Record<string, number> = {
-    I: 1,
-    V: 5,
-    X: 10,
-    L: 50,
-    C: 100,
-    D: 500,
-    M: 1000,
-  };
-
-  return roman
-    .toUpperCase()
-    .split('')
-    .reduce((total, char, index, chars) => {
-      const value = values[char] || 0;
-      const nextValue = values[chars[index + 1]] || 0;
-      return total + (value < nextValue ? -value : value);
-    }, 0);
-};
-
-export const extractLeadingRomanNumber = (text: string): number | null => {
-  const match = text.trim().match(/^([IVXLCDM]+)(?:[\s.)-]|$)/i);
-  if (!match) return null;
-
-  const roman = match[1].toUpperCase();
-  return toRoman(fromRoman(roman)) === roman ? fromRoman(roman) : null;
-};
-
-const sttSortParts = (value?: string) => {
+const sttSortParts = (value) => {
   const text = String(value || '').trim();
   if (!text) return [Number.POSITIVE_INFINITY];
   const parts = text.match(/\d+/g)?.map((part) => Number.parseInt(part, 10)) || [];
   return parts.length ? parts : [Number.POSITIVE_INFINITY];
 };
 
-export const compareTaskStt = (a?: string, b?: string) => {
+const compareTaskStt = (a, b) => {
   const textA = String(a || '').trim();
   const textB = String(b || '').trim();
   
@@ -64,7 +22,6 @@ export const compareTaskStt = (a?: string, b?: string) => {
   const romanA = extractLeadingRomanNumber(textA);
   const romanB = extractLeadingRomanNumber(textB);
 
-  // 1. Single/Double Letter headers (A, B, C, AA, BB) get highest priority for root level section sorting
   if (isLetterA && isLetterB) return textA.localeCompare(textB, 'en', { sensitivity: 'base' });
   if (isLetterA && !isLetterB) return -1;
   if (!isLetterA && isLetterB) return 1;
@@ -87,3 +44,8 @@ export const compareTaskStt = (a?: string, b?: string) => {
   }
   return textA.localeCompare(textB, 'vi', { numeric: true, sensitivity: 'base' });
 };
+
+console.log('34 vs A:', compareTaskStt('34', 'A'));
+console.log('A vs 34:', compareTaskStt('A', '34'));
+console.log('A vs B:', compareTaskStt('A', 'B'));
+console.log('33 vs 34:', compareTaskStt('33', '34'));

@@ -10,6 +10,7 @@ import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
 import { WebOcrExtractedData } from '../services/webOcrService';
 import { Task, getStatusColorStyle , calculateAutoProgressRatio, calculateAutoProgressPercent, normalizeStatusText, purchaseProgressScore, constructionProgressScore, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS, ISSUE_STATUS_OPTIONS, getIssueStatusColorStyle } from '../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { compareTaskStt } from '../utils/taskTreeUtils';
 
 // Convert integer to Roman numeral
 const toRoman = (num: number): string => {
@@ -95,32 +96,6 @@ const sttSortParts = (value?: string) => {
   if (!text) return [Number.POSITIVE_INFINITY];
   const parts = text.match(/\d+/g)?.map((part) => Number.parseInt(part, 10)) || [];
   return parts.length ? parts : [Number.POSITIVE_INFINITY];
-};
-
-const compareTaskStt = (a?: string, b?: string) => {
-  const textA = String(a || '').trim();
-  const textB = String(b || '').trim();
-  
-  const romanA = extractLeadingRomanNumber(textA);
-  const romanB = extractLeadingRomanNumber(textB);
-  
-  if (romanA !== null && romanB !== null) {
-    if (romanA !== romanB) return romanA - romanB;
-  } else if (romanA !== null && romanB === null) {
-    return -1;
-  } else if (romanA === null && romanB !== null) {
-    return 1;
-  }
-
-  const left = sttSortParts(textA);
-  const right = sttSortParts(textB);
-  const max = Math.max(left.length, right.length);
-  for (let index = 0; index < max; index += 1) {
-    const leftValue = left[index] ?? 0;
-    const rightValue = right[index] ?? 0;
-    if (leftValue !== rightValue) return leftValue - rightValue;
-  }
-  return textA.localeCompare(textB, 'vi', { numeric: true, sensitivity: 'base' });
 };
 
 
