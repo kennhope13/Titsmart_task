@@ -186,12 +186,12 @@ export const PersonnelPage: React.FC = () => {
   const handleSavePerson = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim() || submitting) return;
-    if (!isAllProjects && selectedProjectCodes.length === 0) {
+    if (selectedProjectCodes.length === 0) {
       triggerToast('Vui lòng chọn ít nhất 1 dự án cho nhân sự!', 'warning');
       return;
     }
     
-    const finalProjectCodes = isAllProjects ? [] : selectedProjectCodes;
+    const finalProjectCodes = selectedProjectCodes;
     
     setSubmitting(true);
     try {
@@ -407,29 +407,21 @@ export const PersonnelPage: React.FC = () => {
   <label className="block text-[13px] font-bold text-slate-700 mb-1.5">
     Phân quyền Dự án <span className="text-red-500">*</span>
   </label>
-  <div className="mb-2">
-    <label className="flex items-center gap-2 text-sm cursor-pointer p-2 bg-blue-50/50 border border-blue-100 rounded-lg hover:bg-blue-50 transition-colors">
-      <input type="checkbox" checked={isAllProjects} onChange={(e) => setIsAllProjects(e.target.checked)} className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500" />
-      <span className="font-bold text-blue-700 text-[13px]">Truy cập tất cả dự án (Quyền xem toàn bộ)</span>
-    </label>
-  </div>
-  {!isAllProjects && (
-    <div>
-      <div className={`max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 custom-scrollbar ${(!isAllProjects && selectedProjectCodes.length === 0) ? 'border-red-300' : 'border-slate-200'}`}>
-        {projects.length === 0 && <p className="text-[11px] text-slate-400 p-2">Chưa có dự án nào trong hệ thống.</p>}
-        {projects.map((p) => (
-          <label key={p.code} className="flex items-center gap-2 text-sm p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors">
-            <input type="checkbox" checked={selectedProjectCodes.includes(p.code)} onChange={() => toggleProjectCode(p.code)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
-            <span className="font-semibold text-slate-700">{p.name}</span>
-            <span className="text-slate-400 text-xs">({p.code})</span>
-          </label>
-        ))}
-      </div>
-      {!isAllProjects && selectedProjectCodes.length === 0 && (
-        <p className="mt-1 text-[11px] text-red-500">Bắt buộc chọn ít nhất 1 dự án để nhân sự có quyền truy cập.</p>
-      )}
+  <div>
+    <div className={`max-h-48 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 custom-scrollbar ${selectedProjectCodes.length === 0 ? 'border-red-300' : 'border-slate-200'}`}>
+      {projects.length === 0 && <p className="text-[11px] text-slate-400 p-2">Chưa có dự án nào trong hệ thống.</p>}
+      {projects.map((p) => (
+        <label key={p.code} className="flex items-center gap-2 text-sm p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors">
+          <input type="checkbox" checked={selectedProjectCodes.includes(p.code)} onChange={() => toggleProjectCode(p.code)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
+          <span className="font-semibold text-slate-700">{p.name}</span>
+          <span className="text-slate-400 text-xs">({p.code})</span>
+        </label>
+      ))}
     </div>
-  )}
+    {selectedProjectCodes.length === 0 && (
+      <p className="mt-1 text-[11px] text-red-500">Bắt buộc chọn ít nhất 1 dự án để nhân sự có quyền truy cập.</p>
+    )}
+  </div>
 <div className="border-t border-slate-100 my-2"></div>
 
               <div className="flex justify-between items-center mb-2">
