@@ -1151,7 +1151,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                     groups[targetSection] = [];
                     order.push(targetSection);
                   }
-                  groups[targetSection].push({ ...t, _isHeader: isParentRow(t) });
+                  groups[targetSection].push({ ...t, _isHeader: false });
                 }
               });
 

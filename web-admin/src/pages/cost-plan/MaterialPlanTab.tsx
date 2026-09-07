@@ -522,7 +522,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                     groups[targetSection] = [];
                     order.push(targetSection);
                   }
-                  groups[targetSection].push({ ...t, _isHeader: isParentRow(t) });
+                  groups[targetSection].push({ ...t, _isHeader: false });
                 }
               });
 

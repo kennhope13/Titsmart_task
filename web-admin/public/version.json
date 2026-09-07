@@ -1,8 +1,7 @@
 {
-  "version": "1.2.95",
+  "version": "1.2.96",
   "date": "2026-09-07",
   "notes": [
-    "Hiển thị rõ ràng Mã STT kèm Tên đầu mục (ví dụ: 33 - HỆ THỐNG THÔNG TIN LIÊN LẠC... và 36 - HỆ THỐNG SCADA...) trên thanh Folder.",
-    "Cho phép nội dung tên đầu mục tự động xuống dòng và tự nới rộng, không bị ẩn hay cắt ngắn."
+    "Sửa lỗi triệt để: Hiển thị đầy đủ các đầu mục 33, 36 và các hạng mục con bên trong các mục lớn A, B."
   ]
 }
