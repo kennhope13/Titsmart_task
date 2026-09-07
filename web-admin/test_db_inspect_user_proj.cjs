@@ -1,21 +1,14 @@
-﻿const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient('https://nvdonaaxbtqjfmxtlgzb.supabase.co', 'sb_publishable_gzUeVF_f2jadDuuii66pCw_W_0xmqjg');
 
 async function run() {
-  const { data: p } = await supabase.from('projects').select('id, code, name').eq('id', '352140f7-df33-4a23-8f7e-e1d716660622');
-  if (!p || p.length === 0) return console.log('Project not found');
-  const code = p[0].code;
-  console.log('Project Code:', code);
-
-  const { data: tasks } = await supabase.from('tasks').select('id, stt, name, parent_id, is_section_header').eq('project_code', code);
+  const codes = ["TRAM_BIEN_AP_110KV_PHUOC_DONG_6", "TRAM_BIEN_AP_500KV_BAC_NINH"];
+  const { data: eng, error } = await supabase
+    .from('engineers')
+    .update({ project_codes: codes })
+    .eq('username', 'htbinh')
+    .select();
   
-  const idMap = {};
-  tasks.forEach(t => idMap[t.id] = t.stt);
-  
-  console.log('\n--- TASKS IN DB FOR THIS PROJECT ---');
-  tasks.forEach(t => {
-    const pStt = t.parent_id ? (idMap[t.parent_id] || t.parent_id.substring(0,8)) : 'ROOT';
-    console.log(t.stt.padEnd(8), '| header:', String(t.is_section_header).padEnd(5), '| parent:', pStt.padEnd(8), '|', t.name.substring(0, 45));
-  });
+  console.log('Updated htbinh project_codes:', JSON.stringify(eng, null, 2), error);
 }
 run();

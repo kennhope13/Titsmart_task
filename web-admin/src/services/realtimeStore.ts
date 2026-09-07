@@ -594,31 +594,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { ...e, projectCodes: uniqueCodes };
         });
 
-        // Clean up ghost project codes (codes that don't exist in projects list)
-        const currentProjects = get().projects;
-        if (currentProjects.length > 0) {
-          const validCodes = new Set(currentProjects.map(p => (p.code || '').trim()).filter(Boolean));
-          let hasGhosts = false;
-          
-          for (const eng of engineers) {
-            const originalLength = eng.projectCodes.length;
-            eng.projectCodes = eng.projectCodes.filter((code: string) => {
-              if (!code || !code.trim()) return false; // Remove empty codes
-              return validCodes.has(code.trim());
-            });
-            
-            if (eng.projectCodes.length !== originalLength) {
-              hasGhosts = true;
-              // Silently update backend in background
-              api.engineers.update(eng.id, { projectCodes: eng.projectCodes }).catch(console.error);
-            }
-          }
-          
-          if (hasGhosts) {
-            console.log('Cleaned up ghost project references from engineers.');
-          }
-        }
-
         set({ engineers });
 
         // Sync authStore if the logged-in user is updated
