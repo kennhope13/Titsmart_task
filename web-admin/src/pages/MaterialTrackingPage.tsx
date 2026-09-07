@@ -467,8 +467,10 @@ export const MaterialTrackingPage: React.FC = () => {
   const [constrStatus, setConstrStatus] = useState('Chưa thi công');
 
   // Edit Material form state
-  const [editPurchaseStatus, setEditPurchaseStatus] = useState('Chưa đặt hàng');
-  const [editConstrStatus, setEditConstrStatus] = useState('Chưa thi công');
+  const [editName, setEditName] = useState('');
+  const [editCode, setEditCode] = useState('');
+  const [editSpecs, setEditSpecs] = useState('');
+  const [editCategory, setEditCategory] = useState('');
   const [editSupplier, setEditSupplier] = useState('');
   const [editInitialStock, setEditInitialStock] = useState(0);
   const [editUnit, setEditUnit] = useState('cái');
@@ -568,8 +570,10 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const openEditMaterial = (material: Material) => {
     setEditingMaterial(material);
-    setEditPurchaseStatus(normalizePurchaseStatus(material.status));
-    setEditConstrStatus(normalizeConstructionStatus(material.constrStatus));
+    setEditName(material.name || '');
+    setEditCode(material.code || '');
+    setEditSpecs(material.specs || '');
+    setEditCategory(material.category || '');
     setEditSupplier(material.supplier || '');
     setEditInitialStock(material.initialStock || 0);
     setEditUnit(material.unit || 'cái');
@@ -590,8 +594,10 @@ export const MaterialTrackingPage: React.FC = () => {
     const currentStock = editInitialStock + totalImp - totalExp;
 
     await updateMaterial(editingMaterial.id, {
-      status: editPurchaseStatus,
-      constrStatus: editConstrStatus,
+      name: editName,
+      code: editCode,
+      specs: editSpecs,
+      category: editCategory,
       supplier: editSupplier,
       initialStock: editInitialStock,
       currentStock,
@@ -599,7 +605,7 @@ export const MaterialTrackingPage: React.FC = () => {
       unitPrice: editUnitPrice,
     });
     setEditingMaterial(null);
-      triggerToast(`Đã cập nhật \"${editingMaterial.name}\" thành công!`, 'success');
+      triggerToast(`Đã cập nhật \"${editName || editingMaterial.name}\" thành công!`, 'success');
     } catch (error: any) {
       triggerToast(error.message || 'Lỗi khi cập nhật!', 'warning');
     } finally {
@@ -1020,12 +1026,15 @@ export const MaterialTrackingPage: React.FC = () => {
                         <td className="p-3.5 text-right font-bold text-primary text-sm">{(material.currentStock !== undefined ? material.currentStock : (material.initialStock || 0)).toLocaleString('vi-VN')}</td>
                         <td className="p-3.5 text-slate-600 text-xs max-w-xs truncate" title={material.notes || ''}>{material.notes || '-'}</td>
                         <td className="p-3.5 text-center" onClick={(event) => event.stopPropagation()}>
-                          <div className="flex justify-center gap-2">
+                          <div className="flex justify-center gap-1.5">
+                            <button type="button" onClick={() => openEditMaterial(material)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-colors" title="Chỉnh sửa thông tin vật tư">
+                              <span className="material-symbols-outlined text-[15px]">edit</span>
+                            </button>
                             <button type="button" onClick={() => {
                               setTransferMaterial(material);
                               setIsTransferModalOpen(true);
                             }} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors" title="Chuyển kho">
-                              <span className="material-symbols-outlined text-[14px]">swap_horiz</span>
+                              <span className="material-symbols-outlined text-[15px]">swap_horiz</span>
                             </button>
                             <button type="button" onClick={() => {
                               setConfirmConfig({
@@ -1037,8 +1046,8 @@ export const MaterialTrackingPage: React.FC = () => {
                               confirmText: 'Xóa',
                               onConfirm: () => { deleteMaterial(material.id); triggerToast(`Đã xóa vật tư "${material.name}" thành công!`, 'success'); },
                             });
-                          }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title="Xóa vật tư">
-                            <span className="material-symbols-outlined text-base">delete</span>
+                          }} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title="Xóa vật tư">
+                            <span className="material-symbols-outlined text-[15px]">delete</span>
                             </button>
                           </div>
                         </td>
@@ -1140,13 +1149,23 @@ export const MaterialTrackingPage: React.FC = () => {
       <Modal isOpen={!!editingMaterial} onClose={() => setEditingMaterial(null)} title="Cập nhật Thông tin Vật tư">
         {editingMaterial && (
           <form onSubmit={handleSaveMaterial} className="space-y-3 text-xs">
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-              <div className="font-bold text-slate-900">{editingMaterial.name}</div>
-              <div className="text-[11px] text-slate-500 mt-1">{editingMaterial.code}</div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Tên vật tư / thiết bị *</label>
+              <input type="text" required value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold text-slate-700 mb-1">Tình trạng mua hàng</label><CustomSelect value={editPurchaseStatus} onChange={(event) => setEditPurchaseStatus(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{PURCHASE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</CustomSelect></div>
-              <div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><CustomSelect value={editConstrStatus} onChange={(event) => setEditConstrStatus(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{CONSTRUCTION_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</CustomSelect></div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Mã vật tư</label>
+                <input type="text" value={editCode} onChange={(e) => setEditCode(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Danh mục vật tư</label>
+                <input type="text" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} placeholder="VD: Thiết bị, Cáp điện..." className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
+              </div>
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Mô tả / Quy cách</label>
+              <input type="text" value={editSpecs} onChange={(e) => setEditSpecs(e.target.value)} placeholder="VD: 50 mét, chống nhiễu..." className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold text-slate-700 mb-1">Tồn đầu kỳ</label><input type="number" step="any" value={editInitialStock} onChange={(event) => setEditInitialStock(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
