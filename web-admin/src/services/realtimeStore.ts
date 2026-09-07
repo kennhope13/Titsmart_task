@@ -1738,22 +1738,29 @@ export function setupRealtimeSync() {
     supabase.removeChannel(realtimeChannel);
   }
 
-  // Debounce: gom nhiều thay đổi trong 2 giây thành 1 lần refresh
+  // Debounce: gom nhiều thay đổi trong 3 giây thành 1 lần refresh và CHỈ fetch bảng bị đổi để tránh làm lag DB
+  let changedTables = new Set<string>();
   let refreshTimeout: any = null;
-  const debouncedRefresh = () => {
+  const debouncedRefresh = (payload?: any) => {
+    if (payload && payload.table) {
+      changedTables.add(payload.table);
+    }
     if (refreshTimeout) clearTimeout(refreshTimeout);
     refreshTimeout = setTimeout(() => {
-      console.log('[Realtime] Đã nhận tín hiệu thay đổi data. Tự động cập nhật dữ liệu...');
       const store = useRealtimeStore.getState();
-      store.fetchProjects();
-      store.fetchAccounting();
-      store.fetchMaterials(undefined);
-      store.fetchTasks(undefined);
-      store.fetchIssues(undefined);
-      store.fetchEngineers();
-      store.fetchFieldLogs();
-      store.fetchNotifications();
-    }, 1000);
+      const tables = Array.from(changedTables);
+      changedTables.clear();
+      console.log('[Realtime] Đã nhận tín hiệu thay đổi. Tự động cập nhật dữ liệu cho:', tables.length ? tables : 'ALL');
+      
+      if (tables.length === 0 || tables.includes('projects')) store.fetchProjects();
+      if (tables.length === 0 || tables.includes('tasks')) store.fetchTasks(undefined);
+      if (tables.length === 0 || tables.includes('materials') || tables.includes('inventory_transactions') || tables.includes('material_plans') || tables.includes('purchasing_plans')) store.fetchMaterials(undefined);
+      if (tables.length === 0 || tables.includes('issues')) store.fetchIssues(undefined);
+      if (tables.length === 0 || tables.includes('engineers')) store.fetchEngineers();
+      if (tables.length === 0 || tables.includes('expenses') || tables.includes('labor_payrolls')) store.fetchAccounting();
+      if (tables.length === 0 || tables.includes('field_logs')) store.fetchFieldLogs();
+      if (tables.length === 0 || tables.includes('notifications')) store.fetchNotifications();
+    }, 3000);
   };
 
   realtimeChannel = supabase

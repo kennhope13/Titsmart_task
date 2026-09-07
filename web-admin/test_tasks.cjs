@@ -2,11 +2,8 @@
 const supabase = createClient('https://nvdonaaxbtqjfmxtlgzb.supabase.co', 'sb_publishable_gzUeVF_f2jadDuuii66pCw_W_0xmqjg');
 
 async function run() {
-  const { data, error } = await supabase.from('tasks').select('id, name, stt').eq('project_code', 'TRAM_BIEN_AP_110KV_PHUOC_DONG_6');
+  const { data, error } = await supabase.from('projects').select('code, name');
   if (error) console.error('Error:', error);
-  else {
-    const found = data.filter(t => t.name.includes('BÊN A'));
-    console.log(found);
-  }
+  else console.log(data.filter(p => p.name.toLowerCase().includes('đông 6') || p.name.toLowerCase().includes('dong 6')));
 }
 run();
