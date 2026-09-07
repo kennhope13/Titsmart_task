@@ -138,8 +138,9 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
 
     const sectionSortKey = (r: ProjectMaterialPlan): number[] => {
       const stt = String(r.stt || '').trim();
-      if (/^[IVXLCDM]+$/i.test(stt)) return [0, romanToInt(stt)];
-      return [1, ...numericSttParts(stt)];
+      if (/^[A-Z]{1,2}$/i.test(stt)) return [0, stt.charCodeAt(0)];
+      if (/^[IVXLCDM]+$/i.test(stt)) return [1, romanToInt(stt)];
+      return [2, ...numericSttParts(stt)];
     };
     const sectionOrder = new Map<string, number>();
     [...filtered]
