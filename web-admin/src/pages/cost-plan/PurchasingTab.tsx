@@ -116,6 +116,10 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
   // Sort sections by their stt: Roman sections by Roman value, numeric sections
   // by numeric parts (e.g. '33' < '34' < '105'). Strategy: assign each record a
   // composite key (sectionIndex, numericParts) via a single pass over the data.
+  const isRootSectionRow = (pur: ProjectPurchasing) => {
+    return isSectionRow(pur) && (pur.parentId === null || !pur.parentId);
+  };
+
   const sectionSortKey = (r: ProjectPurchasing): number[] => {
     const stt = String(r.stt || '').trim();
     if (/^[A-Z]{1,2}$/i.test(stt)) return [0, stt.charCodeAt(0)];
@@ -124,7 +128,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
   };
   const sectionOrder = new Map<string, number>();
   [...data]
-    .filter(r => isSectionRow(r))
+    .filter(r => isRootSectionRow(r))
     .sort((a, b) => {
       const ka = sectionSortKey(a), kb = sectionSortKey(b);
       for (let i = 0; i < Math.max(ka.length, kb.length); i++) {
@@ -163,7 +167,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
     if (visited.has(pur.id)) return Infinity;
     visited.add(pur.id);
 
-    if (isSectionRow(pur)) {
+    if (isRootSectionRow(pur)) {
       const res = sectionOrder.get(pur.id) ?? Infinity;
       sectionIndexCache.set(pur.id, res);
       return res;
@@ -180,7 +184,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
       const parentItem = data.find(r => r.id === resolvedParentId);
       if (parentItem) {
         const parentSecIdx = getSectionIndexForItem(parentItem, visited);
-        if (parentSecIdx !== -1) {
+        if (parentSecIdx !== Infinity) {
           sectionIndexCache.set(pur.id, parentSecIdx);
           return parentSecIdx;
         }
@@ -199,7 +203,7 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
     let bestSecIdx = Infinity;
     let bestSecPos = -1;
     data.forEach(r => {
-      if (isSectionRow(r)) {
+      if (isRootSectionRow(r)) {
         const secPos = originalOrderMap.get(r.id) ?? Infinity;
         if (secPos <= myPos && secPos > bestSecPos) {
           bestSecPos = secPos;
@@ -264,16 +268,23 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
       const secA = getSectionIndexForItem(a);
       const secB = getSectionIndexForItem(b);
       if (secA !== secB) return secA - secB;
-      // Within same section: section header always first, then items by numeric stt
-      const aIsSec = isSectionRow(a) ? 0 : 1;
-      const bIsSec = isSectionRow(b) ? 0 : 1;
-      if (aIsSec !== bIsSec) return aIsSec - bIsSec;
+
+      const parentOfA = resolveParentId(a);
+      const parentOfB = resolveParentId(b);
+      if (a.id === parentOfB) return -1;
+      if (b.id === parentOfA) return 1;
+
+      const isLetterA = /^[A-Z]{1,2}$/i.test(String(a.stt || '').trim());
+      const isLetterB = /^[A-Z]{1,2}$/i.test(String(b.stt || '').trim());
+      if (isLetterA && !isLetterB) return -1;
+      if (!isLetterA && isLetterB) return 1;
+
       const ap = numericSttParts(a.stt), bp = numericSttParts(b.stt);
       for (let i = 0; i < Math.max(ap.length, bp.length); i++) {
         const diff = (ap[i] ?? Infinity) - (bp[i] ?? Infinity);
         if (diff !== 0) return diff;
       }
-      return 0;
+      return String(a.stt || '').localeCompare(String(b.stt || ''));
     });
 
   const startEditing = (id: string, field: keyof ProjectPurchasing, value: any) => {
