@@ -486,14 +486,19 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       return text.split(/[.\-]/).map(p => { const n = parseInt(p, 10); return isNaN(n) ? Infinity : n; });
     };
 
+    const isRootSectionRow = (plan: ProjectMaterialPlan) => {
+      return isParentRow(plan) && (plan.parentId === null || !plan.parentId);
+    };
+
     const sectionSortKey = (r: ProjectMaterialPlan): number[] => {
       const stt = String(r.stt || '').trim();
-      if (/^[IVXLCDM]+$/i.test(stt)) return [0, romanToInt(stt)];
-      return [1, ...numericSttParts(stt)];
+      if (/^[A-Z]{1,2}$/i.test(stt)) return [0, stt.charCodeAt(0)];
+      if (/^[IVXLCDM]+$/i.test(stt)) return [1, romanToInt(stt)];
+      return [2, ...numericSttParts(stt)];
     };
     const sectionOrder = new Map<string, number>();
     [...filtered]
-      .filter(r => isParentRow(r))
+      .filter(r => isRootSectionRow(r))
       .sort((a, b) => {
         const ka = sectionSortKey(a), kb = sectionSortKey(b);
         for (let i = 0; i < Math.max(ka.length, kb.length); i++) {
@@ -552,7 +557,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       if (visited.has(plan.id)) return Infinity;
       visited.add(plan.id);
 
-      if (isParentRow(plan)) {
+      if (isRootSectionRow(plan)) {
         const res = sectionOrder.get(plan.id) ?? Infinity;
         sectionIndexCache.set(plan.id, res);
         return res;
@@ -569,7 +574,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         const parentItem = filtered.find(r => r.id === resolvedParentId);
         if (parentItem) {
           const parentSecIdx = getSectionIndexForItem(parentItem, visited);
-          if (parentSecIdx !== -1) {
+          if (parentSecIdx !== Infinity) {
             sectionIndexCache.set(plan.id, parentSecIdx);
             return parentSecIdx;
           }
@@ -580,7 +585,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       let bestSecIdx = Infinity;
       let bestSecPos = -1;
       filtered.forEach(r => {
-        if (isParentRow(r)) {
+        if (isRootSectionRow(r)) {
           const secPos = originalOrderMap.get(r.id) ?? Infinity;
           if (secPos <= myPos && secPos > bestSecPos) {
             bestSecPos = secPos;
@@ -598,9 +603,15 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       const secB = getSectionIndexForItem(b);
       if (secA !== secB) return secA - secB;
       
-      const aIsSec = isParentRow(a) ? 0 : 1;
-      const bIsSec = isParentRow(b) ? 0 : 1;
-      if (aIsSec !== bIsSec) return aIsSec - bIsSec;
+      const parentOfA = resolveParentId(a);
+      const parentOfB = resolveParentId(b);
+      if (a.id === parentOfB) return -1;
+      if (b.id === parentOfA) return 1;
+
+      const isLetterA = /^[A-Z]{1,2}$/i.test(String(a.stt || '').trim());
+      const isLetterB = /^[A-Z]{1,2}$/i.test(String(b.stt || '').trim());
+      if (isLetterA && !isLetterB) return -1;
+      if (!isLetterA && isLetterB) return 1;
       
       const hasSttA = !!String(a.stt || '').trim();
       const hasSttB = !!String(b.stt || '').trim();
@@ -612,7 +623,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           const diff = (ap[i] ?? -1) - (bp[i] ?? -1);
           if (diff !== 0) return diff;
         }
-        return 0;
+        return String(a.stt || '').localeCompare(String(b.stt || ''));
       }
       
       // Nếu một trong hai hoặc cả hai không có STT, giữ nguyên thứ tự ban đầu từ Excel (orderTagValue)
