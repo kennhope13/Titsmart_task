@@ -546,8 +546,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       const fetchStartTime = Date.now();
       try {
         const tasks = await api.tasks.getAll(projectId);
-        if (get().lastMutationTime > fetchStartTime) {
-          console.log('[Realtime] Skipping tasks overwrite because local mutation occurred');
+        // Bảo vệ: không ghi đè nếu có mutation trong vòng 5 giây gần nhất
+        const mutationGuard = get().lastMutationTime + 5000;
+        if (mutationGuard > fetchStartTime) {
+          console.log('[Realtime] Skipping tasks overwrite because local mutation occurred recently');
         } else {
           set({ tasks: filterByProject(tasks, 'projectCode') });
         }
@@ -687,8 +689,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       // Tải từng bảng độc lập để 1 bảng lỗi không ảnh hưởng bảng khác
       try {
         const materialPlans = await api.accounting.getMaterialPlans();
-        if (get().lastMutationTime > fetchStartTime) {
-          console.log('[Realtime] Skipping materialPlans overwrite because local mutation occurred');
+        const mutationGuardMP = get().lastMutationTime + 5000;
+        if (mutationGuardMP > fetchStartTime) {
+          console.log('[Realtime] Skipping materialPlans overwrite because local mutation occurred recently');
         } else if (Array.isArray(materialPlans)) {
           nextState.materialPlans = filterByProject(materialPlans.map(normalizeMaterialPlan), 'projectCode');
         }
@@ -697,8 +700,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
       try {
         const purchasingPlans = await api.accounting.getPurchasings();
-        if (get().lastMutationTime > fetchStartTime) {
-          console.log('[Realtime] Skipping purchasingPlans overwrite because local mutation occurred');
+        const mutationGuardPP = get().lastMutationTime + 5000;
+        if (mutationGuardPP > fetchStartTime) {
+          console.log('[Realtime] Skipping purchasingPlans overwrite because local mutation occurred recently');
         } else if (Array.isArray(purchasingPlans)) {
           nextState.purchasingPlans = filterByProject(purchasingPlans.map(normalizePurchasingPlan), 'projectCode');
         }
