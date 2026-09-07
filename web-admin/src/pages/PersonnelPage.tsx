@@ -31,6 +31,7 @@ export const PersonnelPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [selectedProjectCodes, setSelectedProjectCodes] = useState<string[]>([]);
+  const [isAllProjects, setIsAllProjects] = useState(false);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -83,6 +84,7 @@ export const PersonnelPage: React.FC = () => {
     setUsername('');
     setPassword('');
     setSelectedProjectCodes([]);
+    setIsAllProjects(false);
     setPermissions(getDefaultPermissions('Nhân viên'));
   };
 
@@ -171,6 +173,12 @@ export const PersonnelPage: React.FC = () => {
     setRole(person.role || 'Nhân viên');
     setUsername((person as any).username || '');
     setPassword('');
+    
+    // Check original projectCodes from DB to see if it was empty (meaning all projects)
+    const rawProjectCodes = (person as any).projectCodes || (person as any).project_codes || [];
+    const hadNoProjectsAssigned = Array.isArray(rawProjectCodes) && rawProjectCodes.length === 0;
+    
+    setIsAllProjects(hadNoProjectsAssigned);
     setSelectedProjectCodes(person.assignedProjects.map((project: any) => project.code));
     setIsFormOpen(true);
   };
@@ -178,10 +186,13 @@ export const PersonnelPage: React.FC = () => {
   const handleSavePerson = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim() || submitting) return;
-    if (role !== 'Quản lý dự án' && selectedProjectCodes.length === 0) {
+    if (!isAllProjects && selectedProjectCodes.length === 0) {
       triggerToast('Vui lòng chọn ít nhất 1 dự án cho nhân sự!', 'warning');
       return;
     }
+    
+    const finalProjectCodes = isAllProjects ? [] : selectedProjectCodes;
+    
     setSubmitting(true);
     try {
       if (editingPersonId) {
@@ -192,7 +203,7 @@ export const PersonnelPage: React.FC = () => {
           title: role,
           ...(username ? { username: username.trim() } : {}),
           ...(password ? { password } : {}),
-          projectCodes: selectedProjectCodes,
+          projectCodes: finalProjectCodes,
             permissions,
         });
         triggerToast(`Đã cập nhật nhân sự "${name.trim()}" thành công!`, 'success');
@@ -204,7 +215,7 @@ export const PersonnelPage: React.FC = () => {
           title: role,
           username: username.trim(),
           password,
-          projectCodes: selectedProjectCodes,
+          projectCodes: finalProjectCodes,
             permissions,
         });
         triggerToast(`Đã thêm nhân sự "${name.trim()}" và gán ${selectedProjectCodes.length} dự án!`, 'success');
@@ -301,18 +312,16 @@ export const PersonnelPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-3">
-                      {person.role === 'Quản lý dự án' ? (
+                      {person.assignedProjects.length === 0 ? (
                         <span className="text-blue-700 text-[11px] font-bold">Tất cả dự án</span>
-                      ) : person.assignedProjects.length > 0 ? (
+                      ) : (
                         <div className="flex flex-wrap gap-y-0.5">
                           {person.assignedProjects.map((mp: any, i: number, arr: any[]) => (
-  <span key={mp.code} className="text-primary text-[11px] font-bold break-words">
-    {mp.name}{i < arr.length - 1 ? ', ' : ''}
-  </span>
-))}
+                            <span key={mp.code} className="text-primary text-[11px] font-bold break-words">
+                              {mp.name}{i < arr.length - 1 ? ', ' : ''}
+                            </span>
+                          ))}
                         </div>
-                      ) : (
-                        <span className="text-slate-400 text-[11px]">Chưa gán</span>
                       )}
                     </td>
                     <td className="p-3 text-slate-600 whitespace-nowrap">{person.phone || 'Chưa cập nhật'}</td>
@@ -395,26 +404,32 @@ export const PersonnelPage: React.FC = () => {
 </div>
 <div className="lg:w-[60%] border-t lg:border-t-0 lg:border-l lg:pl-4 border-slate-100">
 <div className="mt-2">
-{role !== 'Quản lý dự án' && (
-            <div>
-              <label className="block text-[13px] font-bold text-slate-700 mb-1.5">
-                Phân quyền Dự án <span className="text-red-500">*</span>
-              </label>
-              <div className={`max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 custom-scrollbar ${selectedProjectCodes.length === 0 ? 'border-red-300' : 'border-slate-200'}`}>
-                {projects.length === 0 && <p className="text-[11px] text-slate-400 p-2">Chưa có dự án nào trong hệ thống.</p>}
-                {projects.map((p) => (
-                  <label key={p.code} className="flex items-center gap-2 text-sm p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors">
-                    <input type="checkbox" checked={selectedProjectCodes.includes(p.code)} onChange={() => toggleProjectCode(p.code)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
-                    <span className="font-semibold text-slate-700">{p.name}</span>
-                    <span className="text-slate-400 text-xs">({p.code})</span>
-                  </label>
-                ))}
-              </div>
-              {selectedProjectCodes.length === 0 && (
-                <p className="mt-1 text-[11px] text-red-500">Bắt buộc chọn ít nhất 1 dự án để nhân sự có quyền truy cập.</p>
-              )}
-            </div>
-          )}
+  <label className="block text-[13px] font-bold text-slate-700 mb-1.5">
+    Phân quyền Dự án <span className="text-red-500">*</span>
+  </label>
+  <div className="mb-2">
+    <label className="flex items-center gap-2 text-sm cursor-pointer p-2 bg-blue-50/50 border border-blue-100 rounded-lg hover:bg-blue-50 transition-colors">
+      <input type="checkbox" checked={isAllProjects} onChange={(e) => setIsAllProjects(e.target.checked)} className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500" />
+      <span className="font-bold text-blue-700 text-[13px]">Truy cập tất cả dự án (Quyền xem toàn bộ)</span>
+    </label>
+  </div>
+  {!isAllProjects && (
+    <div>
+      <div className={`max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 custom-scrollbar ${(!isAllProjects && selectedProjectCodes.length === 0) ? 'border-red-300' : 'border-slate-200'}`}>
+        {projects.length === 0 && <p className="text-[11px] text-slate-400 p-2">Chưa có dự án nào trong hệ thống.</p>}
+        {projects.map((p) => (
+          <label key={p.code} className="flex items-center gap-2 text-sm p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors">
+            <input type="checkbox" checked={selectedProjectCodes.includes(p.code)} onChange={() => toggleProjectCode(p.code)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
+            <span className="font-semibold text-slate-700">{p.name}</span>
+            <span className="text-slate-400 text-xs">({p.code})</span>
+          </label>
+        ))}
+      </div>
+      {!isAllProjects && selectedProjectCodes.length === 0 && (
+        <p className="mt-1 text-[11px] text-red-500">Bắt buộc chọn ít nhất 1 dự án để nhân sự có quyền truy cập.</p>
+      )}
+    </div>
+  )}
 <div className="border-t border-slate-100 my-2"></div>
 
               <div className="flex justify-between items-center mb-2">
