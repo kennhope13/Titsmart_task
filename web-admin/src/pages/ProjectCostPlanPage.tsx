@@ -83,8 +83,10 @@ const parseDateValue = (dStr?: string) => {
 const normalizePlanKey = (stt?: string, content?: string, _parentId?: string) =>
   `${String(stt || '').trim()}|${String(content || '').trim().toLowerCase()}`;
 
-const isSectionMarker = (stt?: string, notes?: string) =>
-  String(notes || '').toLowerCase().includes('[section]') || romanToNumber(stt) !== null;
+const isSectionMarker = (stt?: string, notes?: string) => {
+  const cleanStt = String(stt || '').trim().toUpperCase();
+  return String(notes || '').toLowerCase().includes('[section]') || romanToNumber(stt) !== null || /^[A-Z]{1,2}$/.test(cleanStt);
+};
 
 const isAutoSyncedMaterialPlan = (plan?: ProjectMaterialPlan) => {
   const notes = String(plan?.notes || '').toLowerCase();

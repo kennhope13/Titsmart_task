@@ -1,9 +1,8 @@
 {
-  "version": "1.2.90",
+  "version": "1.2.91",
   "date": "2026-09-07",
   "notes": [
-    "Bổ sung bộ lọc Dự án (Dự án: Tất cả) tại Kho tổng để quản lý và phân loại vật tư theo dự án hoặc kho công ty.",
-    "Bổ sung tính năng Nhập Danh mục khi thêm mới vật tư.",
-    "Tối ưu hóa bảng Vật tư & Chi phí và hệ thống thông báo tức thì cho người dùng."
+    "Sửa lỗi nhận diện đầu mục STT chữ cái dạng A, B, C... trong Phụ lục Vật tư & Chi phí.",
+    "Hỗ trợ phân nhóm đầu mục theo kí hiệu chữ (A, B, C...) đồng nhất với STT số và La Mã."
   ]
 }
