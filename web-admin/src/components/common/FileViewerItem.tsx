@@ -134,12 +134,12 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        className={`w-full flex-1 overflow-hidden bg-slate-900/5 rounded-md flex items-center justify-center p-0.5 min-h-0 relative select-none h-full ${
+        className={`w-full flex-1 overflow-auto bg-slate-900/5 rounded-md flex items-center justify-center p-0.5 min-h-0 relative select-none h-full ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
       >
         <div
-          className="transition-transform duration-75 ease-out origin-center flex items-center justify-center w-full h-full"
+          className="transition-transform duration-75 ease-out origin-center flex items-center justify-center w-full h-full min-w-full min-h-full"
           style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
           }}
@@ -153,8 +153,8 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             />
           ) : (
             <iframe
-              src={url.includes('#') ? url : `${url}#toolbar=0&navpanes=0`}
-              className="w-full h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
+              src={url}
+              className="w-full h-full min-w-full min-h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
               style={{ transform: `rotate(${rotation}deg)`, pointerEvents: isDragging ? 'none' : 'auto' }}
               title={`File ${index + 1}`}
             />
