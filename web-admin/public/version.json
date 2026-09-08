@@ -1,9 +1,9 @@
 {
-  "version": "1.4.7",
+  "version": "1.4.8",
   "date": "2026-09-08",
   "notes": [
-    "Cập nhật trình đọc bản vẽ & sơ đồ PDF sắc nét HD (Fit-Width Single Page layout).",
-    "Bổ sung nút bật/tắt linh hoạt giữa hai chế độ 'Bàn tay kéo' và 'Cuộn file' cùng thanh cuộn ngang/dọc to rõ ràng.",
-    "Khắc phục triệt để hiển thị bảng Đặt hàng/Vật tư và nâng cao hiệu năng hệ thống."
+    "Cập nhật Icon Shortcut đồng bộ thương hiệu TITSMART chuẩn Desktop App lên di động.",
+    "Bổ sung hệ thống thông báo cập nhật phiên bản mới tự động trên Android & iOS.",
+    "Tối ưu hiệu năng tải dữ liệu và độ ổn định toàn hệ thống."
   ]
 }
