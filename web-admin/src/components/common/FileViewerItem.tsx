@@ -10,21 +10,62 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
   const [showPages, setShowPages] = useState<boolean>(true);
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragMode, setDragMode] = useState<boolean>(false); // Tự động bật khi phóng to (zoom > 1)
 
   // Width of left PDF page thumbnails column (in px)
   const [sidebarWidth, setSidebarWidth] = useState<number>(260); // Mặc định 260px
   const [isResizingSidebar, setIsResizingSidebar] = useState<boolean>(false);
   const resizeStartRef = useRef<{ startX: number; startWidth: number }>({ startX: 0, startWidth: 260 });
+  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
   const handleRotate = () => setRotation((r) => (r + 90) % 360);
   const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 4));
-  const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.5));
+  const handleZoomOut = () => {
+    setZoom((z) => {
+      const next = Math.max(z - 0.25, 0.5);
+      if (next <= 1) setPosition({ x: 0, y: 0 });
+      return next;
+    });
+  };
   const handleReset = () => {
     setZoom(1);
     setRotation(0);
+    setPosition({ x: 0, y: 0 });
   };
+
+  // Mouse Drag to Pan khi Phóng to (Zoom > 1) hoặc bật Bàn tay kéo
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button === 0 && (zoom > 1 || dragMode || isImage)) {
+      setIsDragging(true);
+      dragStartRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
+    }
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMoveGlobal = (e: MouseEvent) => {
+      setPosition({
+        x: e.clientX - dragStartRef.current.x,
+        y: e.clientY - dragStartRef.current.y,
+      });
+    };
+
+    const handleMouseUpGlobal = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMoveGlobal);
+    window.addEventListener('mouseup', handleMouseUpGlobal);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMoveGlobal);
+      window.removeEventListener('mouseup', handleMouseUpGlobal);
+    };
+  }, [isDragging]);
 
   // Measure container dimensions for rotation aspect ratio calculation
   useEffect(() => {
@@ -76,7 +117,11 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        setZoom((z) => (e.deltaY < 0 ? Math.min(z + 0.15, 4) : Math.max(z - 0.15, 0.5)));
+        setZoom((z) => {
+          const next = e.deltaY < 0 ? Math.min(z + 0.15, 4) : Math.max(z - 0.15, 0.5);
+          if (next <= 1) setPosition({ x: 0, y: 0 });
+          return next;
+        });
       }
     };
 
@@ -92,7 +137,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const getRotatedContentStyle = (): React.CSSProperties => {
     const base: React.CSSProperties = {
       transform: `rotate(${rotation}deg)`,
-      transition: 'transform 200ms ease, width 200ms ease, height 200ms ease',
+      transition: isDragging ? 'none' : 'transform 200ms ease, width 200ms ease, height 200ms ease',
     };
 
     if (isRotated90 && containerSize.w > 0 && containerSize.h > 0) {
@@ -109,6 +154,8 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     return base;
   };
 
+  const isPanActive = zoom > 1 || dragMode || isImage;
+
   return (
     <div className="flex flex-col border border-slate-200 rounded-lg p-1.5 sm:p-2 bg-white shadow-sm flex-1 min-h-0 h-full select-none">
       {/* Header Toolbar */}
@@ -118,7 +165,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             Tài liệu {index + 1}
           </span>
           <span className="text-[11px] text-slate-400 italic hidden md:inline">
-            (💡 Kéo vạch xám đứng sang Trái/Phải để thay đổi kích thước cột xem trang | <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
+            (💡 Khi phóng to: Nhấn giữ chuột trái & Kéo để di chuyển bản vẽ | Kéo vạch đứng để chỉnh cột trang)
           </span>
         </div>
 
@@ -136,6 +183,24 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             >
               <span className="material-symbols-outlined text-[14px]">view_sidebar</span>
               {showPages ? 'Danh sách trang: Hiện' : 'Danh sách trang: Ẩn'}
+            </button>
+          )}
+
+          {/* Toggle Hand Drag Mode */}
+          {!isImage && (
+            <button
+              onClick={() => setDragMode((m) => !m)}
+              title={dragMode ? 'Đang ở Chế độ Bàn tay kéo (Nhấp để tắt)' : 'Bật chế độ Bàn tay kéo di chuyển nội dung'}
+              className={`flex items-center gap-1 h-[26px] px-2 rounded-md text-[11px] font-bold border transition-all ${
+                dragMode || zoom > 1
+                  ? 'bg-blue-50 text-primary border-blue-200 shadow-xs'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">
+                {dragMode || zoom > 1 ? 'pan_tool' : 'touch_app'}
+              </span>
+              {dragMode || zoom > 1 ? 'Bàn tay kéo' : 'Cuộn file'}
             </button>
           )}
 
@@ -225,12 +290,24 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         {/* Right Main Document Viewport */}
         <div
           ref={containerRef}
-          className="flex-1 min-h-0 relative h-full overflow-auto always-visible-scrollbar flex items-center justify-center p-1"
+          onMouseDown={handleMouseDown}
+          className={`flex-1 min-h-0 relative h-full overflow-auto always-visible-scrollbar flex items-center justify-center p-1 select-none ${
+            isPanActive ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
+          }`}
         >
+          {/* Overlay to capture mouse dragging when zoomed in */}
+          {isPanActive && !isImage && (
+            <div
+              onMouseDown={handleMouseDown}
+              className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
+            />
+          )}
+
           <div
-            className="transition-transform duration-75 ease-out origin-center flex items-center justify-center"
+            className="flex items-center justify-center"
             style={{
-              transform: `scale(${zoom})`,
+              transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+              transition: isDragging ? 'none' : 'transform 75ms ease-out',
               width: zoom > 1 ? `${zoom * 100}%` : '100%',
               height: zoom > 1 ? `${zoom * 100}%` : '100%',
               minWidth: '100%',

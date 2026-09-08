@@ -1,8 +1,8 @@
 {
-  "version": "1.4.1",
+  "version": "1.4.2",
   "date": "2026-09-08",
   "notes": [
-    "Sửa triệt để lỗi xoay 90/270 độ: Khung hiển thị tự động hoán đổi kích thước Chiều rộng & Chiều cao để khớp 100% với màn hình.",
-    "Bản vẽ/tài liệu khi xoay ngang không còn bị cắt xém nội dung hoặc hiển thị khoảng đen hai bên."
+    "Cung cấp tính năng Bàn tay kéo di chuyển (Pan) siêu mượt mà khi Phóng to (Zoom > 100%).",
+    "Người dùng chỉ cần nhấn giữ chuột trái trên bản vẽ đã phóng to để kéo xem chi tiết cực kỳ nhanh chóng và tiện lợi."
   ]
 }
