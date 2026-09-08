@@ -64,10 +64,20 @@ export const UpdateNotifier: React.FC = () => {
     if (window.electronAPI) return; // Electron xử lý tự động riêng
     try {
       const currentVersion = import.meta.env.VITE_APP_VERSION || '1.0.0';
-      const res = await fetch(`./version.json?t=${Date.now()}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.version && compareVersions(data.version, currentVersion) > 0) {
+      
+      // Đọc version.json local hoặc remote GitHub khi chạy trên mobile capacitor
+      let data: any = null;
+      try {
+        const res = await fetch(`./version.json?t=${Date.now()}`);
+        if (res.ok) data = await res.json();
+      } catch (e) { }
+
+      if (!data) {
+        const remoteRes = await fetch(`https://raw.githubusercontent.com/kennhope13/Titsmart_task/main/web-admin/public/version.json?t=${Date.now()}`);
+        if (remoteRes.ok) data = await remoteRes.json();
+      }
+
+      if (data && data.version && compareVersions(data.version, currentVersion) > 0) {
         setState({ 
           status: 'available', 
           version: data.version, 
