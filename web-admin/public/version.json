@@ -1,7 +1,9 @@
 {
-  "version": "2.1.5",
+  "version": "2.1.6",
   "date": "2026-09-08",
   "notes": [
-    "Tối ưu lại bố cục form Nhập/Xuất kho: Đưa ô Chọn Vật tư lên dòng riêng 100% chiều rộng rộng rãi, thoải mái hiển thị đầy đủ tên vật tư và thông số."
+    "Đưa ô Lọc theo Kho/Dự án lên trên ô Chọn Vật tư.",
+    "Cải thiện vùng bấm ô chọn Vật tư (CustomSelect) nhạy hơn và dễ thao tác.",
+    "Thêm nút Quay lại Nhật ký Nhập/Xuất kho trong form Thêm Vật Tư Mới."
   ]
 }

@@ -181,10 +181,17 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     <div className={`relative ${layoutClasses} min-w-0`} ref={containerRef}>
       
       {searchable ? (
-        <div className={triggerClassName} onClick={toggleDropdown} style={{ cursor: disabled ? "not-allowed" : "text" }}>
+        <div 
+          className={triggerClassName} 
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleDropdown();
+          }} 
+          style={{ cursor: disabled ? "not-allowed" : "pointer" }}
+        >
           <input
             type="text"
-            className="w-full h-full bg-transparent border-none outline-none pr-6"
+            className="w-full h-full bg-transparent border-none outline-none pr-6 cursor-pointer"
             style={{ color: "inherit", fontWeight: "inherit", fontSize: "inherit", margin: 0, padding: 0 }}
             placeholder={isOpen ? "Nhập để tìm kiếm..." : "-- Chọn --"}
             disabled={disabled}
@@ -196,7 +203,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                 onChange({ target: { value: e.target.value } } as any);
               }
             }}
-            onFocus={() => openDropdown()} onClick={(e) => { e.stopPropagation(); openDropdown(); }}
+            onFocus={() => openDropdown()}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isOpen) openDropdown();
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -208,20 +219,29 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
               }
             }}
           />
-          <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+          <span 
+            className="absolute inset-y-0 right-0 flex items-center pr-2 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleDropdown();
+            }}
+          >
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-primary" : ""}`} />
           </span>
         </div>
       ) : (
         <button
           type="button"
           className={triggerClassName}
-          onClick={toggleDropdown}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleDropdown();
+          }}
           disabled={disabled}
         >
           <span className="block truncate min-w-0 flex-1 pr-6" title={typeof displayLabel === "string" ? displayLabel : ""}>{displayLabel || "\u00A0"}</span>
-          <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+          <span className="absolute inset-y-0 right-0 flex items-center pr-2">
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-primary" : ""}`} />
           </span>
         </button>
       )}
