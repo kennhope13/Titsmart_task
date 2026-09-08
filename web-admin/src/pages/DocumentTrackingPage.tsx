@@ -337,7 +337,11 @@ export const DocumentTrackingPage: React.FC = () => {
               Xuất Excel
             </button>
             <button 
-              onClick={() => setIsNewDocOpen(true)} 
+              onClick={() => {
+                const code = resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '');
+                setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
+                setIsNewDocOpen(true);
+              }} 
               className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs"
             >
               <span className="material-symbols-outlined text-sm">add</span>
@@ -371,7 +375,11 @@ export const DocumentTrackingPage: React.FC = () => {
             Xuất Excel
           </button>
           <button 
-            onClick={() => setIsNewDocOpen(true)} 
+            onClick={() => {
+              const code = resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '');
+              setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
+              setIsNewDocOpen(true);
+            }} 
             className="flex items-center gap-1.5 bg-primary text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm"
           >
             <span className="material-symbols-outlined text-[14px]">add</span>
@@ -591,7 +599,13 @@ deleteDocumentTrack(track.id);
                 <option value="Nhận">Nhận hồ sơ (Nhận về)</option>
               </CustomSelect>
               <label className="block font-bold mb-1 truncate">Dự án *</label>
-              <CustomSelect required value={newDoc.projectCode} onChange={(e) => setNewDoc({...newDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold truncate">
+              <CustomSelect 
+                required 
+                disabled={Boolean(resolvedProjectCode || (filterProjectCode && filterProjectCode !== 'all'))} 
+                value={newDoc.projectCode || resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '')} 
+                onChange={(e) => setNewDoc({...newDoc, projectCode: e.target.value})} 
+                className="w-full border rounded-lg p-2 bg-white font-bold truncate"
+              >
                 <option value="">-- Chọn dự án --</option>
                 {projects.map(p => (
                   <option key={p.code} value={p.code}>{p.name}</option>
@@ -689,7 +703,13 @@ deleteDocumentTrack(track.id);
             <div className="grid grid-cols-2 gapx-1 py-1">
               <div className="min-w-0">
                 <label className="block font-bold mb-1 truncate">Dự án *</label>
-                <CustomSelect required value={editingDoc.projectCode || projects.find(p => p.id === (editingDoc as any).projectId)?.code || ''} onChange={(e) => setEditingDoc({...editingDoc, projectCode: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold truncate">
+                <CustomSelect 
+                  required 
+                  disabled={Boolean(resolvedProjectCode || (filterProjectCode && filterProjectCode !== 'all'))} 
+                  value={editingDoc.projectCode || projects.find(p => p.id === (editingDoc as any).projectId)?.code || resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '')} 
+                  onChange={(e) => setEditingDoc({...editingDoc, projectCode: e.target.value})} 
+                  className="w-full border rounded-lg p-2 bg-white font-bold truncate"
+                >
                   <option value="">-- Chọn dự án --</option>
                   {projects.map(p => (
                     <option key={p.code} value={p.code}>{p.name}</option>

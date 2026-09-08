@@ -1,7 +1,7 @@
 {
-  "version": "1.3.1",
+  "version": "1.3.2",
   "date": "2026-09-08",
   "notes": [
-    "Cập nhật Icon ứng dụng Desktop với nền trắng bo góc viền nét (Solid White Container) đảm bảo hiển thị sắc nét trên mọi hình nền Desktop (cả nền đen và nền sáng)."
+    "Khóa cố định ô chọn Dự án (Disabled & Auto-preselect) khi đang ở trong chi tiết dự án cụ thể, tránh việc chọn nhầm sang dự án khác."
   ]
 }
