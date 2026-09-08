@@ -1,8 +1,7 @@
 {
-  "version": "2.2.1",
+  "version": "2.2.2",
   "date": "2026-09-08",
   "notes": [
-    "Cập nhật tính năng xem Lịch Sử Giao Dịch Vật Tư (History Modal) ngay trên bảng quản lý kho.",
-    "Bỏ màu nền viền quanh nhãn Nhập kho / Xuất kho giúp hiển thị tinh tế và thoáng mắt hơn."
+    "Cải thiện nút Cập nhật ngay trên Mobile: Tự động điều hướng tải file APK mới nhất từ GitHub Releases."
   ]
 }
