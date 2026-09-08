@@ -9,15 +9,10 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const isImage = Boolean(url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i));
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
-  const [showPages, setShowPages] = useState<boolean>(true);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragMode, setDragMode] = useState<boolean>(false);
 
-  // Width of left PDF page thumbnails column (in px)
-  const [sidebarWidth, setSidebarWidth] = useState<number>(260); // Mặc định 260px
-  const [isResizingSidebar, setIsResizingSidebar] = useState<boolean>(false);
-  const resizeStartRef = useRef<{ startX: number; startWidth: number }>({ startX: 0, startWidth: 260 });
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -90,34 +85,6 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     return () => observer.disconnect();
   }, []);
 
-  // Start dragging split bar (Kéo thanh vạch sang Trái / Phải)
-  const handleSidebarResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizingSidebar(true);
-    resizeStartRef.current = { startX: e.clientX, startWidth: sidebarWidth };
-  };
-
-  useEffect(() => {
-    if (!isResizingSidebar) return;
-
-    const handleMouseMoveGlobal = (e: MouseEvent) => {
-      const deltaX = e.clientX - resizeStartRef.current.startX;
-      const newWidth = Math.max(100, Math.min(700, resizeStartRef.current.startWidth + deltaX));
-      setSidebarWidth(newWidth);
-    };
-
-    const handleMouseUpGlobal = () => {
-      setIsResizingSidebar(false);
-    };
-
-    window.addEventListener('mousemove', handleMouseMoveGlobal);
-    window.addEventListener('mouseup', handleMouseUpGlobal);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMoveGlobal);
-      window.removeEventListener('mouseup', handleMouseUpGlobal);
-    };
-  }, [isResizingSidebar]);
-
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -172,27 +139,11 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             Tài liệu {index + 1}
           </span>
           <span className="text-[11px] text-slate-400 italic hidden md:inline">
-            (💡 Chuyển chế độ Cuộn file / Bàn tay kéo linh hoạt | Giữ <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
+            (💡 Xem tài liệu sắc nét HD | Chuyển chế độ Cuộn file / Bàn tay kéo | Giữ <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
           </span>
         </div>
 
         <div className="flex items-center gap-1.5">
-          {/* Toggle PDF Pages Sidebar */}
-          {!isImage && (
-            <button
-              onClick={() => setShowPages((prev) => !prev)}
-              title={showPages ? 'Đang hiện danh sách trang PDF (Nhấp để ẩn)' : 'Đang ẩn danh sách trang (Nhấp để bật)'}
-              className={`flex items-center gap-1 h-[26px] px-2 rounded-md text-[11px] font-bold border transition-all ${
-                showPages
-                  ? 'bg-blue-50 text-primary border-blue-200 shadow-xs'
-                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[14px]">view_sidebar</span>
-              {showPages ? 'Danh sách trang: Hiện' : 'Danh sách trang: Ẩn'}
-            </button>
-          )}
-
           {/* Toggle Hand Drag Mode / Scroll Mode */}
           {!isImage && (
             <button
@@ -261,40 +212,8 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         </div>
       </div>
 
-      {/* Main Split Container */}
+      {/* Main Single Crisp Document Viewport */}
       <div className="w-full flex-1 flex min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-hidden border border-slate-200">
-        
-        {/* Transparent Overlay during resize to ensure continuous drag over iframes */}
-        {isResizingSidebar && (
-          <div className="fixed inset-0 z-50 cursor-col-resize bg-transparent" />
-        )}
-
-        {/* Left PDF Pages Column */}
-        {!isImage && showPages && (
-          <>
-            <div
-              style={{ width: `${sidebarWidth}px` }}
-              className="h-full bg-slate-800 shrink-0 relative overflow-hidden hidden sm:block"
-            >
-              <iframe
-                src={`${url}#navpanes=1&pagemode=thumbs&toolbar=0`}
-                className="w-full h-full border-0"
-                title={`Sidebar Pages ${index + 1}`}
-              />
-            </div>
-
-            {/* Resizer Splitter Handle Bar (Kéo vạch này sang Trái / Phải) */}
-            <div
-              onMouseDown={handleSidebarResizeStart}
-              title="Nhấn giữ chuột & Kéo vạch này sang Trái / Phải để thay đổi kích thước cột bên trái"
-              className="w-2.5 bg-slate-300 hover:bg-primary cursor-col-resize shrink-0 transition-colors flex items-center justify-center group z-30 select-none border-x border-slate-400/40 active:bg-blue-600"
-            >
-              <div className="w-0.5 h-10 bg-slate-600 group-hover:bg-white rounded-full" />
-            </div>
-          </>
-        )}
-
-        {/* Right Main Document Viewport */}
         <div
           ref={containerRef}
           onMouseDown={handleMouseDown}
@@ -320,15 +239,14 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
               />
             ) : (
               <iframe
-                src={`${url}#navpanes=0&toolbar=0`}
-                className="rounded border border-slate-200 bg-white shadow-xs"
+                src={`${url}#navpanes=1&toolbar=0&view=FitH`}
+                className="w-full h-full rounded border border-slate-200 bg-white shadow-xs"
                 style={getContentTransformStyle()}
                 title={`File ${index + 1}`}
               />
             )}
           </div>
         </div>
-
       </div>
     </div>
   );
