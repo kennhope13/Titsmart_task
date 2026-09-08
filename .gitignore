@@ -5,6 +5,11 @@ web-admin/release/
 web-admin/dist/
 backend/node_modules/
 mobile-app/node_modules/
+mobile/node_modules/
+mobile/.expo/
+web-admin/android/app/build/
+web-admin/android/.gradle/
+*.apk
 *.exe
 *.dll
 *.asar
@@ -12,3 +17,4 @@ mobile-app/node_modules/
 .env
 .env.local
 .env.production
+
