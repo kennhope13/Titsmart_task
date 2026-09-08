@@ -6,6 +6,7 @@ import { FileUpload } from '../components/common/FileUpload';
 import { createPortal } from 'react-dom';
 import { Toast } from '../components/common/Toast';
 import { Modal } from '../components/common/Modal';
+import { FileViewerItem } from '../components/common/FileViewerItem';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 
 export const ProjectDiagramTab: React.FC = () => {
@@ -273,19 +274,16 @@ export const ProjectDiagramTab: React.FC = () => {
           icon="delete"
         />
         {viewerItem && (
-          <Modal isOpen={true} onClose={() => setViewerItem(null)} title="Chi tiết sơ đồ" size="xl">
-            <div className="flex flex-col border rounded-lg p-2">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-semibold text-slate-700 truncate w-3/4">{viewerItem.name}</span>
-                <a href={`${viewerItem.url}?download=`} download target="_blank" rel="noreferrer" className="flex items-center gap-1.5 bg-primary text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm">
-                  <span className="material-symbols-outlined text-[14px]">download</span> Tải về
-                </a>
-              </div>
-              {viewerItem.url.toLowerCase().includes('.pdf') ? (
-                <iframe src={viewerItem.url} className="w-full h-[70vh] bg-slate-100 rounded" title={viewerItem.name} />
-              ) : (
-                <img src={viewerItem.url} alt={viewerItem.name} className="w-full object-contain max-h-[70vh] bg-slate-100 rounded" />
-              )}
+          <Modal
+            isOpen={true}
+            onClose={() => setViewerItem(null)}
+            title={`Sơ đồ: ${viewerItem.name}`}
+            size="full"
+            defaultMaximized={true}
+            icon="schema"
+          >
+            <div className="flex flex-col flex-1 h-full min-h-0">
+              <FileViewerItem url={viewerItem.url} index={0} />
             </div>
           </Modal>
         )}

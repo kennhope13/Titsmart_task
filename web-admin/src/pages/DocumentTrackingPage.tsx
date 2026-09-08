@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../services/authStore';
 import { Modal } from '../components/common/Modal';
+import { FileViewerItem } from '../components/common/FileViewerItem';
 import { Toast } from '../components/common/Toast';
 import { DocumentTrack } from '../types';
 import { ConfirmModal } from '../components/common/ConfirmModal';
@@ -793,26 +794,18 @@ deleteDocumentTrack(track.id);
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
 
       {fileViewerUrls && (
-        <Modal isOpen={true} onClose={() => setFileViewerUrls(null)} title="Tài liệu đính kèm" size="xl">
-          <div className="flex flex-col space-y-4">
-            {fileViewerUrls.map((url, index) => {
-              const isImage = url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
-              return (
-                <div key={index} className="flex flex-col border rounded p-2">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-semibold truncate w-3/4">Tài liệu {index + 1}</span>
-                    <a href={`${url}?download=`} download target="_blank" rel="noreferrer" className="flex items-center gap-1.5 bg-primary text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm">
-                      <span className="material-symbols-outlined text-[14px]">download</span> Tải về
-                    </a>
-                  </div>
-                  {isImage ? (
-                    <img src={url} alt={`File ${index + 1}`} className="w-full object-contain max-h-[60vh] bg-slate-100" />
-                  ) : (
-                    <iframe src={url} className="w-full h-[60vh] bg-slate-100" title={`File ${index + 1}`} />
-                  )}
-                </div>
-              );
-            })}
+        <Modal
+          isOpen={true}
+          onClose={() => setFileViewerUrls(null)}
+          title="Tài liệu đính kèm"
+          size="full"
+          defaultMaximized={true}
+          icon="description"
+        >
+          <div className="flex flex-col space-y-4 flex-1 h-full min-h-0">
+            {fileViewerUrls.map((url, index) => (
+              <FileViewerItem key={index} url={url} index={index} />
+            ))}
           </div>
         </Modal>
       )}

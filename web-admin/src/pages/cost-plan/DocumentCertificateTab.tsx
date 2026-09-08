@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ProjectMaterialPlan } from '../../types';
 import { ImageUpload } from '../../components/common/ImageUpload';
 import { Modal } from '../../components/common/Modal';
+import { FileViewerItem } from '../../components/common/FileViewerItem';
 import { CustomSelect } from '../../components/common/CustomSelect';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -669,11 +670,20 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
       </div>
 
       {/* Xem ảnh Modal */}
-      <Modal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} title="Xem hình ảnh chứng từ" size="xl" icon="image">
-        <div className="flex justify-center bg-slate-50 rounded-lg relative border border-slate-200">
-          {previewImage && <img src={previewImage} alt="Chứng từ" className="w-full h-auto object-contain shadow-sm rounded" />}
-        </div>
-      </Modal>
+      {previewImage && (
+        <Modal
+          isOpen={!!previewImage}
+          onClose={() => setPreviewImage(null)}
+          title="Xem hình ảnh chứng từ"
+          size="full"
+          defaultMaximized={true}
+          icon="image"
+        >
+          <div className="flex flex-col flex-1 h-full min-h-0">
+            <FileViewerItem url={previewImage} index={0} />
+          </div>
+        </Modal>
+      )}
 
       {/* Modal Add/Edit */}
       <Modal

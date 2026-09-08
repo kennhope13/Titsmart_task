@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../services/authStore';
 import { Modal } from '../components/common/Modal';
+import { FileViewerItem } from '../components/common/FileViewerItem';
 import { Toast } from '../components/common/Toast';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { CostPlanSummaryTable } from './cost-plan/CostPlanSummaryTable';
@@ -367,8 +368,17 @@ export const OfficeCostsPage: React.FC = () => {
 
       {/* Preview Image Modal */}
       {previewImage && (
-        <Modal isOpen={true} onClose={() => setPreviewImage(null)} title="Hóa Đơn / Chứng từ">
-          <img src={previewImage} alt="Hoa don" className="max-w-full max-h-[80vh] object-contain" />
+        <Modal
+          isOpen={true}
+          onClose={() => setPreviewImage(null)}
+          title="Hóa Đơn / Chứng từ"
+          size="full"
+          defaultMaximized={true}
+          icon="receipt_long"
+        >
+          <div className="flex flex-col flex-1 h-full min-h-0">
+            <FileViewerItem url={previewImage} index={0} />
+          </div>
         </Modal>
       )}
 
