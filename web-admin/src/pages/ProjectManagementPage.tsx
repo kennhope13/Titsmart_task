@@ -687,7 +687,7 @@ export const ProjectManagementPage: React.FC = () => {
       </section>
 
       <div className="p-6">
-        {isFetchingProjects ? (
+        {isFetchingProjects && projects.length === 0 ? (
           <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center">
               <svg className="animate-spin h-12 w-12 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

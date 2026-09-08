@@ -527,7 +527,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     fetchProjects: async () => {
       try {
-        set({ isFetchingProjects: true });
+        if (get().projects.length === 0) {
+          set({ isFetchingProjects: true });
+        }
         const projects = await api.projects.getAll();
         // Lọc bỏ project nội bộ "Kho Công Ty" khỏi danh sách dự án
         let filtered = Array.isArray(projects)
