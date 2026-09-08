@@ -1,7 +1,7 @@
 {
-  "version": "2.1.0",
+  "version": "2.1.1",
   "date": "2026-09-08",
   "notes": [
-    "Hiển thị rõ ràng vị trí kho (📍 Kho Tổng vs 🏗️ Dự án: [Tên dự án]) trong danh sách lựa chọn vật tư của Phiếu Nhập / Xuất kho giúp tránh nhầm lẫn giữa các mã trùng tên."
+    "Thêm bộ lọc 'Lọc theo Kho / Dự án' độc lập trong form Nhập/Xuất kho giúp lọc danh sách vật tư cực nhanh và loại bỏ hoàn toàn biểu tượng rườm rà."
   ]
 }
