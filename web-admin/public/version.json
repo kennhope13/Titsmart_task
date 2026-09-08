@@ -1,7 +1,7 @@
 {
-  "version": "2.1.2",
+  "version": "2.1.3",
   "date": "2026-09-08",
   "notes": [
-    "Tăng kích thước cửa sổ Modal Nhập/Xuất kho rộng rãi, thoáng đãng giúp hiển thị đầy đủ tên vật tư và tên dự án."
+    "Mở rộng tối đa chiều rộng Modal Nhập/Xuất kho (size xl) và tối ưu hóa nội dung hiển thị của từng dòng vật tư giúp vừa vặn 1 dòng không bị rớt dòng."
   ]
 }

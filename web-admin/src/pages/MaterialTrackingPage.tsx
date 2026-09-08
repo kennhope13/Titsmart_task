@@ -1234,7 +1234,7 @@ export const MaterialTrackingPage: React.FC = () => {
       </Modal>
 
       {/* MODAL GIAO DỊCH NHẬP/XUẤT KHO */}
-      <Modal size="lg" isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} title={transactionType === 'IMPORT' ? 'Tạo Phiếu Nhập Kho' : 'Tạo Phiếu Xuất Kho'}>
+      <Modal size="xl" isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} title={transactionType === 'IMPORT' ? 'Tạo Phiếu Nhập Kho' : 'Tạo Phiếu Xuất Kho'}>
         <form onSubmit={handleSubmitTransaction} className="space-y-3 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
@@ -1282,11 +1282,11 @@ export const MaterialTrackingPage: React.FC = () => {
                   })
                   .map(m => {
                     const isCompany = m.projectCode === 'COMPANY' || !m.projectCode || m.projectCode === 'all';
-                    const locationLabel = isCompany ? 'Kho Tổng' : `Dự án: ${m.projectName || m.projectCode}`;
+                    const locationLabel = isCompany ? 'Kho Tổng' : (m.projectName || m.projectCode);
                     const stockVal = m.currentStock !== undefined ? m.currentStock : (m.initialStock || 0);
                     return (
                       <option key={m.id} value={m.id}>
-                        [{m.code}] {m.name} - ({locationLabel}) - Tồn: {stockVal.toLocaleString('vi-VN')} {m.unit}
+                        [{m.code}] {m.name} ({locationLabel}) - Tồn: {stockVal.toLocaleString('vi-VN')} {m.unit}
                       </option>
                     );
                   })}
