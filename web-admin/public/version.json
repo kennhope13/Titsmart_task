@@ -1,7 +1,7 @@
 {
-  "version": "1.3.0",
-  "date": "2026-09-07",
+  "version": "1.3.1",
+  "date": "2026-09-08",
   "notes": [
-    "Chuyển toàn bộ nền của các dòng hạng mục con sang màu trắng đồng nhất, sạch sẽ và dễ nhìn."
+    "Cập nhật Icon ứng dụng Desktop với nền trắng bo góc viền nét (Solid White Container) đảm bảo hiển thị sắc nét trên mọi hình nền Desktop (cả nền đen và nền sáng)."
   ]
 }
