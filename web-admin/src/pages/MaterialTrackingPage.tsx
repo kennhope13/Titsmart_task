@@ -1229,7 +1229,23 @@ export const MaterialTrackingPage: React.FC = () => {
           <div><label className="block font-bold text-slate-700 mb-1">Mô tả / quy cách</label><input type="text" placeholder="VD: chống nhiễu, chống cháy..." value={description} onChange={(event) => setDescription(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
           <div><label className="block font-bold text-slate-700 mb-1">Nhà cung cấp mặc định</label><input type="text" placeholder="VD: Kho công ty" value={supplier} onChange={(event) => setSupplier(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
           <div className="grid grid-cols-3 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Số lượng nhập ban đầu</label><input type="number" step="any" min="0" value={volume} onChange={(event) => setVolume(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị</label><input type="text" value={unit} onChange={(event) => setUnit(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn giá</label><input type="number" step="any" value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div></div>
-          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setIsPlaceOrderModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading} className="px-5 py-1.5 bg-primary disabled:opacity-50 text-white rounded-lg font-bold hover:opacity-90">Tạo mới</button></div>
+          <div className="pt-3 flex justify-between items-center border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => {
+                setIsPlaceOrderModalOpen(false);
+                setIsTransactionModalOpen(true);
+              }}
+              className="px-3 py-1.5 border border-blue-200 bg-blue-50 text-primary rounded-lg font-bold hover:bg-blue-100 flex items-center gap-1 transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">arrow_back</span>
+              Quay lại Phiếu Nhập/Xuất Kho
+            </button>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setIsPlaceOrderModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button>
+              <button type="submit" disabled={loading} className="px-5 py-1.5 bg-primary disabled:opacity-50 text-white rounded-lg font-bold hover:opacity-90">Tạo mới</button>
+            </div>
+          </div>
         </form>
       </Modal>
 

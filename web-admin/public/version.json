@@ -1,7 +1,7 @@
 {
-  "version": "2.1.3",
+  "version": "2.1.4",
   "date": "2026-09-08",
   "notes": [
-    "Mở rộng tối đa chiều rộng Modal Nhập/Xuất kho (size xl) và tối ưu hóa nội dung hiển thị của từng dòng vật tư giúp vừa vặn 1 dòng không bị rớt dòng."
+    "Bổ sung nút 'Quay lại Phiếu Nhập/Xuất Kho' trong modal Thêm Vật Tư Mới giúp dễ dàng quay trở lại thao tác làm phiếu kho."
   ]
 }
