@@ -239,7 +239,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
               />
             ) : (
               <iframe
-                src={`${url}#navpanes=1&toolbar=0&view=FitH`}
+                src={`${url}#page=1&view=FitH&pagemode=none&toolbar=0&navpanes=0`}
                 className="w-full h-full rounded border border-slate-200 bg-white shadow-xs"
                 style={getContentTransformStyle()}
                 title={`File ${index + 1}`}

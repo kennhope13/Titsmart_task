@@ -1,8 +1,8 @@
 {
-  "version": "1.4.5",
+  "version": "1.4.6",
   "date": "2026-09-08",
   "notes": [
-    "Tối ưu hóa độ nét hiển thị sơ đồ & PDF: render vector nguyên bản ở độ phân giải cao HD 100%, không bị mờ nét chữ hay mờ bản vẽ.",
-    "Loại bỏ chế độ nén hình thu nhỏ gây mờ, mang lại chất lượng hiển thị sơ đồ siêu nét."
+    "Sửa dứt điểm lỗi mờ tài liệu: Ép buộc chế độ 1 Trang duy nhất (Fit-Width Single Page HD), không còn bị chia đôi 2 trang gây bóp nghẹt sơ đồ.",
+    "Bản vẽ sơ đồ hiển thị tràn 100% chiều rộng màn hình cực kỳ sắc nét và dễ đọc."
   ]
 }
