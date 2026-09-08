@@ -1389,7 +1389,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   />
                                 ) : (
                                   <div onClick={() => startEditing(plan.id, 'unit', plan.unit)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-center" title={plan.unit || 'Click để nhập'}>
-                                    {plan.unit || <span className="text-slate-300 italic">...</span>}
+                                    {plan.unit || <span className="text-slate-300">-</span>}
                                   </div>
                                 )}
                               </td>
@@ -1409,7 +1409,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   />
                                 ) : (
                                   <div onClick={() => startEditing(plan.id, 'contractVolume', plan.contractVolume)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-center" title={showNumber(plan.contractVolume) || 'Click để nhập'}>
-                                    {showNumber(plan.contractVolume) || <span className="text-slate-300 italic">...</span>}
+                                    {showNumber(plan.contractVolume) || <span className="text-slate-300">-</span>}
                                   </div>
                                 )}
                               </td>
@@ -1429,7 +1429,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   return (
                                     <div onClick={() => startEditing(plan.id, 'techSpecModel', plan.techSpecModel)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex flex-col items-center justify-center break-words px-1 py-0.5 text-slate-600 relative group/cell" title={plan.techSpecModel || 'Click để nhập mã'}>
                                       <div className="text-center text-slate-700 w-full">
-                                        {plan.techSpecModel || <span className="text-slate-300 italic font-normal">...</span>}
+                                        {plan.techSpecModel || <span className="text-slate-300 font-normal">-</span>}
                                       </div>
                                       {inventoryMatch && (
                                         <div className="mt-0.5 opacity-80 group-hover/cell:opacity-100 transition-opacity">
@@ -1456,7 +1456,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   />
                                 ) : (
                                   <div onClick={() => startEditing(plan.id, 'techSpecOrigin', plan.techSpecOrigin)} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center justify-center break-words px-1 text-slate-600" title={plan.techSpecOrigin || 'Click để nhập'}>
-                                    {plan.techSpecOrigin || <span className="text-slate-300 italic">...</span>}
+                                    {plan.techSpecOrigin || <span className="text-slate-300">-</span>}
                                   </div>
                                 )}
                               </td>
