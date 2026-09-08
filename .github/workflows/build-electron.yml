@@ -1,4 +1,4 @@
-name: Build Electron App (Windows)
+name: Build Electron & Android App
 
 on:
   push:
@@ -8,7 +8,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-electron:
+    name: Build Electron Windows App
     runs-on: windows-latest
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -35,7 +36,7 @@ jobs:
       working-directory: ./web-admin
       run: npm run build:electron -- --publish never
 
-    - name: Upload Build Artifacts (.exe + update files)
+    - name: Upload Windows Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: TITSMART-Setup-Windows
@@ -45,14 +46,13 @@ jobs:
           web-admin/release/latest.yml
         retention-days: 7
 
-    - name: Publish to GitHub Releases
+    - name: Publish Windows Release
       uses: softprops/action-gh-release@v2
       with:
         name: TITSMART Project Manager v${{ env.version }}
         tag_name: v${{ env.version }}
         body: |
-          Phiên bản **v${{ env.version }}** của TITSMART Project Manager
-          Bản cập nhật này bao gồm các tính năng và bản vá lỗi mới nhất.
+          Phiên bản **v${{ env.version }}** của TITSMART Project Manager (Bản cài đặt Windows & Android APK).
         generate_release_notes: true
         files: |
           web-admin/release/*.exe
@@ -61,12 +61,85 @@ jobs:
         update_release: true
         fail_on_unmatched_files: false
 
+  build-android:
+    name: Build Android APK (Capacitor)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Install Web-Admin Dependencies
+      working-directory: ./web-admin
+      run: npm install
+
+    - name: Get App Version
+      id: version
+      working-directory: ./web-admin
+      run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
+    - name: Build Web Mobile Bundle & Sync Capacitor
+      working-directory: ./web-admin
+      run: |
+        npx vite build --config vite.config.mobile.ts
+        npx cap sync android
+
+    - name: Make Gradlew Executable
+      working-directory: ./web-admin/android
+      run: chmod +x gradlew
+
+    - name: Build Android Debug APK
+      working-directory: ./web-admin/android
+      run: ./gradlew assembleDebug --no-daemon
+
+    - name: Rename APK File
+      run: |
+        cp web-admin/android/app/build/outputs/apk/debug/app-debug.apk TITSMART-v${{ env.version }}.apk
+
+    - name: Upload Android APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TITSMART-Android-v${{ env.version }}
+        path: TITSMART-v${{ env.version }}.apk
+
+    - name: Attach APK to GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ env.version }}
+        files: |
+          TITSMART-v${{ env.version }}.apk
+        update_release: true
+        fail_on_unmatched_files: false
+
+  send-email:
+    name: Send Email Notification
+    needs: [build-electron, build-android]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
     - name: Generate Email Body
-      if: success()
       run: node generate_mail.js
 
     - name: Send Notification Email
-      if: success()
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: mail90168.maychuemail.com
@@ -74,7 +147,8 @@ jobs:
         secure: true
         username: "kythuat@titsmart.vn"
         password: "Vcuong1@"
-        subject: "[TITSMART] Phần mềm quản lý dự án đã có bản cập nhật mới v${{ env.version }}"
+        subject: "[TITSMART] Phần mềm quản lý dự án đã có bản cập nhật mới"
         to: kythuat@titsmart.vn
         from: Hệ thống TITSMART <kythuat@titsmart.vn>
         html_body: file://mail_body.html
+
