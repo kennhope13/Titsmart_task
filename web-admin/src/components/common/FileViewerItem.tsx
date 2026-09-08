@@ -11,6 +11,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const [rotation, setRotation] = useState<number>(0);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragMode, setDragMode] = useState<boolean>(true); // mặc định bật Chế độ Kéo di chuyển
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -23,7 +24,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     setPosition({ x: 0, y: 0 });
   };
 
-  // Mouse Drag to Pan (Kéo di chuyển tài liệu khi phóng to)
+  // Mouse Drag to Pan (Kéo di chuyển tài liệu)
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 0) {
       if (e.ctrlKey) {
@@ -72,11 +73,29 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             Tài liệu {index + 1}
           </span>
           <span className="text-[11px] text-slate-400 italic hidden md:inline">
-            (💡 Kéo chuột để di chuyển tài liệu | Giữ phím <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
+            (💡 Kéo chuột để di chuyển bản vẽ | Giữ phím <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
           </span>
         </div>
 
         <div className="flex items-center gap-1.5">
+          {/* Toggle Drag Mode for PDF */}
+          {!isImage && (
+            <button
+              onClick={() => setDragMode((m) => !m)}
+              title={dragMode ? 'Đang ở Chế độ Kéo chuột (Nhấp để bật chế độ cuộn trang PDF)' : 'Đang ở Chế độ Cuộn trang (Nhấp để bật chế độ Kéo di chuyển)'}
+              className={`flex items-center gap-1 h-[26px] px-2 rounded-md text-[11px] font-bold border transition-all ${
+                dragMode
+                  ? 'bg-blue-50 text-primary border-blue-200 shadow-xs'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">
+                {dragMode ? 'pan_tool' : 'touch_app'}
+              </span>
+              {dragMode ? 'Bàn tay kéo' : 'Cuộn file'}
+            </button>
+          )}
+
           {/* Zoom controls */}
           <div className="flex items-center gap-0.5 bg-slate-100 px-1 py-0.5 rounded-md border border-slate-200 text-xs">
             <button
@@ -135,9 +154,19 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         className={`w-full flex-1 overflow-auto bg-slate-900/5 rounded-md flex items-center justify-center p-0.5 min-h-0 relative select-none h-full ${
-          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+          isImage || dragMode ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
         }`}
       >
+        {/* Invisible Overlay Layer to capture Drag Events across PDF iframe */}
+        {!isImage && dragMode && (
+          <div
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
+          />
+        )}
+
         <div
           className="transition-transform duration-75 ease-out origin-center flex items-center justify-center w-full h-full min-w-full min-h-full"
           style={{
@@ -155,7 +184,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             <iframe
               src={url}
               className="w-full h-full min-w-full min-h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
-              style={{ transform: `rotate(${rotation}deg)`, pointerEvents: isDragging ? 'none' : 'auto' }}
+              style={{ transform: `rotate(${rotation}deg)` }}
               title={`File ${index + 1}`}
             />
           )}
