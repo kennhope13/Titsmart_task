@@ -1234,7 +1234,7 @@ export const MaterialTrackingPage: React.FC = () => {
       </Modal>
 
       {/* MODAL GIAO DỊCH NHẬP/XUẤT KHO */}
-      <Modal isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} title={transactionType === 'IMPORT' ? 'Tạo Phiếu Nhập Kho' : 'Tạo Phiếu Xuất Kho'}>
+      <Modal size="lg" isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} title={transactionType === 'IMPORT' ? 'Tạo Phiếu Nhập Kho' : 'Tạo Phiếu Xuất Kho'}>
         <form onSubmit={handleSubmitTransaction} className="space-y-3 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
