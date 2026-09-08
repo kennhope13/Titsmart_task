@@ -1067,7 +1067,7 @@ export const MaterialTrackingPage: React.FC = () => {
                         <td className="p-3.5 text-right text-slate-500">{material.initialStock || 0}</td>
                         <td className="p-3.5 text-right text-emerald-600 font-bold">+{material.totalImport || 0}</td>
                         <td className="p-3.5 text-right text-amber-600 font-bold">-{material.totalExport || 0}</td>
-                        <td className="p-3.5 text-right font-bold text-primary text-sm">{(material.currentStock !== undefined ? material.currentStock : (material.initialStock || 0)).toLocaleString('vi-VN')}</td>
+                        <td className="p-3.5 text-right font-bold text-primary text-sm">{((material.initialStock || 0) + (material.totalImport || 0) - (material.totalExport || 0)).toLocaleString('vi-VN')}</td>
                         <td className="p-3.5 text-slate-600 text-xs max-w-xs truncate" title={material.notes || ''}>{material.notes || '-'}</td>
                         <td className="p-3.5 text-center" onClick={(event) => event.stopPropagation()}>
                           <div className="flex justify-center gap-1.5">

@@ -1,7 +1,7 @@
 {
-  "version": "2.2.2",
+  "version": "2.2.3",
   "date": "2026-09-08",
   "notes": [
-    "Cải thiện nút Cập nhật ngay trên Mobile: Tự động điều hướng tải file APK mới nhất từ GitHub Releases."
+    "Sửa lỗi hiển thị Tồn kho hiện tại trong Modal Lịch sử và Bảng vật tư: Đồng bộ công thức Tồn kho = Tồn đầu kỳ + Tổng Nhập - Tổng Xuất."
   ]
 }

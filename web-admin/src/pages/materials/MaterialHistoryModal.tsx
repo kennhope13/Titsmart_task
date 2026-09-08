@@ -39,7 +39,8 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
     .filter((tx) => tx.type === 'EXPORT')
     .reduce((sum, tx) => sum + (tx.quantity || 0), 0);
 
-  const currentStock = materialCurrentStock(material);
+  // Tồn kho hiện tại = Tồn đầu kỳ + Tổng Nhập từ giao dịch - Tổng Xuất từ giao dịch
+  const currentStock = (material.initialStock || 0) + (totalImported || material.totalImport || 0) - (totalExported || material.totalExport || 0);
 
   return (
     <Modal
