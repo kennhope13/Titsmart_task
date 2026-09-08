@@ -1252,7 +1252,45 @@ export const MaterialTrackingPage: React.FC = () => {
       {/* MODAL GIAO DỊCH NHẬP/XUẤT KHO */}
       <Modal size="xl" isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} title={transactionType === 'IMPORT' ? 'Tạo Phiếu Nhập Kho' : 'Tạo Phiếu Xuất Kho'}>
         <form onSubmit={handleSubmitTransaction} className="space-y-3 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-bold text-slate-700">Chọn Vật tư *</label>
+              <button 
+                type="button" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsTransactionModalOpen(false);
+                  setIsPlaceOrderModalOpen(true);
+                }} 
+                className="text-xs text-primary font-bold hover:underline flex items-center gap-0.5"
+                title="Tạo mã vật tư mới vào danh mục kho"
+              >
+                <span className="material-symbols-outlined text-[14px]">add_circle</span>
+                Thêm vật tư mới
+              </button>
+            </div>
+            <CustomSelect required searchable value={txMaterialId} onChange={(e) => setTxMaterialId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+              <option value="">-- Chọn vật tư --</option>
+              {materials
+                .filter(m => {
+                  if (txFilterProject === 'all') return true;
+                  if (txFilterProject === 'COMPANY') return m.projectCode === 'COMPANY' || !m.projectCode || m.projectCode === 'all';
+                  return m.projectCode === txFilterProject;
+                })
+                .map(m => {
+                  const isCompany = m.projectCode === 'COMPANY' || !m.projectCode || m.projectCode === 'all';
+                  const locationLabel = isCompany ? 'Kho Tổng' : (m.projectName || m.projectCode);
+                  const stockVal = m.currentStock !== undefined ? m.currentStock : (m.initialStock || 0);
+                  return (
+                    <option key={m.id} value={m.id}>
+                      [{m.code}] {m.name} ({locationLabel}) - Tồn: {stockVal.toLocaleString('vi-VN')} {m.unit}
+                    </option>
+                  );
+                })}
+            </CustomSelect>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Lọc theo Kho / Dự án</label>
               <CustomSelect
@@ -1270,48 +1308,14 @@ export const MaterialTrackingPage: React.FC = () => {
                 ))}
               </CustomSelect>
             </div>
-
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block font-bold text-slate-700">Chọn Vật tư *</label>
-                <button 
-                  type="button" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setIsTransactionModalOpen(false);
-                    setIsPlaceOrderModalOpen(true);
-                  }} 
-                  className="text-xs text-primary font-bold hover:underline flex items-center gap-0.5"
-                  title="Tạo mã vật tư mới vào danh mục kho"
-                >
-                  <span className="material-symbols-outlined text-[14px]">add_circle</span>
-                  Thêm vật tư mới
-                </button>
-              </div>
-              <CustomSelect required searchable value={txMaterialId} onChange={(e) => setTxMaterialId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
-                <option value="">-- Chọn vật tư --</option>
-                {materials
-                  .filter(m => {
-                    if (txFilterProject === 'all') return true;
-                    if (txFilterProject === 'COMPANY') return m.projectCode === 'COMPANY' || !m.projectCode || m.projectCode === 'all';
-                    return m.projectCode === txFilterProject;
-                  })
-                  .map(m => {
-                    const isCompany = m.projectCode === 'COMPANY' || !m.projectCode || m.projectCode === 'all';
-                    const locationLabel = isCompany ? 'Kho Tổng' : (m.projectName || m.projectCode);
-                    const stockVal = m.currentStock !== undefined ? m.currentStock : (m.initialStock || 0);
-                    return (
-                      <option key={m.id} value={m.id}>
-                        [{m.code}] {m.name} ({locationLabel}) - Tồn: {stockVal.toLocaleString('vi-VN')} {m.unit}
-                      </option>
-                    );
-                  })}
-              </CustomSelect>
+              <label className="block font-bold text-slate-700 mb-1">Ngày {transactionType === 'IMPORT' ? 'nhập' : 'xuất'} *</label>
+              <input type="date" required value={txDate} onChange={(e) => setTxDate(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="block font-bold text-slate-700 mb-1">Ngày {transactionType === 'IMPORT' ? 'nhập' : 'xuất'} *</label><input type="date" required value={txDate} onChange={(e) => setTxDate(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
-            <div><label className="block font-bold text-slate-700 mb-1">Số lượng *</label><input type="number" step="any" required min="1" value={txQuantity} onChange={(e) => setTxQuantity(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Số lượng *</label>
+              <input type="number" step="any" required min="1" value={txQuantity} onChange={(e) => setTxQuantity(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
+            </div>
           </div>
           <div>
             <label className="block font-bold text-slate-700 mb-1">{transactionType === 'IMPORT' ? 'Nguồn nhập hàng' : 'Dự án / Nơi xuất đến'} *</label>

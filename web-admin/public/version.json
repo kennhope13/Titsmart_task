@@ -1,7 +1,7 @@
 {
-  "version": "2.1.4",
+  "version": "2.1.5",
   "date": "2026-09-08",
   "notes": [
-    "Bổ sung nút 'Quay lại Phiếu Nhập/Xuất Kho' trong modal Thêm Vật Tư Mới giúp dễ dàng quay trở lại thao tác làm phiếu kho."
+    "Tối ưu lại bố cục form Nhập/Xuất kho: Đưa ô Chọn Vật tư lên dòng riêng 100% chiều rộng rộng rãi, thoải mái hiển thị đầy đủ tên vật tư và thông số."
   ]
 }
