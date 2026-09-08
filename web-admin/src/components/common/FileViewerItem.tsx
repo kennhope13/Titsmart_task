@@ -9,7 +9,12 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const isImage = Boolean(url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i));
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
-  const [showPages, setShowPages] = useState<boolean>(true); // Hiện danh sách các trang PDF
+  const [showPages, setShowPages] = useState<boolean>(true);
+
+  // Width of left PDF page thumbnails column (in px)
+  const [sidebarWidth, setSidebarWidth] = useState<number>(260); // Mặc định 260px
+  const [isResizingSidebar, setIsResizingSidebar] = useState<boolean>(false);
+  const resizeStartRef = useRef<{ startX: number; startWidth: number }>({ startX: 0, startWidth: 260 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleRotate = () => setRotation((r) => (r + 90) % 360);
@@ -19,6 +24,34 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     setZoom(1);
     setRotation(0);
   };
+
+  // Start dragging split bar (Kéo thanh vạch sang Trái / Phải)
+  const handleSidebarResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingSidebar(true);
+    resizeStartRef.current = { startX: e.clientX, startWidth: sidebarWidth };
+  };
+
+  useEffect(() => {
+    if (!isResizingSidebar) return;
+
+    const handleMouseMoveGlobal = (e: MouseEvent) => {
+      const deltaX = e.clientX - resizeStartRef.current.startX;
+      const newWidth = Math.max(100, Math.min(700, resizeStartRef.current.startWidth + deltaX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUpGlobal = () => {
+      setIsResizingSidebar(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMoveGlobal);
+    window.addEventListener('mouseup', handleMouseUpGlobal);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMoveGlobal);
+      window.removeEventListener('mouseup', handleMouseUpGlobal);
+    };
+  }, [isResizingSidebar]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -46,7 +79,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             Tài liệu {index + 1}
           </span>
           <span className="text-[11px] text-slate-400 italic hidden md:inline">
-            (💡 Giữ phím <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
+            (💡 Kéo vạch xám đứng sang Trái/Phải để thay đổi kích thước cột xem trang | <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
           </span>
         </div>
 
@@ -55,7 +88,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
           {!isImage && (
             <button
               onClick={() => setShowPages((prev) => !prev)}
-              title={showPages ? 'Đang ẩn/hiện danh sách trang PDF (Nhấp để bật/tắt)' : 'Bật danh sách trang PDF'}
+              title={showPages ? 'Đang hiện danh sách trang PDF (Nhấp để ẩn)' : 'Đang ẩn danh sách trang (Nhấp để bật)'}
               className={`flex items-center gap-1 h-[26px] px-2 rounded-md text-[11px] font-bold border transition-all ${
                 showPages
                   ? 'bg-blue-50 text-primary border-blue-200 shadow-xs'
@@ -117,37 +150,72 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         </div>
       </div>
 
-      {/* Main Document Viewport */}
-      <div
-        ref={containerRef}
-        className="w-full flex-1 min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-auto always-visible-scrollbar border border-slate-200 flex items-center justify-center p-1"
-      >
+      {/* Main Split Container */}
+      <div className="w-full flex-1 flex min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-hidden border border-slate-200">
+        
+        {/* Transparent Overlay during resize to ensure continuous drag over iframes */}
+        {isResizingSidebar && (
+          <div className="fixed inset-0 z-50 cursor-col-resize bg-transparent" />
+        )}
+
+        {/* Left PDF Pages Column */}
+        {!isImage && showPages && (
+          <>
+            <div
+              style={{ width: `${sidebarWidth}px` }}
+              className="h-full bg-slate-800 shrink-0 relative overflow-hidden hidden sm:block"
+            >
+              <iframe
+                src={`${url}#navpanes=1&pagemode=thumbs&toolbar=0`}
+                className="w-full h-full border-0"
+                title={`Sidebar Pages ${index + 1}`}
+              />
+            </div>
+
+            {/* Resizer Splitter Handle Bar (Kéo vạch này sang Trái / Phải) */}
+            <div
+              onMouseDown={handleSidebarResizeStart}
+              title="Nhấn giữ chuột & Kéo vạch này sang Trái / Phải để thay đổi kích thước cột bên trái"
+              className="w-2.5 bg-slate-300 hover:bg-primary cursor-col-resize shrink-0 transition-colors flex items-center justify-center group z-30 select-none border-x border-slate-400/40 active:bg-blue-600"
+            >
+              <div className="w-0.5 h-10 bg-slate-600 group-hover:bg-white rounded-full" />
+            </div>
+          </>
+        )}
+
+        {/* Right Main Document Viewport */}
         <div
-          className="transition-transform duration-75 ease-out origin-center flex items-center justify-center"
-          style={{
-            transform: `scale(${zoom})`,
-            width: zoom > 1 ? `${zoom * 100}%` : '100%',
-            height: zoom > 1 ? `${zoom * 100}%` : '100%',
-            minWidth: '100%',
-            minHeight: '100%',
-          }}
+          ref={containerRef}
+          className="flex-1 min-h-0 relative h-full overflow-auto always-visible-scrollbar flex items-center justify-center p-1"
         >
-          {isImage ? (
-            <img
-              src={url}
-              alt={`File ${index + 1}`}
-              className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white transition-transform duration-200"
-              style={{ transform: `rotate(${rotation}deg)` }}
-            />
-          ) : (
-            <iframe
-              src={`${url}#navpanes=${showPages ? 1 : 0}&pagemode=${showPages ? 'thumbs' : 'none'}`}
-              className="w-full h-full min-w-full min-h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
-              style={{ transform: `rotate(${rotation}deg)` }}
-              title={`File ${index + 1}`}
-            />
-          )}
+          <div
+            className="transition-transform duration-75 ease-out origin-center flex items-center justify-center"
+            style={{
+              transform: `scale(${zoom})`,
+              width: zoom > 1 ? `${zoom * 100}%` : '100%',
+              height: zoom > 1 ? `${zoom * 100}%` : '100%',
+              minWidth: '100%',
+              minHeight: '100%',
+            }}
+          >
+            {isImage ? (
+              <img
+                src={url}
+                alt={`File ${index + 1}`}
+                className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white transition-transform duration-200"
+                style={{ transform: `rotate(${rotation}deg)` }}
+              />
+            ) : (
+              <iframe
+                src={`${url}#navpanes=0&toolbar=0`}
+                className="w-full h-full min-w-full min-h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
+                style={{ transform: `rotate(${rotation}deg)` }}
+                title={`File ${index + 1}`}
+              />
+            )}
+          </div>
         </div>
+
       </div>
     </div>
   );
