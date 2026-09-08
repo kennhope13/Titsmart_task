@@ -1253,10 +1253,17 @@ export const MaterialTrackingPage: React.FC = () => {
               </button>
             </div>
             <CustomSelect required searchable value={txMaterialId} onChange={(e) => setTxMaterialId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
-              
-              {materials.map(m => (
-                <option key={m.id} value={m.id}>[{m.code}] {m.name} (Tồn: {m.currentStock ?? (m.initialStock || 0)} {m.unit})</option>
-              ))}
+              {materials.map(m => {
+                const locationLabel = m.projectCode === 'COMPANY' || !m.projectCode || m.projectCode === 'all'
+                  ? '📍 Kho Tổng'
+                  : `🏗️ Dự án: ${m.projectName || m.projectCode}`;
+                const stockVal = m.currentStock !== undefined ? m.currentStock : (m.initialStock || 0);
+                return (
+                  <option key={m.id} value={m.id}>
+                    [{m.code}] {m.name} - ({locationLabel}) - Tồn: {stockVal.toLocaleString('vi-VN')} {m.unit}
+                  </option>
+                );
+              })}
             </CustomSelect>
           </div>
           <div className="grid grid-cols-2 gap-3">
