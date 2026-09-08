@@ -37,7 +37,15 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     setPosition({ x: 0, y: 0 });
   };
 
-  // Mouse Drag to Pan khi Phóng to (Zoom > 1) hoặc khi bật Bàn tay kéo
+  const handleToggleDragMode = () => {
+    setDragMode((prev) => {
+      const next = !prev;
+      if (!next && zoom <= 1) setPosition({ x: 0, y: 0 });
+      return next;
+    });
+  };
+
+  // Mouse Drag to Pan khi Bàn tay kéo bật hoặc Zoom > 1
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 0 && (zoom > 1 || dragMode || isImage)) {
       setIsDragging(true);
@@ -153,7 +161,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     return base;
   };
 
-  const isPanActive = zoom > 1 || dragMode || isImage;
+  const isPanActive = dragMode || (zoom > 1 && (position.x !== 0 || position.y !== 0));
 
   return (
     <div className="flex flex-col border border-slate-200 rounded-lg p-1.5 sm:p-2 bg-white shadow-sm flex-1 min-h-0 h-full select-none">
@@ -164,7 +172,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             Tài liệu {index + 1}
           </span>
           <span className="text-[11px] text-slate-400 italic hidden md:inline">
-            (💡 Khi phóng to: Nhấn giữ chuột trái & Kéo để di chuyển bản vẽ | Kéo vạch đứng để chỉnh cột trang)
+            (💡 Chuyển chế độ Cuộn file / Bàn tay kéo linh hoạt | Giữ <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
           </span>
         </div>
 
@@ -185,21 +193,21 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             </button>
           )}
 
-          {/* Toggle Hand Drag Mode */}
+          {/* Toggle Hand Drag Mode / Scroll Mode */}
           {!isImage && (
             <button
-              onClick={() => setDragMode((m) => !m)}
-              title={dragMode ? 'Đang ở Chế độ Bàn tay kéo (Nhấp để tắt)' : 'Bật chế độ Bàn tay kéo di chuyển nội dung'}
+              onClick={handleToggleDragMode}
+              title={dragMode ? 'Đang ở Chế độ Bàn tay kéo (Nhấp để về Chế độ Cuộn file)' : 'Đang ở Chế độ Cuộn file (Nhấp để sang Chế độ Bàn tay kéo)'}
               className={`flex items-center gap-1 h-[26px] px-2 rounded-md text-[11px] font-bold border transition-all ${
-                dragMode || zoom > 1
+                dragMode
                   ? 'bg-blue-50 text-primary border-blue-200 shadow-xs'
                   : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
               }`}
             >
               <span className="material-symbols-outlined text-[14px]">
-                {dragMode || zoom > 1 ? 'pan_tool' : 'touch_app'}
+                {dragMode ? 'pan_tool' : 'touch_app'}
               </span>
-              {dragMode || zoom > 1 ? 'Bàn tay kéo' : 'Cuộn file'}
+              {dragMode ? 'Bàn tay kéo' : 'Cuộn file'}
             </button>
           )}
 
@@ -290,11 +298,11 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         <div
           ref={containerRef}
           onMouseDown={handleMouseDown}
-          className={`flex-1 min-h-0 relative h-full overflow-hidden flex items-center justify-center p-1 select-none ${
-            isPanActive ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
-          }`}
+          className={`flex-1 min-h-0 relative h-full flex items-center justify-center p-1 select-none ${
+            isPanActive ? 'overflow-hidden' : 'overflow-auto always-visible-scrollbar'
+          } ${isPanActive ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
         >
-          {/* Overlay to capture mouse dragging when zoomed in */}
+          {/* Overlay to capture mouse dragging ONLY when Bàn tay kéo is ON */}
           {isPanActive && !isImage && (
             <div
               onMouseDown={handleMouseDown}
@@ -302,7 +310,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             />
           )}
 
-          <div className="w-full h-full flex items-center justify-center overflow-hidden">
+          <div className="w-full h-full flex items-center justify-center">
             {isImage ? (
               <img
                 src={url}

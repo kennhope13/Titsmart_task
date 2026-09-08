@@ -1,8 +1,8 @@
 {
-  "version": "1.4.3",
+  "version": "1.4.4",
   "date": "2026-09-08",
   "notes": [
-    "Khống chế hiệu ứng Thu/Phóng (Zoom) chỉ tác động trực tiếp lên nội dung bản vẽ/tài liệu.",
-    "Khung chứa nền màu xám xung quanh giữ cố định 100%, không bị phình to hay tạo khoảng trống mờ khi phóng to."
+    "Khắc phục triệt để chế độ cuộn file: Khi chuyển từ Bàn tay kéo về 'Cuộn file', trang cuộn ngay lập tức mượt mà.",
+    "Hỗ trợ nút bật/tắt linh hoạt giữa hai chế độ 'Bàn tay kéo' và 'Cuộn file' theo đúng ý người dùng."
   ]
 }
