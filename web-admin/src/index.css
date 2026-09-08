@@ -13,18 +13,35 @@
 
 /* Custom Scrollbar Styling */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
+  background: #94a3b8;
+  border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #475569;
+}
+
+.always-visible-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.always-visible-scrollbar::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 6px;
+}
+.always-visible-scrollbar::-webkit-scrollbar-thumb {
+  background: #64748b;
+  border-radius: 6px;
+  border: 1.5px solid #e2e8f0;
+}
+.always-visible-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #1e293b;
 }
 
 .custom-scrollbar::-webkit-scrollbar {

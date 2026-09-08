@@ -1,9 +1,9 @@
 {
-  "version": "1.3.4",
+  "version": "1.4.7",
   "date": "2026-09-08",
   "notes": [
-    "Cải tiến giao diện xem file đính kèm/chứng từ: Mặc định phóng to tối đa, hỗ trợ nút toggle full-screen (Maximize/Restore).",
-    "Thêm tính năng Phóng to/Thu nhỏ linh hoạt trên tài liệu đính kèm (Giữ phím Ctrl + Nhấp chuột trái hoặc Cuộn chuột).",
-    "Tối ưu hóa tốc độ tải trang Tất cả dự án, khắc phục triệt để lỗi đứng ở trạng thái 'Đang tải dữ liệu...'."
+    "Cập nhật trình đọc bản vẽ & sơ đồ PDF sắc nét HD (Fit-Width Single Page layout).",
+    "Bổ sung nút bật/tắt linh hoạt giữa hai chế độ 'Bàn tay kéo' và 'Cuộn file' cùng thanh cuộn ngang/dọc to rõ ràng.",
+    "Khắc phục triệt để hiển thị bảng Đặt hàng/Vật tư và nâng cao hiệu năng hệ thống."
   ]
 }

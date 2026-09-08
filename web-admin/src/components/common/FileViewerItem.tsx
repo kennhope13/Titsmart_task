@@ -8,19 +8,82 @@ interface FileViewerItemProps {
 export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) => {
   const isImage = Boolean(url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i));
   const [zoom, setZoom] = useState<number>(1);
+  const [rotation, setRotation] = useState<number>(0);
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragMode, setDragMode] = useState<boolean>(false);
+
+  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
+  const handleRotate = () => setRotation((r) => (r + 90) % 360);
   const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 4));
-  const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.5));
-  const handleResetZoom = () => setZoom(1);
+  const handleZoomOut = () => {
+    setZoom((z) => {
+      const next = Math.max(z - 0.25, 0.5);
+      if (next <= 1) setPosition({ x: 0, y: 0 });
+      return next;
+    });
+  };
+  const handleReset = () => {
+    setZoom(1);
+    setRotation(0);
+    setPosition({ x: 0, y: 0 });
+  };
 
-  // Ctrl + Left Click or Ctrl + Wheel Zooming
+  const handleToggleDragMode = () => {
+    setDragMode((prev) => {
+      const next = !prev;
+      if (!next && zoom <= 1) setPosition({ x: 0, y: 0 });
+      return next;
+    });
+  };
+
+  // Mouse Drag to Pan khi Bàn tay kéo bật hoặc Zoom > 1
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.ctrlKey && e.button === 0) {
-      e.preventDefault();
-      setZoom((z) => (z >= 2.5 ? 1 : z + 0.5));
+    if (e.button === 0 && (zoom > 1 || dragMode || isImage)) {
+      setIsDragging(true);
+      dragStartRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
     }
   };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMoveGlobal = (e: MouseEvent) => {
+      setPosition({
+        x: e.clientX - dragStartRef.current.x,
+        y: e.clientY - dragStartRef.current.y,
+      });
+    };
+
+    const handleMouseUpGlobal = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMoveGlobal);
+    window.addEventListener('mouseup', handleMouseUpGlobal);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMoveGlobal);
+      window.removeEventListener('mouseup', handleMouseUpGlobal);
+    };
+  }, [isDragging]);
+
+  // Measure container dimensions for rotation aspect ratio calculation
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const updateSize = () => {
+      setContainerSize({ w: el.clientWidth, h: el.clientHeight });
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -29,7 +92,11 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        setZoom((z) => (e.deltaY < 0 ? Math.min(z + 0.15, 4) : Math.max(z - 0.15, 0.5)));
+        setZoom((z) => {
+          const next = e.deltaY < 0 ? Math.min(z + 0.15, 4) : Math.max(z - 0.15, 0.5);
+          if (next <= 1) setPosition({ x: 0, y: 0 });
+          return next;
+        });
       }
     };
 
@@ -39,80 +106,146 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     };
   }, []);
 
+  // Check if rotated 90deg or 270deg (Xoay ngang)
+  const isRotated90 = Math.abs(rotation % 180) === 90;
+
+  const getContentTransformStyle = (): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      transform: `translate(${position.x}px, ${position.y}px) scale(${zoom}) rotate(${rotation}deg)`,
+      transformOrigin: 'center center',
+      transition: isDragging ? 'none' : 'transform 100ms ease-out, width 200ms ease, height 200ms ease',
+    };
+
+    if (isRotated90 && containerSize.w > 0 && containerSize.h > 0) {
+      // Swap width & height so after 90/270 degree rotation, visual dimensions match container (W, H)
+      base.width = `${containerSize.h}px`;
+      base.height = `${containerSize.w}px`;
+    } else {
+      base.width = '100%';
+      base.height = '100%';
+    }
+
+    return base;
+  };
+
+  const isPanActive = dragMode || (zoom > 1 && (position.x !== 0 || position.y !== 0));
+
   return (
-    <div className="flex flex-col border border-slate-200 rounded-lg p-3 bg-white shadow-sm flex-1 min-h-0">
-      <div className="flex flex-wrap justify-between items-center mb-2 gap-2 shrink-0">
-        <span className="text-sm font-semibold text-slate-800 truncate">
-          Tài liệu {index + 1}
-        </span>
+    <div className="flex flex-col border border-slate-200 rounded-lg p-1.5 sm:p-2 bg-white shadow-sm flex-1 min-h-0 h-full select-none">
+      {/* Header Toolbar */}
+      <div className="flex flex-wrap justify-between items-center mb-1.5 gap-2 shrink-0 border-b border-slate-100 pb-1.5">
         <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-800 truncate">
+            Tài liệu {index + 1}
+          </span>
+          <span className="text-[11px] text-slate-400 italic hidden md:inline">
+            (💡 Xem tài liệu sắc nét HD | Chuyển chế độ Cuộn file / Bàn tay kéo | Giữ <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {/* Toggle Hand Drag Mode / Scroll Mode */}
+          {!isImage && (
+            <button
+              onClick={handleToggleDragMode}
+              title={dragMode ? 'Đang ở Chế độ Bàn tay kéo (Nhấp để về Chế độ Cuộn file)' : 'Đang ở Chế độ Cuộn file (Nhấp để sang Chế độ Bàn tay kéo)'}
+              className={`flex items-center gap-1 h-[26px] px-2 rounded-md text-[11px] font-bold border transition-all ${
+                dragMode
+                  ? 'bg-blue-50 text-primary border-blue-200 shadow-xs'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">
+                {dragMode ? 'pan_tool' : 'touch_app'}
+              </span>
+              {dragMode ? 'Bàn tay kéo' : 'Cuộn file'}
+            </button>
+          )}
+
           {/* Zoom controls */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
+          <div className="flex items-center gap-0.5 bg-slate-100 px-1 py-0.5 rounded-md border border-slate-200 text-xs">
             <button
               onClick={handleZoomOut}
-              title="Thu nhỏ"
-              className="p-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
+              title="Thu nhỏ (-)"
+              className="p-0.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
             >
-              <span className="material-symbols-outlined text-[16px]">remove</span>
+              <span className="material-symbols-outlined text-[15px]">remove</span>
             </button>
-            <span className="px-1.5 font-bold text-slate-700 min-w-[42px] text-center">
+            <span className="px-1 font-bold text-slate-700 text-[11px] min-w-[38px] text-center">
               {Math.round(zoom * 100)}%
             </span>
             <button
               onClick={handleZoomIn}
-              title="Phóng to"
-              className="p-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
+              title="Phóng to (+)"
+              className="p-0.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
             >
-              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span className="material-symbols-outlined text-[15px]">add</span>
             </button>
             <button
-              onClick={handleResetZoom}
-              title="Khôi phục kích thước ban đầu"
-              className="px-1.5 py-0.5 text-[11px] font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
+              onClick={handleReset}
+              title="Khôi phục mặc định"
+              className="px-1.5 py-0.5 text-[10px] font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors border-l border-slate-200 ml-0.5"
             >
               100%
             </button>
           </div>
 
+          {/* Rotate Button */}
+          <button
+            onClick={handleRotate}
+            title="Xoay 90 độ"
+            className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 h-[26px] px-2 rounded-md text-[11px] font-bold transition-all"
+          >
+            <span className="material-symbols-outlined text-[14px]">rotate_left</span> Xoay
+          </button>
+
+          {/* Download Button */}
           <a
             href={`${url}?download=`}
             download
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 bg-primary text-white h-[32px] px-3 rounded-lg text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+            className="flex items-center gap-1 bg-primary text-white h-[26px] px-2.5 rounded-md text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs"
           >
-            <span className="material-symbols-outlined text-[14px]">download</span> Tải về
+            <span className="material-symbols-outlined text-[13px]">download</span> Tải về
           </a>
         </div>
       </div>
 
-      <p className="text-[11px] text-slate-400 mb-1 italic">
-        💡 Gợi ý: Giữ phím <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold">Ctrl</kbd> + Nhấp chuột trái (hoặc cuộn chuột) để Phóng to / Thu nhỏ tài liệu.
-      </p>
-
-      {/* Document Viewport */}
-      <div
-        ref={containerRef}
-        onMouseDown={handleMouseDown}
-        className="w-full flex-1 overflow-auto bg-slate-900/5 rounded-lg flex items-center justify-center p-2 min-h-[450px] relative select-none cursor-zoom-in"
-      >
+      {/* Main Single Crisp Document Viewport */}
+      <div className="w-full flex-1 flex min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-hidden border border-slate-200">
         <div
-          className="transition-transform duration-150 ease-out origin-center flex items-center justify-center w-full h-full"
-          style={{ transform: `scale(${zoom})` }}
+          ref={containerRef}
+          onMouseDown={handleMouseDown}
+          className={`flex-1 min-h-0 relative h-full flex items-center justify-center p-1 select-none ${
+            isPanActive ? 'overflow-hidden' : 'overflow-auto always-visible-scrollbar'
+          } ${isPanActive ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
         >
-          {isImage ? (
-            <img
-              src={url}
-              alt={`File ${index + 1}`}
-              className="max-w-full max-h-[75vh] object-contain shadow-md rounded border border-slate-200 bg-white"
-            />
-          ) : (
-            <iframe
-              src={url}
-              className="w-full h-[75vh] rounded border border-slate-200 bg-white shadow-sm"
-              title={`File ${index + 1}`}
+          {/* Overlay to capture mouse dragging ONLY when Bàn tay kéo is ON */}
+          {isPanActive && !isImage && (
+            <div
+              onMouseDown={handleMouseDown}
+              className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
             />
           )}
+
+          <div className="w-full h-full flex items-center justify-center">
+            {isImage ? (
+              <img
+                src={url}
+                alt={`File ${index + 1}`}
+                className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white"
+                style={getContentTransformStyle()}
+              />
+            ) : (
+              <iframe
+                src={`${url}#page=1&view=FitH&pagemode=none&toolbar=0&navpanes=0`}
+                className="w-full h-full rounded border border-slate-200 bg-white shadow-xs"
+                style={getContentTransformStyle()}
+                title={`File ${index + 1}`}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
