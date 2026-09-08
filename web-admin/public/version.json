@@ -1,8 +1,7 @@
 {
-  "version": "2.1.9",
+  "version": "2.2.0",
   "date": "2026-09-08",
   "notes": [
-    "Bổ sung nút Xem Lịch Sử Giao Dịch (History Modal) trực tiếp trên từng dòng vật tư.",
-    "Cho phép xem tổng quan Tồn đầu, Tổng nhập, Tổng xuất và danh sách toàn bộ các đợt nhập/xuất kho của riêng vật tư được chọn."
+    "Bỏ màu nền viền quanh nhãn Nhập kho / Xuất kho trong lịch sử giao dịch giúp hiển thị gọn gàng, tinh tế hơn."
   ]
 }

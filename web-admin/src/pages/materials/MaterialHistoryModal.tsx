@@ -113,13 +113,11 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
                       </td>
                       <td className="p-2.5 text-center">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            isImport
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          className={`inline-flex items-center gap-1 font-bold ${
+                            isImport ? 'text-emerald-700' : 'text-amber-700'
                           }`}
                         >
-                          <span className="material-symbols-outlined text-[12px]">
+                          <span className="material-symbols-outlined text-[14px]">
                             {isImport ? 'arrow_downward' : 'arrow_upward'}
                           </span>
                           {isImport ? 'Nhập kho' : 'Xuất kho'}
