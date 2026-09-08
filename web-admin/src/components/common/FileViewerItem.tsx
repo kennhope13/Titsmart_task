@@ -72,18 +72,20 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
       >
         <div
           className="transition-transform duration-200 ease-out origin-center flex items-center justify-center w-full h-full"
-          style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
+          style={{ transform: `scale(${zoom})` }}
         >
           {isImage ? (
             <img
               src={url}
               alt={`File ${index + 1}`}
-              className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white"
+              className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white transition-transform duration-200"
+              style={{ transform: `rotate(${rotation}deg)` }}
             />
           ) : (
             <iframe
               src={url}
-              className="w-full h-full rounded border border-slate-200 bg-white shadow-xs"
+              className="w-full h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
+              style={{ transform: `rotate(${rotation}deg)` }}
               title={`File ${index + 1}`}
             />
           )}
