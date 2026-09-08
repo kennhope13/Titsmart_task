@@ -1098,115 +1098,34 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           </thead>
           <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
             {(() => {
-              const groups: { [key: string]: any[] } = {};
-              const order: string[] = [];
+              const flattened: any[] = [];
               let currentSectionKey = '__default__';
 
-              const sttSet = new Set(filteredData.map(t => String(t.stt || '').trim()));
-              const missingParents: any[] = [];
               filteredData.forEach(t => {
-                const stt = String(t.stt || '').trim();
-                if (stt.includes('.')) {
-                  const parts = stt.split('.');
-                  parts.pop();
-                  const parentStt = parts.join('.');
-                  if (parentStt && !sttSet.has(parentStt)) {
-                    sttSet.add(parentStt);
-                    let synthName = '';
-                    if (parentStt === '33') {
-                      synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-                    } else if (parentStt === '36') {
-                      synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-                    } else {
-                      synthName = `HẠNG MỤC ${parentStt}`;
-                    }
-
-                    missingParents.push({
-                      id: `synth_mat_${parentStt}`,
-                      stt: parentStt,
-                      jobContent: synthName,
-                      content: synthName,
-                      projectCode: t.projectCode,
-                      parentId: t.parentId,
-                      isSec: true,
-                      notes: '[section]'
-                    });
-                  }
-                }
-              });
-
-              const allData = [...missingParents, ...filteredData];
-
-              allData.forEach(t => {
-                if (isRootSectionRow(t)) {
+                if (isParentRow(t)) {
                   currentSectionKey = t.id;
-                  if (!groups[currentSectionKey]) {
-                    groups[currentSectionKey] = [];
-                    order.push(currentSectionKey);
-                  }
-                  groups[currentSectionKey].unshift({ ...t, _isHeader: true });
-                } else {
-                  let targetSection = currentSectionKey;
-                  const resolvedParentId = resolveParentId(t);
-                  if (resolvedParentId && groups[resolvedParentId]) {
-                    targetSection = resolvedParentId;
-                  }
-
-                  if (!groups[targetSection]) {
-                    groups[targetSection] = [];
-                    order.push(targetSection);
-                  }
-                  groups[targetSection].push({ ...t, _isHeader: false });
-                }
-              });
-
-              const orphanedIdx = order.indexOf('__orphaned__');
-              if (orphanedIdx !== -1) {
-                order.splice(orphanedIdx, 1);
-                order.push('__orphaned__');
-              }
-
-              const flattened: any[] = [];
-              order.forEach((secKey) => {
-                let sectionHeader = groups[secKey].find((t: any) => t._isHeader);
-                if (secKey === '__orphaned__' && !sectionHeader) {
-                  sectionHeader = {
-                    id: '__orphaned__',
-                    stt: '',
-                    jobContent: 'CHƯA PHÂN NHÓM',
-                    content: 'CHƯA PHÂN NHÓM',
+                  flattened.push({
+                    ...t,
+                    depth: 0,
+                    computedStt: t.stt,
                     isSec: true,
-                    _isHeader: true
-                  };
-                }
-                const items = groups[secKey].filter((t: any) => !t._isHeader);
-
-                const map = new Map<string, any>();
-                const roots: any[] = [];
-                items.forEach((t: any) => map.set(t.id, { ...t, children: [] }));
-                items.forEach((t: any) => {
-                  const resolvedParentId = resolveParentId(t);
-                  if (resolvedParentId && resolvedParentId !== secKey && map.has(resolvedParentId)) {
-                    map.get(resolvedParentId)!.children.push(map.get(t.id));
-                  } else {
-                    roots.push(map.get(t.id));
-                  }
-                });
-
-                const flattenTree = (nodes: any[], depth: number, prefix: string = '', sectionKey: string = '') => {
-                  nodes.forEach((node: any, idx: number) => {
-                    const currentNum = (idx + 1).toString();
-                    const computedStt = node.stt || (depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum));
-                    const isSec = node.isSec || isParentRow(node);
-                    flattened.push({ ...node, depth, computedStt, isSec, _sectionKey: sectionKey });
-                    flattenTree(node.children, depth + 1, computedStt, sectionKey);
+                    _sectionKey: currentSectionKey
                   });
-                };
-
-                if (sectionHeader) {
-                  flattened.push({ ...sectionHeader, depth: 0, computedStt: sectionHeader.stt, isSec: true, _sectionKey: secKey });
+                } else {
+                  let secKey = currentSectionKey;
+                  if (t.parentId) {
+                    const foundParent = filteredData.find(p => p.id === t.parentId);
+                    if (foundParent) secKey = foundParent.id;
+                  }
+                  const depth = t.stt && t.stt.includes('.') ? t.stt.split('.').length - 1 : 1;
+                  flattened.push({
+                    ...t,
+                    depth,
+                    computedStt: t.stt,
+                    isSec: false,
+                    _sectionKey: secKey
+                  });
                 }
-                flattenTree(roots, sectionHeader ? 1 : 0, '', secKey);
               });
 
               if (flattened.length === 0) {

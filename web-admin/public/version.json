@@ -1,8 +1,8 @@
 {
-  "version": "2.0.2",
+  "version": "2.0.3",
   "date": "2026-09-08",
   "notes": [
-    "Sửa lỗi sắp xếp sai thứ tự đầu mục và nội dung trong tab 'Vật tư & Chi phí'.",
-    "Giữ nguyên thứ tự chuẩn theo đúng Phụ lục Hợp đồng và file Excel nhập vào."
+    "Sửa triệt để lỗi đảo thứ tự đầu mục A, 33, 34, 36 và thứ tự các công việc con trong tab Vật tư & Chi phí.",
+    "Bảng hiển thị đồng bộ 100% đúng thứ tự theo Tiến độ công việc."
   ]
 }
