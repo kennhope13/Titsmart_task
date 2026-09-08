@@ -1,7 +1,9 @@
 {
-  "version": "1.3.3",
+  "version": "1.3.4",
   "date": "2026-09-08",
   "notes": [
-    "Khóa cố định ô chọn Dự án (Disabled & Auto-preselect) khi đang ở trong chi tiết dự án cụ thể, tránh việc chọn nhầm sang dự án khác."
+    "Cải tiến giao diện xem file đính kèm/chứng từ: Mặc định phóng to tối đa, hỗ trợ nút toggle full-screen (Maximize/Restore).",
+    "Thêm tính năng Phóng to/Thu nhỏ linh hoạt trên tài liệu đính kèm (Giữ phím Ctrl + Nhấp chuột trái hoặc Cuộn chuột).",
+    "Tối ưu hóa tốc độ tải trang Tất cả dự án, khắc phục triệt để lỗi đứng ở trạng thái 'Đang tải dữ liệu...'."
   ]
 }
