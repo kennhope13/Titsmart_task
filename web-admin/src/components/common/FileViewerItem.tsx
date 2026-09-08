@@ -82,12 +82,18 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
               style={{ transform: `rotate(${rotation}deg)` }}
             />
           ) : (
-            <iframe
-              src={url.includes('#') ? url : `${url}#toolbar=0&navpanes=0&scrollbar=0`}
-              className="w-full h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
-              style={{ transform: `rotate(${rotation}deg)` }}
-              title={`File ${index + 1}`}
-            />
+            <div className="w-full h-full overflow-hidden relative rounded border border-slate-200 bg-white shadow-xs">
+              <iframe
+                src={
+                  url.startsWith('blob:') || url.startsWith('data:')
+                    ? `${url}#toolbar=0&navpanes=0&scrollbar=0`
+                    : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`
+                }
+                className="w-full h-full border-0 transition-transform duration-200"
+                style={{ transform: `rotate(${rotation}deg)` }}
+                title={`File ${index + 1}`}
+              />
+            </div>
           )}
         </div>
       </div>
