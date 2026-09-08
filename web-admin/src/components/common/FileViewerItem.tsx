@@ -12,7 +12,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const [showPages, setShowPages] = useState<boolean>(true);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [dragMode, setDragMode] = useState<boolean>(false); // Tự động bật khi phóng to (zoom > 1)
+  const [dragMode, setDragMode] = useState<boolean>(false);
 
   // Width of left PDF page thumbnails column (in px)
   const [sidebarWidth, setSidebarWidth] = useState<number>(260); // Mặc định 260px
@@ -37,7 +37,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     setPosition({ x: 0, y: 0 });
   };
 
-  // Mouse Drag to Pan khi Phóng to (Zoom > 1) hoặc bật Bàn tay kéo
+  // Mouse Drag to Pan khi Phóng to (Zoom > 1) hoặc khi bật Bàn tay kéo
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 0 && (zoom > 1 || dragMode || isImage)) {
       setIsDragging(true);
@@ -134,10 +134,11 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   // Check if rotated 90deg or 270deg (Xoay ngang)
   const isRotated90 = Math.abs(rotation % 180) === 90;
 
-  const getRotatedContentStyle = (): React.CSSProperties => {
+  const getContentTransformStyle = (): React.CSSProperties => {
     const base: React.CSSProperties = {
-      transform: `rotate(${rotation}deg)`,
-      transition: isDragging ? 'none' : 'transform 200ms ease, width 200ms ease, height 200ms ease',
+      transform: `translate(${position.x}px, ${position.y}px) scale(${zoom}) rotate(${rotation}deg)`,
+      transformOrigin: 'center center',
+      transition: isDragging ? 'none' : 'transform 100ms ease-out, width 200ms ease, height 200ms ease',
     };
 
     if (isRotated90 && containerSize.w > 0 && containerSize.h > 0) {
@@ -147,8 +148,6 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     } else {
       base.width = '100%';
       base.height = '100%';
-      base.minWidth = '100%';
-      base.minHeight = '100%';
     }
 
     return base;
@@ -291,7 +290,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         <div
           ref={containerRef}
           onMouseDown={handleMouseDown}
-          className={`flex-1 min-h-0 relative h-full overflow-auto always-visible-scrollbar flex items-center justify-center p-1 select-none ${
+          className={`flex-1 min-h-0 relative h-full overflow-hidden flex items-center justify-center p-1 select-none ${
             isPanActive ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
           }`}
         >
@@ -303,29 +302,19 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             />
           )}
 
-          <div
-            className="flex items-center justify-center"
-            style={{
-              transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
-              transition: isDragging ? 'none' : 'transform 75ms ease-out',
-              width: zoom > 1 ? `${zoom * 100}%` : '100%',
-              height: zoom > 1 ? `${zoom * 100}%` : '100%',
-              minWidth: '100%',
-              minHeight: '100%',
-            }}
-          >
+          <div className="w-full h-full flex items-center justify-center overflow-hidden">
             {isImage ? (
               <img
                 src={url}
                 alt={`File ${index + 1}`}
                 className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white"
-                style={getRotatedContentStyle()}
+                style={getContentTransformStyle()}
               />
             ) : (
               <iframe
                 src={`${url}#navpanes=0&toolbar=0`}
                 className="rounded border border-slate-200 bg-white shadow-xs"
-                style={getRotatedContentStyle()}
+                style={getContentTransformStyle()}
                 title={`File ${index + 1}`}
               />
             )}

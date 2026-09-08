@@ -1,8 +1,8 @@
 {
-  "version": "1.4.2",
+  "version": "1.4.3",
   "date": "2026-09-08",
   "notes": [
-    "Cung cấp tính năng Bàn tay kéo di chuyển (Pan) siêu mượt mà khi Phóng to (Zoom > 100%).",
-    "Người dùng chỉ cần nhấn giữ chuột trái trên bản vẽ đã phóng to để kéo xem chi tiết cực kỳ nhanh chóng và tiện lợi."
+    "Khống chế hiệu ứng Thu/Phóng (Zoom) chỉ tác động trực tiếp lên nội dung bản vẽ/tài liệu.",
+    "Khung chứa nền màu xám xung quanh giữ cố định 100%, không bị phình to hay tạo khoảng trống mờ khi phóng to."
   ]
 }
