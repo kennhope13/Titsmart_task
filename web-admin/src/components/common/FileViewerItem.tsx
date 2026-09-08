@@ -83,7 +83,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             />
           ) : (
             <iframe
-              src={url}
+              src={url.includes('#') ? url : `${url}#toolbar=0&navpanes=0&scrollbar=0`}
               className="w-full h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
               style={{ transform: `rotate(${rotation}deg)` }}
               title={`File ${index + 1}`}
