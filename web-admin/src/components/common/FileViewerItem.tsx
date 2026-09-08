@@ -40,35 +40,40 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   }, []);
 
   return (
-    <div className="flex flex-col border border-slate-200 rounded-lg p-3 bg-white shadow-sm flex-1 min-h-0">
-      <div className="flex flex-wrap justify-between items-center mb-2 gap-2 shrink-0">
-        <span className="text-sm font-semibold text-slate-800 truncate">
-          Tài liệu {index + 1}
-        </span>
+    <div className="flex flex-col border border-slate-200 rounded-lg p-1.5 sm:p-2 bg-white shadow-sm flex-1 min-h-0 h-full">
+      <div className="flex flex-wrap justify-between items-center mb-1 gap-2 shrink-0">
         <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-800 truncate">
+            Tài liệu {index + 1}
+          </span>
+          <span className="text-[11px] text-slate-400 italic hidden sm:inline">
+            (💡 Giữ <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Click hoặc Cuộn chuột để Thu/Phóng)
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
           {/* Zoom controls */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
+          <div className="flex items-center gap-1 bg-slate-100 px-1 py-0.5 rounded-md border border-slate-200 text-xs">
             <button
               onClick={handleZoomOut}
               title="Thu nhỏ"
-              className="p-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
+              className="p-0.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
             >
-              <span className="material-symbols-outlined text-[16px]">remove</span>
+              <span className="material-symbols-outlined text-[15px]">remove</span>
             </button>
-            <span className="px-1.5 font-bold text-slate-700 min-w-[42px] text-center">
+            <span className="px-1 font-bold text-slate-700 text-[11px] min-w-[36px] text-center">
               {Math.round(zoom * 100)}%
             </span>
             <button
               onClick={handleZoomIn}
               title="Phóng to"
-              className="p-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
+              className="p-0.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
             >
-              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span className="material-symbols-outlined text-[15px]">add</span>
             </button>
             <button
               onClick={handleResetZoom}
               title="Khôi phục kích thước ban đầu"
-              className="px-1.5 py-0.5 text-[11px] font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
+              className="px-1 py-0.5 text-[10px] font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
             >
               100%
             </button>
@@ -79,22 +84,18 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             download
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 bg-primary text-white h-[32px] px-3 rounded-lg text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+            className="flex items-center gap-1 bg-primary text-white h-[26px] px-2.5 rounded-md text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs"
           >
-            <span className="material-symbols-outlined text-[14px]">download</span> Tải về
+            <span className="material-symbols-outlined text-[13px]">download</span> Tải về
           </a>
         </div>
       </div>
-
-      <p className="text-[11px] text-slate-400 mb-1 italic">
-        💡 Gợi ý: Giữ phím <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold">Ctrl</kbd> + Nhấp chuột trái (hoặc cuộn chuột) để Phóng to / Thu nhỏ tài liệu.
-      </p>
 
       {/* Document Viewport */}
       <div
         ref={containerRef}
         onMouseDown={handleMouseDown}
-        className="w-full flex-1 overflow-auto bg-slate-900/5 rounded-lg flex items-center justify-center p-2 min-h-[450px] relative select-none cursor-zoom-in"
+        className="w-full flex-1 overflow-auto bg-slate-900/5 rounded-md flex items-center justify-center p-0.5 min-h-0 relative select-none cursor-zoom-in h-full"
       >
         <div
           className="transition-transform duration-150 ease-out origin-center flex items-center justify-center w-full h-full"
@@ -104,12 +105,12 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             <img
               src={url}
               alt={`File ${index + 1}`}
-              className="max-w-full max-h-[75vh] object-contain shadow-md rounded border border-slate-200 bg-white"
+              className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white"
             />
           ) : (
             <iframe
               src={url}
-              className="w-full h-[75vh] rounded border border-slate-200 bg-white shadow-sm"
+              className="w-full h-full rounded border border-slate-200 bg-white shadow-xs"
               title={`File ${index + 1}`}
             />
           )}
