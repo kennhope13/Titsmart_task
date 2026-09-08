@@ -16,6 +16,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const [isResizingSidebar, setIsResizingSidebar] = useState<boolean>(false);
   const resizeStartRef = useRef<{ startX: number; startWidth: number }>({ startX: 0, startWidth: 260 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
   const handleRotate = () => setRotation((r) => (r + 90) % 360);
   const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 4));
@@ -24,6 +25,21 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     setZoom(1);
     setRotation(0);
   };
+
+  // Measure container dimensions for rotation aspect ratio calculation
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const updateSize = () => {
+      setContainerSize({ w: el.clientWidth, h: el.clientHeight });
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Start dragging split bar (Kéo thanh vạch sang Trái / Phải)
   const handleSidebarResizeStart = (e: React.MouseEvent) => {
@@ -69,6 +85,29 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
       el.removeEventListener('wheel', handleWheel);
     };
   }, []);
+
+  // Check if rotated 90deg or 270deg (Xoay ngang)
+  const isRotated90 = Math.abs(rotation % 180) === 90;
+
+  const getRotatedContentStyle = (): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      transform: `rotate(${rotation}deg)`,
+      transition: 'transform 200ms ease, width 200ms ease, height 200ms ease',
+    };
+
+    if (isRotated90 && containerSize.w > 0 && containerSize.h > 0) {
+      // Swap width & height so after 90/270 degree rotation, visual dimensions match container (W, H)
+      base.width = `${containerSize.h}px`;
+      base.height = `${containerSize.w}px`;
+    } else {
+      base.width = '100%';
+      base.height = '100%';
+      base.minWidth = '100%';
+      base.minHeight = '100%';
+    }
+
+    return base;
+  };
 
   return (
     <div className="flex flex-col border border-slate-200 rounded-lg p-1.5 sm:p-2 bg-white shadow-sm flex-1 min-h-0 h-full select-none">
@@ -202,14 +241,14 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
               <img
                 src={url}
                 alt={`File ${index + 1}`}
-                className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white transition-transform duration-200"
-                style={{ transform: `rotate(${rotation}deg)` }}
+                className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white"
+                style={getRotatedContentStyle()}
               />
             ) : (
               <iframe
                 src={`${url}#navpanes=0&toolbar=0`}
-                className="w-full h-full min-w-full min-h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
-                style={{ transform: `rotate(${rotation}deg)` }}
+                className="rounded border border-slate-200 bg-white shadow-xs"
+                style={getRotatedContentStyle()}
                 title={`File ${index + 1}`}
               />
             )}

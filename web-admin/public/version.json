@@ -1,8 +1,8 @@
 {
-  "version": "1.4.0",
+  "version": "1.4.1",
   "date": "2026-09-08",
   "notes": [
-    "Cung cấp thanh vạch đứng phân cách kéo mở rộng/thu hẹp cột xem trang PDF linh hoạt sang Trái và sang Phải.",
-    "Hỗ trợ xem toàn bộ danh sách các trang PDF và nhả chuột mượt mà khi kéo thả."
+    "Sửa triệt để lỗi xoay 90/270 độ: Khung hiển thị tự động hoán đổi kích thước Chiều rộng & Chiều cao để khớp 100% với màn hình.",
+    "Bản vẽ/tài liệu khi xoay ngang không còn bị cắt xém nội dung hoặc hiển thị khoảng đen hai bên."
   ]
 }
