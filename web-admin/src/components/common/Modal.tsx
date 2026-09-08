@@ -41,27 +41,18 @@ export const Modal: React.FC<ModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4 animate-fadeIn">
       <div className={`bg-white rounded-lg shadow-2xl border border-outline-variant w-full ${sizeClass} overflow-hidden flex flex-col transition-all duration-200`}>
         {/* Modal Header */}
-        <div className="px-3 py-1.5 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
+        <div className="px-3 py-1.5 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0 pr-14">
           <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 truncate">
             {icon && <span className="material-symbols-outlined text-[17px]">{icon}</span>}
             <span className="truncate">{title}</span>
           </h3>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setIsMaximized((prev) => !prev)}
-              title={isMaximized ? 'Thu nhỏ cửa sổ' : 'Phóng to cửa sổ'}
-              className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded transition-colors"
-            >
-              <span className="material-symbols-outlined text-[17px] block">
-                {isMaximized ? 'filter_none' : 'crop_square'}
-              </span>
-            </button>
-            <button
               onClick={onClose}
               title="Đóng"
               className="p-1 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
             >
-              <span className="material-symbols-outlined text-[18px] block">close</span>
+              <span className="material-symbols-outlined text-[20px] block">close</span>
             </button>
           </div>
         </div>
