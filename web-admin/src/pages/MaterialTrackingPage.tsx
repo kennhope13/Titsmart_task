@@ -1252,34 +1252,26 @@ export const MaterialTrackingPage: React.FC = () => {
       {/* MODAL GIAO DỊCH NHẬP/XUẤT KHO */}
       <Modal size="xl" isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} title={transactionType === 'IMPORT' ? 'Tạo Phiếu Nhập Kho' : 'Tạo Phiếu Xuất Kho'}>
         <form onSubmit={handleSubmitTransaction} className="space-y-3 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Lọc theo Kho / Dự án</label>
-              <CustomSelect
-                value={txFilterProject}
-                onChange={(e) => {
-                  setTxFilterProject(e.target.value);
-                  setTxMaterialId('');
-                }}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-medium"
-              >
-                <option value="all">-- Tất cả Kho & Dự án --</option>
-                <option value="COMPANY">Kho Tổng (Kho Công Ty)</option>
-                {projects.map(p => (
-                  <option key={p.code} value={p.code}>Dự án: {p.name}</option>
-                ))}
-              </CustomSelect>
-            </div>
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Ngày {transactionType === 'IMPORT' ? 'nhập' : 'xuất'} *</label>
-              <input type="date" required value={txDate} onChange={(e) => setTxDate(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
-            </div>
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Số lượng *</label>
-              <input type="number" step="any" required min="1" value={txQuantity} onChange={(e) => setTxQuantity(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
-            </div>
+          {/* 1. Lọc theo Kho / Dự án */}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Lọc theo Kho / Dự án</label>
+            <CustomSelect
+              value={txFilterProject}
+              onChange={(e) => {
+                setTxFilterProject(e.target.value);
+                setTxMaterialId('');
+              }}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-medium"
+            >
+              <option value="all">-- Tất cả Kho & Dự án --</option>
+              <option value="COMPANY">Kho Tổng (Kho Công Ty)</option>
+              {projects.map(p => (
+                <option key={p.code} value={p.code}>Dự án: {p.name}</option>
+              ))}
+            </CustomSelect>
           </div>
 
+          {/* 2. Chọn Vật tư */}
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block font-bold text-slate-700">Chọn Vật tư *</label>
@@ -1316,6 +1308,18 @@ export const MaterialTrackingPage: React.FC = () => {
                   );
                 })}
             </CustomSelect>
+          </div>
+
+          {/* 3. Ngày & Số lượng */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Ngày {transactionType === 'IMPORT' ? 'nhập' : 'xuất'} *</label>
+              <input type="date" required value={txDate} onChange={(e) => setTxDate(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Số lượng *</label>
+              <input type="number" step="any" required min="1" value={txQuantity} onChange={(e) => setTxQuantity(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" />
+            </div>
           </div>
           <div>
             <label className="block font-bold text-slate-700 mb-1">{transactionType === 'IMPORT' ? 'Nguồn nhập hàng' : 'Dự án / Nơi xuất đến'} *</label>
