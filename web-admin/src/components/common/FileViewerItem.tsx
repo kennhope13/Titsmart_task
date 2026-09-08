@@ -69,15 +69,27 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  useEffect(() => {
     if (!isDragging) return;
-    setPosition({
-      x: e.clientX - dragStartRef.current.x,
-      y: e.clientY - dragStartRef.current.y,
-    });
-  };
 
-  const handleMouseUp = () => setIsDragging(false);
+    const handleMouseMoveGlobal = (e: MouseEvent) => {
+      setPosition({
+        x: e.clientX - dragStartRef.current.x,
+        y: e.clientY - dragStartRef.current.y,
+      });
+    };
+
+    const handleMouseUpGlobal = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMoveGlobal);
+    window.addEventListener('mouseup', handleMouseUpGlobal);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMoveGlobal);
+      window.removeEventListener('mouseup', handleMouseUpGlobal);
+    };
+  }, [isDragging]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -209,9 +221,6 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         <div
           ref={containerRef}
           onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
           className={`flex-1 overflow-auto bg-slate-900/5 flex items-center justify-center p-0.5 min-h-0 relative select-none h-full ${
             isImage || dragMode ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
           }`}
@@ -220,8 +229,6 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
           {!isImage && dragMode && (
             <div
               onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
               className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
             />
           )}
