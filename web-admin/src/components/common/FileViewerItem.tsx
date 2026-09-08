@@ -9,6 +9,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const isImage = Boolean(url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i));
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
+  const [showPages, setShowPages] = useState<boolean>(true); // Hiện danh sách các trang PDF
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleRotate = () => setRotation((r) => (r + 90) % 360);
@@ -50,6 +51,22 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         </div>
 
         <div className="flex items-center gap-1.5">
+          {/* Toggle PDF Pages Sidebar */}
+          {!isImage && (
+            <button
+              onClick={() => setShowPages((prev) => !prev)}
+              title={showPages ? 'Đang ẩn/hiện danh sách trang PDF (Nhấp để bật/tắt)' : 'Bật danh sách trang PDF'}
+              className={`flex items-center gap-1 h-[26px] px-2 rounded-md text-[11px] font-bold border transition-all ${
+                showPages
+                  ? 'bg-blue-50 text-primary border-blue-200 shadow-xs'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">view_sidebar</span>
+              {showPages ? 'Danh sách trang: Hiện' : 'Danh sách trang: Ẩn'}
+            </button>
+          )}
+
           {/* Zoom controls */}
           <div className="flex items-center gap-0.5 bg-slate-100 px-1 py-0.5 rounded-md border border-slate-200 text-xs">
             <button
@@ -124,7 +141,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             />
           ) : (
             <iframe
-              src={`${url}#navpanes=0&toolbar=0`}
+              src={`${url}#navpanes=${showPages ? 1 : 0}&pagemode=${showPages ? 'thumbs' : 'none'}`}
               className="w-full h-full min-w-full min-h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
               style={{ transform: `rotate(${rotation}deg)` }}
               title={`File ${index + 1}`}

@@ -1,8 +1,8 @@
 {
-  "version": "1.3.8",
+  "version": "1.3.9",
   "date": "2026-09-08",
   "notes": [
-    "Cải tiến thanh cuộn ngang (Trái / Phải) & cuộn dọc (Lên / Xuống) rõ ràng, to và dễ dùng với chuột.",
-    "Giữ nguyên 100% diện tích hiển thị tài liệu/sơ đồ mượt mà."
+    "Cung cấp nút Bật/Tắt 'Danh sách trang' trực quan giúp xem hình thu nhỏ (thumbnails) và chọn trang PDF 1, 2, 3... dễ dàng.",
+    "Giữ nguyên thanh cuộn chuẩn mượt mà và giao diện xem file rõ nét."
   ]
 }
