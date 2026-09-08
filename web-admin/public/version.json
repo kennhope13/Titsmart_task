@@ -1,8 +1,8 @@
 {
-  "version": "1.4.9",
+  "version": "1.5.0",
   "date": "2026-09-08",
   "notes": [
-    "Tinh chỉnh tỉ lệ Icon Mobile vừa vặn, chuẩn kích thước Launcher Android & iOS.",
-    "Tự động gửi thông báo cập nhật phiên bản mới trên thiết bị di động."
+    "Cập nhật hệ thống thông báo phiên bản mới tự động thời gian thực cho Android di động.",
+    "Tinh chỉnh lề Icon Shortcut ứng dụng vừa vặn chuẩn kích thước màn hình Android & iOS."
   ]
 }

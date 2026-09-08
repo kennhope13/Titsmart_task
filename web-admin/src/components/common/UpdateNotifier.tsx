@@ -65,16 +65,22 @@ export const UpdateNotifier: React.FC = () => {
     try {
       const currentVersion = import.meta.env.VITE_APP_VERSION || '1.0.0';
       
-      // Đọc version.json local hoặc remote GitHub khi chạy trên mobile capacitor
       let data: any = null;
+
+      // Ưu tiên đọc version.json mới nhất từ GitHub server online
       try {
-        const res = await fetch(`./version.json?t=${Date.now()}`);
-        if (res.ok) data = await res.json();
+        const remoteRes = await fetch(`https://raw.githubusercontent.com/kennhope13/Titsmart_task/main/web-admin/public/version.json?t=${Date.now()}`);
+        if (remoteRes.ok) {
+          data = await remoteRes.json();
+        }
       } catch (e) { }
 
+      // Fallback nếu offline / không kết nối được GitHub
       if (!data) {
-        const remoteRes = await fetch(`https://raw.githubusercontent.com/kennhope13/Titsmart_task/main/web-admin/public/version.json?t=${Date.now()}`);
-        if (remoteRes.ok) data = await remoteRes.json();
+        try {
+          const res = await fetch(`./version.json?t=${Date.now()}`);
+          if (res.ok) data = await res.json();
+        } catch (e) { }
       }
 
       if (data && data.version && compareVersions(data.version, currentVersion) > 0) {
