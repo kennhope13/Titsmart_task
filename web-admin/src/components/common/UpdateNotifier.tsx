@@ -118,17 +118,15 @@ export const UpdateNotifier: React.FC = () => {
   const dismiss = () => setState({ ...state, visible: false });
 
   const handleWebUpdate = () => {
-    // Check if running inside Capacitor Mobile environment
-    const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
-    const isMobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    if (isCapacitor || isMobileUA) {
-      // Mobile: Mở link tải file APK mới nhất trực tiếp trên trình duyệt thiết bị
-      window.open('https://github.com/kennhope13/Titsmart_task/releases/latest', '_system');
-    } else {
-      // Web Browser: Hard reload để xóa cache và tải code mới
-      window.location.reload();
-    }
+    // Tự động tải lại ứng dụng và cập nhật mã nguồn mới ngầm mà không nhảy sang trang Web
+    try {
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          names.forEach((name) => caches.delete(name));
+        });
+      }
+    } catch (e) {}
+    window.location.reload();
   };
 
   return (

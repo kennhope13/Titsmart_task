@@ -1,7 +1,7 @@
 {
-  "version": "2.2.3",
+  "version": "2.2.4",
   "date": "2026-09-08",
   "notes": [
-    "Sửa lỗi hiển thị Tồn kho hiện tại trong Modal Lịch sử và Bảng vật tư: Đồng bộ công thức Tồn kho = Tồn đầu kỳ + Tổng Nhập - Tổng Xuất."
+    "Cập nhật trực tiếp ngầm trên Mobile: Bấm Cập nhật ngay sẽ xóa cache và nạp trực tiếp phiên bản mới ngầm mà không điều hướng sang trình duyệt web bên ngoài."
   ]
 }
