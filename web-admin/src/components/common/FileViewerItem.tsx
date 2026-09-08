@@ -103,12 +103,16 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
       {/* Main Document Viewport */}
       <div
         ref={containerRef}
-        className="w-full flex-1 min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-auto border border-slate-200 flex items-center justify-center p-1"
+        className="w-full flex-1 min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-auto always-visible-scrollbar border border-slate-200 flex items-center justify-center p-1"
       >
         <div
-          className="transition-transform duration-75 ease-out origin-center flex items-center justify-center w-full h-full min-w-full min-h-full"
+          className="transition-transform duration-75 ease-out origin-center flex items-center justify-center"
           style={{
             transform: `scale(${zoom})`,
+            width: zoom > 1 ? `${zoom * 100}%` : '100%',
+            height: zoom > 1 ? `${zoom * 100}%` : '100%',
+            minWidth: '100%',
+            minHeight: '100%',
           }}
         >
           {isImage ? (
