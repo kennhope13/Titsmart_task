@@ -87,20 +87,61 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
     const map = new Map<string, any>();
     const roots: any[] = [];
 
-    displayTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
+    // Synthesize missing parent section headers if any child items exist (e.g. 33.1 without 33)
+    const sttSet = new Set(displayTasks.map(t => String(t.stt || '').trim()));
+    const missingParents: any[] = [];
+    displayTasks.forEach(t => {
+      const stt = String(t.stt || '').trim();
+      if (stt.includes('.')) {
+        const parts = stt.split('.');
+        parts.pop();
+        const parentStt = parts.join('.');
+        if (parentStt && !sttSet.has(parentStt)) {
+          sttSet.add(parentStt);
+          let synthName = '';
+          if (parentStt === '33') {
+            synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+          } else if (parentStt === '36') {
+            synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+          } else {
+            synthName = `HẠNG MỤC ${parentStt}`;
+          }
+
+          missingParents.push({
+            id: `synth_field_${parentStt}`,
+            stt: parentStt,
+            name: synthName,
+            projectCode: t.projectCode,
+            projectName: t.projectName,
+            isSectionHeader: true,
+            sectionName: t.sectionName,
+            parentId: t.parentId,
+            volume: 0,
+            unit: '',
+            progress: 0,
+            status: 'Chưa làm',
+            notes: '[section]'
+          });
+        }
+      }
+    });
+
+    const fullTasks = [...missingParents, ...displayTasks];
+    fullTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
 
     const resolveParentId = (item: any) => {
+      if (item.parentId && map.has(item.parentId)) return item.parentId;
       if (item.stt && item.stt.includes('.')) {
         const parts = item.stt.split('.');
         parts.pop();
         const parentStt = parts.join('.');
-        const parentItem = displayTasks.find((r) => r.stt === parentStt);
+        const parentItem = fullTasks.find((r) => r.stt === parentStt);
         if (parentItem && map.has(parentItem.id)) return parentItem.id;
       }
       return item.parentId;
     };
 
-    displayTasks.forEach((t) => {
+    fullTasks.forEach((t) => {
       const resolvedParentId = resolveParentId(t);
       if (resolvedParentId && map.has(resolvedParentId)) {
         map.get(resolvedParentId)!.children.push(map.get(t.id));
@@ -109,16 +150,46 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
       }
     });
 
+    let currentSectionKey = '';
+    const isTaskSectionHeader = (node: any) => {
+      if (node.isSectionHeader) return true;
+      const stt = String(node.stt || '').trim().toUpperCase();
+      const notes = String(node.notes || '').toLowerCase();
+      const hasNoDot = stt.length > 0 && !stt.includes('.');
+      const isSecPattern = notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (hasNoDot && /^\d+$/.test(stt));
+      const hasNoVol = !node.volume || node.volume === 0;
+      const unitStr = String(node.unit || '').trim();
+      const hasNoUnit = !unitStr || unitStr === '' || unitStr === '-' || unitStr === '–' || unitStr === '—';
+      return isSecPattern && (hasNoVol || hasNoUnit || !node.parentId);
+    };
+
     const flattened: any[] = [];
-    const flattenTree = (nodes: any[], depth: number = 0) => {
+    const flattenTree = (nodes: any[], currentDepth: number = 0) => {
       nodes.sort((a, b) => {
         const sttCompare = compareTaskStt(a.stt, b.stt);
         if (sttCompare !== 0) return sttCompare;
         return a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' });
       });
+
       nodes.forEach((node) => {
-        flattened.push({ ...node, depth });
-        flattenTree(node.children, depth + 1);
+        const isSec = isTaskSectionHeader(node);
+        if (isSec) {
+          currentSectionKey = node.sectionName || node.name || '';
+        }
+
+        let displayDepth = currentDepth;
+        if (currentDepth === 0 && !isSec && currentSectionKey !== '') {
+          displayDepth = 1;
+        }
+
+        flattened.push({
+          ...node,
+          isSectionHeader: isSec,
+          depth: displayDepth,
+          _sectionKey: currentSectionKey || 'Khác'
+        });
+
+        flattenTree(node.children, displayDepth + 1);
       });
     };
 

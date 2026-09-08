@@ -1,8 +1,8 @@
 {
-  "version": "2.0.5",
+  "version": "2.0.6",
   "date": "2026-09-08",
   "notes": [
-    "Khắc phục triệt để lỗi thiếu Đầu mục 33, 34 trong tab Vật tư & Chi phí.",
-    "Bổ sung cơ chế tự động tạo tên Đầu mục gốc (Missing Parent Synthesis) khớp 100% với Tiến độ công việc."
+    "Sửa triệt để lỗi thiếu Đầu mục 33, 34 trong tab Nhật ký hiện trường.",
+    "Đồng bộ cấu trúc bảng hiển thị Đầu mục giữa Nhật ký hiện trường, Vật tư & Chi phí và Tiến độ công việc."
   ]
 }
