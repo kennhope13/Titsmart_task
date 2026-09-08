@@ -9,6 +9,7 @@ import { Toast } from '../components/common/Toast';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Material, InventoryTransaction } from '../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { MaterialHistoryModal } from './materials/MaterialHistoryModal';
 
 const PURCHASE_STATUSES = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã có hàng', 'Hàng gia công'];
 const CONSTRUCTION_STATUSES = ['Chưa thi công', 'Đang thi công', 'Đã thi công', 'VƯỚNG MẮC'];
@@ -851,8 +852,19 @@ export const MaterialTrackingPage: React.FC = () => {
     commitTransaction();
   };
 
+  // History Modal State
+  const [historyMaterial, setHistoryMaterial] = useState<Material | null>(null);
+
   return (
     <div className="flex flex-col flex-1 h-full bg-slate-50 relative overflow-hidden">
+      {historyMaterial && (
+        <MaterialHistoryModal
+          isOpen={!!historyMaterial}
+          material={historyMaterial}
+          onClose={() => setHistoryMaterial(null)}
+          transactions={inventoryTransactions}
+        />
+      )}
             {!projectId && (
         <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3 pr-14`}>
           <div className="flex items-center gap-4">
@@ -1059,6 +1071,9 @@ export const MaterialTrackingPage: React.FC = () => {
                         <td className="p-3.5 text-slate-600 text-xs max-w-xs truncate" title={material.notes || ''}>{material.notes || '-'}</td>
                         <td className="p-3.5 text-center" onClick={(event) => event.stopPropagation()}>
                           <div className="flex justify-center gap-1.5">
+                            <button type="button" onClick={() => setHistoryMaterial(material)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors" title="Xem lịch sử nhập/xuất">
+                              <span className="material-symbols-outlined text-[15px]">history</span>
+                            </button>
                             <button type="button" onClick={() => {
                               setTransferMaterial(material);
                               setIsTransferModalOpen(true);

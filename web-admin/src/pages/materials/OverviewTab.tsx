@@ -6,9 +6,10 @@ interface OverviewTabProps {
   materials: Material[];
   onEdit: (material: Material) => void;
   onDelete: (material: Material) => void;
+  onShowHistory?: (material: Material) => void;
 }
 
-export const OverviewTab: React.FC<OverviewTabProps> = ({ materials, onEdit, onDelete }) => {
+export const OverviewTab: React.FC<OverviewTabProps> = ({ materials, onEdit, onDelete, onShowHistory }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const updateColumnFilter = (key: string, value: string) => {
@@ -38,7 +39,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ materials, onEdit, onD
         )}
       </div>
       <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-240px)] custom-scrollbar">
-        <table className="w-full min-w-[1180px] table-fixed text-left border-collapse">
+        <table className="w-full min-w-[1240px] table-fixed text-left border-collapse">
           <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
               <tr>
                 <th className="w-14 p-3 text-center">STT</th>
@@ -50,9 +51,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ materials, onEdit, onD
                 <th className="w-24 p-3 text-right">Nhập</th>
                 <th className="w-24 p-3 text-right">Xuất</th>
                 <th className="w-24 p-3 text-right">Tồn kho</th>
-                <th className="w-48 p-3">Ghi chú</th>
+                <th className="w-44 p-3">Ghi chú</th>
                 <th className="w-32 p-3 text-center">Tình trạng</th>
-                <th className="w-20 p-3 text-center">Thao tác</th>
+                <th className="w-24 p-3 text-center">Thao tác</th>
               </tr>
             </thead>
             <tfoot className="bg-slate-50/80 border-t border-slate-200">
@@ -66,9 +67,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ materials, onEdit, onD
                 <td className="w-24 p-1"></td>
                 <td className="w-24 p-1"></td>
                 <td className="w-24 p-1"></td>
-                <td className="w-48 p-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+                <td className="w-44 p-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
                 <td className="w-32 p-1"></td>
-                <td className="w-20 p-1"></td>
+                <td className="w-24 p-1"></td>
               </tr>
             </tfoot>
             <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
@@ -95,9 +96,16 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ materials, onEdit, onD
               <td className="p-3 text-slate-500 italic truncate" title={material.notes || ''}>{material.notes || '-'}</td>
               <td className="p-3 text-center"><span className={`inline-flex max-w-full items-center px-2.5 py-1 rounded-full border text-[11px] font-bold ${purchaseBadgeClass(purchase)}`}>{purchase}</span></td>
               <td className="p-3 text-center" onClick={(event) => event.stopPropagation()}>
-                <button type="button" onClick={() => onDelete(material)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title="Xóa vật tư">
-                  <span className="material-symbols-outlined text-base">delete</span>
-                </button>
+                <div className="flex items-center justify-center gap-1">
+                  {onShowHistory && (
+                    <button type="button" onClick={() => onShowHistory(material)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-blue-200 bg-blue-50 text-primary hover:bg-blue-100 transition-colors" title="Xem lịch sử nhập xuất">
+                      <span className="material-symbols-outlined text-base">history</span>
+                    </button>
+                  )}
+                  <button type="button" onClick={() => onDelete(material)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title="Xóa vật tư">
+                    <span className="material-symbols-outlined text-base">delete</span>
+                  </button>
+                </div>
               </td>
             </tr>
           );
