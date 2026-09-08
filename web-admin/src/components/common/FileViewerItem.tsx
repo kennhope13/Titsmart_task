@@ -11,7 +11,13 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const [rotation, setRotation] = useState<number>(0);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [dragMode, setDragMode] = useState<boolean>(true); // mặc định bật Chế độ Kéo di chuyển
+  const [dragMode, setDragMode] = useState<boolean>(true);
+
+  // Width of left panel / PDF navigation pane (in px or percentage)
+  const [sidebarWidth, setSidebarWidth] = useState<number>(240); // Mặc định 240px
+  const [isResizingSidebar, setIsResizingSidebar] = useState<boolean>(false);
+  const resizeStartRef = useRef<{ startX: number; startWidth: number }>({ startX: 0, startWidth: 240 });
+
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -23,6 +29,32 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     setRotation(0);
     setPosition({ x: 0, y: 0 });
   };
+
+  // Resizing left sidebar handle (Kéo vạch phân cách sang Trái / Phải)
+  const handleSidebarResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingSidebar(true);
+    resizeStartRef.current = { startX: e.clientX, startWidth: sidebarWidth };
+  };
+
+  useEffect(() => {
+    if (!isResizingSidebar) return;
+
+    const handleMouseMoveGlobal = (e: MouseEvent) => {
+      const deltaX = e.clientX - resizeStartRef.current.startX;
+      const newWidth = Math.max(60, Math.min(600, resizeStartRef.current.startWidth + deltaX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUpGlobal = () => setIsResizingSidebar(false);
+
+    window.addEventListener('mousemove', handleMouseMoveGlobal);
+    window.addEventListener('mouseup', handleMouseUpGlobal);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMoveGlobal);
+      window.removeEventListener('mouseup', handleMouseUpGlobal);
+    };
+  }, [isResizingSidebar]);
 
   // Mouse Drag to Pan (Kéo di chuyển tài liệu)
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -73,7 +105,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             Tài liệu {index + 1}
           </span>
           <span className="text-[11px] text-slate-400 italic hidden md:inline">
-            (💡 Kéo chuột để di chuyển bản vẽ | Giữ phím <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
+            (💡 Kéo vạch xám để mở rộng/thu hẹp cột trái | Giữ phím <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
           </span>
         </div>
 
@@ -146,48 +178,76 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         </div>
       </div>
 
-      {/* Document Viewport with Drag & Zoom */}
-      <div
-        ref={containerRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        className={`w-full flex-1 overflow-auto bg-slate-900/5 rounded-md flex items-center justify-center p-0.5 min-h-0 relative select-none h-full ${
-          isImage || dragMode ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
-        }`}
-      >
-        {/* Invisible Overlay Layer to capture Drag Events across PDF iframe */}
-        {!isImage && dragMode && (
-          <div
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
-          />
+      {/* Main Container with Resizable Split Line */}
+      <div className="w-full flex-1 flex min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-hidden border border-slate-200">
+        {/* Left PDF Sidebar (Optional container when resizing) */}
+        {!isImage && (
+          <>
+            <div
+              style={{ width: `${sidebarWidth}px` }}
+              className="h-full bg-slate-800 shrink-0 relative overflow-hidden hidden sm:block"
+            >
+              <iframe
+                src={`${url}#navpanes=1&toolbar=0`}
+                className="w-full h-full border-0"
+                title={`Sidebar ${index + 1}`}
+              />
+            </div>
+
+            {/* Resizer Split Handle Bar (Thanh vạch kéo sang trái/phải) */}
+            <div
+              onMouseDown={handleSidebarResizeStart}
+              title="Kéo vạch này sang Trái / Phải để thay đổi kích thước cột bên trái"
+              className="w-2.5 bg-slate-300 hover:bg-primary cursor-col-resize shrink-0 transition-colors flex items-center justify-center group z-30 select-none border-x border-slate-400/30"
+            >
+              <div className="w-0.5 h-8 bg-slate-500 group-hover:bg-white rounded-full" />
+            </div>
+          </>
         )}
 
+        {/* Right Main Document Viewport with Drag & Zoom */}
         <div
-          className="transition-transform duration-75 ease-out origin-center flex items-center justify-center w-full h-full min-w-full min-h-full"
-          style={{
-            transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
-          }}
+          ref={containerRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          className={`flex-1 overflow-auto bg-slate-900/5 flex items-center justify-center p-0.5 min-h-0 relative select-none h-full ${
+            isImage || dragMode ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
+          }`}
         >
-          {isImage ? (
-            <img
-              src={url}
-              alt={`File ${index + 1}`}
-              className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white transition-transform duration-200 pointer-events-none"
-              style={{ transform: `rotate(${rotation}deg)` }}
-            />
-          ) : (
-            <iframe
-              src={url}
-              className="w-full h-full min-w-full min-h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
-              style={{ transform: `rotate(${rotation}deg)` }}
-              title={`File ${index + 1}`}
+          {/* Invisible Overlay Layer to capture Drag Events across PDF iframe */}
+          {!isImage && dragMode && (
+            <div
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
             />
           )}
+
+          <div
+            className="transition-transform duration-75 ease-out origin-center flex items-center justify-center w-full h-full min-w-full min-h-full"
+            style={{
+              transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+            }}
+          >
+            {isImage ? (
+              <img
+                src={url}
+                alt={`File ${index + 1}`}
+                className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white transition-transform duration-200 pointer-events-none"
+                style={{ transform: `rotate(${rotation}deg)` }}
+              />
+            ) : (
+              <iframe
+                src={`${url}#navpanes=0&toolbar=0`}
+                className="w-full h-full min-w-full min-h-full rounded border border-slate-200 bg-white shadow-xs transition-transform duration-200"
+                style={{ transform: `rotate(${rotation}deg)` }}
+                title={`File ${index + 1}`}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
