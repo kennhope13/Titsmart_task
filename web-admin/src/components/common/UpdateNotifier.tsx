@@ -59,35 +59,43 @@ export const UpdateNotifier: React.FC = () => {
     });
   }, []);
 
-  // 🟢🟢🟢 Web polling disabled 🟢🟢🟢
-  // const checkWebVersion = useCallback(async () => {
-  //   if (window.electronAPI || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return;
-  //   try {
-  //     const currentVersion = import.meta.env.VITE_APP_VERSION || '0.0.0';
-  //     const res = await fetch(`./version.json?t=${Date.now()}`);
-  //     if (!res.ok) return;
-  //     const data = await res.json();
-  //     if (data.version && compareVersions(data.version, currentVersion) > 0) {
-  //       setState({ status: 'available', version: data.version, visible: true, error: null });
-  //     }
-  //   } catch (err) { }
-  // }, []);
-  //
-  // useEffect(() => {
-  //   if (window.electronAPI) return; // Electron xử lý riêng
-  //   checkWebVersion();
-  //   const interval = setInterval(checkWebVersion, POLL_INTERVAL);
-  //   const handleVisibility = () => {
-  //     if (document.visibilityState === 'visible') {
-  //       checkWebVersion();
-  //     }
-  //   };
-  //   document.addEventListener('visibilitychange', handleVisibility);
-  //   return () => {
-  //     clearInterval(interval);
-  //     document.removeEventListener('visibilitychange', handleVisibility);
-  //   };
-  // }, [checkWebVersion]);
+  // 🟢🟢🟢 Web & Capacitor Auto-Version Check 🟢🟢🟢
+  const checkWebVersion = useCallback(async () => {
+    if (window.electronAPI) return; // Electron xử lý tự động riêng
+    try {
+      const currentVersion = import.meta.env.VITE_APP_VERSION || '1.0.0';
+      const res = await fetch(`./version.json?t=${Date.now()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.version && compareVersions(data.version, currentVersion) > 0) {
+        setState({ 
+          status: 'available', 
+          version: data.version, 
+          notes: data.notes || [], 
+          visible: true, 
+          source: 'web' 
+        });
+      }
+    } catch (err) {
+      console.warn('[UpdateNotifier] Check version failed:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (window.electronAPI) return;
+    checkWebVersion();
+    const interval = setInterval(checkWebVersion, POLL_INTERVAL);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkWebVersion();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [checkWebVersion]);
 
   if (!state.visible) return null;
 

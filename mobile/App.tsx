@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/services/authStore';
+import { MobileUpdateModal } from './src/components/MobileUpdateModal';
 import 'react-native-url-polyfill/auto';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <AppNavigator />
+      <MobileUpdateModal />
     </NavigationContainer>
   );
 }
