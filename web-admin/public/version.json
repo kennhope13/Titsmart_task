@@ -1,8 +1,8 @@
 {
-  "version": "2.0.6",
+  "version": "2.0.7",
   "date": "2026-09-08",
   "notes": [
-    "Sửa triệt để lỗi thiếu Đầu mục 33, 34 trong tab Nhật ký hiện trường.",
-    "Đồng bộ cấu trúc bảng hiển thị Đầu mục giữa Nhật ký hiện trường, Vật tư & Chi phí và Tiến độ công việc."
+    "Ẩn biểu tượng chuông thông báo bên dưới lớp phủ Modal khi bật các tab/bảng cửa sổ nổi.",
+    "Giữ nguyên tính năng Toast thông báo Realtime thời gian thực."
   ]
 }
