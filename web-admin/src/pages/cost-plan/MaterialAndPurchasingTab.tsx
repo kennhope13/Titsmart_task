@@ -1102,10 +1102,54 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           </thead>
           <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
             {(() => {
+              const sttSet = new Set(filteredData.map(t => String(t.stt || '').trim()));
+              const missingParents: any[] = [];
+              filteredData.forEach(t => {
+                const stt = String(t.stt || '').trim();
+                if (stt.includes('.')) {
+                  const parts = stt.split('.');
+                  parts.pop();
+                  const parentStt = parts.join('.');
+                  if (parentStt && !sttSet.has(parentStt)) {
+                    sttSet.add(parentStt);
+                    let synthName = '';
+                    if (parentStt === '33') {
+                      synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+                    } else if (parentStt === '36') {
+                      synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+                    } else {
+                      synthName = `HẠNG MỤC ${parentStt}`;
+                    }
+
+                    missingParents.push({
+                      id: `synth_mat_${parentStt}`,
+                      stt: parentStt,
+                      jobContent: synthName,
+                      content: synthName,
+                      projectCode: t.projectCode,
+                      parentId: t.parentId,
+                      isSec: true,
+                      notes: '[section]'
+                    });
+                  }
+                }
+              });
+
+              // Merge missing parents into correct position based on STT ordering
+              const fullData = [...filteredData];
+              missingParents.forEach(missing => {
+                const firstChildIdx = fullData.findIndex(t => String(t.stt || '').startsWith(missing.stt + '.'));
+                if (firstChildIdx !== -1) {
+                  fullData.splice(firstChildIdx, 0, missing);
+                } else {
+                  fullData.push(missing);
+                }
+              });
+
               const flattened: any[] = [];
               let currentSectionKey = '__default__';
 
-              filteredData.forEach(t => {
+              fullData.forEach(t => {
                 if (isParentRow(t)) {
                   currentSectionKey = t.id;
                   flattened.push({
@@ -1118,7 +1162,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 } else {
                   let secKey = currentSectionKey;
                   if (t.parentId) {
-                    const foundParent = filteredData.find(p => p.id === t.parentId);
+                    const foundParent = fullData.find(p => p.id === t.parentId);
                     if (foundParent) secKey = foundParent.id;
                   }
                   const depth = t.stt && t.stt.includes('.') ? t.stt.split('.').length - 1 : 1;

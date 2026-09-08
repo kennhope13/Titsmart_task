@@ -1,8 +1,8 @@
 {
-  "version": "2.0.4",
+  "version": "2.0.5",
   "date": "2026-09-08",
   "notes": [
-    "Đồng bộ chuẩn điều kiện nhận diện Đầu mục giữa Tiến độ công việc và Vật tư & Chi phí.",
-    "Hiển thị đầy đủ tất cả Đầu mục 33, 34, 35, 36, A, B và các hạng mục con chuẩn xác 100%."
+    "Khắc phục triệt để lỗi thiếu Đầu mục 33, 34 trong tab Vật tư & Chi phí.",
+    "Bổ sung cơ chế tự động tạo tên Đầu mục gốc (Missing Parent Synthesis) khớp 100% với Tiến độ công việc."
   ]
 }
