@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { useAuthStore } from '../../services/authStore';
+import { useUIStore } from '../../services/uiStore';
 
 export const NotificationBell: React.FC = () => {
   const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
+  const showNotificationBell = useUIStore(state => state.showNotificationBell);
   
   const [showPopover, setShowPopover] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -27,12 +29,17 @@ export const NotificationBell: React.FC = () => {
     };
   }, [showPopover]);
 
+  if (!showNotificationBell) {
+    return null;
+  }
+
   return (
-    <div ref={popoverRef} className="absolute top-[6px] right-2 z-30">
+    <div ref={popoverRef} className="absolute top-[6px] right-3 z-[70]">
       <button
         onClick={() => setShowPopover(!showPopover)}
-        className={`w-[36px] h-[36px] rounded-md flex items-center justify-center transition-all relative border 
-          ${showPopover ? 'bg-blue-50 border-blue-200 text-primary' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+        title="Thông báo hệ thống"
+        className={`w-[36px] h-[36px] rounded-md flex items-center justify-center transition-all relative border shadow-sm cursor-pointer
+          ${showPopover ? 'bg-blue-50 border-blue-200 text-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800'}`}
       >
         <span className="material-symbols-outlined text-[20px]">notifications</span>
         {unreadCount > 0 && (

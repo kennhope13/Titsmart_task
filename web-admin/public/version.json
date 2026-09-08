@@ -1,8 +1,8 @@
 {
-  "version": "2.0.7",
+  "version": "2.0.8",
   "date": "2026-09-08",
   "notes": [
-    "Ẩn biểu tượng chuông thông báo bên dưới lớp phủ Modal khi bật các tab/bảng cửa sổ nổi.",
-    "Giữ nguyên tính năng Toast thông báo Realtime thời gian thực."
+    "Cập nhật tùy chọn Cài đặt giao diện (ẩn/hiện nút chuông thông báo, chế độ sidebar) gọn gàng trong nút Cài đặt ⚙️.",
+    "Chuẩn hóa giao diện popup Cài đặt đồng bộ 100% với hệ thống, lớp phủ mờ toàn màn hình và căn chỉnh lề nút Đóng ✕ chuẩn đẹp."
   ]
 }
