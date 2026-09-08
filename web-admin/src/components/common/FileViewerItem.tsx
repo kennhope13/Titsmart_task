@@ -8,11 +8,10 @@ interface FileViewerItemProps {
 export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) => {
   const isImage = Boolean(url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i));
   const [zoom, setZoom] = useState<number>(1);
+  const [rotation, setRotation] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 4));
-  const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.5));
-  const handleResetZoom = () => setZoom(1);
+  const handleRotate = () => setRotation((r) => (r + 90) % 360);
 
   // Ctrl + Left Click or Ctrl + Wheel Zooming
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -45,15 +44,24 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         <span className="text-xs font-bold text-slate-800 truncate">
           Tài liệu {index + 1}
         </span>
-        <a
-          href={`${url}?download=`}
-          download
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1 bg-primary text-white h-[26px] px-2.5 rounded-md text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs"
-        >
-          <span className="material-symbols-outlined text-[13px]">download</span> Tải về
-        </a>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={handleRotate}
+            title="Xoay xoay 90 độ"
+            className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 h-[26px] px-2 rounded-md text-[11px] font-bold transition-all"
+          >
+            <span className="material-symbols-outlined text-[14px]">rotate_left</span> Xoay
+          </button>
+          <a
+            href={`${url}?download=`}
+            download
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 bg-primary text-white h-[26px] px-2.5 rounded-md text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs"
+          >
+            <span className="material-symbols-outlined text-[13px]">download</span> Tải về
+          </a>
+        </div>
       </div>
 
       {/* Document Viewport */}
@@ -63,8 +71,8 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         className="w-full flex-1 overflow-auto bg-slate-900/5 rounded-md flex items-center justify-center p-0.5 min-h-0 relative select-none cursor-zoom-in h-full"
       >
         <div
-          className="transition-transform duration-150 ease-out origin-center flex items-center justify-center w-full h-full"
-          style={{ transform: `scale(${zoom})` }}
+          className="transition-transform duration-200 ease-out origin-center flex items-center justify-center w-full h-full"
+          style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
         >
           {isImage ? (
             <img
