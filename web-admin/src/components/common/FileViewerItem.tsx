@@ -9,11 +9,6 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const isImage = Boolean(url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i));
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
-  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [dragMode, setDragMode] = useState<boolean>(true);
-
-  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleRotate = () => setRotation((r) => (r + 90) % 360);
@@ -22,43 +17,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const handleReset = () => {
     setZoom(1);
     setRotation(0);
-    setPosition({ x: 0, y: 0 });
   };
-
-  // Mouse Drag to Pan (Kéo di chuyển tài liệu bằng chuột)
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.button === 0) {
-      if (e.ctrlKey) {
-        e.preventDefault();
-        setZoom((z) => (z >= 2.5 ? 1 : z + 0.5));
-        return;
-      }
-      setIsDragging(true);
-      dragStartRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
-    }
-  };
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMoveGlobal = (e: MouseEvent) => {
-      setPosition({
-        x: e.clientX - dragStartRef.current.x,
-        y: e.clientY - dragStartRef.current.y,
-      });
-    };
-
-    const handleMouseUpGlobal = () => {
-      setIsDragging(false);
-    };
-
-    window.addEventListener('mousemove', handleMouseMoveGlobal);
-    window.addEventListener('mouseup', handleMouseUpGlobal);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMoveGlobal);
-      window.removeEventListener('mouseup', handleMouseUpGlobal);
-    };
-  }, [isDragging]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -86,29 +45,11 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             Tài liệu {index + 1}
           </span>
           <span className="text-[11px] text-slate-400 italic hidden md:inline">
-            (💡 Nhấn giữ chuột trái để kéo di chuyển trang sang Trái/Phải/Lên/Xuống | <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
+            (💡 Giữ phím <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
           </span>
         </div>
 
         <div className="flex items-center gap-1.5">
-          {/* Toggle Drag Mode for PDF */}
-          {!isImage && (
-            <button
-              onClick={() => setDragMode((m) => !m)}
-              title={dragMode ? 'Đang ở Chế độ Bàn tay kéo di chuyển (Nhấp để chuyển sang chế độ Cuộn file)' : 'Đang ở Chế độ Cuộn file (Nhấp để chuyển sang chế độ Bàn tay kéo di chuyển)'}
-              className={`flex items-center gap-1 h-[26px] px-2 rounded-md text-[11px] font-bold border transition-all ${
-                dragMode
-                  ? 'bg-blue-50 text-primary border-blue-200 shadow-xs'
-                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[14px]">
-                {dragMode ? 'pan_tool' : 'touch_app'}
-              </span>
-              {dragMode ? 'Bàn tay kéo' : 'Cuộn file'}
-            </button>
-          )}
-
           {/* Zoom controls */}
           <div className="flex items-center gap-0.5 bg-slate-100 px-1 py-0.5 rounded-md border border-slate-200 text-xs">
             <button
@@ -159,33 +100,22 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         </div>
       </div>
 
-      {/* Single Clean Main Document Viewport with Mouse Drag & Zoom */}
+      {/* Main Document Viewport */}
       <div
         ref={containerRef}
-        onMouseDown={handleMouseDown}
-        className={`w-full flex-1 min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-auto border border-slate-200 flex items-center justify-center p-1 select-none ${
-          isImage || dragMode ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
-        }`}
+        className="w-full flex-1 min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-auto border border-slate-200 flex items-center justify-center p-1"
       >
-        {/* Invisible Overlay Layer to capture Drag Events across PDF iframe */}
-        {!isImage && dragMode && (
-          <div
-            onMouseDown={handleMouseDown}
-            className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
-          />
-        )}
-
         <div
           className="transition-transform duration-75 ease-out origin-center flex items-center justify-center w-full h-full min-w-full min-h-full"
           style={{
-            transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+            transform: `scale(${zoom})`,
           }}
         >
           {isImage ? (
             <img
               src={url}
               alt={`File ${index + 1}`}
-              className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white transition-transform duration-200 pointer-events-none"
+              className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white transition-transform duration-200"
               style={{ transform: `rotate(${rotation}deg)` }}
             />
           ) : (

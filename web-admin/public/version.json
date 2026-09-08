@@ -1,9 +1,8 @@
 {
-  "version": "1.3.6",
+  "version": "1.3.7",
   "date": "2026-09-08",
   "notes": [
-    "Tối ưu hóa giao diện Trình xem file (Sơ đồ, Chứng từ, Tài liệu đính kèm): Loại bỏ hoàn toàn cột xem thử trùng lặp bên trái, mở rộng 100% diện tích hiển thị.",
-    "Hỗ trợ chế độ Bàn tay kéo di chuyển (Pan) siêu mượt mà trên tất cả các tab theo 4 hướng Trái / Phải / Lên / Xuống.",
-    "Tự động nhả chuột ngay khi thả tay ở bất kỳ đâu trên màn hình."
+    "Loại bỏ hoàn toàn tính năng/nút Bàn tay kéo di chuyển trên trình xem sơ đồ & tài liệu.",
+    "Giữ nguyên giao diện xem sơ đồ 100% diện tích, hỗ trợ Thu/Phóng (Zoom) và Xoay tài liệu đơn giản, mượt mà."
   ]
 }
