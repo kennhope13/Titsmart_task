@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
+import { CustomSelect } from '../components/common/CustomSelect';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
 
@@ -87,16 +88,16 @@ export const MyTasksPage: React.FC = () => {
           <SharedTaskTabs activeTab="my-tasks" />
         </div>
         <div className="flex items-center gap-2">
-          <select 
+          <CustomSelect 
             value={filterProjectCode} 
             onChange={(e) => setFilterProjectCode(e.target.value)}
-            className="border border-slate-300 rounded px-3 h-[36px] text-sm bg-white focus:outline-none focus:border-primary font-medium cursor-pointer"
+            className="w-[240px] text-xs font-bold text-slate-800"
           >
             <option value="all">-- Tất cả Dự án của tôi --</option>
             {myProjects.map(p => (
               <option key={p.id} value={p.code}>{p.name}</option>
             ))}
-          </select>
+          </CustomSelect>
         </div>
       </div>
 

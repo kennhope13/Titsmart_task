@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
+import { CustomSelect } from '../components/common/CustomSelect';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
 
@@ -98,16 +99,16 @@ export const TaskAssignmentPage: React.FC = () => {
           <SharedTaskTabs activeTab={activeTab as any} onTabChange={(t) => { setActiveTab(t); setSelectedTaskIds([]); }} />
         </div>
         <div className="flex items-center gap-4">
-          <select 
+          <CustomSelect 
             value={filterProjectCode} 
             onChange={(e) => setFilterProjectCode(e.target.value)}
-            className="border border-slate-300 rounded px-3 h-[36px] text-sm bg-white focus:outline-none focus:border-primary font-medium cursor-pointer"
+            className="w-[240px] text-xs font-bold text-slate-800"
           >
             <option value="all">-- Tất cả Dự án --</option>
             {projects.map(p => (
               <option key={p.id} value={p.code}>{p.name}</option>
             ))}
-          </select>
+          </CustomSelect>
           {activeTab === 'unassigned' && (
             <button 
               disabled={selectedTaskIds.length === 0}
