@@ -1,8 +1,8 @@
 {
-  "version": "2.0.3",
+  "version": "2.0.4",
   "date": "2026-09-08",
   "notes": [
-    "Sửa triệt để lỗi đảo thứ tự đầu mục A, 33, 34, 36 và thứ tự các công việc con trong tab Vật tư & Chi phí.",
-    "Bảng hiển thị đồng bộ 100% đúng thứ tự theo Tiến độ công việc."
+    "Đồng bộ chuẩn điều kiện nhận diện Đầu mục giữa Tiến độ công việc và Vật tư & Chi phí.",
+    "Hiển thị đầy đủ tất cả Đầu mục 33, 34, 35, 36, A, B và các hạng mục con chuẩn xác 100%."
   ]
 }
