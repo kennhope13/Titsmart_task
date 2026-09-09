@@ -24,20 +24,13 @@ const normalizePurchaseStatus = (status?: string) => {
   return status;
 };
 
-const cleanCodeString = (str: string) => {
-  return str
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Bỏ dấu tiếng Việt
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "-") // Thay khoảng trắng, ký tự đặc biệt (/ , . _) thành dấu gạch ngang
-    .replace(/-+/g, "-") // Bỏ các dấu gạch ngang liên tiếp
-    .replace(/^-|-$/g, ""); // Xóa gạch ngang đầu cuối
-};
-
 const generateMaterialCode = (name: string, suffix?: string) => {
-  const normalized = cleanCodeString(name);
+  const normalized = name
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '-') // replace non-alphanumeric with hyphen
+    .replace(/-+/g, '-') // remove consecutive hyphens
+    .replace(/^-|-$/g, ''); // trim hyphens
   return `TSM-${normalized}${suffix ? `-${suffix}` : ''}`.substring(0, 100);
 };
 
@@ -198,8 +191,13 @@ export const MaterialTrackingPage: React.FC = () => {
                 finalCode = generateMaterialCode(codeBase, String(suffixNum));
               }
             } else {
-              // If user provided a code, keep it exactly as-is. If duplicate, append -1, -2
+              // If user provided a code, but it's a duplicate, try appending specs
               if (usedCodes.has(finalCode)) {
+                let codeWithSpecs = finalCode;
+                if (specs) codeWithSpecs += `-${generateMaterialCode(specs).replace('TSM-', '')}`;
+                finalCode = codeWithSpecs;
+                
+                // If it's STILL a duplicate even after adding specs, then append a number as last resort
                 let suffixNum = 0;
                 let originalUserCode = finalCode;
                 while (usedCodes.has(finalCode)) {
@@ -349,25 +347,15 @@ export const MaterialTrackingPage: React.FC = () => {
       let updatedCount = 0;
 
       for (const m of materials) {
-        let rawCode = m.code || '';
-        let newCode = cleanCodeString(rawCode);
-
-        // If raw code is empty or contains non-standard characters (/ or space or accents) or equals specs, generate a clean code
-        if (!newCode || rawCode.includes('/') || rawCode.includes(' ') || rawCode.includes('mét') || (m.specs && rawCode.trim() === m.specs.trim())) {
+        let newCode = m.code || '';
+        // If code is empty or code equals specs (or contains specs text), generate a standard code from name/specs
+        if (!newCode || (m.specs && (newCode.trim() === m.specs.trim() || newCode.includes('UPC') || newCode.includes('APC')))) {
           let suffixNum = 0;
-          let codeBase = m.specs ? `${m.name}-${m.specs}` : (m.name || 'VAT-TU');
+          let codeBase = m.specs ? `${m.name}-${m.specs}` : m.name;
           newCode = generateMaterialCode(codeBase);
           while (usedCodes.has(newCode.toLowerCase())) {
             suffixNum++;
             newCode = generateMaterialCode(codeBase, String(suffixNum));
-          }
-        } else {
-          // If code was already standard, ensure uniqueness
-          let suffixNum = 0;
-          let baseCode = newCode;
-          while (usedCodes.has(newCode.toLowerCase())) {
-            suffixNum++;
-            newCode = `${baseCode}-${suffixNum}`;
           }
         }
 
@@ -674,7 +662,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
     await updateMaterial(editingMaterial.id, {
       name: editName,
-      code: editCode.trim(),
+      code: editCode,
       specs: editSpecs,
       category: editCategory,
       supplier: editSupplier,
@@ -955,6 +943,10 @@ export const MaterialTrackingPage: React.FC = () => {
             <button onClick={handleExportExcel} className="flex items-center gap-2 border border-slate-200 bg-white h-[40px] px-5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
               <span className="material-symbols-outlined text-base">file_download</span>
               Xuất Excel
+            </button>
+            <button onClick={handleStandardizeMaterialCodes} title="Chuẩn hóa Mã Vật Tư tự động trong cơ sở dữ liệu" className="flex items-center gap-2 border border-blue-200 bg-blue-50 text-primary h-[40px] px-3.5 rounded-lg text-[13px] font-bold hover:bg-blue-100 transition-colors shadow-xs">
+              <span className="material-symbols-outlined text-base">auto_fix_high</span>
+              Chuẩn hóa Mã DB
             </button>
             <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-2 bg-emerald-600 text-white h-[40px] px-5 rounded-lg text-[13px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
               <span className="material-symbols-outlined text-base">arrow_downward</span>
