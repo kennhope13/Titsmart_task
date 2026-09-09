@@ -266,6 +266,11 @@ export const ProjectManagementPage: React.FC = () => {
       if (!q) return true;
       return [project.name, project.code, project.location, project.client, project.managerName, project.memberNames.join(' ')]
         .some((value) => String(value || '').toLowerCase().includes(q));
+    }).sort((a, b) => {
+      const codeA = (a.code || '').toLowerCase();
+      const codeB = (b.code || '').toLowerCase();
+      if (codeA && codeB) return codeA.localeCompare(codeB, 'vi', { numeric: true });
+      return (a.name || '').localeCompare(b.name || '', 'vi', { numeric: true });
     });
   }, [allEnhancedProjects, searchQuery, statusFilter]);
 
