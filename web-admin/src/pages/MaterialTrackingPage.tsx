@@ -749,13 +749,18 @@ export const MaterialTrackingPage: React.FC = () => {
     const maxStt = materials.reduce((max, m) => Math.max(max, m.stt || 0), 0);
     const nextStt = maxStt + 1;
 
-        let finalCode = newMatCode.trim();
+    let finalCode = newMatCode.trim();
     const usedCodes = new Set(materials.map(m => (m.code || '').toLowerCase()));
+
     if (finalCode) {
+      // Nếu mã người dùng nhập đã tồn tại, tự động nối thêm hậu tố phân biệt (-1, -2...) để không bị báo lỗi
       if (usedCodes.has(finalCode.toLowerCase())) {
-        triggerToast('Mã vật tư này đã tồn tại trong kho!', 'warning');
-        isSubmittingRef.current = false;
-        return;
+        let suffixNum = 0;
+        let baseUserCode = finalCode;
+        while (usedCodes.has(finalCode.toLowerCase())) {
+          suffixNum++;
+          finalCode = `${baseUserCode}-${suffixNum}`;
+        }
       }
     } else {
       let suffixNum = 0;

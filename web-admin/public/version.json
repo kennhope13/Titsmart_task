@@ -1,7 +1,7 @@
 {
-  "version": "2.2.9",
+  "version": "2.3.0",
   "date": "2026-09-09",
   "notes": [
-    "Sửa cột STT bảng Tồn Kho Tổng Hợp hiển thị liên tục 1, 2, 3... chuẩn xác kể cả khi lọc danh sách."
+    "Khắc phục hoàn toàn lỗi trùng Mã vật tư: Tự động phát sinh mã duy nhất (tự động nối hậu tố -1, -2...) khi gõ trùng mã cũ, cho phép lưu vật tư mới thành công 100%."
   ]
 }
