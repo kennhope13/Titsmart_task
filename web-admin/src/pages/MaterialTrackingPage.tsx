@@ -375,13 +375,24 @@ export const MaterialTrackingPage: React.FC = () => {
         }
       });
 
-      // 1. Update existing materials with clean codes and ensure Name + Code include Singlemode/Multimode
+      // 1. Update existing materials with clean codes and sync materialName from import logs if it was Singlemode/Multimode
       for (const m of materials) {
-        let name = m.name || 'Dây nhảy';
         let rawCode = m.code || '';
         let cleanCode = cleanCodeString(rawCode);
+        let name = m.name || 'Singlemode';
 
-        // Ensure material code includes the name (e.g. MULTIMODE or SINGLEMODE) if not already included
+        // Check if there is a matching import tx for this material by specs
+        const matchingTx = inventoryTransactions.find(tx => 
+          tx.type === 'IMPORT' && 
+          ((m.specs && tx.specs && tx.specs.trim().toLowerCase() === m.specs.trim().toLowerCase()) ||
+           (cleanCodeString(tx.materialCode) === cleanCode))
+        );
+
+        if (matchingTx && matchingTx.materialName) {
+          name = matchingTx.materialName.trim();
+        }
+
+        // Ensure material code includes the name (e.g. MULTIMODE or SINGLEMODE)
         if (name && !cleanCode.includes(cleanCodeString(name))) {
           cleanCode = cleanCodeString(`${cleanCode}-${name}`);
         }
@@ -395,7 +406,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
         usedCodes.add(cleanCode.toLowerCase());
 
-        if (cleanCode !== m.code) {
+        if (cleanCode !== m.code || name !== m.name) {
           await updateMaterial(m.id, { code: cleanCode, name });
           updatedCount++;
         }
