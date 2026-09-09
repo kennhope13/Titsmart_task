@@ -589,10 +589,15 @@ export const MaterialTrackingPage: React.FC = () => {
                          (m.specs || '').toLowerCase().includes(rawQ);
         
         if (!rawMatch) {
-          const queryTerms = cleanCodeString(searchQuery).toLowerCase().split('-').filter(Boolean);
-          const fullText = cleanCodeString(`${m.code || ''} ${m.name || ''} ${m.specs || ''}`).toLowerCase();
-          const matchesAllTerms = queryTerms.length > 0 && queryTerms.every(term => fullText.includes(term));
-          if (!matchesAllTerms) return false;
+          // Normalize both query and material fields to plain words
+          const cleanQuery = searchQuery.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          const words = cleanQuery.split(/[^a-z0-9]+/i).filter(Boolean);
+          
+          const cleanMaterialText = `${m.code || ''} ${m.name || ''} ${m.specs || ''} ${m.category || ''}`
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          
+          const matchesAllWords = words.length > 0 && words.every(w => cleanMaterialText.includes(w));
+          if (!matchesAllWords) return false;
         }
       }
 

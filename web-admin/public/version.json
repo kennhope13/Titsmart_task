@@ -1,5 +1,5 @@
 {
-  "version": "2.4.2",
+  "version": "2.4.3",
   "date": "2026-09-09",
   "notes": [
     "Nâng cấp bộ lọc Mã vật tư: Tự động loại bỏ dấu tiếng Việt, khoảng trắng và các ký tự đặc biệt (/ , .) khi tạo hoặc chuẩn hóa mã vật tư (VD: 'LC/PC-LC/PC 30 mét' -> 'TSM-SINGLEMODE-LC-PC-LC-PC-30-MET')."
