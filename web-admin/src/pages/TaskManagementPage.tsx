@@ -1772,7 +1772,7 @@ const displayTasks = tasks.filter((t) => {
                     return (
                       <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
                         <td onClick={() => handleOpenEditModal(t)} className="sticky left-0 z-10 py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{(t as any).computedStt || t.stt}</td>
-                        <td colSpan={9} className="sticky z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" style={{ left: "var(--stt-width)" }}>
+                        <td colSpan={hasPermission(authStore.user, 'ASSIGN_TASKS') ? 9 : 8} className="sticky z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" style={{ left: "var(--stt-width)" }}>
                           <div className="flex items-start gap-2 whitespace-normal break-words">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}

@@ -1090,8 +1090,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 </>
               )}
 
-              {subTab !== 'TECH' && <th rowSpan={2} style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', borderLeft: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>}
-              <th rowSpan={2} style={{ width: 130, borderBottom: '1px solid #94a3b8', borderLeft: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT / THỜI GIAN</th>
+              <th rowSpan={2} style={{ width: 130, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', borderLeft: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT / THỜI GIAN</th>
+              {subTab !== 'TECH' && <th rowSpan={2} style={{ width: 110, borderBottom: '1px solid #94a3b8', borderLeft: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>}
             </tr>
             <tr className="bg-slate-50">
               
@@ -1624,6 +1624,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             </>
                           )}
 
+                          <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1.5 align-middle text-slate-500 min-w-[120px]">
+                            <AuditInfoCell updatedBy={plan.updatedBy || pRecord?.updatedBy} updatedAt={plan.updatedAt || pRecord?.updatedAt} />
+                          </td>
+
                           {subTab !== 'TECH' ? (
                             <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-0 align-middle text-slate-500">
                               {editingCell?.id === plan.id && editingCell?.field === 'notes' && editingCell.isPurchasing === (subTab === 'FINANCE') ? (
@@ -1722,9 +1726,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               </div>
                             </td>
                           )}
-                          <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1.5 align-middle text-slate-500 min-w-[120px]">
-                            <AuditInfoCell updatedBy={plan.updatedBy || pRecord?.updatedBy} updatedAt={plan.updatedAt || pRecord?.updatedAt} />
-                          </td>
                       </tr>
                       );
                     })}
