@@ -1076,10 +1076,7 @@ export const MaterialTrackingPage: React.FC = () => {
               <span className="material-symbols-outlined text-base">file_download</span>
               Xuất Excel
             </button>
-            <button onClick={handleSyncCodeFromImportLogs} title="Cập nhật toàn bộ mã vật tư & tái tạo vật tư còn thiếu từ Nhật Ký Nhập Kho" className="flex items-center gap-2 border border-blue-200 bg-blue-50 text-primary h-[40px] px-3.5 rounded-lg text-[13px] font-bold hover:bg-blue-100 transition-colors shadow-xs">
-              <span className="material-symbols-outlined text-base">sync</span>
-              Đồng bộ từ Nhật Ký
-            </button>
+
             <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-2 bg-emerald-600 text-white h-[40px] px-5 rounded-lg text-[13px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
               <span className="material-symbols-outlined text-base">arrow_downward</span>
               Nhập Kho

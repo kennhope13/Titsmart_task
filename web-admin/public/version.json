@@ -1,7 +1,7 @@
 {
-  "version": "2.5.2",
+  "version": "2.5.3",
   "date": "2026-09-09",
   "notes": [
-    "Tự động hợp nhất các vật tư bị trùng dòng trong cùng một kho và nâng cấp bộ lọc lịch sử giao dịch."
+    "Ẩn nút Đồng bộ từ nhật ký sau khi chuẩn hóa xong dữ liệu vật tư."
   ]
 }
