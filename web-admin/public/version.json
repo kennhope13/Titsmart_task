@@ -1,9 +1,9 @@
 {
-  "version": "2.8.4",
+  "version": "2.8.5",
   "date": "2026-09-09",
   "notes": [
+    "Tối ưu hóa tải CPU và hạ số lượng kết nối Database (Supabase DB). Bỏ truy vấn dư thừa khi chính tab đang thao tác.",
     "Loại bỏ chữ 'Hệ thống' khỏi cột Người cập nhật khi chưa có người dùng thao tác trực tiếp (hiển thị dấu '-').",
-    "Cung cấp hướng dẫn SQL khởi tạo cột updated_by / updated_at trên cơ sở dữ liệu Supabase.",
     "Sửa lỗi đồng bộ Realtime người cập nhật / thời gian cập nhật ngay lập tức khi thay đổi Trạng thái thi công/mua sắm/tiến độ công việc."
   ]
 }

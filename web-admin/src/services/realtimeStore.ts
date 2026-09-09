@@ -1812,9 +1812,15 @@ export function setupRealtimeSync() {
     if (refreshTimeout) clearTimeout(refreshTimeout);
     refreshTimeout = setTimeout(() => {
       const store = useRealtimeStore.getState();
+      // Nếu thao tác sửa đổi vừa diễn ra trên chính tab này (trong vòng 5 giây) -> Bỏ qua re-fetch vì local store đã được cập nhật mượt mà
+      if (Date.now() - store.lastMutationTime < 5000) {
+        changedTables.clear();
+        return;
+      }
+
       const tables = Array.from(changedTables);
       changedTables.clear();
-      console.log('[Realtime] Đã nhận tín hiệu thay đổi. Tự động cập nhật dữ liệu cho:', tables.length ? tables : 'ALL');
+      console.log('[Realtime] Đã nhận tín hiệu thay đổi từ thiết bị khác. Cập nhật dữ liệu cho:', tables.length ? tables : 'ALL');
       
       if (tables.length === 0 || tables.includes('projects')) store.fetchProjects();
       if (tables.length === 0 || tables.includes('tasks')) store.fetchTasks(undefined);
@@ -1824,7 +1830,7 @@ export function setupRealtimeSync() {
       if (tables.length === 0 || tables.includes('expenses') || tables.includes('labor_payrolls')) store.fetchAccounting();
       if (tables.length === 0 || tables.includes('field_logs')) store.fetchFieldLogs();
       if (tables.length === 0 || tables.includes('notifications')) store.fetchNotifications();
-    }, 3000);
+    }, 4000);
   };
 
   realtimeChannel = supabase
