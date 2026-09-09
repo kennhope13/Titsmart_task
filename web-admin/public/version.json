@@ -1,7 +1,7 @@
 {
-  "version": "2.5.5",
+  "version": "2.5.6",
   "date": "2026-09-09",
   "notes": [
-    "Bổ sung Phân quyền 'Kho Tổng (Kho Công Ty)' trong phần Quản lý Nhân sự."
+    "Tách riêng các cột Ảnh nhật ký, Ghi chú thi công và Thao tác trong bảng Nhật ký công trường giúp trình bày rõ ràng, chuyên nghiệp."
   ]
 }
