@@ -375,22 +375,26 @@ export const MaterialTrackingPage: React.FC = () => {
         }
       });
 
-      // 1. Update existing materials with clean codes and sync materialName from import logs if it was Singlemode/Multimode
+      // 1. Update existing materials with clean codes and sync materialName from import logs if it was Multimode/Singlemode
       for (const m of materials) {
         let rawCode = m.code || '';
         let cleanCode = cleanCodeString(rawCode);
-        let name = m.name || 'Singlemode';
+        let name = m.name || '';
 
-        // Check if there is a matching import tx for this material by specs
+        // Match import transaction by materialCode (e.g. SC/UPC-LC/UPC 15 mét) or by exact specs
         const matchingTx = inventoryTransactions.find(tx => 
           tx.type === 'IMPORT' && 
-          ((m.specs && tx.specs && tx.specs.trim().toLowerCase() === m.specs.trim().toLowerCase()) ||
-           (cleanCodeString(tx.materialCode) === cleanCode))
+          tx.materialName &&
+          ((tx.materialCode && cleanCodeString(tx.materialCode) === cleanCode) ||
+           (tx.materialCode && cleanCodeString(tx.materialCode).includes(cleanCodeString(m.specs || ''))) ||
+           (m.specs && tx.specs && tx.specs.trim().toLowerCase() === m.specs.trim().toLowerCase()))
         );
 
         if (matchingTx && matchingTx.materialName) {
           name = matchingTx.materialName.trim();
         }
+
+        if (!name) name = 'Singlemode';
 
         // Ensure material code includes the name (e.g. MULTIMODE or SINGLEMODE)
         if (name && !cleanCode.includes(cleanCodeString(name))) {
@@ -421,7 +425,8 @@ export const MaterialTrackingPage: React.FC = () => {
         const grpSpecs = grp.specs || '';
         
         const exists = materials.some(m => 
-          m.name.toLowerCase() === grpName.toLowerCase() && (m.specs || '').toLowerCase() === grpSpecs.toLowerCase()
+          (m.name.toLowerCase() === grpName.toLowerCase() && (m.specs || '').toLowerCase() === grpSpecs.toLowerCase()) ||
+          (grp.materialCode && cleanCodeString(m.code).includes(cleanCodeString(grp.materialCode)) && m.name.toLowerCase() === grpName.toLowerCase())
         );
 
         if (!exists) {
