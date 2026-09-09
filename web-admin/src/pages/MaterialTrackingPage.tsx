@@ -406,12 +406,12 @@ export const MaterialTrackingPage: React.FC = () => {
 
         let suffixNum = 0;
         let baseCode = cleanCode;
-        while (usedCodes.has(cleanCode.toLowerCase())) {
+        while (usedCodes.has(`${m.projectCode || 'COMPANY'}:::${cleanCode.toLowerCase()}`)) {
           suffixNum++;
           cleanCode = `${baseCode}-${suffixNum}`;
         }
 
-        usedCodes.add(cleanCode.toLowerCase());
+        usedCodes.add(`${m.projectCode || 'COMPANY'}:::${cleanCode.toLowerCase()}`);
 
         if (cleanCode !== m.code || name !== m.name) {
           await updateMaterial(m.id, { code: cleanCode, name });
@@ -443,12 +443,12 @@ export const MaterialTrackingPage: React.FC = () => {
 
           let suffixNum = 0;
           let baseCode = cleanCode;
-          while (usedCodes.has(cleanCode.toLowerCase())) {
+          while (usedCodes.has(`COMPANY:::${cleanCode.toLowerCase()}`)) {
             suffixNum++;
             cleanCode = `${baseCode}-${suffixNum}`;
           }
 
-          usedCodes.add(cleanCode.toLowerCase());
+          usedCodes.add(`COMPANY:::${cleanCode.toLowerCase()}`);
 
           await addMaterial({
             stt: currentStt,

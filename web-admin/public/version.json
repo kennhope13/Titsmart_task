@@ -1,7 +1,7 @@
 {
-  "version": "2.4.9",
+  "version": "2.5.0",
   "date": "2026-09-09",
   "notes": [
-    "Sửa lỗi tự động thêm hậu tố '-1' vào mã vật tư khi chuyển kho/dự án, giữ nguyên mã chuẩn trên toàn hệ thống."
+    "Cho phép mã vật tư trùng nhau giữa các kho/dự án khác nhau mà không bị tự động gán đuôi -1."
   ]
 }
