@@ -200,13 +200,12 @@ export const MaterialTrackingPage: React.FC = () => {
                 finalCode = generateMaterialCode(codeBase, String(suffixNum));
               }
             } else {
-              // If user provided a code, but it's a duplicate, try appending specs
+              // If user provided a code, but it's a duplicate (e.g. same code for Singlemode and Multimode), combine Code + Name to differentiate
               if (usedCodes.has(finalCode)) {
-                let codeWithSpecs = finalCode;
-                if (specs) codeWithSpecs += `-${generateMaterialCode(specs).replace('TSM-', '')}`;
-                finalCode = cleanCodeString(codeWithSpecs);
+                let codeWithName = cleanCodeString(`${finalCode}-${finalName}`);
+                finalCode = codeWithName;
                 
-                // If it's STILL a duplicate even after adding specs, then append a number as last resort
+                // If it's STILL a duplicate even after adding name, then append a number suffix
                 let suffixNum = 0;
                 let originalUserCode = finalCode;
                 while (usedCodes.has(finalCode)) {
@@ -749,8 +748,11 @@ export const MaterialTrackingPage: React.FC = () => {
     const usedCodes = new Set(materials.map(m => (m.code || '').toLowerCase()));
 
     if (finalCode) {
-      // Nếu mã người dùng nhập đã tồn tại, tự động nối thêm hậu tố phân biệt (-1, -2...) để không bị báo lỗi
+      // Nếu mã người dùng nhập bị trùng (VD cùng nhập SC/UPC-LC/UPC 15 mét cho cả Singlemode và Multimode), tự động kết hợp thêm Tên vật tư vào Mã để phân biệt
       if (usedCodes.has(finalCode.toLowerCase())) {
+        let codeWithName = cleanCodeString(`${finalCode}-${matName}`);
+        finalCode = codeWithName;
+        
         let suffixNum = 0;
         let baseUserCode = finalCode;
         while (usedCodes.has(finalCode.toLowerCase())) {
