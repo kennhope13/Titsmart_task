@@ -1110,43 +1110,47 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 const stt = String(t.stt || '').trim();
                 if (stt.includes('.')) {
                   const parts = stt.split('.');
-                  parts.pop();
-                  const parentStt = parts.join('.');
-                  if (parentStt && !sttSet.has(parentStt)) {
-                    sttSet.add(parentStt);
-                    let synthName = '';
-                    if (parentStt === '33') {
-                      synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-                    } else if (parentStt === '36') {
-                      synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-                    } else {
-                      synthName = `HẠNG MỤC ${parentStt}`;
-                    }
+                  while (parts.length > 1) {
+                    parts.pop();
+                    const parentStt = parts.join('.');
+                    if (parentStt && !sttSet.has(parentStt)) {
+                      sttSet.add(parentStt);
+                      let synthName = '';
+                      if (parentStt === '33') {
+                        synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+                      } else if (parentStt === '36') {
+                        synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+                      } else {
+                        synthName = `HẠNG MỤC ${parentStt}`;
+                      }
 
-                    missingParents.push({
-                      id: `synth_mat_${parentStt}`,
-                      stt: parentStt,
-                      jobContent: synthName,
-                      content: synthName,
-                      projectCode: t.projectCode,
-                      parentId: t.parentId,
-                      isSec: true,
-                      notes: '[section]'
-                    });
+                      missingParents.push({
+                        id: `synth_mat_${parentStt}`,
+                        stt: parentStt,
+                        jobContent: synthName,
+                        content: synthName,
+                        projectCode: t.projectCode,
+                        parentId: t.parentId,
+                        isSec: true,
+                        notes: '[section]'
+                      });
+                    }
                   }
                 }
               });
 
               // Merge missing parents into correct position based on STT ordering
               const fullData = [...filteredData];
-              missingParents.forEach(missing => {
-                const firstChildIdx = fullData.findIndex(t => String(t.stt || '').startsWith(missing.stt + '.'));
-                if (firstChildIdx !== -1) {
-                  fullData.splice(firstChildIdx, 0, missing);
-                } else {
-                  fullData.push(missing);
-                }
-              });
+              missingParents
+                .sort((a, b) => (a.stt.split('.').length - b.stt.split('.').length) || a.stt.localeCompare(b.stt, 'vi', { numeric: true }))
+                .forEach(missing => {
+                  const firstChildIdx = fullData.findIndex(t => String(t.stt || '').startsWith(missing.stt + '.'));
+                  if (firstChildIdx !== -1) {
+                    fullData.splice(firstChildIdx, 0, missing);
+                  } else {
+                    fullData.push(missing);
+                  }
+                });
 
               const flattened: any[] = [];
               let currentSectionKey = '__default__';

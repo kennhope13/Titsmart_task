@@ -1,8 +1,8 @@
 {
-  "version": "2.8.7",
+  "version": "2.8.8",
   "date": "2026-09-09",
   "notes": [
-    "Rút gọn tên tiêu đề cột thành 'NGƯỜI CẬP NHẬT' tinh gọn trên tất cả các bảng dữ liệu hệ thống.",
-    "Sửa lỗi chính tả chữ 'Chưa đặt hng' thành 'Chưa đặt hàng' và 'Chưa thi cng' thành 'Chưa thi công'."
+    "Sửa lỗi cấu trúc cây phân cấp đầu mục (đặt lại đúng ví trí cho đầu mục cấp 2, 2.1, 2.1.1).",
+    "Rút gọn tên tiêu đề cột thành 'NGƯỜI CẬP NHẬT' tinh gọn trên tất cả các bảng dữ liệu hệ thống."
   ]
 }
