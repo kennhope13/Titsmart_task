@@ -1,7 +1,7 @@
 {
-  "version": "2.5.6",
+  "version": "2.5.7",
   "date": "2026-09-09",
   "notes": [
-    "Tách riêng các cột Ảnh nhật ký, Ghi chú thi công và Thao tác trong bảng Nhật ký công trường giúp trình bày rõ ràng, chuyên nghiệp."
+    "Loại bỏ thanh thông báo hết danh sách dưới chân bảng Nhật ký hiện trường."
   ]
 }
