@@ -425,16 +425,9 @@ export const MaterialTrackingPage: React.FC = () => {
 
       for (const [pKey, matList] of projectMaterialMap.entries()) {
         if (matList.length > 1) {
-          // Keep the first material as primary, merge others into it and delete duplicates
-          const primary = matList[0];
+          // Keep the first material as primary, delete duplicate rows
           for (let i = 1; i < matList.length; i++) {
             const dup = matList[i];
-            // Re-point transactions from dup to primary
-            const dupTxs = inventoryTransactions.filter(tx => tx.materialId === dup.id);
-            for (const tx of dupTxs) {
-              await updateInventoryTransaction(tx.id, { materialId: primary.id, materialCode: primary.code });
-            }
-            // Delete duplicate material
             await deleteMaterial(dup.id);
           }
         }
