@@ -841,23 +841,35 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updateEngineer: async (id, input) => {
-      const updated = await api.engineers.update(id, {
-          role: input.role,
-          username: input.username,
-          password: input.password,
-          isLocked: input.isLocked,
-        name: input.name,
-        phone: input.phone,
-        title: input.title,
-        projectCodes: input.projectCodes,
-          permissions: input.permissions,
-      });
+      const existing = get().engineers.find(e => e.id === id);
+      const updateData: any = {};
+      if (input.name !== undefined) updateData.name = input.name;
+      if (input.phone !== undefined) updateData.phone = input.phone;
+      if (input.title !== undefined) updateData.title = input.title;
+      if (input.role !== undefined) updateData.role = input.role;
+      if (input.username !== undefined) updateData.username = input.username;
+      if (input.password !== undefined) updateData.password = input.password;
+      if (input.isLocked !== undefined) updateData.isLocked = input.isLocked;
+      
+      if (input.projectCodes !== undefined) {
+        updateData.projectCodes = input.projectCodes;
+      } else if (existing?.projectCodes) {
+        updateData.projectCodes = existing.projectCodes;
+      }
+      
+      if (input.permissions !== undefined) {
+        updateData.permissions = input.permissions;
+      } else if (existing?.permissions) {
+        updateData.permissions = existing.permissions;
+      }
+
+      const updated = await api.engineers.update(id, updateData);
       const engineers = await api.engineers.getAll();
       set(() => {
         persistAndNotify({ engineers });
         return { engineers };
       });
-      get().logActivity('Đã cập nhật nhân sự: ' + input.name, input.name);
+      get().logActivity('Đã cập nhật nhân sự: ' + (input.name || existing?.name || id), input.name || existing?.name || id);
       return updated;
     },
 
