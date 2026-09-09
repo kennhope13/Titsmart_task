@@ -170,7 +170,14 @@ export const ProjectManagementPage: React.FC = () => {
     const merged = [...projects, ...deriveProjectsFromTasks(tasks).filter((derived) => !projects.some((project) => project.code === derived.code))];
     
     return merged.map((project) => {
-      const projectTasks = tasks.filter((task) => task.projectCode === project.code && !task.isSectionHeader);
+      const pCodeUpper = (project.code || '').trim().toUpperCase();
+      const pIdUpper = (project.id || '').trim().toUpperCase();
+      const isProjectItem = (item: any) => {
+        const u = (item.projectCode || item.projectId || '').trim().toUpperCase();
+        return u && (u === pCodeUpper || u === pIdUpper);
+      };
+
+      const projectTasks = tasks.filter((task) => isProjectItem(task) && !task.isSectionHeader);
       const totalTasks = projectTasks.length || project.totalTasks;
       const completedTasks = projectTasks.filter((task) => task.isDone || task.progress >= 1).length || project.completedTasks;
       const memberNames = resolveProjectMemberNames(project);
@@ -181,7 +188,7 @@ export const ProjectManagementPage: React.FC = () => {
         progress = Math.round((totalProgress / projectTasks.length) * 100);
       }
 
-      const projMaterialPlans = materialPlans.filter((plan) => plan.projectCode === project.code);
+      const projMaterialPlans = materialPlans.filter((plan) => isProjectItem(plan));
       const totalMaterials = projMaterialPlans.length;
       const completedMaterials = projMaterialPlans.filter((plan) => {
         const status = (plan.progressStatus || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -190,24 +197,34 @@ export const ProjectManagementPage: React.FC = () => {
       }).length;
       const materialProgress = totalMaterials > 0 ? Math.round((completedMaterials / totalMaterials) * 100) : 0;
 
-      const totalPurchasing = purchasingPlans.filter((item) => item.projectCode === project.code).reduce((sum, item) => sum + (item.totalAmount || 0), 0);
-      const totalExp = expenses.filter((item) => item.projectCode === project.code).reduce((sum, item) => sum + (item.totalAmount || 0), 0);
-      const totalLab = laborPayrolls.filter((item) => item.projectCode === project.code).reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+      const projPurchasings = purchasingPlans.filter((item) => isProjectItem(item));
+      const projExpenses = expenses.filter((item) => isProjectItem(item));
+      const projLabors = laborPayrolls.filter((item) => isProjectItem(item));
+
+      const totalPurchasing = projPurchasings.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+      const totalExp = projExpenses.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+      const totalLab = projLabors.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
       const totalCost = totalPurchasing + totalExp + totalLab;
       const missingDocsCount = projMaterialPlans.filter((plan) => !plan.docCo).length + projMaterialPlans.filter((plan) => !plan.docCq).length;
 
-      // Tìm thông tin người cập nhật mới nhất từ danh sách công việc của dự án này
-      const tasksWithAudit = projectTasks.filter(t => t.updatedBy && t.updatedBy !== 'Hệ thống' && t.updatedAt);
-      tasksWithAudit.sort((a, b) => new Date(b.updatedAt!).getTime() - new Date(a.updatedAt!).getTime());
-      const latestTaskAudit = tasksWithAudit[0];
+      // Gom tất cả các thay đổi gần nhất từ Công việc, Vật tư, Mua sắm, Chi phí và Lương
+      const allAudits: { updatedBy: string; updatedAt: string }[] = [];
+      [...tasks.filter(isProjectItem), ...projMaterialPlans, ...projPurchasings, ...projExpenses, ...projLabors].forEach((item: any) => {
+        if (item.updatedBy && item.updatedBy !== 'Hệ thống' && item.updatedAt) {
+          allAudits.push({ updatedBy: item.updatedBy, updatedAt: item.updatedAt });
+        }
+      });
+
+      allAudits.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      const latestAudit = allAudits[0];
 
       const effectiveUpdatedBy = (project.updatedBy && project.updatedBy !== 'Hệ thống')
         ? project.updatedBy
-        : (latestTaskAudit?.updatedBy || project.updatedBy || 'Hệ thống');
+        : (latestAudit?.updatedBy || project.updatedBy || 'Hệ thống');
 
       const effectiveUpdatedAt = (project.updatedBy && project.updatedBy !== 'Hệ thống' && project.updatedAt)
         ? project.updatedAt
-        : (latestTaskAudit?.updatedAt || project.updatedAt);
+        : (latestAudit?.updatedAt || project.updatedAt);
 
       return {
         ...project,
