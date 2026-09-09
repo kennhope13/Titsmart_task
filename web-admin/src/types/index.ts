@@ -55,6 +55,8 @@ export interface Task {
   dueDate?: string;
   priority?: TaskPriority;
   createdAt?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface Project {
@@ -78,6 +80,8 @@ export interface Project {
   members?: string[]; // Danh sách thành viên (ID)
   startDate?: string;
   endDate?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface Material {
@@ -104,6 +108,8 @@ export interface Material {
   specs?: string;
   notes?: string;
   systemGroup?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface InventoryTransaction {
@@ -121,6 +127,8 @@ export interface InventoryTransaction {
   receiverName?: string; // Người Nhận (đối với xuất kho)
   notes?: string;
   createdAt: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 export type IssueStatus = 'OPEN' | 'PROCESSING' | 'RESOLVED';
 export type IssuePriority = 'CRITICAL' | 'WARNING' | 'STANDARD';
@@ -146,6 +154,8 @@ export interface Issue {
     author: string;
     message: string;
   }>;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface Engineer {
@@ -164,6 +174,8 @@ export interface Engineer {
   memberProjects?: { code: string; name: string }[];
   projectCodes?: string[];
   permissions?: Permission[];
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface NotificationItem {
@@ -212,6 +224,8 @@ export interface ProjectMaterialPlan {
   dispatchDate?: string;
   supplyScope?: 'contractor' | 'owner' | 'unknown';
   notes?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface ProjectPurchasing {
@@ -236,6 +250,8 @@ export interface ProjectPurchasing {
   paymentDate?: string;
   invoiceStatus?: string;
   notes?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface ProjectExpense {
@@ -255,6 +271,8 @@ export interface ProjectExpense {
   balanceFund?: number;
   notes?: string;
   invoiceUrl?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface LaborPayroll {
@@ -275,6 +293,8 @@ export interface LaborPayroll {
   idCardBackUrl?: string;
   paymentStatus: string;
   notes?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface DocumentTrack {
@@ -300,6 +320,8 @@ export interface DocumentTrack {
   isCompleted: boolean;
   notes?: string;
   fileUrls?: string[];
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export interface FieldLog {
@@ -309,6 +331,8 @@ export interface FieldLog {
   images: string[]; // URL ảnh (đường dẫn /uploads/...)
   timestamp: string; // Thời điểm tạo báo cáo
   taskId?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export const getTextColorStyle = (status?: string) => {

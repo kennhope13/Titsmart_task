@@ -59,42 +59,9 @@ export const UpdateNotifier: React.FC = () => {
     });
   }, []);
 
-  // 🟢🟢🟢 Web & Capacitor Auto-Version Check 🟢🟢🟢
+  // Disable web update popup notification
   const checkWebVersion = useCallback(async () => {
-    if (window.electronAPI) return; // Electron xử lý tự động riêng
-    try {
-      const currentVersion = import.meta.env.VITE_APP_VERSION || '1.0.0';
-      
-      let data: any = null;
-
-      // Ưu tiên đọc version.json mới nhất từ GitHub server online
-      try {
-        const remoteRes = await fetch(`https://raw.githubusercontent.com/kennhope13/Titsmart_task/main/web-admin/public/version.json?t=${Date.now()}`);
-        if (remoteRes.ok) {
-          data = await remoteRes.json();
-        }
-      } catch (e) { }
-
-      // Fallback nếu offline / không kết nối được GitHub
-      if (!data) {
-        try {
-          const res = await fetch(`./version.json?t=${Date.now()}`);
-          if (res.ok) data = await res.json();
-        } catch (e) { }
-      }
-
-      if (data && data.version && compareVersions(data.version, currentVersion) > 0) {
-        setState({ 
-          status: 'available', 
-          version: data.version, 
-          notes: data.notes || [], 
-          visible: true, 
-          source: 'web' 
-        });
-      }
-    } catch (err) {
-      console.warn('[UpdateNotifier] Check version failed:', err);
-    }
+    return;
   }, []);
 
   useEffect(() => {
