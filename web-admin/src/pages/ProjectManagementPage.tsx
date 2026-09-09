@@ -196,8 +196,23 @@ export const ProjectManagementPage: React.FC = () => {
       const totalCost = totalPurchasing + totalExp + totalLab;
       const missingDocsCount = projMaterialPlans.filter((plan) => !plan.docCo).length + projMaterialPlans.filter((plan) => !plan.docCq).length;
 
+      // Tìm thông tin người cập nhật mới nhất từ danh sách công việc của dự án này
+      const tasksWithAudit = projectTasks.filter(t => t.updatedBy && t.updatedBy !== 'Hệ thống' && t.updatedAt);
+      tasksWithAudit.sort((a, b) => new Date(b.updatedAt!).getTime() - new Date(a.updatedAt!).getTime());
+      const latestTaskAudit = tasksWithAudit[0];
+
+      const effectiveUpdatedBy = (project.updatedBy && project.updatedBy !== 'Hệ thống')
+        ? project.updatedBy
+        : (latestTaskAudit?.updatedBy || project.updatedBy || 'Hệ thống');
+
+      const effectiveUpdatedAt = (project.updatedBy && project.updatedBy !== 'Hệ thống' && project.updatedAt)
+        ? project.updatedAt
+        : (latestTaskAudit?.updatedAt || project.updatedAt);
+
       return {
         ...project,
+        updatedBy: effectiveUpdatedBy,
+        updatedAt: effectiveUpdatedAt,
         status: progress >= 100 ? 'completed' : project.status,
         totalTasks,
         completedTasks,
