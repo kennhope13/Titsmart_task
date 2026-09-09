@@ -577,9 +577,11 @@ export const ProjectManagementPage: React.FC = () => {
 
       await updateProject(projectToEdit.id, payload);
 
-      // Update engineer project codes to match exactly the selected members list
+      // Update engineer project codes in parallel to optimize speed
       const projCodeUpper = (projectToEdit.code || '').trim().toUpperCase();
       const projIdUpper = (projectToEdit.id || '').trim().toUpperCase();
+      const engUpdates: Promise<any>[] = [];
+
       for (const eng of engineers) {
         const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
         const isSelected = editSelectedEngineerIds.includes(eng.id);
@@ -590,14 +592,18 @@ export const ProjectManagementPage: React.FC = () => {
 
         if (isSelected && !hasCode) {
           const newCodes = [...currentCodes, projectToEdit.code || projectToEdit.id];
-          await updateEngineer(eng.id, { name: eng.name, projectCodes: newCodes, permissions: eng.permissions });
+          engUpdates.push(updateEngineer(eng.id, { name: eng.name, projectCodes: newCodes, permissions: eng.permissions }));
         } else if (!isSelected && hasCode) {
           const newCodes = currentCodes.filter(c => {
             const u = (c || '').trim().toUpperCase();
             return u !== projCodeUpper && u !== projIdUpper;
           });
-          await updateEngineer(eng.id, { name: eng.name, projectCodes: newCodes, permissions: eng.permissions });
+          engUpdates.push(updateEngineer(eng.id, { name: eng.name, projectCodes: newCodes, permissions: eng.permissions }));
         }
+      }
+
+      if (engUpdates.length > 0) {
+        await Promise.all(engUpdates);
       }
 
       logActivity(`Cập nhật thông tin dự án: ${editProjName.trim()}`, editProjName.trim());
