@@ -566,6 +566,8 @@ export const ProjectManagementPage: React.FC = () => {
         managerName: managerName,
         members: editSelectedEngineerIds,
         memberIds: editSelectedEngineerIds,
+        updatedBy: user?.name || user?.username || 'Hệ thống',
+        updatedAt: new Date().toISOString(),
       };
 
       await updateProject(projectToEdit.id, payload);
