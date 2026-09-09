@@ -143,10 +143,19 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     return "";
   };
   const normalizeVN = (str: string) => {
-    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLowerCase();
   };
   const filteredOptions = searchable 
-    ? options.filter(opt => normalizeVN(extractText(opt.label)).includes(normalizeVN(searchTerm))) 
+    ? options.filter(opt => {
+        const optionText = normalizeVN(extractText(opt.label));
+        const searchWords = normalizeVN(searchTerm).trim().split(/\s+/).filter(Boolean);
+        return searchWords.every(word => optionText.includes(word));
+      }) 
     : options;
 
   const dropdownEl = isOpen && !disabled ? (

@@ -1,7 +1,7 @@
 {
-  "version": "2.2.5",
-  "date": "2026-09-08",
+  "version": "2.2.6",
+  "date": "2026-09-09",
   "notes": [
-    "Tối ưu trình xem tài liệu (PDF, Word, Excel) trực tiếp ngay trên Mobile bằng công nghệ Google Docs Engine."
+    "Cải tiến bộ tìm kiếm vật tư (CustomSelect): Hỗ trợ tìm kiếm thông minh không dấu, gõ nhiều từ cách rời (VD: singlemode fc lc) đều tìm thấy vật tư chính xác."
   ]
 }
