@@ -218,6 +218,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
           <tr>
             <th className="py-3 px-3 border-r border-slate-200 w-16 text-center">STT</th>
             <th className="py-3 px-4 border-r border-slate-200">NỘI DUNG CÔNG VIỆC</th>
+            <th className="py-3 px-3 border-r border-slate-200 w-36 text-center">THỜI GIAN THI CÔNG</th>
             <th className="py-3 px-3 border-r border-slate-200 w-72">ẢNH NHẬT KÝ VẬN HÀNH</th>
             <th className="py-3 px-3 border-r border-slate-200 w-64">GHI CHÚ / THI CÔNG HỆ THỐNG</th>
             <th className="py-3 px-3 w-28 text-center">THAO TÁC</th>
@@ -225,7 +226,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
         </thead>
         <tbody className="divide-y divide-slate-200">
           {groupedTasks.length === 0 ? (
-            <tr><td colSpan={5} className="p-8 text-center text-slate-400">Không có công việc nào</td></tr>
+            <tr><td colSpan={6} className="p-8 text-center text-slate-400">Không có công việc nào</td></tr>
           ) : (
             groupedTasks.filter((t) => {
               if (t.isSectionHeader) return true;
@@ -236,7 +237,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                 return (
                   <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
                     <td className="py-3 px-3 border-r border-blue-200 text-center font-mono text-xs">{t.computedStt || t.stt}</td>
-                    <td colSpan={4} className="py-3 px-4 font-extrabold text-xs">
+                    <td colSpan={5} className="py-3 px-4 font-extrabold text-xs">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => toggleSection(t._sectionKey || '')}
@@ -261,6 +262,9 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
               const allImagesForTask = taskLogs.flatMap(l => l.images);
               const allNotesForTask = taskLogs.filter(l => l.note && l.note.trim().length > 0);
 
+              // Unique dates for this task
+              const datesList = Array.from(new Set(taskLogs.map(l => l.timestamp ? new Date(l.timestamp).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '').filter(Boolean)));
+
               return (
                 <tr key={t.id} onClick={(e) => { e.stopPropagation(); setViewAllLogsTask(t); }} className="hover:bg-slate-50 transition-colors group cursor-pointer">
                   <td className={`py-3 px-3 border-r border-slate-200 text-center font-mono text-xs ${depth === 1 ? 'font-bold text-slate-600' : 'text-slate-400'}`}>
@@ -270,6 +274,21 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                     <div className="flex items-center gap-2" style={{ paddingLeft: `${Math.max(0, depth - 1) * 1.5}rem` }}>
                       {depth > 1 && <span className="material-symbols-outlined text-slate-300 text-sm">subdirectory_arrow_right</span>}
                       {t.name}
+                    </div>
+                  </td>
+                  {/* CỘT THỜI GIAN THI CÔNG */}
+                  <td className="py-2.5 px-3 border-r border-slate-200 text-center">
+                    <div className="flex flex-col gap-1 items-center justify-center">
+                      {datesList.length > 0 ? (
+                        datesList.map((d, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 bg-blue-50 text-blue-800 text-[11px] font-bold px-2 py-0.5 rounded border border-blue-200/80 whitespace-nowrap">
+                            <span className="material-symbols-outlined text-[12px] text-blue-600">calendar_today</span>
+                            {d}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-slate-300 text-xs italic">-</span>
+                      )}
                     </div>
                   </td>
                   {/* CỘT ẢNH NHẬT KÝ */}
@@ -297,19 +316,12 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                   <td className="py-2.5 px-3 border-r border-slate-200">
                     <div className="flex flex-col gap-1.5">
                       {allNotesForTask.length > 0 ? (
-                        allNotesForTask.map((l) => {
-                          const dateStr = l.timestamp ? new Date(l.timestamp).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : '';
-                          return (
-                            <div key={l.id} onClick={(e) => { e.stopPropagation(); onEditLogClick(l); }} className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 text-[11px] font-semibold px-2 py-1 rounded-md border border-amber-200/80 hover:bg-amber-100 transition-colors w-fit max-w-full cursor-pointer" title={`${dateStr ? `[${dateStr}] ` : ''}${l.note}`}>
-                              {dateStr && (
-                                <span className="bg-amber-200/90 text-amber-950 font-bold px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap shrink-0">
-                                  {dateStr}
-                                </span>
-                              )}
-                              <span className="truncate">{l.note}</span>
-                            </div>
-                          );
-                        })
+                        allNotesForTask.map((l) => (
+                          <div key={l.id} onClick={(e) => { e.stopPropagation(); onEditLogClick(l); }} className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 text-[11px] font-semibold px-2 py-1 rounded-md border border-amber-200/80 hover:bg-amber-100 transition-colors w-fit max-w-full cursor-pointer" title={l.note}>
+                            <span className="material-symbols-outlined text-[13px] text-amber-600 shrink-0">edit_note</span>
+                            <span className="truncate">{l.note}</span>
+                          </div>
+                        ))
                       ) : (
                         <span className="text-slate-300 text-xs italic">Chưa có ghi chú</span>
                       )}
