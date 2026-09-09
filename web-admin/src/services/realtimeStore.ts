@@ -524,24 +524,34 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     }, 500);
   };
 
+  const loadSavedState = () => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  };
+  const savedState = loadSavedState();
+
   return {
     lastMutationTime: 0,
     markMutation: () => set({ lastMutationTime: Date.now() }),
     isFetchingProjects: true, // default to true
-    projects: [],
-    tasks: [],
-    materials: inventorySeed.materials,
-    issues: [],
-    engineers: [],
-    notifications: [],
-    activityLogs: [],
-    inventoryTransactions: inventorySeed.inventoryTransactions,
-    materialPlans: [],
-    purchasingPlans: [],
-    expenses: [],
-    laborPayrolls: [],
-    documentTracks: [],
-    fieldLogs: [],
+    projects: savedState.projects || [],
+    tasks: savedState.tasks || [],
+    materials: savedState.materials || inventorySeed.materials,
+    issues: savedState.issues || [],
+    engineers: savedState.engineers || [],
+    notifications: savedState.notifications || [],
+    activityLogs: savedState.activityLogs || [],
+    inventoryTransactions: savedState.inventoryTransactions || inventorySeed.inventoryTransactions,
+    materialPlans: savedState.materialPlans || [],
+    purchasingPlans: savedState.purchasingPlans || [],
+    expenses: savedState.expenses || [],
+    laborPayrolls: savedState.laborPayrolls || [],
+    documentTracks: savedState.documentTracks || [],
+    fieldLogs: savedState.fieldLogs || [],
 
     fetchProjects: async () => {
       try {
@@ -566,12 +576,21 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       const fetchStartTime = Date.now();
       try {
         const tasks = await api.tasks.getAll(projectId);
+        const currentTasksMap = new Map(get().tasks.map(t => [t.id, t]));
+        const mergedTasks = filterByProject(tasks, 'projectCode').map((t: any) => {
+          const existing = currentTasksMap.get(t.id);
+          return {
+            ...t,
+            updatedBy: t.updatedBy || existing?.updatedBy,
+            updatedAt: t.updatedAt || existing?.updatedAt,
+          };
+        });
         // Bảo vệ: không ghi đè nếu có mutation trong vòng 5 giây gần nhất
         const mutationGuard = get().lastMutationTime + 5000;
         if (mutationGuard > fetchStartTime) {
           console.log('[Realtime] Skipping tasks overwrite because local mutation occurred recently');
         } else {
-          set({ tasks: filterByProject(tasks, 'projectCode') });
+          set({ tasks: mergedTasks });
         }
       } catch (e) {
         console.error('Failed to fetch tasks', e);
