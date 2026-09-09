@@ -20,11 +20,22 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
 
   // Filter transactions belonging to this material
   const history = transactions
-    .filter(
-      (tx) =>
-        tx.materialId === material.id ||
-        (tx.materialCode && tx.materialCode === material.code)
-    )
+    .filter((tx) => {
+      if (tx.materialId === material.id) return true;
+      if (tx.materialCode && material.code && tx.materialCode.trim().toLowerCase() === material.code.trim().toLowerCase()) return true;
+      
+      // Fallback matching by specs / materialName if code was updated or normalized
+      const cleanTxCode = (tx.materialCode || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+      const cleanMatCode = (material.code || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+      if (cleanTxCode && cleanMatCode && (cleanTxCode.includes(cleanMatCode) || cleanMatCode.includes(cleanTxCode))) return true;
+
+      if (material.specs && tx.specs && material.specs.trim().toLowerCase() === tx.specs.trim().toLowerCase()) {
+        const matName = (material.name || '').toLowerCase();
+        const txName = (tx.materialName || '').toLowerCase();
+        if (!matName || !txName || matName.includes(txName) || txName.includes(matName)) return true;
+      }
+      return false;
+    })
     .sort(
       (a, b) =>
         new Date(b.createdAt || b.date || 0).getTime() -

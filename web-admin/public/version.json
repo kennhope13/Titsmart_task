@@ -1,7 +1,7 @@
 {
-  "version": "2.5.1",
+  "version": "2.5.2",
   "date": "2026-09-09",
   "notes": [
-    "Cắt sạch 100% các đuôi -1, -2 cũ khi bấm Đồng bộ từ nhật ký nhập kho."
+    "Tự động hợp nhất các vật tư bị trùng dòng trong cùng một kho và nâng cấp bộ lọc lịch sử giao dịch."
   ]
 }
