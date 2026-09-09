@@ -1,9 +1,9 @@
 {
-  "version": "2.8.2",
+  "version": "2.8.3",
   "date": "2026-09-09",
   "notes": [
+    "Cung cấp hướng dẫn SQL khởi tạo cột updated_by / updated_at trên cơ sở dữ liệu Supabase.",
     "Sửa lỗi đồng bộ Realtime người cập nhật / thời gian cập nhật ngay lập tức khi thay đổi Trạng thái thi công/mua sắm/tiến độ công việc.",
-    "Khắc phục vị trí sắp xếp danh sách Dự án cố định theo mã/tên dự án, không bị xáo trộn khi cập nhật dữ liệu.",
-    "Bổ sung cột NGƯỜI CẬP NHẬT / THỜI GIAN chuẩn hóa căn giữa trên tất cả 13 bảng giao diện hệ thống Web."
+    "Khắc phục vị trí sắp xếp danh sách Dự án cố định theo mã/tên dự án, không bị xáo trộn khi cập nhật dữ liệu."
   ]
 }
