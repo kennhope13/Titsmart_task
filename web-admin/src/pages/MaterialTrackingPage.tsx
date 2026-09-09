@@ -342,7 +342,7 @@ export const MaterialTrackingPage: React.FC = () => {
   const handleSyncCodeFromImportLogs = async () => {
     if (loading || isSubmittingRef.current) return;
     const confirmRun = window.confirm(
-      'Hệ thống sẽ đối chiếu với Nhật Ký Nhập Kho để khôi phục và cập nhật đầy đủ toàn bộ vật tư (bao gồm cả các vật tư như Multimode, Singlemode...) theo quy chuẩn mã mới. Bạn có chắc chắn muốn thực hiện?'
+      'Hệ thống sẽ đồng bộ & khôi phục toàn bộ vật tư từ Nhật Ký Nhập Kho. Tự động thêm phân loại (Multimode / Singlemode...) vào cả Tên và Mã vật tư. Bạn có chắc chắn muốn thực hiện?'
     );
     if (!confirmRun) return;
 
@@ -355,17 +355,17 @@ export const MaterialTrackingPage: React.FC = () => {
       let updatedCount = 0;
       let restoredCount = 0;
 
-      // Group import transactions by materialCode or Name+Specs
+      // Group import transactions by materialName + specs + materialCode
       const importGroups = new Map<string, { materialCode: string; materialName: string; specs: string; unit: string; totalQty: number; sourceOrProject: string }>();
 
       inventoryTransactions.filter(tx => tx.type === 'IMPORT').forEach(tx => {
-        const key = `${tx.materialCode || ''}___${tx.materialName || ''}___${tx.specs || ''}`.toLowerCase();
+        const key = `${tx.materialName || ''}___${tx.specs || ''}___${tx.materialCode || ''}`.toLowerCase();
         if (!importGroups.has(key)) {
           importGroups.set(key, {
             materialCode: tx.materialCode,
             materialName: tx.materialName,
             specs: tx.specs || '',
-            unit: tx.unit || 'Cái',
+            unit: tx.unit || 'sợi',
             totalQty: tx.quantity || 0,
             sourceOrProject: tx.sourceOrProject || ''
           });
@@ -375,53 +375,58 @@ export const MaterialTrackingPage: React.FC = () => {
         }
       });
 
-      // 1. Update existing materials with clean codes and distinction
+      // 1. Update existing materials with clean codes and ensure Name + Code include Singlemode/Multimode
       for (const m of materials) {
+        let name = m.name || 'Dây nhảy';
         let rawCode = m.code || '';
         let cleanCode = cleanCodeString(rawCode);
 
-        // If duplicate code exists for different names (e.g. Singlemode vs Multimode), append name
-        if (usedCodes.has(cleanCode.toLowerCase())) {
-          cleanCode = cleanCodeString(`${cleanCode}-${m.name}`);
-          let suffixNum = 0;
-          let baseCode = cleanCode;
-          while (usedCodes.has(cleanCode.toLowerCase())) {
-            suffixNum++;
-            cleanCode = `${baseCode}-${suffixNum}`;
-          }
+        // Ensure material code includes the name (e.g. MULTIMODE or SINGLEMODE) if not already included
+        if (name && !cleanCode.includes(cleanCodeString(name))) {
+          cleanCode = cleanCodeString(`${cleanCode}-${name}`);
+        }
+
+        let suffixNum = 0;
+        let baseCode = cleanCode;
+        while (usedCodes.has(cleanCode.toLowerCase())) {
+          suffixNum++;
+          cleanCode = `${baseCode}-${suffixNum}`;
         }
 
         usedCodes.add(cleanCode.toLowerCase());
 
         if (cleanCode !== m.code) {
-          await updateMaterial(m.id, { code: cleanCode });
+          await updateMaterial(m.id, { code: cleanCode, name });
           updatedCount++;
         }
       }
 
-      // 2. Check if any import group is completely missing from materials table and recreate it
+      // 2. Check if any import group (especially Multimode items) is missing and recreate it
       const maxStt = materials.reduce((max, m) => Math.max(max, m.stt || 0), 0);
       let currentStt = maxStt;
 
       for (const [key, grp] of importGroups.entries()) {
+        const grpName = grp.materialName || 'Dây nhảy';
+        const grpSpecs = grp.specs || '';
+        
         const exists = materials.some(m => 
-          (m.code && cleanCodeString(m.code).toLowerCase() === cleanCodeString(grp.materialCode).toLowerCase()) ||
-          (m.name.toLowerCase() === grp.materialName.toLowerCase() && (m.specs || '').toLowerCase() === grp.specs.toLowerCase())
+          m.name.toLowerCase() === grpName.toLowerCase() && (m.specs || '').toLowerCase() === grpSpecs.toLowerCase()
         );
 
         if (!exists) {
           currentStt++;
-          let rawCode = grp.materialCode || `${grp.materialName}-${grp.specs}`;
+          let rawCode = grp.materialCode || `${grpName}-${grpSpecs}`;
           let cleanCode = cleanCodeString(rawCode);
 
-          if (usedCodes.has(cleanCode.toLowerCase())) {
-            cleanCode = cleanCodeString(`${cleanCode}-${grp.materialName}`);
-            let suffixNum = 0;
-            let baseCode = cleanCode;
-            while (usedCodes.has(cleanCode.toLowerCase())) {
-              suffixNum++;
-              cleanCode = `${baseCode}-${suffixNum}`;
-            }
+          if (!cleanCode.includes(cleanCodeString(grpName))) {
+            cleanCode = cleanCodeString(`${cleanCode}-${grpName}`);
+          }
+
+          let suffixNum = 0;
+          let baseCode = cleanCode;
+          while (usedCodes.has(cleanCode.toLowerCase())) {
+            suffixNum++;
+            cleanCode = `${baseCode}-${suffixNum}`;
           }
 
           usedCodes.add(cleanCode.toLowerCase());
@@ -429,9 +434,9 @@ export const MaterialTrackingPage: React.FC = () => {
           await addMaterial({
             stt: currentStt,
             code: cleanCode,
-            name: grp.materialName,
+            name: grpName,
             category: 'Dây nhảy',
-            specs: grp.specs,
+            specs: grpSpecs,
             unit: grp.unit,
             volume: grp.totalQty,
             initialStock: grp.totalQty,
