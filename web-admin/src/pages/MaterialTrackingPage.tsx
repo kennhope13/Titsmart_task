@@ -338,26 +338,117 @@ export const MaterialTrackingPage: React.FC = () => {
   const [filterName, setFilterName] = useState('');
   const [filterUnit, setFilterUnit] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  // Đồng bộ lại Mã vật tư từ Nhật ký nhập kho (Restore original codes from import transactions)
+  // Đồng bộ & Khôi phục lại toàn bộ danh mục vật tư từ Nhật ký nhập kho (Recreate missing materials from import transactions)
   const handleSyncCodeFromImportLogs = async () => {
     if (loading || isSubmittingRef.current) return;
+    const confirmRun = window.confirm(
+      'Hệ thống sẽ đối chiếu với Nhật Ký Nhập Kho để khôi phục và cập nhật đầy đủ toàn bộ vật tư (bao gồm cả các vật tư như Multimode, Singlemode...) theo quy chuẩn mã mới. Bạn có chắc chắn muốn thực hiện?'
+    );
+    if (!confirmRun) return;
+
     isSubmittingRef.current = true;
     setLoading(true);
-    setLoadingMessage('Đang khôi phục lại Mã vật tư từ Nhật ký nhập kho...');
+    setLoadingMessage('Đang đồng bộ & khôi phục toàn bộ vật tư từ Nhật ký nhập kho...');
 
     try {
+      const usedCodes = new Set<string>();
       let updatedCount = 0;
+      let restoredCount = 0;
+
+      // Group import transactions by materialCode or Name+Specs
+      const importGroups = new Map<string, { materialCode: string; materialName: string; specs: string; unit: string; totalQty: number; sourceOrProject: string }>();
+
+      inventoryTransactions.filter(tx => tx.type === 'IMPORT').forEach(tx => {
+        const key = `${tx.materialCode || ''}___${tx.materialName || ''}___${tx.specs || ''}`.toLowerCase();
+        if (!importGroups.has(key)) {
+          importGroups.set(key, {
+            materialCode: tx.materialCode,
+            materialName: tx.materialName,
+            specs: tx.specs || '',
+            unit: tx.unit || 'Cái',
+            totalQty: tx.quantity || 0,
+            sourceOrProject: tx.sourceOrProject || ''
+          });
+        } else {
+          const grp = importGroups.get(key)!;
+          grp.totalQty += (tx.quantity || 0);
+        }
+      });
+
+      // 1. Update existing materials with clean codes and distinction
       for (const m of materials) {
-        // Find matching transaction in import logs
-        const matchingTx = inventoryTransactions.find(tx => tx.materialId === m.id || (tx.materialName === m.name && tx.specs === m.specs));
-        if (matchingTx && matchingTx.materialCode && matchingTx.materialCode !== m.code) {
-          await updateMaterial(m.id, { code: matchingTx.materialCode });
+        let rawCode = m.code || '';
+        let cleanCode = cleanCodeString(rawCode);
+
+        // If duplicate code exists for different names (e.g. Singlemode vs Multimode), append name
+        if (usedCodes.has(cleanCode.toLowerCase())) {
+          cleanCode = cleanCodeString(`${cleanCode}-${m.name}`);
+          let suffixNum = 0;
+          let baseCode = cleanCode;
+          while (usedCodes.has(cleanCode.toLowerCase())) {
+            suffixNum++;
+            cleanCode = `${baseCode}-${suffixNum}`;
+          }
+        }
+
+        usedCodes.add(cleanCode.toLowerCase());
+
+        if (cleanCode !== m.code) {
+          await updateMaterial(m.id, { code: cleanCode });
           updatedCount++;
         }
       }
-      triggerToast(`Đã đồng bộ & khôi phục ${updatedCount} mã vật tư từ Nhật ký nhập kho!`, 'success');
+
+      // 2. Check if any import group is completely missing from materials table and recreate it
+      const maxStt = materials.reduce((max, m) => Math.max(max, m.stt || 0), 0);
+      let currentStt = maxStt;
+
+      for (const [key, grp] of importGroups.entries()) {
+        const exists = materials.some(m => 
+          (m.code && cleanCodeString(m.code).toLowerCase() === cleanCodeString(grp.materialCode).toLowerCase()) ||
+          (m.name.toLowerCase() === grp.materialName.toLowerCase() && (m.specs || '').toLowerCase() === grp.specs.toLowerCase())
+        );
+
+        if (!exists) {
+          currentStt++;
+          let rawCode = grp.materialCode || `${grp.materialName}-${grp.specs}`;
+          let cleanCode = cleanCodeString(rawCode);
+
+          if (usedCodes.has(cleanCode.toLowerCase())) {
+            cleanCode = cleanCodeString(`${cleanCode}-${grp.materialName}`);
+            let suffixNum = 0;
+            let baseCode = cleanCode;
+            while (usedCodes.has(cleanCode.toLowerCase())) {
+              suffixNum++;
+              cleanCode = `${baseCode}-${suffixNum}`;
+            }
+          }
+
+          usedCodes.add(cleanCode.toLowerCase());
+
+          await addMaterial({
+            stt: currentStt,
+            code: cleanCode,
+            name: grp.materialName,
+            category: 'Dây nhảy',
+            specs: grp.specs,
+            unit: grp.unit,
+            volume: grp.totalQty,
+            initialStock: grp.totalQty,
+            currentStock: grp.totalQty,
+            totalImport: grp.totalQty,
+            totalExport: 0,
+            projectCode: 'COMPANY',
+            projectName: 'Kho Tổng (Kho Công Ty)',
+            status: 'Đã có hàng'
+          });
+          restoredCount++;
+        }
+      }
+
+      triggerToast(`Đã đồng bộ thành công! Cập nhật ${updatedCount} mã vật tư & Khôi phục mới ${restoredCount} vật tư từ Nhật Ký!`, 'success');
     } catch (err: any) {
-      triggerToast('Lỗi khi khôi phục mã: ' + (err.message || 'Xin thử lại'), 'warning');
+      triggerToast('Lỗi khi đồng bộ: ' + (err.message || 'Xin thử lại'), 'warning');
     } finally {
       setLoading(false);
       setLoadingMessage('');
@@ -946,6 +1037,10 @@ export const MaterialTrackingPage: React.FC = () => {
             <button onClick={handleExportExcel} className="flex items-center gap-2 border border-slate-200 bg-white h-[40px] px-5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
               <span className="material-symbols-outlined text-base">file_download</span>
               Xuất Excel
+            </button>
+            <button onClick={handleSyncCodeFromImportLogs} title="Cập nhật toàn bộ mã vật tư & tái tạo vật tư còn thiếu từ Nhật Ký Nhập Kho" className="flex items-center gap-2 border border-blue-200 bg-blue-50 text-primary h-[40px] px-3.5 rounded-lg text-[13px] font-bold hover:bg-blue-100 transition-colors shadow-xs">
+              <span className="material-symbols-outlined text-base">sync</span>
+              Đồng bộ từ Nhật Ký
             </button>
             <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-2 bg-emerald-600 text-white h-[40px] px-5 rounded-lg text-[13px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
               <span className="material-symbols-outlined text-base">arrow_downward</span>
