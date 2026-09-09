@@ -34,8 +34,13 @@ const toSnakeCase = (obj: any) => {
     }
   }
   const audit = getCurrentAuditPayload();
-  if (result.updated_by === undefined) result.updated_by = audit.updated_by;
-  if (result.updated_at === undefined) result.updated_at = audit.updated_at;
+  if (result.updated_by === undefined && obj.updatedBy !== undefined) result.updated_by = obj.updatedBy || audit.updated_by;
+  if (result.updated_at === undefined && obj.updatedAt !== undefined) result.updated_at = obj.updatedAt || audit.updated_at;
+  // If explicitly updated in local action but not passed, populate if field was present in obj or if obj is mutation
+  if (obj.updatedBy === undefined && obj.updatedAt === undefined) {
+    result.updated_by = audit.updated_by;
+    result.updated_at = audit.updated_at;
+  }
   return result;
 };
 
@@ -340,13 +345,33 @@ export const api = {
     createMaterialPlan: async (data: any) => {
       const payload = toSnakeCase(data);
       const { data: result, error } = await supabase.from('material_plans').insert(payload).select().single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('updated_at') || String(error.message).includes('updated_by')) {
+          delete payload.updated_at;
+          delete payload.updated_by;
+          const { data: retryResult, error: retryError } = await supabase.from('material_plans').insert(payload).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     createMaterialPlanBatch: async (dataArray: any[]) => {
       const payloads = dataArray.map(toSnakeCase);
       const { data: result, error } = await supabase.from('material_plans').insert(payloads).select();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('updated_at') || String(error.message).includes('updated_by')) {
+          payloads.forEach(p => {
+            delete p.updated_at;
+            delete p.updated_by;
+          });
+          const { data: retryResult, error: retryError } = await supabase.from('material_plans').insert(payloads).select();
+          if (retryError) throw retryError;
+          return mapArray(retryResult || []);
+        }
+        throw error;
+      }
       return mapArray(result || []);
     },
     updateMaterialPlan: async (id: string, data: any) => {
@@ -355,6 +380,16 @@ export const api = {
       const { data: result, error } = await supabase.from('material_plans').update(payload).eq('id', id).select().single();
       if (error) {
         if (error.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('updated_at') || String(error.message).includes('updated_by')) {
+          delete payload.updated_at;
+          delete payload.updated_by;
+          const { data: retryResult, error: retryError } = await supabase.from('material_plans').update(payload).eq('id', id).select().single();
+          if (retryError) {
+            if (retryError.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
+            throw retryError;
+          }
+          return toCamelCase(retryResult);
+        }
         throw error;
       }
       return toCamelCase(result);
@@ -375,9 +410,10 @@ export const api = {
       const { data: result, error } = await supabase.from('purchasing_plans').insert(payload).select().single();
       if (error) {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
-          console.warn('Fallback: saving without parent_id because columns are missing in DB');
           delete payload.parent_id;
           delete payload.material_plan_id;
+          delete payload.updated_at;
+          delete payload.updated_by;
           const { data: retryResult, error: retryError } = await supabase.from('purchasing_plans').insert(payload).select().single();
           if (retryError) throw retryError;
           return toCamelCase({ ...retryResult, parent_id: data.parentId, material_plan_id: data.materialPlanId });
@@ -391,10 +427,11 @@ export const api = {
       const { data: result, error } = await supabase.from('purchasing_plans').insert(payloads).select();
       if (error) {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
-          console.warn('Fallback: saving batch without parent_id because columns are missing in DB');
           payloads.forEach(p => {
              delete p.parent_id;
              delete p.material_plan_id;
+             delete p.updated_at;
+             delete p.updated_by;
           });
           const { data: retryResult, error: retryError } = await supabase.from('purchasing_plans').insert(payloads).select();
           if (retryError) throw retryError;
@@ -413,6 +450,8 @@ export const api = {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
           delete payload.parent_id;
           delete payload.material_plan_id;
+          delete payload.updated_at;
+          delete payload.updated_by;
           const { data: retryResult, error: retryError } = await supabase.from('purchasing_plans').update(payload).eq('id', id).select().single();
           if (retryError) {
             if (retryError.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
@@ -438,12 +477,31 @@ export const api = {
     createExpense: async (data: any) => {
       const payload = toSnakeCase(data);
       const { data: result, error } = await supabase.from('expenses').insert(payload).select().single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete payload.updated_at;
+          delete payload.updated_by;
+          const { data: retryResult, error: retryError } = await supabase.from('expenses').insert(payload).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     updateExpense: async (id: string, data: any) => {
-      const { data: result, error } = await supabase.from('expenses').update(toSnakeCase(data)).eq('id', id).select().single();
-      if (error) throw error;
+      const payload = toSnakeCase(data);
+      const { data: result, error } = await supabase.from('expenses').update(payload).eq('id', id).select().single();
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete payload.updated_at;
+          delete payload.updated_by;
+          const { data: retryResult, error: retryError } = await supabase.from('expenses').update(payload).eq('id', id).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     deleteExpense: async (id: string) => {
@@ -460,12 +518,31 @@ export const api = {
     createLaborPayroll: async (data: any) => {
       const payload = toSnakeCase(data);
       const { data: result, error } = await supabase.from('labor_payrolls').insert(payload).select().single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete payload.updated_at;
+          delete payload.updated_by;
+          const { data: retryResult, error: retryError } = await supabase.from('labor_payrolls').insert(payload).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     updateLaborPayroll: async (id: string, data: any) => {
-      const { data: result, error } = await supabase.from('labor_payrolls').update(toSnakeCase(data)).eq('id', id).select().single();
-      if (error) throw error;
+      const payload = toSnakeCase(data);
+      const { data: result, error } = await supabase.from('labor_payrolls').update(payload).eq('id', id).select().single();
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete payload.updated_at;
+          delete payload.updated_by;
+          const { data: retryResult, error: retryError } = await supabase.from('labor_payrolls').update(payload).eq('id', id).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     deleteLaborPayroll: async (id: string) => {
@@ -488,7 +565,16 @@ export const api = {
         delete payload.project_code;
       }
       const { data: result, error } = await supabase.from('document_tracks').insert(payload).select().single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete payload.updated_at;
+          delete payload.updated_by;
+          const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(payload).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     updateDocumentTrack: async (id: string, data: any) => {
@@ -502,7 +588,16 @@ export const api = {
         delete payload.project_code;
       }
       const { data: result, error } = await supabase.from('document_tracks').update(payload).eq('id', id).select().single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete payload.updated_at;
+          delete payload.updated_by;
+          const { data: retryResult, error: retryError } = await supabase.from('document_tracks').update(payload).eq('id', id).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     deleteDocumentTrack: async (id: string) => {
