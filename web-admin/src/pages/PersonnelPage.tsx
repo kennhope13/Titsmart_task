@@ -104,12 +104,13 @@ export const PersonnelPage: React.FC = () => {
     
     if (engineer.projectCodes && Array.isArray(engineer.projectCodes)) {
       engineer.projectCodes.forEach((code: string) => {
-        if ((code || '').trim().toUpperCase() === 'COMPANY') {
+        const uCode = (code || '').trim().toUpperCase();
+        if (uCode === 'COMPANY') {
           allAssigned.push({ code: 'COMPANY', name: 'Kho Tổng (Kho Công Ty)' });
         } else {
-          const found = projects.find(p => (p.code || '').trim().toUpperCase() === (code || '').trim().toUpperCase());
+          const found = projects.find(p => (p.code || '').trim().toUpperCase() === uCode || (p.id || '').trim().toUpperCase() === uCode);
           if (found) {
-            allAssigned.push({ code: found.code, name: found.name });
+            allAssigned.push({ code: found.code || found.id, name: found.name });
           }
         }
       });
@@ -117,7 +118,7 @@ export const PersonnelPage: React.FC = () => {
 
     // Filter out duplicates and projects that no longer exist in the projects list
     assignedProjects = allAssigned.filter((value, assignedIndex, self) => 
-      (value.code === 'COMPANY' || projects.some(p => (p.code || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase())) &&
+      (value.code === 'COMPANY' || projects.some(p => (p.code || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase() || (p.id || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase())) &&
       self.findIndex((item) => (item.code || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase()) === assignedIndex
     );
 
@@ -318,7 +319,7 @@ export const PersonnelPage: React.FC = () => {
                     </td>
                     <td className="p-3">
                       {person.assignedProjects.length === 0 ? (
-                        <span className="text-blue-700 text-[11px] font-bold">Tất cả dự án</span>
+                        <span className="text-slate-400 text-[11px] italic">Chưa phân công</span>
                       ) : (
                         <div className="flex flex-wrap gap-y-0.5">
                           {person.assignedProjects.map((mp: any, i: number, arr: any[]) => (
