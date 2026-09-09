@@ -775,44 +775,71 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateTask: async (id, updatedFields) => {
       get().markMutation();
+      const audit = getAuditFields();
+      const fieldsWithAudit = {
+        updatedBy: audit.updatedBy,
+        updatedAt: audit.updatedAt,
+        ...updatedFields,
+      };
+
       // Optimistic update
       set((state) => {
-        const nextTasks = state.tasks.map((t) => (t.id === id ? { ...t, ...updatedFields } : t));
+        const nextTasks = state.tasks.map((t) => (t.id === id ? { ...t, ...fieldsWithAudit } : t));
         const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, state.tasks.find(t=>t.id===id)?.projectCode ? [state.tasks.find(t=>t.id===id)!.projectCode] : []);
         persistAndNotify({ tasks: nextTasks, projects: nextProjects });
         return { tasks: nextTasks, projects: nextProjects };
       });
       try {
-        const updatedTask = await api.tasks.update(id, updatedFields);
+        const updatedTask = await api.tasks.update(id, fieldsWithAudit);
+        const mergedTask = {
+          ...updatedTask,
+          updatedBy: updatedTask.updatedBy || audit.updatedBy,
+          updatedAt: updatedTask.updatedAt || audit.updatedAt,
+        };
         set((state) => {
-          const nextTasks = state.tasks.map((t) => (t.id === id ? updatedTask : t));
-          const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, [updatedTask.projectCode]);
+          const nextTasks = state.tasks.map((t) => (t.id === id ? mergedTask : t));
+          const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, [mergedTask.projectCode]);
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity('Đã chỉnh sửa thông tin công việc', updatedTask.projectName || updatedTask.projectCode);
+        get().logActivity('Đã chỉnh sửa thông tin công việc', mergedTask.projectName || mergedTask.projectCode);
       } catch (e) {
         console.error('Failed to update task', e);
-        // Rollback can be added here if needed
       }
     },
 
     updateTaskProgress: async (id, progress, isDone) => {
       get().markMutation();
+      const audit = getAuditFields();
+      const fieldsWithAudit = {
+        progress,
+        isDone,
+        status: (isDone ? 'Done' : progress > 0 ? 'In Progress' : 'Not Started') as TaskStatus,
+        updatedBy: audit.updatedBy,
+        updatedAt: audit.updatedAt,
+      };
+
       // Optimistic update
+      set((state) => {
+        const nextTasks = state.tasks.map((t) => (t.id === id ? { ...t, ...fieldsWithAudit } : t));
+        const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, state.tasks.find(t=>t.id===id)?.projectCode ? [state.tasks.find(t=>t.id===id)!.projectCode] : []);
+        persistAndNotify({ tasks: nextTasks, projects: nextProjects });
+        return { tasks: nextTasks, projects: nextProjects };
+      });
       try {
-        const updatedTask = await api.tasks.update(id, {
-          progress,
-          isDone,
-          status: (isDone ? 'Done' : progress > 0 ? 'In Progress' : 'Not Started') as TaskStatus,
-        });
+        const updatedTask = await api.tasks.update(id, fieldsWithAudit);
+        const mergedTask = {
+          ...updatedTask,
+          updatedBy: updatedTask.updatedBy || audit.updatedBy,
+          updatedAt: updatedTask.updatedAt || audit.updatedAt,
+        };
         set((state) => {
-          const nextTasks = state.tasks.map((t) => (t.id === id ? updatedTask : t));
-          const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, [updatedTask.projectCode]);
+          const nextTasks = state.tasks.map((t) => (t.id === id ? mergedTask : t));
+          const nextProjects = recalculateProjectsFromTasks(state.projects, nextTasks, [mergedTask.projectCode]);
           persistAndNotify({ tasks: nextTasks, projects: nextProjects });
           return { tasks: nextTasks, projects: nextProjects };
         });
-        get().logActivity(`Đã cập nhật tiến độ thi công thành ${Math.round(progress * 100)}%`, updatedTask.projectName || updatedTask.projectCode);
+        get().logActivity(`Đã cập nhật tiến độ thi công thành ${Math.round(progress * 100)}%`, mergedTask.projectName || mergedTask.projectCode);
       } catch (e) {
         console.error('Failed to update task progress', e);
       }
@@ -1374,31 +1401,38 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateMaterialPlan: async (id, fields) => {
       get().markMutation();
+      const audit = getAuditFields();
+      const fieldsWithAudit = { updatedBy: audit.updatedBy, updatedAt: audit.updatedAt, ...fields };
       const oldPlan = get().materialPlans.find((p) => p.id === id);
       // Optimistic update
       set((state) => {
-        const nextPlans = state.materialPlans.map((p) => (p.id === id ? { ...p, ...fields } : p));
+        const nextPlans = state.materialPlans.map((p) => (p.id === id ? { ...p, ...fieldsWithAudit } : p));
         persistAndNotify({ materialPlans: nextPlans });
         return { materialPlans: nextPlans };
       });
       try {
-        const updated = normalizeMaterialPlan(await api.accounting.updateMaterialPlan(id, fields));
+        const updated = normalizeMaterialPlan(await api.accounting.updateMaterialPlan(id, fieldsWithAudit));
+        const merged = {
+          ...updated,
+          updatedBy: updated.updatedBy || audit.updatedBy,
+          updatedAt: updated.updatedAt || audit.updatedAt,
+        };
         get().markMutation();
         set((state) => {
-          const nextPlans = state.materialPlans.map((p) => (p.id === id ? updated : p));
+          const nextPlans = state.materialPlans.map((p) => (p.id === id ? merged : p));
           
           let changes = [];
           if (oldPlan) {
-            if (oldPlan.stt !== updated.stt) changes.push(`STT: "${oldPlan.stt || ''}" -> "${updated.stt || ''}"`);
-            if (oldPlan.jobContent !== updated.jobContent) changes.push(`Nội dung: "${oldPlan.jobContent || ''}" -> "${updated.jobContent || ''}"`);
-            if (oldPlan.contractVolume !== updated.contractVolume) changes.push(`Khối lượng: "${oldPlan.contractVolume || ''}" -> "${updated.contractVolume || ''}"`);
-            if (oldPlan.unit !== updated.unit) changes.push(`ĐVT: "${oldPlan.unit || ''}" -> "${updated.unit || ''}"`);
-            if (oldPlan.supplyScope !== updated.supplyScope) changes.push(`Phạm vi: "${oldPlan.supplyScope || ''}" -> "${updated.supplyScope || ''}"`);
-            if (oldPlan.notes !== updated.notes) changes.push(`Ghi chú: "${oldPlan.notes || ''}" -> "${updated.notes || ''}"`);
+            if (oldPlan.stt !== merged.stt) changes.push(`STT: "${oldPlan.stt || ''}" -> "${merged.stt || ''}"`);
+            if (oldPlan.jobContent !== merged.jobContent) changes.push(`Nội dung: "${oldPlan.jobContent || ''}" -> "${merged.jobContent || ''}"`);
+            if (oldPlan.contractVolume !== merged.contractVolume) changes.push(`Khối lượng: "${oldPlan.contractVolume || ''}" -> "${merged.contractVolume || ''}"`);
+            if (oldPlan.unit !== merged.unit) changes.push(`ĐVT: "${oldPlan.unit || ''}" -> "${merged.unit || ''}"`);
+            if (oldPlan.supplyScope !== merged.supplyScope) changes.push(`Phạm vi: "${oldPlan.supplyScope || ''}" -> "${merged.supplyScope || ''}"`);
+            if (oldPlan.notes !== merged.notes) changes.push(`Ghi chú: "${oldPlan.notes || ''}" -> "${merged.notes || ''}"`);
           }
-          const detailStr = changes.length > 0 ? ` |Detail:Dự án ${updated.projectCode}, Đầu mục ${updated.stt}: ${changes.join(', ')}` : '';
+          const detailStr = changes.length > 0 ? ` |Detail:Dự án ${merged.projectCode}, Đầu mục ${merged.stt}: ${changes.join(', ')}` : '';
           
-          get().logActivity('Cập nhật Kế hoạch vật tư: ' + (updated.jobContent || id) + detailStr, updated.projectCode || 'COMPANY');
+          get().logActivity('Cập nhật Kế hoạch vật tư: ' + (merged.jobContent || id) + detailStr, merged.projectCode || 'COMPANY');
           persistAndNotify({ materialPlans: nextPlans });
           return { materialPlans: nextPlans };
         });
@@ -1440,30 +1474,37 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updatePurchasingPlan: async (id, fields) => {
       get().markMutation();
+      const audit = getAuditFields();
+      const fieldsWithAudit = { updatedBy: audit.updatedBy, updatedAt: audit.updatedAt, ...fields };
       const oldPlan = get().purchasingPlans.find((p) => p.id === id);
       // Optimistic update
       set((state) => {
-        const nextPurs = state.purchasingPlans.map((p) => (p.id === id ? { ...p, ...fields } : p));
+        const nextPurs = state.purchasingPlans.map((p) => (p.id === id ? { ...p, ...fieldsWithAudit } : p));
         persistAndNotify({ purchasingPlans: nextPurs });
         return { purchasingPlans: nextPurs };
       });
       try {
-        const updated = normalizePurchasingPlan(await api.accounting.updatePurchasing(id, fields));
+        const updated = normalizePurchasingPlan(await api.accounting.updatePurchasing(id, fieldsWithAudit));
+        const merged = {
+          ...updated,
+          updatedBy: updated.updatedBy || audit.updatedBy,
+          updatedAt: updated.updatedAt || audit.updatedAt,
+        };
         set((state) => {
-          const nextPurs = state.purchasingPlans.map((p) => (p.id === id ? updated : p));
+          const nextPurs = state.purchasingPlans.map((p) => (p.id === id ? merged : p));
           
           let changes = [];
           if (oldPlan) {
-            if (oldPlan.stt !== updated.stt) changes.push(`STT: "${oldPlan.stt || ''}" -> "${updated.stt || ''}"`);
-            if (oldPlan.content !== updated.content) changes.push(`Nội dung: "${oldPlan.content || ''}" -> "${updated.content || ''}"`);
-            if (oldPlan.volumeContract !== updated.volumeContract) changes.push(`KL: "${oldPlan.volumeContract || ''}" -> "${updated.volumeContract || ''}"`);
-            if (oldPlan.unit !== updated.unit) changes.push(`ĐVT: "${oldPlan.unit || ''}" -> "${updated.unit || ''}"`);
-            if (oldPlan.unitPrice !== updated.unitPrice) changes.push(`Đơn giá: "${oldPlan.unitPrice || ''}" -> "${updated.unitPrice || ''}"`);
-            if (oldPlan.notes !== updated.notes) changes.push(`Ghi chú: "${oldPlan.notes || ''}" -> "${updated.notes || ''}"`);
+            if (oldPlan.stt !== merged.stt) changes.push(`STT: "${oldPlan.stt || ''}" -> "${merged.stt || ''}"`);
+            if (oldPlan.content !== merged.content) changes.push(`Nội dung: "${oldPlan.content || ''}" -> "${merged.content || ''}"`);
+            if (oldPlan.volumeContract !== merged.volumeContract) changes.push(`KL: "${oldPlan.volumeContract || ''}" -> "${merged.volumeContract || ''}"`);
+            if (oldPlan.unit !== merged.unit) changes.push(`ĐVT: "${oldPlan.unit || ''}" -> "${merged.unit || ''}"`);
+            if (oldPlan.unitPrice !== merged.unitPrice) changes.push(`Đơn giá: "${oldPlan.unitPrice || ''}" -> "${merged.unitPrice || ''}"`);
+            if (oldPlan.notes !== merged.notes) changes.push(`Ghi chú: "${oldPlan.notes || ''}" -> "${merged.notes || ''}"`);
           }
-          const detailStr = changes.length > 0 ? ` |Detail:Dự án ${updated.projectCode}, Đầu mục ${updated.stt}: ${changes.join(', ')}` : '';
+          const detailStr = changes.length > 0 ? ` |Detail:Dự án ${merged.projectCode}, Đầu mục ${merged.stt}: ${changes.join(', ')}` : '';
           
-          get().logActivity('Cập nhật Mua hàng nhà thầu: ' + (updated.content || id) + detailStr, updated.projectCode || 'COMPANY');
+          get().logActivity('Cập nhật Mua hàng nhà thầu: ' + (merged.content || id) + detailStr, merged.projectCode || 'COMPANY');
           persistAndNotify({ purchasingPlans: nextPurs });
           return { purchasingPlans: nextPurs };
         });
