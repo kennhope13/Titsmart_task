@@ -509,19 +509,12 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       fieldLogs: newState.fieldLogs !== undefined ? newState.fieldLogs : current.fieldLogs,
     };
     
-    // Debounce localStorage persistence to prevent UI freezes during rapid sequential updates
-    if ((window as any).__persistTimeout) {
-      clearTimeout((window as any).__persistTimeout);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      channel?.postMessage({ type: 'SYNC_STATE' });
+    } catch (e) {
+      console.error('Failed to save state', e);
     }
-    
-    (window as any).__persistTimeout = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        channel?.postMessage({ type: 'SYNC_STATE' });
-      } catch (e) {
-        console.error('Failed to save state', e);
-      }
-    }, 500);
   };
 
   const loadSavedState = () => {
