@@ -20,12 +20,12 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
 }) => {
   const formattedTime = formatAuditDateTime(updatedAt);
   if (!updatedBy && !formattedTime) {
-    return <span className="text-slate-300 italic text-[10px]">-</span>;
+    return <div className="text-center w-full"><span className="text-slate-300 italic text-[10px]">-</span></div>;
   }
 
   return (
-    <div className={`flex flex-col text-[10px] leading-tight ${className}`}>
-      <span className="font-bold text-slate-700 truncate" title={updatedBy || 'Hệ thống'}>
+    <div className={`flex flex-col items-center justify-center text-center text-[10px] leading-tight w-full ${className}`}>
+      <span className="font-bold text-slate-700 truncate w-full" title={updatedBy || 'Hệ thống'}>
         {updatedBy || 'Hệ thống'}
       </span>
       {formattedTime && (
