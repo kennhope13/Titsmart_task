@@ -377,7 +377,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
       // 1. Update existing materials with clean codes and sync materialName from import logs if it was Multimode/Singlemode
       for (const m of materials) {
-        let rawCode = m.code || '';
+        let rawCode = (m.code || '').replace(/-\d+$/, ''); // Bỏ các số hậu tố -1, -2 cũ
         let cleanCode = cleanCodeString(rawCode);
         let name = m.name || '';
 
@@ -400,6 +400,9 @@ export const MaterialTrackingPage: React.FC = () => {
         if (name && !cleanCode.includes(cleanCodeString(name))) {
           cleanCode = cleanCodeString(`${cleanCode}-${name}`);
         }
+
+        // Clean any leftover -1, -2 if not strictly needed
+        cleanCode = cleanCode.replace(/-\d+$/, '');
 
         let suffixNum = 0;
         let baseCode = cleanCode;
