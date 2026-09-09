@@ -47,7 +47,7 @@ export const StockTab: React.FC<StockTabProps> = ({ materials, onEdit }) => {
               <th className="w-24 p-3 text-right">Nhập</th>
               <th className="w-24 p-3 text-right">Xuất</th>
               <th className="w-24 p-3 text-right">Tồn kho</th>
-              <th className="w-36 p-3 text-center">Người cập nhật / Thời gian</th>
+              <th className="w-36 p-3 text-center">Người cập nhật</th>
               <th className="w-44 p-3">Ghi chú</th>
             </tr>
           </thead>

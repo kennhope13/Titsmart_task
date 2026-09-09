@@ -222,7 +222,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
             <th className="py-3 px-3 border-r border-slate-200 w-36 text-center">THỜI GIAN THI CÔNG</th>
             <th className="py-3 px-3 border-r border-slate-200 w-72">ẢNH NHẬT KÝ VẬN HÀNH</th>
             <th className="py-3 px-3 border-r border-slate-200 w-64">NỘI DUNG NHẬT KÝ / THI CÔNG HỆ THỐNG</th>
-            <th className="py-3 px-3 border-r border-slate-200 w-40">NGƯỜI CẬP NHẬT / THỜI GIAN</th>
+            <th className="py-3 px-3 border-r border-slate-200 w-40">NGƯỜI CẬP NHẬT</th>
             <th className="py-3 px-3 w-28 text-center">THAO TÁC</th>
           </tr>
         </thead>

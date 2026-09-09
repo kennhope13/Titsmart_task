@@ -86,7 +86,7 @@ export const LaborTab: React.FC<LaborTabProps> = ({
               <th className="w-[180px] px-1.5 py-1.5">Tài khoản & Người nhận</th>
               <th className="w-[95px] px-1.5 py-1.5 text-center">CCCD</th>
               <th className="w-[85px] px-1.5 py-1.5 text-center">Tình trạng</th>
-              <th className="w-[120px] px-1.5 py-1.5 text-center">Người cập nhật / Thời gian</th>
+              <th className="w-[120px] px-1.5 py-1.5 text-center">Người cập nhật</th>
               <th className="w-[60px] px-1.5 py-1.5 text-center">Thao tác</th>
             </tr>
           </thead>

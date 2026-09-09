@@ -50,7 +50,7 @@ export const InventoryLogTab: React.FC<InventoryLogTabProps> = ({ rows, kind }) 
             <th className="w-52 p-3">{isImport ? 'Nguồn nhập' : 'Dự án nhận'}</th>
             {!isImport && <th className="w-36 p-3">Người nhận</th>}
             <th className="w-40 p-3">Ghi chú</th>
-            <th className="w-40 p-3">Người cập nhật / Thời gian</th>
+            <th className="w-40 p-3">Người cập nhật</th>
           </tr>
         </thead>
         <tfoot className="bg-slate-50/80 border-t border-slate-200">
