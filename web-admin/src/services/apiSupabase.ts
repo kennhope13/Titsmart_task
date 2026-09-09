@@ -6,6 +6,22 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 
 const cleanUuid = (value: unknown) => (typeof value === 'string' && UUID_RE.test(value) ? value : null);
 
+const getCurrentAuditPayload = () => {
+  try {
+    const raw = localStorage.getItem('titsmart_auth_session');
+    const user = raw ? JSON.parse(raw) : null;
+    return {
+      updated_by: user?.name || user?.username || 'Hệ thống',
+      updated_at: new Date().toISOString(),
+    };
+  } catch {
+    return {
+      updated_by: 'Hệ thống',
+      updated_at: new Date().toISOString(),
+    };
+  }
+};
+
 // Ánh xạ CamelCase (của UI) sang snake_case (của Database)
 const toSnakeCase = (obj: any) => {
   if (!obj || typeof obj !== 'object') return obj;
@@ -17,6 +33,9 @@ const toSnakeCase = (obj: any) => {
       result[snakeKey] = obj[key];
     }
   }
+  const audit = getCurrentAuditPayload();
+  if (result.updated_by === undefined) result.updated_by = audit.updated_by;
+  if (result.updated_at === undefined) result.updated_at = audit.updated_at;
   return result;
 };
 

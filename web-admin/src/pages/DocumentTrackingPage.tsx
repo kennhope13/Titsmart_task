@@ -11,6 +11,7 @@ import { DocumentTrack } from '../types';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { FileUpload } from '../components/common/FileUpload';
+import { AuditInfoCell } from '../components/common/AuditInfoCell';
 
 export const DocumentTrackingPage: React.FC = () => {
   const { documentTracks, projects, updateProject, addDocumentTrack, updateDocumentTrack, deleteDocumentTrack, logActivity } = useRealtimeStore();
@@ -477,6 +478,7 @@ export const DocumentTrackingPage: React.FC = () => {
                    <th className="p-1 text-center min-w-[80px]">Thanh toán</th>
                    <th className="p-1 text-center whitespace-nowrap">File</th>
                    <th className="p-1 text-center whitespace-nowrap">Hồ sơ</th>
+                   <th className="p-1 min-w-[130px]">Người cập nhật / Thời gian</th>
                    <th className="p-1 text-center whitespace-nowrap">Thao tác</th>
                  </tr>
                </thead>
@@ -520,6 +522,9 @@ export const DocumentTrackingPage: React.FC = () => {
                       )}
                     </td>
                     <td className="px-1 py-1 text-center"><span className={`text-[10px] font-bold ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'text-emerald-700' : 'text-amber-700'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
+                    <td className="px-1 py-1">
+                      <AuditInfoCell updatedBy={track.updatedBy} updatedAt={track.updatedAt} />
+                    </td>
                     
                     <td className="px-1 py-1 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1.5">

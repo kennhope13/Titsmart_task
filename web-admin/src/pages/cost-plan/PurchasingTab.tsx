@@ -1,6 +1,7 @@
 import React from 'react';
 import { ProjectPurchasing, getStatusColorStyle, PURCHASE_STATUS_OPTIONS } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { AuditInfoCell } from '../../components/common/AuditInfoCell';
 
 interface PurchasingTabProps {
   data: ProjectPurchasing[];
@@ -453,7 +454,8 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.total}</th>
                 <th style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.orderStatus}</th>
                 <th style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">{TEXT.contractStatus}</th>
-                <th style={{ width: 119, borderBottom: '1px solid #94a3b8' }} className="sticky right-0 z-20 bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.note}</th>
+                <th style={{ width: 119, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.note}</th>
+                <th style={{ width: 130, borderBottom: '1px solid #94a3b8' }} className="sticky right-0 z-20 bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT / THỜI GIAN</th>
               </tr>
             ) : (
               <tr className="bg-slate-50">
@@ -465,7 +467,8 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                 <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.payment}</th>
                 <th style={{ width: 70, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.paymentDate}</th>
                 <th style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.invoice}</th>
-                <th style={{ width: 119, borderBottom: '1px solid #94a3b8' }} className="sticky right-0 z-20 bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.note}</th>
+                <th style={{ width: 119, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">{TEXT.note}</th>
+                <th style={{ width: 130, borderBottom: '1px solid #94a3b8' }} className="sticky right-0 z-20 bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT / THỜI GIAN</th>
               </tr>
             )}
           </thead>
@@ -919,6 +922,11 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
                     ) : (
                       <div onClick={() => startEditing(pur.id, 'notes', cleanNotes(pur.notes))} className="w-full truncate cursor-pointer hover:bg-slate-100 px-1.5 py-0.5 rounded" title={cleanNotes(pur.notes)}>{cleanNotes(pur.notes) || '-'}</div>
                     )}
+                  </td>
+
+                  {/* NGƯỜI CẬP NHẬT / THỜI GIAN */}
+                  <td className={`sticky right-0 z-20 ${stickyBg} group-hover:bg-slate-100 px-1.5 py-1 text-center font-semibold text-slate-700`}>
+                    <AuditInfoCell updatedBy={pur.updatedBy} updatedAt={pur.updatedAt} />
                   </td>
                 </tr>
               );

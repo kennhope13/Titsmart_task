@@ -8,6 +8,7 @@ import { Toast } from '../components/common/Toast';
 import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { WebOcrExtractedData } from '../services/webOcrService';
+import { AuditInfoCell } from '../components/common/AuditInfoCell';
 
 const todayStamp = () => new Date().toISOString().split('T')[0];
 
@@ -787,6 +788,12 @@ export const ProjectManagementPage: React.FC = () => {
 
                     {/* Tiến độ */}
                     <div className="mt-auto pt-1">
+                      {(project.updatedBy || project.updatedAt) && (
+                        <div className="mb-2 pt-1 border-t border-slate-100/50 flex items-center justify-between">
+                          <span className="text-[10px] font-semibold text-slate-400">Cập nhật:</span>
+                          <AuditInfoCell updatedBy={project.updatedBy} updatedAt={project.updatedAt} />
+                        </div>
+                      )}
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[11px] text-slate-400">Tiến độ</span>
                         <span className={`text-xs font-extrabold ${

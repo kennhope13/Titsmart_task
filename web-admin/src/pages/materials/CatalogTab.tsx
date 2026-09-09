@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Material } from '../../types';
+import { AuditInfoCell } from '../../components/common/AuditInfoCell';
 
 interface CatalogTabProps {
   materials: Material[];
@@ -40,11 +41,12 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
         <table className="w-full table-fixed text-left border-collapse">
           <colgroup>
             <col style={{ width: '4%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '24%' }} />
             <col style={{ width: '12%' }} />
-            <col style={{ width: '28%' }} />
+            <col style={{ width: '25%' }} />
+            <col style={{ width: '5%' }} />
             <col style={{ width: '13%' }} />
-            <col style={{ width: '30%' }} />
-            <col style={{ width: '6%' }} />
             <col style={{ width: '7%' }} />
           </colgroup>
           <thead className="bg-slate-50 border-b border-slate-200 text-[12px] font-bold text-slate-500 uppercase">
@@ -55,6 +57,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
               <th className="px-2 py-3">Mã vật tư</th>
               <th className="px-2 py-3">Thông số / Quy cách</th>
               <th className="px-2 py-3 text-center">ĐVT</th>
+              <th className="px-2 py-3">Người cập nhật</th>
               <th className="px-2 py-3 text-center">Thao tác</th>
             </tr>
           </thead>
@@ -66,6 +69,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
               <td className="px-2 py-1"><input value={columnFilters.code || ''} onChange={e => updateColumnFilter('code', e.target.value)} placeholder="Mã VT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
               <td className="px-2 py-1"><input value={columnFilters.specs || ''} onChange={e => updateColumnFilter('specs', e.target.value)} placeholder="Quy cách..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
               <td className="px-2 py-1"><input value={columnFilters.unit || ''} onChange={e => updateColumnFilter('unit', e.target.value)} placeholder="ĐVT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+              <td className="px-2 py-1"></td>
               <td className="px-2 py-1"></td>
             </tr>
           </tfoot>
@@ -80,6 +84,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
             <td className="px-2 py-3 font-mono text-slate-600 truncate" title={material.code || ''}>{material.code || '-'}</td>
             <td className="px-2 py-3 text-slate-500 truncate" title={material.specs || material.englishName || ''}>{material.specs || material.englishName || '-'}</td>
             <td className="px-2 py-3 text-center truncate">{material.unit || '-'}</td>
+            <td className="px-2 py-3">
+              <AuditInfoCell updatedBy={material.updatedBy} updatedAt={material.updatedAt} />
+            </td>
             <td className="px-2 py-3 text-center" onClick={(event) => event.stopPropagation()}>
               <button type="button" onClick={() => onDelete(material)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title={'X\u00f3a v\u1eadt t\u01b0'}>
                 <span className="material-symbols-outlined text-base">delete</span>
@@ -87,7 +94,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
             </td>
           </tr>
         ))}
-        {filtered.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-slate-500">{'Kh\u00f4ng c\u00f3 v\u1eadt t\u01b0 n\u00e0o.'}</td></tr>}
+        {filtered.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-slate-500">{'Kh\u00f4ng c\u00f3 v\u1eadt t\u01b0 n\u00e0o.'}</td></tr>}
       </tbody>
     </table>
   </div>

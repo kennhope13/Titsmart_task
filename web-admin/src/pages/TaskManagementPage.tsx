@@ -11,6 +11,7 @@ import { WebOcrExtractedData } from '../services/webOcrService';
 import { Task, getStatusColorStyle , calculateAutoProgressRatio, calculateAutoProgressPercent, normalizeStatusText, purchaseProgressScore, constructionProgressScore, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS, ISSUE_STATUS_OPTIONS, getIssueStatusColorStyle } from '../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { compareTaskStt } from '../utils/taskTreeUtils';
+import { AuditInfoCell } from '../components/common/AuditInfoCell';
 
 // Convert integer to Roman numeral
 const toRoman = (num: number): string => {
@@ -1756,6 +1757,7 @@ const displayTasks = tasks.filter((t) => {
                 {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
                     <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">GIAO VIỆC</th>
                   )}
+                <th className="py-2 px-1 w-[130px] border-b border-slate-200 whitespace-nowrap text-left">NGƯỜI CẬP NHẬT</th>
                 <th className="sticky right-0 z-20 bg-slate-50 bg-clip-padding py-2 px-1 w-[150px] min-w-[150px] border-b border-l border-slate-200 whitespace-nowrap shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">GHI CHÚ</th>
               </tr>
             </thead>
@@ -1922,6 +1924,9 @@ const displayTasks = tasks.filter((t) => {
                           </div>
                         </td>
                       )}
+                      <td className="py-1.5 px-1 text-left border-r border-slate-200 whitespace-nowrap">
+                        <AuditInfoCell updatedBy={t.updatedBy} updatedAt={t.updatedAt} />
+                      </td>
                       <td className={`sticky right-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-l border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-slate-500 whitespace-normal break-words leading-tight`} title={cleanNotes(t.notes)}>
                         {editingCell?.id === t.id && editingCell?.field === 'notes' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-700 font-bold focus:outline-primary text-[10px]" />

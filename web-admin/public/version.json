@@ -1,7 +1,8 @@
 {
-  "version": "2.6.2",
+  "version": "2.7.0",
   "date": "2026-09-09",
   "notes": [
-    "Đảm bảo phân công nhân sự hoạt động đồng bộ và bảo lưu dự án cũ ở cả 2 trang Quản Lý Nhân Sự và Quản Lý Dự Án."
+    "Bổ sung cột NGƯỜI CẬP NHẬT / THỜI GIAN trên tất cả các bảng quản lý của hệ thống web.",
+    "Bảo lưu dự án và quyền truy cập khi cập nhật thông tin người dùng/kỹ sư."
   ]
 }

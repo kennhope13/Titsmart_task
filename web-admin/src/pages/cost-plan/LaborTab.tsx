@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { LaborPayroll } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { AuditInfoCell } from '../../components/common/AuditInfoCell';
 
 interface LaborTabProps {
   data: LaborPayroll[];
@@ -85,6 +86,7 @@ export const LaborTab: React.FC<LaborTabProps> = ({
               <th className="w-[180px] px-1.5 py-1.5">Tài khoản & Người nhận</th>
               <th className="w-[95px] px-1.5 py-1.5 text-center">CCCD</th>
               <th className="w-[85px] px-1.5 py-1.5 text-center">Tình trạng</th>
+              <th className="w-[120px] px-1.5 py-1.5 text-left">Người cập nhật / Thời gian</th>
               <th className="w-[60px] px-1.5 py-1.5 text-center">Thao tác</th>
             </tr>
           </thead>
@@ -131,6 +133,9 @@ export const LaborTab: React.FC<LaborTabProps> = ({
                     <span className="material-symbols-outlined text-[12px]">{lab.paymentStatus === 'Đã thanh toán' ? 'check_circle' : 'pending'}</span>
                     {lab.paymentStatus}
                   </span>
+                 </td>
+                 <td className="px-1.5 py-1.5">
+                   <AuditInfoCell updatedBy={lab.updatedBy} updatedAt={lab.updatedAt} />
                  </td>
                  <td className="sticky right-0 z-10 bg-white group-hover:bg-blue-50/30 border-l border-slate-100 p-3 text-center">
                    <div className="flex items-center justify-center gap-2 transition-opacity">

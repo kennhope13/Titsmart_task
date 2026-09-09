@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ProjectExpense } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { AuditInfoCell } from '../../components/common/AuditInfoCell';
 
 interface ExpenseTabProps {
   data: ProjectExpense[];
@@ -116,6 +117,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
               <th className="w-[90px] px-1.5 py-1.5 text-right">Thực thu (đ)</th>
               <th className="w-[90px] px-1.5 py-1.5 text-right">Tồn quỹ (đ)</th>
               <th className="w-[70px] px-1.5 py-1.5 text-center">Hóa đơn</th>
+              <th className="w-[120px] px-1.5 py-1.5 text-left">Người cập nhật / Thời gian</th>
               <th className="w-[60px] px-1.5 py-1.5 text-center">Thao tác</th>
             </tr>
           </thead>
@@ -153,6 +155,9 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                     <span className="text-slate-300 material-symbols-outlined text-lg" title="Không có hóa đơn">image_not_supported</span>
                   )}
                  </td>
+                 <td className="px-1.5 py-1.5">
+                   <AuditInfoCell updatedBy={exp.updatedBy} updatedAt={exp.updatedAt} />
+                 </td>
                  <td className="sticky right-0 z-10 bg-white group-hover:bg-blue-50/30 border-l border-slate-100 p-3 text-center">
                    <div className="flex items-center justify-center gap-2 transition-opacity">
                     <button onClick={() => onEdit(exp)} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition-colors" title="Chỉnh sửa">
@@ -166,7 +171,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
               </tr>
             ))}
             {filteredData.length === 0 && (
-              <tr><td colSpan={12} className="p-12 text-center text-slate-400 font-medium">Chưa có giao dịch chi phí nào.</td></tr>
+              <tr><td colSpan={13} className="p-12 text-center text-slate-400 font-medium">Chưa có giao dịch chi phí nào.</td></tr>
             )}
           </tbody>
         </table>

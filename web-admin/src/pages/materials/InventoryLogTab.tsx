@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { InventoryTransaction } from '../../types';
 import { formatNumber } from './inventoryUtils';
+import { AuditInfoCell } from '../../components/common/AuditInfoCell';
 
 interface InventoryLogTabProps {
   rows: InventoryTransaction[];
@@ -49,6 +50,7 @@ export const InventoryLogTab: React.FC<InventoryLogTabProps> = ({ rows, kind }) 
             <th className="w-52 p-3">{isImport ? 'Nguồn nhập' : 'Dự án nhận'}</th>
             {!isImport && <th className="w-36 p-3">Người nhận</th>}
             <th className="w-40 p-3">Ghi chú</th>
+            <th className="w-40 p-3">Người cập nhật / Thời gian</th>
           </tr>
         </thead>
         <tfoot className="bg-slate-50/80 border-t border-slate-200">
@@ -61,6 +63,7 @@ export const InventoryLogTab: React.FC<InventoryLogTabProps> = ({ rows, kind }) 
             <td className="w-52 p-1"><input value={columnFilters.sourceOrProject || ''} onChange={e => updateColumnFilter('sourceOrProject', e.target.value)} placeholder={isImport ? 'Nguồn...' : 'Dự án...'} className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
             {!isImport && <td className="w-36 p-1"><input value={columnFilters.receiverName || ''} onChange={e => updateColumnFilter('receiverName', e.target.value)} placeholder="Người nhận..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>}
             <td className="w-40 p-1"><input value={columnFilters.notes || ''} onChange={e => updateColumnFilter('notes', e.target.value)} placeholder="Ghi chú..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+            <td className="w-40 p-1"></td>
           </tr>
         </tfoot>
         <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
@@ -82,9 +85,12 @@ export const InventoryLogTab: React.FC<InventoryLogTabProps> = ({ rows, kind }) 
               <td className="p-3 text-slate-700 truncate" title={tx.sourceOrProject || ''}>{tx.sourceOrProject || '-'}</td>
               {!isImport && <td className="p-3 text-slate-600 truncate" title={tx.receiverName || ''}>{tx.receiverName || '-'}</td>}
               <td className="p-3 text-slate-500 italic truncate" title={tx.notes || ''}>{tx.notes || '-'}</td>
+              <td className="p-3">
+                <AuditInfoCell updatedBy={tx.updatedBy} updatedAt={tx.updatedAt} />
+              </td>
             </tr>
           ))}
-          {filtered.length === 0 && <tr><td colSpan={isImport ? 7 : 8} className="p-8 text-center text-slate-500">Chưa có giao dịch {isImport ? 'nhập' : 'xuất'} kho nào.</td></tr>}
+          {filtered.length === 0 && <tr><td colSpan={isImport ? 8 : 9} className="p-8 text-center text-slate-500">Chưa có giao dịch {isImport ? 'nhập' : 'xuất'} kho nào.</td></tr>}
         </tbody>
       </table>
     </div>

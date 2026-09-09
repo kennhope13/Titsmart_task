@@ -4,6 +4,7 @@ import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
+import { AuditInfoCell } from '../components/common/AuditInfoCell';
 
 export const TaskAssignmentPage: React.FC = () => {
   const { tasks, projects, engineers, updateTask } = useRealtimeStore();
@@ -144,13 +145,14 @@ export const TaskAssignmentPage: React.FC = () => {
                 <th className="py-2.5 px-4 w-40 border-r border-slate-200">Người phụ trách</th>
                 <th className="py-2.5 px-4 w-32 border-r border-slate-200">Trạng thái</th>
                 <th className="py-2.5 px-4 w-20 text-center border-r border-slate-200">KL</th>
-                <th className="py-2.5 px-4 w-20 text-center">ĐVT</th>
+                <th className="py-2.5 px-4 w-20 text-center border-r border-slate-200">ĐVT</th>
+                <th className="py-2.5 px-4 w-40 border-r border-slate-200">Người cập nhật / Thời gian</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {displayedTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500 font-medium italic">Không có công việc nào</td>
+                  <td colSpan={8} className="py-8 text-center text-slate-500 font-medium italic">Không có công việc nào</td>
                 </tr>
               ) : (
                 displayedTasks.map((t, idx) => {
@@ -191,6 +193,9 @@ export const TaskAssignmentPage: React.FC = () => {
                       </td>
                       <td className="py-2.5 px-4 text-center text-slate-600 font-medium text-xs border-l border-slate-200">{t.volume}</td>
                       <td className="py-2.5 px-4 text-center text-slate-600 font-medium text-xs border-l border-slate-200">{t.unit}</td>
+                      <td className="py-2.5 px-4 border-l border-slate-200">
+                        <AuditInfoCell updatedBy={t.updatedBy} updatedAt={t.updatedAt} />
+                      </td>
                     </tr>
                   );
                 })

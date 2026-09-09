@@ -29,6 +29,14 @@ const getAuthUser = () => {
   }
 };
 
+const getAuditFields = () => {
+  const user = getAuthUser();
+  return {
+    updatedBy: user?.name || user?.username || 'Hệ thống',
+    updatedAt: new Date().toISOString(),
+  };
+};
+
 const filterByProject = (items: any[], codeField: string) => {
   const user = getAuthUser();
   if (!user || !Array.isArray(items)) return items;
@@ -371,6 +379,8 @@ const normalizeMaterialPlan = (plan: any): ProjectMaterialPlan => ({
   supplyScope: deriveSupplyScope(plan),
   notes: plan.notes || '',
   parentId: plan.parentId ?? plan.parent_id ?? undefined,
+  updatedBy: plan.updatedBy ?? plan.updated_by ?? undefined,
+  updatedAt: plan.updatedAt ?? plan.updated_at ?? undefined,
 });
 
 const normalizePurchasingPlan = (plan: any): ProjectPurchasing => ({
@@ -394,6 +404,8 @@ const normalizePurchasingPlan = (plan: any): ProjectPurchasing => ({
   invoiceStatus: plan.invoiceStatus ?? plan.invoice_status ?? '',
   notes: plan.notes || '',
   parentId: plan.parentId ?? plan.parent_id ?? undefined,
+  updatedBy: plan.updatedBy ?? plan.updated_by ?? undefined,
+  updatedAt: plan.updatedAt ?? plan.updated_at ?? undefined,
 });
 
 const normalizeExpense = (exp: any): ProjectExpense => ({
@@ -413,6 +425,8 @@ const normalizeExpense = (exp: any): ProjectExpense => ({
   balanceFund: Number(exp.balanceFund ?? exp.balance_fund ?? 0),
   notes: exp.notes || '',
   invoiceUrl: exp.invoiceUrl ?? exp.invoice_url ?? '',
+  updatedBy: exp.updatedBy ?? exp.updated_by ?? undefined,
+  updatedAt: exp.updatedAt ?? exp.updated_at ?? undefined,
 });
 
 const normalizeLaborPayroll = (lab: any): LaborPayroll => ({
@@ -433,6 +447,8 @@ const normalizeLaborPayroll = (lab: any): LaborPayroll => ({
   idCardBackUrl: lab.idCardBackUrl ?? lab.id_card_back_url ?? '',
   paymentStatus: lab.paymentStatus ?? lab.payment_status ?? '',
   notes: lab.notes || '',
+  updatedBy: lab.updatedBy ?? lab.updated_by ?? undefined,
+  updatedAt: lab.updatedAt ?? lab.updated_at ?? undefined,
 });
 
 const normalizeDocumentTrack = (doc: any): DocumentTrack => ({
@@ -457,7 +473,9 @@ const normalizeDocumentTrack = (doc: any): DocumentTrack => ({
   isCompleted: !!(doc.isCompleted ?? doc.is_completed ?? false),
   notes: doc.notes || '',
   fileUrls: doc.fileUrls ?? doc.file_urls ?? [],
-  docType: doc.docType ?? doc.doc_type ?? 'Giao'
+  docType: doc.docType ?? doc.doc_type ?? 'Giao',
+  updatedBy: doc.updatedBy ?? doc.updated_by ?? undefined,
+  updatedAt: doc.updatedAt ?? doc.updated_at ?? undefined,
 });
 
 export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {

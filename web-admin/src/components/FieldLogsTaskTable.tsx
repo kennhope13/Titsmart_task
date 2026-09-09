@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { FieldLog, Task } from '../types';
 import { compareTaskStt } from '../utils/taskTreeUtils';
+import { AuditInfoCell } from './common/AuditInfoCell';
 
 const CustomLightbox: React.FC<{ images: string[]; index: number; onClose: () => void; onPrev: () => void; onNext: () => void }> = ({
   images, index, onClose, onPrev, onNext,
@@ -221,12 +222,13 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
             <th className="py-3 px-3 border-r border-slate-200 w-36 text-center">THỜI GIAN THI CÔNG</th>
             <th className="py-3 px-3 border-r border-slate-200 w-72">ẢNH NHẬT KÝ VẬN HÀNH</th>
             <th className="py-3 px-3 border-r border-slate-200 w-64">NỘI DUNG NHẬT KÝ / THI CÔNG HỆ THỐNG</th>
+            <th className="py-3 px-3 border-r border-slate-200 w-40">NGƯỜI CẬP NHẬT / THỜI GIAN</th>
             <th className="py-3 px-3 w-28 text-center">THAO TÁC</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200">
           {groupedTasks.length === 0 ? (
-            <tr><td colSpan={6} className="p-8 text-center text-slate-400">Không có công việc nào</td></tr>
+            <tr><td colSpan={7} className="p-8 text-center text-slate-400">Không có công việc nào</td></tr>
           ) : (
             groupedTasks.filter((t) => {
               if (t.isSectionHeader) return true;
@@ -237,7 +239,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                 return (
                   <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
                     <td className="py-3 px-3 border-r border-blue-200 text-center font-mono text-xs">{t.computedStt || t.stt}</td>
-                    <td colSpan={5} className="py-3 px-4 font-extrabold text-xs">
+                    <td colSpan={6} className="py-3 px-4 font-extrabold text-xs">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => toggleSection(t._sectionKey || '')}
@@ -326,6 +328,10 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                         <span className="text-slate-300 text-xs italic">Chưa có nội dung nhật ký</span>
                       )}
                     </div>
+                  </td>
+                  {/* CỘT NGƯỜI CẬP NHẬT */}
+                  <td className="py-2.5 px-3 border-r border-slate-200">
+                    <AuditInfoCell updatedBy={taskLogs[0]?.updatedBy || t.updatedBy} updatedAt={taskLogs[0]?.updatedAt || t.updatedAt} />
                   </td>
                   {/* CỘT THAO TÁC */}
                   <td className="py-2.5 px-3 text-center">

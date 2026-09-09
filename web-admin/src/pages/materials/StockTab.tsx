@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Material } from '../../types';
 import { formatNumber, materialCurrentStock } from './inventoryUtils';
+import { AuditInfoCell } from '../../components/common/AuditInfoCell';
 
 interface StockTabProps {
   materials: Material[];
@@ -46,6 +47,7 @@ export const StockTab: React.FC<StockTabProps> = ({ materials, onEdit }) => {
               <th className="w-24 p-3 text-right">Nhập</th>
               <th className="w-24 p-3 text-right">Xuất</th>
               <th className="w-24 p-3 text-right">Tồn kho</th>
+              <th className="w-36 p-3">Người cập nhật</th>
               <th className="w-44 p-3">Ghi chú</th>
             </tr>
           </thead>
@@ -54,6 +56,7 @@ export const StockTab: React.FC<StockTabProps> = ({ materials, onEdit }) => {
               <td className="p-1"></td>
               <td className="p-1"><input value={columnFilters.name || ''} onChange={e => updateColumnFilter('name', e.target.value)} placeholder="Vật tư..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
               <td className="p-1"><input value={columnFilters.unit || ''} onChange={e => updateColumnFilter('unit', e.target.value)} placeholder="ĐVT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
+              <td className="p-1"></td>
               <td className="p-1"></td>
               <td className="p-1"></td>
               <td className="p-1"></td>
@@ -74,10 +77,13 @@ export const StockTab: React.FC<StockTabProps> = ({ materials, onEdit }) => {
             <td className="p-3 text-right text-emerald-600 font-bold">+{formatNumber(material.totalImport)}</td>
             <td className="p-3 text-right text-amber-600 font-bold">-{formatNumber(material.totalExport)}</td>
             <td className="p-3 text-right font-bold text-primary text-sm">{formatNumber(materialCurrentStock(material))}</td>
+            <td className="p-3">
+              <AuditInfoCell updatedBy={material.updatedBy} updatedAt={material.updatedAt} />
+            </td>
             <td className="p-3 text-slate-500 italic truncate" title={material.notes || ''}>{material.notes || '-'}</td>
           </tr>
         ))}
-        {filtered.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-slate-500">Không có vật tư nào.</td></tr>}
+        {filtered.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-slate-500">Không có vật tư nào.</td></tr>}
       </tbody>
     </table>
   </div>

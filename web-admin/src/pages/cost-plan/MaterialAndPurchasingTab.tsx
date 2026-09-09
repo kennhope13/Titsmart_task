@@ -5,6 +5,7 @@ import { CustomSelect } from '@/components/common/CustomSelect';
 import { decodeModels, encodeModels, ModelEntry } from './DocumentCertificateTab';
 import { FastDocModal } from './FastDocModal';
 import { DocumentCertificateTab } from './DocumentCertificateTab';
+import { AuditInfoCell } from '../../components/common/AuditInfoCell';
 
 interface MaterialAndPurchasingTabProps {
   activeSubTab?: 'TECH' | 'ORDER' | 'DOCS' | 'FINANCE';
@@ -772,10 +773,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   }, [data]);
 
   const colSpanCount = useMemo(() => {
-    if (subTab === 'TECH') return 9;
-    if (subTab === 'DOCS') return 6;
-    if (subTab === 'FINANCE') return 11;
-    return 8;
+    if (subTab === 'TECH') return 10;
+    if (subTab === 'DOCS') return 7;
+    if (subTab === 'FINANCE') return 12;
+    return 9;
   }, [subTab]);
 
   return (
@@ -1090,6 +1091,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               )}
 
               {subTab !== 'TECH' && <th rowSpan={2} style={{ width: 110, borderBottom: '1px solid #94a3b8', borderLeft: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>}
+              <th rowSpan={2} style={{ width: 130, borderBottom: '1px solid #94a3b8', borderLeft: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT / THỜI GIAN</th>
             </tr>
             <tr className="bg-slate-50">
               
@@ -1720,6 +1722,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               </div>
                             </td>
                           )}
+                          <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1.5 align-middle text-slate-500 min-w-[120px]">
+                            <AuditInfoCell updatedBy={plan.updatedBy || pRecord?.updatedBy} updatedAt={plan.updatedAt || pRecord?.updatedAt} />
+                          </td>
                       </tr>
                       );
                     })}

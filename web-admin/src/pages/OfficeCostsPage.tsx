@@ -6,6 +6,7 @@ import { FileViewerItem } from '../components/common/FileViewerItem';
 import { Toast } from '../components/common/Toast';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { CostPlanSummaryTable } from './cost-plan/CostPlanSummaryTable';
+import { AuditInfoCell } from '../components/common/AuditInfoCell';
 
 export const OfficeCostsPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -195,6 +196,7 @@ export const OfficeCostsPage: React.FC = () => {
                   <th className="px-2 py-1.5 text-right min-w-[85px]">Thực thu</th>
                   <th className="px-2 py-1.5 text-center w-[50px]">H.Đơn</th>
                   <th className="px-2 py-1.5 min-w-[80px]">Ghi chú</th>
+                  <th className="px-2 py-1.5 min-w-[120px]">Người cập nhật / Thời gian</th>
                   {hasPermission(user, 'EDIT_EXPENSES') && <th className="px-2 py-1.5 text-center w-[40px]"></th>}
                 </tr>
               </thead>
@@ -219,6 +221,9 @@ export const OfficeCostsPage: React.FC = () => {
                       ) : <span className="text-slate-300">-</span>}
                     </td>
                     <td className="px-2 py-1.5 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
+                    <td className="px-2 py-1.5">
+                      <AuditInfoCell updatedBy={exp.updatedBy} updatedAt={exp.updatedAt} />
+                    </td>
                     {hasPermission(user, 'EDIT_EXPENSES') && (
                       <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => {
@@ -235,7 +240,7 @@ export const OfficeCostsPage: React.FC = () => {
                 ))}
                 {filteredExpenses.length === 0 && (
                   <tr>
-                    <td colSpan={12} className="px-2 py-8 text-center text-slate-500">Không có dữ liệu chi phí nào</td>
+                    <td colSpan={13} className="px-2 py-8 text-center text-slate-500">Không có dữ liệu chi phí nào</td>
                   </tr>
                 )}
               </tbody>
