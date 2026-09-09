@@ -170,7 +170,7 @@ export const ActivityLogPage: React.FC = () => {
 
         
           <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
-          <span className="px-3 h-[38px] rounded-full bg-blue-50 text-primary text-[13px] font-bold border border-blue-100 whitespace-nowrap">
+          <span className="flex items-center justify-center px-3 h-[38px] rounded-full bg-blue-50 text-primary text-[13px] font-bold border border-blue-100 whitespace-nowrap">
             {filteredLogs.length} thao tác
           </span>
           <div className="relative w-full sm:w-64 flex items-center">
