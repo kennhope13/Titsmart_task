@@ -57,7 +57,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
               <th className="px-2 py-3">Mã vật tư</th>
               <th className="px-2 py-3">Thông số / Quy cách</th>
               <th className="px-2 py-3 text-center">ĐVT</th>
-              <th className="px-2 py-3">Người cập nhật</th>
+              <th className="px-2 py-3 text-center">Người cập nhật / Thời gian</th>
               <th className="px-2 py-3 text-center">Thao tác</th>
             </tr>
           </thead>

@@ -117,7 +117,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
               <th className="w-[90px] px-1.5 py-1.5 text-right">Thực thu (đ)</th>
               <th className="w-[90px] px-1.5 py-1.5 text-right">Tồn quỹ (đ)</th>
               <th className="w-[70px] px-1.5 py-1.5 text-center">Hóa đơn</th>
-              <th className="w-[120px] px-1.5 py-1.5 text-left">Người cập nhật / Thời gian</th>
+              <th className="w-[120px] px-1.5 py-1.5 text-center">Người cập nhật / Thời gian</th>
               <th className="w-[60px] px-1.5 py-1.5 text-center">Thao tác</th>
             </tr>
           </thead>

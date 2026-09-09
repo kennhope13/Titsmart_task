@@ -146,7 +146,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 <th className="py-2.5 px-4 w-32 border-r border-slate-200">Trạng thái</th>
                 <th className="py-2.5 px-4 w-20 text-center border-r border-slate-200">KL</th>
                 <th className="py-2.5 px-4 w-20 text-center border-r border-slate-200">ĐVT</th>
-                <th className="py-2.5 px-4 w-40 border-r border-slate-200">Người cập nhật / Thời gian</th>
+                <th className="py-2.5 px-4 w-40 border-r border-slate-200 text-center">NGƯỜI CẬP NHẬT / THỜI GIAN</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">

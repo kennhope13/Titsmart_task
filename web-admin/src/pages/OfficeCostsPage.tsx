@@ -196,7 +196,7 @@ export const OfficeCostsPage: React.FC = () => {
                   <th className="px-2 py-1.5 text-right min-w-[85px]">Thực thu</th>
                   <th className="px-2 py-1.5 text-center w-[50px]">H.Đơn</th>
                   <th className="px-2 py-1.5 min-w-[80px]">Ghi chú</th>
-                  <th className="px-2 py-1.5 min-w-[120px]">Người cập nhật / Thời gian</th>
+                  <th className="px-2 py-1.5 min-w-[120px] text-center">NGƯỜI CẬP NHẬT / THỜI GIAN</th>
                   {hasPermission(user, 'EDIT_EXPENSES') && <th className="px-2 py-1.5 text-center w-[40px]"></th>}
                 </tr>
               </thead>

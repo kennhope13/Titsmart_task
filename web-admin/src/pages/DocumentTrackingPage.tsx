@@ -478,7 +478,7 @@ export const DocumentTrackingPage: React.FC = () => {
                    <th className="p-1 text-center min-w-[80px]">Thanh toán</th>
                    <th className="p-1 text-center whitespace-nowrap">File</th>
                    <th className="p-1 text-center whitespace-nowrap">Hồ sơ</th>
-                   <th className="p-1 min-w-[130px]">Người cập nhật / Thời gian</th>
+                   <th className="p-1 min-w-[130px] text-center">NGƯỜI CẬP NHẬT / THỜI GIAN</th>
                    <th className="p-1 text-center whitespace-nowrap">Thao tác</th>
                  </tr>
                </thead>
