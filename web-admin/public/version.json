@@ -1,8 +1,10 @@
 {
-  "version": "2.7.0",
+  "version": "2.8.0",
   "date": "2026-09-09",
   "notes": [
-    "Bổ sung cột NGƯỜI CẬP NHẬT / THỜI GIAN trên tất cả các bảng quản lý của hệ thống web.",
-    "Bảo lưu dự án và quyền truy cập khi cập nhật thông tin người dùng/kỹ sư."
+    "Bổ sung cột NGƯỜI CẬP NHẬT / THỜI GIAN chuẩn hóa căn giữa trên tất cả 13 bảng giao diện hệ thống Web.",
+    "Cập nhật tự động Tên người dùng và thời gian thực tế vào cột NGƯỜI CẬP NHẬT.",
+    "Tổng hợp người cập nhật mới nhất từ toàn bộ công việc và hạng mục để hiển thị lên Thẻ Dự Án.",
+    "Tối ưu tốc độ phản hồi lưu Cập nhật dự án và đồng bộ nhân sự song song tức thì."
   ]
 }
