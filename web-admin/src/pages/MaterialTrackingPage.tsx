@@ -1318,7 +1318,7 @@ export const MaterialTrackingPage: React.FC = () => {
                   const stockVal = m.currentStock !== undefined ? m.currentStock : (m.initialStock || 0);
                   return (
                     <option key={m.id} value={m.id}>
-                      [{m.code}] {m.name} ({locationLabel}) - Tồn: {stockVal.toLocaleString('vi-VN')} {m.unit}
+                      [{m.code}] {m.name} {m.specs ? `- ${m.specs}` : ''} ({locationLabel}) - Tồn: {stockVal.toLocaleString('vi-VN')} {m.unit}
                     </option>
                   );
                 })}

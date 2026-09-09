@@ -1,7 +1,7 @@
 {
-  "version": "2.2.6",
+  "version": "2.2.7",
   "date": "2026-09-09",
   "notes": [
-    "Cải tiến bộ tìm kiếm vật tư (CustomSelect): Hỗ trợ tìm kiếm thông minh không dấu, gõ nhiều từ cách rời (VD: singlemode fc lc) đều tìm thấy vật tư chính xác."
+    "Hiển thị Quy cách / Thông số (VD: FC/UPC-LC/UPC) trực tiếp trên dòng danh sách ô Chọn Vật Tư giúp gõ tìm kiếm thông số ra chính xác 100%."
   ]
 }
