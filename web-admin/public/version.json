@@ -1,7 +1,7 @@
 {
-  "version": "2.5.0",
+  "version": "2.5.1",
   "date": "2026-09-09",
   "notes": [
-    "Cho phép mã vật tư trùng nhau giữa các kho/dự án khác nhau mà không bị tự động gán đuôi -1."
+    "Cắt sạch 100% các đuôi -1, -2 cũ khi bấm Đồng bộ từ nhật ký nhập kho."
   ]
 }

@@ -401,17 +401,11 @@ export const MaterialTrackingPage: React.FC = () => {
           cleanCode = cleanCodeString(`${cleanCode}-${name}`);
         }
 
-        // Clean any leftover -1, -2 if not strictly needed
+        // Strip trailing -1, -2 suffix cleanly
         cleanCode = cleanCode.replace(/-\d+$/, '');
 
-        let suffixNum = 0;
-        let baseCode = cleanCode;
-        while (usedCodes.has(`${m.projectCode || 'COMPANY'}:::${cleanCode.toLowerCase()}`)) {
-          suffixNum++;
-          cleanCode = `${baseCode}-${suffixNum}`;
-        }
-
-        usedCodes.add(`${m.projectCode || 'COMPANY'}:::${cleanCode.toLowerCase()}`);
+        const projectKey = m.projectCode || 'COMPANY';
+        usedCodes.add(`${projectKey}:::${cleanCode.toLowerCase()}`);
 
         if (cleanCode !== m.code || name !== m.name) {
           await updateMaterial(m.id, { code: cleanCode, name });
