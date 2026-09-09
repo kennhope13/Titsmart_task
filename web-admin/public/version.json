@@ -1,7 +1,7 @@
 {
-  "version": "2.5.4",
+  "version": "2.5.5",
   "date": "2026-09-09",
   "notes": [
-    "Căn chỉnh chuẩn UI cho badge đếm tổng số thao tác trong trang Nhật ký hoạt động."
+    "Bổ sung Phân quyền 'Kho Tổng (Kho Công Ty)' trong phần Quản lý Nhân sự."
   ]
 }

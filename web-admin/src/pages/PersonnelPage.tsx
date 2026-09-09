@@ -104,16 +104,20 @@ export const PersonnelPage: React.FC = () => {
     
     if (engineer.projectCodes && Array.isArray(engineer.projectCodes)) {
       engineer.projectCodes.forEach((code: string) => {
-        const found = projects.find(p => (p.code || '').trim().toUpperCase() === (code || '').trim().toUpperCase());
-        if (found) {
-          allAssigned.push({ code: found.code, name: found.name });
+        if ((code || '').trim().toUpperCase() === 'COMPANY') {
+          allAssigned.push({ code: 'COMPANY', name: 'Kho Tổng (Kho Công Ty)' });
+        } else {
+          const found = projects.find(p => (p.code || '').trim().toUpperCase() === (code || '').trim().toUpperCase());
+          if (found) {
+            allAssigned.push({ code: found.code, name: found.name });
+          }
         }
       });
     }
 
     // Filter out duplicates and projects that no longer exist in the projects list
     assignedProjects = allAssigned.filter((value, assignedIndex, self) => 
-      projects.some(p => (p.code || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase()) && // Ensure project still exists
+      (value.code === 'COMPANY' || projects.some(p => (p.code || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase())) &&
       self.findIndex((item) => (item.code || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase()) === assignedIndex
     );
 
@@ -410,6 +414,11 @@ export const PersonnelPage: React.FC = () => {
   </label>
   <div>
     <div className={`max-h-48 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 custom-scrollbar ${selectedProjectCodes.length === 0 ? 'border-red-300' : 'border-slate-200'}`}>
+      <label key="COMPANY" className="flex items-center gap-2 text-sm p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors border-b border-slate-200/60 pb-2 mb-1">
+        <input type="checkbox" checked={selectedProjectCodes.includes('COMPANY')} onChange={() => toggleProjectCode('COMPANY')} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" />
+        <span className="font-bold text-primary">Kho Tổng (Kho Công Ty)</span>
+        <span className="text-slate-400 text-xs">(COMPANY)</span>
+      </label>
       {projects.length === 0 && <p className="text-[11px] text-slate-400 p-2">Chưa có dự án nào trong hệ thống.</p>}
       {projects.map((p) => (
         <label key={p.code} className="flex items-center gap-2 text-sm p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors">
