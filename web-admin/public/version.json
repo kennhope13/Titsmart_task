@@ -1,7 +1,7 @@
 {
-  "version": "2.5.7",
+  "version": "2.5.8",
   "date": "2026-09-09",
   "notes": [
-    "Loại bỏ thanh thông báo hết danh sách dưới chân bảng Nhật ký hiện trường."
+    "Hiển thị nhãn Ngày (ví dụ: 08/09, 09/09) trực tiếp bên cạnh mỗi ghi chú thi công trong bảng Nhật ký hiện trường."
   ]
 }

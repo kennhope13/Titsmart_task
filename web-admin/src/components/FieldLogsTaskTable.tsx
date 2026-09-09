@@ -295,14 +295,21 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                   </td>
                   {/* CỘT GHI CHÚ */}
                   <td className="py-2.5 px-3 border-r border-slate-200">
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1.5">
                       {allNotesForTask.length > 0 ? (
-                        allNotesForTask.map((l) => (
-                          <div key={l.id} onClick={(e) => { e.stopPropagation(); onEditLogClick(l); }} className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 text-[11px] font-semibold px-2 py-1 rounded-md border border-amber-200/80 hover:bg-amber-100 transition-colors w-fit max-w-full cursor-pointer" title={l.note}>
-                            <span className="material-symbols-outlined text-[13px] text-amber-600 shrink-0">edit_note</span>
-                            <span className="truncate">{l.note}</span>
-                          </div>
-                        ))
+                        allNotesForTask.map((l) => {
+                          const dateStr = l.timestamp ? new Date(l.timestamp).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : '';
+                          return (
+                            <div key={l.id} onClick={(e) => { e.stopPropagation(); onEditLogClick(l); }} className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 text-[11px] font-semibold px-2 py-1 rounded-md border border-amber-200/80 hover:bg-amber-100 transition-colors w-fit max-w-full cursor-pointer" title={`${dateStr ? `[${dateStr}] ` : ''}${l.note}`}>
+                              {dateStr && (
+                                <span className="bg-amber-200/90 text-amber-950 font-bold px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap shrink-0">
+                                  {dateStr}
+                                </span>
+                              )}
+                              <span className="truncate">{l.note}</span>
+                            </div>
+                          );
+                        })
                       ) : (
                         <span className="text-slate-300 text-xs italic">Chưa có ghi chú</span>
                       )}
