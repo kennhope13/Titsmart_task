@@ -1,7 +1,7 @@
 {
-  "version": "2.2.8",
+  "version": "2.2.9",
   "date": "2026-09-09",
   "notes": [
-    "Thêm công cụ 'Chuẩn hóa Mã DB' giúp tự động chuyển đổi các Mã vật tư đang bị trùng với Quy cách thành Mã chuẩn dạng TSM-... trong CSDL."
+    "Sửa cột STT bảng Tồn Kho Tổng Hợp hiển thị liên tục 1, 2, 3... chuẩn xác kể cả khi lọc danh sách."
   ]
 }
