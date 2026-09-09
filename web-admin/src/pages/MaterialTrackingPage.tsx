@@ -550,7 +550,7 @@ export const MaterialTrackingPage: React.FC = () => {
       const maxStt = materials.reduce((max, m) => Math.max(max, m.stt || 0), 0);
       const newMat = {
         stt: maxStt + 1,
-        code: transferMaterial.code,
+        code: transferMaterial.code, // Giữ nguyên mã gốc của vật tư khi chuyển kho, tuyệt đối không nối -1, -2
         name: transferMaterial.name,
         englishName: transferMaterial.englishName,
         projectCode: targetCode,
