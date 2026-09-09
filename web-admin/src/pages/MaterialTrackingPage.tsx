@@ -24,13 +24,20 @@ const normalizePurchaseStatus = (status?: string) => {
   return status;
 };
 
-const generateMaterialCode = (name: string, suffix?: string) => {
-  const normalized = name
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+const cleanCodeString = (str: string) => {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Bỏ dấu tiếng Việt
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
     .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '-') // replace non-alphanumeric with hyphen
-    .replace(/-+/g, '-') // remove consecutive hyphens
-    .replace(/^-|-$/g, ''); // trim hyphens
+    .replace(/[^A-Z0-9]/g, "-") // Thay khoảng trắng, ký tự đặc biệt (/ , . _) thành dấu gạch ngang
+    .replace(/-+/g, "-") // Bỏ các dấu gạch ngang liên tiếp
+    .replace(/^-|-$/g, ""); // Xóa gạch ngang đầu cuối
+};
+
+const generateMaterialCode = (name: string, suffix?: string) => {
+  const normalized = cleanCodeString(name);
   return `TSM-${normalized}${suffix ? `-${suffix}` : ''}`.substring(0, 100);
 };
 
@@ -347,15 +354,25 @@ export const MaterialTrackingPage: React.FC = () => {
       let updatedCount = 0;
 
       for (const m of materials) {
-        let newCode = m.code || '';
-        // If code is empty or code equals specs (or contains specs text), generate a standard code from name/specs
-        if (!newCode || (m.specs && (newCode.trim() === m.specs.trim() || newCode.includes('UPC') || newCode.includes('APC')))) {
+        let rawCode = m.code || '';
+        let newCode = cleanCodeString(rawCode);
+
+        // If raw code is empty or contains non-standard characters (/ or space or accents) or equals specs, generate a clean code
+        if (!newCode || rawCode.includes('/') || rawCode.includes(' ') || rawCode.includes('mét') || (m.specs && rawCode.trim() === m.specs.trim())) {
           let suffixNum = 0;
-          let codeBase = m.specs ? `${m.name}-${m.specs}` : m.name;
+          let codeBase = m.specs ? `${m.name}-${m.specs}` : (m.name || 'VAT-TU');
           newCode = generateMaterialCode(codeBase);
           while (usedCodes.has(newCode.toLowerCase())) {
             suffixNum++;
             newCode = generateMaterialCode(codeBase, String(suffixNum));
+          }
+        } else {
+          // If code was already standard, ensure uniqueness
+          let suffixNum = 0;
+          let baseCode = newCode;
+          while (usedCodes.has(newCode.toLowerCase())) {
+            suffixNum++;
+            newCode = `${baseCode}-${suffixNum}`;
           }
         }
 

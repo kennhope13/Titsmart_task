@@ -1,7 +1,7 @@
 {
-  "version": "2.3.0",
+  "version": "2.3.1",
   "date": "2026-09-09",
   "notes": [
-    "Khắc phục hoàn toàn lỗi trùng Mã vật tư: Tự động phát sinh mã duy nhất (tự động nối hậu tố -1, -2...) khi gõ trùng mã cũ, cho phép lưu vật tư mới thành công 100%."
+    "Nâng cấp bộ lọc Mã vật tư: Tự động loại bỏ dấu tiếng Việt, khoảng trắng và các ký tự đặc biệt (/ , .) khi tạo hoặc chuẩn hóa mã vật tư (VD: 'LC/PC-LC/PC 30 mét' -> 'TSM-SINGLEMODE-LC-PC-LC-PC-30-MET')."
   ]
 }
