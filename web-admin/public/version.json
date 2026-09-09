@@ -1,7 +1,7 @@
 {
-  "version": "2.5.9",
+  "version": "2.6.0",
   "date": "2026-09-09",
   "notes": [
-    "Thêm cột độc lập 'THỜI GIAN THI CÔNG' hiển thị chi tiết danh sách ngày thi công của từng hạng mục."
+    "Đổi tên cột tiêu đề thành 'NỘI DUNG NHẬT KÝ / THI CÔNG HỆ THỐNG' đúng chuẩn công việc hiện trường."
   ]
 }
