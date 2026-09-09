@@ -584,12 +584,17 @@ export const MaterialTrackingPage: React.FC = () => {
       if (filterUnit && m.unit !== filterUnit) return false;
 
       if (searchQuery.trim()) {
-        const queryTerms = cleanCodeString(searchQuery).toLowerCase().split('-').filter(Boolean);
-        const fullText = cleanCodeString(`${m.code || ''} ${m.name || ''} ${m.specs || ''}`).toLowerCase();
+        const rawQ = searchQuery.toLowerCase().trim();
+        const rawMatch = (m.code || '').toLowerCase().includes(rawQ) || 
+                         (m.name || '').toLowerCase().includes(rawQ) || 
+                         (m.specs || '').toLowerCase().includes(rawQ);
         
-        // Match if all query terms appear anywhere in code, name or specs
-        const matchesAllTerms = queryTerms.every(term => fullText.includes(term));
-        if (!matchesAllTerms) return false;
+        if (!rawMatch) {
+          const queryTerms = cleanCodeString(searchQuery).toLowerCase().split('-').filter(Boolean);
+          const fullText = cleanCodeString(`${m.code || ''} ${m.name || ''} ${m.specs || ''}`).toLowerCase();
+          const matchesAllTerms = queryTerms.length > 0 && queryTerms.every(term => fullText.includes(term));
+          if (!matchesAllTerms) return false;
+        }
       }
 
       // OVERVIEW matches everything
