@@ -198,13 +198,8 @@ export const MaterialTrackingPage: React.FC = () => {
                 finalCode = generateMaterialCode(codeBase, String(suffixNum));
               }
             } else {
-              // If user provided a code, but it's a duplicate, try appending specs
+              // If user provided a code, keep it exactly as-is. If duplicate, append -1, -2
               if (usedCodes.has(finalCode)) {
-                let codeWithSpecs = finalCode;
-                if (specs) codeWithSpecs += `-${generateMaterialCode(specs).replace('TSM-', '')}`;
-                finalCode = codeWithSpecs;
-                
-                // If it's STILL a duplicate even after adding specs, then append a number as last resort
                 let suffixNum = 0;
                 let originalUserCode = finalCode;
                 while (usedCodes.has(finalCode)) {
