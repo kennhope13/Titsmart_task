@@ -1241,7 +1241,7 @@ export const MaterialTrackingPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Mã vật tư</label>
-                <input type="text" value={editCode} onChange={(e) => setEditCode(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" />
+                <input type="text" value={editCode} onChange={(e) => setEditCode(e.target.value)} onBlur={() => setEditCode(cleanCodeString(editCode))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" />
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Danh mục vật tư</label>
@@ -1277,7 +1277,7 @@ export const MaterialTrackingPage: React.FC = () => {
               </select>
             </div>
           )}
-          <div><label className="block font-bold text-slate-700 mb-1">Mã vật tư (Tùy chọn)</label><input type="text" placeholder="Bỏ trống để tự động tạo (VD: MAT-186)" value={newMatCode} onChange={(event) => setNewMatCode(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div>
+          <div><label className="block font-bold text-slate-700 mb-1">Mã vật tư (Tùy chọn)</label><input type="text" placeholder="Bỏ trống để tự động tạo (VD: MAT-186)" value={newMatCode} onChange={(event) => setNewMatCode(event.target.value)} onBlur={() => setNewMatCode(cleanCodeString(newMatCode))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block font-bold text-slate-700 mb-1">Tên vật tư / thiết bị *</label><input type="text" required placeholder="VD: Cáp Cu/XLPE/PVC 2x2.5mm2" value={matName} onChange={(event) => setMatName(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
             <div><label className="block font-bold text-slate-700 mb-1">Danh mục vật tư</label><input type="text" placeholder="VD: Thiết bị, Cáp điện, Vật tư phụ..." value={addCategory} onChange={(event) => setAddCategory(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
