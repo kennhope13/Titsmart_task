@@ -330,6 +330,52 @@ export const MaterialTrackingPage: React.FC = () => {
   const [filterName, setFilterName] = useState('');
   const [filterUnit, setFilterUnit] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  // Standardize existing material codes in Database
+  const handleStandardizeMaterialCodes = async () => {
+    if (loading || isSubmittingRef.current) return;
+    const confirmRun = window.confirm(
+      'Bạn có muốn tự động chuẩn hóa lại Mã vật tư cho toàn bộ các vật tư hiện có trong DB? (Tạo mã chuẩn dạng TSM-... từ tên/quy cách nếu mã đang trùng với quy cách)'
+    );
+    if (!confirmRun) return;
+
+    isSubmittingRef.current = true;
+    setLoading(true);
+    setLoadingMessage('Đang chuẩn hóa Mã vật tư trong CSDL...');
+
+    try {
+      const usedCodes = new Set<string>();
+      let updatedCount = 0;
+
+      for (const m of materials) {
+        let newCode = m.code || '';
+        // If code is empty or code equals specs (or contains specs text), generate a standard code from name/specs
+        if (!newCode || (m.specs && (newCode.trim() === m.specs.trim() || newCode.includes('UPC') || newCode.includes('APC')))) {
+          let suffixNum = 0;
+          let codeBase = m.specs ? `${m.name}-${m.specs}` : m.name;
+          newCode = generateMaterialCode(codeBase);
+          while (usedCodes.has(newCode.toLowerCase())) {
+            suffixNum++;
+            newCode = generateMaterialCode(codeBase, String(suffixNum));
+          }
+        }
+
+        usedCodes.add(newCode.toLowerCase());
+
+        if (newCode !== m.code) {
+          await updateMaterial(m.id, { code: newCode });
+          updatedCount++;
+        }
+      }
+
+      triggerToast(`Đã chuẩn hóa thành công ${updatedCount} mã vật tư!`, 'success');
+    } catch (err: any) {
+      triggerToast('Lỗi khi chuẩn hóa: ' + (err.message || 'Xin thử lại'), 'warning');
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+      isSubmittingRef.current = false;
+    }
+  };
 
   // Sticky header dynamic height
   const stickyHeaderRef = useRef<HTMLDivElement>(null);
@@ -892,6 +938,10 @@ export const MaterialTrackingPage: React.FC = () => {
             <button onClick={handleExportExcel} className="flex items-center gap-2 border border-slate-200 bg-white h-[40px] px-5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
               <span className="material-symbols-outlined text-base">file_download</span>
               Xuất Excel
+            </button>
+            <button onClick={handleStandardizeMaterialCodes} title="Chuẩn hóa Mã Vật Tư tự động trong cơ sở dữ liệu" className="flex items-center gap-2 border border-blue-200 bg-blue-50 text-primary h-[40px] px-3.5 rounded-lg text-[13px] font-bold hover:bg-blue-100 transition-colors shadow-xs">
+              <span className="material-symbols-outlined text-base">auto_fix_high</span>
+              Chuẩn hóa Mã DB
             </button>
             <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-2 bg-emerald-600 text-white h-[40px] px-5 rounded-lg text-[13px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
               <span className="material-symbols-outlined text-base">arrow_downward</span>

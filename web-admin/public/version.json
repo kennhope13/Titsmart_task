@@ -1,7 +1,7 @@
 {
-  "version": "2.2.7",
+  "version": "2.2.8",
   "date": "2026-09-09",
   "notes": [
-    "Hiển thị Quy cách / Thông số (VD: FC/UPC-LC/UPC) trực tiếp trên dòng danh sách ô Chọn Vật Tư giúp gõ tìm kiếm thông số ra chính xác 100%."
+    "Thêm công cụ 'Chuẩn hóa Mã DB' giúp tự động chuyển đổi các Mã vật tư đang bị trùng với Quy cách thành Mã chuẩn dạng TSM-... trong CSDL."
   ]
 }
