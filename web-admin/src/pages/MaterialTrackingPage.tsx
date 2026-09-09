@@ -24,13 +24,21 @@ const normalizePurchaseStatus = (status?: string) => {
   return status;
 };
 
-const generateMaterialCode = (name: string, suffix?: string) => {
-  const normalized = name
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+const cleanCodeString = (str: string) => {
+  if (!str) return '';
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Bỏ dấu tiếng Việt
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
     .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '-') // replace non-alphanumeric with hyphen
-    .replace(/-+/g, '-') // remove consecutive hyphens
-    .replace(/^-|-$/g, ''); // trim hyphens
+    .replace(/[^A-Z0-9]/g, "-") // Chuyển khoảng trắng, dấu tiếng Việt/ký tự đặc biệt thành dấu -
+    .replace(/-+/g, "-") // Loại bỏ dấu - liên tiếp
+    .replace(/^-|-$/g, ""); // Xóa dấu - ở đầu và cuối
+};
+
+const generateMaterialCode = (name: string, suffix?: string) => {
+  const normalized = cleanCodeString(name);
   return `TSM-${normalized}${suffix ? `-${suffix}` : ''}`.substring(0, 100);
 };
 
@@ -181,7 +189,8 @@ export const MaterialTrackingPage: React.FC = () => {
             
             const unit = String(row[6] || 'Cái').trim();
             
-            let finalCode = String(row[3] || '').trim();
+            let rawCode = String(row[3] || '').trim();
+            let finalCode = rawCode ? cleanCodeString(rawCode) : '';
             if (!finalCode) {
               let suffixNum = 0;
               let codeBase = specs ? `${finalName}-${specs}` : finalName;
@@ -195,7 +204,7 @@ export const MaterialTrackingPage: React.FC = () => {
               if (usedCodes.has(finalCode)) {
                 let codeWithSpecs = finalCode;
                 if (specs) codeWithSpecs += `-${generateMaterialCode(specs).replace('TSM-', '')}`;
-                finalCode = codeWithSpecs;
+                finalCode = cleanCodeString(codeWithSpecs);
                 
                 // If it's STILL a duplicate even after adding specs, then append a number as last resort
                 let suffixNum = 0;
@@ -642,7 +651,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
     await updateMaterial(editingMaterial.id, {
       name: editName,
-      code: editCode,
+      code: editCode ? cleanCodeString(editCode) : '',
       specs: editSpecs,
       category: editCategory,
       supplier: editSupplier,
@@ -729,7 +738,8 @@ export const MaterialTrackingPage: React.FC = () => {
     const maxStt = materials.reduce((max, m) => Math.max(max, m.stt || 0), 0);
     const nextStt = maxStt + 1;
 
-    let finalCode = newMatCode.trim();
+    let rawUserCode = newMatCode.trim();
+    let finalCode = rawUserCode ? cleanCodeString(rawUserCode) : '';
     const usedCodes = new Set(materials.map(m => (m.code || '').toLowerCase()));
 
     if (finalCode) {
@@ -923,10 +933,6 @@ export const MaterialTrackingPage: React.FC = () => {
             <button onClick={handleExportExcel} className="flex items-center gap-2 border border-slate-200 bg-white h-[40px] px-5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
               <span className="material-symbols-outlined text-base">file_download</span>
               Xuất Excel
-            </button>
-            <button onClick={handleSyncCodeFromImportLogs} title="Khôi phục lại Mã Vật Tư từ Nhật Ký Nhập Kho" className="flex items-center gap-2 border border-blue-200 bg-blue-50 text-primary h-[40px] px-3.5 rounded-lg text-[13px] font-bold hover:bg-blue-100 transition-colors shadow-xs">
-              <span className="material-symbols-outlined text-base">sync</span>
-              Khôi phục Mã từ Nhật Ký
             </button>
             <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-2 bg-emerald-600 text-white h-[40px] px-5 rounded-lg text-[13px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
               <span className="material-symbols-outlined text-base">arrow_downward</span>
