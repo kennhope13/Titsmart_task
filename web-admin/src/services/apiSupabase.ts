@@ -192,7 +192,8 @@ export const api = {
              if (retryError.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
              throw retryError;
           }
-          return toCamelCase({ ...data, ...retryResult });
+          const audit = getCurrentAuditPayload();
+          return toCamelCase({ updated_by: audit.updated_by, updated_at: audit.updated_at, ...data, ...retryResult });
         }
         throw error;
       }
