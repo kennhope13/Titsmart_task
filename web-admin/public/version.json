@@ -1,7 +1,7 @@
 {
-  "version": "2.6.1",
+  "version": "2.6.2",
   "date": "2026-09-09",
   "notes": [
-    "Fix lỗi cập nhật dự án/quyền nhân sự làm mất quyền và phân công dự án của nhân sự khác."
+    "Đảm bảo phân công nhân sự hoạt động đồng bộ và bảo lưu dự án cũ ở cả 2 trang Quản Lý Nhân Sự và Quản Lý Dự Án."
   ]
 }

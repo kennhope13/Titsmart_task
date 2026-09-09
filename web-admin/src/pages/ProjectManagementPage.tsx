@@ -304,7 +304,8 @@ export const ProjectManagementPage: React.FC = () => {
           if (!currentCodes.includes(code)) {
             return updateEngineer(engId, {
               name: eng.name,
-              projectCodes: [...currentCodes, code]
+              projectCodes: [...currentCodes, code],
+              permissions: eng.permissions,
             });
           }
         }
@@ -584,7 +585,7 @@ export const ProjectManagementPage: React.FC = () => {
           const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
           if (!currentCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper)) {
             const newCodes = [...currentCodes, projectToEdit.code];
-            await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+            await updateEngineer(id, { name: eng.name, projectCodes: newCodes, permissions: eng.permissions });
           }
         }
       }
@@ -594,7 +595,7 @@ export const ProjectManagementPage: React.FC = () => {
           const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
           if (currentCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper)) {
             const newCodes = currentCodes.filter(c => (c || '').trim().toUpperCase() !== projCodeUpper);
-            await updateEngineer(id, { name: eng.name, projectCodes: newCodes });
+            await updateEngineer(id, { name: eng.name, projectCodes: newCodes, permissions: eng.permissions });
           }
         }
       }
