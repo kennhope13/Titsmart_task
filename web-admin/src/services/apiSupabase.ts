@@ -122,6 +122,8 @@ export const api = {
           delete payload.project_name;
           delete payload.assigned_engineer_name;
           delete payload.assigner_name;
+          delete payload.updated_by;
+          delete payload.updated_at;
           const { data: retryResult, error: retryError } = await supabase.from('tasks').insert(payload).select().single();
           if (retryError) throw retryError;
           return toCamelCase({ ...data, ...retryResult });
@@ -183,6 +185,8 @@ export const api = {
           delete payload.project_name;
           delete payload.assigned_engineer_name;
           delete payload.assigner_name;
+          delete payload.updated_by;
+          delete payload.updated_at;
           const { data: retryResult, error: retryError } = await supabase.from('tasks').update(payload).eq('id', id).select().single();
           if (retryError) {
              if (retryError.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
