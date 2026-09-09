@@ -221,7 +221,7 @@ export const ProjectManagementPage: React.FC = () => {
       allAudits.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
       const latestAudit = allAudits[0];
 
-      const effectiveUpdatedBy = latestAudit?.updatedBy || (project.updatedBy && project.updatedBy !== 'Hệ thống' ? project.updatedBy : 'Hệ thống');
+      const effectiveUpdatedBy = latestAudit?.updatedBy || (project.updatedBy && project.updatedBy !== 'Hệ thống' ? project.updatedBy : '');
       const effectiveUpdatedAt = latestAudit?.updatedAt || project.updatedAt;
 
       return {
