@@ -572,34 +572,19 @@ export const ProjectManagementPage: React.FC = () => {
 
       await updateProject(projectToEdit.id, payload);
 
-      // Update engineer project codes if members changed
+      // Update engineer project codes to match exactly the selected members list
       const projCodeUpper = (projectToEdit.code || '').trim().toUpperCase();
-      const oldMembers = Array.from(new Set([
-        ...(projectToEdit.members || []),
-        ...(projectToEdit.memberIds || []),
-        ...engineers.filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper)).map(eng => eng.id)
-      ]));
-      const addedMembers = editSelectedEngineerIds.filter(id => !oldMembers.includes(id));
-      const removedMembers = oldMembers.filter(id => !editSelectedEngineerIds.includes(id));
+      for (const eng of engineers) {
+        const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
+        const isSelected = editSelectedEngineerIds.includes(eng.id);
+        const hasCode = currentCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper);
 
-      for (const id of addedMembers) {
-        const eng = engineers.find(e => e.id === id);
-        if (eng) {
-          const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
-          if (!currentCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper)) {
-            const newCodes = [...currentCodes, projectToEdit.code];
-            await updateEngineer(id, { name: eng.name, projectCodes: newCodes, permissions: eng.permissions });
-          }
-        }
-      }
-      for (const id of removedMembers) {
-        const eng = engineers.find(e => e.id === id);
-        if (eng) {
-          const currentCodes = Array.isArray(eng.projectCodes) ? eng.projectCodes : [];
-          if (currentCodes.some(c => (c || '').trim().toUpperCase() === projCodeUpper)) {
-            const newCodes = currentCodes.filter(c => (c || '').trim().toUpperCase() !== projCodeUpper);
-            await updateEngineer(id, { name: eng.name, projectCodes: newCodes, permissions: eng.permissions });
-          }
+        if (isSelected && !hasCode) {
+          const newCodes = [...currentCodes, projectToEdit.code];
+          await updateEngineer(eng.id, { name: eng.name, projectCodes: newCodes, permissions: eng.permissions });
+        } else if (!isSelected && hasCode) {
+          const newCodes = currentCodes.filter(c => (c || '').trim().toUpperCase() !== projCodeUpper);
+          await updateEngineer(eng.id, { name: eng.name, projectCodes: newCodes, permissions: eng.permissions });
         }
       }
 
