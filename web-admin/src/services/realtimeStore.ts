@@ -978,6 +978,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         persistAndNotify({ engineers: nextEngineers });
         return { engineers: nextEngineers };
       });
+      await get().fetchEngineers();
       get().logActivity('Đã cập nhật nhân sự: ' + (input.name || existing?.name || id), input.name || existing?.name || id);
       return updated;
     },
