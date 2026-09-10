@@ -1183,15 +1183,15 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
               // Resolve parent globally
               const resolveParentIdGlobal = (item: any) => {
-                if (item.parentId && map.has(item.parentId)) return item.parentId;
+                if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) return item.parentId;
                 if (item.stt && item.stt.includes('.')) {
                   const parts = item.stt.split('.');
                   parts.pop();
                   const parentStt = parts.join('.');
                   const parentItem = fullTasks.find((r) => r.stt === parentStt);
-                  if (parentItem && map.has(parentItem.id)) return parentItem.id;
+                  if (parentItem && parentItem.id !== item.id && map.has(parentItem.id)) return parentItem.id;
                 }
-                return item.parentId;
+                return (item.parentId && item.parentId !== item.id) ? item.parentId : undefined;
               };
 
               fullTasks.forEach((t) => {
@@ -1206,7 +1206,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               let currentSectionKey = '';
               const flattened: any[] = [];
 
-              const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '') => {
+              const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '', visited = new Set<string>()) => {
                 nodes.sort((a, b) => {
                   const sttCompare = compareTaskStt(a.stt, b.stt);
                   if (sttCompare !== 0) return sttCompare;
@@ -1214,6 +1214,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 });
 
                 nodes.forEach((node, idx) => {
+                  if (visited.has(node.id)) return;
+                  visited.add(node.id);
+
                   const isSec = isParentRow(node);
                   if (isSec) {
                     currentSectionKey = node.id;
@@ -1234,7 +1237,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                     computedStt,
                     _sectionKey: currentSectionKey || 'Khác'
                   });
-                  flattenTree(node.children, currentDepth + 1, computedStt);
+                  if (node.children && node.children.length > 0) {
+                    flattenTree(node.children, currentDepth + 1, computedStt, visited);
+                  }
                 });
               };
 
