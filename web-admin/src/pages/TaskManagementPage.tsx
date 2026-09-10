@@ -1911,7 +1911,7 @@ const displayTasks = tasks.filter((t) => {
                         <span className={'inline-flex min-w-10 items-center justify-center px-1.5 py-0.5 font-mono font-bold text-[10px] rounded border ' + (isFinished ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : pct > 0 ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600')}>{pct}%</span>
                       </td>
                       <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200">
-                        <span title="Tự động đồng bộ từ tab Vật tư và Chi phí" className={`inline-block w-full rounded border px-1.5 py-0.5 text-[11px] font-bold text-center whitespace-nowrap leading-snug overflow-visible ${getStatusColorStyle(t.purchaseStatus || "Chưa đặt hàng")}`}>
+                        <span title="Tự động đồng bộ từ tab Vật tư và Chi phí" className={`inline-block w-full rounded border px-0.5 py-0.5 text-[10px] font-bold text-center whitespace-nowrap leading-snug overflow-visible ${getStatusColorStyle(t.purchaseStatus || "Chưa đặt hàng")}`}>
                           {t.purchaseStatus || "Chưa đặt hàng"}
                         </span>
                       </td>
