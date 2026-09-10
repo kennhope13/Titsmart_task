@@ -58,20 +58,23 @@ export const compareTaskStt = (a?: string, b?: string) => {
   const textA = String(a || '').trim();
   const textB = String(b || '').trim();
   
-  const isLetterA = /^[A-Z]{1,2}$/i.test(textA);
-  const isLetterB = /^[A-Z]{1,2}$/i.test(textB);
-
   const romanA = extractLeadingRomanNumber(textA);
   const romanB = extractLeadingRomanNumber(textB);
 
-  // 1. Single/Double Letter headers (A, B, C, AA, BB) get highest priority for root level section sorting
+  // 1. If both are valid Roman numerals, compare their numerical value (III=3 < XI=11)
+  if (romanA !== null && romanB !== null) {
+    if (romanA !== romanB) return romanA - romanB;
+  }
+
+  // 2. Single/Double Letter headers (A, B, C, AA, BB) get priority if not Roman
+  const isLetterA = /^[A-Z]{1,2}$/i.test(textA) && romanA === null;
+  const isLetterB = /^[A-Z]{1,2}$/i.test(textB) && romanB === null;
+
   if (isLetterA && isLetterB) return textA.localeCompare(textB, 'en', { sensitivity: 'base' });
   if (isLetterA && !isLetterB) return -1;
   if (!isLetterA && isLetterB) return 1;
   
-  if (romanA !== null && romanB !== null) {
-    if (romanA !== romanB) return romanA - romanB;
-  } else if (romanA !== null && romanB === null) {
+  if (romanA !== null && romanB === null) {
     return -1;
   } else if (romanA === null && romanB !== null) {
     return 1;

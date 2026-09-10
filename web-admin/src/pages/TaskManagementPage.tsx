@@ -774,21 +774,13 @@ const hasSyncedRef = useRef(false);
             if (isSection) {
                if (isMainLevelSection) {
                  currentMainSectionId = taskId;
-                 currentSubSectionId = undefined;
+                 currentSubSectionId = undefined; // Reset sub section khi gặp Main Section mới (VD: B)
+                 parentId = undefined;
                } else {
                  currentSubSectionId = taskId;
                  parentId = currentMainSectionId;
                }
             } else {
-               let isSubFolder = false;
-               const nextRow = rows[i + 1];
-               if (nextRow) {
-                 const nextStt = nextRow[sttCol] ? String(nextRow[sttCol]).trim() : '';
-                 if (nextStt && nextStt.startsWith(sttVal + '.')) {
-                   isSubFolder = true;
-                 }
-               }
-               
                let foundDottedParent = false;
                if (sttVal.includes('.')) {
                  const parts = sttVal.split('.');
@@ -802,10 +794,6 @@ const hasSyncedRef = useRef(false);
                
                if (!foundDottedParent) {
                  parentId = currentSubSectionId || currentMainSectionId;
-               }
-               
-               if (isSubFolder) {
-                 currentSubSectionId = taskId;
                }
             }
 
@@ -1493,12 +1481,7 @@ const displayTasks = tasks.filter((t) => {
       if (node.isSectionHeader) return true;
       const stt = String(node.stt || '').trim().toUpperCase();
       const notes = String(node.notes || '').toLowerCase();
-      const hasNoDot = stt.length > 0 && !stt.includes('.');
-      const isSecPattern = notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (hasNoDot && /^\d+$/.test(stt));
-      const hasNoVol = !node.volume || node.volume === 0;
-      const unitStr = String(node.unit || '').trim();
-      const hasNoUnit = !unitStr || unitStr === '' || unitStr === '-' || unitStr === '–' || unitStr === '—';
-      return isSecPattern && (hasNoVol || hasNoUnit || !node.parentId);
+      return notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
     };
 
     const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '') => {

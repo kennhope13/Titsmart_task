@@ -182,7 +182,31 @@ const isTotalOrNoiseRow = (name: string) => {
   if (!/[a-zA-ZÀ-ỹ0-9]/.test(name)) return true;
   const lookup = normalizeLookupText(name).trim();
   if (!lookup) return true;
-  return lookup.includes('tong cong') || lookup === 'cong' || lookup.includes('bang chi tiet') || lookup.includes('gia tri hop dong') || /\bthue\b/.test(lookup) || lookup.includes('chiet khau') || /^[\d\s.,]+$/.test(lookup) || lookup === 'stt';
+  
+  // Filter out summary/total/tax rows and payment installment/advance terms
+  const isPaymentTerm = lookup.includes('tam ung') || 
+                        lookup.includes('tt dot') || 
+                        lookup.includes('thanh toan dot') || 
+                        lookup.includes('quyet toan') || 
+                        lookup.includes('dot qt') ||
+                        lookup.includes('dot 01') ||
+                        lookup.includes('dot 1') ||
+                        lookup.includes('dot 02') ||
+                        lookup.includes('dot 2') ||
+                        lookup.includes('dot 03') ||
+                        lookup.includes('dot 3') ||
+                        lookup.includes('dot 04') ||
+                        lookup.includes('dot 4');
+
+  return lookup.includes('tong cong') || 
+         lookup === 'cong' || 
+         lookup.includes('bang chi tiet') || 
+         lookup.includes('gia tri hop dong') || 
+         /\bthue\b/.test(lookup) || 
+         lookup.includes('chiet khau') || 
+         /^[\d\s.,]+$/.test(lookup) || 
+         lookup === 'stt' ||
+         isPaymentTerm;
 };
 
 const isNoiseStt = (sttStr: string) => {
@@ -295,10 +319,9 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const startsWithPhan = name.trim().toUpperCase().startsWith('PHẦN ') && !name.trim().toUpperCase().startsWith('PHẦN MỀM');
     const hasNoVolumeAndUnit = (volume === 0 || !volume) && (!cleanUnitVal || cleanUnitVal === '');
 
-    // Section Header cấp 1 là chữ La Mã (I, II), chữ cái (A, B) hoặc bắt đầu bằng chữ PHẦN
-    const isMainSectionHeader = isRomanOrAlphaSection || startsWithPhan || isMainSectionName(name);
-    // Dòng nhóm (như 33, 34, 35...) không có khối lượng/đơn vị là thư mục nhóm
-    const isSectionHeader = (isMainSectionHeader || (hasNoDot && hasNoVolumeAndUnit)) && !/^\d+$/.test(cleanStt);
+    // Section Header là chữ La Mã (I, II), chữ cái (A, B), chữ PHẦN, hoặc dòng số nguyên/không có dấu chấm không có khối lượng & đơn vị
+    const isMainSectionHeader = isRomanOrAlphaSection || startsWithPhan;
+    const isSectionHeader = isMainSectionHeader || (hasNoDot && hasNoVolumeAndUnit);
     const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
     
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';

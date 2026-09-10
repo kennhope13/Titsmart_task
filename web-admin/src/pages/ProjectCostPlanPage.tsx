@@ -571,13 +571,13 @@ export const ProjectCostPlanPage: React.FC = () => {
             const volumeCol = getColumnIndex(headerRow, ['khoi luong'], 2);
             const unitCol = getColumnIndex(headerRow, ['don vi tinh', 'dvt'], 3);
             debugLogs.push(`[DEBUG] cols -> sttCol:${sttCol}, contentCol:${contentCol}, volumeCol:${volumeCol}, unitCol:${unitCol}`);
-            const modelCol = getColumnIndex(headerRow, ['ma hieu', 'model'], -1);
-            const originCol = getColumnIndex(headerRow, ['nguon san xuat', 'xuat xu'], -1);
-            const unitPriceCol = getColumnIndex(headerRow, ['don gia'], modelCol >= 0 ? 6 : 4);
-            const preTaxCol = getColumnIndex(headerRow, ['thanh tien truoc thue', 'thanh tien'], unitPriceCol + 1);
-            const vatRateCol = getColumnIndex(headerRow, ['thue vat', 'vat'], preTaxCol + 1, preTaxCol + 1);
+            const modelCol = getColumnIndex(headerRow, ['ma hieu', 'model', 'ky hieu'], -1);
+            const originCol = getColumnIndex(headerRow, ['nguon san xuat', 'xuat xu', 'hang san xuat'], -1);
+            const unitPriceCol = getColumnIndex(headerRow, ['don gia', 'dongia', 'don gia mua'], modelCol >= 0 ? 6 : 4);
+            const preTaxCol = getColumnIndex(headerRow, ['thanh tien truoc thue', 'thanh tien', 'thanhtien'], unitPriceCol + 1);
+            const vatRateCol = getColumnIndex(headerRow, ['thue vat', 'vat'], preTaxCol >= 0 ? preTaxCol + 1 : 6);
             const vatAmountCol = vatRateCol + 1;
-            const totalCol = getColumnIndex(headerRow, ['tong tien', 'thanh tien sau thue'], vatAmountCol + 1, vatAmountCol + 1);
+            const totalCol = getColumnIndex(headerRow, ['tong tien', 'thanh tien sau thue', 'thanh tien gom vat', 'thanh tien hop dong'], preTaxCol >= 0 ? preTaxCol + 1 : 7);
             const notesCol = getColumnIndex(headerRow, ['ghi chu'], totalCol + 1);
 
             const hasPrices = unitPriceCol !== -1 || totalCol !== -1;
@@ -1152,46 +1152,121 @@ export const ProjectCostPlanPage: React.FC = () => {
   const currentProjMaterialPlans = useMemo(() => {
     const currentProjObj = projects.find(p => p.code === selectedProject || p.id === selectedProject);
     const validCodes = new Set([selectedProject, currentProjObj?.code, currentProjObj?.id].filter(Boolean));
-    return materialPlans.filter((plan) => validCodes.has(plan.projectCode) && plan.jobContent?.trim());
-  }, [materialPlans, selectedProject, projects]);
+    const projTasks = tasks.filter(t => validCodes.has(t.projectCode));
+    const taskMap = new Map(projTasks.map(t => [t.id, t]));
+    const taskSttNameMap = new Map(projTasks.map(t => [`${t.stt?.trim()}|${t.name?.trim().toLowerCase()}`, t]));
+
+    const dbPlans = materialPlans.filter((plan) => validCodes.has(plan.projectCode) && plan.jobContent?.trim());
+    if (dbPlans.length > 0) {
+      return dbPlans.map(plan => {
+        const matchingTask = taskMap.get(plan.id) || taskSttNameMap.get(`${plan.stt?.trim()}|${plan.jobContent?.trim().toLowerCase()}`);
+        return {
+          ...plan,
+          unitPrice: (plan as any).unitPrice || (matchingTask as any)?.unitPrice || 0,
+          vatRate: (plan as any).vatRate !== undefined ? (plan as any).vatRate : ((matchingTask as any)?.vatRate !== undefined ? (matchingTask as any).vatRate : 10),
+          vatAmount: (plan as any).vatAmount || (matchingTask as any)?.vatAmount || 0,
+          totalAmount: (plan as any).totalAmount || (matchingTask as any)?.totalAmount || 0,
+        };
+      });
+    }
+
+    let orderCounter = 0;
+    return projTasks.map(task => {
+      const isSection = task.isSectionHeader;
+      const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
+      const existingMat = materialPlans.find(m => m.id === task.id || (m.projectCode === task.projectCode && m.stt === task.stt && m.jobContent === task.name));
+
+      return {
+        id: task.id,
+        parentId: task.parentId,
+        projectCode: task.projectCode,
+        stt: task.stt || '',
+        jobContent: task.name,
+        unit: task.unit || '',
+        contractVolume: task.volume || 0,
+        unitPrice: (existingMat as any)?.unitPrice || (task as any).unitPrice || 0,
+        vatRate: (existingMat as any)?.vatRate !== undefined ? (existingMat as any).vatRate : ((task as any).vatRate !== undefined ? (task as any).vatRate : 10),
+        vatAmount: (existingMat as any)?.vatAmount || (task as any).vatAmount || 0,
+        totalAmount: (existingMat as any)?.totalAmount || (task as any).totalAmount || 0,
+        techSpecModel: existingMat?.techSpecModel || (task as any).techSpecModel || '',
+        techSpecOrigin: existingMat?.techSpecOrigin || (task as any).techSpecOrigin || '',
+        progressStatus: existingMat?.progressStatus || task.constrStatus || '',
+        orderedVolume: existingMat?.orderedVolume || 0,
+        orderedStatus: existingMat?.orderedStatus || task.purchaseStatus || 'Chưa đặt hàng',
+        expectedDate: existingMat?.expectedDate || '',
+        issueContent: existingMat?.issueContent || task.issue || '',
+        issueStatus: existingMat?.issueStatus || task.issueStatus || '',
+        docCo: existingMat?.docCo || false,
+        docCq: existingMat?.docCq || false,
+        docFireInspection: existingMat?.docFireInspection || false,
+        dispatchToSite: existingMat?.dispatchToSite || false,
+        supplyScope: existingMat?.supplyScope || 'contractor',
+        notes: [orderTag, isSection ? '[section]' : '', existingMat?.notes || task.notes].filter(Boolean).join(' | '),
+      } as ProjectMaterialPlan;
+    });
+  }, [materialPlans, tasks, selectedProject, projects]);
 
   const currentProjPurchasing = useMemo(() => {
     const currentProjObj = projects.find(p => p.code === selectedProject || p.id === selectedProject);
     const validCodes = new Set([selectedProject, currentProjObj?.code, currentProjObj?.id].filter(Boolean));
-    const projectPurchasing = purchasingPlans.filter((plan) => validCodes.has(plan.projectCode));
-    const validIds = new Set<string>();
+    const projTasks = tasks.filter(t => validCodes.has(t.projectCode));
+    const taskMap = new Map(projTasks.map(t => [t.id, t]));
+    const taskSttNameMap = new Map(projTasks.map(t => [`${t.stt?.trim()}|${t.name?.trim().toLowerCase()}`, t]));
 
-    projectPurchasing.forEach(plan => {
-      validIds.add(plan.id);
-    });
+    const dbPurchasing = purchasingPlans.filter((plan) => validCodes.has(plan.projectCode) && plan.content?.trim());
+    if (dbPurchasing.length > 0) {
+      return dbPurchasing.map(plan => {
+        const matchingTask = taskMap.get(plan.id) || taskSttNameMap.get(`${plan.stt?.trim()}|${plan.content?.trim().toLowerCase()}`);
+        const price = plan.unitPrice || (matchingTask as any)?.unitPrice || 0;
+        const vatR = plan.vatRate !== undefined && plan.vatRate > 0 ? plan.vatRate : ((matchingTask as any)?.vatRate !== undefined ? (matchingTask as any).vatRate : 10);
+        const vatA = plan.vatAmount || (matchingTask as any)?.vatAmount || ((plan.volumeOrder || plan.volumeContract || 0) * price * vatR / 100);
+        const tot = plan.totalAmount || (matchingTask as any)?.totalAmount || (((plan.volumeOrder || plan.volumeContract || 0) * price) + vatA);
 
-    let added;
-    do {
-      added = false;
-      projectPurchasing.forEach(plan => {
-        if (validIds.has(plan.id) && plan.parentId && !validIds.has(plan.parentId)) {
-           validIds.add(plan.parentId);
-           added = true;
-        }
+        return {
+          ...plan,
+          unitPrice: price,
+          vatRate: vatR,
+          vatAmount: vatA,
+          totalAmount: tot,
+          remainingAmount: plan.remainingAmount || (tot - (plan.prepayAmount || 0)),
+        };
       });
-    } while (added);
+    }
 
-    // Remove empty owner sections that were kept but shouldn't be.
-    // Actually, if it's an owner section and has no children, it won't be in validIds from pass 1
-    // UNLESS it had no matPlan. If it had no matPlan, it was added in pass 1.
-    // Let's ensure owner sections without matPlan are removed if they have no valid children.
-    projectPurchasing.forEach(plan => {
-      if (validIds.has(plan.id) && isSectionMarker(plan.stt, plan.notes)) {
-        const matPlan = plan.materialPlanId
-          ? currentProjMaterialPlans.find(m => m.id === plan.materialPlanId)
-          : currentProjMaterialPlans.find(m => normalizePlanKey(m.stt, m.jobContent) === normalizePlanKey(plan.stt, plan.content));
+    let orderCounter = 0;
+    return projTasks.map(task => {
+      const isSection = task.isSectionHeader;
+      const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
+      const existingPur = purchasingPlans.find(p => p.id === task.id || (p.projectCode === task.projectCode && p.stt === task.stt && p.content === task.name));
 
-        if (!matPlan) { /* owner check removed */ }
-      }
+      const unitPrice = existingPur?.unitPrice || (task as any).unitPrice || 0;
+      const vatRate = existingPur?.vatRate !== undefined ? existingPur.vatRate : ((task as any).vatRate !== undefined ? (task as any).vatRate : 10);
+      const vatAmount = existingPur?.vatAmount || (task as any).vatAmount || (task.volume * unitPrice * vatRate / 100);
+      const totalAmount = existingPur?.totalAmount || (task as any).totalAmount || (task.volume * unitPrice + vatAmount);
+
+      return {
+        id: task.id,
+        parentId: task.parentId,
+        projectCode: task.projectCode,
+        stt: task.stt || '',
+        content: task.name,
+        unit: task.unit || '',
+        volumeContract: task.volume || 0,
+        volumeOrder: existingPur?.volumeOrder || task.volume || 0,
+        unitPrice: unitPrice,
+        vatRate: vatRate,
+        vatAmount: vatAmount,
+        totalAmount: totalAmount,
+        prepayPercent: existingPur?.prepayPercent || 0,
+        prepayAmount: existingPur?.prepayAmount || 0,
+        remainingAmount: existingPur?.remainingAmount || totalAmount,
+        orderStatus: existingPur?.orderStatus || task.purchaseStatus || 'Chưa đặt hàng',
+        contractStatus: existingPur?.contractStatus || 'Đã có phụ lục',
+        invoiceStatus: existingPur?.invoiceStatus || 'Chưa xuất',
+        notes: [orderTag, isSection ? '[section]' : '', existingPur?.notes || task.notes].filter(Boolean).join(' | '),
+      } as ProjectPurchasing;
     });
-
-    return projectPurchasing.filter(plan => validIds.has(plan.id));
-  }, [purchasingPlans, selectedProject, currentProjMaterialPlans, projects]);
+  }, [purchasingPlans, tasks, selectedProject, projects]);
 
   // Tự động đồng bộ các hạng mục do nhà thầu cung cấp sang tab Mua hàng (chạy ngầm, không gây treo máy nhờ debounce)
   useEffect(() => {

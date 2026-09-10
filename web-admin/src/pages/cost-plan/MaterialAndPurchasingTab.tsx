@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { ProjectMaterialPlan, ProjectPurchasing, getStatusColorStyle, getTextColorStyle, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { compareTaskStt } from '../../utils/taskTreeUtils';
 import { decodeModels, encodeModels, ModelEntry } from './DocumentCertificateTab';
 import { FastDocModal } from './FastDocModal';
 import { DocumentCertificateTab } from './DocumentCertificateTab';
@@ -44,8 +45,7 @@ const isParentRow = (plan: ProjectMaterialPlan) => {
   if (notes.includes('[section]')) return true;
 
   const stt = String(plan.stt || '').trim().toUpperCase();
-  const hasNoDot = stt.length > 0 && !stt.includes('.');
-  const isSecPattern = /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (hasNoDot && /^\d+$/.test(stt));
+  const isSecPattern = /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
   return isSecPattern;
 };
 
@@ -340,12 +340,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
   // Cross-reference helper
   const findPurchasingMatch = (plan: ProjectMaterialPlan) => {
-    let match = purchasingData.find(p => p.materialPlanId === plan.id);
+    let match = purchasingData.find(p => p.id === plan.id || p.materialPlanId === plan.id);
     if (match) return match;
 
     const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
     match = purchasingData.find(
-      p => norm(p.stt) === norm(plan.stt) && norm(p.content) === norm(plan.jobContent)
+      p => norm(p.stt) === norm(plan.stt) && norm(p.content) === norm(plan.jobContent || (plan as any).name)
     );
     return match;
   };
@@ -695,7 +695,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     let finalTemp = value === undefined || value === null ? '' : value;
     if (field === 'issueContent') finalTemp = getIssueContentText(value);
     setTempValue(finalTemp);
-
   };
 
   const saveEditing = (plan: ProjectMaterialPlan, pRecord?: ProjectPurchasing) => {
@@ -704,46 +703,65 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     let finalValue = tempValue;
 
     if (isPurchasing) {
-      if (pRecord) {
-        if (field === 'notes') {
-          const finalNotes = String(pRecord.notes || '');
-          const existingTags = finalNotes.match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
-          finalValue = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
-        } else if (field === 'volumeOrder' || field === 'unitPrice' || field === 'vatRate' || field === 'prepayPercent' || field === 'prepayAmount') {
-          finalValue = Number(tempValue || 0);
-        }
-        
-        let updatePayload: Partial<ProjectPurchasing> = { [field]: finalValue };
-        
-        // Auto-calculate VAT & Total
-        if (field === 'volumeOrder' || field === 'unitPrice' || field === 'vatRate') {
-          const vol = field === 'volumeOrder' ? Number(finalValue) : (pRecord.volumeOrder || 0);
-          const price = field === 'unitPrice' ? Number(finalValue) : (pRecord.unitPrice || 0);
-          const rate = field === 'vatRate' ? Number(finalValue) : (pRecord.vatRate || 0);
-          
-          const vat = Math.round(vol * price * rate / 100);
-          const total = Math.round(vol * price * (1 + rate / 100));
-          
-          updatePayload.vatAmount = vat;
-          updatePayload.totalAmount = total;
-          updatePayload.remainingAmount = total - (pRecord.prepayAmount || 0);
-        } else if (field === 'prepayAmount') {
-          const prepay = Number(finalValue);
-          const total = pRecord.totalAmount || 0;
-          updatePayload.remainingAmount = total - prepay;
-          if (total > 0) {
-            updatePayload.prepayPercent = Number(((prepay / total) * 100).toFixed(2));
-          }
-        } else if (field === 'prepayPercent') {
-          const pct = Number(finalValue);
-          const total = pRecord.totalAmount || 0;
-          const prepay = Math.round(total * pct / 100);
-          updatePayload.prepayAmount = prepay;
-          updatePayload.remainingAmount = total - prepay;
-        }
+      const activeRecord = pRecord || {
+        id: plan.id,
+        materialPlanId: plan.id,
+        projectCode: plan.projectCode,
+        stt: plan.stt,
+        content: plan.jobContent,
+        unit: plan.unit,
+        volumeContract: plan.contractVolume || 0,
+        volumeOrder: plan.contractVolume || 0,
+        unitPrice: (plan as any).unitPrice || 0,
+        vatRate: (plan as any).vatRate !== undefined ? (plan as any).vatRate : 10,
+        vatAmount: 0,
+        totalAmount: (plan as any).totalAmount || 0,
+        prepayPercent: 0,
+        prepayAmount: 0,
+        remainingAmount: 0,
+        orderStatus: 'Chưa đặt hàng',
+        contractStatus: 'Đã có phụ lục',
+        invoiceStatus: 'Chưa xuất'
+      } as ProjectPurchasing;
 
-        onUpdatePurchasing(pRecord.id, updatePayload);
+      if (field === 'notes') {
+        const finalNotes = String(activeRecord.notes || '');
+        const existingTags = finalNotes.match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
+        finalValue = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+      } else if (field === 'volumeOrder' || field === 'unitPrice' || field === 'vatRate' || field === 'prepayPercent' || field === 'prepayAmount') {
+        finalValue = Number(tempValue || 0);
       }
+      
+      let updatePayload: Partial<ProjectPurchasing> = { [field]: finalValue };
+      
+      // Auto-calculate VAT & Total
+      if (field === 'volumeOrder' || field === 'unitPrice' || field === 'vatRate') {
+        const vol = field === 'volumeOrder' ? Number(finalValue) : (activeRecord.volumeOrder || 0);
+        const price = field === 'unitPrice' ? Number(finalValue) : (activeRecord.unitPrice || 0);
+        const rate = field === 'vatRate' ? Number(finalValue) : (activeRecord.vatRate || 0);
+        
+        const vat = Math.round(vol * price * rate / 100);
+        const total = Math.round(vol * price * (1 + rate / 100));
+        
+        updatePayload.vatAmount = vat;
+        updatePayload.totalAmount = total;
+        updatePayload.remainingAmount = total - (activeRecord.prepayAmount || 0);
+      } else if (field === 'prepayAmount') {
+        const prepay = Number(finalValue);
+        const total = activeRecord.totalAmount || 0;
+        updatePayload.remainingAmount = total - prepay;
+        if (total > 0) {
+          updatePayload.prepayPercent = Number(((prepay / total) * 100).toFixed(2));
+        }
+      } else if (field === 'prepayPercent') {
+        const pct = Number(finalValue);
+        const total = activeRecord.totalAmount || 0;
+        const prepay = Math.round(total * pct / 100);
+        updatePayload.prepayAmount = prepay;
+        updatePayload.remainingAmount = total - prepay;
+      }
+
+      onUpdatePurchasing(activeRecord.id, updatePayload);
     } else {
       let finalNotes = String(plan.notes || '');
       const currentTech = getTechNote(finalNotes);
@@ -1062,8 +1080,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           <thead className="sticky top-0 z-30 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
               <th rowSpan={2} style={{ minWidth: 50, width: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
-              <th rowSpan={2} style={{ width: '100%', minWidth: 280, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left ">NỘI DUNG</th>
-              {(subTab === 'TECH' || subTab === 'DOCS') && (
+              <th rowSpan={2} style={{ minWidth: 280, width: 320, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left ">NỘI DUNG</th>
+              {(subTab === 'TECH' || subTab === 'DOCS' || subTab === 'FINANCE') && (
                 <>
                   <th rowSpan={2} style={{ minWidth: 65, width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
                   <th rowSpan={2} style={{ minWidth: 55, width: 55, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL HĐ</th>
@@ -1119,96 +1137,108 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           </thead>
           <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
             {(() => {
+              // Synthesize missing parent section headers if any child items exist (e.g. 33.1 without 33)
               const sttSet = new Set(filteredData.map(t => String(t.stt || '').trim()));
               const missingParents: any[] = [];
               filteredData.forEach(t => {
                 const stt = String(t.stt || '').trim();
                 if (stt.includes('.')) {
                   const parts = stt.split('.');
-                  while (parts.length > 1) {
-                    parts.pop();
-                    const parentStt = parts.join('.');
-                    if (parentStt && !sttSet.has(parentStt)) {
-                      sttSet.add(parentStt);
-                      let synthName = '';
-                      if (parentStt === '33') {
-                        synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-                      } else if (parentStt === '36') {
-                        synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-                      } else {
-                        synthName = `HẠNG MỤC ${parentStt}`;
-                      }
-
-                      missingParents.push({
-                        id: `synth_mat_${parentStt}`,
-                        stt: parentStt,
-                        jobContent: synthName,
-                        content: synthName,
-                        projectCode: t.projectCode,
-                        parentId: t.parentId,
-                        isSec: true,
-                        notes: '[section]'
-                      });
+                  parts.pop();
+                  const parentStt = parts.join('.');
+                  if (parentStt && !sttSet.has(parentStt)) {
+                    sttSet.add(parentStt);
+                    let synthName = '';
+                    if (parentStt === '33') {
+                      synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+                    } else if (parentStt === '36') {
+                      synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+                    } else {
+                      synthName = `HẠNG MỤC ${parentStt}`;
                     }
+
+                    missingParents.push({
+                      id: `synth_mat_${parentStt}`,
+                      stt: parentStt,
+                      jobContent: synthName,
+                      content: synthName,
+                      name: synthName,
+                      projectCode: t.projectCode,
+                      parentId: t.parentId,
+                      isSec: true,
+                      notes: '[section]'
+                    });
                   }
                 }
               });
 
-              // Merge missing parents into correct position based on STT ordering
-              const fullData = [...filteredData];
-              missingParents
-                .sort((a, b) => (a.stt.split('.').length - b.stt.split('.').length) || a.stt.localeCompare(b.stt, 'vi', { numeric: true }))
-                .forEach(missing => {
-                  const firstChildIdx = fullData.findIndex(t => String(t.stt || '').startsWith(missing.stt + '.'));
-                  if (firstChildIdx !== -1) {
-                    fullData.splice(firstChildIdx, 0, missing);
-                  } else {
-                    fullData.push(missing);
-                  }
+              // Build tree globally exactly like TaskManagementPage
+              const map = new Map<string, any>();
+              const roots: any[] = [];
+
+              const fullTasks = [...missingParents, ...filteredData];
+
+              // Initialize map
+              fullTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
+
+              // Resolve parent globally
+              const resolveParentIdGlobal = (item: any) => {
+                if (item.parentId && map.has(item.parentId)) return item.parentId;
+                if (item.stt && item.stt.includes('.')) {
+                  const parts = item.stt.split('.');
+                  parts.pop();
+                  const parentStt = parts.join('.');
+                  const parentItem = fullTasks.find((r) => r.stt === parentStt);
+                  if (parentItem && map.has(parentItem.id)) return parentItem.id;
+                }
+                return item.parentId;
+              };
+
+              fullTasks.forEach((t) => {
+                const resolvedParentId = resolveParentIdGlobal(t);
+                if (resolvedParentId && map.has(resolvedParentId)) {
+                  map.get(resolvedParentId)!.children.push(map.get(t.id));
+                } else {
+                  roots.push(map.get(t.id));
+                }
+              });
+
+              let currentSectionKey = '';
+              const flattened: any[] = [];
+
+              const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '') => {
+                nodes.sort((a, b) => {
+                  const sttCompare = compareTaskStt(a.stt, b.stt);
+                  if (sttCompare !== 0) return sttCompare;
+                  return (a.jobContent || a.name || '').localeCompare(b.jobContent || b.name || '', 'vi', { numeric: true, sensitivity: 'base' });
                 });
 
-              const flattened: any[] = [];
-              let currentSectionKey = '__default__';
-
-              fullData.forEach(t => {
-                if (isParentRow(t)) {
-                  currentSectionKey = t.id;
-                  flattened.push({
-                    ...t,
-                    depth: 0,
-                    computedStt: t.stt,
-                    isSec: true,
-                    _sectionKey: currentSectionKey
-                  });
-                } else {
-                  let secKey = currentSectionKey;
-                  const itemAny = t as any;
-                  if (t.parentId) {
-                    const foundParent = fullData.find(p => p.id === t.parentId);
-                    if (foundParent) secKey = foundParent.id;
-                  } else if (t.stt && t.stt.includes('.')) {
-                    const parts = t.stt.split('.');
-                    let foundParentByStt: any = undefined;
-                    while (parts.length > 1 && !foundParentByStt) {
-                      parts.pop();
-                      const prefixStt = parts.join('.');
-                      foundParentByStt = fullData.find(p => String(p.stt || '').trim() === prefixStt);
-                    }
-                    if (foundParentByStt) secKey = foundParentByStt.id;
-                  } else if (itemAny.sectionName) {
-                    const foundParentBySection = fullData.find(p => isParentRow(p) && ((p as any).sectionName === itemAny.sectionName || p.jobContent === itemAny.sectionName || `${p.stt ? p.stt + '. ' : ''}${p.jobContent}` === itemAny.sectionName));
-                    if (foundParentBySection) secKey = foundParentBySection.id;
+                nodes.forEach((node, idx) => {
+                  const isSec = isParentRow(node);
+                  if (isSec) {
+                    currentSectionKey = node.id;
                   }
-                  const depth = t.stt && t.stt.includes('.') ? t.stt.split('.').length - 1 : 1;
+
+                  let displayDepth = currentDepth;
+                  if (currentDepth === 0 && !isSec && currentSectionKey !== '') {
+                    displayDepth = 1;
+                  }
+
+                  const currentNum = (idx + 1).toString();
+                  const computedStt = node.stt || (displayDepth === 1 ? currentNum : (displayDepth > 1 ? `${prefix}.${currentNum}` : currentNum));
+
                   flattened.push({
-                    ...t,
-                    depth,
-                    computedStt: t.stt,
-                    isSec: false,
-                    _sectionKey: secKey
+                    ...node,
+                    isSec: isSec,
+                    depth: displayDepth,
+                    computedStt,
+                    _sectionKey: currentSectionKey || 'Khác'
                   });
-                }
-              });
+                  flattenTree(node.children, currentDepth + 1, computedStt);
+                });
+              };
+
+              flattenTree(roots, 0, '');
 
               if (flattened.length === 0) {
                 return <tr><td colSpan={colSpanCount + 2} className="p-8 text-center text-slate-400 whitespace-nowrap">{TEXT.empty}</td></tr>;
@@ -1345,7 +1375,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           </td>
 
                           {/* DYNAMIC RIGHT COLUMNS BASED ON SUBTAB */}
-                          {(subTab === 'TECH' || subTab === 'DOCS') && (
+                          {(subTab === 'TECH' || subTab === 'DOCS' || subTab === 'FINANCE') && (
                             <>
                               <td className="bg-white group-hover:bg-slate-50 border-r border-slate-200 p-0 text-center font-semibold text-[11px] align-middle text-slate-700">
                                 {editingCell?.id === plan.id && editingCell?.field === 'unit' && !editingCell.isPurchasing ? (
@@ -1536,9 +1566,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     autoFocus
                                     className="w-full text-center bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none border-none rounded"
                                   />
-                                ) : (
-                                  <span onClick={() => pRecord && startEditing(plan.id, 'volumeOrder', pRecord.volumeOrder, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5" title={showNumber(pRecord?.volumeOrder)}>{showNumber(pRecord?.volumeOrder) || '-'}</span>
-                                )}
+                                ) : ((() => {
+                                  const effectiveVol = pRecord?.volumeOrder !== undefined && pRecord.volumeOrder > 0 ? pRecord.volumeOrder : plan.contractVolume;
+                                  return (
+                                    <span onClick={() => startEditing(plan.id, 'volumeOrder', effectiveVol, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5" title={showNumber(effectiveVol)}>{showNumber(effectiveVol) || '-'}</span>
+                                  );
+                                })())}
                               </td>
                               {/* ĐƠN GIÁ MUA */}
                               <td className="p-0 align-middle text-right font-mono text-slate-600 border-r border-slate-200 leading-tight">
@@ -1552,9 +1585,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     autoFocus
                                     className="w-full text-right bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none border-none rounded"
                                   />
-                                ) : (
-                                  <span onClick={() => pRecord && startEditing(plan.id, 'unitPrice', pRecord.unitPrice, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-end px-1.5 py-1.5" title={showNumber(pRecord?.unitPrice)}>{showNumber(pRecord?.unitPrice) || '-'}</span>
-                                )}
+                                ) : ((() => {
+                                  const effectivePrice = pRecord?.unitPrice || (plan as any).unitPrice || 0;
+                                  return (
+                                    <span onClick={() => startEditing(plan.id, 'unitPrice', effectivePrice, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-end px-1.5 py-1.5" title={showNumber(effectivePrice)}>{showNumber(effectivePrice) || '-'}</span>
+                                  );
+                                })())}
                               </td>
                               {/* VAT % */}
                               <td className="p-0 align-middle text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">
@@ -1568,13 +1604,23 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                     autoFocus
                                     className="w-full text-center bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none border-none rounded"
                                   />
-                                ) : (
-                                  <span onClick={() => pRecord && startEditing(plan.id, 'vatRate', pRecord.vatRate, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 whitespace-nowrap overflow-hidden text-ellipsis" title={showNumber(pRecord?.vatRate)}>{showPercent(pRecord?.vatRate)}</span>
-                                )}
+                                ) : ((() => {
+                                  const effectiveVat = pRecord?.vatRate !== undefined ? pRecord.vatRate : ((plan as any).vatRate !== undefined ? (plan as any).vatRate : 10);
+                                  return (
+                                    <span onClick={() => startEditing(plan.id, 'vatRate', effectiveVat, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 whitespace-nowrap overflow-hidden text-ellipsis" title={showNumber(effectiveVat)}>{showPercent(effectiveVat)}</span>
+                                  );
+                                })())}
                               </td>
                               {/* THÀNH TIỀN MUA */}
                               <td className="p-1.5 align-middle text-right font-mono font-bold text-slate-800 border-r border-slate-200 leading-tight">
-                                {showNumber(pRecord?.totalAmount) || '-'}
+                                {(() => {
+                                  const effectiveVol = pRecord?.volumeOrder || plan.contractVolume || 0;
+                                  const effectivePrice = pRecord?.unitPrice || (plan as any).unitPrice || 0;
+                                  const effectiveVat = pRecord?.vatRate !== undefined ? pRecord.vatRate : ((plan as any).vatRate !== undefined ? (plan as any).vatRate : 10);
+                                  const effectiveVatAmt = pRecord?.vatAmount || (effectiveVol * effectivePrice * effectiveVat / 100);
+                                  const effectiveTotal = pRecord?.totalAmount || (plan as any).totalAmount || ((effectiveVol * effectivePrice) + effectiveVatAmt);
+                                  return showNumber(effectiveTotal) || '-';
+                                })()}
                               </td>
                               {/* % TẠM ỨNG */}
                               <td className="p-0 align-middle text-center font-mono text-slate-600 border-r border-slate-200 leading-tight">

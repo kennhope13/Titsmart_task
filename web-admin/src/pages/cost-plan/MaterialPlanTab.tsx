@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ProjectMaterialPlan, getStatusColorStyle, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { compareTaskStt } from '../../utils/taskTreeUtils';
 
 interface MaterialPlanTabProps {
   data: ProjectMaterialPlan[];
@@ -30,8 +31,7 @@ const TEXT = {
 const isParentRow = (plan: ProjectMaterialPlan) => {
   const stt = String(plan.stt || '').trim().toUpperCase();
   const notes = String(plan.notes || '').toLowerCase();
-  const hasNoDot = stt.length > 0 && !stt.includes('.');
-  return notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (hasNoDot && /^\d+$/.test(stt));
+  return notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
 };
 
 const cleanNotes = (value?: string) => {
@@ -267,26 +267,9 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
     };
 
     const sortedFiltered = filtered.sort((a, b) => {
-      const secA = getSectionIndexForItem(a);
-      const secB = getSectionIndexForItem(b);
-      if (secA !== secB) return secA - secB;
-
-      const parentOfA = resolveParentId(a);
-      const parentOfB = resolveParentId(b);
-      if (a.id === parentOfB) return -1;
-      if (b.id === parentOfA) return 1;
-
-      const isLetterA = /^[A-Z]{1,2}$/i.test(String(a.stt || '').trim());
-      const isLetterB = /^[A-Z]{1,2}$/i.test(String(b.stt || '').trim());
-      if (isLetterA && !isLetterB) return -1;
-      if (!isLetterA && isLetterB) return 1;
-
-      const ap = numericSttParts(a.stt), bp = numericSttParts(b.stt);
-      for (let i = 0; i < Math.max(ap.length, bp.length); i++) {
-        const diff = (ap[i] ?? Infinity) - (bp[i] ?? Infinity);
-        if (diff !== 0) return diff;
-      }
-      return String(a.stt || '').localeCompare(String(b.stt || ''));
+      const sttCompare = compareTaskStt(a.stt, b.stt);
+      if (sttCompare !== 0) return sttCompare;
+      return (a.jobContent || '').localeCompare(b.jobContent || '', 'vi', { numeric: true, sensitivity: 'base' });
     });
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
   }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder, filterConstruction]);
@@ -493,124 +476,73 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
           </thead>
           <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
             {(() => {
-              const groups: { [key: string]: any[] } = {};
-              const order: string[] = [];
-              let currentSectionKey = '__default__';
+              // Build tree globally exactly like TaskManagementPage
+              const map = new Map<string, any>();
+              const roots: any[] = [];
 
-              const isRootSectionRow = (plan: ProjectMaterialPlan) => {
-                const stt = String(plan.stt || '').trim().toUpperCase();
-                return /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (isParentRow(plan) && !plan.parentId);
-              };
+              const fullTasks = [...filteredData];
 
-              // Group by section. True orphans go to __orphaned__
-              const sttSet = new Set(filteredData.map(t => String(t.stt || '').trim()));
-              const missingParents: any[] = [];
-              filteredData.forEach(t => {
-                const stt = String(t.stt || '').trim();
-                if (stt.includes('.')) {
-                  const parts = stt.split('.');
+              // Initialize map
+              fullTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
+
+              // Resolve parent globally
+              const resolveParentIdGlobal = (item: any) => {
+                if (item.parentId && map.has(item.parentId)) return item.parentId;
+                if (item.stt && item.stt.includes('.')) {
+                  const parts = item.stt.split('.');
                   parts.pop();
                   const parentStt = parts.join('.');
-                  if (parentStt && !sttSet.has(parentStt)) {
-                    sttSet.add(parentStt);
-                    let synthName = '';
-                    if (parentStt === '33') {
-                      synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-                    } else if (parentStt === '36') {
-                      synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-                    } else {
-                      synthName = `HẠNG MỤC ${parentStt}`;
-                    }
-
-                    missingParents.push({
-                      id: `synth_mat_${parentStt}`,
-                      stt: parentStt,
-                      jobContent: synthName,
-                      content: synthName,
-                      projectCode: t.projectCode,
-                      parentId: t.parentId,
-                      isSec: true,
-                      notes: '[section]'
-                    });
-                  }
+                  const parentItem = fullTasks.find((r) => r.stt === parentStt);
+                  if (parentItem && map.has(parentItem.id)) return parentItem.id;
                 }
-              });
+                return item.parentId;
+              };
 
-              const allData = [...missingParents, ...filteredData];
-
-              allData.forEach(t => {
-                if (isRootSectionRow(t)) {
-                  currentSectionKey = t.id;
-                  if (!groups[currentSectionKey]) {
-                    groups[currentSectionKey] = [];
-                    order.push(currentSectionKey);
-                  }
-                  groups[currentSectionKey].unshift({ ...t, _isHeader: true });
+              fullTasks.forEach((t) => {
+                const resolvedParentId = resolveParentIdGlobal(t);
+                if (resolvedParentId && map.has(resolvedParentId)) {
+                  map.get(resolvedParentId)!.children.push(map.get(t.id));
                 } else {
-                  let targetSection = currentSectionKey;
-                  const resolvedParentId = resolveParentId(t);
-                  if (resolvedParentId && groups[resolvedParentId]) {
-                    targetSection = resolvedParentId;
-                  }
-
-                  if (!groups[targetSection]) {
-                    groups[targetSection] = [];
-                    order.push(targetSection);
-                  }
-                  groups[targetSection].push({ ...t, _isHeader: false });
+                  roots.push(map.get(t.id));
                 }
               });
 
-              // Push orphaned items to the absolute bottom
-              const orphanedIdx = order.indexOf('__orphaned__');
-              if (orphanedIdx !== -1) {
-                order.splice(orphanedIdx, 1);
-                order.push('__orphaned__');
-              }
-
+              let currentSectionKey = '';
               const flattened: any[] = [];
-              order.forEach((secKey) => {
-                let sectionHeader = groups[secKey].find((t: any) => t._isHeader);
-                if (secKey === '__orphaned__' && !sectionHeader) {
-                  sectionHeader = {
-                    id: '__orphaned__',
-                    stt: '',
-                    jobContent: 'CHƯA PHÂN NHÓM',
-                    content: 'CHƯA PHÂN NHÓM',
-                    isSec: true,
-                    _isHeader: true
-                  };
-                }
-                const items = groups[secKey].filter((t: any) => !t._isHeader);
 
-                // Build tree within this section (for sub-items with parentId)
-                const map = new Map<string, any>();
-                const roots: any[] = [];
-                items.forEach((t: any) => map.set(t.id, { ...t, children: [] }));
-                items.forEach((t: any) => {
-                  const resolvedParentId = resolveParentId(t);
-                  if (resolvedParentId && resolvedParentId !== secKey && map.has(resolvedParentId)) {
-                    map.get(resolvedParentId)!.children.push(map.get(t.id));
-                  } else {
-                    roots.push(map.get(t.id));
-                  }
+              const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '') => {
+                nodes.sort((a, b) => {
+                  const sttCompare = compareTaskStt(a.stt, b.stt);
+                  if (sttCompare !== 0) return sttCompare;
+                  return (a.jobContent || '').localeCompare(b.jobContent || '', 'vi', { numeric: true, sensitivity: 'base' });
                 });
 
-                const flattenTree = (nodes: any[], depth: number, prefix: string = '', sectionKey: string = '') => {
-                  nodes.forEach((node: any, idx: number) => {
-                    const currentNum = (idx + 1).toString();
-                    const computedStt = node.stt || (depth === 1 ? currentNum : (depth > 1 ? `${prefix}.${currentNum}` : currentNum));
-                    const isSec = node.isSec || isParentRow(node);
-                    flattened.push({ ...node, depth, computedStt, isSec, _sectionKey: sectionKey });
-                    flattenTree(node.children, depth + 1, computedStt, sectionKey);
-                  });
-                };
+                nodes.forEach((node, idx) => {
+                  const isSec = isParentRow(node);
+                  if (isSec) {
+                    currentSectionKey = node.id;
+                  }
 
-                if (sectionHeader) {
-                  flattened.push({ ...sectionHeader, depth: 0, computedStt: sectionHeader.stt, isSec: true, _sectionKey: secKey });
-                }
-                flattenTree(roots, sectionHeader ? 1 : 0, '', secKey);
-              });
+                  let displayDepth = currentDepth;
+                  if (currentDepth === 0 && !isSec && currentSectionKey !== '') {
+                    displayDepth = 1;
+                  }
+
+                  const currentNum = (idx + 1).toString();
+                  const computedStt = node.stt || (displayDepth === 1 ? currentNum : (displayDepth > 1 ? `${prefix}.${currentNum}` : currentNum));
+
+                  flattened.push({
+                    ...node,
+                    isSec: isSec,
+                    depth: displayDepth,
+                    computedStt,
+                    _sectionKey: currentSectionKey || 'Khác'
+                  });
+                  flattenTree(node.children, currentDepth + 1, computedStt);
+                });
+              };
+
+              flattenTree(roots, 0, '');
 
               if (flattened.length === 0) {
                 return <tr><td colSpan={subTab === 'TECH' ? 9 : 10} className="p-8 text-center text-slate-400 whitespace-nowrap">{TEXT.empty}</td></tr>;

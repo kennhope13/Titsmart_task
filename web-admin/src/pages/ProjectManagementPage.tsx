@@ -460,10 +460,17 @@ export const ProjectManagementPage: React.FC = () => {
 
         let parentId = undefined;
         if (isSection) {
-          currentMainSectionId = item.id;
-          currentSubSectionId = undefined;
+          const isMainLevelHeader = /^[A-Z]{1,2}$/i.test(sttVal) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(sttVal) || sttVal.startsWith('PHẦN') || item.name.toUpperCase().startsWith('PHẦN ');
+          if (isMainLevelHeader) {
+            currentMainSectionId = item.id;
+            currentSubSectionId = undefined; // Reset sub section khi gặp Main Section mới (VD: B, II, III)
+            parentId = undefined; // Main Section (A, B, I, II, III) nằm ở cấp Root cao nhất
+          } else {
+            currentSubSectionId = item.id;
+            parentId = currentMainSectionId; // Nhóm số (33, 34, 35 thuộc A; 36, 37 thuộc B)
+          }
         } else {
-          // Tìm parent theo dấu chấm gần nhất
+          // Tìm parent theo dấu chấm gần nhất (VD: 33.1.1 -> 33.1)
           let foundDottedParent = false;
           if (sttVal.includes('.')) {
             const parts = sttVal.split('.');
@@ -476,18 +483,7 @@ export const ProjectManagementPage: React.FC = () => {
           }
           
           if (!foundDottedParent) {
-            // Nếu không tìm thấy theo dấu chấm (ví dụ: '33.1.1' nhưng không có '33.1'),
-            // kết nối vào thư mục con gần nhất hoặc thư mục chính
             parentId = currentSubSectionId || currentMainSectionId;
-          }
-
-          // Kiểm tra xem dòng tiếp theo có phải con của dòng này không
-          const nextItem = pendingProjectTasks[index + 1];
-          if (nextItem) {
-            const nextStt = String(nextItem.stt || '').trim();
-            if (nextStt && nextStt.startsWith(sttVal + '.')) {
-              currentSubSectionId = item.id;
-            }
           }
         }
 
