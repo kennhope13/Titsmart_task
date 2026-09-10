@@ -1169,9 +1169,17 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   });
                 } else {
                   let secKey = currentSectionKey;
+                  const itemAny = t as any;
                   if (t.parentId) {
                     const foundParent = fullData.find(p => p.id === t.parentId);
                     if (foundParent) secKey = foundParent.id;
+                  } else if (t.stt && t.stt.includes('.')) {
+                    const rootStt = t.stt.split('.')[0];
+                    const foundParentByStt = fullData.find(p => isParentRow(p) && String(p.stt || '').trim() === rootStt);
+                    if (foundParentByStt) secKey = foundParentByStt.id;
+                  } else if (itemAny.sectionName) {
+                    const foundParentBySection = fullData.find(p => isParentRow(p) && ((p as any).sectionName === itemAny.sectionName || p.jobContent === itemAny.sectionName || `${p.stt ? p.stt + '. ' : ''}${p.jobContent}` === itemAny.sectionName));
+                    if (foundParentBySection) secKey = foundParentBySection.id;
                   }
                   const depth = t.stt && t.stt.includes('.') ? t.stt.split('.').length - 1 : 1;
                   flattened.push({
