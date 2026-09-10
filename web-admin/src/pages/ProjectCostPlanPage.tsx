@@ -1113,13 +1113,16 @@ export const ProjectCostPlanPage: React.FC = () => {
   // items); re-sorting here (sections first, then items) or rebuilding the
   // purchasing rows from material plans breaks the hierarchy and duplicates
   // section rows. MaterialPlanTab / PurchasingTab handle grouping themselves.
-  const currentProjMaterialPlans = useMemo(() =>
-    materialPlans.filter((plan) => plan.projectCode === selectedProject && plan.jobContent?.trim()),
-    [materialPlans, selectedProject]
-  );
+  const currentProjMaterialPlans = useMemo(() => {
+    const currentProjObj = projects.find(p => p.code === selectedProject || p.id === selectedProject);
+    const validCodes = new Set([selectedProject, currentProjObj?.code, currentProjObj?.id].filter(Boolean));
+    return materialPlans.filter((plan) => validCodes.has(plan.projectCode) && plan.jobContent?.trim());
+  }, [materialPlans, selectedProject, projects]);
 
   const currentProjPurchasing = useMemo(() => {
-    const projectPurchasing = purchasingPlans.filter((plan) => plan.projectCode === selectedProject);
+    const currentProjObj = projects.find(p => p.code === selectedProject || p.id === selectedProject);
+    const validCodes = new Set([selectedProject, currentProjObj?.code, currentProjObj?.id].filter(Boolean));
+    const projectPurchasing = purchasingPlans.filter((plan) => validCodes.has(plan.projectCode));
     const validIds = new Set<string>();
 
     projectPurchasing.forEach(plan => {
@@ -1152,7 +1155,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     });
 
     return projectPurchasing.filter(plan => validIds.has(plan.id));
-  }, [purchasingPlans, selectedProject, currentProjMaterialPlans]);
+  }, [purchasingPlans, selectedProject, currentProjMaterialPlans, projects]);
 
   // Tự động đồng bộ các hạng mục do nhà thầu cung cấp sang tab Mua hàng (chạy ngầm, không gây treo máy nhờ debounce)
   useEffect(() => {
@@ -1266,7 +1269,9 @@ export const ProjectCostPlanPage: React.FC = () => {
   }, [laborPayrolls]);
 
   const currentProjExpenses = useMemo(() => {
-    const sortedOldestFirst = expenses.filter(p => p.projectCode === selectedProject).sort((a, b) => {
+    const currentProjObj = projects.find(p => p.code === selectedProject || p.id === selectedProject);
+    const validCodes = new Set([selectedProject, currentProjObj?.code, currentProjObj?.id].filter(Boolean));
+    const sortedOldestFirst = expenses.filter(p => validCodes.has(p.projectCode)).sort((a, b) => {
       return sttSortValue(a.stt) - sttSortValue(b.stt);
     });
     let currentBalance = 0;
@@ -1275,7 +1280,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       return { ...exp, autoBalance: currentBalance };
     });
     return computed;
-  }, [expenses, selectedProject]);
+  }, [expenses, selectedProject, projects]);
 
   const expenseDateOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjExpenses.map(p => p.date).filter(Boolean)))], [currentProjExpenses]);
   const expenseContentOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjExpenses.map(p => p.content).filter(Boolean)))], [currentProjExpenses]);
