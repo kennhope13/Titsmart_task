@@ -5,6 +5,7 @@ import { Modal } from '../components/common/Modal';
 import { FileViewerItem } from '../components/common/FileViewerItem';
 import { Toast } from '../components/common/Toast';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { ImageUpload } from '../components/common/ImageUpload';
 import { CostPlanSummaryTable } from './cost-plan/CostPlanSummaryTable';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
 
@@ -320,6 +321,13 @@ export const OfficeCostsPage: React.FC = () => {
             </div>
           </div>
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newExpenseData.notes} onChange={(e) => setNewExpenseData({...newExpenseData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+          <div>
+            <ImageUpload
+              label="Hóa đơn / Chứng từ chi (Hình ảnh hoặc PDF)"
+              value={newExpenseData.invoiceUrl}
+              onChange={(url) => setNewExpenseData({...newExpenseData, invoiceUrl: Array.isArray(url) ? url[0] || '' : url})}
+            />
+          </div>
           <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setIsNewExpenseOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading} className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">Lưu phiếuchi</button></div>
         </form>
       </Modal>
@@ -368,6 +376,13 @@ export const OfficeCostsPage: React.FC = () => {
               <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={editingExpense.incomeAmount} onChange={(e) => setEditingExpense({...editingExpense, incomeAmount: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
             </div>
             <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingExpense.notes} onChange={(e) => setEditingExpense({...editingExpense, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div>
+              <ImageUpload
+                label="Hóa đơn / Chứng từ chi (Hình ảnh hoặc PDF)"
+                value={editingExpense.invoiceUrl}
+                onChange={(url) => setEditingExpense({...editingExpense, invoiceUrl: Array.isArray(url) ? url[0] || '' : url})}
+              />
+            </div>
             <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingExpense(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading} className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">Lưu thay đổi</button></div>
           </form>
         )}
