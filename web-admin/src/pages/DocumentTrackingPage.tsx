@@ -613,6 +613,7 @@ deleteDocumentTrack(track.id);
                 className="w-full border rounded-lg p-2 bg-white font-bold truncate"
               >
                 <option value="">-- Chọn dự án --</option>
+                <option value="COMPANY">Chung nội bộ / Hồ sơ Công ty</option>
                 {projects.map(p => (
                   <option key={p.code} value={p.code}>{p.name}</option>
                 ))}
@@ -717,6 +718,7 @@ deleteDocumentTrack(track.id);
                   className="w-full border rounded-lg p-2 bg-white font-bold truncate"
                 >
                   <option value="">-- Chọn dự án --</option>
+                  <option value="COMPANY">Chung nội bộ / Hồ sơ Công ty</option>
                   {projects.map(p => (
                     <option key={p.code} value={p.code}>{p.name}</option>
                   ))}
