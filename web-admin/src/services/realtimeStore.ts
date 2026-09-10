@@ -582,6 +582,22 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           set({ isFetchingProjects: true });
         }
         const projects = await api.projects.getAll();
+        // Tự động bảo đảm dự án OFFICE (Văn phòng) tồn tại trong Supabase
+        if (Array.isArray(projects) && !projects.some((p: any) => p.code === 'OFFICE')) {
+          try {
+            const officeProj = await api.projects.create({
+              name: 'Văn phòng',
+              code: 'OFFICE',
+              status: 'active',
+              location: 'Văn phòng Công ty',
+              client: 'Nội bộ',
+              notes: 'Chi phí văn phòng'
+            });
+            projects.push(officeProj);
+          } catch (err) {
+            console.log('[Supabase] OFFICE project already exists or auto-created');
+          }
+        }
         // Lọc bỏ project nội bộ "Kho Công Ty" khỏi danh sách dự án
         let filtered = Array.isArray(projects)
           ? projects.filter((p: any) => p.code !== 'COMPANY')

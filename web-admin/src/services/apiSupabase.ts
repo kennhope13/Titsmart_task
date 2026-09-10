@@ -522,6 +522,21 @@ export const api = {
       const payload = toSnakeCase(data);
       const { data: result, error } = await supabase.from('expenses').insert(payload).select().single();
       if (error) {
+        // Handle foreign key constraint error if 'OFFICE' project row doesn't exist yet in projects table
+        if (error.code === '23503' || String(error.message).includes('foreign key constraint') || String(error.message).includes('expenses_project_code_fkey')) {
+          const projCode = payload.project_code || 'OFFICE';
+          await supabase.from('projects').insert({
+            name: projCode === 'OFFICE' ? 'Văn phòng' : projCode,
+            code: projCode,
+            status: 'active',
+            location: 'Văn phòng Công ty',
+            client: 'Nội bộ',
+            notes: 'Chi phí văn phòng'
+          });
+          const { data: retryResult, error: retryError } = await supabase.from('expenses').insert(payload).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
           delete payload.updated_at;
           delete payload.updated_by;
