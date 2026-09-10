@@ -588,14 +588,23 @@ export const ProjectManagementPage: React.FC = () => {
     setEditProjClient(project.client || '');
     setEditProjCategory(project.notes || '');
 
-    // Resolve engineers from the engineers array since database doesn't store project.members
+    // Resolve engineers from the engineers array by ID, code, or name matching
     const pCodeUpper = (project.code || '').trim().toUpperCase();
     const pIdUpper = (project.id || '').trim().toUpperCase();
+    const managerNames = project.managerName ? project.managerName.split(',').map(s => s.trim().toUpperCase()) : [];
+
     const assignedEngineers = engineers
-      .filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => {
-        const u = (c || '').trim().toUpperCase();
-        return u === pCodeUpper || u === pIdUpper;
-      }))
+      .filter(eng => {
+        const engNameUpper = (eng.name || '').trim().toUpperCase();
+        const hasCode = Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => {
+          const u = (c || '').trim().toUpperCase();
+          return u && (u === pCodeUpper || u === pIdUpper);
+        });
+        const isMember = (Array.isArray(project.members) && project.members.includes(eng.id)) ||
+                         (Array.isArray(project.memberIds) && project.memberIds.includes(eng.id));
+        const matchesManagerName = managerNames.includes(engNameUpper);
+        return hasCode || isMember || matchesManagerName;
+      })
       .map(eng => eng.id);
 
     const allMemberIds = Array.from(new Set([...(project.members || []), ...(project.memberIds || []), ...assignedEngineers]));
