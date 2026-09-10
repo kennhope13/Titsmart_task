@@ -272,6 +272,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       </aside>
 
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
+
+      {/* Full screen backdrop when logging out to prevent any user actions */}
+      {isLoggingOut && (
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-[2px] z-[9999] flex items-center justify-center cursor-wait select-none" onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}>
+          <div className="bg-white/95 backdrop-blur-md px-6 py-4 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3 animate-in fade-in zoom-in duration-200">
+            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm font-bold text-slate-800">Đang đăng xuất, vui lòng chờ...</span>
+          </div>
+        </div>
+      )}
     </>
   );
 };
