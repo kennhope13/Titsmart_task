@@ -217,16 +217,23 @@ export const ProjectCostPlanPage: React.FC = () => {
     try {
       await updatePurchasingPlan(id, updates);
 
-      if (updates.stt !== undefined || updates.content !== undefined || updates.unit !== undefined || updates.volumeContract !== undefined) {
+      if (
+        updates.stt !== undefined ||
+        updates.content !== undefined ||
+        updates.unit !== undefined ||
+        updates.volumeContract !== undefined ||
+        updates.orderStatus !== undefined
+      ) {
         if (matchingMaterial) {
           triggerToast(`Đã đồng bộ sang Kế hoạch vật tư: ${matchingMaterial.jobContent}`, 'success');
           await updateMaterialPlan(matchingMaterial.id, {
             stt: updates.stt !== undefined ? updates.stt : matchingMaterial.stt,
             jobContent: updates.content !== undefined ? updates.content : matchingMaterial.jobContent,
             unit: updates.unit !== undefined ? updates.unit : matchingMaterial.unit,
-            contractVolume: updates.volumeContract !== undefined ? updates.volumeContract : matchingMaterial.contractVolume
+            contractVolume: updates.volumeContract !== undefined ? updates.volumeContract : matchingMaterial.contractVolume,
+            orderedStatus: updates.orderStatus !== undefined ? updates.orderStatus : matchingMaterial.orderedStatus
           });
-        } else {
+        } else if (updates.stt !== undefined || updates.content !== undefined || updates.unit !== undefined || updates.volumeContract !== undefined) {
           triggerToast(`Không tìm thấy mục tương ứng trong Kế hoạch vật tư! (STT: ${existing.stt}, Nội dung: ${existing.content})`, 'warning');
         }
 
@@ -236,11 +243,19 @@ export const ProjectCostPlanPage: React.FC = () => {
           norm(t.name) === norm(existing.content)
         );
         if (matchingTask) {
+          const nextPurchaseStatus = updates.orderStatus !== undefined ? updates.orderStatus : (matchingTask.purchaseStatus || 'Chưa đặt hàng');
+          const nextConstrStatus = matchingTask.constrStatus || 'Chưa thi công';
+          const nextProgress = calculateAutoProgressRatio(nextPurchaseStatus, nextConstrStatus);
+
           updateTask(matchingTask.id, {
             stt: updates.stt !== undefined ? updates.stt : matchingTask.stt,
             name: updates.content !== undefined ? updates.content : matchingTask.name,
             unit: updates.unit !== undefined ? updates.unit : matchingTask.unit,
-            volume: updates.volumeContract !== undefined ? updates.volumeContract : matchingTask.volume
+            volume: updates.volumeContract !== undefined ? updates.volumeContract : matchingTask.volume,
+            purchaseStatus: nextPurchaseStatus,
+            progress: nextProgress,
+            isDone: nextProgress >= 1,
+            status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm'
           });
         }
       }
@@ -260,8 +275,14 @@ export const ProjectCostPlanPage: React.FC = () => {
 
       const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
-      // Đồng bộ STT, tên, đơn vị, khối lượng sang Purchasing + Task
-      if (updates.stt !== undefined || updates.jobContent !== undefined || updates.unit !== undefined || updates.contractVolume !== undefined) {
+      // Đồng bộ STT, tên, đơn vị, khối lượng, trạng thái đặt hàng sang Purchasing + Task
+      if (
+        updates.stt !== undefined ||
+        updates.jobContent !== undefined ||
+        updates.unit !== undefined ||
+        updates.contractVolume !== undefined ||
+        updates.orderedStatus !== undefined
+      ) {
         const matchingPurchasing = purchasingPlans.find(p =>
           p.projectCode === existing.projectCode &&
           norm(p.stt) === norm(existing.stt) &&
@@ -272,7 +293,8 @@ export const ProjectCostPlanPage: React.FC = () => {
             stt: updates.stt !== undefined ? updates.stt : matchingPurchasing.stt,
             content: updates.jobContent !== undefined ? updates.jobContent : matchingPurchasing.content,
             unit: updates.unit !== undefined ? updates.unit : matchingPurchasing.unit,
-            volumeContract: updates.contractVolume !== undefined ? updates.contractVolume : matchingPurchasing.volumeContract
+            volumeContract: updates.contractVolume !== undefined ? updates.contractVolume : matchingPurchasing.volumeContract,
+            orderStatus: updates.orderedStatus !== undefined ? updates.orderedStatus : matchingPurchasing.orderStatus
           });
         }
 
@@ -282,11 +304,19 @@ export const ProjectCostPlanPage: React.FC = () => {
           norm(t.name) === norm(existing.jobContent)
         );
         if (matchingTask) {
+          const nextPurchaseStatus = updates.orderedStatus !== undefined ? updates.orderedStatus : (matchingTask.purchaseStatus || 'Chưa đặt hàng');
+          const nextConstrStatus = matchingTask.constrStatus || 'Chưa thi công';
+          const nextProgress = calculateAutoProgressRatio(nextPurchaseStatus, nextConstrStatus);
+
           updateTask(matchingTask.id, {
             stt: updates.stt !== undefined ? updates.stt : matchingTask.stt,
             name: updates.jobContent !== undefined ? updates.jobContent : matchingTask.name,
             unit: updates.unit !== undefined ? updates.unit : matchingTask.unit,
-            volume: updates.contractVolume !== undefined ? updates.contractVolume : matchingTask.volume
+            volume: updates.contractVolume !== undefined ? updates.contractVolume : matchingTask.volume,
+            purchaseStatus: nextPurchaseStatus,
+            progress: nextProgress,
+            isDone: nextProgress >= 1,
+            status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm'
           });
         }
       }
