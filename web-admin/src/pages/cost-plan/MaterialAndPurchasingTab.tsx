@@ -46,10 +46,7 @@ const isParentRow = (plan: ProjectMaterialPlan) => {
   const stt = String(plan.stt || '').trim().toUpperCase();
   const hasNoDot = stt.length > 0 && !stt.includes('.');
   const isSecPattern = /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (hasNoDot && /^\d+$/.test(stt));
-  const hasNoVol = !plan.contractVolume || plan.contractVolume === 0;
-  const unitStr = String(plan.unit || '').trim();
-  const hasNoUnit = !unitStr || unitStr === '' || unitStr === '-' || unitStr === '–' || unitStr === '—';
-  return isSecPattern && (hasNoVol || hasNoUnit || !plan.parentId);
+  return isSecPattern;
 };
 
 const isRootSectionRow = (plan: ProjectMaterialPlan) => {
