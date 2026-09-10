@@ -248,9 +248,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           }}
           disabled={disabled}
         >
-          <span className="block truncate min-w-0 flex-1 pr-6" title={typeof displayLabel === "string" ? displayLabel : ""}>{displayLabel || "\u00A0"}</span>
-          <span className="absolute inset-y-0 right-0 flex items-center pr-2">
-            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-primary" : ""}`} />
+          <span className={`block truncate min-w-0 flex-1 ${className.includes('px-1') || className.includes('text-[10px]') || className.includes('text-xs') ? 'pr-3.5' : 'pr-6'}`} title={typeof displayLabel === "string" ? displayLabel : ""}>{displayLabel || "\u00A0"}</span>
+          <span className="absolute inset-y-0 right-0 flex items-center pr-1">
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-primary" : ""}`} />
           </span>
         </button>
       )}
