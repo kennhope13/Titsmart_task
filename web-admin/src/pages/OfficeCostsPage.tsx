@@ -10,7 +10,7 @@ import { AuditInfoCell } from '../components/common/AuditInfoCell';
 
 export const OfficeCostsPage: React.FC = () => {
   const { user } = useAuthStore();
-  const { expenses, addExpense, updateExpense, deleteExpense } = useRealtimeStore();
+  const { expenses, engineers, addExpense, updateExpense, deleteExpense } = useRealtimeStore();
 
   const currentProjExpenses = useMemo(() => expenses.filter(e => e.projectCode === 'OFFICE').sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()), [expenses]);
 
@@ -63,9 +63,10 @@ export const OfficeCostsPage: React.FC = () => {
   const expenseSpenderNames = useMemo(() => {
     const names = new Set<string>();
     names.add('CÔNG TY');
+    engineers.forEach(e => { if (e.name) names.add(e.name.trim()); });
     currentProjExpenses.forEach(e => { if (e.spenderName) names.add(e.spenderName.trim()); });
     return Array.from(names).sort();
-  }, [currentProjExpenses]);
+  }, [currentProjExpenses, engineers]);
 
   const filteredExpenses = useMemo(() => {
     return currentProjExpenses.filter(e => {
@@ -264,25 +265,26 @@ export const OfficeCostsPage: React.FC = () => {
             await addExpense({
               projectCode: 'OFFICE',
               stt: String(currentProjExpenses.length + 1),
-              date: newExpenseData.date,
-              content: newExpenseData.content,
+              date: newExpenseData.date || new Date().toISOString().split('T')[0],
+              content: newExpenseData.content || 'Văn phòng phẩm',
               description: newExpenseData.description,
-              spenderName: newExpenseData.spenderName,
-              unit: newExpenseData.unit,
+              spenderName: newExpenseData.spenderName || user?.name || 'CÔNG TY',
+              unit: newExpenseData.unit || 'cái',
               quantity: qty,
               unitPrice: price,
               taxAmount: vat,
               totalAmount: total,
               incomeAmount: Number(newExpenseData.incomeAmount || 0),
               balanceFund: 0,
-              notes: newExpenseData.notes,
-              invoiceUrl: newExpenseData.invoiceUrl
+              notes: newExpenseData.notes || '',
+              invoiceUrl: newExpenseData.invoiceUrl || ''
             });
             setIsNewExpenseOpen(false);
             setNewExpenseData({...newExpenseData, description: '', unitPrice: 0, taxAmount: 0, incomeAmount: 0, notes: '', invoiceUrl: ''});
             triggerToast('Đã thêm thành công!', 'success');
-          } catch (err) {
-            triggerToast('Lỗi khi lưu', 'warning');
+          } catch (err: any) {
+            console.error('Office expense create error:', err);
+            triggerToast(`Lỗi khi lưu: ${err?.message || 'Không rõ nguyên nhân'}`, 'warning');
           }
           setLoading(false);
         }} className="space-y-3 text-xs">

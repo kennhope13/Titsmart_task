@@ -190,13 +190,12 @@ export const PersonnelPage: React.FC = () => {
     setUsername((person as any).username || '');
     setPassword('');
     
-    // Check original projectCodes from DB
+    // Check original projectCodes from DB and combine with assignedProjects
     const rawProjectCodes = (person as any).projectCodes || (person as any).project_codes || [];
-    const codesToUse = Array.isArray(rawProjectCodes) && rawProjectCodes.length > 0
-      ? rawProjectCodes
-      : person.assignedProjects.map((project: any) => project.code);
+    const assignedCodes = person.assignedProjects ? person.assignedProjects.map((project: any) => project.code) : [];
+    const combinedCodes = Array.from(new Set([...(Array.isArray(rawProjectCodes) ? rawProjectCodes : []), ...assignedCodes])).filter(Boolean);
     
-    setSelectedProjectCodes(codesToUse);
+    setSelectedProjectCodes(combinedCodes);
     setIsFormOpen(true);
   };
 
