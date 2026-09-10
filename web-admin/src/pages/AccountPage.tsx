@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
@@ -9,13 +9,33 @@ export const AccountPage: React.FC = () => {
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      navigate('/login', { replace: true });
+    }
   };
 
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
+      {isLoggingOut && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 max-w-xs text-center border border-slate-100">
+            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-primary">
+              <span className="h-6 w-6 animate-spin rounded-full border-3 border-primary border-t-transparent" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-slate-900 text-base">Đang đăng xuất...</h3>
+              <p className="text-xs text-slate-500 mt-1">Đang hoàn tất phiên làm việc và bảo mật dữ liệu</p>
+            </div>
+          </div>
+        </div>
+      )}
       <section className={`bg-white px-6 md:h-12 flex items-center border-b border-slate-200 shadow-sm pr-6`}>
         <div className="flex items-center gap-3">
           <div className="h-6 w-[2px] bg-primary"></div>
@@ -60,10 +80,15 @@ export const AccountPage: React.FC = () => {
               </button>
               <button 
                 onClick={handleLogout} 
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-colors shadow-sm"
+                disabled={isLoggingOut}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-lg">logout</span>
-                Đăng xuất
+                {isLoggingOut ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <span className="material-symbols-outlined text-lg">logout</span>
+                )}
+                {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
               </button>
             </div>
           </div>

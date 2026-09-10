@@ -43,9 +43,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
     };
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      navigate('/login', { replace: true });
+    }
   };
 
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
@@ -239,10 +246,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                   <div className="h-px bg-slate-100 my-1 mx-2"></div>
                   <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    disabled={isLoggingOut}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                   >
-                    <span className="material-symbols-outlined text-lg">logout</span>
-                    Đăng xuất
+                    {isLoggingOut ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                    ) : (
+                      <span className="material-symbols-outlined text-lg">logout</span>
+                    )}
+                    {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
                   </button>
                   <div className="h-px bg-slate-100 my-1 mx-2"></div>
                   <div className="px-3 py-1.5 text-center">
@@ -255,6 +267,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
             )}
           </div>
       </aside>
+
+      {/* Fullscreen Logout Loading Overlay */}
+      {isLoggingOut && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 max-w-xs text-center border border-slate-100">
+            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-primary">
+              <span className="h-6 w-6 animate-spin rounded-full border-3 border-primary border-t-transparent" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-slate-900 text-base">Đang đăng xuất...</h3>
+              <p className="text-xs text-slate-500 mt-1">Đang hoàn tất phiên làm việc và bảo mật dữ liệu</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
     </>
