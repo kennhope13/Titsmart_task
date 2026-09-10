@@ -288,14 +288,17 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     if (!hasValidStt && stt !== '') continue;
     
     const cleanUnitVal = unit.replace(/^[-–—_.\s]+$/, '').trim();
-    // A section header is ONLY a roman numeral if the file has roman numerals, OR if it has [section] in notes.
     const rawNotes = notesCol >= 0 ? String(cells[notesCol] || '').trim() : '';
     const isRomanOrAlphaSection = romanRegex.test(sttLookup) || alphaSectionRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
     const cleanStt = String(stt || '').trim().replace(/\.$/, '');
     const hasNoDot = !cleanStt.includes('.');
     const startsWithPhan = name.trim().toUpperCase().startsWith('PHẦN ') && !name.trim().toUpperCase().startsWith('PHẦN MỀM');
     const hasNoVolumeAndUnit = (volume === 0 || !volume) && (!cleanUnitVal || cleanUnitVal === '');
-    const isSectionHeader = hasNoDot && (startsWithPhan || (hasNoVolumeAndUnit && isMainSectionName(name)) || (hasNoVolumeAndUnit && isRomanOrAlphaSection));
+
+    // Section Header cấp 1 là chữ La Mã (I, II), chữ cái (A, B) hoặc bắt đầu bằng chữ PHẦN
+    const isMainSectionHeader = isRomanOrAlphaSection || startsWithPhan || isMainSectionName(name);
+    // Dòng nhóm (như 33, 34, 35...) không có khối lượng/đơn vị là thư mục nhóm
+    const isSectionHeader = (isMainSectionHeader || (hasNoDot && hasNoVolumeAndUnit)) && !/^\d+$/.test(cleanStt);
     const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
     
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
