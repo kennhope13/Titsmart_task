@@ -1663,13 +1663,16 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     addDocumentTrack: async (trackData) => {
-      const tempId = `temp-${Date.now()}`;
+      const tempId = `doc-${Date.now()}`;
+      const audit = getAuditFields();
       const optimisticDoc: DocumentTrack = {
         ...trackData,
+        ...audit,
         id: tempId,
         stt: trackData.stt || '',
         contractNo: trackData.contractNo || '',
         contractName: trackData.contractName || '',
+        projectCode: trackData.projectCode || '',
         company: trackData.company || '',
         receiverName: trackData.receiverName || '',
         phone: trackData.phone || '',
@@ -1691,9 +1694,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       });
 
       try {
-        const created = normalizeDocumentTrack(await api.accounting.createDocumentTrack(trackData));
+        const created = normalizeDocumentTrack(await api.accounting.createDocumentTrack({ ...trackData, ...audit }));
         set((state) => {
-          const nextTracks = state.documentTracks.map(d => d.id === tempId ? created : d);
+          const nextTracks = state.documentTracks.map(d => d.id === tempId ? { ...audit, ...created } : d);
           get().logActivity('Thêm mới hồ sơ gửi đi: ' + (created.contractName || ''), 'COMPANY');
           persistAndNotify({ documentTracks: nextTracks });
           return { documentTracks: nextTracks };
@@ -1711,9 +1714,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateDocumentTrack: async (id, fields) => {
       try {
-        const updated = normalizeDocumentTrack(await api.accounting.updateDocumentTrack(id, fields));
+        const audit = getAuditFields();
+        const updated = normalizeDocumentTrack(await api.accounting.updateDocumentTrack(id, { ...fields, ...audit }));
         set((state) => {
-          const nextTracks = state.documentTracks.map((d) => (d.id === id ? updated : d));
+          const nextTracks = state.documentTracks.map((d) => (d.id === id ? { ...d, ...fields, ...audit, ...updated } : d));
           get().logActivity('Cập nhật hồ sơ gửi đi: ' + (updated.contractName || id), 'COMPANY');
           persistAndNotify({ documentTracks: nextTracks });
           return { documentTracks: nextTracks };
