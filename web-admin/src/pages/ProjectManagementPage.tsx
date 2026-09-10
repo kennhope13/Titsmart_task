@@ -463,15 +463,7 @@ export const ProjectManagementPage: React.FC = () => {
           currentMainSectionId = item.id;
           currentSubSectionId = undefined;
         } else {
-          let isSubFolder = false;
-          const nextItem = pendingProjectTasks[index + 1];
-          if (nextItem) {
-            const nextStt = String(nextItem.stt || '').trim();
-            if (nextStt && nextStt.startsWith(sttVal + '.')) {
-              isSubFolder = true;
-            }
-          }
-          
+          // Tìm parent theo dấu chấm gần nhất
           let foundDottedParent = false;
           if (sttVal.includes('.')) {
             const parts = sttVal.split('.');
@@ -484,15 +476,18 @@ export const ProjectManagementPage: React.FC = () => {
           }
           
           if (!foundDottedParent) {
-            if (sttVal && !sttVal.includes('.')) {
-              parentId = currentMainSectionId;
-            } else {
-              parentId = currentSubSectionId || currentMainSectionId;
-            }
+            // Nếu không tìm thấy theo dấu chấm (ví dụ: '33.1.1' nhưng không có '33.1'),
+            // kết nối vào thư mục con gần nhất hoặc thư mục chính
+            parentId = currentSubSectionId || currentMainSectionId;
           }
 
-          if (isSubFolder) {
-            currentSubSectionId = item.id;
+          // Kiểm tra xem dòng tiếp theo có phải con của dòng này không
+          const nextItem = pendingProjectTasks[index + 1];
+          if (nextItem) {
+            const nextStt = String(nextItem.stt || '').trim();
+            if (nextStt && nextStt.startsWith(sttVal + '.')) {
+              currentSubSectionId = item.id;
+            }
           }
         }
 
