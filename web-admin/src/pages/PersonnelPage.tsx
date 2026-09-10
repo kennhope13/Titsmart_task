@@ -116,10 +116,21 @@ export const PersonnelPage: React.FC = () => {
       });
     }
 
+    // Also check projects where this engineer is listed in project.members, memberIds, or managerName
+    const engNameUpper = (engineer.name || '').trim().toUpperCase();
+    projects.forEach(p => {
+      const isMember = (Array.isArray(p.members) && p.members.includes(engineer.id)) ||
+                       (Array.isArray(p.memberIds) && p.memberIds.includes(engineer.id));
+      const isManager = p.managerName ? p.managerName.split(',').map(s => s.trim().toUpperCase()).includes(engNameUpper) : false;
+      if (isMember || isManager) {
+        allAssigned.push({ code: p.code || p.id, name: p.name });
+      }
+    });
+
     // Filter out duplicates and projects that no longer exist in the projects list
     assignedProjects = allAssigned.filter((value, assignedIndex, self) => 
-      (value.code === 'COMPANY' || projects.some(p => (p.code || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase() || (p.id || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase())) &&
-      self.findIndex((item) => (item.code || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase()) === assignedIndex
+      (value.code === 'COMPANY' || projects.some(p => (p.code || p.name || '').trim().toUpperCase() === (value.code || value.name || '').trim().toUpperCase() || (p.id || '').trim().toUpperCase() === (value.code || '').trim().toUpperCase())) &&
+      self.findIndex((item) => (item.code || item.name || '').trim().toUpperCase() === (value.code || value.name || '').trim().toUpperCase()) === assignedIndex
     );
 
     let rawRole = (engineer as any).role || engineer.title?.trim() || 'Nhân viên';
