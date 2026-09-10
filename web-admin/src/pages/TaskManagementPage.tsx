@@ -1794,8 +1794,8 @@ const displayTasks = tasks.filter((t) => {
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
-                <th className="py-2 px-1 w-[135px] min-w-[135px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
-                <th className="py-2 px-1 w-[135px] min-w-[135px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
+                <th className="py-2 px-1 w-[145px] min-w-[145px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
+                <th className="py-2 px-1 w-[145px] min-w-[145px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
                 <th className="py-2 px-1 w-[115px] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
                 <th className="py-2 px-1 w-[140px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
                 {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
