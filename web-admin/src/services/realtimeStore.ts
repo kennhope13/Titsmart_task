@@ -937,10 +937,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
 
       const updated = await api.engineers.update(id, updateData);
-      const engineers = await api.engineers.getAll();
-      set(() => {
-        persistAndNotify({ engineers });
-        return { engineers };
+      set((state) => {
+        const nextEngineers = state.engineers.map((eng) => (eng.id === id ? { ...eng, ...updated } : eng));
+        persistAndNotify({ engineers: nextEngineers });
+        return { engineers: nextEngineers };
       });
       get().logActivity('Đã cập nhật nhân sự: ' + (input.name || existing?.name || id), input.name || existing?.name || id);
       return updated;

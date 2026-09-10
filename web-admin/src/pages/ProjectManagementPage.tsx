@@ -648,7 +648,7 @@ export const ProjectManagementPage: React.FC = () => {
 
       await updateProject(projectToEdit.id, payload);
 
-      // Update engineer project codes in parallel to optimize speed
+      // Update engineer project codes in parallel only if changed
       const projCodeUpper = (projectToEdit.code || '').trim().toUpperCase();
       const projIdUpper = (projectToEdit.id || '').trim().toUpperCase();
       const engUpdates: Promise<any>[] = [];
