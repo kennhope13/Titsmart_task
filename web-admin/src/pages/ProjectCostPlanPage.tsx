@@ -166,7 +166,12 @@ export const ProjectCostPlanPage: React.FC = () => {
     activityLogs,
     deleteTask,
     updateTask,
+    fetchAccounting,
   } = useRealtimeStore();
+
+  useEffect(() => {
+    fetchAccounting();
+  }, [fetchAccounting]);
 
   const user = useAuthStore(state => state.user);
 
