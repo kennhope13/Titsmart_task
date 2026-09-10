@@ -54,11 +54,15 @@ const filterByProject = (items: any[], codeField: string) => {
   const assigned = Array.isArray(user.projectCodes) ? user.projectCodes : [];
   // Nếu chưa gán dự án nào (mảng rỗng) → xem tất cả
   if (assigned.length === 0) return items;
-  // Lọc theo danh sách dự án được gán (hỗ trợ cả match code lẫn id/slug)
+  const assignedUpper = assigned.map(a => String(a || '').trim().toUpperCase()).filter(Boolean);
+  // Lọc theo danh sách dự án được gán (hỗ trợ không phân biệt hoa thường, match code lẫn id/slug)
   return items.filter(item => {
-    const val = item[codeField];
-    if (!val) return false;
-    return assigned.includes(val) || assigned.includes(item.id) || assigned.includes(item.code);
+    const val = String(item[codeField] || '').trim().toUpperCase();
+    const itemId = String(item.id || '').trim().toUpperCase();
+    const itemCode = String(item.code || '').trim().toUpperCase();
+    return (val && assignedUpper.includes(val)) || 
+           (itemId && assignedUpper.includes(itemId)) || 
+           (itemCode && assignedUpper.includes(itemCode));
   });
 };
 import { supabase } from '../lib/supabase';
