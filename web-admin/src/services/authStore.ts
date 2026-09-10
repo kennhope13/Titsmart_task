@@ -161,55 +161,58 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       email = `${email}@titsmart.vn`;
     }
 
-    const signInRes = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    let data: any = signInRes.data;
-    let error = signInRes.error;
+    const demoAccount = DEMO_ACCOUNTS.find(
+      acc => (acc.username.toLowerCase() === usernameOrEmail.trim().toLowerCase() || acc.email.toLowerCase() === email.toLowerCase()) && acc.password === password
+    );
 
-    // Auto-register if user doesn't exist, then sign in again
-    if (error && error.message.includes('Invalid login credentials')) {
-      const signUpRes = await supabase.auth.signUp({
+    let data: any = null;
+    let error: any = null;
+
+    try {
+      const signInRes = await supabase.auth.signInWithPassword({
         email,
         password,
-        options: { data: { confirmed_at: new Date().toISOString() } },
       });
-      if (!signUpRes.error) {
-        // Try signing in again after registration
-        const retryRes = await supabase.auth.signInWithPassword({ email, password });
-        if (!retryRes.error) {
-          data = retryRes.data;
-          error = null;
-        } else if (signUpRes.data.user) {
-          // If sign-in still fails but signup succeeded, use signup session
-          data = signUpRes.data;
-          error = null;
-        }
-      } else {
-        // If signup failed, capture the error so we know why auto-register failed
-        if (signUpRes.error.message.includes('already registered')) {
-            // Already registered means it's truly a wrong password
-            console.error('Supabase signup error (already exists):', signUpRes.error.message);
-        } else {
-            console.error('Supabase signup error:', signUpRes.error.message);
-            return { ok: false, error: 'Lỗi đăng ký tự động: ' + signUpRes.error.message };
+      data = signInRes.data;
+      error = signInRes.error;
+
+      // Auto-register if user doesn't exist, then sign in again
+      if (error && error.message.includes('Invalid login credentials')) {
+        const signUpRes = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { confirmed_at: new Date().toISOString() } },
+        });
+        if (!signUpRes.error) {
+          const retryRes = await supabase.auth.signInWithPassword({ email, password });
+          if (!retryRes.error) {
+            data = retryRes.data;
+            error = null;
+          } else if (signUpRes.data.user) {
+            data = signUpRes.data;
+            error = null;
+          }
         }
       }
+    } catch (err) {
+      console.warn('Supabase auth request failed, attempting demo account check', err);
     }
 
-    // If email not confirmed, try to sign in via signUp (which returns session for existing user)
-    if (error && error.message.includes('Email not confirmed')) {
-      // Try signUp again - for existing unconfirmed users, this resends confirmation
-      // But we'll also try a workaround: use the anon key directly
-      const retrySignUp = await supabase.auth.signUp({ email, password });
-      if (!retrySignUp.error && retrySignUp.data.session) {
-        data = retrySignUp.data;
-        error = null;
-      } else {
-        // Last resort: return error asking user to confirm email in Supabase dashboard
-        return { ok: false, error: 'Tài khoản chưa xác thực email. Vui lòng vào Supabase > Authentication > chọn user > Confirm Email.' };
-      }
+    // If Supabase auth failed but user matched a demo account (e.g. admin/admin123)
+    if ((error || !data?.user) && demoAccount) {
+      const user: AuthUser = {
+        id: 'user-' + demoAccount.username,
+        username: demoAccount.username,
+        name: demoAccount.name,
+        role: demoAccount.role,
+        title: demoAccount.title,
+        email: demoAccount.email,
+        phone: demoAccount.phone,
+        permissions: getDefaultPermissions(demoAccount.role),
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      set({ user });
+      return { ok: true };
     }
 
     if (error) {
