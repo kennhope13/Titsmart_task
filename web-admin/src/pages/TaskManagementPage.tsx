@@ -370,11 +370,11 @@ const hasSyncedRef = useRef(false);
     setProjectCode(selectedProjectFromUrl);
   }, [selectedProjectFromUrl]);
 
-  // Extract Unique Roman Numeral Sections for Filter & Dropdowns
-  const activeTasksForProj = tasks.filter((t) => selectedProjectCode === 'all' || t.projectCode === selectedProjectCode);
+  const effectiveProjectCode = (projectCode && projectCode !== 'all') ? projectCode : selectedProjectCode;
+  const activeTasksForProj = tasks.filter((t) => effectiveProjectCode === 'all' || t.projectCode === effectiveProjectCode);
   
   const rawSectionsList = tasks
-    .filter((t) => projectCode === 'all' || t.projectCode === projectCode)
+    .filter((t) => effectiveProjectCode === 'all' || t.projectCode === effectiveProjectCode)
     .map((t) => t.sectionName)
     .filter((secName): secName is string => !!secName && secName.trim().length > 0);
 
@@ -2034,10 +2034,10 @@ const displayTasks = tasks.filter((t) => {
                     onChange={(e) => setSectionSelect(e.target.value)}
                     className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
                   >
-                    <option value="default">-- Chon Dau muc cha --</option>
+                    <option value="default">-- Chọn Đầu mục cha --</option>
                     {uniqueSectionsForProj.map((sec) => (
                       <option key={sec} value={sec} title={sec}>
-                        {truncateText(sec, 40)}
+                        {sec}
                       </option>
                     ))}
                   </CustomSelect>
@@ -2045,7 +2045,7 @@ const displayTasks = tasks.filter((t) => {
                     type="button"
                     onClick={handleStartCustomSection}
                     className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-blue-300 bg-blue-50 text-primary rounded-md text-sm font-bold hover:bg-blue-100 transition-all"
-                    title="Tao Dau muc lon moi"
+                    title="Tạo Đầu mục lớn mới"
                   >
                     +
                   </button>
@@ -2068,7 +2068,7 @@ const displayTasks = tasks.filter((t) => {
                     .filter((t) => !t.isSectionHeader && t.sectionName === sectionSelect)
                     .map((t) => (
                       <option key={t.id} value={t.id} title={t.name}>
-                        {truncateText(t.name, 60)}
+                        {t.name}
                       </option>
                     ))}
                 </CustomSelect>
