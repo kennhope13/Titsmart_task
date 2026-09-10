@@ -1079,12 +1079,15 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   <th rowSpan={2} style={{ width: 135, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">NGÀY CÓ HÀNG</th>
                   <th rowSpan={2} style={{ width: 200, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">GHI CHÚ / VƯỚNG MẮC</th>
+                  <th rowSpan={2} style={{ width: 130, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT</th>
                 </>
               )}
 
               {subTab === 'DOCS' && (
                 <>
                   <th rowSpan={2} style={{ width: 240, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
+                  <th rowSpan={2} style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>
+                  <th rowSpan={2} style={{ width: 130, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT</th>
                 </>
               )}
 
@@ -1100,11 +1103,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TÌNH TRẠNG HĐ</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HẠN THANH TOÁN</th>
                   <th rowSpan={2} style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HÓA ĐƠN VAT</th>
+                  <th rowSpan={2} style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>
+                  <th rowSpan={2} style={{ width: 130, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT</th>
                 </>
               )}
-
-              <th rowSpan={2} style={{ width: 130, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', borderLeft: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT</th>
-              {subTab !== 'TECH' && <th rowSpan={2} style={{ width: 110, borderBottom: '1px solid #94a3b8', borderLeft: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>}
             </tr>
             <tr className="bg-slate-50">
               
@@ -1654,36 +1656,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             </>
                           )}
 
-                          <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1.5 align-middle text-slate-500 min-w-[120px]">
-                            <AuditInfoCell updatedBy={plan.updatedBy || pRecord?.updatedBy} updatedAt={plan.updatedAt || pRecord?.updatedAt} />
-                          </td>
-
-                          {subTab !== 'TECH' ? (
-                            <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-0 align-middle text-slate-500">
-                              {editingCell?.id === plan.id && editingCell?.field === 'notes' && editingCell.isPurchasing === (subTab === 'FINANCE') ? (
-                                <input
-                                  type="text"
-                                  value={tempValue}
-                                  onChange={(e) => setTempValue(e.target.value)}
-                                  onBlur={() => saveEditing(plan, pRecord)}
-                                  onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                  autoFocus
-                                  className="w-full bg-white text-slate-500 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
-                                />
-                              ) : (
-                                <div onClick={() => {
-                                  if (subTab === 'FINANCE') {
-                                    if (pRecord) startEditing(plan.id, 'notes', cleanNotes(pRecord.notes) || '', true);
-                                  } else {
-                                    startEditing(plan.id, 'notes', cleanDocNotes(plan.notes), false);
-                                  }
-                                }} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={subTab === 'FINANCE' ? cleanNotes(pRecord?.notes) : cleanDocNotes(plan.notes)}>
-                                  <span className="truncate flex-1">{subTab === 'FINANCE' ? cleanNotes(pRecord?.notes) : cleanDocNotes(plan.notes)}</span>
-                                </div>
-                              )}
-                            </td>
-                          ) : (
-                            <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1 align-middle text-slate-500 min-w-[200px]">
+                          {subTab === 'TECH' ? (
+                            <td className="bg-white group-hover:bg-slate-50 border-r border-slate-200 p-1 align-middle text-slate-500 min-w-[200px]">
                               <div className="flex flex-col gap-0.5 w-full text-xs py-0.5">
                                 {/* Vướng mắc */}
                                 <div className="flex items-start gap-1.5">
@@ -1755,7 +1729,35 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </div>
                               </div>
                             </td>
+                          ) : (
+                            <td className="bg-white group-hover:bg-slate-50 border-r border-slate-200 p-0 align-middle text-slate-500">
+                              {editingCell?.id === plan.id && editingCell?.field === 'notes' && editingCell.isPurchasing === (subTab === 'FINANCE') ? (
+                                <input
+                                  type="text"
+                                  value={tempValue}
+                                  onChange={(e) => setTempValue(e.target.value)}
+                                  onBlur={() => saveEditing(plan, pRecord)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
+                                  autoFocus
+                                  className="w-full bg-white text-slate-500 focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
+                                />
+                              ) : (
+                                <div onClick={() => {
+                                  if (subTab === 'FINANCE') {
+                                    if (pRecord) startEditing(plan.id, 'notes', cleanNotes(pRecord.notes) || '', true);
+                                  } else {
+                                    startEditing(plan.id, 'notes', cleanDocNotes(plan.notes), false);
+                                  }
+                                }} className="w-full min-h-[32px] cursor-pointer hover:bg-slate-100 flex items-center px-1.5 py-1.5" title={subTab === 'FINANCE' ? cleanNotes(pRecord?.notes) : cleanDocNotes(plan.notes)}>
+                                  <span className="truncate flex-1">{subTab === 'FINANCE' ? cleanNotes(pRecord?.notes) : cleanDocNotes(plan.notes)}</span>
+                                </div>
+                              )}
+                            </td>
                           )}
+
+                          <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1.5 align-middle text-slate-500 min-w-[120px]">
+                            <AuditInfoCell updatedBy={plan.updatedBy || pRecord?.updatedBy} updatedAt={plan.updatedAt || pRecord?.updatedAt} />
+                          </td>
                       </tr>
                       );
                     })}
