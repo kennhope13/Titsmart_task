@@ -1577,6 +1577,24 @@ const displayTasks = tasks.filter((t) => {
               Lọc chi tiết:
             </span>
 
+            {!projectId && (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Dự án:</span>
+                <CustomSelect
+                  value={selectedProjectCode}
+                  onChange={(e) => setSelectedProjectCode(e.target.value)}
+                  className="h-7 min-w-[120px] max-w-[200px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-bold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
+                >
+                  <option value="all">Tất cả dự án</option>
+                  {projects.map((p) => (
+                    <option key={p.id || p.code} value={p.code}>
+                      {p.name || p.code}
+                    </option>
+                  ))}
+                </CustomSelect>
+              </div>
+            )}
+
 
 
             <div className="flex items-center gap-2">
