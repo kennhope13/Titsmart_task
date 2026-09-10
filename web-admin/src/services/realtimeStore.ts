@@ -1860,12 +1860,18 @@ let realtimeChannel: any = null;
 
 export function setupRealtimeSync() {
   if (realtimeChannel) {
-    supabase.removeChannel(realtimeChannel);
+    try {
+      supabase.removeChannel(realtimeChannel);
+    } catch (e) {
+      console.warn('[Realtime] Failed to remove previous channel', e);
+    }
+    realtimeChannel = null;
   }
 
-  // Debounce: gom nhiều thay đổi trong 3 giây thành 1 lần refresh và CHỈ fetch bảng bị đổi để tránh làm lag DB
+  // Debounce: gom nhiều thay đổi trong 4 giây thành 1 lần refresh và CHỈ fetch bảng bị đổi
   let changedTables = new Set<string>();
   let refreshTimeout: any = null;
+
   const debouncedRefresh = (payload?: any) => {
     if (payload && payload.table) {
       changedTables.add(payload.table);
@@ -1873,7 +1879,7 @@ export function setupRealtimeSync() {
     if (refreshTimeout) clearTimeout(refreshTimeout);
     refreshTimeout = setTimeout(() => {
       const store = useRealtimeStore.getState();
-      // Nếu thao tác sửa đổi vừa diễn ra trên chính tab này (trong vòng 5 giây) -> Bỏ qua re-fetch vì local store đã được cập nhật mượt mà
+      // Nếu thao tác vừa diễn ra trên tab này (trong vòng 5s) -> Bỏ qua re-fetch
       if (Date.now() - store.lastMutationTime < 5000) {
         changedTables.clear();
         return;
@@ -1894,26 +1900,25 @@ export function setupRealtimeSync() {
     }, 4000);
   };
 
-  realtimeChannel = supabase
-    .channel('realtime-all-tables')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'materials' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'issues' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'engineers' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_transactions' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'material_plans' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'purchasing_plans' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'labor_payrolls' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'document_tracks' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'field_logs' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, debouncedRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, debouncedRefresh)
-    .subscribe((status: string) => {
-      console.log('[Realtime] Trạng thái kết nối:', status);
-    });
+  // Tạo 1 Channel tổng duy nhất lắng nghe tất cả các bảng
+  const channel = supabase.channel('realtime-global-sync');
 
-  console.log('[Realtime] Đã bật đồng bộ tức thì cho tất cả bảng dữ liệu.');
+  REALTIME_TABLES.forEach((tableName) => {
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: tableName }, debouncedRefresh);
+  });
+
+  channel.subscribe((status: string) => {
+    console.log('[Realtime] Trạng thái kết nối (Single Channel):', status);
+  });
+
+  realtimeChannel = channel;
+  console.log('[Realtime] Đã kích hoạt 1 kênh đồng bộ thời gian thực tối ưu duy nhất cho 14 bảng.');
+
+  return () => {
+    if (realtimeChannel) {
+      supabase.removeChannel(realtimeChannel);
+      realtimeChannel = null;
+    }
+  };
 }
 
