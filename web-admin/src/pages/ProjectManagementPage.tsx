@@ -156,14 +156,30 @@ export const ProjectManagementPage: React.FC = () => {
   };
 
   const resolveProjectMemberNames = (project: Project) => {
-    const codeMatch = (project.code || '').trim().toUpperCase();
-    if (!codeMatch) return [];
+    const pCodeUpper = (project.code || '').trim().toUpperCase();
+    const pIdUpper = (project.id || '').trim().toUpperCase();
 
-    const memberNames = engineers
-      .filter((eng) => Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => (c || '').trim().toUpperCase() === codeMatch))
+    const memberNamesFromEngineers = engineers
+      .filter((eng) => {
+        // Check if engineer.id is in project.members or project.memberIds
+        const isMember = (Array.isArray(project.members) && project.members.includes(eng.id)) ||
+                         (Array.isArray(project.memberIds) && project.memberIds.includes(eng.id));
+        // Check if engineer has project.code or project.id in eng.projectCodes
+        const hasCode = Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => {
+          const u = (c || '').trim().toUpperCase();
+          return u && (u === pCodeUpper || u === pIdUpper);
+        });
+        return isMember || hasCode;
+      })
       .map((eng) => eng.name);
 
-    return Array.from(new Set(memberNames));
+    // Fallback: parse project.managerName if set and non-default
+    let extraNames: string[] = [];
+    if (project.managerName && project.managerName !== TEXT.unassigned) {
+      extraNames = project.managerName.split(',').map(s => s.trim()).filter(Boolean);
+    }
+
+    return Array.from(new Set([...memberNamesFromEngineers, ...extraNames]));
   };
 
   const allEnhancedProjects = useMemo(() => {

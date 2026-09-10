@@ -1,8 +1,8 @@
 {
-  "version": "2.9.0",
+  "version": "2.9.1",
   "date": "2026-09-10",
   "notes": [
-    "Tách biệt hoàn toàn thông tin 'NGƯỜI CẬP NHẬT' theo từng tab/mục độc lập (Quản lý công việc, Vật tư, Mua sắm, Chi phí).",
-    "Loại bỏ hiệu ứng cập nhật đè tên người dùng sang các tab khác khi người dùng làm việc ở tab riêng biệt."
+    "Sửa lỗi tổng hợp Nhân sự hiển thị trên Thẻ Dự Án (khớp chính xác theo ID dự án, Mã dự án và danh sách thành viên gán trực tiếp).",
+    "Tách biệt hoàn toàn thông tin 'NGƯỜI CẬP NHẬT' theo từng tab/mục độc lập (Quản lý công việc, Vật tư, Mua sắm, Chi phí)."
   ]
 }
