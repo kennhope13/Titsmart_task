@@ -197,17 +197,25 @@ export const ProjectManagementPage: React.FC = () => {
     const norm = (s?: string) => String(s || '').trim().toUpperCase();
     const derivedProjects = deriveProjectsFromTasks(tasks);
 
-    // Merge database projects and derived projects while deduplicating strictly by normalized code or id
+    // Merge database projects and derived projects while deduplicating by code, id, or normalized project name for Office projects
     const seenKeys = new Set<string>();
     const merged: Project[] = [];
 
     [...projects, ...derivedProjects].forEach((proj) => {
       const codeKey = norm(proj.code);
       const idKey = norm(proj.id);
+      const nameKey = norm(proj.name);
+
+      // Special rule: if it's 'VĂN PHÒNG' or 'OFFICE' or 'VP', treat as single unified project
+      const isOfficeProject = nameKey === 'VAN PHONG' || nameKey === 'OFFICE' || codeKey === 'VP' || codeKey === 'OFFICE' || codeKey === 'VAN_PHONG_CONG_TY';
+      if (isOfficeProject && seenKeys.has('OFFICE_UNIFIED')) {
+        return;
+      }
 
       if ((codeKey && seenKeys.has(codeKey)) || (idKey && seenKeys.has(idKey))) {
         return;
       }
+      if (isOfficeProject) seenKeys.add('OFFICE_UNIFIED');
       if (codeKey) seenKeys.add(codeKey);
       if (idKey) seenKeys.add(idKey);
       merged.push(proj);
