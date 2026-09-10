@@ -171,7 +171,8 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   useEffect(() => {
     fetchAccounting();
-  }, [fetchAccounting]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const user = useAuthStore(state => state.user);
 
