@@ -612,7 +612,21 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       return finalRes;
     };
 
+    const compareSttHierarchy = (sttA?: string, sttB?: string): number => {
+      const partsA = (sttA || '').split(/[.\-]/).map(p => parseInt(p, 10));
+      const partsB = (sttB || '').split(/[.\-]/).map(p => parseInt(p, 10));
+      const len = Math.max(partsA.length, partsB.length);
+      for (let i = 0; i < len; i++) {
+        const valA = isNaN(partsA[i]) ? 0 : partsA[i];
+        const valB = isNaN(partsB[i]) ? 0 : partsB[i];
+        if (valA !== valB) return valA - valB;
+      }
+      return 0;
+    };
+
     const sortedFiltered = filtered.sort((a, b) => {
+      const cmp = compareSttHierarchy(a.stt, b.stt);
+      if (cmp !== 0) return cmp;
       const posA = originalOrderMap.get(a.id) ?? 0;
       const posB = originalOrderMap.get(b.id) ?? 0;
       return posA - posB;
