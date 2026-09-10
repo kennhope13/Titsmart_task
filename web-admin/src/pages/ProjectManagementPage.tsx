@@ -197,20 +197,18 @@ export const ProjectManagementPage: React.FC = () => {
     const norm = (s?: string) => String(s || '').trim().toUpperCase();
     const derivedProjects = deriveProjectsFromTasks(tasks);
 
-    // Merge database projects and derived projects while deduplicating by normalized code, id, or name
+    // Merge database projects and derived projects while deduplicating strictly by normalized code or id
     const seenKeys = new Set<string>();
     const merged: Project[] = [];
 
     [...projects, ...derivedProjects].forEach((proj) => {
       const codeKey = norm(proj.code);
-      const nameKey = norm(proj.name);
       const idKey = norm(proj.id);
 
-      if ((codeKey && seenKeys.has(codeKey)) || (nameKey && seenKeys.has(nameKey)) || (idKey && seenKeys.has(idKey))) {
+      if ((codeKey && seenKeys.has(codeKey)) || (idKey && seenKeys.has(idKey))) {
         return;
       }
       if (codeKey) seenKeys.add(codeKey);
-      if (nameKey) seenKeys.add(nameKey);
       if (idKey) seenKeys.add(idKey);
       merged.push(proj);
     });
