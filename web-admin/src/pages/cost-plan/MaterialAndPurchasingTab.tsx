@@ -1478,7 +1478,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <td className="p-0 align-middle text-center border-r border-slate-200">
                                 <div className="p-1">
                                   {(() => {
-                                    const currentStatus = plan.orderedStatus || '';
+                                    const currentStatus = plan.orderedStatus || 'Chưa đặt hàng';
                                     const btnStyle = getStatusColorStyle(currentStatus);
                                     return (
                                       <CustomSelect
