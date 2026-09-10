@@ -38,49 +38,8 @@ const getAuditFields = () => {
 };
 
 const filterByProject = (items: any[], codeField: string) => {
-  const user = getAuthUser();
-  if (!user || !Array.isArray(items)) return items;
-  // Admin & PM / Quản lý dự án / Quản trị viên luôn xem được tất cả dự án
-  if (
-    user.username === 'admin' ||
-    user.role === 'admin' ||
-    user.role === 'pm' ||
-    user.role === 'Quản trị viên' ||
-    user.role === 'Quản lý dự án'
-  ) {
-    return items;
-  }
-  
-  const assigned = Array.isArray(user.projectCodes) ? user.projectCodes : [];
-  // Nếu chưa gán dự án nào (mảng rỗng) → xem tất cả
-  if (assigned.length === 0) return items;
-  const assignedUpper = assigned.map(a => String(a || '').trim().toUpperCase()).filter(Boolean);
-// Lọc theo danh sách dự án được gán (hỗ trợ không phân biệt hoa thường, match code, id, name hoặc slug)
-  const userEngId = (user as any).id || '';
-  const userNameUpper = String(user.name || '').trim().toUpperCase();
-
-  return items.filter(item => {
-    // Check if user is explicit member/manager of this project item
-    if (userEngId && Array.isArray(item.members) && item.members.includes(userEngId)) return true;
-    if (userEngId && Array.isArray(item.memberIds) && item.memberIds.includes(userEngId)) return true;
-    if (userNameUpper && item.managerName && String(item.managerName).toUpperCase().includes(userNameUpper)) return true;
-
-    const val = String(item[codeField] || '').trim().toUpperCase();
-    const itemId = String(item.id || '').trim().toUpperCase();
-    const itemCode = String(item.code || '').trim().toUpperCase();
-    const itemName = String(item.name || '').trim().toUpperCase();
-
-    // Cho phép hiển thị các hồ sơ/mục chung nội bộ không gán mã dự án cụ thể hoặc mã COMPANY
-    if (!val || val === 'COMPANY' || val === 'OFFICE' || val === 'KHÁC') return true;
-
-    return assignedUpper.some(assigned => {
-      if (!assigned) return false;
-      return (val && (val === assigned || assigned.includes(val) || val.includes(assigned))) || 
-             (itemId && (itemId === assigned || assigned.includes(itemId) || itemId.includes(assigned))) || 
-             (itemCode && (itemCode === assigned || assigned.includes(itemCode) || itemCode.includes(assigned))) ||
-             (itemName && (itemName === assigned || assigned.includes(itemName) || itemName.includes(assigned)));
-    });
-  });
+  // Bỏ hoàn toàn ràng buộc gán dự án riêng lẻ. Dữ liệu hiển thị dựa trên Phân quyền chi tiết hệ thống.
+  return Array.isArray(items) ? items : [];
 };
 import { supabase } from '../lib/supabase';
 import inventorySeedData from './inventorySeedData.json';
