@@ -9,7 +9,9 @@ interface FileViewerItemProps {
 export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) => {
   const isImage = Boolean(url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i));
   const isExcel = Boolean(url.match(/\.(xlsx|xls|csv)$/i));
-  const [excelHtml, setExcelHtml] = useState<string>('');
+  const [sheetNames, setSheetNames] = useState<string[]>([]);
+  const [activeSheet, setActiveSheet] = useState<string>('');
+  const [sheetsHtmlMap, setSheetsHtmlMap] = useState<Record<string, string>>({});
   const [excelLoading, setExcelLoading] = useState<boolean>(false);
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
@@ -21,19 +23,28 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     if (!isExcel || !url) return;
     let isMounted = true;
     setExcelLoading(true);
-    setExcelHtml('');
+    setSheetNames([]);
+    setActiveSheet('');
+    setSheetsHtmlMap({});
 
     fetch(url)
       .then((res) => res.arrayBuffer())
       .then((buffer) => {
         if (!isMounted) return;
-        const workbook = XLSX.read(buffer, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        if (firstSheetName) {
-          const sheet = workbook.Sheets[firstSheetName];
-          const html = XLSX.utils.sheet_to_html(sheet, { header: '', footer: '' });
-          setExcelHtml(html);
-        }
+        const workbook = XLSX.read(buffer, { type: 'array', cellStyles: true, cellFormula: true, cellDates: true });
+        const names = workbook.SheetNames || [];
+        const htmlMap: Record<string, string> = {};
+
+        names.forEach((name) => {
+          const sheet = workbook.Sheets[name];
+          if (sheet) {
+            htmlMap[name] = XLSX.utils.sheet_to_html(sheet, { editable: false });
+          }
+        });
+
+        setSheetNames(names);
+        if (names.length > 0) setActiveSheet(names[0]);
+        setSheetsHtmlMap(htmlMap);
       })
       .catch((err) => {
         console.warn('Failed to parse Excel arrayBuffer locally:', err);
@@ -272,18 +283,40 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
                 style={getContentTransformStyle()}
               />
             ) : isExcel ? (
-              <div className="w-full h-full relative flex flex-col bg-white overflow-auto p-4 border border-slate-200 rounded">
+              <div className="w-full h-full relative flex flex-col bg-white overflow-hidden border border-slate-200 rounded">
                 {excelLoading ? (
                   <div className="flex flex-col items-center justify-center h-full gap-2 text-slate-500">
                     <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     <span className="text-xs font-bold">Đang tải và đọc tập tin Excel...</span>
                   </div>
-                ) : excelHtml ? (
-                  <div 
-                    className="excel-viewer-table text-xs text-slate-800"
-                    dangerouslySetInnerHTML={{ __html: excelHtml }} 
-                    style={getContentTransformStyle()}
-                  />
+                ) : activeSheet && sheetsHtmlMap[activeSheet] ? (
+                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+                    <div 
+                      className="excel-viewer-table flex-1 overflow-auto p-4 text-xs text-slate-800"
+                      dangerouslySetInnerHTML={{ __html: sheetsHtmlMap[activeSheet] }} 
+                      style={getContentTransformStyle()}
+                    />
+                    
+                    {/* Excel Sheet Tabs Bar at bottom */}
+                    {sheetNames.length > 0 && (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-slate-100 border-t border-slate-200 overflow-x-auto shrink-0 select-none">
+                        <span className="text-[11px] font-bold text-slate-500 px-1 shrink-0">Sheet:</span>
+                        {sheetNames.map((name) => (
+                          <button
+                            key={name}
+                            onClick={() => setActiveSheet(name)}
+                            className={`px-3 py-1 text-xs font-bold rounded transition-colors whitespace-nowrap ${
+                              activeSheet === name
+                                ? 'bg-white text-emerald-700 shadow-xs border border-slate-300 border-b-2 border-b-emerald-600'
+                                : 'text-slate-600 hover:bg-slate-200'
+                            }`}
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-600 p-6 text-center">
                     <span className="material-symbols-outlined text-4xl text-amber-500">description</span>

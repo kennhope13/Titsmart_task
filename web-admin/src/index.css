@@ -28,25 +28,29 @@
 }
 
 /* Excel HTML Preview Table Styling */
+.excel-viewer-table {
+  font-family: Calibri, Aptos, Arial, sans-serif;
+}
 .excel-viewer-table table {
   border-collapse: collapse;
-  width: 100%;
+  width: auto;
+  min-width: 100%;
   background: #ffffff;
+  border: 1px solid #94a3b8;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.excel-viewer-table td,
+.excel-viewer-table th {
   border: 1px solid #cbd5e1;
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
-.excel-viewer-table th,
-.excel-viewer-table td {
-  border: 1px solid #cbd5e1;
-  padding: 6px 10px;
-  text-align: left;
-  white-space: nowrap;
-  font-size: 12px;
-}
-.excel-viewer-table tr:nth-child(even) {
-  background-color: #f8fafc;
-}
-.excel-viewer-table tr:hover {
-  background-color: #f1f5f9;
+.excel-viewer-table tr:first-child td,
+.excel-viewer-table tr:first-child th {
+  font-weight: bold;
 }
 
 .always-visible-scrollbar::-webkit-scrollbar {
