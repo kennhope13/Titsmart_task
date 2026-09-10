@@ -338,16 +338,25 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const [filterInvoiceStatus, setFilterInvoiceStatus] = useState('all');
 
 
-  // Cross-reference helper
-  const findPurchasingMatch = (plan: ProjectMaterialPlan) => {
-    let match = purchasingData.find(p => p.id === plan.id || p.materialPlanId === plan.id);
-    if (match) return match;
-
+  // Pre-computed map for fast O(1) purchasing lookup (eliminates lag on large datasets)
+  const purchasingMatchMap = useMemo(() => {
+    const map = new Map<string, ProjectPurchasing>();
     const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-    match = purchasingData.find(
-      p => norm(p.stt) === norm(plan.stt) && norm(p.content) === norm(plan.jobContent || (plan as any).name)
-    );
-    return match;
+
+    purchasingData.forEach(p => {
+      if (p.id) map.set(p.id, p);
+      if (p.materialPlanId) map.set(p.materialPlanId, p);
+      const sttKey = `${norm(p.stt)}|${norm(p.content)}`;
+      if (!map.has(sttKey)) map.set(sttKey, p);
+    });
+    return map;
+  }, [purchasingData]);
+
+  const findPurchasingMatch = (plan: ProjectMaterialPlan) => {
+    if (purchasingMatchMap.has(plan.id)) return purchasingMatchMap.get(plan.id);
+    const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const sttKey = `${norm(plan.stt)}|${norm(plan.jobContent || (plan as any).name)}`;
+    return purchasingMatchMap.get(sttKey);
   };
 
   const parentOptions = useMemo(() => {
@@ -632,7 +641,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       return posA - posB;
     });
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
-  }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder]);
+  }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder, filterModel, filterOrigin, filterDocs, filterExpectedDateFrom, filterExpectedDateTo, filterContractStatus, filterPaymentDate, filterInvoiceStatus, purchasingMatchMap]);
 
   const handleDeleteDoc = (planId: string, docType: string) => {
     const plan = data.find(p => p.id === planId);
