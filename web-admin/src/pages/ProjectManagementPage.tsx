@@ -158,18 +158,29 @@ export const ProjectManagementPage: React.FC = () => {
   const resolveProjectMemberNames = (project: Project) => {
     const pCodeUpper = (project.code || '').trim().toUpperCase();
     const pIdUpper = (project.id || '').trim().toUpperCase();
+    const pNameUpper = (project.name || '').trim().toUpperCase();
 
     const memberNamesFromEngineers = engineers
       .filter((eng) => {
         // Check if engineer.id is in project.members or project.memberIds
         const isMember = (Array.isArray(project.members) && project.members.includes(eng.id)) ||
                          (Array.isArray(project.memberIds) && project.memberIds.includes(eng.id));
-        // Check if engineer has project.code or project.id in eng.projectCodes
+        // Check if engineer has project.code, project.id, or project.name in eng.projectCodes
         const hasCode = Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => {
           const u = (c || '').trim().toUpperCase();
-          return u && (u === pCodeUpper || u === pIdUpper);
+          return u && (u === pCodeUpper || u === pIdUpper || u === pNameUpper);
         });
-        return isMember || hasCode;
+        // Check managedProjects or memberProjects array
+        const hasManaged = eng.managedProjects?.some(p => {
+          const u = (p.code || p.name || '').trim().toUpperCase();
+          return u && (u === pCodeUpper || u === pIdUpper || u === pNameUpper);
+        });
+        const hasMemberProj = eng.memberProjects?.some(p => {
+          const u = (p.code || p.name || '').trim().toUpperCase();
+          return u && (u === pCodeUpper || u === pIdUpper || u === pNameUpper);
+        });
+
+        return isMember || hasCode || hasManaged || hasMemberProj;
       })
       .map((eng) => eng.name);
 
