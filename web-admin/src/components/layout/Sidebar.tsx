@@ -271,9 +271,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           </div>
       </aside>
 
-      {/* Synchronized LoadingSpinner Overlay */}
-      <LoadingSpinner loading={isLoggingOut} message="Đang đăng xuất khỏi hệ thống..." />
-
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
     </>
   );
