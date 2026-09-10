@@ -40,7 +40,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
       for (const file of filesToUpload) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = `office/${fileName}`;
+        const filePath = `files/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('titsmart-images')
@@ -48,7 +48,6 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
 
         if (uploadError) {
           console.error("Supabase Storage upload error:", uploadError);
-          // Create local object URL so user can still see preview & upload works locally if bucket policies fail
           const objectUrl = URL.createObjectURL(file);
           newUrls.push(objectUrl);
           setError(`Cảnh báo Storage Supabase: ${uploadError.message}. Đã tạo preview tạm thời.`);
@@ -98,7 +97,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
         <div className="flex items-center gap-3">
           <input 
             type="file" 
-            accept="image/*,application/pdf"
+            accept="*/*"
             multiple={multiple}
             onChange={handleUpload}
             disabled={isUploading}
@@ -115,23 +114,43 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
         {localValues.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {localValues.map((url, idx) => {
-              const isPdf = url.toLowerCase().endsWith('.pdf');
+              const lower = url.toLowerCase();
+              const isPdf = lower.endsWith('.pdf');
+              const isExcel = lower.endsWith('.xlsx') || lower.endsWith('.xls') || lower.endsWith('.csv');
+              const isDoc = lower.endsWith('.doc') || lower.endsWith('.docx');
+              const isImg = Boolean(lower.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i)) || url.startsWith('blob:');
+
               return (
                 <div key={idx} className="relative group shrink-0 w-16 h-16 rounded border bg-slate-100 overflow-hidden flex items-center justify-center">
                   <a href={url} target="_blank" rel="noreferrer" className="block w-full h-full">
                     {isPdf ? (
                       <div className="w-full h-full flex flex-col items-center justify-center text-rose-500 bg-white group-hover:bg-slate-50 transition-colors">
                         <span className="material-symbols-outlined text-2xl">picture_as_pdf</span>
-                        <span className="text-[8px] font-bold mt-1">PDF</span>
+                        <span className="text-[8px] font-bold mt-0.5">PDF</span>
                       </div>
-                    ) : (
+                    ) : isExcel ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-emerald-600 bg-white group-hover:bg-slate-50 transition-colors">
+                        <span className="material-symbols-outlined text-2xl">table_chart</span>
+                        <span className="text-[8px] font-bold mt-0.5">EXCEL</span>
+                      </div>
+                    ) : isDoc ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-blue-600 bg-white group-hover:bg-slate-50 transition-colors">
+                        <span className="material-symbols-outlined text-2xl">description</span>
+                        <span className="text-[8px] font-bold mt-0.5">WORD</span>
+                      </div>
+                    ) : isImg ? (
                       <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover group-hover:opacity-60 transition-opacity" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 bg-white group-hover:bg-slate-50 transition-colors">
+                        <span className="material-symbols-outlined text-2xl">draft</span>
+                        <span className="text-[8px] font-bold mt-0.5">FILE</span>
+                      </div>
                     )}
                   </a>
                   <button 
                     type="button"
                     onClick={() => handleRemove(idx)}
-                    className="absolute top-0.5 right-0.5 bg-white rounded-full p-0.5 shadow-sm text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                    className="absolute top-0.5 right-0.5 bg-white rounded-full p-0.5 shadow-sm text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors z-10"
                     title="Xóa tệp"
                   >
                     <span className="material-symbols-outlined text-[14px] block">close</span>

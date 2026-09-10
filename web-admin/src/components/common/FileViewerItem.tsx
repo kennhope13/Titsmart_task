@@ -241,7 +241,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
               <div className="w-full h-full relative flex flex-col items-center justify-center">
                 <iframe
                   src={
-                    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+                    /\.(xlsx|xls|csv|doc|docx|ppt|pptx)$/i.test(url) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
                       ? `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`
                       : `${url}#page=1&view=FitH&pagemode=none&toolbar=0&navpanes=0`
                   }
