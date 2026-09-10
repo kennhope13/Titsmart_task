@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 
 interface FileViewerItemProps {
   url: string;
@@ -7,11 +8,44 @@ interface FileViewerItemProps {
 
 export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) => {
   const isImage = Boolean(url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i));
+  const isExcel = Boolean(url.match(/\.(xlsx|xls|csv)$/i));
+  const [excelHtml, setExcelHtml] = useState<string>('');
+  const [excelLoading, setExcelLoading] = useState<boolean>(false);
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragMode, setDragMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isExcel || !url) return;
+    let isMounted = true;
+    setExcelLoading(true);
+    setExcelHtml('');
+
+    fetch(url)
+      .then((res) => res.arrayBuffer())
+      .then((buffer) => {
+        if (!isMounted) return;
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        if (firstSheetName) {
+          const sheet = workbook.Sheets[firstSheetName];
+          const html = XLSX.utils.sheet_to_html(sheet, { header: '', footer: '' });
+          setExcelHtml(html);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to parse Excel arrayBuffer locally:', err);
+      })
+      .finally(() => {
+        if (isMounted) setExcelLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [url, isExcel]);
 
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -237,12 +271,52 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
                 className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white"
                 style={getContentTransformStyle()}
               />
+            ) : isExcel ? (
+              <div className="w-full h-full relative flex flex-col bg-white overflow-auto p-4 border border-slate-200 rounded">
+                {excelLoading ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-2 text-slate-500">
+                    <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-bold">Đang tải và đọc tập tin Excel...</span>
+                  </div>
+                ) : excelHtml ? (
+                  <div 
+                    className="excel-viewer-table text-xs text-slate-800"
+                    dangerouslySetInnerHTML={{ __html: excelHtml }} 
+                    style={getContentTransformStyle()}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-600 p-6 text-center">
+                    <span className="material-symbols-outlined text-4xl text-amber-500">description</span>
+                    <p className="font-bold text-sm">Không thể xem trực tiếp tệp Excel trên trình duyệt</p>
+                    <p className="text-xs text-slate-500 max-w-sm">Tệp Excel này có thể được bảo mật hoặc xem từ môi trường localhost/mạng nội bộ.</p>
+                    <div className="flex gap-2 mt-2">
+                      <a
+                        href={url}
+                        download
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-800 transition-colors flex items-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-base">download</span> Tải tệp về máy
+                      </a>
+                      <a
+                        href={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1.5 border border-slate-300"
+                      >
+                        <span className="material-symbols-outlined text-base">open_in_new</span> Xem trên Office Online
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="w-full h-full relative flex flex-col items-center justify-center">
                 <iframe
                   src={
-                    /\.(xlsx|xls|csv|doc|docx|ppt|pptx)$/i.test(url) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-                      ? `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`
+                    /\.(doc|docx|ppt|pptx)$/i.test(url)
+                      ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
                       : `${url}#page=1&view=FitH&pagemode=none&toolbar=0&navpanes=0`
                   }
                   className="w-full h-full rounded border border-slate-200 bg-white shadow-xs"

@@ -27,6 +27,28 @@
   background: #475569;
 }
 
+/* Excel HTML Preview Table Styling */
+.excel-viewer-table table {
+  border-collapse: collapse;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+.excel-viewer-table th,
+.excel-viewer-table td {
+  border: 1px solid #cbd5e1;
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.excel-viewer-table tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+.excel-viewer-table tr:hover {
+  background-color: #f1f5f9;
+}
+
 .always-visible-scrollbar::-webkit-scrollbar {
   width: 10px;
   height: 10px;
