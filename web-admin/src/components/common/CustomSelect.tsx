@@ -43,7 +43,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   });
 
   const selectedOption = options.find((opt) => String(opt.value) === String(value));
-  const displayLabel = selectedOption ? selectedOption.label : '';
+  const displayLabel = selectedOption ? selectedOption.label : (value ? String(value) : '');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
