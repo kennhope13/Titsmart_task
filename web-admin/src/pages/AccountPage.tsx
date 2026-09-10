@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 export const AccountPage: React.FC = () => {
   const engineer = useRealtimeStore((state) => state.engineers[0]);
@@ -23,19 +24,7 @@ export const AccountPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
-      {isLoggingOut && (
-        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 max-w-xs text-center border border-slate-100">
-            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-primary">
-              <span className="h-6 w-6 animate-spin rounded-full border-3 border-primary border-t-transparent" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-base">Đang đăng xuất...</h3>
-              <p className="text-xs text-slate-500 mt-1">Đang hoàn tất phiên làm việc và bảo mật dữ liệu</p>
-            </div>
-          </div>
-        </div>
-      )}
+      <LoadingSpinner loading={isLoggingOut} message="Đang đăng xuất khỏi hệ thống..." />
       <section className={`bg-white px-6 md:h-12 flex items-center border-b border-slate-200 shadow-sm pr-6`}>
         <div className="flex items-center gap-3">
           <div className="h-6 w-[2px] bg-primary"></div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import LoadingSpinner from '../LoadingSpinner';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../../services/authStore';
@@ -268,20 +269,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           </div>
       </aside>
 
-      {/* Fullscreen Logout Loading Overlay */}
-      {isLoggingOut && (
-        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 max-w-xs text-center border border-slate-100">
-            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-primary">
-              <span className="h-6 w-6 animate-spin rounded-full border-3 border-primary border-t-transparent" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-base">Đang đăng xuất...</h3>
-              <p className="text-xs text-slate-500 mt-1">Đang hoàn tất phiên làm việc và bảo mật dữ liệu</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Synchronized LoadingSpinner Overlay */}
+      <LoadingSpinner loading={isLoggingOut} message="Đang đăng xuất khỏi hệ thống..." />
 
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
     </>
