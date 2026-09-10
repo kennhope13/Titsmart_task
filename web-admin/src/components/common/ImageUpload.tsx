@@ -40,15 +40,18 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
       for (const file of filesToUpload) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = `cccd/${fileName}`;
+        const filePath = `office/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('titsmart-images')
-          .upload(filePath, file);
+          .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
         if (uploadError) {
-          console.error("Upload error:", uploadError);
-          alert(`Lỗi tải ảnh. Vui lòng đảm bảo bạn đã tạo Storage Bucket tên "titsmart-images" trên Supabase và bật Public.`);
+          console.error("Supabase Storage upload error:", uploadError);
+          // Create local object URL so user can still see preview & upload works locally if bucket policies fail
+          const objectUrl = URL.createObjectURL(file);
+          newUrls.push(objectUrl);
+          setError(`Cảnh báo Storage Supabase: ${uploadError.message}. Đã tạo preview tạm thời.`);
           continue;
         }
 
