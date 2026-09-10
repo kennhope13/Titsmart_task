@@ -70,6 +70,9 @@ const filterByProject = (items: any[], codeField: string) => {
     const itemCode = String(item.code || '').trim().toUpperCase();
     const itemName = String(item.name || '').trim().toUpperCase();
 
+    // Cho phép hiển thị các hồ sơ/mục chung nội bộ không gán mã dự án cụ thể hoặc mã COMPANY
+    if (!val || val === 'COMPANY' || val === 'OFFICE' || val === 'KHÁC') return true;
+
     return assignedUpper.some(assigned => {
       if (!assigned) return false;
       return (val && (val === assigned || assigned.includes(val) || val.includes(assigned))) || 
