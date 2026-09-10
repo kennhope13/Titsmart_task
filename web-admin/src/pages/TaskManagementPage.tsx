@@ -710,6 +710,14 @@ const hasSyncedRef = useRef(false);
           let currentSubSectionId: string | undefined = undefined;
           const sttIdMap = new Map<string, string>();
 
+          let currentMainMatId: string | undefined = undefined;
+          let currentSubMatId: string | undefined = undefined;
+          const matSttIdMap = new Map<string, string>();
+
+          let currentMainPurId: string | undefined = undefined;
+          let currentSubPurId: string | undefined = undefined;
+          const purSttIdMap = new Map<string, string>();
+
           const isMainSectionName = (name: string): boolean => {
             const norm = name.toLowerCase();
             return norm.startsWith('phần ');
@@ -833,18 +841,64 @@ const hasSyncedRef = useRef(false);
               assignedEngineerName: '',
             });
 
+            const matId = crypto.randomUUID();
+            const purId = crypto.randomUUID();
+            if (sttVal) {
+              matSttIdMap.set(sttVal, matId);
+              purSttIdMap.set(sttVal, purId);
+            }
+
+            let matParentId: string | undefined = undefined;
+            let purParentId: string | undefined = undefined;
+
+            if (isSection) {
+              if (isMainLevelSection) {
+                currentMainMatId = matId;
+                currentSubMatId = undefined;
+                currentMainPurId = purId;
+                currentSubPurId = undefined;
+              } else {
+                currentSubMatId = matId;
+                matParentId = currentMainMatId;
+                currentSubPurId = purId;
+                purParentId = currentMainPurId;
+              }
+            } else {
+              let foundMatDotted = false;
+              let foundPurDotted = false;
+              if (sttVal.includes('.')) {
+                const parts = sttVal.split('.');
+                parts.pop();
+                const parentStt = parts.join('.');
+                if (matSttIdMap.has(parentStt)) {
+                  matParentId = matSttIdMap.get(parentStt);
+                  foundMatDotted = true;
+                }
+                if (purSttIdMap.has(parentStt)) {
+                  purParentId = purSttIdMap.get(parentStt);
+                  foundPurDotted = true;
+                }
+              }
+              if (!foundMatDotted) matParentId = currentSubMatId || currentMainMatId;
+              if (!foundPurDotted) purParentId = currentSubPurId || currentMainPurId;
+            }
+
             if (isSection) {
               importedMaterials.push({
+                id: matId,
                 projectCode: targetProjectCode,
                 stt: finalStt,
                 jobContent: String(itemName).trim(),
                 unit: '',
                 contractVolume: 0,
                 sectionName: currentSection,
+                parentId: matParentId,
                 notes: '[section]'
               });
 
               importedPurchasings.push({
+                id: purId,
+                materialPlanId: matId,
                 projectCode: targetProjectCode,
                 stt: finalStt,
                 content: String(itemName).trim(),
@@ -862,20 +916,25 @@ const hasSyncedRef = useRef(false);
                 contractStatus: 'Chưa ký',
                 invoiceStatus: 'Chưa xuất',
                 sectionName: currentSection,
+                parentId: purParentId,
                 notes: '[section]'
               });
             } else {
               importedMaterials.push({
+                id: matId,
                 projectCode: targetProjectCode,
                 stt: finalStt,
                 jobContent: String(itemName).trim(),
                 unit: unitVal,
                 contractVolume: volVal,
                 sectionName: currentSection,
+                parentId: matParentId,
                 notes: ''
               });
 
               importedPurchasings.push({
+                id: purId,
+                materialPlanId: matId,
                 projectCode: targetProjectCode,
                 stt: finalStt,
                 content: String(itemName).trim(),
@@ -893,6 +952,7 @@ const hasSyncedRef = useRef(false);
                 contractStatus: 'Chưa ký',
                 invoiceStatus: 'Chưa xuất',
                 sectionName: currentSection,
+                parentId: purParentId,
                 notes: ''
               });
             }

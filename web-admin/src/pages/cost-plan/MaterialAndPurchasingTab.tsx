@@ -1203,7 +1203,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             <td className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
                               {plan.stt}
                             </td>
-                            <td colSpan={colSpanCount + 1} className="bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={`${plan.stt ? plan.stt + ' - ' : ''}${plan.jobContent}`}>
+                            <td colSpan={colSpanCount + 1} className="bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={plan.jobContent?.startsWith(plan.stt + '.') || plan.jobContent?.startsWith(plan.stt + ' ') ? plan.jobContent : `${plan.stt ? plan.stt + ' - ' : ''}${plan.jobContent}`}>
                               <div className="flex items-center gap-1.5 min-w-0 overflow-hidden whitespace-normal break-words">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
@@ -1214,7 +1214,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </button>
                                 <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
                                 <span className="flex-1 cursor-pointer hover:underline break-words leading-tight" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }}>
-                                  {plan.stt ? `${plan.stt} - ` : ''}{plan.jobContent}
+                                  {plan.jobContent?.startsWith(plan.stt + '.') || plan.jobContent?.startsWith(plan.stt + ' ') ? plan.jobContent : `${plan.stt ? plan.stt + ' - ' : ''}${plan.jobContent}`}
                                 </span>
                                 {onAddSubtask && subTab !== 'FINANCE' && (
                                   <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
