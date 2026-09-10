@@ -1338,11 +1338,50 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
       updateProject: async (id, projData) => { try { const updatedProj = await api.projects.update(id, projData); set((state) => { const nextProjs = state.projects.map((p) => (p.id === id ? { ...p, ...updatedProj } : p)); persistAndNotify({ projects: nextProjs }); return { projects: nextProjs }; }); return updatedProj; } catch (e) { console.error('Failed to update project', e); } },
 
-  deleteProject: async (id) => {
-      try {
-        const projectToDelete = get().projects.find((p) => p.id === id);
-        if (!projectToDelete) return;
+    deleteProject: async (id) => {
+      const projectToDelete = get().projects.find((p) => p.id === id);
+      if (!projectToDelete) return;
+      const projectCode = projectToDelete.code;
 
+      // 1. Optimistic Update local state immediately so UI updates instantly
+      set((state) => {
+        const nextProjects = state.projects.filter((p) => p.id !== id);
+        const nextTasks = state.tasks.filter((t) => t.projectCode !== projectCode);
+        const nextMaterials = state.materials.filter((m) => m.projectCode !== projectCode);
+        const nextIssues = state.issues.filter((i) => i.projectCode !== projectCode);
+        const nextMaterialPlans = state.materialPlans.filter((p) => p.projectCode !== projectCode);
+        const nextPurchasingPlans = state.purchasingPlans.filter((p) => p.projectCode !== projectCode);
+        const nextExpenses = state.expenses.filter((e) => e.projectCode !== projectCode);
+        const nextLaborPayrolls = state.laborPayrolls.filter((p) => p.projectCode !== projectCode);
+        const nextFieldLogs = state.fieldLogs.filter((l) => l.projectCode !== projectCode);
+
+        persistAndNotify({
+          projects: nextProjects,
+          tasks: nextTasks,
+          materials: nextMaterials,
+          issues: nextIssues,
+          materialPlans: nextMaterialPlans,
+          purchasingPlans: nextPurchasingPlans,
+          expenses: nextExpenses,
+          laborPayrolls: nextLaborPayrolls,
+          fieldLogs: nextFieldLogs,
+        });
+
+        return {
+          projects: nextProjects,
+          tasks: nextTasks,
+          materials: nextMaterials,
+          issues: nextIssues,
+          materialPlans: nextMaterialPlans,
+          purchasingPlans: nextPurchasingPlans,
+          expenses: nextExpenses,
+          laborPayrolls: nextLaborPayrolls,
+          fieldLogs: nextFieldLogs,
+        };
+      });
+
+      // 2. Perform DB API calls in background
+      try {
         await api.projects.delete(id);
 
         // Clean up project from assigned engineers
@@ -1363,50 +1402,14 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
               memberProjects: eng.memberProjects?.filter(keepProject) || [],
               projectCodes: Array.isArray(eng.projectCodes) && projectCodeStr ? eng.projectCodes.filter(c => c.trim() !== projectCodeStr) : (eng.projectCodes || [])
             });
-          }));
+          })).catch(err => console.warn('Clean up engineers failed', err));
         }
-
-        set((state) => {
-          const projectCode = projectToDelete.code;
-          const nextProjects = state.projects.filter((p) => p.id !== id);
-          const nextTasks = state.tasks.filter((t) => t.projectCode !== projectCode);
-          const nextMaterials = state.materials.filter((m) => m.projectCode !== projectCode);
-          const nextIssues = state.issues.filter((i) => i.projectCode !== projectCode);
-          const nextMaterialPlans = state.materialPlans.filter((p) => p.projectCode !== projectCode);
-          const nextPurchasingPlans = state.purchasingPlans.filter((p) => p.projectCode !== projectCode);
-          const nextExpenses = state.expenses.filter((e) => e.projectCode !== projectCode);
-          const nextLaborPayrolls = state.laborPayrolls.filter((p) => p.projectCode !== projectCode);
-          const nextFieldLogs = state.fieldLogs.filter((l) => l.projectCode !== projectCode);
-
-          persistAndNotify({
-            projects: nextProjects,
-            tasks: nextTasks,
-            materials: nextMaterials,
-            issues: nextIssues,
-            materialPlans: nextMaterialPlans,
-            purchasingPlans: nextPurchasingPlans,
-            expenses: nextExpenses,
-            laborPayrolls: nextLaborPayrolls,
-            fieldLogs: nextFieldLogs,
-          });
-
-          return {
-            projects: nextProjects,
-            tasks: nextTasks,
-            materials: nextMaterials,
-            issues: nextIssues,
-            materialPlans: nextMaterialPlans,
-            purchasingPlans: nextPurchasingPlans,
-            expenses: nextExpenses,
-            laborPayrolls: nextLaborPayrolls,
-            fieldLogs: nextFieldLogs,
-          };
-        });
 
         get().logActivity('Đã xóa dự án: ' + projectToDelete.name, projectToDelete.name);
         get().fetchEngineers();
       } catch (e) {
-        console.error('Failed to delete project', e);
+        console.error('Failed to delete project from DB', e);
+        throw e;
       }
     },
     addMaterialPlansBatch: async (plansData) => {
