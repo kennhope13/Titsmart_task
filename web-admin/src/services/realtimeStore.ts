@@ -698,6 +698,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
             const updatedUser = {
               ...currentUser,
               projectCodes: matchedEngineer.projectCodes || [],
+              permissions: matchedEngineer.permissions || currentUser.permissions,
               role: matchedEngineer.role === 'Quản trị viên' ? 'admin' :
                     matchedEngineer.role === 'Quản lý dự án' ? 'pm' :
                     matchedEngineer.role === 'Kỹ sư hiện trường' ? 'engineer' : 'staff',
@@ -705,8 +706,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
               title: matchedEngineer.title || currentUser.title,
             };
             
-            // Only update if there's an actual change in projectCodes or role to avoid infinite loops
+            // Only update if there's an actual change in projectCodes, permissions or role to avoid infinite loops
             if (JSON.stringify(currentUser.projectCodes) !== JSON.stringify(updatedUser.projectCodes) ||
+                JSON.stringify(currentUser.permissions) !== JSON.stringify(updatedUser.permissions) ||
                 currentUser.role !== updatedUser.role) {
               authStore.updateUser(updatedUser);
             }
