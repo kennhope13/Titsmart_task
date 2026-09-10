@@ -40,14 +40,26 @@ const getAuditFields = () => {
 const filterByProject = (items: any[], codeField: string) => {
   const user = getAuthUser();
   if (!user || !Array.isArray(items)) return items;
-  // Admin gốc luôn thấy tất cả
-  if (user.username === 'admin') return items;
+  // Admin & PM / Quản lý dự án / Quản trị viên luôn xem được tất cả dự án
+  if (
+    user.username === 'admin' ||
+    user.role === 'admin' ||
+    user.role === 'pm' ||
+    user.role === 'Quản trị viên' ||
+    user.role === 'Quản lý dự án'
+  ) {
+    return items;
+  }
   
   const assigned = Array.isArray(user.projectCodes) ? user.projectCodes : [];
-  // Nếu chưa gán dự án nào (mảng rỗng) → xem tất cả (dành cho PM/Giám đốc)
+  // Nếu chưa gán dự án nào (mảng rỗng) → xem tất cả
   if (assigned.length === 0) return items;
-  // Lọc theo danh sách dự án được gán
-  return items.filter(item => assigned.includes(item[codeField]));
+  // Lọc theo danh sách dự án được gán (hỗ trợ cả match code lẫn id/slug)
+  return items.filter(item => {
+    const val = item[codeField];
+    if (!val) return false;
+    return assigned.includes(val) || assigned.includes(item.id) || assigned.includes(item.code);
+  });
 };
 import { supabase } from '../lib/supabase';
 import inventorySeedData from './inventorySeedData.json';
