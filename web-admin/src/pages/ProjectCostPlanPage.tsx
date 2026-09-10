@@ -238,32 +238,6 @@ export const ProjectCostPlanPage: React.FC = () => {
           });
         }
       }
-
-      // Đồng bộ trạng thái đặt hàng sang Kế hoạch Vật tư + Quản lý Công việc
-      if (updates.orderStatus !== undefined) {
-        if (matchingMaterial) {
-          await updateMaterialPlan(matchingMaterial.id, { orderedStatus: updates.orderStatus || 'Chưa đặt hàng' });
-        }
-
-        const matchingTask = tasks.find(t =>
-          t.projectCode === existing.projectCode &&
-          norm(t.stt) === norm(existing.stt) &&
-          norm(t.name) === norm(existing.content)
-        );
-        if (matchingTask) {
-          const newPurch = updates.orderStatus || 'Chưa đặt hàng';
-          const taskUpdates: Record<string, any> = { purchaseStatus: newPurch };
-
-          if (!matchingTask.isSectionHeader) {
-            const nextProgress = calculateAutoProgressRatio(newPurch, matchingTask.constrStatus);
-            taskUpdates.progress = nextProgress;
-            taskUpdates.isDone = nextProgress >= 1;
-            taskUpdates.status = nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm';
-          }
-
-          updateTask(matchingTask.id, taskUpdates);
-        }
-      }
     } finally {
       if (matchingMaterial) {
         syncingIdsRef.current.delete(matchingMaterial.id);
@@ -308,71 +282,6 @@ export const ProjectCostPlanPage: React.FC = () => {
             unit: updates.unit !== undefined ? updates.unit : matchingTask.unit,
             volume: updates.contractVolume !== undefined ? updates.contractVolume : matchingTask.volume
           });
-        }
-      }
-
-      // Đồng bộ Ghi chú / Vướng mắc sang Task
-      if (updates.issueContent !== undefined || updates.issueStatus !== undefined || updates.notes !== undefined) {
-        const matchingTask = tasks.find(t =>
-          t.projectCode === existing.projectCode &&
-          norm(t.stt) === norm(existing.stt) &&
-          norm(t.name) === norm(existing.jobContent)
-        );
-        if (matchingTask) {
-          const taskUpdates: Record<string, any> = {};
-          if (updates.issueContent !== undefined) {
-            taskUpdates.issue = String(updates.issueContent).split('[DOC-DATA]')[0].trimEnd();
-          }
-          if (updates.issueStatus !== undefined) taskUpdates.issueStatus = updates.issueStatus;
-          if (updates.notes !== undefined) {
-            taskUpdates.notes = String(updates.notes).split('[DOC-NOTE]')[0].trimEnd();
-          }
-          if (Object.keys(taskUpdates).length > 0) {
-            updateTask(matchingTask.id, taskUpdates);
-          }
-        }
-      }
-
-      // Đồng bộ trạng thái đặt hàng / thi công sang Purchasing + Task
-      if (updates.orderedStatus !== undefined || updates.progressStatus !== undefined) {
-        const matchingTask = tasks.find(t =>
-          t.projectCode === existing.projectCode &&
-          norm(t.stt) === norm(existing.stt) &&
-          norm(t.name) === norm(existing.jobContent)
-        );
-        if (matchingTask) {
-          const taskUpdates: Record<string, any> = {};
-          let newPurch = matchingTask.purchaseStatus;
-          let newConstr = matchingTask.constrStatus;
-
-          if (updates.orderedStatus !== undefined) {
-             taskUpdates.purchaseStatus = updates.orderedStatus || 'Chưa đặt hàng';
-             newPurch = taskUpdates.purchaseStatus;
-          }
-          if (updates.progressStatus !== undefined) {
-             taskUpdates.constrStatus = updates.progressStatus || 'Chưa thi công';
-             newConstr = taskUpdates.constrStatus;
-          }
-
-          if (!matchingTask.isSectionHeader) {
-            const nextProgress = calculateAutoProgressRatio(newPurch, newConstr);
-            taskUpdates.progress = nextProgress;
-            taskUpdates.isDone = nextProgress >= 1;
-            taskUpdates.status = nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm';
-          }
-
-          updateTask(matchingTask.id, taskUpdates);
-        }
-
-        if (updates.orderedStatus !== undefined) {
-          const matchingPurchasing = purchasingPlans.find(p =>
-            p.projectCode === existing.projectCode &&
-            norm(p.stt) === norm(existing.stt) &&
-            norm(p.content) === norm(existing.jobContent)
-          );
-          if (matchingPurchasing) {
-            updatePurchasingPlan(matchingPurchasing.id, { orderStatus: updates.orderedStatus || 'Chưa đặt hàng' });
-          }
         }
       }
     } finally {

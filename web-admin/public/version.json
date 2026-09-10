@@ -1,8 +1,8 @@
 {
-  "version": "2.8.8",
-  "date": "2026-09-09",
+  "version": "2.9.0",
+  "date": "2026-09-10",
   "notes": [
-    "Sửa lỗi cấu trúc cây phân cấp đầu mục (đặt lại đúng ví trí cho đầu mục cấp 2, 2.1, 2.1.1).",
-    "Rút gọn tên tiêu đề cột thành 'NGƯỜI CẬP NHẬT' tinh gọn trên tất cả các bảng dữ liệu hệ thống."
+    "Tách biệt hoàn toàn thông tin 'NGƯỜI CẬP NHẬT' theo từng tab/mục độc lập (Quản lý công việc, Vật tư, Mua sắm, Chi phí).",
+    "Loại bỏ hiệu ứng cập nhật đè tên người dùng sang các tab khác khi người dùng làm việc ở tab riêng biệt."
   ]
 }

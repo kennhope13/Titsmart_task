@@ -162,47 +162,9 @@ export const TaskManagementPage: React.FC = () => {
     }
   };
 
-  // Đồng bộ trạng thái Mua hàng / Thi công từ tab Quản lý Công việc sang tab Kế hoạch Vật tư & Mua hàng
-    const handleUpdateTaskSync = (id: string, updates: Partial<Task>) => {
+  // Cập nhật trạng thái công việc (độc lập audit theo từng tab)
+  const handleUpdateTaskSync = (id: string, updates: Partial<Task>) => {
     updateTask(id, updates);
-    const existing = tasks.find(t => t.id === id);
-    if (!existing) return;
-    
-    const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-    
-    // Tìm MaterialPlan
-    const matchingMaterial = materialPlans.find(m =>
-      m.projectCode === existing.projectCode &&
-      norm(m.stt) === norm(existing.stt) &&
-      norm(m.jobContent) === norm(existing.name)
-    );
-    if (matchingMaterial) {
-      const matUpdates: Record<string, any> = {};
-      if (updates.purchaseStatus !== undefined) matUpdates.orderedStatus = updates.purchaseStatus;
-      if (updates.constrStatus !== undefined) matUpdates.progressStatus = updates.constrStatus;
-      if (updates.issue !== undefined) {
-        const docPart = String(matchingMaterial.issueContent || '').split('[DOC-DATA]');
-        matUpdates.issueContent = updates.issue + (docPart.length > 1 ? ' [DOC-DATA]' + docPart[1] : '');
-      }
-      if (updates.issueStatus !== undefined) matUpdates.issueStatus = updates.issueStatus;
-      if (updates.notes !== undefined) {
-        const docPart = String(matchingMaterial.notes || '').split('[DOC-NOTE]');
-        matUpdates.notes = updates.notes + (docPart.length > 1 ? ' [DOC-NOTE]' + docPart[1] : '');
-      }
-      if (Object.keys(matUpdates).length > 0) {
-        updateMaterialPlan(matchingMaterial.id, matUpdates);
-      }
-    }
-
-    // Tìm Purchasing
-    const matchingPurchasing = purchasingPlans.find(p =>
-      p.projectCode === existing.projectCode &&
-      norm(p.stt) === norm(existing.stt) &&
-      norm(p.content) === norm(existing.name)
-    );
-    if (matchingPurchasing && updates.purchaseStatus !== undefined) {
-      updatePurchasingPlan(matchingPurchasing.id, { orderStatus: updates.purchaseStatus });
-    }
   };
 
 const hasSyncedRef = useRef(false);
