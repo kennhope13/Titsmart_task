@@ -604,15 +604,14 @@ deleteDocumentTrack(track.id);
                 <option value="Giao">Giao hồ sơ (Gửi đi)</option>
                 <option value="Nhận">Nhận hồ sơ (Nhận về)</option>
               </CustomSelect>
-              <label className="block font-bold mb-1 truncate">Dự án *</label>
+              <label className="block font-bold mb-1 truncate">Dự án (Không bắt buộc)</label>
               <CustomSelect 
-                required 
-                disabled={Boolean(resolvedProjectCode || (filterProjectCode && filterProjectCode !== 'all'))} 
+                disabled={Boolean(resolvedProjectCode)} 
                 value={newDoc.projectCode || resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '')} 
                 onChange={(e) => setNewDoc({...newDoc, projectCode: e.target.value})} 
                 className="w-full border rounded-lg p-2 bg-white font-bold truncate"
               >
-                <option value="">-- Chọn dự án --</option>
+                <option value="">-- Không thuộc dự án --</option>
                 <option value="COMPANY">Chung nội bộ / Hồ sơ Công ty</option>
                 {projects.map(p => (
                   <option key={p.code} value={p.code}>{p.name}</option>
@@ -709,15 +708,14 @@ deleteDocumentTrack(track.id);
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gapx-1 py-1">
               <div className="min-w-0">
-                <label className="block font-bold mb-1 truncate">Dự án *</label>
+                <label className="block font-bold mb-1 truncate">Dự án (Không bắt buộc)</label>
                 <CustomSelect 
-                  required 
-                  disabled={Boolean(resolvedProjectCode || (filterProjectCode && filterProjectCode !== 'all'))} 
+                  disabled={Boolean(resolvedProjectCode)} 
                   value={editingDoc.projectCode || projects.find(p => p.id === (editingDoc as any).projectId)?.code || resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '')} 
                   onChange={(e) => setEditingDoc({...editingDoc, projectCode: e.target.value})} 
                   className="w-full border rounded-lg p-2 bg-white font-bold truncate"
                 >
-                  <option value="">-- Chọn dự án --</option>
+                  <option value="">-- Không thuộc dự án --</option>
                   <option value="COMPANY">Chung nội bộ / Hồ sơ Công ty</option>
                   {projects.map(p => (
                     <option key={p.code} value={p.code}>{p.name}</option>
