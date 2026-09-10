@@ -80,6 +80,19 @@ export const TaskAssignmentPage: React.FC = () => {
       });
     });
 
+    const store = useRealtimeStore.getState();
+    const assignerName = user?.name || user?.username || 'Quản lý';
+    store.logActivity(`Quản lý ${assignerName} đã GIAO ${selectedTaskIds.length} CÔNG VIỆC cho ${engName}`, 'Hệ thống');
+
+    if (store.addNotification) {
+      store.addNotification({
+        title: 'Công việc mới được giao',
+        message: `${assignerName} đã giao ${selectedTaskIds.length} công việc mới cho bạn.`,
+        type: 'task_assigned',
+        icon: 'assignment_ind'
+      });
+    }
+
     triggerToast(`Đã giao ${selectedTaskIds.length} hạng mục cho ${engName}!`, 'success');
     setSelectedTaskIds([]);
     setIsModalOpen(false);

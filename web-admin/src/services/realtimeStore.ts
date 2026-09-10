@@ -697,6 +697,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
             const updatedUser = {
               ...currentUser,
+              id: matchedEngineer.id || currentUser.id,
               projectCodes: matchedEngineer.projectCodes || [],
               permissions: matchedEngineer.permissions || currentUser.permissions,
               role: matchedEngineer.role === 'Quản trị viên' ? 'admin' :
