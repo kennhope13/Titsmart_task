@@ -840,6 +840,7 @@ const hasSyncedRef = useRef(false);
                 jobContent: String(itemName).trim(),
                 unit: '',
                 contractVolume: 0,
+                sectionName: currentSection,
                 notes: '[section]'
               });
 
@@ -860,6 +861,7 @@ const hasSyncedRef = useRef(false);
                 orderStatus: 'Chưa đặt hàng',
                 contractStatus: 'Chưa ký',
                 invoiceStatus: 'Chưa xuất',
+                sectionName: currentSection,
                 notes: '[section]'
               });
             } else {
@@ -869,6 +871,7 @@ const hasSyncedRef = useRef(false);
                 jobContent: String(itemName).trim(),
                 unit: unitVal,
                 contractVolume: volVal,
+                sectionName: currentSection,
                 notes: ''
               });
 
@@ -889,6 +892,7 @@ const hasSyncedRef = useRef(false);
                 orderStatus: rawPurchaseStatus,
                 contractStatus: 'Chưa ký',
                 invoiceStatus: 'Chưa xuất',
+                sectionName: currentSection,
                 notes: ''
               });
             }
