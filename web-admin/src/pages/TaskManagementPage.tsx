@@ -1794,8 +1794,8 @@ const displayTasks = tasks.filter((t) => {
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
-                <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
-                <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
+                <th className="py-2 px-1 w-[135px] min-w-[135px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
+                <th className="py-2 px-1 w-[135px] min-w-[135px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
                 <th className="py-2 px-1 w-[115px] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
                 <th className="py-2 px-1 w-[140px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
                 {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
@@ -1911,7 +1911,7 @@ const displayTasks = tasks.filter((t) => {
                         <span className={'inline-flex min-w-10 items-center justify-center px-1.5 py-0.5 font-mono font-bold text-[10px] rounded border ' + (isFinished ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : pct > 0 ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600')}>{pct}%</span>
                       </td>
                       <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200">
-                        <div title="Tự động đồng bộ từ tab Vật tư và Chi phí" className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold flex items-center justify-center ${getStatusColorStyle(t.purchaseStatus || "Chưa đặt hàng")}`}>
+                        <div title="Tự động đồng bộ từ tab Vật tư và Chi phí" className={`w-full min-w-0 rounded border px-0.5 py-0.5 text-[10px] tracking-tight font-bold flex items-center justify-center whitespace-nowrap ${getStatusColorStyle(t.purchaseStatus || "Chưa đặt hàng")}`}>
                           {t.purchaseStatus || "Chưa đặt hàng"}
                         </div>
                       </td>
