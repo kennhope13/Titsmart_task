@@ -194,8 +194,28 @@ export const ProjectManagementPage: React.FC = () => {
   };
 
   const allEnhancedProjects = useMemo(() => {
-    let merged = [...projects, ...deriveProjectsFromTasks(tasks).filter((derived) => !projects.some((project) => project.code === derived.code))];
+    const norm = (s?: string) => String(s || '').trim().toUpperCase();
+    const derivedProjects = deriveProjectsFromTasks(tasks);
 
+    // Merge database projects and derived projects while deduplicating by normalized code, id, or name
+    const seenKeys = new Set<string>();
+    const merged: Project[] = [];
+
+    [...projects, ...derivedProjects].forEach((proj) => {
+      const codeKey = norm(proj.code);
+      const nameKey = norm(proj.name);
+      const idKey = norm(proj.id);
+
+      if ((codeKey && seenKeys.has(codeKey)) || (nameKey && seenKeys.has(nameKey)) || (idKey && seenKeys.has(idKey))) {
+        return;
+      }
+      if (codeKey) seenKeys.add(codeKey);
+      if (nameKey) seenKeys.add(nameKey);
+      if (idKey) seenKeys.add(idKey);
+      merged.push(proj);
+    });
+
+    let finalMerged = merged;
     // Filter projects based on user permissions if user is not admin/pm
     const isAdminOrPm = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm' || user?.role === 'Quản lý dự án' || user?.username === 'admin';
     if (!isAdminOrPm && user) {
@@ -205,7 +225,7 @@ export const ProjectManagementPage: React.FC = () => {
       const userEngId = (user as any).id || '';
       const userNameUpper = String(user.name || '').trim().toUpperCase();
 
-      merged = merged.filter(p => {
+      finalMerged = finalMerged.filter(p => {
         const pCode = String(p.code || '').trim().toUpperCase();
         const pId = String(p.id || '').trim().toUpperCase();
         const pName = String(p.name || '').trim().toUpperCase();
@@ -222,7 +242,7 @@ export const ProjectManagementPage: React.FC = () => {
       });
     }
     
-    return merged.map((project) => {
+    return finalMerged.map((project) => {
       const pCodeUpper = (project.code || '').trim().toUpperCase();
       const pIdUpper = (project.id || '').trim().toUpperCase();
       const isProjectItem = (item: any) => {
