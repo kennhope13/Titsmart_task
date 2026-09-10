@@ -1911,9 +1911,9 @@ const displayTasks = tasks.filter((t) => {
                         <span className={'inline-flex min-w-10 items-center justify-center px-1.5 py-0.5 font-mono font-bold text-[10px] rounded border ' + (isFinished ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : pct > 0 ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600')}>{pct}%</span>
                       </td>
                       <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200">
-                        <div title="Tự động đồng bộ từ tab Vật tư và Chi phí" className={`w-full min-w-0 rounded border px-0.5 py-0.5 text-[10px] tracking-tight font-bold flex items-center justify-center whitespace-nowrap ${getStatusColorStyle(t.purchaseStatus || "Chưa đặt hàng")}`}>
+                        <span title="Tự động đồng bộ từ tab Vật tư và Chi phí" className={`inline-block w-full rounded border px-1 py-0.5 text-[10px] font-bold text-center whitespace-nowrap overflow-visible ${getStatusColorStyle(t.purchaseStatus || "Chưa đặt hàng")}`}>
                           {t.purchaseStatus || "Chưa đặt hàng"}
-                        </div>
+                        </span>
                       </td>
                       <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200"><CustomSelect value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); handleUpdateTaskSync(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}>{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>))}</CustomSelect></td>
                       <td className="py-1.5 px-1 font-semibold text-red-600 whitespace-normal break-words leading-tight border-r border-slate-200" title={cleanIssue(t.issue) || ''}>
