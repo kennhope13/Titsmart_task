@@ -194,7 +194,33 @@ export const ProjectManagementPage: React.FC = () => {
   };
 
   const allEnhancedProjects = useMemo(() => {
-    const merged = [...projects, ...deriveProjectsFromTasks(tasks).filter((derived) => !projects.some((project) => project.code === derived.code))];
+    let merged = [...projects, ...deriveProjectsFromTasks(tasks).filter((derived) => !projects.some((project) => project.code === derived.code))];
+
+    // Filter projects based on user permissions if user is not admin/pm
+    const isAdminOrPm = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm' || user?.role === 'Quản lý dự án' || user?.username === 'admin';
+    if (!isAdminOrPm && user) {
+      const assignedCodes = (Array.isArray(user.projectCodes) ? user.projectCodes : [])
+        .map(c => String(c || '').trim().toUpperCase())
+        .filter(Boolean);
+      const userEngId = (user as any).id || '';
+      const userNameUpper = String(user.name || '').trim().toUpperCase();
+
+      merged = merged.filter(p => {
+        const pCode = String(p.code || '').trim().toUpperCase();
+        const pId = String(p.id || '').trim().toUpperCase();
+        const pName = String(p.name || '').trim().toUpperCase();
+
+        if (userEngId && Array.isArray(p.members) && p.members.includes(userEngId)) return true;
+        if (userEngId && Array.isArray(p.memberIds) && p.memberIds.includes(userEngId)) return true;
+        if (userNameUpper && p.managerName && String(p.managerName).toUpperCase().includes(userNameUpper)) return true;
+
+        if (assignedCodes.length === 0) return false;
+
+        return assignedCodes.some(assigned => 
+          assigned && (pCode === assigned || pId === assigned || pName === assigned || pCode.includes(assigned) || assigned.includes(pCode))
+        );
+      });
+    }
     
     return merged.map((project) => {
       const pCodeUpper = (project.code || '').trim().toUpperCase();
