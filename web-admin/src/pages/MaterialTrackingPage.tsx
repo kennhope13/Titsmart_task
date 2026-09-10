@@ -71,7 +71,7 @@ export const MaterialTrackingPage: React.FC = () => {
   const { materials, projects, inventoryTransactions, addMaterial, addMaterialsBatch, updateMaterial, deleteMaterial, addInventoryTransaction, addInventoryTransactionsBatch, logActivity } = useRealtimeStore();
 
   const currentProject = projects.find(p => p.id === projectId || p.code === projectId);
-  const projectCodeFilter = currentProject ? currentProject.code : null;
+  const projectCodeFilter = currentProject ? currentProject.code : (projectId || null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 

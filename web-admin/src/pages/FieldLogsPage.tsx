@@ -247,6 +247,7 @@ const UploadModal: React.FC<{
     </Modal>
   );
 };
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export const FieldLogsPage: React.FC = () => {
@@ -256,7 +257,7 @@ export const FieldLogsPage: React.FC = () => {
   const resolvedProjectCode = useMemo(() => {
     if (!projectId) return '';
     const proj = projects.find(p => p.id === projectId || p.code === projectId);
-    return proj ? proj.code : '';
+    return proj ? proj.code : projectId;
   }, [projectId, projects]);
 
   const [selectedProject, setSelectedProject] = useState('');
@@ -266,6 +267,7 @@ export const FieldLogsPage: React.FC = () => {
       setSelectedProject(resolvedProjectCode);
     }
   }, [resolvedProjectCode]);
+
   const outletContext = useOutletContext<any>();
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
   useEffect(() => { setPortalNode(document.getElementById('project-header-actions')); }, []);
