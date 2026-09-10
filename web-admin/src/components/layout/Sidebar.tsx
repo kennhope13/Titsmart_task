@@ -212,9 +212,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                 <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-slate-400 bg-slate-100 uppercase shadow-sm border border-slate-200">
                   <span className="material-symbols-outlined text-[20px]">person</span>
                 </div>
-                <div className={`text-left leading-tight transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-1 opacity-100 delay-0 w-auto' : 'flex-none w-0 opacity-0 delay-200'}`}>
-                  <span className="block font-bold text-xs text-slate-800 whitespace-nowrap">{user?.name || 'Admin'}</span>
-                  <span className="block text-[10px] text-slate-500 whitespace-nowrap">{user?.title || 'Quản trị viên'}</span>
+                <div className={`text-left leading-tight transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-1 opacity-100 delay-0 min-w-0' : 'flex-none w-0 opacity-0 delay-200'}`}>
+                  <span className="block font-bold text-xs text-slate-800 truncate" title={user?.name}>{user?.name || 'Admin'}</span>
+                  <span className="block text-[10px] text-slate-500 truncate" title={user?.title}>{user?.title || 'Quản trị viên'}</span>
                 </div>
                 <button
                   type="button"

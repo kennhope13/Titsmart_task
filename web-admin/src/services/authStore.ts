@@ -143,6 +143,8 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       if (engineerData) {
         const updatedUser = {
           ...current,
+          name: engineerData.name || current.name,
+          title: engineerData.title || current.title,
           projectCodes: engineerData.project_codes || [],
           permissions: engineerData.permissions || current.permissions,
         };
