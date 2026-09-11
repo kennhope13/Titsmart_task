@@ -592,9 +592,10 @@ export const ProjectCostPlanPage: React.FC = () => {
               const volumeContract = numVal(row[volumeCol]);
               const unitPrice = numVal(row[unitPriceCol]);
               const totalBeforeVat = numVal(row[preTaxCol]) || volumeContract * unitPrice;
-              const totalAmount = numVal(row[totalCol]) || totalBeforeVat;
-              const vatRate = numVal(row[vatRateCol]);
-              const vatAmount = numVal(row[vatAmountCol]);
+              let vatRate = numVal(row[vatRateCol]);
+              if (vatRate > 0 && vatRate <= 1) vatRate = vatRate * 100;
+              const vatAmount = numVal(row[vatAmountCol]) || (totalBeforeVat * (vatRate / 100));
+              const totalAmount = numVal(row[totalCol]) || (totalBeforeVat + vatAmount);
               const normalizedContent = normalizeImportText(content);
               const isSummaryRow = normalizedContent.includes('tong cong') || (!stt && normalizedContent === 'cong');
               if (isSummaryRow) return;
