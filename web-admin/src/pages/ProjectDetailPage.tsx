@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, Link, useLocation, Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../services/authStore';
+import { TaskManagementPage } from './TaskManagementPage';
+import { ProjectCostPlanPage } from './ProjectCostPlanPage';
 
 export const ProjectDetailPage: React.FC = () => {
   const { projectId } = useParams();
@@ -89,9 +91,22 @@ export const ProjectDetailPage: React.FC = () => {
 
 
 
-      {/* Content wrapper */}
+      {/* Content wrapper with Keep-Alive DOM caching for instant 0ms tab switching */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">
-        <Outlet context={{ setSubTitle }} key={location.state?.reset || location.pathname} />
+        {/* If standard sub-tab (Overview, Field logs, Diagram, Documents, Inventory), render via Outlet */}
+        {(!location.pathname.includes('/tasks') && !location.pathname.includes('/cost-plan')) && (
+          <Outlet context={{ setSubTitle }} key={location.state?.reset || location.pathname} />
+        )}
+
+        {/* Keep-Alive TaskManagementPage */}
+        <div className={location.pathname.includes('/tasks') ? 'flex-1 flex flex-col h-full overflow-hidden' : 'hidden'}>
+          <TaskManagementPage />
+        </div>
+
+        {/* Keep-Alive ProjectCostPlanPage */}
+        <div className={location.pathname.includes('/cost-plan') ? 'flex-1 flex flex-col h-full overflow-hidden' : 'hidden'}>
+          <ProjectCostPlanPage />
+        </div>
       </div>
     </div>
   );
