@@ -1454,15 +1454,15 @@ const displayTasks = tasks.filter((t) => {
 
     // Resolve parent globally for all tasks
     const resolveParentId = (item: any) => {
-      if (item.parentId && map.has(item.parentId)) return item.parentId;
+      if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) return item.parentId;
       if (item.stt && item.stt.includes('.')) {
         const parts = item.stt.split('.');
         parts.pop();
         const parentStt = parts.join('.');
         const parentItem = fullTasks.find((r) => r.stt === parentStt);
-        if (parentItem && map.has(parentItem.id)) return parentItem.id;
+        if (parentItem && parentItem.id !== item.id && map.has(parentItem.id)) return parentItem.id;
       }
-      return item.parentId;
+      return (item.parentId && item.parentId !== item.id) ? item.parentId : undefined;
     };
 
     fullTasks.forEach((t) => {
@@ -1484,7 +1484,7 @@ const displayTasks = tasks.filter((t) => {
       return notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
     };
 
-    const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '') => {
+    const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '', visited = new Set<string>()) => {
       // Sort theo STT
       nodes.sort((a, b) => {
         const sttCompare = compareTaskStt(a.stt, b.stt);
@@ -1493,6 +1493,9 @@ const displayTasks = tasks.filter((t) => {
       });
 
       nodes.forEach((node, idx) => {
+        if (visited.has(node.id)) return;
+        visited.add(node.id);
+
         const isSec = isTaskSectionHeader(node);
         if (isSec) {
           currentSectionKey = node.sectionName || node.name || '';
@@ -1514,7 +1517,9 @@ const displayTasks = tasks.filter((t) => {
           _sectionKey: currentSectionKey || 'Khác' 
         });
 
-        flattenTree(node.children, displayDepth + 1, computedStt);
+        if (node.children && node.children.length > 0) {
+          flattenTree(node.children, displayDepth + 1, computedStt, visited);
+        }
       });
     };
 
