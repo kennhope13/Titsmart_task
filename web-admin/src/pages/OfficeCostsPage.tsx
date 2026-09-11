@@ -13,7 +13,7 @@ export const OfficeCostsPage: React.FC = () => {
   const { user } = useAuthStore();
   const { expenses, engineers, addExpense, updateExpense, deleteExpense } = useRealtimeStore();
 
-  const currentProjExpenses = useMemo(() => expenses.filter(e => e.projectCode === 'OFFICE').sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()), [expenses]);
+  const currentProjExpenses = useMemo(() => expenses.filter(e => e.projectCode === 'OFFICE' || e.projectCode === 'VAN_PHONG').sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()), [expenses]);
 
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'warning' | 'info' }>({ show: false, message: '', type: 'success' });
   const triggerToast = (message: string, type: 'success' | 'warning' | 'info' = 'success') => {
@@ -124,7 +124,7 @@ export const OfficeCostsPage: React.FC = () => {
               }
 
               addExpense({
-                projectCode: 'OFFICE',
+                projectCode: 'VAN_PHONG',
                 stt: String(currentProjExpenses.length + 1),
                 date: new Date().toISOString().split('T')[0],
                 content: 'Quỹ',
@@ -264,7 +264,7 @@ export const OfficeCostsPage: React.FC = () => {
             const total = qty * price + vat;
 
             await addExpense({
-              projectCode: 'OFFICE',
+              projectCode: 'VAN_PHONG',
               stt: String(currentProjExpenses.length + 1),
               date: newExpenseData.date || new Date().toISOString().split('T')[0],
               content: newExpenseData.content || 'Văn phòng phẩm',
