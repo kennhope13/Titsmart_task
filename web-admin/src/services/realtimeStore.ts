@@ -1825,7 +1825,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 // ==========================================
 const REALTIME_TABLES = [
   'projects', 'tasks', 'materials', 'issues', 'engineers',
-  'notifications', 'activity_logs', 'inventory_transactions',
+  'notifications', 'inventory_transactions',
   'material_plans', 'purchasing_plans', 'expenses',
   'labor_payrolls', 'document_tracks', 'field_logs'
 ];

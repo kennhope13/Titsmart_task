@@ -101,7 +101,11 @@ const renderActionText = (text: string, fullDetail: boolean = false) => {
   };
 
 export const ActivityLogPage: React.FC = () => {
-  const { activityLogs, projects } = useRealtimeStore();
+  const { activityLogs, projects, fetchActivityLogs } = useRealtimeStore();
+
+  React.useEffect(() => {
+    fetchActivityLogs();
+  }, []);
 
   const getProjectName = (projCodeOrName: string) => {
     if (!projCodeOrName) return projCodeOrName;
