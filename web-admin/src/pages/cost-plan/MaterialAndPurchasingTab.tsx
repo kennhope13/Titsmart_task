@@ -1190,14 +1190,19 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               // Initialize map
               fullTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
 
+              const sttToItemMap = new Map<string, any>();
+              fullTasks.forEach((t) => {
+                if (t.stt) sttToItemMap.set(String(t.stt).trim(), t);
+              });
+
               // Resolve parent globally
               const resolveParentIdGlobal = (item: any) => {
                 if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) return item.parentId;
-                if (item.stt && item.stt.includes('.')) {
-                  const parts = item.stt.split('.');
+                if (item.stt && String(item.stt).includes('.')) {
+                  const parts = String(item.stt).split('.');
                   parts.pop();
                   const parentStt = parts.join('.');
-                  const parentItem = fullTasks.find((r) => r.stt === parentStt);
+                  const parentItem = sttToItemMap.get(parentStt);
                   if (parentItem && parentItem.id !== item.id && map.has(parentItem.id)) return parentItem.id;
                 }
                 return (item.parentId && item.parentId !== item.id) ? item.parentId : undefined;
