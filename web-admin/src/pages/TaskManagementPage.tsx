@@ -1406,7 +1406,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
     const roots: any[] = [];
 
     // Synthesize missing parent section headers if any child items exist (max 30 items)
-    const sttSet = new Set(displayTasks.map(t => String(t.stt || '').trim()));
+    const sttSet = new Set(displayTasks.map(t => `${t.projectCode || ''}:::${String(t.stt || '').trim()}`));
     const missingParents: any[] = [];
     displayTasks.forEach(t => {
       if (missingParents.length >= 30) return;
@@ -1415,8 +1415,9 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
         const parts = stt.split('.');
         parts.pop();
         const parentStt = parts.join('.');
-        if (parentStt && !sttSet.has(parentStt)) {
-          sttSet.add(parentStt);
+        const parentKey = `${t.projectCode || ''}:::${parentStt}`;
+        if (parentStt && !sttSet.has(parentKey)) {
+          sttSet.add(parentKey);
           let synthName = '';
           if (parentStt === '33') {
             synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';

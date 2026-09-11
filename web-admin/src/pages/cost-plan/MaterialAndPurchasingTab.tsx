@@ -1147,16 +1147,18 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
             {(() => {
               // Synthesize missing parent section headers if any child items exist (e.g. 33.1 without 33)
-              const sttSet = new Set(filteredData.map(t => String(t.stt || '').trim()));
+              const sttSet = new Set(filteredData.map(t => `${t.projectCode || ''}:::${String(t.stt || '').trim()}`));
               const missingParents: any[] = [];
               filteredData.forEach(t => {
+                if (missingParents.length >= 30) return;
                 const stt = String(t.stt || '').trim();
                 if (stt.includes('.')) {
                   const parts = stt.split('.');
                   parts.pop();
                   const parentStt = parts.join('.');
-                  if (parentStt && !sttSet.has(parentStt)) {
-                    sttSet.add(parentStt);
+                  const parentKey = `${t.projectCode || ''}:::${parentStt}`;
+                  if (parentStt && !sttSet.has(parentKey)) {
+                    sttSet.add(parentKey);
                     let synthName = '';
                     if (parentStt === '33') {
                       synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
