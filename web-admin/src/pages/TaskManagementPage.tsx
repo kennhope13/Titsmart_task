@@ -1405,10 +1405,11 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
     const map = new Map<string, any>();
     const roots: any[] = [];
 
-    // Synthesize missing parent section headers if any child items exist (e.g. 33.1 without 33)
+    // Synthesize missing parent section headers if any child items exist (max 30 items)
     const sttSet = new Set(displayTasks.map(t => String(t.stt || '').trim()));
     const missingParents: any[] = [];
     displayTasks.forEach(t => {
+      if (missingParents.length >= 30) return;
       const stt = String(t.stt || '').trim();
       if (stt.includes('.')) {
         const parts = stt.split('.');
@@ -1471,8 +1472,6 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
     };
 
     fullTasks.forEach((t) => {
-      // Section header có parentId thì vẫn là con của parent (VD: 33, 34, 35 thuộc A)
-      // Chỉ section header KHÔNG có parentId mới là root (VD: A, B)
       const resolvedParentId = resolveParentId(t);
       if (resolvedParentId && map.has(resolvedParentId)) {
         map.get(resolvedParentId)!.children.push(map.get(t.id));
@@ -1490,15 +1489,16 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
     };
 
     const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '', visited = new Set<string>()) => {
-      // Sort theo STT
+      if (currentDepth > 15) return; // Safety guard: max 15 depth level to prevent OOM crash
+
       nodes.sort((a, b) => {
         const sttCompare = compareTaskStt(a.stt, b.stt);
         if (sttCompare !== 0) return sttCompare;
-        return a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' });
+        return String(a.name || '').localeCompare(String(b.name || ''), 'vi', { numeric: true, sensitivity: 'base' });
       });
 
       nodes.forEach((node, idx) => {
-        if (visited.has(node.id)) return;
+        if (!node || !node.id || visited.has(node.id)) return;
         visited.add(node.id);
 
         const isSec = isTaskSectionHeader(node);
@@ -1508,7 +1508,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
 
         let displayDepth = currentDepth;
         if (currentDepth === 0 && !isSec && currentSectionKey !== '') {
-          displayDepth = 1; // Indent if under a section header
+          displayDepth = 1;
         }
 
         const currentNum = (idx + 1).toString();

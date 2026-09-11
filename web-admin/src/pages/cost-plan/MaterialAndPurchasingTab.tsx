@@ -1221,6 +1221,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               const flattened: any[] = [];
 
               const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '', visited = new Set<string>()) => {
+                if (currentDepth > 15) return; // Safety guard against OOM crash
+
                 nodes.sort((a, b) => {
                   const sttCompare = compareTaskStt(a.stt, b.stt);
                   if (sttCompare !== 0) return sttCompare;
@@ -1228,7 +1230,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 });
 
                 nodes.forEach((node, idx) => {
-                  if (visited.has(node.id)) return;
+                  if (!node || !node.id || visited.has(node.id)) return;
                   visited.add(node.id);
 
                   const isSec = isParentRow(node);
