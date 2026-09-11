@@ -242,6 +242,11 @@ export const api = {
       const payload = toSnakeCase(data);
       if (!payload.id) payload.id = uuidv4();
       
+      // material_id in Postgres is UUID. If it's a local temp ID (mat-1789...), strip it
+      if (payload.material_id && !UUID_RE.test(String(payload.material_id))) {
+        delete payload.material_id;
+      }
+
       // Loại bỏ các trường không thuộc bảng inventory_transactions
       const allowedKeys = ['id', 'type', 'date', 'material_id', 'material_code', 'material_name', 'specs', 'category', 'unit', 'quantity', 'source_or_project', 'receiver_name', 'notes', 'created_at'];
       const sanitizedPayload: any = {};
@@ -255,7 +260,7 @@ export const api = {
       if (error) throw error;
       
       // Update material stock
-      if (data.materialId) {
+      if (data.materialId && UUID_RE.test(String(data.materialId))) {
         const { data: currentMat } = await supabase.from('materials').select('initial_stock, total_import, total_export').eq('id', data.materialId).single();
         if (currentMat) {
           const isImport = data.type === 'IMPORT';
@@ -283,7 +288,7 @@ export const api = {
       
       const allowedKeys = [
         'code', 'name', 'english_name', 'project_code', 'project_name',
-        'stt', 'volume', 'initial_stock', 'current_stock', 'total_import', 'total_export',
+        'volume', 'initial_stock', 'current_stock', 'total_import', 'total_export',
         'unit', 'unit_price', 'status', 'constr_status', 'supplier', 'specs', 'category', 'notes',
         'created_at', 'updated_at', 'updated_by'
       ];
@@ -314,7 +319,6 @@ export const api = {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
           delete sanitizedPayload.updated_at;
           delete sanitizedPayload.updated_by;
-          delete sanitizedPayload.stt;
           const { data: retryResult, error: retryError } = await supabase.from('materials').insert(sanitizedPayload).select().single();
           if (retryError) throw retryError;
           return toCamelCase(retryResult);
