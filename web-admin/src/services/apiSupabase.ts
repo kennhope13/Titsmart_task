@@ -280,8 +280,47 @@ export const api = {
       if (payload.id && String(payload.id).startsWith('mat-')) {
         delete payload.id;
       }
-      const { data: result, error } = await supabase.from('materials').insert(payload).select().single();
-      if (error) throw error;
+      
+      const allowedKeys = [
+        'code', 'name', 'english_name', 'project_code', 'project_name',
+        'stt', 'volume', 'initial_stock', 'current_stock', 'total_import', 'total_export',
+        'unit', 'unit_price', 'status', 'constr_status', 'supplier', 'specs', 'category', 'notes',
+        'created_at', 'updated_at', 'updated_by'
+      ];
+      const sanitizedPayload: any = {};
+      for (const key of Object.keys(payload)) {
+        if (allowedKeys.includes(key)) {
+          sanitizedPayload[key] = payload[key];
+        }
+      }
+
+      const { data: result, error } = await supabase.from('materials').insert(sanitizedPayload).select().single();
+      if (error) {
+        console.error('Supabase error inserting material:', error, sanitizedPayload);
+        // Handle foreign key constraint if project_code (e.g. 'COMPANY') is missing from projects table
+        if (error.code === '23503' || String(error.message).includes('foreign key constraint') || String(error.message).includes('materials_project_code_fkey')) {
+          const projCode = sanitizedPayload.project_code || 'COMPANY';
+          await supabase.from('projects').insert({
+            name: projCode === 'COMPANY' ? 'Kho Tổng (Kho Công Ty)' : projCode,
+            code: projCode,
+            status: 'active',
+            location: 'Kho Công ty',
+            client: 'Nội bộ'
+          });
+          const { data: retryResult, error: retryError } = await supabase.from('materials').insert(sanitizedPayload).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete sanitizedPayload.updated_at;
+          delete sanitizedPayload.updated_by;
+          delete sanitizedPayload.stt;
+          const { data: retryResult, error: retryError } = await supabase.from('materials').insert(sanitizedPayload).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     update: async (id: string, data: any) => {

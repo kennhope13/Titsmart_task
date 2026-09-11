@@ -620,15 +620,28 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           api.materials.getAll(projectId),
           api.materials.getTransactions(),
         ]);
-        let mats = mergeMaterialsWithSeed(Array.isArray(materials) ? materials : [], projectId);
-        mats = filterByProject(mats, 'projectCode');
+        const currentLocal = get().materials || [];
+        let fetchedMats = Array.isArray(materials) ? materials : [];
+        
+        // Merge remote materials with any local materials that haven't been synced or fetched yet
+        const remoteIds = new Set(fetchedMats.map((m: any) => m.id));
+        const remoteCodes = new Set(fetchedMats.map((m: any) => `${m.projectCode || 'COMPANY'}:::${(m.code || '').toLowerCase()}`));
+        
+        const unsyncedLocal = currentLocal.filter(m => 
+          !remoteIds.has(m.id) && !remoteCodes.has(`${m.projectCode || 'COMPANY'}:::${(m.code || '').toLowerCase()}`)
+        );
+
+        let merged = mergeMaterialsWithSeed([...unsyncedLocal, ...fetchedMats], projectId);
+        merged = filterByProject(merged, 'projectCode');
         set({
-          materials: mats,
+          materials: merged,
           inventoryTransactions: Array.isArray(inventoryTransactions) ? inventoryTransactions : get().inventoryTransactions,
         });
       } catch (e) {
         console.error('Failed to fetch materials', e);
-        set({ materials: seedMaterialsForProject(projectId) });
+        if (get().materials.length === 0) {
+          set({ materials: seedMaterialsForProject(projectId) });
+        }
       }
     },
 
@@ -990,26 +1003,27 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     addMaterial: async (matData) => {
+      const newMat: Material = {
+        ...matData,
+        id: 'mat-' + Date.now(),
+      };
+      
+      let created = newMat;
       try {
-        const newMat: Material = {
-          ...matData,
-          id: 'mat-' + Date.now(),
-        };
-        
-        let created = newMat;
         if (api.materials && (api.materials as any).create) {
-           created = await (api.materials as any).create(newMat);
+          const res = await (api.materials as any).create(newMat);
+          if (res) created = res;
         }
-        
-        set((state) => {
-          const nextMats = [created, ...state.materials];
-          persistAndNotify({ materials: nextMats });
-          return { materials: nextMats };
-        });
-        return created;
       } catch (e) {
-        console.error('Failed to add material', e);
+        console.error('Failed to create material on backend, using local created:', e);
       }
+      
+      set((state) => {
+        const nextMats = [created, ...state.materials];
+        persistAndNotify({ materials: nextMats });
+        return { materials: nextMats };
+      });
+      return created;
     },
 
     addMaterialsBatch: async (matsData) => {

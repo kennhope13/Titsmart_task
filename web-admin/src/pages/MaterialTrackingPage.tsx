@@ -705,8 +705,9 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const filteredMaterials = useMemo(() => {
     let result = materials.filter(m => {
-      if (projectCodeFilter && m.projectCode !== projectCodeFilter) return false;
-      if (filterProject && m.projectCode !== filterProject) return false;
+      const mProjCode = m.projectCode || 'COMPANY';
+      if (projectCodeFilter && mProjCode !== projectCodeFilter) return false;
+      if (filterProject && mProjCode !== filterProject) return false;
       if (filterCategory && (m.category || 'Vật tư chung') !== filterCategory) return false;
       if (filterName && m.name !== filterName) return false;
       if (filterUnit && m.unit !== filterUnit) return false;
@@ -954,6 +955,12 @@ export const MaterialTrackingPage: React.FC = () => {
     setSupplier('');
     setPurchaseStatus('Chưa đặt hàng');
     setConstrStatus('Chưa thi công');
+    // Reset filters to ensure the newly created material is visible immediately
+    setFilterCategory('');
+    setFilterName('');
+    setFilterUnit('');
+    setSearchQuery('');
+    if (!currentProject) setFilterProject('');
       triggerToast(`Đã thêm vật tư \"${matName}\" thành công!`, 'success');
     } catch (error: any) {
       triggerToast(error.message || 'Lỗi khi thêm vật tư!', 'warning');
