@@ -1279,23 +1279,27 @@ export const ProjectCostPlanPage: React.FC = () => {
     const syncMissing = async () => {
       const contractorPlans = currentProjMaterialPlans;
 
+      const purchasingKeySet = new Set(
+        currentProjPurchasing.map(p => p.materialPlanId || `${norm(p.stt)}|${norm(p.content)}`)
+      );
+
       const missingPlans = contractorPlans.filter(plan => {
         if (syncingIdsRef.current.has(plan.id)) return false;
-        return !currentProjPurchasing.some(p =>
-          p.materialPlanId === plan.id ||
-          (norm(p.stt) === norm(plan.stt) && norm(p.content) === norm(plan.jobContent))
-        );
+        const keyByMatId = plan.id;
+        const keyBySttContent = `${norm(plan.stt)}|${norm(plan.jobContent)}`;
+        return !purchasingKeySet.has(keyByMatId) && !purchasingKeySet.has(keyBySttContent);
       });
 
       if (missingPlans.length === 0) return;
 
+      const matMap = new Map(currentProjMaterialPlans.map(m => [m.id, m]));
+      const purchasingSttContentMap = new Map(currentProjPurchasing.map(p => [`${norm(p.stt)}|${norm(p.content)}`, p]));
+
       const findPurchasingParentId = (matParentId?: string): string | undefined => {
         if (!matParentId) return undefined;
-        const parentMat = currentProjMaterialPlans.find(m => m.id === matParentId);
+        const parentMat = matMap.get(matParentId);
         if (!parentMat) return undefined;
-        const match = currentProjPurchasing.find(p =>
-          norm(p.stt) === norm(parentMat.stt) && norm(p.content) === norm(parentMat.jobContent)
-        );
+        const match = purchasingSttContentMap.get(`${norm(parentMat.stt)}|${norm(parentMat.jobContent)}`);
         return match ? match.id : undefined;
       };
 

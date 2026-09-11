@@ -334,11 +334,16 @@ export const api = {
       const payload = toSnakeCase(data);
       const { data: result, error } = await supabase.from('engineers').insert(payload).select().single();
       if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('password')) {
           delete payload.updated_by;
           delete payload.updated_at;
           const { data: retryResult, error: retryError } = await supabase.from('engineers').insert(payload).select().single();
-          if (retryError) throw retryError;
+          if (retryError) {
+            delete payload.password;
+            const { data: finalResult, error: finalError } = await supabase.from('engineers').insert(payload).select().single();
+            if (finalError) throw finalError;
+            return toCamelCase(finalResult);
+          }
           return toCamelCase(retryResult);
         }
         throw error;
@@ -349,11 +354,16 @@ export const api = {
       const payload = toSnakeCase(data);
       const { data: result, error } = await supabase.from('engineers').update(payload).eq('id', id).select().single();
       if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('password')) {
           delete payload.updated_by;
           delete payload.updated_at;
           const { data: retryResult, error: retryError } = await supabase.from('engineers').update(payload).eq('id', id).select().single();
-          if (retryError) throw retryError;
+          if (retryError) {
+            delete payload.password;
+            const { data: finalResult, error: finalError } = await supabase.from('engineers').update(payload).eq('id', id).select().single();
+            if (finalError) throw finalError;
+            return toCamelCase(finalResult);
+          }
           return toCamelCase(retryResult);
         }
         throw error;

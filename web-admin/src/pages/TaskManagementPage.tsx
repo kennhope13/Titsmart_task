@@ -1357,7 +1357,7 @@ const hasSyncedRef = useRef(false);
   return Math.max(42, maxLen * 7.5 + 16);
 }, [tasks]);
 
-const displayTasks = tasks.filter((t) => {
+const displayTasks = React.useMemo(() => tasks.filter((t) => {
     const matchesProj = selectedProjectCode === 'all' || t.projectCode === selectedProjectCode;
 
     // Column Filters
@@ -1383,7 +1383,7 @@ const displayTasks = tasks.filter((t) => {
       matchesAssign &&
       matchesSearch
     );
-  });
+  }), [tasks, selectedProjectCode, filterSection, filterUnit, filterPurchase, filterConstr, assignFilter, searchTerm]);
 
   const toRoman = (num: number): string => {
     const roman: Record<string, number> = {
