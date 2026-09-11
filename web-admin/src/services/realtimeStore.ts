@@ -526,28 +526,18 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
   const persistAndNotify = (newState: Partial<RealtimeStoreState>) => {
     const current = get();
-    const updated = {
+    // Only persist lightweight session keys to localStorage to prevent QuotaExceeded / OOM renderer crash
+    const lightweightSaved = {
       projects: newState.projects !== undefined ? newState.projects : current.projects,
-      tasks: newState.tasks !== undefined ? newState.tasks : current.tasks,
-      materials: newState.materials !== undefined ? newState.materials : current.materials,
-      issues: newState.issues !== undefined ? newState.issues : current.issues,
-      engineers: newState.engineers !== undefined ? newState.engineers : current.engineers,
       notifications: newState.notifications !== undefined ? newState.notifications : current.notifications,
-      activityLogs: newState.activityLogs !== undefined ? newState.activityLogs : current.activityLogs,
-      inventoryTransactions: newState.inventoryTransactions !== undefined ? newState.inventoryTransactions : current.inventoryTransactions,
-      materialPlans: newState.materialPlans !== undefined ? newState.materialPlans : current.materialPlans,
-      purchasingPlans: newState.purchasingPlans !== undefined ? newState.purchasingPlans : current.purchasingPlans,
-      expenses: newState.expenses !== undefined ? newState.expenses : current.expenses,
-      laborPayrolls: newState.laborPayrolls !== undefined ? newState.laborPayrolls : current.laborPayrolls,
-      documentTracks: newState.documentTracks !== undefined ? newState.documentTracks : current.documentTracks,
-      fieldLogs: newState.fieldLogs !== undefined ? newState.fieldLogs : current.fieldLogs,
+      engineers: newState.engineers !== undefined ? newState.engineers : current.engineers,
     };
-    
+
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(lightweightSaved));
       channel?.postMessage({ type: 'SYNC_STATE' });
     } catch (e) {
-      console.error('Failed to save state', e);
+      console.warn('[Storage] Skipped localStorage write to prevent quota crash:', e);
     }
   };
 
