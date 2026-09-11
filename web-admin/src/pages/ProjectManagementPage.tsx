@@ -206,12 +206,6 @@ export const ProjectManagementPage: React.FC = () => {
       const idKey = norm(proj.id);
       const nameKey = norm(proj.name);
 
-      // Exclude internal Office project card from main project cards list
-      const isOfficeProject = nameKey === 'VAN PHONG' || nameKey === 'OFFICE' || codeKey === 'VP' || codeKey === 'OFFICE' || codeKey === 'VAN_PHONG_CONG_TY';
-      if (isOfficeProject) {
-        return;
-      }
-
       if ((codeKey && seenKeys.has(codeKey)) || (idKey && seenKeys.has(idKey))) {
         return;
       }
