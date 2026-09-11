@@ -2128,9 +2128,41 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
       {/* MODALS */}
       {/* Xem ảnh Modal */}
-      <Modal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} title="Xem hình ảnh hóa đơn/chứng từ" size="xl" icon="image">
-        <div className="flex justify-center bg-slate-50 rounded-lg relative border border-slate-200">
-          {previewImage && <img src={previewImage} alt="Hóa đơn" className="w-full h-auto object-contain shadow-sm rounded" />}
+      <Modal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} title="Xem hình ảnh hóa đơn / chứng từ / CCCD" size="xl" icon="image">
+        <div className="flex flex-col items-center gap-4 p-3 bg-slate-50 rounded-lg relative border border-slate-200">
+          {previewImage && (
+            <>
+              {previewImage.includes('drive.google.com') ? (
+                <iframe
+                  src={previewImage.replace(/\/view.*$/, '/preview')}
+                  className="w-full h-[65vh] rounded-md border border-slate-300 shadow-inner bg-white"
+                  title="Google Drive Preview"
+                />
+              ) : (
+                <img
+                  src={(() => {
+                    const trimmed = (previewImage || '').trim();
+                    const match = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                    return match && match[1] ? `https://lh3.googleusercontent.com/d/${match[1]}` : trimmed;
+                  })()}
+                  alt="Chứng từ / CCCD"
+                  className="max-h-[65vh] w-auto object-contain shadow-md rounded-md bg-white border border-slate-200"
+                />
+              )}
+
+              <div className="flex items-center gap-3 border-t border-slate-200 pt-3 w-full justify-center">
+                <a
+                  href={previewImage}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                  Mở liên kết gốc trên Google Drive
+                </a>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
 
