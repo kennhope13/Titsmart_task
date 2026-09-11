@@ -1,0 +1,36 @@
+const fs = require('fs');
+postHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; }
+    .header { background-color: #1e3a8a; color: #ffffff; padding: 15px; text-align: center; border-radius: 6px 6px 0 0; }
+    .content { padding: 20px; }
+    .footer { font-size: 12px; color: #777; text-align: center; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; }
+    .btn { display: inline-block; background-color: #2563eb; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2 style="margin:0;">He Thong Quan Ly Cong Viec TITSMART</h2>
+    </div>
+    <div class="content">
+      <p>Kinh gui Quy khach hang / Ban Quan Ly,</p>
+      <p>He thong vua cap nhat phien ban moi <strong>TITSMART Project Manager</strong>.</p>
+      <p>Vui long tai xuong ban cap nhat moi nhat tren GitHub Releases hoac theo duong dan ung dung Android/Windows.</p>
+      <br>
+      <p style="text-align: center;">
+        <a href="https://github.com/kennhope13/Titsmart_task/releases" class="btn">Tai Ban Cap Nhat Moi</a>
+      </p>
+    </div>
+    <div class="footer">
+      <p>Email nay duoc gui tu dong tu He thong TITSMART.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+fs.writeFileSync('mail_body.html', postHtml, 'utf-8');
+console.log('zw�jם mail_body.html successfully!');
