@@ -1337,10 +1337,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const nextTasks = state.tasks.filter((t) => t.projectCode !== projectCode);
         const nextMaterials = state.materials.filter((m) => m.projectCode !== projectCode);
         const nextIssues = state.issues.filter((i) => i.projectCode !== projectCode);
-        const nextMaterialPlans = state.materialPlans.filter((p) => p.projectCode !== projectCode);
-        const nextPurchasingPlans = state.purchasingPlans.filter((p) => p.projectCode !== projectCode);
-        const nextExpenses = state.expenses.filter((e) => e.projectCode !== projectCode);
-        const nextLaborPayrolls = state.laborPayrolls.filter((p) => p.projectCode !== projectCode);
+        const nextMaterialPlans = state.materialPlans;
+        const nextPurchasingPlans = state.purchasingPlans;
+        const nextExpenses = state.expenses;
+        const nextLaborPayrolls = state.laborPayrolls;
         const nextFieldLogs = state.fieldLogs.filter((l) => l.projectCode !== projectCode);
 
         persistAndNotify({
