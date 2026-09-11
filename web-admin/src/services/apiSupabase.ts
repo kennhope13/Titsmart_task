@@ -259,9 +259,17 @@ export const api = {
       const { data: result, error } = await supabase.from('inventory_transactions').insert(sanitizedPayload).select().single();
       if (error) throw error;
       
-      // Update material stock
-      if (data.materialId && UUID_RE.test(String(data.materialId))) {
-        const { data: currentMat } = await supabase.from('materials').select('initial_stock, total_import, total_export').eq('id', data.materialId).single();
+      // Update material stock by ID or Code
+      const matIdOrCode = data.materialId || data.materialCode;
+      if (matIdOrCode) {
+        let matQuery = supabase.from('materials').select('id, initial_stock, total_import, total_export');
+        if (UUID_RE.test(String(matIdOrCode))) {
+          matQuery = matQuery.eq('id', matIdOrCode);
+        } else {
+          matQuery = matQuery.eq('code', String(matIdOrCode));
+        }
+        const { data: currentMatList } = await matQuery;
+        const currentMat = currentMatList?.[0];
         if (currentMat) {
           const isImport = data.type === 'IMPORT';
           const qty = Number(data.quantity) || 0;
@@ -274,7 +282,7 @@ export const api = {
             total_import: newImport,
             total_export: newExport,
             current_stock: currentStock
-          }).eq('id', data.materialId);
+          }).eq('id', currentMat.id);
         }
       }
       
@@ -330,12 +338,43 @@ export const api = {
     update: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
       if (Object.keys(payload).length === 0) return { id };
-      const { data: result, error } = await supabase.from('materials').update(payload).eq('id', id).select().single();
+
+      const allowedKeys = [
+        'code', 'name', 'english_name', 'project_code', 'project_name',
+        'volume', 'initial_stock', 'current_stock', 'total_import', 'total_export',
+        'unit', 'unit_price', 'status', 'constr_status', 'supplier', 'specs', 'category', 'notes',
+        'created_at', 'updated_at', 'updated_by'
+      ];
+      const sanitizedPayload: any = {};
+      for (const key of Object.keys(payload)) {
+        if (allowedKeys.includes(key)) {
+          sanitizedPayload[key] = payload[key];
+        }
+      }
+
+      let query = supabase.from('materials').update(sanitizedPayload);
+      if (UUID_RE.test(id)) {
+        query = query.eq('id', id);
+      } else {
+        query = query.eq('code', id);
+      }
+
+      const { data: result, error } = await query.select();
       if (error) {
         if (error.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete sanitizedPayload.updated_at;
+          delete sanitizedPayload.updated_by;
+          let retryQuery = supabase.from('materials').update(sanitizedPayload);
+          if (UUID_RE.test(id)) retryQuery = retryQuery.eq('id', id);
+          else retryQuery = retryQuery.eq('code', id);
+          const { data: retryResult, error: retryError } = await retryQuery.select();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult?.[0] || { id, ...data });
+        }
         throw error;
       }
-      return toCamelCase(result);
+      return toCamelCase(result?.[0] || { id, ...data });
     },
     delete: async (id: string) => {
       const { error } = await supabase.from('materials').delete().eq('id', id);
