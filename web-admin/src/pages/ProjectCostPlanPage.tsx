@@ -2142,24 +2142,60 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <img
                   src={(() => {
                     const trimmed = (previewImage || '').trim();
-                    const match = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-                    return match && match[1] ? `https://lh3.googleusercontent.com/d/${match[1]}` : trimmed;
+                    const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                    if (driveMatch && driveMatch[1]) return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
+                    if (trimmed.includes('localhost:') || trimmed.includes('127.0.0.1:')) {
+                      return trimmed.replace(/http:\/\/(localhost|127\.0\.0\.1):\d+\/storage\/v1/, 'https://nvdonaaxbtqjfmxtlgzb.supabase.co/storage/v1');
+                    }
+                    if (trimmed.startsWith('files/') || trimmed.startsWith('titsmart-images/')) {
+                      const cleanPath = trimmed.replace(/^titsmart-images\//, '');
+                      return `https://nvdonaaxbtqjfmxtlgzb.supabase.co/storage/v1/object/public/titsmart-images/${cleanPath}`;
+                    }
+                    if (trimmed.startsWith('/storage/v1/')) {
+                      return `https://nvdonaaxbtqjfmxtlgzb.supabase.co${trimmed}`;
+                    }
+                    return trimmed;
                   })()}
-                  alt="Chứng từ / CCCD"
+                  alt="Chứng từ / CCCD / Hóa đơn"
                   className="max-h-[65vh] w-auto object-contain shadow-md rounded-md bg-white border border-slate-200"
                 />
               )}
 
               <div className="flex items-center gap-3 border-t border-slate-200 pt-3 w-full justify-center">
-                <a
-                  href={previewImage}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                  Mở liên kết gốc trên Google Drive
-                </a>
+                {previewImage.includes('drive.google.com') ? (
+                  <a
+                    href={previewImage}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                    Mở liên kết gốc trên Google Drive
+                  </a>
+                ) : (
+                  <a
+                    href={(() => {
+                      const trimmed = (previewImage || '').trim();
+                      if (trimmed.includes('localhost:') || trimmed.includes('127.0.0.1:')) {
+                        return trimmed.replace(/http:\/\/(localhost|127\.0\.0\.1):\d+\/storage\/v1/, 'https://nvdonaaxbtqjfmxtlgzb.supabase.co/storage/v1');
+                      }
+                      if (trimmed.startsWith('files/') || trimmed.startsWith('titsmart-images/')) {
+                        const cleanPath = trimmed.replace(/^titsmart-images\//, '');
+                        return `https://nvdonaaxbtqjfmxtlgzb.supabase.co/storage/v1/object/public/titsmart-images/${cleanPath}`;
+                      }
+                      if (trimmed.startsWith('/storage/v1/')) {
+                        return `https://nvdonaaxbtqjfmxtlgzb.supabase.co${trimmed}`;
+                      }
+                      return trimmed;
+                    })()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                    Mở ảnh trong thẻ mới
+                  </a>
+                )}
               </div>
             </>
           )}
