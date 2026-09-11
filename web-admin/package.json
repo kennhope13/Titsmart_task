@@ -1,19 +1,19 @@
 {
   "name": "buildcore-pro-web-admin",
   "private": true,
-  "version": "3.7.11",
+  "version": "3.7.12",
   "description": "TITSMART Project Manager",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "vite --host",
-    "dev:web": "cross-env WEB_ONLY=true vite --host",
-    "build": "tsc && vite build",
-    "build:mobile": "vite build --config vite.config.mobile.ts && npx cap sync",
-    "cap:open": "npx cap open android",
+    "dev": "vite --host --mode production",
+    "dev:local": "vite --host --mode development",
+    "dev:web": "cross-env WEB_ONLY=true vite --host --mode production",
+    "build": "tsc && vite build --mode production",
+    "build:mobile": "vite build --config vite.config.mobile.ts --mode production && npx cap sync",
     "preview": "vite preview",
-    "build:electron": "vite build && electron-builder",
-    "publish:win": "vite build && electron-builder --win --publish always"
+    "build:electron": "vite build --mode production && electron-builder",
+    "publish:win": "vite build --mode production && electron-builder --win --publish always"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",

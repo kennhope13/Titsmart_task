@@ -34,6 +34,9 @@ jobs:
 
     - name: Build Electron App
       working-directory: ./web-admin
+      env:
+        VITE_SUPABASE_URL: "https://nvdonaaxbtqjfmxtlgzb.supabase.co"
+        VITE_SUPABASE_ANON_KEY: "sb_publishable_gzUeVF_f2jadDuuii66pCw_W_0xmqjg"
       run: npm run build:electron -- --publish never
 
     - name: Upload Windows Artifacts
@@ -91,8 +94,11 @@ jobs:
 
     - name: Build Web Mobile Bundle & Sync Capacitor
       working-directory: ./web-admin
+      env:
+        VITE_SUPABASE_URL: "https://nvdonaaxbtqjfmxtlgzb.supabase.co"
+        VITE_SUPABASE_ANON_KEY: "sb_publishable_gzUeVF_f2jadDuuii66pCw_W_0xmqjg"
       run: |
-        npx vite build --config vite.config.mobile.ts
+        npx vite build --config vite.config.mobile.ts --mode production
         npx cap sync android
 
     - name: Make Gradlew Executable
