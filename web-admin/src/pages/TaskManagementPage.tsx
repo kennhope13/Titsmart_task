@@ -1454,17 +1454,17 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
 
     const sttToItemMap = new Map<string, any>();
     fullTasks.forEach((t) => {
-      if (t.stt) sttToItemMap.set(String(t.stt).trim(), t);
+      if (t.stt) sttToItemMap.set(`${t.projectCode || ''}:::${String(t.stt).trim()}`, t);
     });
 
-    // Resolve parent globally for all tasks
+    // Resolve parent globally for all tasks (strictly within same project)
     const resolveParentId = (item: any) => {
       if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) return item.parentId;
       if (item.stt && String(item.stt).includes('.')) {
         const parts = String(item.stt).split('.');
         parts.pop();
         const parentStt = parts.join('.');
-        const parentItem = sttToItemMap.get(parentStt);
+        const parentItem = sttToItemMap.get(`${item.projectCode || ''}:::${parentStt}`);
         if (parentItem && parentItem.id !== item.id && map.has(parentItem.id)) return parentItem.id;
       }
       return (item.parentId && item.parentId !== item.id) ? item.parentId : undefined;
