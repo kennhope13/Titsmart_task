@@ -6,7 +6,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Ba
 export const ProjectOverviewTab: React.FC = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { projects, tasks, expenses, engineers, materialPlans, documentTracks, fieldLogs } = useRealtimeStore();
+  const { projects, tasks, expenses, engineers, materialPlans, materials, fetchMaterials, documentTracks, fieldLogs } = useRealtimeStore();
 
   const project = useMemo(() => {
     if (!projectId) return undefined;
@@ -18,6 +18,12 @@ export const ProjectOverviewTab: React.FC = () => {
       return pCode === normKey || pId === normKey || pName === normKey;
     });
   }, [projectId, projects]);
+
+  React.useEffect(() => {
+    if (project) {
+      fetchMaterials(project.code || project.id);
+    }
+  }, [project?.id, project?.code]);
 
   if (!project) {
     return <div className="p-6 text-center text-slate-500">Không tìm thấy thông tin dự án.</div>;
@@ -33,10 +39,40 @@ export const ProjectOverviewTab: React.FC = () => {
   };
 
   // --- 1. TIẾN ĐỘ ---
-  const projTasks = tasks.filter(t => isProjectMatch(t.projectCode));
-  const totalTasks = projTasks.length;
-  const completedTasks = projTasks.filter(t => t.status === 'Hoàn thành' || t.isDone).length;
-  const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const projTasks = tasks.filter(t => isProjectMatch(t.projectCode) && !t.isSectionHeader);
+  
+  const isTaskCompleted = (t: typeof tasks[number]) => {
+    if (t.isDone) return true;
+    const st = String(t.status || '').trim().toLowerCase();
+    if (st === 'hoàn thành' || st === 'đã hoàn thành' || st === 'done' || st === 'completed') return true;
+    if (t.progress !== undefined && t.progress >= 1) return true;
+    const volDone = (t as any).volumeDone;
+    if (t.volume && volDone && Number(volDone) >= Number(t.volume) && Number(t.volume) > 0) return true;
+    return false;
+  };
+
+  const actualTotalTasks = projTasks.length > 0 ? projTasks.length : (project.totalTasks || 0);
+  const actualCompletedTasks = projTasks.length > 0 
+    ? projTasks.filter(isTaskCompleted).length 
+    : (project.completedTasks || 0);
+
+  let calculatedPercent = 0;
+  if (projTasks.length > 0) {
+    const totalProgressSum = projTasks.reduce((sum, t) => {
+      if (isTaskCompleted(t)) return sum + 100;
+      const prog = t.progress !== undefined ? (t.progress <= 1 ? t.progress * 100 : t.progress) : 0;
+      const volDone = (t as any).volumeDone;
+      const volProg = (t.volume && volDone && Number(t.volume) > 0) ? Math.min(100, (Number(volDone) / Number(t.volume)) * 100) : 0;
+      return sum + Math.max(prog, volProg);
+    }, 0);
+    calculatedPercent = Math.round(totalProgressSum / projTasks.length);
+  } else {
+    calculatedPercent = project.progressPercent || 0;
+  }
+
+  const totalTasks = actualTotalTasks;
+  const completedTasks = actualCompletedTasks;
+  const progressPercent = Math.min(100, Math.max(0, calculatedPercent));
 
   // --- 2. VẬT TƯ & CHI PHÍ ---
   const projExpenses = expenses.filter(e => isProjectMatch(e.projectCode));
@@ -51,10 +87,21 @@ export const ProjectOverviewTab: React.FC = () => {
   const docPercent = totalDocs > 0 ? Math.round((completedDocs / totalDocs) * 100) : 0;
 
   // --- 4. KHO DỰ ÁN ---
-  const projMaterials = materialPlans.filter(m => isProjectMatch(m.projectCode));
-  const totalMatEstimate = projMaterials.reduce((sum, m) => sum + (m.contractVolume || 0), 0);
-  const totalMatActual = projMaterials.reduce((sum, m) => sum + (m.orderedVolume || 0), 0);
-  const matPercent = totalMatEstimate > 0 ? Math.min(Math.round((totalMatActual / totalMatEstimate) * 100), 100) : 0;
+  const projMaterialPlans = materialPlans ? materialPlans.filter(m => isProjectMatch(m.projectCode)) : [];
+  const projWarehouseMaterials = materials ? materials.filter(m => isProjectMatch(m.projectCode)) : [];
+
+  const totalMatEstimate = projMaterialPlans.reduce((sum, m) => sum + (m.contractVolume || 0), 0);
+  
+  // Tính tổng số lượng vật tư đang có trong Kho thực tế (materials)
+  const totalWarehouseStock = projWarehouseMaterials.reduce((sum, m) => sum + (m.currentStock ?? m.volume ?? 0), 0);
+  const totalPlanOrdered = projMaterialPlans.reduce((sum, m) => sum + (m.orderedVolume || 0), 0);
+
+  // Ưu tiên hiển thị tổng tồn kho thực tế của Kho dự án nếu kho có dữ liệu, nếu không dùng từ Phụ lục mua sắm
+  const totalMatActual = projWarehouseMaterials.length > 0 ? totalWarehouseStock : totalPlanOrdered;
+
+  const matPercent = totalMatEstimate > 0 
+    ? Math.min(Math.round((totalMatActual / totalMatEstimate) * 100), 100) 
+    : (totalMatActual > 0 ? 100 : 0);
 
   // --- 5. NHẬT KÝ HIỆN TRƯỜNG ---
   const projLogs = fieldLogs ? fieldLogs.filter(l => isProjectMatch(l.projectCode)) : [];
