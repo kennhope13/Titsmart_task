@@ -1296,7 +1296,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             <td className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
                               {plan.stt}
                             </td>
-                            <td colSpan={colSpanCount + 1} className="bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={plan.jobContent?.startsWith(plan.stt + '.') || plan.jobContent?.startsWith(plan.stt + ' ') ? plan.jobContent : `${plan.stt ? plan.stt + ' - ' : ''}${plan.jobContent}`}>
+                            <td colSpan={colSpanCount + 1} className="bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={plan.jobContent}>
                               <div className="flex items-center gap-1.5 min-w-0 overflow-hidden whitespace-normal break-words">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
@@ -1310,11 +1310,14 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   {(() => {
                                     const content = plan.jobContent || '';
                                     const sttStr = String(plan.stt || '').trim();
+                                    // 1. Try matching plan.stt
                                     if (sttStr) {
                                       const pattern = new RegExp(`^${sttStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[-–—.]?\\s*`, 'i');
-                                      return content.replace(pattern, '');
+                                      const cleaned = content.replace(pattern, '').trim();
+                                      if (cleaned) return cleaned;
                                     }
-                                    return content;
+                                    // 2. Fallback: Strip any leading digits/letters STT pattern like "114 - " or "A - "
+                                    return content.replace(/^([0-9A-Z]{1,5}|[IVXLCDM]{1,8})\s*[-–—.]\s*/i, '').trim();
                                   })()}
                                 </span>
                                 {onAddSubtask && subTab !== 'FINANCE' && (
