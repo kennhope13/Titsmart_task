@@ -23,6 +23,7 @@ export const OfficeCostsPage: React.FC = () => {
 
   const [isNewExpenseOpen, setIsNewExpenseOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<any | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string; title: string } | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -40,9 +41,9 @@ export const OfficeCostsPage: React.FC = () => {
     spenderName: '',
     unit: 'cái',
     quantity: 1,
-    unitPrice: 0,
-    taxAmount: 0,
-    incomeAmount: 0,
+    unitPrice: '' as any,
+    taxAmount: '' as any,
+    incomeAmount: '' as any,
     notes: '',
     invoiceUrl: ''
   });
@@ -214,7 +215,7 @@ export const OfficeCostsPage: React.FC = () => {
                     <td className="px-2 py-1.5 text-left">{exp.unit}</td>
                     <td className="px-2 py-1.5 text-right">{exp.quantity || '-'}</td>
                     <td className="px-2 py-1.5 text-right whitespace-nowrap">{exp.unitPrice ? exp.unitPrice.toLocaleString('vi-VN') : '-'}</td>
-                    <td className="px-2 py-1.5 text-right whitespace-nowrap">{exp.taxAmount ? exp.taxAmount.toLocaleString('vi-VN') : '-'}</td>
+                    <td className="px-2 py-1.5 text-right whitespace-nowrap">{exp.taxAmount ? `${exp.taxAmount}%` : '-'}</td>
                     <td className="px-2 py-1.5 text-right font-bold text-rose-600 whitespace-nowrap">{exp.totalAmount ? exp.totalAmount.toLocaleString('vi-VN') : '-'}</td>
                     <td className="px-2 py-1.5 text-right font-bold text-emerald-600 whitespace-nowrap">{exp.incomeAmount ? exp.incomeAmount.toLocaleString('vi-VN') : '-'}</td>
                     <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
@@ -229,10 +230,11 @@ export const OfficeCostsPage: React.FC = () => {
                     {hasPermission(user, 'EDIT_EXPENSES') && (
                       <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => {
-                          if (window.confirm('Xóa chi phí này?')) {
-                            deleteExpense(exp.id);
-                            triggerToast('Đã xóa', 'success');
-                          }
+                          setDeleteConfirm({
+                            isOpen: true,
+                            id: exp.id,
+                            title: exp.description || exp.content || 'Chi phí'
+                          });
                         }} className="text-slate-400 hover:text-rose-500 p-1">
                           <span className="material-symbols-outlined text-[16px] block">delete</span>
                         </button>
@@ -260,8 +262,10 @@ export const OfficeCostsPage: React.FC = () => {
           try {
             const qty = Number(newExpenseData.quantity || 1);
             const price = Number(newExpenseData.unitPrice || 0);
-            const vat = Number(newExpenseData.taxAmount || 0);
-            const total = qty * price + vat;
+            const baseTotal = qty * price;
+            const vatPercent = Number(newExpenseData.taxAmount || 0);
+            const vatMoney = (baseTotal * vatPercent) / 100;
+            const total = baseTotal + vatMoney;
 
             await addExpense({
               projectCode: 'OFFICE',
@@ -273,7 +277,7 @@ export const OfficeCostsPage: React.FC = () => {
               unit: newExpenseData.unit || 'cái',
               quantity: qty,
               unitPrice: price,
-              taxAmount: vat,
+              taxAmount: vatPercent,
               totalAmount: total,
               incomeAmount: Number(newExpenseData.incomeAmount || 0),
               balanceFund: 0,
@@ -307,16 +311,23 @@ export const OfficeCostsPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newExpenseData.unit} onChange={(e) => setNewExpenseData({...newExpenseData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={newExpenseData.quantity} onChange={(e) => setNewExpenseData({...newExpenseData, quantity: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" step="any" value={newExpenseData.unitPrice} onChange={(e) => setNewExpenseData({...newExpenseData, unitPrice: (e.target.value as any)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+            <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={newExpenseData.quantity || ''} onChange={(e) => setNewExpenseData({...newExpenseData, quantity: e.target.value === '' ? '' as any : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" step="any" value={newExpenseData.unitPrice || ''} onChange={(e) => setNewExpenseData({...newExpenseData, unitPrice: e.target.value === '' ? '' as any : Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={newExpenseData.taxAmount} onChange={(e) => setNewExpenseData({...newExpenseData, taxAmount: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={newExpenseData.incomeAmount} onChange={(e) => setNewExpenseData({...newExpenseData, incomeAmount: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">VAT (%)</label><input type="number" step="any" placeholder="VD: 8 hoặc 10" value={newExpenseData.taxAmount || ''} onChange={(e) => setNewExpenseData({...newExpenseData, taxAmount: e.target.value === '' ? '' as any : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={newExpenseData.incomeAmount || ''} onChange={(e) => setNewExpenseData({...newExpenseData, incomeAmount: e.target.value === '' ? '' as any : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
               <label className="block font-bold mb-1 text-slate-500">Tổng cộng (Tạm tính)</label>
               <div className="w-full border rounded-lg p-2 bg-slate-50 font-black text-rose-600">
-                {((Number(newExpenseData.quantity || 1) * Number(newExpenseData.unitPrice || 0)) + Number(newExpenseData.taxAmount || 0)).toLocaleString('vi-VN')} đ
+                {(() => {
+                  const qty = Number(newExpenseData.quantity || 1);
+                  const price = Number(newExpenseData.unitPrice || 0);
+                  const baseTotal = qty * price;
+                  const vatPercent = Number(newExpenseData.taxAmount || 0);
+                  const vatMoney = (baseTotal * vatPercent) / 100;
+                  return (baseTotal + vatMoney).toLocaleString('vi-VN');
+                })()} đ
               </div>
             </div>
           </div>
@@ -341,8 +352,10 @@ export const OfficeCostsPage: React.FC = () => {
             try {
               const qty = Number(editingExpense.quantity || 1);
               const price = Number(editingExpense.unitPrice || 0);
-              const vat = Number(editingExpense.taxAmount || 0);
-              const total = qty * price + vat;
+              const baseTotal = qty * price;
+              const vatPercent = Number(editingExpense.taxAmount || 0);
+              const vatMoney = (baseTotal * vatPercent) / 100;
+              const total = baseTotal + vatMoney;
               await updateExpense(editingExpense.id, { ...editingExpense, totalAmount: total });
               setEditingExpense(null);
               triggerToast('Cập nhật thành công', 'success');
@@ -368,12 +381,12 @@ export const OfficeCostsPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingExpense.unit} onChange={(e) => setEditingExpense({...editingExpense, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={editingExpense.quantity} onChange={(e) => setEditingExpense({...editingExpense, quantity: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" step="any" value={editingExpense.unitPrice} onChange={(e) => setEditingExpense({...editingExpense, unitPrice: (e.target.value as any)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+              <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={editingExpense.quantity || ''} onChange={(e) => setEditingExpense({...editingExpense, quantity: e.target.value === '' ? '' as any : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" step="any" value={editingExpense.unitPrice || ''} onChange={(e) => setEditingExpense({...editingExpense, unitPrice: e.target.value === '' ? '' as any : Number(e.target.value)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={editingExpense.taxAmount} onChange={(e) => setEditingExpense({...editingExpense, taxAmount: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={editingExpense.incomeAmount} onChange={(e) => setEditingExpense({...editingExpense, incomeAmount: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">VAT (%)</label><input type="number" step="any" placeholder="VD: 8 hoặc 10" value={editingExpense.taxAmount || ''} onChange={(e) => setEditingExpense({...editingExpense, taxAmount: e.target.value === '' ? '' as any : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={editingExpense.incomeAmount || ''} onChange={(e) => setEditingExpense({...editingExpense, incomeAmount: e.target.value === '' ? '' as any : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white" /></div>
             </div>
             <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingExpense.notes} onChange={(e) => setEditingExpense({...editingExpense, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
@@ -400,6 +413,46 @@ export const OfficeCostsPage: React.FC = () => {
         >
           <div className="flex flex-col flex-1 h-full min-h-0">
             <FileViewerItem url={previewImage} index={0} />
+          </div>
+        </Modal>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteConfirm && (
+        <Modal
+          isOpen={deleteConfirm.isOpen}
+          onClose={() => setDeleteConfirm(null)}
+          title="Xác nhận xóa chi phí"
+          icon="warning"
+        >
+          <div className="p-4 space-y-4">
+            <p className="text-sm text-slate-700">
+              Bạn có chắc chắn muốn xóa khoản chi phí <strong className="text-rose-600">"{deleteConfirm.title}"</strong> này không?
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 border rounded-lg font-semibold hover:bg-slate-100 text-xs"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await deleteExpense(deleteConfirm.id);
+                    triggerToast('Đã xóa chi phí thành công!', 'success');
+                  } catch(e) {
+                    triggerToast('Lỗi khi xóa chi phí', 'warning');
+                  }
+                  setDeleteConfirm(null);
+                }}
+                className="px-4 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 text-xs shadow-xs"
+              >
+                Xác nhận xóa
+              </button>
+            </div>
           </div>
         </Modal>
       )}
