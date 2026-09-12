@@ -288,6 +288,24 @@ export const api = {
       
       return toCamelCase(result);
     },
+    updateTransaction: async (id: string, data: any) => {
+      const payload = toSnakeCase(data);
+      const allowedKeys = ['type', 'date', 'material_id', 'material_code', 'material_name', 'specs', 'category', 'unit', 'quantity', 'source_or_project', 'receiver_name', 'notes', 'updated_at', 'updated_by'];
+      const sanitizedPayload: any = {};
+      for (const key of Object.keys(payload)) {
+        if (allowedKeys.includes(key)) {
+          sanitizedPayload[key] = payload[key];
+        }
+      }
+      const { data: result, error } = await supabase.from('inventory_transactions').update(sanitizedPayload).eq('id', id).select().single();
+      if (error) throw error;
+      return toCamelCase(result);
+    },
+    deleteTransaction: async (id: string) => {
+      const { error } = await supabase.from('inventory_transactions').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    },
     create: async (data: any) => {
       const payload = toSnakeCase(data);
       if (payload.id && String(payload.id).startsWith('mat-')) {

@@ -248,6 +248,8 @@ interface RealtimeStoreState {
 
   addInventoryTransaction: (transaction: Omit<InventoryTransaction, 'id' | 'createdAt'>) => Promise<void>;
   addInventoryTransactionsBatch: (transactions: Omit<InventoryTransaction, 'id' | 'createdAt'>[]) => Promise<void>;
+  updateInventoryTransaction: (id: string, fields: Partial<InventoryTransaction>) => Promise<void>;
+  deleteInventoryTransaction: (id: string) => Promise<void>;
 
   addIssue: (issue: Omit<Issue, 'id'>) => void;
   updateIssueStatus: (id: string, status: IssueStatus) => void;
@@ -1213,6 +1215,50 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         persistAndNotify(nextState);
         return nextState;
       });
+    },
+
+    updateInventoryTransaction: async (id, fields) => {
+      try {
+        await api.materials.updateTransaction(id, fields);
+      } catch (e) {
+        console.error('Failed to update transaction on backend', e);
+      }
+      try {
+        const [freshMaterials, freshTransactions] = await Promise.all([
+          api.materials.getAll(undefined),
+          api.materials.getTransactions(),
+        ]);
+        if (Array.isArray(freshMaterials) && Array.isArray(freshTransactions)) {
+          set({
+            materials: mergeMaterialsWithSeed(freshMaterials),
+            inventoryTransactions: freshTransactions,
+          });
+        }
+      } catch (syncErr) {
+        console.warn('Sync after update failed', syncErr);
+      }
+    },
+
+    deleteInventoryTransaction: async (id) => {
+      try {
+        await api.materials.deleteTransaction(id);
+      } catch (e) {
+        console.error('Failed to delete transaction on backend', e);
+      }
+      try {
+        const [freshMaterials, freshTransactions] = await Promise.all([
+          api.materials.getAll(undefined),
+          api.materials.getTransactions(),
+        ]);
+        if (Array.isArray(freshMaterials) && Array.isArray(freshTransactions)) {
+          set({
+            materials: mergeMaterialsWithSeed(freshMaterials),
+            inventoryTransactions: freshTransactions,
+          });
+        }
+      } catch (syncErr) {
+        console.warn('Sync after delete failed', syncErr);
+      }
     },
 
     addIssue: (issueData) => {

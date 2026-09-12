@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal } from '../../components/common/Modal';
 import { Material, InventoryTransaction } from '../../types';
-import { formatNumber, materialCurrentStock } from './inventoryUtils';
+import { formatNumber } from './inventoryUtils';
+import { useRealtimeStore } from '../../services/realtimeStore';
 
 interface MaterialHistoryModalProps {
   isOpen: boolean;
@@ -16,6 +17,11 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
   transactions,
   onClose,
 }) => {
+  const { updateInventoryTransaction, deleteInventoryTransaction } = useRealtimeStore();
+  const [editingTx, setEditingTx] = useState<InventoryTransaction | null>(null);
+  const [deletingTx, setDeletingTx] = useState<InventoryTransaction | null>(null);
+  const [loading, setLoading] = useState(false);
+
   if (!material) return null;
 
   // Filter transactions belonging to this material
@@ -52,6 +58,37 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
 
   // Tồn kho hiện tại = Tồn đầu kỳ + Tổng Nhập từ giao dịch - Tổng Xuất từ giao dịch
   const currentStock = (material.initialStock || 0) + (totalImported || material.totalImport || 0) - (totalExported || material.totalExport || 0);
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTx) return;
+    setLoading(true);
+    try {
+      await updateInventoryTransaction(editingTx.id, {
+        quantity: Number(editingTx.quantity || 0),
+        sourceOrProject: editingTx.sourceOrProject,
+        receiverName: editingTx.receiverName,
+        notes: editingTx.notes,
+        date: editingTx.date
+      });
+      setEditingTx(null);
+    } catch(err) {
+      console.error('Update transaction failed:', err);
+    }
+    setLoading(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingTx) return;
+    setLoading(true);
+    try {
+      await deleteInventoryTransaction(deletingTx.id);
+      setDeletingTx(null);
+    } catch(err) {
+      console.error('Delete transaction failed:', err);
+    }
+    setLoading(false);
+  };
 
   return (
     <Modal
@@ -105,20 +142,21 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase">
                 <tr>
-                  <th className="w-12 p-2.5 text-center">STT</th>
+                  <th className="w-10 p-2.5 text-center">STT</th>
                   <th className="w-24 p-2.5">Ngày</th>
                   <th className="w-24 p-2.5 text-center">Loại GD</th>
                   <th className="w-24 p-2.5 text-right">Số lượng</th>
                   <th className="p-2.5">Nguồn nhập / Dự án nhận</th>
                   <th className="w-28 p-2.5">Người nhận</th>
                   <th className="p-2.5">Ghi chú</th>
+                  <th className="w-20 p-2.5 text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                 {history.map((tx, idx) => {
                   const isImport = tx.type === 'IMPORT';
                   return (
-                    <tr key={tx.id || idx} className="hover:bg-slate-50 transition-colors">
+                    <tr key={tx.id || idx} className="hover:bg-slate-50 transition-colors align-middle">
                       <td className="p-2.5 text-center text-slate-400">{idx + 1}</td>
                       <td className="p-2.5 font-semibold text-slate-800">
                         {tx.date ? new Date(tx.date).toLocaleDateString('vi-VN') : '-'}
@@ -151,12 +189,32 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
                       <td className="p-2.5 text-slate-500 italic">
                         {tx.notes || '-'}
                       </td>
+                      <td className="p-2.5 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setEditingTx(tx)}
+                            className="p-1 text-slate-400 hover:text-primary rounded hover:bg-slate-100 transition-colors"
+                            title="Sửa giao dịch"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingTx(tx)}
+                            className="p-1 text-slate-400 hover:text-rose-500 rounded hover:bg-slate-100 transition-colors"
+                            title="Xóa giao dịch"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
                 {history.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-slate-400 italic">
+                    <td colSpan={8} className="p-8 text-center text-slate-400 italic">
                       Chưa có lịch sử giao dịch nhập/xuất kho cho vật tư này.
                     </td>
                   </tr>
@@ -165,6 +223,121 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
             </table>
           </div>
         </div>
+
+        {/* Modal Edit Transaction */}
+        {editingTx && (
+          <Modal
+            isOpen={true}
+            onClose={() => setEditingTx(null)}
+            title={`Sửa Giao Dịch (${editingTx.type === 'IMPORT' ? 'Nhập Kho' : 'Xuất Kho'})`}
+          >
+            <form onSubmit={handleSaveEdit} className="space-y-3 p-1 text-xs">
+              <div>
+                <label className="block font-bold mb-1">Ngày giao dịch</label>
+                <input
+                  type="date"
+                  value={editingTx.date || ''}
+                  onChange={(e) => setEditingTx({ ...editingTx, date: e.target.value })}
+                  className="w-full border rounded-lg p-2 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block font-bold mb-1">Số lượng</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={editingTx.quantity || ''}
+                  onChange={(e) => setEditingTx({ ...editingTx, quantity: e.target.value === '' ? '' as any : Number(e.target.value) })}
+                  className="w-full border rounded-lg p-2 font-bold bg-white"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block font-bold mb-1">
+                  {editingTx.type === 'IMPORT' ? 'Nguồn nhập' : 'Dự án nhận'}
+                </label>
+                <input
+                  type="text"
+                  value={editingTx.sourceOrProject || ''}
+                  onChange={(e) => setEditingTx({ ...editingTx, sourceOrProject: e.target.value })}
+                  className="w-full border rounded-lg p-2 bg-white"
+                />
+              </div>
+              {editingTx.type === 'EXPORT' && (
+                <div>
+                  <label className="block font-bold mb-1">Người nhận</label>
+                  <input
+                    type="text"
+                    value={editingTx.receiverName || ''}
+                    onChange={(e) => setEditingTx({ ...editingTx, receiverName: e.target.value })}
+                    className="w-full border rounded-lg p-2 bg-white"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block font-bold mb-1">Ghi chú</label>
+                <input
+                  type="text"
+                  value={editingTx.notes || ''}
+                  onChange={(e) => setEditingTx({ ...editingTx, notes: e.target.value })}
+                  className="w-full border rounded-lg p-2 bg-white"
+                />
+              </div>
+              <div className="pt-3 border-t flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingTx(null)}
+                  className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50"
+                >
+                  Lưu thay đổi
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
+
+        {/* Modal Delete Confirmation */}
+        {deletingTx && (
+          <Modal
+            isOpen={true}
+            onClose={() => setDeletingTx(null)}
+            title="Xác nhận xóa giao dịch"
+            icon="warning"
+          >
+            <div className="p-2 space-y-4 text-xs">
+              <p className="text-slate-700">
+                Bạn có chắc muốn xóa phiếu <strong className="text-rose-600">{deletingTx.type === 'IMPORT' ? 'Nhập kho' : 'Xuất kho'}</strong> với số lượng <strong className="font-bold">{deletingTx.quantity} {material.unit}</strong> không?
+              </p>
+              <p className="text-slate-500 italic text-[11px]">
+                * Sau khi xóa, tồn kho hiện tại sẽ được tự động tính toán lại.
+              </p>
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <button
+                  type="button"
+                  onClick={() => setDeletingTx(null)}
+                  className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={loading}
+                  className="px-4 py-1.5 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 shadow-xs"
+                >
+                  Xác nhận xóa
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
 
         <div className="pt-2 flex justify-end border-t border-slate-100">
           <button
@@ -179,3 +352,4 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
     </Modal>
   );
 };
+
