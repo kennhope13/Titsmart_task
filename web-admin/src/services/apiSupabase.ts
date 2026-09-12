@@ -494,7 +494,16 @@ export const api = {
     create: async (data: any) => {
       const payload = toSnakeCase(data);
       const { data: result, error } = await supabase.from('activity_logs').insert(payload).select().single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          delete payload.updated_at;
+          delete payload.updated_by;
+          const { data: retryResult, error: retryError } = await supabase.from('activity_logs').insert(payload).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
   },

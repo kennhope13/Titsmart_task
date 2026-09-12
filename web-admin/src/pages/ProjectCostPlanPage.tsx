@@ -137,7 +137,7 @@ const isEffectiveContractorPlan = (plan: ProjectMaterialPlan, allPlans: ProjectM
 };
 
 export const ProjectCostPlanPage: React.FC = () => {
-  console.log('[DEBUG_VERSION] v1.1.90 - Realtime and fix regex enabled');
+// Cleaned debug log
   const {
     projects,
     materialPlans,
