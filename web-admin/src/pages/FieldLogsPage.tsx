@@ -91,13 +91,16 @@ const UploadModal: React.FC<{
   projects: { code: string; name: string }[];
   editLog?: any;
   onClose: () => void;
-  onUpload: (input: { projectCode: string; note: string; images: string[]; taskId?: string }) => Promise<void>;
-  onUpdate?: (id: string, input: { note: string; images: string[]; existingImages: string[]; taskId?: string }) => Promise<void>;
+  onUpload: (input: { projectCode: string; note: string; images: string[]; taskId?: string; timestamp?: string }) => Promise<void>;
+  onUpdate?: (id: string, input: { note: string; images: string[]; existingImages: string[]; taskId?: string; timestamp?: string }) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
 }> = ({ defaultProjectCode, defaultTaskId, projects, editLog, onClose, onUpload, onUpdate, onDelete }) => {
   const [projectCode, setProjectCode] = useState(editLog?.projectCode || defaultProjectCode || '');
   const [note, setNote] = useState(editLog?.note || '');
   const [taskId, setTaskId] = useState(editLog?.taskId || defaultTaskId || '');
+  const todayStr = new Date().toISOString().split('T')[0];
+  const initialDate = editLog?.timestamp ? new Date(editLog.timestamp).toISOString().split('T')[0] : todayStr;
+  const [logDate, setLogDate] = useState(initialDate);
   const { tasks } = useRealtimeStore();
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>(editLog?.images || []);
@@ -150,10 +153,11 @@ const UploadModal: React.FC<{
         const { data: { publicUrl } } = supabase.storage.from('titsmart-images').getPublicUrl(filePath);
         urls.push(publicUrl);
       }
+      const timestampIso = logDate ? new Date(`${logDate}T12:00:00`).toISOString() : new Date().toISOString();
       if (editLog && onUpdate) {
-        await onUpdate(editLog.id, { note, images: urls, existingImages, taskId });
+        await onUpdate(editLog.id, { note, images: urls, existingImages, taskId, timestamp: timestampIso });
       } else {
-        await onUpload({ projectCode, note, images: urls, taskId });
+        await onUpload({ projectCode, note, images: urls, taskId, timestamp: timestampIso });
       }
       onClose();
     } catch (err: any) {
@@ -211,6 +215,18 @@ const UploadModal: React.FC<{
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </CustomSelect>
+        </div>
+
+        {/* Thời gian thi công */}
+        <div>
+          <label className="block font-bold text-slate-700 mb-1">Thời gian thi công / Ngày báo cáo *</label>
+          <input
+            type="date"
+            value={logDate}
+            onChange={(e) => setLogDate(e.target.value)}
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white text-slate-800 font-semibold"
+          />
+          <p className="mt-1 text-[11px] text-slate-400">Tùy chọn ngày thực tế thi công (ví dụ: báo cáo bổ sung cho các ngày trước)</p>
         </div>
 
         {/* Ghi chú */}

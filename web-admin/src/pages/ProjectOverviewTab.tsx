@@ -109,10 +109,9 @@ export const ProjectOverviewTab: React.FC = () => {
   
   // Tính tổng số lượng vật tư đang có trong Kho thực tế (materials)
   const totalWarehouseStock = projWarehouseMaterials.reduce((sum, m) => sum + (m.currentStock ?? m.volume ?? 0), 0);
-  const totalPlanOrdered = projMaterialPlans.reduce((sum, m) => sum + (m.orderedVolume || 0), 0);
 
-  // Ưu tiên hiển thị tổng tồn kho thực tế của Kho dự án nếu kho có dữ liệu, nếu không dùng từ Phụ lục mua sắm
-  const totalMatActual = projWarehouseMaterials.length > 0 ? totalWarehouseStock : totalPlanOrdered;
+  // Hiển thị chính xác tổng tồn kho thực tế của Kho dự án (nếu Kho rỗng thì hiển thị 0)
+  const totalMatActual = totalWarehouseStock;
 
   const matPercent = totalMatEstimate > 0 
     ? Math.min(Math.round((totalMatActual / totalMatEstimate) * 100), 100) 
