@@ -206,6 +206,12 @@ export const ProjectManagementPage: React.FC = () => {
       const idKey = norm(proj.id);
       const nameKey = norm(proj.name);
 
+      // Exclude internal Office project card from main project cards list (it has its own dedicated Chi phí văn phòng tab)
+      const isOfficeProject = codeKey === 'OFFICE' || codeKey === 'VAN_PHONG' || (nameKey === 'VAN PHONG' && (codeKey === 'OFFICE' || codeKey === 'VAN_PHONG'));
+      if (isOfficeProject) {
+        return;
+      }
+
       if ((codeKey && seenKeys.has(codeKey)) || (idKey && seenKeys.has(idKey))) {
         return;
       }
