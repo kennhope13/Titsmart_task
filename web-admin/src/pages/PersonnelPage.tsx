@@ -253,6 +253,31 @@ export const PersonnelPage: React.FC = () => {
 
         triggerToast(`Đã cập nhật nhân sự "${name.trim()}" thành công!`, 'success');
       } else {
+        // KIỂM TRA TRÙNG LẶP TRƯỚC KHI TẠO MỚI
+        const normalizeStr = (str: string) => (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase().trim();
+        const targetUsername = username.trim().toLowerCase();
+        const targetName = normalizeStr(name);
+        const targetPhone = phone.trim();
+
+        const duplicate = engineers.find(eng => {
+          if (eng.role === 'Quản trị viên' || (eng as any).username === 'admin') return false;
+          const engUsername = ((eng as any).username || '').trim().toLowerCase();
+          const engName = normalizeStr(eng.name || '');
+          const engPhone = (eng.phone || '').trim();
+
+          const matchUsername = targetUsername && engUsername && engUsername === targetUsername;
+          const matchName = targetName && engName === targetName;
+          const matchPhone = targetPhone && targetPhone.length >= 8 && engPhone === targetPhone;
+
+          return matchUsername || matchName || (matchPhone && matchName);
+        });
+
+        if (duplicate) {
+          triggerToast(`Cảnh báo: Nhân sự "${duplicate.name}" (Tài khoản/Mã: ${(duplicate as any).username || duplicate.code || 'Đã tồn tại'}) đã có trong hệ thống! Vui lòng kiểm tra và chỉnh sửa nhân sự sẵn có thay vì tạo trùng lặp.`, 'warning');
+          setSubmitting(false);
+          return;
+        }
+
         await createEngineer({
           name: name.trim(),
           phone,
@@ -261,7 +286,7 @@ export const PersonnelPage: React.FC = () => {
           username: username.trim(),
           password,
           projectCodes: finalProjectCodes,
-            permissions,
+          permissions,
         });
         triggerToast(`Đã thêm nhân sự "${name.trim()}" và gán ${selectedProjectCodes.length} dự án!`, 'success');
       }
