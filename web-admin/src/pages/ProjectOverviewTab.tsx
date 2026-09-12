@@ -81,9 +81,24 @@ export const ProjectOverviewTab: React.FC = () => {
   const budgetPercent = contractValue > 0 ? Math.min(Math.round((totalExpense / contractValue) * 100), 100) : 0;
 
   // --- 3. HỒ SƠ ---
-  const projDocs = documentTracks ? documentTracks.filter(d => isProjectMatch(d.projectCode)) : [];
+  const projDocs = documentTracks 
+    ? documentTracks.filter(d => isProjectMatch(d.projectCode) || isProjectMatch(d.projectId)) 
+    : [];
   const totalDocs = projDocs.length;
-  const completedDocs = projDocs.filter(d => d.docStatus === 'Hoàn thành' || d.docStatus === 'Đã duyệt').length;
+
+  const isDocCompleted = (d: typeof documentTracks[number]) => {
+    if (d.isCompleted) return true;
+    const st = String(d.docStatus || '').toLowerCase();
+    return st.includes('ký') || 
+           st.includes('đủ') || 
+           st.includes('hoàn thành') || 
+           st.includes('duyệt') || 
+           st.includes('đã nhận') ||
+           st === 'done' || 
+           st === 'approved';
+  };
+
+  const completedDocs = projDocs.filter(isDocCompleted).length;
   const docPercent = totalDocs > 0 ? Math.round((completedDocs / totalDocs) * 100) : 0;
 
   // --- 4. KHO DỰ ÁN ---
