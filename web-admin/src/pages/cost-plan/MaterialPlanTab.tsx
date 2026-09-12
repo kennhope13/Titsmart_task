@@ -141,6 +141,12 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
       return isParentRow(plan) && (plan.parentId === null || !plan.parentId);
     };
 
+    const orderTagValue = (notes?: string): number | null => {
+      const m = String(notes || '').match(/\[order:([\d.]+)\]/);
+      return m ? parseFloat(m[1]) : null;
+    };
+    const originalOrderMap = new Map<string, number>(filtered.map((r, i) => [r.id, orderTagValue(r.notes) ?? i]));
+
     const sectionSortKey = (r: ProjectMaterialPlan): number[] => {
       const stt = String(r.stt || '').trim();
       if (/^[A-Z]{1,2}$/i.test(stt)) return [0, stt.charCodeAt(0)];
@@ -151,6 +157,9 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
     [...filtered]
       .filter(r => isRootSectionRow(r))
       .sort((a, b) => {
+        const orderA = orderTagValue(a.notes);
+        const orderB = orderTagValue(b.notes);
+        if (orderA !== null && orderB !== null && orderA !== orderB) return orderA - orderB;
         const ka = sectionSortKey(a), kb = sectionSortKey(b);
         for (let i = 0; i < Math.max(ka.length, kb.length); i++) {
           const diff = (ka[i] ?? Infinity) - (kb[i] ?? Infinity);
@@ -159,12 +168,6 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
         return 0;
       })
       .forEach((r, i) => sectionOrder.set(r.id, i));
-
-    const orderTagValue = (notes?: string): number | null => {
-      const m = String(notes || '').match(/\[order:([\d.]+)\]/);
-      return m ? parseFloat(m[1]) : null;
-    };
-    const originalOrderMap = new Map<string, number>(filtered.map((r, i) => [r.id, orderTagValue(r.notes) ?? i]));
 
     const resolveParentId = (plan: ProjectMaterialPlan): string | undefined => {
       if (plan.stt && plan.stt.includes('.')) {
@@ -577,7 +580,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         <td className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
                           {plan.stt}
                         </td>
-                        <td colSpan={colSpanCount} className=" bg-blue-50/90  px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={`${plan.stt ? plan.stt + ' - ' : ''}${plan.jobContent}`}>
+                        <td colSpan={colSpanCount} className=" bg-blue-50/90  px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={plan.jobContent}>
                           <div className="flex items-center gap-2 min-w-0 overflow-hidden whitespace-normal break-words">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
@@ -588,7 +591,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             </button>
                             <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
                             <span className="flex-1 cursor-pointer hover:underline break-words leading-tight" onClick={(e) => { e.stopPropagation(); onEdit?.(plan); }}>
-                              {plan.stt ? `${plan.stt} - ` : ''}{plan.jobContent}
+                              {plan.jobContent}
                             </span>
                             {onAddSubtask && (
                               <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">

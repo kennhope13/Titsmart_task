@@ -45,12 +45,8 @@ const isParentRow = (plan: ProjectMaterialPlan) => {
   if (notes.includes('[section]')) return true;
 
   const stt = String(plan.stt || '').trim().toUpperCase();
-  const isSecPattern = /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
-  if (isSecPattern) return true;
-
-  // Header row without volume or unit price, e.g. 114 with long text section title
-  if (stt && !stt.includes('.') && (!plan.volume || plan.volume === 0) && (!plan.unit || plan.unit === '')) return true;
-  return false;
+  const isSecPattern = /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || stt.startsWith('PHẦN');
+  return isSecPattern;
 };
 
 const isRootSectionRow = (plan: ProjectMaterialPlan) => {
@@ -503,6 +499,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       return /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (isParentRow(plan) && !plan.parentId);
     };
 
+    const orderTagValue = (notes?: string): number | null => {
+      const m = String(notes || '').match(/\[order:([\d.]+)\]/);
+      return m ? parseFloat(m[1]) : null;
+    };
+    const originalOrderMap = new Map<string, number>(filtered.map((r, i) => [r.id, orderTagValue(r.notes) ?? i]));
+
     const sectionSortKey = (r: ProjectMaterialPlan): number[] => {
       const stt = String(r.stt || '').trim();
       if (/^[A-Z]{1,2}$/i.test(stt)) return [0, stt.charCodeAt(0)];
@@ -513,6 +515,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     [...filtered]
       .filter(r => isRootSectionRow(r))
       .sort((a, b) => {
+        const orderA = orderTagValue(a.notes);
+        const orderB = orderTagValue(b.notes);
+        if (orderA !== null && orderB !== null && orderA !== orderB) return orderA - orderB;
         const ka = sectionSortKey(a), kb = sectionSortKey(b);
         for (let i = 0; i < Math.max(ka.length, kb.length); i++) {
           const diff = (ka[i] ?? -1) - (kb[i] ?? -1);
@@ -521,12 +526,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         return 0;
       })
       .forEach((r, i) => sectionOrder.set(r.id, i));
-
-    const orderTagValue = (notes?: string): number | null => {
-      const m = String(notes || '').match(/\[order:([\d.]+)\]/);
-      return m ? parseFloat(m[1]) : null;
-    };
-    const originalOrderMap = new Map<string, number>(filtered.map((r, i) => [r.id, orderTagValue(r.notes) ?? i]));
 
     const resolveParentId = (plan: ProjectMaterialPlan): string | undefined => {
       if (plan.stt && plan.stt.includes('.')) {
@@ -1307,18 +1306,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </button>
                                 <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
                                 <span className="flex-1 cursor-pointer hover:underline break-words leading-tight" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }}>
-                                  {(() => {
-                                    const content = plan.jobContent || '';
-                                    const sttStr = String(plan.stt || '').trim();
-                                    // 1. Try matching plan.stt
-                                    if (sttStr) {
-                                      const pattern = new RegExp(`^${sttStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[-–—.]?\\s*`, 'i');
-                                      const cleaned = content.replace(pattern, '').trim();
-                                      if (cleaned) return cleaned;
-                                    }
-                                    // 2. Fallback: Strip any leading digits/letters STT pattern like "114 - " or "A - "
-                                    return content.replace(/^([0-9A-Z]{1,5}|[IVXLCDM]{1,8})\s*[-–—.]\s*/i, '').trim();
-                                  })()}
+                                  {plan.jobContent}
                                 </span>
                                 {onAddSubtask && subTab !== 'FINANCE' && (
                                   <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">

@@ -533,12 +533,16 @@ export const api = {
       const payloads = dataArray.map(toSnakeCase);
       const { data: result, error } = await supabase.from('material_plans').insert(payloads).select();
       if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('updated_at') || String(error.message).includes('updated_by')) {
-          payloads.forEach(p => {
-            delete p.updated_at;
-            delete p.updated_by;
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('dispatch_to_site')) {
+          const allowedKeys = ['id', 'parent_id', 'project_code', 'stt', 'job_content', 'unit', 'contract_volume', 'tech_spec_model', 'tech_spec_origin', 'progress_status', 'ordered_volume', 'ordered_status', 'expected_date', 'issue_content', 'issue_status', 'doc_co', 'doc_cq', 'doc_fire_inspection', 'supply_scope', 'notes'];
+          const cleanedPayloads = payloads.map(p => {
+            const cleanObj: any = {};
+            for (const key of Object.keys(p)) {
+              if (allowedKeys.includes(key)) cleanObj[key] = p[key];
+            }
+            return cleanObj;
           });
-          const { data: retryResult, error: retryError } = await supabase.from('material_plans').insert(payloads).select();
+          const { data: retryResult, error: retryError } = await supabase.from('material_plans').insert(cleanedPayloads).select();
           if (retryError) throw retryError;
           return mapArray(retryResult || []);
         }
@@ -558,7 +562,7 @@ export const api = {
           const { data: retryResult, error: retryError } = await supabase.from('material_plans').update(payload).eq('id', id).select().single();
           if (retryError) {
             if (retryError.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
-            throw retryError;
+            if (retryError) throw retryError;
           }
           return toCamelCase(retryResult);
         }
@@ -599,13 +603,15 @@ export const api = {
       const { data: result, error } = await supabase.from('purchasing_plans').insert(payloads).select();
       if (error) {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
-          payloads.forEach(p => {
-             delete p.parent_id;
-             delete p.material_plan_id;
-             delete p.updated_at;
-             delete p.updated_by;
+          const allowedKeys = ['id', 'project_code', 'stt', 'content', 'unit', 'volume_contract', 'volume_order', 'unit_price', 'vat_rate', 'vat_amount', 'total_amount', 'prepay_percent', 'prepay_amount', 'remaining_amount', 'order_status', 'contract_status', 'invoice_status', 'notes', 'expected_date', 'payment_date'];
+          const cleanedPayloads = payloads.map(p => {
+            const cleanObj: any = {};
+            for (const key of Object.keys(p)) {
+              if (allowedKeys.includes(key)) cleanObj[key] = p[key];
+            }
+            return cleanObj;
           });
-          const { data: retryResult, error: retryError } = await supabase.from('purchasing_plans').insert(payloads).select();
+          const { data: retryResult, error: retryError } = await supabase.from('purchasing_plans').insert(cleanedPayloads).select();
           if (retryError) throw retryError;
           return retryResult.map((r: any, i: number) => toCamelCase({ ...r, parent_id: dataArray[i].parentId, material_plan_id: dataArray[i].materialPlanId }));
         }

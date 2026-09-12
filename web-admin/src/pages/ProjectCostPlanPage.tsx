@@ -605,14 +605,14 @@ export const ProjectCostPlanPage: React.FC = () => {
               if (isSummaryRow) return;
 
               const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
-              const numericParentRegex = /^\d+$/;
               const isRoman = romanRegex.test(stt);
               const cleanStt = String(stt || '').trim().replace(/\.$/, '');
-              const hasNoDot = !cleanStt.includes('.');
               const startsWithPhan = content.trim().toUpperCase().startsWith('PHẦN ');
               const cleanUnitVal = String(row[unitCol] || '').replace(/^[-–—_.\s]+$/, '').trim();
               const hasNoVolumeAndUnit = (volumeContract === 0 || !volumeContract) && (!cleanUnitVal || cleanUnitVal === '');
-              const isSection = (startsWithPhan || isMainSectionName(content) || hasNoDot) && hasNoVolumeAndUnit;
+
+              const isSectionPattern = isRoman || /^[A-Z]{1,2}$/i.test(cleanStt) || startsWithPhan || isMainSectionName(content);
+              const isSection = isSectionPattern && hasNoVolumeAndUnit;
 
               if (stt.startsWith('26') || stt.startsWith('27')) {
                 debugLogs.push(`[DEBUG] Row:${index + headerRowIndex + 2} | STT:${stt} | isSec:${isSection} | vol:${volumeContract} | unit:${cleanUnitVal} | hasNoVolUnit:${hasNoVolumeAndUnit} | content:${content.substring(0,30)}`);
