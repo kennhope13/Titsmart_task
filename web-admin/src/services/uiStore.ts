@@ -15,7 +15,7 @@ export const useUIStore = create<UIStoreState>()(
     (set) => ({
       sidebarHoverToExpand: false,
       sidebarShowToggleButton: true,
-      showNotificationBell: false,
+      showNotificationBell: true,
       setSidebarHoverToExpand: (val) => set({ sidebarHoverToExpand: val }),
       setSidebarShowToggleButton: (val) => set({ sidebarShowToggleButton: val }),
       setShowNotificationBell: (val) => set({ showNotificationBell: val }),
