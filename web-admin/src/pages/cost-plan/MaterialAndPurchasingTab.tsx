@@ -46,7 +46,11 @@ const isParentRow = (plan: ProjectMaterialPlan) => {
 
   const stt = String(plan.stt || '').trim().toUpperCase();
   const isSecPattern = /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
-  return isSecPattern;
+  if (isSecPattern) return true;
+
+  // Header row without volume or unit price, e.g. 114 with long text section title
+  if (stt && !stt.includes('.') && (!plan.volume || plan.volume === 0) && (!plan.unit || plan.unit === '')) return true;
+  return false;
 };
 
 const isRootSectionRow = (plan: ProjectMaterialPlan) => {
@@ -1225,6 +1229,15 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 if (currentDepth > 15) return; // Safety guard against OOM crash
 
                 nodes.sort((a, b) => {
+                  const orderTagValue = (notes?: string): number | null => {
+                    const m = String(notes || '').match(/\[order:([\d.]+)\]/);
+                    return m ? parseFloat(m[1]) : null;
+                  };
+                  const orderA = orderTagValue(a.notes);
+                  const orderB = orderTagValue(b.notes);
+                  if (orderA !== null && orderB !== null && orderA !== orderB) {
+                    return orderA - orderB;
+                  }
                   const sttCompare = compareTaskStt(a.stt, b.stt);
                   if (sttCompare !== 0) return sttCompare;
                   return (a.jobContent || a.name || '').localeCompare(b.jobContent || b.name || '', 'vi', { numeric: true, sensitivity: 'base' });
@@ -1294,7 +1307,15 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 </button>
                                 <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
                                 <span className="flex-1 cursor-pointer hover:underline break-words leading-tight" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }}>
-                                  {plan.jobContent?.startsWith(plan.stt + '.') || plan.jobContent?.startsWith(plan.stt + ' ') ? plan.jobContent : `${plan.stt ? plan.stt + ' - ' : ''}${plan.jobContent}`}
+                                  {(() => {
+                                    const content = plan.jobContent || '';
+                                    const sttStr = String(plan.stt || '').trim();
+                                    if (sttStr) {
+                                      const pattern = new RegExp(`^${sttStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[-–—.]?\\s*`, 'i');
+                                      return content.replace(pattern, '');
+                                    }
+                                    return content;
+                                  })()}
                                 </span>
                                 {onAddSubtask && subTab !== 'FINANCE' && (
                                   <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">

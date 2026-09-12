@@ -940,6 +940,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     updateEngineer: async (id, input) => {
+      get().markMutation();
       const existing = get().engineers.find(e => e.id === id);
       const updateData: any = {};
       if (input.name !== undefined) updateData.name = input.name;
@@ -963,12 +964,13 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
 
       const updated = await api.engineers.update(id, updateData);
-      set((state) => {
-        const nextEngineers = state.engineers.map((eng) => (eng.id === id ? { ...eng, ...updated } : eng));
-        persistAndNotify({ engineers: nextEngineers });
-        return { engineers: nextEngineers };
+      
+      // Fetch fresh engineers from DB to obtain synced project relations and updated state
+      const freshEngineers = await api.engineers.getAll();
+      set(() => {
+        persistAndNotify({ engineers: freshEngineers });
+        return { engineers: freshEngineers };
       });
-      await get().fetchEngineers();
       get().logActivity('Đã cập nhật nhân sự: ' + (input.name || existing?.name || id), input.name || existing?.name || id);
       return updated;
     },

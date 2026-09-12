@@ -190,12 +190,12 @@ export const PersonnelPage: React.FC = () => {
     setUsername((person as any).username || '');
     setPassword('');
     
-    // Check original projectCodes from DB and combine with assignedProjects
-    const rawProjectCodes = (person as any).projectCodes || (person as any).project_codes || [];
-    const assignedCodes = person.assignedProjects ? person.assignedProjects.map((project: any) => project.code) : [];
-    const combinedCodes = Array.from(new Set([...(Array.isArray(rawProjectCodes) ? rawProjectCodes : []), ...assignedCodes])).filter(Boolean);
+    // Read projectCodes directly from engineer object in engineers store
+    const eng = engineers.find(e => e.id === person.id) || person;
+    const rawProjectCodes = (eng as any).projectCodes || (eng as any).project_codes || [];
+    const initialCodes = Array.isArray(rawProjectCodes) ? rawProjectCodes : [];
     
-    setSelectedProjectCodes(combinedCodes);
+    setSelectedProjectCodes(initialCodes);
     setIsFormOpen(true);
   };
 
@@ -220,8 +220,37 @@ export const PersonnelPage: React.FC = () => {
           ...(username ? { username: username.trim() } : {}),
           ...(password ? { password } : {}),
           projectCodes: finalProjectCodes,
-            permissions,
+          permissions,
         });
+
+        // Synchronize updated personnel with projects member arrays
+        const engId = editingPersonId;
+        const targetCodesUpper = finalProjectCodes.map(c => String(c || '').trim().toUpperCase());
+        const projectSyncPromises: Promise<any>[] = [];
+        
+        for (const proj of projects) {
+          const pCodeUpper = String(proj.code || '').trim().toUpperCase();
+          const pIdUpper = String(proj.id || '').trim().toUpperCase();
+          const currentMembers = Array.isArray(proj.members) ? proj.members : [];
+          const currentMemberIds = Array.isArray(proj.memberIds) ? proj.memberIds : [];
+          
+          const isAssigned = targetCodesUpper.includes(pCodeUpper) || targetCodesUpper.includes(pIdUpper);
+          const hasMember = currentMembers.includes(engId) || currentMemberIds.includes(engId);
+
+          if (isAssigned && !hasMember) {
+            const nextMembers = Array.from(new Set([...currentMembers, engId]));
+            const nextMemberIds = Array.from(new Set([...currentMemberIds, engId]));
+            projectSyncPromises.push(useRealtimeStore.getState().updateProject(proj.id, { members: nextMembers, memberIds: nextMemberIds }));
+          } else if (!isAssigned && hasMember) {
+            const nextMembers = currentMembers.filter(m => m !== engId);
+            const nextMemberIds = currentMemberIds.filter(m => m !== engId);
+            projectSyncPromises.push(useRealtimeStore.getState().updateProject(proj.id, { members: nextMembers, memberIds: nextMemberIds }));
+          }
+        }
+        if (projectSyncPromises.length > 0) {
+          await Promise.all(projectSyncPromises).catch(err => console.warn('Project member sync failed:', err));
+        }
+
         triggerToast(`Đã cập nhật nhân sự "${name.trim()}" thành công!`, 'success');
       } else {
         await createEngineer({
