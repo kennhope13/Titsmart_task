@@ -124,7 +124,7 @@ export const OfficeCostsPage: React.FC = () => {
               }
 
               addExpense({
-                projectCode: 'VAN_PHONG',
+                projectCode: 'OFFICE',
                 stt: String(currentProjExpenses.length + 1),
                 date: new Date().toISOString().split('T')[0],
                 content: 'Quỹ',
@@ -264,7 +264,7 @@ export const OfficeCostsPage: React.FC = () => {
             const total = qty * price + vat;
 
             await addExpense({
-              projectCode: 'VAN_PHONG',
+              projectCode: 'OFFICE',
               stt: String(currentProjExpenses.length + 1),
               date: newExpenseData.date || new Date().toISOString().split('T')[0],
               content: newExpenseData.content || 'Văn phòng phẩm',
