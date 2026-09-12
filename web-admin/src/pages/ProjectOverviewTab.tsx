@@ -9,43 +9,88 @@ export const ProjectOverviewTab: React.FC = () => {
   const { projects, tasks, expenses, engineers, materialPlans, documentTracks, fieldLogs } = useRealtimeStore();
 
   const project = useMemo(() => {
-    return projects.find(p => p.id === projectId || p.code === projectId);
+    if (!projectId) return undefined;
+    const normKey = String(projectId).trim().toUpperCase();
+    return projects.find(p => {
+      const pCode = String(p.code || '').trim().toUpperCase();
+      const pId = String(p.id || '').trim().toUpperCase();
+      const pName = String(p.name || '').trim().toUpperCase();
+      return pCode === normKey || pId === normKey || pName === normKey;
+    });
   }, [projectId, projects]);
 
   if (!project) {
     return <div className="p-6 text-center text-slate-500">Không tìm thấy thông tin dự án.</div>;
   }
 
+  const pCodeUpper = String(project.code || '').trim().toUpperCase();
+  const pIdUpper = String(project.id || '').trim().toUpperCase();
+  const pNameUpper = String(project.name || '').trim().toUpperCase();
+
+  const isProjectMatch = (codeOrId?: string) => {
+    const u = String(codeOrId || '').trim().toUpperCase();
+    return u && (u === pCodeUpper || u === pIdUpper || u === pNameUpper);
+  };
+
   // --- 1. TIẾN ĐỘ ---
-  const projTasks = tasks.filter(t => t.projectCode === project.code);
+  const projTasks = tasks.filter(t => isProjectMatch(t.projectCode));
   const totalTasks = projTasks.length;
-  const completedTasks = projTasks.filter(t => t.status === 'Hoàn thành').length;
+  const completedTasks = projTasks.filter(t => t.status === 'Hoàn thành' || t.isDone).length;
   const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // --- 2. VẬT TƯ & CHI PHÍ ---
-  const projExpenses = expenses.filter(e => e.projectCode === project.code);
+  const projExpenses = expenses.filter(e => isProjectMatch(e.projectCode));
   const totalExpense = projExpenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
   const contractValue = project.contractValue || 0;
   const budgetPercent = contractValue > 0 ? Math.min(Math.round((totalExpense / contractValue) * 100), 100) : 0;
 
   // --- 3. HỒ SƠ ---
-  const projDocs = documentTracks ? documentTracks.filter(d => d.projectCode === project.code) : [];
+  const projDocs = documentTracks ? documentTracks.filter(d => isProjectMatch(d.projectCode)) : [];
   const totalDocs = projDocs.length;
   const completedDocs = projDocs.filter(d => d.docStatus === 'Hoàn thành' || d.docStatus === 'Đã duyệt').length;
   const docPercent = totalDocs > 0 ? Math.round((completedDocs / totalDocs) * 100) : 0;
 
   // --- 4. KHO DỰ ÁN ---
-  const projMaterials = materialPlans.filter(m => m.projectCode === project.code);
+  const projMaterials = materialPlans.filter(m => isProjectMatch(m.projectCode));
   const totalMatEstimate = projMaterials.reduce((sum, m) => sum + (m.contractVolume || 0), 0);
   const totalMatActual = projMaterials.reduce((sum, m) => sum + (m.orderedVolume || 0), 0);
   const matPercent = totalMatEstimate > 0 ? Math.min(Math.round((totalMatActual / totalMatEstimate) * 100), 100) : 0;
 
   // --- 5. NHẬT KÝ HIỆN TRƯỜNG ---
-  const projLogs = fieldLogs ? fieldLogs.filter(l => l.projectCode === project.code) : [];
+  const projLogs = fieldLogs ? fieldLogs.filter(l => isProjectMatch(l.projectCode)) : [];
   const totalLogs = projLogs.length;
 
   // --- 6. NHÂN SỰ ---
-  const assignedEngineers = engineers.filter(eng => Array.isArray(eng.projectCodes) && eng.projectCodes.includes(project.code));
+  const assignedEngineers = useMemo(() => {
+    const isAdminAccount = (eng: any) => {
+      const roleLower = String(eng.role || '').trim().toLowerCase();
+      const usernameLower = String(eng.username || eng.email || '').trim().toLowerCase();
+      const nameLower = String(eng.name || '').trim().toLowerCase();
+      return roleLower === 'admin' || roleLower === 'quản trị viên' || usernameLower === 'admin' || nameLower === 'admin' || nameLower === 'quản trị viên';
+    };
+
+    const memberNamesFromEngineers = engineers
+      .filter((eng) => {
+        if (isAdminAccount(eng)) return false;
+        const isMember = (Array.isArray(project.members) && project.members.includes(eng.id)) ||
+                         (Array.isArray(project.memberIds) && project.memberIds.includes(eng.id));
+        const hasCode = Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => isProjectMatch(c));
+        const hasManaged = eng.managedProjects?.some(p => isProjectMatch(p.code || p.name));
+        const hasMemberProj = eng.memberProjects?.some(p => isProjectMatch(p.code || p.name));
+        return isMember || hasCode || hasManaged || hasMemberProj;
+      })
+      .map((eng) => eng.name);
+
+    let managerNames: string[] = [];
+    if (project.managerName && project.managerName !== 'Chưa phân công') {
+      managerNames = project.managerName
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => Boolean(s) && s.toLowerCase() !== 'admin' && s.toLowerCase() !== 'quản trị viên');
+    }
+
+    return Array.from(new Set([...memberNamesFromEngineers, ...managerNames]));
+  }, [engineers, project]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);

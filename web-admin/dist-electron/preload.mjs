@@ -1,18 +1,1 @@
-"use strict";
-const electron = require("electron");
-electron.contextBridge.exposeInMainWorld("electronAPI", {
-  on: (channel, callback) => {
-    electron.ipcRenderer.on(channel, (_, data) => callback(data));
-  },
-  send: (channel, data) => {
-    electron.ipcRenderer.send(channel, data);
-  },
-  // Auto-update
-  onUpdateStatus: (callback) => {
-    electron.ipcRenderer.on("update:status", (_, payload) => callback(payload));
-  },
-  checkForUpdates: () => electron.ipcRenderer.send("update:check"),
-  downloadUpdate: () => electron.ipcRenderer.send("update:download"),
-  installUpdate: () => electron.ipcRenderer.send("update:install"),
-  openExternal: (url) => electron.ipcRenderer.send("open-external", url)
-});
+"use strict";const e=require("electron");e.contextBridge.exposeInMainWorld("electronAPI",{on:(n,d)=>{e.ipcRenderer.on(n,(r,t)=>d(t))},send:(n,d)=>{e.ipcRenderer.send(n,d)},onUpdateStatus:n=>{e.ipcRenderer.on("update:status",(d,r)=>n(r))},checkForUpdates:()=>e.ipcRenderer.send("update:check"),downloadUpdate:()=>e.ipcRenderer.send("update:download"),installUpdate:()=>e.ipcRenderer.send("update:install"),openExternal:n=>e.ipcRenderer.send("open-external",n)});
