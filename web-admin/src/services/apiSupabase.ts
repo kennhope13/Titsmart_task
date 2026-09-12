@@ -82,6 +82,7 @@ export const api = {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
           delete payload.updated_by;
           delete payload.updated_at;
+          delete payload.diagram_url;
           const { data: retryResult, error: retryError } = await supabase.from('projects').insert(payload).select().single();
           if (retryError) throw retryError;
           const audit = getCurrentAuditPayload();
@@ -104,8 +105,21 @@ export const api = {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
           delete payload.updated_by;
           delete payload.updated_at;
-          const { data: retryResult, error: retryError } = await supabase.from('projects').update(payload).eq('id', id).select().single();
-          if (retryError) throw retryError;
+          const retryPayload = { ...payload };
+          if (error.message.includes('diagram_url')) {
+            delete retryPayload.diagram_url;
+          }
+          const { data: retryResult, error: retryError } = await supabase.from('projects').update(retryPayload).eq('id', id).select().single();
+          if (retryError) {
+            if (retryError.code === 'PGRST204' || String(retryError.message).includes('diagram_url')) {
+              delete retryPayload.diagram_url;
+              const { data: retry2, error: err2 } = await supabase.from('projects').update(retryPayload).eq('id', id).select().single();
+              if (err2) throw err2;
+              const audit = getCurrentAuditPayload();
+              return toCamelCase({ updated_by: audit.updated_by, updated_at: audit.updated_at, ...data, ...retry2 });
+            }
+            throw retryError;
+          }
           const audit = getCurrentAuditPayload();
           return toCamelCase({ updated_by: audit.updated_by, updated_at: audit.updated_at, ...data, ...retryResult });
         }

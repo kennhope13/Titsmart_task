@@ -155,124 +155,96 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const isRotated90 = Math.abs(rotation % 180) === 90;
 
   const getContentTransformStyle = (): React.CSSProperties => {
-    const base: React.CSSProperties = {
-      transform: `translate(${position.x}px, ${position.y}px) scale(${zoom}) rotate(${rotation}deg)`,
-      transformOrigin: 'center center',
-      transition: isDragging ? 'none' : 'transform 100ms ease-out, width 200ms ease, height 200ms ease',
-    };
-
+    let scaleMultiplier = 1;
     if (isRotated90 && containerSize.w > 0 && containerSize.h > 0) {
-      // Swap width & height so after 90/270 degree rotation, visual dimensions match container (W, H)
-      base.width = `${containerSize.h}px`;
-      base.height = `${containerSize.w}px`;
-    } else {
-      base.width = '100%';
-      base.height = '100%';
+      // Keep exact 1:1 scale ratio so rotated PDF doesn't shrink into empty space
+      scaleMultiplier = containerSize.w / containerSize.h;
     }
 
-    return base;
+    return {
+      transform: `translate(${position.x}px, ${position.y}px) scale(${zoom * scaleMultiplier}) rotate(${rotation}deg)`,
+      transformOrigin: 'center center',
+      transition: isDragging ? 'none' : 'transform 100ms ease-out',
+      width: '100%',
+      height: '100%',
+    };
   };
 
-  const isPanActive = dragMode || (zoom > 1 && (position.x !== 0 || position.y !== 0));
+  const isPanActive = dragMode || zoom !== 1 || position.x !== 0 || position.y !== 0;
 
   return (
-    <div className="flex flex-col border border-slate-200 rounded-lg p-1.5 sm:p-2 bg-white shadow-sm flex-1 min-h-0 h-full select-none">
-      {/* Header Toolbar */}
-      <div className="flex flex-wrap justify-between items-center mb-1.5 gap-2 shrink-0 border-b border-slate-100 pb-1.5">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-800 truncate">
-            Tài liệu {index + 1}
-          </span>
-          <span className="text-[11px] text-slate-400 italic hidden md:inline">
-            (💡 Xem tài liệu sắc nét HD | Chuyển chế độ Cuộn file / Bàn tay kéo | Giữ <kbd className="px-1 bg-slate-100 border border-slate-300 rounded font-sans not-italic font-bold text-[10px]">Ctrl</kbd> + Cuộn chuột để Thu/Phóng)
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          {/* Toggle Hand Drag Mode / Scroll Mode */}
-          {!isImage && (
-            <button
-              onClick={handleToggleDragMode}
-              title={dragMode ? 'Đang ở Chế độ Bàn tay kéo (Nhấp để về Chế độ Cuộn file)' : 'Đang ở Chế độ Cuộn file (Nhấp để sang Chế độ Bàn tay kéo)'}
-              className={`flex items-center gap-1 h-[26px] px-2 rounded-md text-[11px] font-bold border transition-all ${
-                dragMode
-                  ? 'bg-blue-50 text-primary border-blue-200 shadow-xs'
-                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[14px]">
-                {dragMode ? 'pan_tool' : 'touch_app'}
-              </span>
-              {dragMode ? 'Bàn tay kéo' : 'Cuộn file'}
-            </button>
-          )}
-
-          {/* Zoom controls */}
-          <div className="flex items-center gap-0.5 bg-slate-100 px-1 py-0.5 rounded-md border border-slate-200 text-xs">
-            <button
-              onClick={handleZoomOut}
-              title="Thu nhỏ (-)"
-              className="p-0.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
-            >
-              <span className="material-symbols-outlined text-[15px]">remove</span>
-            </button>
-            <span className="px-1 font-bold text-slate-700 text-[11px] min-w-[38px] text-center">
-              {Math.round(zoom * 100)}%
+    <div className="flex flex-col border border-slate-200 rounded-lg p-0.5 sm:p-1 bg-white shadow-sm flex-1 min-h-0 h-full select-none">
+      {/* Header Toolbar (Only for Image / Excel) */}
+      {(isImage || isExcel) && (
+        <div className="flex flex-wrap justify-between items-center mb-1 gap-2 shrink-0 border-b border-slate-100 pb-1 px-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-800 truncate">
+              Tài liệu {index + 1}
             </span>
-            <button
-              onClick={handleZoomIn}
-              title="Phóng to (+)"
-              className="p-0.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
-            >
-              <span className="material-symbols-outlined text-[15px]">add</span>
-            </button>
-            <button
-              onClick={handleReset}
-              title="Khôi phục mặc định"
-              className="px-1.5 py-0.5 text-[10px] font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors border-l border-slate-200 ml-0.5"
-            >
-              100%
-            </button>
           </div>
 
-          {/* Rotate Button */}
-          <button
-            onClick={handleRotate}
-            title="Xoay 90 độ"
-            className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 h-[26px] px-2 rounded-md text-[11px] font-bold transition-all"
-          >
-            <span className="material-symbols-outlined text-[14px]">rotate_left</span> Xoay
-          </button>
+          <div className="flex items-center gap-1.5">
+            {/* Zoom controls for Image */}
+            {isImage && (
+              <div className="flex items-center gap-0.5 bg-slate-100 px-1 py-0.5 rounded-md border border-slate-200 text-xs">
+                <button
+                  onClick={handleZoomOut}
+                  title="Thu nhỏ (-)"
+                  className="p-0.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[15px]">remove</span>
+                </button>
+                <span className="px-1 font-bold text-slate-700 text-[11px] min-w-[38px] text-center">
+                  {Math.round(zoom * 100)}%
+                </span>
+                <button
+                  onClick={handleZoomIn}
+                  title="Phóng to (+)"
+                  className="p-0.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[15px]">add</span>
+                </button>
+                <button
+                  onClick={handleReset}
+                  title="Khôi phục mặc định"
+                  className="px-1.5 py-0.5 text-[10px] font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors border-l border-slate-200 ml-0.5"
+                >
+                  100%
+                </button>
+              </div>
+            )}
 
-          {/* Download Button */}
-          <a
-            href={`${url}?download=`}
-            download
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1 bg-primary text-white h-[26px] px-2.5 rounded-md text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs"
-          >
-            <span className="material-symbols-outlined text-[13px]">download</span> Tải về
-          </a>
+            {/* Rotate Button for Image */}
+            {isImage && (
+              <button
+                onClick={handleRotate}
+                title="Xoay 90 độ"
+                className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 h-[26px] px-2 rounded-md text-[11px] font-bold transition-all"
+              >
+                <span className="material-symbols-outlined text-[14px]">rotate_left</span> Xoay
+              </button>
+            )}
+
+            {/* Download Button */}
+            <a
+              href={`${url}?download=`}
+              download
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 bg-primary text-white h-[26px] px-2.5 rounded-md text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[13px]">download</span> Tải về
+            </a>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Single Crisp Document Viewport */}
       <div className="w-full flex-1 flex min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-hidden border border-slate-200">
         <div
           ref={containerRef}
-          onMouseDown={handleMouseDown}
-          className={`flex-1 min-h-0 relative h-full flex items-center justify-center p-1 select-none ${
-            isPanActive ? 'overflow-hidden' : 'overflow-auto always-visible-scrollbar'
-          } ${isPanActive ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
+          className="flex-1 min-h-0 relative h-full flex items-center justify-center p-1 select-none overflow-hidden"
         >
-          {/* Overlay to capture mouse dragging ONLY when Bàn tay kéo is ON */}
-          {isPanActive && !isImage && (
-            <div
-              onMouseDown={handleMouseDown}
-              className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
-            />
-          )}
 
           <div className="w-full h-full flex items-center justify-center">
             {isImage ? (
@@ -294,7 +266,6 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
                     <div 
                       className="excel-viewer-table flex-1 overflow-auto p-4 text-xs text-slate-800"
                       dangerouslySetInnerHTML={{ __html: sheetsHtmlMap[activeSheet] }} 
-                      style={getContentTransformStyle()}
                     />
                     
                     {/* Excel Sheet Tabs Bar at bottom */}
@@ -350,10 +321,9 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
                   src={
                     /\.(doc|docx|ppt|pptx)$/i.test(url)
                       ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
-                      : `${url}#page=1&view=FitH&pagemode=none&toolbar=0&navpanes=0`
+                      : url
                   }
                   className="w-full h-full rounded border border-slate-200 bg-white shadow-xs"
-                  style={getContentTransformStyle()}
                   title={`File ${index + 1}`}
                 />
               </div>

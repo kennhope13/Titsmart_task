@@ -104,7 +104,7 @@ export const ProjectDiagramTab: React.FC = () => {
       
       const updated = await updateProject(project.id, { diagramUrl: combinedUrls });
       if (!updated) {
-        alert('Không thể lưu sơ đồ! Lỗi Database: Bảng "projects" chưa có cột "diagram_url".');
+        alert('Cơ sở dữ liệu Supabase local chưa có cột "diagram_url". Vui lòng thêm cột "diagram_url" (TEXT) vào bảng "projects" trong Supabase!');
       } else {
         handleCloseModal();
         triggerToast('Lưu sơ đồ dự án thành công!', 'success');
