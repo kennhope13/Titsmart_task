@@ -634,11 +634,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     };
 
     const sortedFiltered = filtered.sort((a, b) => {
-      const cmp = compareSttHierarchy(a.stt, b.stt);
-      if (cmp !== 0) return cmp;
       const posA = originalOrderMap.get(a.id) ?? 0;
       const posB = originalOrderMap.get(b.id) ?? 0;
-      return posA - posB;
+      if (posA !== posB) return posA - posB;
+      return compareSttHierarchy(a.stt, b.stt);
     });
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
   }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder, filterModel, filterOrigin, filterDocs, filterExpectedDateFrom, filterExpectedDateTo, filterContractStatus, filterPaymentDate, filterInvoiceStatus, purchasingMatchMap]);
