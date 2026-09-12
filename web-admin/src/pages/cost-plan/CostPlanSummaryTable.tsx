@@ -31,7 +31,8 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
         bySpender[name] = { chi: 0, quy: 0 };
       }
       
-      const chi = exp.totalAmount || 0;
+      const isFundRow = (exp.content || '').trim().toLowerCase() === 'quỹ';
+      const chi = isFundRow ? 0 : (exp.totalAmount || 0);
       const quy = exp.incomeAmount || 0;
       
       bySpender[name].chi += chi;
@@ -76,7 +77,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                   className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800 cursor-pointer hover:bg-slate-50 transition-colors"
                   onClick={() => {
                     if (!editingProjectFund) {
-                      setProjectFundInput(summary.totalProjectFund.toString());
+                      setProjectFundInput(summary.totalProjectFund === 0 ? '' : summary.totalProjectFund.toString());
                       setEditingProjectFund(true);
                     }
                   }}

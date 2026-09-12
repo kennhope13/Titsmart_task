@@ -1926,7 +1926,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                       taxAmount: 0,
                       totalAmount: 0,
                       incomeAmount: diff,
-                      balanceFund: diff
+                      balanceFund: diff,
+                      notes: user?.name || user?.username || 'Cấp quỹ'
                     } as any);
                   }
                   triggerToast(`Đã cập nhật ${title.toLowerCase()}`, 'success');

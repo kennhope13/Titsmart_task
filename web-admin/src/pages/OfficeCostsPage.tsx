@@ -116,13 +116,8 @@ export const OfficeCostsPage: React.FC = () => {
               let targetName = name;
               if (name === '__PROJECT__') targetName = 'CÔNG TY';
 
-              const inputAmount = window.prompt(`Nhập số tiền muốn cấp cho ${targetName} (VND):`, '');
-              if (!inputAmount) return;
-              const fundVal = parseFloat(inputAmount.replace(/,/g, ''));
-              if (isNaN(fundVal) || fundVal <= 0) {
-                triggerToast('Số tiền không hợp lệ!', 'warning');
-                return;
-              }
+              const fundVal = amount !== undefined ? amount : 0;
+              if (fundVal <= 0) return;
 
               addExpense({
                 projectCode: 'OFFICE',
@@ -132,13 +127,13 @@ export const OfficeCostsPage: React.FC = () => {
                 description: `Cấp quỹ cho ${targetName}`,
                 spenderName: targetName,
                 unit: 'lần',
-                quantity: 1,
-                unitPrice: fundVal,
+                quantity: 0,
+                unitPrice: 0,
                 taxAmount: 0,
-                totalAmount: fundVal,
+                totalAmount: 0,
                 incomeAmount: fundVal,
                 balanceFund: 0,
-                notes: 'Tự động cấp quỹ'
+                notes: user?.name || user?.username || 'Cấp quỹ',
               });
               triggerToast(`Đã cấp quỹ ${fundVal.toLocaleString('vi-VN')} đ cho ${targetName}!`, 'success');
             }}
