@@ -584,11 +584,15 @@ export const ProjectCostPlanPage: React.FC = () => {
             const parsedRows = rows.slice(headerRowIndex + 1);
             parsedRows.forEach((row, index) => {
               const actualContent = row[contentCol] !== undefined ? String(row[contentCol]) : String(row[sttCol] || '');
-              const content = actualContent.trim();
+              let content = actualContent.trim();
               if (!content) return;
-              // Remove aggressive regex
 
               const stt = String(row[sttCol] || '').trim();
+              // Clean leading STT prefix from content if content starts with STT e.g. "114 - PHẦN CÀI ĐẶT..." -> "PHẦN CÀI ĐẶT..."
+              if (stt) {
+                const sttPattern = new RegExp(`^${stt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[-–—.]?\\s*`, 'i');
+                content = content.replace(sttPattern, '').trim();
+              }
               const volumeContract = numVal(row[volumeCol]);
               const unitPrice = numVal(row[unitPriceCol]);
               const totalBeforeVat = numVal(row[preTaxCol]) || volumeContract * unitPrice;
