@@ -64,12 +64,13 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
     if (!editingTx) return;
     setLoading(true);
     try {
+      const formattedDate = editingTx.date ? (editingTx.date.includes('T') ? editingTx.date.split('T')[0] : editingTx.date.slice(0, 10)) : undefined;
       await updateInventoryTransaction(editingTx.id, {
         quantity: Number(editingTx.quantity || 0),
         sourceOrProject: editingTx.sourceOrProject,
         receiverName: editingTx.receiverName,
         notes: editingTx.notes,
-        date: editingTx.date
+        date: formattedDate
       });
       setEditingTx(null);
     } catch(err) {
@@ -236,7 +237,7 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
                 <label className="block font-bold mb-1">Ngày giao dịch</label>
                 <input
                   type="date"
-                  value={editingTx.date || ''}
+                  value={editingTx.date ? (editingTx.date.includes('T') ? editingTx.date.split('T')[0] : editingTx.date.slice(0, 10)) : ''}
                   onChange={(e) => setEditingTx({ ...editingTx, date: e.target.value })}
                   className="w-full border rounded-lg p-2 bg-white"
                 />

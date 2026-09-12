@@ -298,7 +298,16 @@ export const api = {
         }
       }
       const { data: result, error } = await supabase.from('inventory_transactions').update(sanitizedPayload).eq('id', id).select().single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('updated_at') || String(error.message).includes('updated_by')) {
+          delete sanitizedPayload.updated_at;
+          delete sanitizedPayload.updated_by;
+          const { data: retryResult, error: retryError } = await supabase.from('inventory_transactions').update(sanitizedPayload).eq('id', id).select().single();
+          if (retryError) throw retryError;
+          return toCamelCase(retryResult);
+        }
+        throw error;
+      }
       return toCamelCase(result);
     },
     deleteTransaction: async (id: string) => {
