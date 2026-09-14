@@ -554,14 +554,20 @@ export const DocumentTrackingPage: React.FC = () => {
                     <td className="px-1 py-1 text-center whitespace-nowrap">
                       {(() => {
                         const info = getDueInfo(track);
-                        if (track.isCompleted) {
-                          return <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Đã xong</span>;
-                        }
                         const effDate = track.dueDate || track.receiveDate || track.sendDate;
+                        const dueStr = effDate ? new Date(effDate).toLocaleDateString('vi-VN') : (track.updatedAt ? new Date(track.updatedAt).toLocaleDateString('vi-VN') : '');
+
+                        if (info.status === 'none' && (track.isCompleted || (track.docStatus === 'Đã ký' || track.docStatus === 'Đã nhận đủ') && track.paymentStatus?.includes('Đã'))) {
+                          return (
+                            <div className="flex flex-col items-center">
+                              <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Đã xong</span>
+                              {dueStr && <span className="text-[9px] text-slate-400 font-mono mt-0.5">{dueStr}</span>}
+                            </div>
+                          );
+                        }
                         if (!effDate) {
                           return <span className="text-slate-300 italic text-[10px]">-</span>;
                         }
-                        const dueStr = new Date(effDate).toLocaleDateString('vi-VN');
                         if (info.status === 'overdue') {
                           return (
                             <div className="flex flex-col items-center">
