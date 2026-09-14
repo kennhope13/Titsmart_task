@@ -606,12 +606,12 @@ export const DocumentTrackingPage: React.FC = () => {
                       )}
                     </td>
                     <td className="px-1 py-1 text-center">
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                      <span className={`text-[10px] font-bold ${
                         track.docStatus === 'Đã ký' || track.docStatus === 'Đã nhận đủ' 
-                          ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' 
+                          ? 'text-emerald-700' 
                           : track.docStatus === 'Chưa ký' || track.docStatus === 'Chưa nhận'
-                          ? 'text-amber-700 bg-amber-50 border border-amber-200 font-bold'
-                          : 'text-slate-600 bg-slate-100'
+                          ? 'text-amber-700 font-bold'
+                          : 'text-slate-600'
                       }`}>
                         {track.docStatus || 'Chưa ký'}
                       </span>

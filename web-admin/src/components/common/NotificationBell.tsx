@@ -11,8 +11,24 @@ export const NotificationBell: React.FC = () => {
   const [showPopover, setShowPopover] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
 
+  const [startupPopupOpen, setStartupPopupOpen] = useState(false);
+  const hasCheckedRef = useRef(false);
+
+  // Auto pop-up on app launch if there are unread due notifications
+  const dueNotifs = notifications.filter(n => (n.id.startsWith('due-doc-') || n.title.includes('hạn')) && !n.read);
+
+  useEffect(() => {
+    if (!hasCheckedRef.current && dueNotifs.length > 0) {
+      hasCheckedRef.current = true;
+      // Slight delay so app loads smoothly
+      const timer = setTimeout(() => {
+        setStartupPopupOpen(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [dueNotifs.length]);
+
   const unreadCount = notifications.filter(item => !item.read).length;
-  const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -96,6 +112,61 @@ export const NotificationBell: React.FC = () => {
                 );
               })
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Startup Popup Alert Modal */}
+      {startupPopupOpen && dueNotifs.length > 0 && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-gradient-to-r from-amber-500 to-rose-500 p-4 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2 font-bold text-sm">
+                <span className="material-symbols-outlined text-xl animate-bounce">notifications_active</span>
+                Cảnh báo Hạn nộp Hồ sơ!
+              </div>
+              <button 
+                onClick={() => setStartupPopupOpen(false)}
+                className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+            
+            <div className="p-4 max-h-[60vh] overflow-y-auto space-y-2.5">
+              <p className="text-xs text-slate-600 font-medium mb-3">
+                Hệ thống phát hiện có <strong className="text-rose-600">{dueNotifs.length} hồ sơ</strong> đến hạn hoặc đã quá hạn nộp:
+              </p>
+              {dueNotifs.map(item => (
+                <div key={item.id} className="p-3 bg-amber-50/60 border border-amber-200 rounded-xl text-xs flex gap-2.5 items-start">
+                  <span className="material-symbols-outlined text-amber-600 text-lg flex-shrink-0 mt-0.5">
+                    {item.icon || 'warning'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-slate-900">{item.title}</h4>
+                    <p className="text-slate-700 leading-snug mt-0.5">{item.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  dueNotifs.forEach(n => markNotificationRead(n.id));
+                  setStartupPopupOpen(false);
+                }}
+                className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+              >
+                Đã hiểu & Đánh dấu đã đọc
+              </button>
+              <button
+                onClick={() => setStartupPopupOpen(false)}
+                className="px-4 py-1.5 bg-primary hover:opacity-90 text-white text-xs font-bold rounded-lg shadow-xs transition-all cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

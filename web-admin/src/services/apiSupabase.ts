@@ -835,15 +835,10 @@ export const api = {
 
       try {
         const { data: result, error } = await supabase.from('document_tracks').insert(fullPayload).select().single();
-        if (error) {
-          console.warn('[DocumentTrack] fullPayload insert error:', error.message, error.details, error.hint, error.code);
-        } else if (result) {
-          console.log('[DocumentTrack] Successfully inserted via fullPayload:', result);
+        if (!error && result) {
           return toCamelCase(result);
         }
-      } catch (err) {
-        console.warn('[DocumentTrack] fullPayload insert exception:', err);
-      }
+      } catch {}
 
       // Fallback for minimal standard schema (local/cloud before ALTER TABLE)
       const formattedContractName = data.contractNo
@@ -864,7 +859,6 @@ export const api = {
       try {
         const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(minPayload).select().single();
         if (retryError) {
-          console.warn('[DocumentTrack] minPayload insert error, trying ultraMinPayload:', retryError.message);
           const ultraMinPayload: any = {
             notes: data.notes || formattedContractName || 'Hồ sơ'
           };
@@ -874,19 +868,14 @@ export const api = {
 
           const { data: ultraResult, error: ultraError } = await supabase.from('document_tracks').insert(ultraMinPayload).select().single();
           if (ultraError) {
-            console.warn('[DocumentTrack] ultraMinPayload error, trying absolute bare minimum insert:', ultraError.message);
-            // Absolute bare minimum fallback to guarantee row insert on any schema
             const barePayload: any = { notes: data.notes || formattedContractName || 'Hồ sơ' };
             const { data: bareResult } = await supabase.from('document_tracks').insert(barePayload).select().single();
             return { ...data, ...toCamelCase(bareResult), id: bareResult?.id || `doc-${Date.now()}` };
           }
-          console.log('[DocumentTrack] Successfully inserted via ultraMinPayload:', ultraResult);
           return { ...data, ...toCamelCase(ultraResult), id: ultraResult.id };
         }
-        console.log('[DocumentTrack] Successfully inserted via minPayload:', retryResult);
         return { ...data, ...toCamelCase(retryResult), id: retryResult.id };
-      } catch (err) {
-        console.warn('[DocumentTrack] Supabase insert fallback maintaining local state:', err);
+      } catch {
         return { id: data.id || `doc-${Date.now()}`, ...data };
       }
     },
