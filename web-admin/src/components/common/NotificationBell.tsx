@@ -14,8 +14,17 @@ export const NotificationBell: React.FC = () => {
   const [startupPopupOpen, setStartupPopupOpen] = useState(false);
   const hasCheckedRef = useRef(false);
 
-  // Auto pop-up on app launch if there are unread due notifications
-  const dueNotifs = notifications.filter(n => (n.id.startsWith('due-doc-') || n.title.includes('hạn')) && !n.read);
+  // Auto pop-up on app launch if there are unread due notifications (deduplicated by title + message)
+  const rawDueNotifs = notifications.filter(n => (n.id.startsWith('due-doc-') || n.title.includes('hạn')) && !n.read);
+  const dueNotifs = React.useMemo(() => {
+    const seen = new Set<string>();
+    return rawDueNotifs.filter(n => {
+      const key = `${n.title}:::${n.message}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [rawDueNotifs]);
 
   useEffect(() => {
     if (!hasCheckedRef.current && dueNotifs.length > 0) {
@@ -137,17 +146,24 @@ export const NotificationBell: React.FC = () => {
               <p className="text-xs text-slate-600 font-medium mb-3">
                 Hệ thống phát hiện có <strong className="text-rose-600">{dueNotifs.length} hồ sơ</strong> đến hạn hoặc đã quá hạn nộp:
               </p>
-              {dueNotifs.map(item => (
-                <div key={item.id} className="p-3 bg-amber-50/60 border border-amber-200 rounded-xl text-xs flex gap-2.5 items-start">
-                  <span className="material-symbols-outlined text-amber-600 text-lg flex-shrink-0 mt-0.5">
-                    {item.icon || 'warning'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-slate-900">{item.title}</h4>
-                    <p className="text-slate-700 leading-snug mt-0.5">{item.message}</p>
+              {dueNotifs.map(item => {
+                const isOverdue = item.title.includes('quá hạn');
+                return (
+                  <div key={item.id} className={`p-3 border rounded-xl text-xs flex gap-2.5 items-start ${
+                    isOverdue ? 'bg-rose-50/70 border-rose-200' : 'bg-amber-50/70 border-amber-200'
+                  }`}>
+                    <span className={`material-symbols-outlined text-lg flex-shrink-0 mt-0.5 ${
+                      isOverdue ? 'text-rose-600' : 'text-amber-600'
+                    }`}>
+                      {item.icon || (isOverdue ? 'warning' : 'notifications')}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <h4 className={`font-bold ${isOverdue ? 'text-rose-900' : 'text-amber-900'}`}>{item.title}</h4>
+                      <p className="text-slate-700 leading-snug mt-0.5">{item.message}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
