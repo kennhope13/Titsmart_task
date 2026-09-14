@@ -319,6 +319,8 @@ export interface DocumentTrack {
   paymentStatus: string;
   isCompleted: boolean;
   notes?: string;
+  dueDate?: string; // Ngày hẹn trả / hạn nộp hồ sơ
+  remindDays?: number; // Số ngày nhắc trước hạn (VD: 3, 5, 7)
   fileUrls?: string[];
   updatedBy?: string;
   updatedAt?: string;

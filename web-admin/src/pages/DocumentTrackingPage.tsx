@@ -207,7 +207,29 @@ export const DocumentTrackingPage: React.FC = () => {
   const [filterDocStatus, setFilterDocStatus] = useState('all');
   const [filterPaymentStatus, setFilterPaymentStatus] = useState('all');
   const [filterDocType, setFilterDocType] = useState('all');
+  const [filterDueStatus, setFilterDueStatus] = useState('all'); // 'all' | 'warning' | 'overdue' | 'normal'
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Helper for due date calculation
+  const getDueInfo = (track: DocumentTrack) => {
+    if (track.isCompleted) return { status: 'none', daysLeft: null, text: '' };
+    const effectiveDueDate = track.dueDate || track.receiveDate || track.sendDate;
+    if (!effectiveDueDate) return { status: 'none', daysLeft: null, text: '' };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(effectiveDueDate);
+    due.setHours(0, 0, 0, 0);
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const remind = track.remindDays || 3;
+
+    if (diffDays < 0) {
+      return { status: 'overdue', daysLeft: diffDays, text: `Quá hạn ${Math.abs(diffDays)} ngày` };
+    } else if (diffDays <= remind) {
+      return { status: 'warning', daysLeft: diffDays, text: diffDays === 0 ? 'Hạn hôm nay 🔔' : `Còn ${diffDays} ngày` };
+    }
+    return { status: 'normal', daysLeft: diffDays, text: `Còn ${diffDays} ngày` };
+  };
 
   const docProjectOptions = useMemo(() => {
     const pCodes = new Set<string>();
@@ -243,6 +265,15 @@ export const DocumentTrackingPage: React.FC = () => {
     if (filterPaymentStatus !== 'all') {
       result = result.filter(t => t.paymentStatus === filterPaymentStatus);
     }
+    if (filterDueStatus !== 'all') {
+      result = result.filter(t => {
+        const info = getDueInfo(t);
+        if (filterDueStatus === 'warning') return info.status === 'warning';
+        if (filterDueStatus === 'overdue') return info.status === 'overdue';
+        if (filterDueStatus === 'normal') return info.status === 'normal' || info.status === 'none';
+        return true;
+      });
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(t => 
@@ -258,7 +289,7 @@ export const DocumentTrackingPage: React.FC = () => {
       if (sttDiff !== 0) return sttDiff;
       return String(a.contractNo || '').localeCompare(String(b.contractNo || ''), 'vi');
     });
-  }, [documentTracks, filterProjectCode, filterDocStatus, filterPaymentStatus, searchQuery, projects]);
+  }, [documentTracks, filterProjectCode, filterDocStatus, filterPaymentStatus, filterDueStatus, searchQuery, projects]);
 
   // Computed summary metrics
   const summary = useMemo(() => {
@@ -444,6 +475,20 @@ export const DocumentTrackingPage: React.FC = () => {
                   ))}
                 </CustomSelect>
               </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-medium whitespace-nowrap">Hạn nộp:</span>
+                <CustomSelect
+                  value={filterDueStatus}
+                  onChange={e => setFilterDueStatus(e.target.value)}
+                  className="min-w-[110px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate font-semibold"
+                >
+                  <option value="all">Tất cả</option>
+                  <option value="warning">🔔 Sắp đến hạn</option>
+                  <option value="overdue">⚠️ Quá hạn</option>
+                  <option value="normal">✅ Trong hạn / Đã xong</option>
+                </CustomSelect>
+              </div>
             </div>
 
             <div className="flex items-center">
@@ -473,6 +518,7 @@ export const DocumentTrackingPage: React.FC = () => {
                    <th className="p-1 min-w-[80px]">Người nhận</th>
                    <th className="p-1 text-center whitespace-nowrap">Ngày gửi</th>
                    <th className="p-1 text-center whitespace-nowrap">Ngày nhận</th>
+                   <th className="p-1 text-center min-w-[100px]">Hạn nộp / Nhắc</th>
                    <th className="p-1 text-right min-w-[90px]">Giá trị HĐ (đ)</th>
                    <th className="p-1 text-center min-w-[70px]">Tạm ứng</th>
                    <th className="p-1 text-center min-w-[80px]">Thanh toán</th>
@@ -505,6 +551,44 @@ export const DocumentTrackingPage: React.FC = () => {
                     </td>
                     <td className="px-1 py-1 text-center whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.sendDate ? 'bg-slate-100 text-slate-700' : 'text-slate-300'}`}>{track.sendDate ? new Date(track.sendDate).toLocaleDateString('vi-VN') : '-'}</span></td>
                     <td className="px-1 py-1 text-center whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.receiveDate ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-300'}`}>{track.receiveDate ? new Date(track.receiveDate).toLocaleDateString('vi-VN') : '-'}</span></td>
+                    <td className="px-1 py-1 text-center whitespace-nowrap">
+                      {(() => {
+                        const info = getDueInfo(track);
+                        if (track.isCompleted) {
+                          return <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Đã xong</span>;
+                        }
+                        const effDate = track.dueDate || track.receiveDate || track.sendDate;
+                        if (!effDate) {
+                          return <span className="text-slate-300 italic text-[10px]">-</span>;
+                        }
+                        const dueStr = new Date(effDate).toLocaleDateString('vi-VN');
+                        if (info.status === 'overdue') {
+                          return (
+                            <div className="flex flex-col items-center">
+                              <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                <span className="material-symbols-outlined text-[12px]">warning</span> {info.text}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-mono mt-0.5">{dueStr}</span>
+                            </div>
+                          );
+                        }
+                        if (info.status === 'warning') {
+                          return (
+                            <div className="flex flex-col items-center">
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                <span className="material-symbols-outlined text-[12px]">notifications_active</span> {info.text}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-mono mt-0.5">{dueStr}</span>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="flex flex-col items-center">
+                            <span className="text-[10px] font-medium text-slate-600 font-mono">{dueStr}</span>
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="px-1 py-1 text-right font-bold text-slate-950">{(track.contractValue || 0).toLocaleString('vi-VN')}</td>
                     <td className="px-1 py-1 text-center">
                       <div className="font-bold text-blue-700">{(track.prepayPercent ? (track.prepayPercent * 100).toFixed(1) : '0')}%</div>
@@ -577,6 +661,8 @@ deleteDocumentTrack(track.id);
               address: newDoc.address || '',
               sendDate: newDoc.sendDate || new Date().toISOString().split('T')[0],
               receiveDate: newDoc.receiveDate || '',
+              dueDate: newDoc.dueDate || '',
+              remindDays: newDoc.remindDays || 3,
               docStatus: newDoc.docStatus || 'Chưa ký',
               side: newDoc.side || 'Bên trả',
               contractValue: val,
@@ -590,7 +676,7 @@ deleteDocumentTrack(track.id);
             });
             triggerToast(`Đã thêm hồ sơ \"${newDoc.contractNo || newDoc.contractName || 'hồ sơ mới'}\" thành công!`, 'success');
             setIsNewDocOpen(false);
-            setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: '', fileUrls: [], docType: 'Giao'});
+            setNewDoc({stt: '', contractNo: '', contractName: '', projectCode: '', company: '', receiverName: '', phone: '', address: '', sendDate: new Date().toISOString().split('T')[0], receiveDate: '', dueDate: '', remindDays: 3, docStatus: 'Chưa ký', side: 'Bên trả', contractValue: 0, prepayPercent: 0, prepayAmount: 0, paymentStatus: 'Chưa thanh toán', isCompleted: false, notes: '', fileUrls: [], docType: 'Giao'});
           } catch (err: any) {
             triggerToast('Lỗi khi thêm hồ sơ: ' + (err.message || 'Xin thử lại'), 'warning');
           } finally {
@@ -638,9 +724,10 @@ deleteDocumentTrack(track.id);
             </div>
           </div>
           <div><label className="block font-bold mb-1">Địa chỉ nhận hồ sơ</label><input type="text" value={newDoc.address} onChange={(e) => setNewDoc({...newDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <div className="grid grid-cols-2 gapx-1 py-1">
-            <div><label className="block font-bold mb-1">Ngày gửi đi</label><input type="date" value={newDoc.sendDate} onChange={(e) => setNewDoc({...newDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Ngày nhận</label><input type="date" value={newDoc.receiveDate} onChange={(e) => setNewDoc({...newDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+          <div className="grid grid-cols-3 gapx-1 py-1 bg-amber-50/50 p-2 rounded-lg border border-amber-200">
+            <div><label className="block font-bold mb-1 text-slate-800">Ngày gửi đi</label><input type="date" value={newDoc.sendDate} onChange={(e) => setNewDoc({...newDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1 text-slate-800">Ngày nhận thực tế</label><input type="date" value={newDoc.receiveDate} onChange={(e) => setNewDoc({...newDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1 text-amber-900">Hạn nộp / Hẹn trả 🔔</label><input type="date" value={newDoc.dueDate || ''} onChange={(e) => setNewDoc({...newDoc, dueDate: e.target.value})} className="w-full border border-amber-300 rounded-lg p-2 bg-white font-bold text-amber-900" /></div>
           </div>
           <div className="grid grid-cols-3 gapx-1 py-1 bg-slate-50 p-2 rounded-lg border">
             <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={newDoc.contractValue} onChange={(e) => setNewDoc({...newDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
@@ -742,9 +829,10 @@ deleteDocumentTrack(track.id);
               </div>
             </div>
             <div><label className="block font-bold mb-1">Địa chỉ</label><input type="text" value={editingDoc.address} onChange={(e) => setEditingDoc({...editingDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div className="grid grid-cols-2 gapx-1 py-1">
-              <div><label className="block font-bold mb-1">Ngày gửi</label><input type="date" value={editingDoc.sendDate} onChange={(e) => setEditingDoc({...editingDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Ngày nhận</label><input type="date" value={editingDoc.receiveDate || ''} onChange={(e) => setEditingDoc({...editingDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div className="grid grid-cols-3 gapx-1 py-1 bg-amber-50/50 p-2 rounded-lg border border-amber-200">
+              <div><label className="block font-bold mb-1 text-slate-800">Ngày gửi đi</label><input type="date" value={editingDoc.sendDate} onChange={(e) => setEditingDoc({...editingDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1 text-slate-800">Ngày nhận thực tế</label><input type="date" value={editingDoc.receiveDate || ''} onChange={(e) => setEditingDoc({...editingDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1 text-amber-900">Hạn nộp / Hẹn trả 🔔</label><input type="date" value={editingDoc.dueDate || ''} onChange={(e) => setEditingDoc({...editingDoc, dueDate: e.target.value})} className="w-full border border-amber-300 rounded-lg p-2 bg-white font-bold text-amber-900" /></div>
             </div>
             <div className="grid grid-cols-3 gapx-1 py-1 bg-slate-50 p-2 rounded-lg border">
               <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={editingDoc.contractValue} onChange={(e) => setEditingDoc({...editingDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>

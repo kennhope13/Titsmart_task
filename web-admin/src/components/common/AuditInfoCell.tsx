@@ -62,15 +62,27 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
       return true;
     });
 
+    // Helper to normalize user name (e.g. Admin -> Quản trị hệ thống)
+    const normalizeUser = (nameStr?: string): string => {
+      const trimmed = String(nameStr || '').trim();
+      if (!trimmed) return '';
+      if (trimmed.toLowerCase() === 'admin' || trimmed.toLowerCase() === 'quản trị hệ thống') {
+        return 'Quản trị hệ thống';
+      }
+      return trimmed;
+    };
+
     // Aggregate log counts and track latest timestamp per user
     filteredLogs.forEach(log => {
-      const u = String(log.user || '').trim();
-      if (!u || u === 'Hệ thống' || u === 'Excel Sync' || u.toLowerCase().includes('excel')) return;
+      const rawUser = String(log.user || '').trim();
+      if (!rawUser || rawUser === 'Hệ thống' || rawUser === 'Excel Sync' || rawUser.toLowerCase().includes('excel')) return;
+      const u = normalizeUser(rawUser);
       const logTimeMs = parseTime(log.timestamp);
       const displayTime = formatAuditDateTime(log.timestamp);
       if (!map.has(u)) {
         const eng = (engineers || []).find(e => e?.name?.toLowerCase() === u.toLowerCase());
-        map.set(u, { name: u, count: 1, lastTime: displayTime, rawTimeMs: logTimeMs, title: eng?.title });
+        const title = u === 'Quản trị hệ thống' ? 'Chủ tịch / Admin' : eng?.title;
+        map.set(u, { name: u, count: 1, lastTime: displayTime, rawTimeMs: logTimeMs, title });
       } else {
         const existing = map.get(u)!;
         existing.count += 1;
@@ -84,11 +96,13 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
     // Make sure the current updatedBy user is in the list with updatedAt
     const currentMs = parseTime(updatedAt);
     if (updatedBy && updatedBy !== 'Hệ thống' && updatedBy !== 'Excel Sync' && !updatedBy.toLowerCase().includes('excel')) {
-      if (!map.has(updatedBy)) {
-        const eng = (engineers || []).find(e => e?.name?.toLowerCase() === updatedBy.toLowerCase());
-        map.set(updatedBy, { name: updatedBy, count: 1, lastTime: formattedTime, rawTimeMs: currentMs, title: eng?.title });
+      const u = normalizeUser(updatedBy);
+      if (!map.has(u)) {
+        const eng = (engineers || []).find(e => e?.name?.toLowerCase() === u.toLowerCase());
+        const title = u === 'Quản trị hệ thống' ? 'Chủ tịch / Admin' : eng?.title;
+        map.set(u, { name: u, count: 1, lastTime: formattedTime, rawTimeMs: currentMs, title });
       } else {
-        const existing = map.get(updatedBy)!;
+        const existing = map.get(u)!;
         if (currentMs > existing.rawTimeMs) {
           existing.rawTimeMs = currentMs;
           existing.lastTime = formattedTime;

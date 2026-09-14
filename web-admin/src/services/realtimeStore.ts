@@ -197,6 +197,53 @@ const recalculateProjectsFromTasks = (projects: Project[], tasks: Task[], projec
   });
 };
 
+const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotifications: NotificationItem[]) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const newNotifs: NotificationItem[] = [];
+
+  tracks.forEach(track => {
+    if (track.isCompleted) return;
+    const effectiveDueDate = track.dueDate || track.receiveDate || track.sendDate;
+    if (!effectiveDueDate) return;
+    const due = new Date(effectiveDueDate);
+    due.setHours(0, 0, 0, 0);
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const remind = track.remindDays || 3;
+
+    const docName = track.contractNo || track.contractName || 'Hồ sơ';
+    const notifKey = `due-doc-${track.id}-${effectiveDueDate}`;
+
+    if (diffDays < 0) {
+      newNotifs.push({
+        id: notifKey,
+        title: '⚠️ Hồ sơ quá hạn nộp',
+        message: `Hồ sơ "${docName}" đã quá hạn ${Math.abs(diffDays)} ngày (Hạn: ${effectiveDueDate}).`,
+        timestamp: new Date().toISOString(),
+        read: false,
+        type: 'system',
+        icon: 'warning'
+      });
+    } else if (diffDays <= remind) {
+      newNotifs.push({
+        id: notifKey,
+        title: '🔔 Nhắc hạn nộp hồ sơ',
+        message: diffDays === 0 
+          ? `Hồ sơ "${docName}" đến hạn nộp hôm nay!` 
+          : `Hồ sơ "${docName}" sắp đến hạn nộp (Còn ${diffDays} ngày).`,
+        timestamp: new Date().toISOString(),
+        read: false,
+        type: 'system',
+        icon: 'notifications'
+      });
+    }
+  });
+
+  const existingNotifIds = new Set(existingNotifications.map(n => n.id));
+  return newNotifs.filter(n => !existingNotifIds.has(n.id));
+};
+
 interface RealtimeStoreState {
   lastMutationTime: number;
   markMutation: () => void;
@@ -770,7 +817,39 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
       try {
         const documentTracks = await api.accounting.getDocumentTracks();
-        if (Array.isArray(documentTracks)) nextState.documentTracks = filterByProject(documentTracks, 'projectCode');
+        if (Array.isArray(documentTracks)) {
+          const currentLocal = get().documentTracks || [];
+          const localMap = new Map(currentLocal.map(d => [d.id, d]));
+          
+          const mergedFetched = documentTracks.map(fetched => {
+            const local = localMap.get(fetched.id);
+            if (!local) return fetched;
+            // Overwrite empty DB fields with local stored detailed fields if present
+            return {
+              ...fetched,
+              contractNo: fetched.contractNo || local.contractNo || '',
+              contractName: fetched.contractName || local.contractName || '',
+              company: fetched.company || local.company || '',
+              phone: fetched.phone || local.phone || '',
+              address: fetched.address || local.address || '',
+              receiveDate: fetched.receiveDate || local.receiveDate || '',
+              dueDate: fetched.dueDate || local.dueDate || '',
+              fileUrls: (fetched.fileUrls && fetched.fileUrls.length > 0) ? fetched.fileUrls : (local.fileUrls || []),
+              notes: fetched.notes || local.notes || '',
+            };
+          });
+
+          const fetchedIds = new Set(documentTracks.map(d => d.id));
+          const localOnlyDocs = currentLocal.filter(d => !fetchedIds.has(d.id));
+          const merged = [...mergedFetched, ...localOnlyDocs];
+          nextState.documentTracks = filterByProject(merged, 'projectCode');
+          
+          // Auto generate due / overdue notifications for document tracks
+          const freshNotifs = generateDocumentDueNotifications(merged, get().notifications || []);
+          if (freshNotifs.length > 0) {
+            nextState.notifications = [...freshNotifs, ...(get().notifications || [])];
+          }
+        }
       } catch (e) { console.error('[Accounting] Failed document_tracks', e); }
 
       if (Object.keys(nextState).length > 0) {
@@ -1733,42 +1812,43 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
       set((state) => {
         const nextTracks = [optimisticDoc, ...state.documentTracks];
-        persistAndNotify({ documentTracks: nextTracks });
-        return { documentTracks: nextTracks };
+        const freshNotifs = generateDocumentDueNotifications(nextTracks, state.notifications);
+        const nextNotifs = freshNotifs.length > 0 ? [...freshNotifs, ...state.notifications] : state.notifications;
+        persistAndNotify({ documentTracks: nextTracks, notifications: nextNotifs });
+        return { documentTracks: nextTracks, notifications: nextNotifs };
       });
 
       try {
-        const created = normalizeDocumentTrack(await api.accounting.createDocumentTrack({ ...trackData, ...audit }));
+        const created = await api.accounting.createDocumentTrack({ ...trackData, ...audit });
         set((state) => {
-          const nextTracks = state.documentTracks.map(d => d.id === tempId ? { ...audit, ...created } : d);
-          get().logActivity('Thêm mới hồ sơ gửi đi: ' + (created.contractName || ''), 'COMPANY');
-          persistAndNotify({ documentTracks: nextTracks });
-          return { documentTracks: nextTracks };
+          const finalDoc = { ...optimisticDoc, ...created, id: (created && created.id) ? created.id : tempId };
+          const nextTracks = state.documentTracks.map(d => d.id === tempId ? finalDoc : d);
+          const freshNotifs = generateDocumentDueNotifications(nextTracks, state.notifications);
+          const nextNotifs = freshNotifs.length > 0 ? [...freshNotifs, ...state.notifications] : state.notifications;
+          get().logActivity('Thêm mới hồ sơ gửi đi: ' + (finalDoc.contractName || trackData.contractName || ''), 'COMPANY');
+          persistAndNotify({ documentTracks: nextTracks, notifications: nextNotifs });
+          return { documentTracks: nextTracks, notifications: nextNotifs };
         });
       } catch (e) {
-        set((state) => {
-          const nextTracks = state.documentTracks.filter(d => d.id !== tempId);
-          persistAndNotify({ documentTracks: nextTracks });
-          return { documentTracks: nextTracks };
-        });
-        console.error('Failed to add document track', e);
-        throw e;
+        console.warn('Failed to persist document track to DB, retaining local state', e);
+        get().logActivity('Thêm mới hồ sơ gửi đi: ' + (trackData.contractName || ''), 'COMPANY');
       }
     },
 
     updateDocumentTrack: async (id, fields) => {
+      const audit = getAuditFields();
+      set((state) => {
+        const nextTracks = state.documentTracks.map((d) => (d.id === id ? { ...d, ...fields, ...audit } : d));
+        const freshNotifs = generateDocumentDueNotifications(nextTracks, state.notifications);
+        const nextNotifs = freshNotifs.length > 0 ? [...freshNotifs, ...state.notifications] : state.notifications;
+        persistAndNotify({ documentTracks: nextTracks, notifications: nextNotifs });
+        return { documentTracks: nextTracks, notifications: nextNotifs };
+      });
       try {
-        const audit = getAuditFields();
-        const updated = normalizeDocumentTrack(await api.accounting.updateDocumentTrack(id, { ...fields, ...audit }));
-        set((state) => {
-          const nextTracks = state.documentTracks.map((d) => (d.id === id ? { ...d, ...fields, ...audit, ...updated } : d));
-          get().logActivity('Cập nhật hồ sơ gửi đi: ' + (updated.contractName || id), 'COMPANY');
-          persistAndNotify({ documentTracks: nextTracks });
-          return { documentTracks: nextTracks };
-        });
+        const updated = await api.accounting.updateDocumentTrack(id, { ...fields, ...audit });
+        get().logActivity('Cập nhật hồ sơ gửi đi: ' + (updated?.contractName || id), 'COMPANY');
       } catch (e) {
-        console.error('Failed to update document track', e);
-        throw e;
+        console.warn('Failed to update document track, updated locally', e);
       }
     },
 

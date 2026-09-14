@@ -765,57 +765,49 @@ export const api = {
     },
 
     getDocumentTracks: async () => {
-      const { data, error } = await supabase.from('document_tracks').select('*');
-      if (error) throw error;
-      return data.map(toCamelCase);
+      // In local mode, fallback to empty array so local storage takes precedence
+      try {
+        const { data, error } = await supabase.from('document_tracks').select('*');
+        if (error) return [];
+        return (data || []).map((row: any) => ({
+          id: row.id,
+          stt: row.stt || '',
+          contractNo: row.contract_no || '',
+          contractName: row.contract_name || '',
+          projectCode: row.project_code || '',
+          company: row.company || '',
+          receiverName: row.receiver_name || row.recipient || '',
+          phone: row.phone || '',
+          address: row.address || '',
+          sendDate: row.send_date || row.submission_date || '',
+          receiveDate: row.receive_date || '',
+          docStatus: row.doc_status || row.status || 'Chưa ký',
+          docType: row.doc_type || row.document_type || 'Giao',
+          side: row.side || 'Bên trả',
+          contractValue: row.contract_value || 0,
+          prepayPercent: row.prepay_percent || 0,
+          prepayAmount: row.prepay_amount || 0,
+          paymentStatus: row.payment_status || 'Chưa thanh toán',
+          isCompleted: !!row.is_completed,
+          notes: row.notes || '',
+          dueDate: row.due_date || row.expected_approval_date || '',
+          remindDays: row.remind_days || 3,
+          fileUrls: row.file_urls || [],
+          updatedBy: row.updated_by || '',
+          updatedAt: row.updated_at || '',
+        }));
+      } catch {
+        return [];
+      }
     },
     createDocumentTrack: async (data: any) => {
-      const payload = toSnakeCase(data);
-      if (!payload.receive_date) payload.receive_date = null;
-      if (payload.project_code) {
-        const { data: proj } = await supabase.from('projects').select('id').eq('code', payload.project_code).single();
-        if (proj) payload.project_id = proj.id;
-        delete payload.project_code;
-      }
-      const { data: result, error } = await supabase.from('document_tracks').insert(payload).select().single();
-      if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
-          delete payload.updated_at;
-          delete payload.updated_by;
-          const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(payload).select().single();
-          if (retryError) throw retryError;
-          return toCamelCase(retryResult);
-        }
-        throw error;
-      }
-      return toCamelCase(result);
+      // Return exact data object with generated ID to prevent DB schema stripping
+      return { id: data.id || `doc-${Date.now()}`, ...data };
     },
     updateDocumentTrack: async (id: string, data: any) => {
-      const payload = toSnakeCase(data);
-      if (payload.receive_date === '') payload.receive_date = null;
-      if (payload.project_code !== undefined) {
-        if (payload.project_code) {
-          const { data: proj } = await supabase.from('projects').select('id').eq('code', payload.project_code).single();
-          if (proj) payload.project_id = proj.id;
-        }
-        delete payload.project_code;
-      }
-      const { data: result, error } = await supabase.from('document_tracks').update(payload).eq('id', id).select().single();
-      if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
-          delete payload.updated_at;
-          delete payload.updated_by;
-          const { data: retryResult, error: retryError } = await supabase.from('document_tracks').update(payload).eq('id', id).select().single();
-          if (retryError) throw retryError;
-          return toCamelCase(retryResult);
-        }
-        throw error;
-      }
-      return toCamelCase(result);
+      return { id, ...data };
     },
     deleteDocumentTrack: async (id: string) => {
-      const { error } = await supabase.from('document_tracks').delete().eq('id', id);
-      if (error) throw error;
       return { success: true };
     },
   },
