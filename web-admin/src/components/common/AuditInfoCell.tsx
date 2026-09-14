@@ -4,11 +4,15 @@ import { Modal } from './Modal';
 
 export const formatAuditDateTime = (isoString?: string): string => {
   if (!isoString) return '';
+  // Handle formatted timestamps like "12:03 14/09/2026"
+  if (/^\d{2}:\d{2}\s+\d{2}\/\d{2}\/\d{4}$/.test(isoString.trim())) {
+    return isoString.trim();
+  }
   try {
     const d = new Date(isoString);
     if (isNaN(d.getTime())) return isoString;
     const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
     return `${timeStr} ${dateStr}`;
   } catch {
     return isoString || '';

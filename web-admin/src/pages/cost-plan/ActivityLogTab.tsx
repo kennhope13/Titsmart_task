@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ActivityLog } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { formatAuditDateTime } from '@/components/common/AuditInfoCell';
 
 interface ActivityLogTabProps {
   data: ActivityLog[];
@@ -313,9 +314,9 @@ export const ActivityLogTab: React.FC<ActivityLogTabProps> = ({
                                 </span>
                               </div>
                             </div>
-                            {/* Time only (no date — already grouped) */}
-                            <span className="text-[10px] font-medium text-slate-400 whitespace-nowrap flex-shrink-0 mt-0.5">
-                              {(log.timestamp || '').split(' ')[0]}
+                            {/* Time */}
+                            <span className="text-[10px] font-medium text-slate-400 whitespace-nowrap flex-shrink-0 mt-0.5 font-mono">
+                              {log.timestamp && log.timestamp.includes('T') ? formatAuditDateTime(log.timestamp) : (log.timestamp || '')}
                             </span>
                           </div>
                         </div>
