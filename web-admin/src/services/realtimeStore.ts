@@ -217,7 +217,7 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
     const docName = track.contractNo || track.contractName || 'Hồ sơ';
     const notifKey = `due-doc-${track.id}-${effectiveDueDate}`;
 
-    if (diffDays < 0) {
+    if (diffDays < 0 && Math.abs(diffDays) <= 2) {
       newNotifs.push({
         id: notifKey,
         title: 'Hồ sơ quá hạn nộp',
@@ -227,7 +227,7 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
         type: 'system',
         icon: 'warning'
       });
-    } else if (diffDays <= remind) {
+    } else if (diffDays >= 0 && diffDays <= remind) {
       newNotifs.push({
         id: notifKey,
         title: 'Nhắc hạn nộp hồ sơ',
@@ -614,7 +614,20 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     materials: savedState.materials || inventorySeed.materials,
     issues: savedState.issues || [],
     engineers: savedState.engineers || [],
-    notifications: savedState.notifications || [],
+    notifications: (() => {
+      const rawNotifs: NotificationItem[] = savedState.notifications || [];
+      const seen = new Set<string>();
+      const cleanList: NotificationItem[] = [];
+      rawNotifs.forEach(n => {
+        const cleanTitle = (n.title || '').replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim();
+        const key = `${cleanTitle}:::${n.message}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          cleanList.push({ ...n, title: cleanTitle });
+        }
+      });
+      return cleanList;
+    })(),
     activityLogs: savedState.activityLogs || [],
     inventoryTransactions: savedState.inventoryTransactions || inventorySeed.inventoryTransactions,
     materialPlans: savedState.materialPlans || [],
