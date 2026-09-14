@@ -772,8 +772,8 @@ export const api = {
         return (data || []).map((row: any) => ({
           id: row.id,
           stt: row.stt || '',
-          contractNo: row.contract_no || (row.contract_name && row.contract_name.startsWith('[') && row.contract_name.includes(']') ? row.contract_name.split(']')[0].replace('[', '') : ''),
-          contractName: row.contract_name && row.contract_name.startsWith('[') && row.contract_name.includes(']') ? row.contract_name.split(']').slice(1).join(']').trim() : (row.contract_name || ''),
+          contractNo: row.contract_no || (row.contract_name && row.contract_name.startsWith('[') && row.contract_name.includes(']') ? row.contract_name.split(']')[0].replace('[', '') : (row.notes && row.notes.startsWith('[') && row.notes.includes(']') ? row.notes.split(']')[0].replace('[', '') : '')),
+          contractName: (row.contract_name && row.contract_name.startsWith('[') && row.contract_name.includes(']')) ? row.contract_name.split(']').slice(1).join(']').trim() : (row.contract_name || (row.notes && row.notes.startsWith('[') && row.notes.includes(']') ? row.notes.split(']').slice(1).join(']').trim() : (row.notes || ''))),
           projectCode: row.project_code || '',
           company: row.company || (row.recipient && row.recipient.includes(' - ') ? row.recipient.split(' - ')[0] : (row.recipient || '')),
           receiverName: row.receiver_name || (row.recipient && row.recipient.includes(' - ') ? row.recipient.split(' - ')[1] : (row.recipient || '')),
@@ -849,24 +849,15 @@ export const api = {
         ? (data.contractName ? `[${data.contractNo}] ${data.contractName}` : data.contractNo)
         : (data.contractName || '');
 
-      const audit = getCurrentAuditPayload();
       const minPayload: any = {
         document_type: data.docType || 'Giao',
         submission_date: cleanDate(data.sendDate),
         recipient: data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || ''),
         status: data.docStatus || 'Chưa ký',
-        contract_name: formattedContractName,
-        doc_type: data.docType || 'Giao',
-        due_date: cleanDate(data.dueDate),
-        address: data.address || '',
-        company: data.company || '',
-        contract_no: data.contractNo || '',
-        updated_by: data.updatedBy || audit.updated_by,
-        updated_at: data.updatedAt || audit.updated_at
+        notes: data.notes || formattedContractName
       };
       if (data.projectCode) minPayload.project_code = data.projectCode;
       if (cleanDate(data.dueDate)) minPayload.expected_approval_date = cleanDate(data.dueDate);
-      if (data.notes) minPayload.notes = data.notes;
 
       try {
         const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(minPayload).select().single();
