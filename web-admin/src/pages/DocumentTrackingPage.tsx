@@ -509,7 +509,6 @@ export const DocumentTrackingPage: React.FC = () => {
           <table className="doc-fit-table w-full text-left border-collapse ">
                <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10 leading-tight">
                  <tr>
-                   <th className="p-1 text-center whitespace-nowrap">STT</th>
                    <th className="p-1 text-center whitespace-nowrap">Bên</th>
                    {!projectId && <th className="p-1 whitespace-nowrap">Dự án</th>}
                    <th className="p-1 min-w-[90px]">Số hợp đồng</th>
@@ -529,9 +528,8 @@ export const DocumentTrackingPage: React.FC = () => {
                  </tr>
                </thead>
                <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 leading-tight">
-                {filteredTracks.map((track, index) => (
+                {filteredTracks.map((track) => (
                   <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
-                    <td className="px-1 py-1 text-center font-bold text-slate-400 w-6">{index + 1}</td>
                     <td className="px-1 py-1 text-center">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         track.side === 'Bên nhận' ? 'bg-emerald-50 text-emerald-600' :
@@ -622,7 +620,6 @@ export const DocumentTrackingPage: React.FC = () => {
                     
                     <td className="px-1 py-1 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1.5">
-                        <button onClick={() => updateDocumentTrack(track.id, { isCompleted: !track.isCompleted })} title="Đánh dấu hoàn tất" className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${track.isCompleted ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-50 text-slate-300 border border-slate-200 hover:text-slate-500'}`}><span className="material-symbols-outlined text-base">task_alt</span></button>
                         <button onClick={() => {
                           setConfirmConfig({
                             isOpen: true,
