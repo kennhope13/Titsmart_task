@@ -808,7 +808,7 @@ export const api = {
       };
 
       const payload: any = {
-        // Local DB column names
+        // Base columns
         document_type: data.docType || 'Giao',
         submission_date: cleanDate(data.sendDate),
         recipient: data.receiverName || '',
@@ -816,7 +816,7 @@ export const api = {
         expected_approval_date: cleanDate(data.dueDate),
         notes: data.notes || '',
         project_code: data.projectCode || '',
-        // Cloud & Extended DB column names
+        // Extended columns
         doc_type: data.docType || 'Giao',
         send_date: cleanDate(data.sendDate),
         receive_date: cleanDate(data.receiveDate),
@@ -840,31 +840,28 @@ export const api = {
         updated_at: data.updatedAt || new Date().toISOString()
       };
 
-      try {
-        const { data: result, error } = await supabase.from('document_tracks').insert(payload).select().single();
-        if (error) {
-          console.warn('[Supabase] Full insert failed, retrying minimal payload:', error.message || error);
-          const minPayload = {
-            document_type: data.docType || 'Giao',
-            submission_date: cleanDate(data.sendDate),
-            recipient: data.receiverName || '',
-            status: data.docStatus || 'Chưa ký',
-            expected_approval_date: cleanDate(data.dueDate),
-            notes: data.notes || '',
-            project_code: data.projectCode || ''
-          };
-          const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(minPayload).select().single();
-          if (retryError) {
-            console.error('[Supabase] Retry insert document_tracks failed:', retryError);
-            return { id: data.id || `doc-${Date.now()}`, ...data };
-          }
-          return { ...data, id: retryResult.id };
+      const { data: result, error } = await supabase.from('document_tracks').insert(payload).select().single();
+      if (error) {
+        console.warn('[Supabase Cloud] Full insert failed:', error.message, error.details, error.code);
+        // Minimal schema insert retry for Cloud DB if extra columns not added yet
+        const minPayload: any = {
+          document_type: data.docType || 'Giao',
+          submission_date: cleanDate(data.sendDate),
+          recipient: data.receiverName || '',
+          status: data.docStatus || 'Chưa ký'
+        };
+        if (cleanDate(data.dueDate)) minPayload.expected_approval_date = cleanDate(data.dueDate);
+        if (data.notes) minPayload.notes = data.notes;
+        if (data.projectCode) minPayload.project_code = data.projectCode;
+
+        const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(minPayload).select().single();
+        if (retryError) {
+          console.error('[Supabase Cloud] Retry insert failed:', retryError);
+          throw retryError;
         }
-        return { ...data, id: result.id };
-      } catch (err) {
-        console.error('[Supabase] Exception insert document_tracks:', err);
-        return { id: data.id || `doc-${Date.now()}`, ...data };
+        return toCamelCase({ ...data, ...retryResult });
       }
+      return toCamelCase(result);
     },
     updateDocumentTrack: async (id: string, data: any) => {
       const payload: any = {};
