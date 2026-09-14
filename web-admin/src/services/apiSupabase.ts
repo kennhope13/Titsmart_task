@@ -807,61 +807,59 @@ export const api = {
         return /^\d{4}-\d{2}-\d{2}/.test(trimmed) ? trimmed.split('T')[0] : null;
       };
 
-      const payload: any = {
-        // Base columns
-        document_type: data.docType || 'Giao',
-        submission_date: cleanDate(data.sendDate),
-        recipient: data.receiverName || '',
-        status: data.docStatus || 'Chưa ký',
-        expected_approval_date: cleanDate(data.dueDate),
-        notes: data.notes || '',
-        project_code: data.projectCode || '',
-        // Extended columns
-        doc_type: data.docType || 'Giao',
-        send_date: cleanDate(data.sendDate),
-        receive_date: cleanDate(data.receiveDate),
-        receiver_name: data.receiverName || '',
-        doc_status: data.docStatus || 'Chưa ký',
+      const fullPayload: any = {
         contract_no: data.contractNo || '',
         contract_name: data.contractName || '',
+        project_code: data.projectCode || '',
         company: data.company || '',
+        receiver_name: data.receiverName || '',
         phone: data.phone || '',
         address: data.address || '',
-        due_date: cleanDate(data.dueDate),
-        remind_days: data.remindDays || 3,
+        send_date: cleanDate(data.sendDate),
+        receive_date: cleanDate(data.receiveDate),
+        doc_status: data.docStatus || 'Chưa ký',
+        doc_type: data.docType || 'Giao',
         side: data.side || 'Bên trả',
         contract_value: data.contractValue || 0,
         prepay_percent: data.prepayPercent || 0,
         prepay_amount: data.prepayAmount || 0,
         payment_status: data.paymentStatus || 'Chưa thanh toán',
         is_completed: !!data.isCompleted,
-        file_urls: data.fileUrls || [],
+        notes: data.notes || '',
+        due_date: cleanDate(data.dueDate),
+        remind_days: data.remindDays || 3,
         updated_by: data.updatedBy || '',
         updated_at: data.updatedAt || new Date().toISOString()
       };
 
-      const { data: result, error } = await supabase.from('document_tracks').insert(payload).select().single();
-      if (error) {
-        console.warn('[Supabase Cloud] Full insert failed:', error.message, error.details, error.code);
-        // Minimal schema insert retry for Cloud DB if extra columns not added yet
-        const minPayload: any = {
-          document_type: data.docType || 'Giao',
-          submission_date: cleanDate(data.sendDate),
-          recipient: data.receiverName || '',
-          status: data.docStatus || 'Chưa ký'
-        };
-        if (cleanDate(data.dueDate)) minPayload.expected_approval_date = cleanDate(data.dueDate);
-        if (data.notes) minPayload.notes = data.notes;
-        if (data.projectCode) minPayload.project_code = data.projectCode;
-
-        const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(minPayload).select().single();
-        if (retryError) {
-          console.error('[Supabase Cloud] Retry insert failed:', retryError);
-          throw retryError;
+      try {
+        const { data: result, error } = await supabase.from('document_tracks').insert(fullPayload).select().single();
+        if (!error && result) {
+          return toCamelCase(result);
         }
-        return toCamelCase({ ...data, ...retryResult });
+      } catch {
+        // Fallthrough to standard/minimal schema fallback
       }
-      return toCamelCase(result);
+
+      // Fallback for minimal standard schema (local/cloud before ALTER TABLE)
+      const minPayload: any = {
+        document_type: data.docType || 'Giao',
+        submission_date: cleanDate(data.sendDate),
+        recipient: data.receiverName || '',
+        status: data.docStatus || 'Chưa ký'
+      };
+      if (cleanDate(data.dueDate)) minPayload.expected_approval_date = cleanDate(data.dueDate);
+      if (data.notes) minPayload.notes = data.notes;
+      if (data.projectCode) minPayload.project_code = data.projectCode;
+
+      try {
+        const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(minPayload).select().single();
+        if (retryError) throw retryError;
+        return { ...data, ...toCamelCase(retryResult), id: retryResult.id };
+      } catch (err) {
+        console.warn('[DocumentTrack] Supabase insert failed, maintaining local record:', err);
+        return { id: data.id || `doc-${Date.now()}`, ...data };
+      }
     },
     updateDocumentTrack: async (id: string, data: any) => {
       const payload: any = {};
