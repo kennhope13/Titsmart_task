@@ -792,7 +792,7 @@ export const api = {
           notes: row.notes || '',
           dueDate: row.due_date || row.expected_approval_date || '',
           remindDays: row.remind_days || 3,
-          fileUrls: row.file_urls || [],
+          fileUrls: (row.file_urls && row.file_urls.length > 0) ? row.file_urls : (row.soft_copy_link ? [row.soft_copy_link] : []),
           updatedBy: row.updated_by || '',
           updatedAt: row.updated_at || '',
         }));
@@ -828,6 +828,7 @@ export const api = {
         notes: data.notes || '',
         due_date: cleanDate(data.dueDate),
         remind_days: data.remindDays || 3,
+        file_urls: Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []),
         updated_by: data.updatedBy || '',
         updated_at: data.updatedAt || new Date().toISOString()
       };
@@ -854,7 +855,8 @@ export const api = {
         submission_date: cleanDate(data.sendDate),
         recipient: data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || ''),
         status: data.docStatus || 'Chưa ký',
-        notes: data.notes || formattedContractName
+        notes: data.notes || formattedContractName,
+        soft_copy_link: (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '')
       };
       if (data.projectCode) minPayload.project_code = data.projectCode;
       if (cleanDate(data.dueDate)) minPayload.expected_approval_date = cleanDate(data.dueDate);
@@ -931,6 +933,9 @@ export const api = {
         fullPayload.expected_approval_date = cleanDate(data.dueDate);
       }
       if (data.remindDays !== undefined) fullPayload.remind_days = data.remindDays;
+      if (data.fileUrls !== undefined) {
+        fullPayload.file_urls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []);
+      }
       if (data.updatedBy !== undefined) fullPayload.updated_by = data.updatedBy;
       fullPayload.updated_at = new Date().toISOString();
 
@@ -948,6 +953,9 @@ export const api = {
           if (data.projectCode !== undefined) minPayload.project_code = data.projectCode;
           if (data.contractName !== undefined) minPayload.contract_name = data.contractName;
           if (data.address !== undefined) minPayload.address = data.address;
+          if (data.fileUrls !== undefined) {
+            minPayload.soft_copy_link = (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '');
+          }
           await supabase.from('document_tracks').update(minPayload).eq('id', id);
         } else if (res) {
           return { id, ...data, ...toCamelCase(res) };
