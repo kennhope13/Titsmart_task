@@ -1889,7 +1889,7 @@ const REALTIME_TABLES = [
   'projects', 'tasks', 'materials', 'issues', 'engineers',
   'notifications', 'inventory_transactions',
   'material_plans', 'purchasing_plans', 'expenses',
-  'labor_payrolls', 'document_tracks', 'field_logs', 'activity_logs'
+  'labor_payrolls', 'document_tracks', 'field_logs'
 ];
 
 let realtimeChannel: any = null;
@@ -1933,7 +1933,6 @@ export function setupRealtimeSync() {
       if (tables.length === 0 || tables.includes('expenses') || tables.includes('labor_payrolls')) store.fetchAccounting();
       if (tables.length === 0 || tables.includes('field_logs')) store.fetchFieldLogs();
       if (tables.length === 0 || tables.includes('notifications')) store.fetchNotifications();
-      if (tables.length === 0 || tables.includes('activity_logs')) store.fetchActivityLogs();
     }, 4000);
   };
 
