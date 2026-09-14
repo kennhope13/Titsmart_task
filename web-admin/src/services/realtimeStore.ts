@@ -582,6 +582,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       projects: newState.projects !== undefined ? newState.projects : current.projects,
       notifications: newState.notifications !== undefined ? newState.notifications : current.notifications,
       engineers: newState.engineers !== undefined ? newState.engineers : current.engineers,
+      documentTracks: newState.documentTracks !== undefined ? newState.documentTracks : current.documentTracks,
     };
 
     try {
@@ -826,25 +827,32 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           const mergedFetched = documentTracks.map(fetched => {
             const local = localMap.get(fetched.id);
             if (!local) return fetched;
-            // Overwrite empty DB fields with local stored detailed fields if present
+            // Merge fetched record with local state, giving priority to fetched data from server
             return {
+              ...local,
               ...fetched,
-              contractNo: fetched.contractNo || local.contractNo || '',
-              contractName: fetched.contractName || local.contractName || '',
-              projectCode: fetched.projectCode || local.projectCode || '',
-              company: fetched.company || local.company || '',
-              receiverName: fetched.receiverName || local.receiverName || '',
-              phone: fetched.phone || local.phone || '',
-              address: fetched.address || local.address || '',
-              sendDate: fetched.sendDate || local.sendDate || '',
-              receiveDate: fetched.receiveDate || local.receiveDate || '',
-              dueDate: fetched.dueDate || local.dueDate || '',
-              remindDays: fetched.remindDays || local.remindDays || 3,
+              // Only fallback to local if fetched value is strictly empty string/undefined
+              contractNo: fetched.contractNo ?? local.contractNo ?? '',
+              contractName: fetched.contractName ?? local.contractName ?? '',
+              projectCode: fetched.projectCode ?? local.projectCode ?? '',
+              company: fetched.company ?? local.company ?? '',
+              receiverName: fetched.receiverName ?? local.receiverName ?? '',
+              phone: fetched.phone ?? local.phone ?? '',
+              address: fetched.address ?? local.address ?? '',
+              sendDate: fetched.sendDate ?? local.sendDate ?? '',
+              receiveDate: fetched.receiveDate ?? local.receiveDate ?? '',
+              dueDate: fetched.dueDate ?? local.dueDate ?? '',
+              remindDays: fetched.remindDays ?? local.remindDays ?? 3,
               docStatus: fetched.docStatus || local.docStatus || 'Chưa ký',
-              docType: fetched.docType || local.docType || 'Giao',
-              side: fetched.side || local.side || 'Bên trả',
+              paymentStatus: fetched.paymentStatus || local.paymentStatus || 'Chưa thanh toán',
+              contractValue: fetched.contractValue ?? local.contractValue ?? 0,
+              prepayPercent: fetched.prepayPercent ?? local.prepayPercent ?? 0,
+              prepayAmount: fetched.prepayAmount ?? local.prepayAmount ?? 0,
+              isCompleted: fetched.isCompleted !== undefined ? fetched.isCompleted : local.isCompleted,
+              docType: fetched.docType ?? local.docType ?? 'Giao',
+              side: fetched.side ?? local.side ?? 'Bên trả',
               fileUrls: (fetched.fileUrls && fetched.fileUrls.length > 0) ? fetched.fileUrls : (local.fileUrls || []),
-              notes: fetched.notes || local.notes || '',
+              notes: fetched.notes ?? local.notes ?? '',
             };
           });
 
