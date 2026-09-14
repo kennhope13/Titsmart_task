@@ -153,15 +153,11 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
 
     let currentSectionKey = '';
     const isTaskSectionHeader = (node: any) => {
-      if (node.isSectionHeader) return true;
-      const stt = String(node.stt || '').trim().toUpperCase();
-      const notes = String(node.notes || '').toLowerCase();
-      const hasNoDot = stt.length > 0 && !stt.includes('.');
-      const isSecPattern = notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (hasNoDot && /^\d+$/.test(stt));
-      const hasNoVol = !node.volume || node.volume === 0;
-      const unitStr = String(node.unit || '').trim();
-      const hasNoUnit = !unitStr || unitStr === '' || unitStr === '-' || unitStr === '–' || unitStr === '—';
-      return isSecPattern && (hasNoVol || hasNoUnit || !node.parentId);
+      const vol = Number(node.volume || 0);
+      const unitVal = String(node.unit || '').trim();
+      // QUY TẮC ĐƠN GIẢN VÀ TRIỆT ĐỂ:
+      // Nếu Khối lượng (0/rỗng) VÀ Đơn vị tính (rỗng) -> BẮT BUỘC LÀ ĐẦU MỤC (SECTION HEADER / FOLDER)
+      return vol === 0 && unitVal === '';
     };
 
     const flattened: any[] = [];
