@@ -26,31 +26,59 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
   const formattedTime = formatAuditDateTime(updatedAt);
   const isSystemOrEmpty = !updatedBy || updatedBy === 'Hệ thống';
 
-  // Extract unique user list from activityLogs and engineers
   const userList = React.useMemo(() => {
-    const map = new Map<string, { name: string; count: number; lastTime: string; title?: string }>();
-    
-    // Aggregate log counts per user (only real people, exclude system/Excel Sync)
+    const map = new Map<string, { name: string; count: number; lastTime: string; rawTimeMs: number; title?: string }>();
+
+    // Helper to parse date string (supports ISO format or HH:mm DD/MM/YYYY)
+    const parseTime = (str?: string): number => {
+      if (!str) return 0;
+      const isoMs = new Date(str).getTime();
+      if (!isNaN(isoMs)) return isoMs;
+      // If formatted as "HH:mm DD/MM/YYYY"
+      const match = str.match(/(\d{2}):(\d{2})\s+(\d{2})\/(\d{2})\/(\d{4})/);
+      if (match) {
+        const [, hh, mm, d, m, y] = match;
+        return new Date(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm)).getTime();
+      }
+      return 0;
+    };
+
+    // Aggregate log counts and track latest timestamp per user
     activityLogs.forEach(log => {
       const u = String(log.user || '').trim();
       if (!u || u === 'Hệ thống' || u === 'Excel Sync' || u.toLowerCase().includes('excel')) return;
+      const logTimeMs = parseTime(log.timestamp);
       if (!map.has(u)) {
         const eng = engineers.find(e => e.name?.toLowerCase() === u.toLowerCase());
-        map.set(u, { name: u, count: 1, lastTime: log.timestamp || '', title: eng?.title });
+        map.set(u, { name: u, count: 1, lastTime: log.timestamp || '', rawTimeMs: logTimeMs, title: eng?.title });
       } else {
         const existing = map.get(u)!;
         existing.count += 1;
+        if (logTimeMs > existing.rawTimeMs) {
+          existing.rawTimeMs = logTimeMs;
+          existing.lastTime = log.timestamp || existing.lastTime;
+        }
       }
     });
 
-    // Make sure the current updatedBy user is in the list
-    if (updatedBy && updatedBy !== 'Hệ thống' && updatedBy !== 'Excel Sync' && !updatedBy.toLowerCase().includes('excel') && !map.has(updatedBy)) {
-      const eng = engineers.find(e => e.name?.toLowerCase() === updatedBy.toLowerCase());
-      map.set(updatedBy, { name: updatedBy, count: 1, lastTime: formattedTime, title: eng?.title });
+    // Make sure the current updatedBy user is in the list with updatedAt
+    const currentMs = parseTime(updatedAt);
+    if (updatedBy && updatedBy !== 'Hệ thống' && updatedBy !== 'Excel Sync' && !updatedBy.toLowerCase().includes('excel')) {
+      if (!map.has(updatedBy)) {
+        const eng = engineers.find(e => e.name?.toLowerCase() === updatedBy.toLowerCase());
+        map.set(updatedBy, { name: updatedBy, count: 1, lastTime: formattedTime, rawTimeMs: currentMs, title: eng?.title });
+      } else {
+        const existing = map.get(updatedBy)!;
+        if (currentMs > existing.rawTimeMs) {
+          existing.rawTimeMs = currentMs;
+          existing.lastTime = formattedTime;
+        }
+      }
     }
 
-    return Array.from(map.values()).sort((a, b) => b.count - a.count);
-  }, [activityLogs, engineers, updatedBy, formattedTime]);
+    // Sort by latest update time descending (newest first)
+    return Array.from(map.values()).sort((a, b) => b.rawTimeMs - a.rawTimeMs);
+  }, [activityLogs, engineers, updatedBy, updatedAt, formattedTime]);
 
   if (isSystemOrEmpty && !formattedTime) {
     return <div className="text-center w-full"><span className="text-slate-300 italic text-[10px]">-</span></div>;
