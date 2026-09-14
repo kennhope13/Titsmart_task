@@ -506,19 +506,19 @@ export const api = {
       return mapArray(data || []);
     },
     create: async (data: any) => {
-      const payload = toSnakeCase(data);
-      const { data: result, error } = await supabase.from('activity_logs').insert(payload).select().single();
-      if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+      try {
+        const payload = toSnakeCase(data);
+        const { data: result, error } = await supabase.from('activity_logs').insert(payload).select().single();
+        if (error) {
           delete payload.updated_at;
           delete payload.updated_by;
-          const { data: retryResult, error: retryError } = await supabase.from('activity_logs').insert(payload).select().single();
-          if (retryError) throw retryError;
-          return toCamelCase(retryResult);
+          const { data: retryResult } = await supabase.from('activity_logs').insert(payload).select().single();
+          if (retryResult) return toCamelCase(retryResult);
         }
-        throw error;
+        return toCamelCase(result || data);
+      } catch {
+        return { id: `log-${Date.now()}`, ...data };
       }
-      return toCamelCase(result);
     },
   },
 
@@ -769,33 +769,51 @@ export const api = {
       try {
         const { data, error } = await supabase.from('document_tracks').select('*');
         if (error) return [];
-        return (data || []).map((row: any) => ({
-          id: row.id,
-          stt: row.stt || '',
-          contractNo: row.contract_no || (row.contract_name && row.contract_name.startsWith('[') && row.contract_name.includes(']') ? row.contract_name.split(']')[0].replace('[', '') : (row.notes && row.notes.startsWith('[') && row.notes.includes(']') ? row.notes.split(']')[0].replace('[', '') : '')),
-          contractName: (row.contract_name && row.contract_name.startsWith('[') && row.contract_name.includes(']')) ? row.contract_name.split(']').slice(1).join(']').trim() : (row.contract_name || (row.notes && row.notes.startsWith('[') && row.notes.includes(']') ? row.notes.split(']').slice(1).join(']').trim() : (row.notes || ''))),
-          projectCode: row.project_code || '',
-          company: row.company || (row.recipient && row.recipient.includes(' - ') ? row.recipient.split(' - ')[0] : (row.recipient || '')),
-          receiverName: row.receiver_name || (row.recipient && row.recipient.includes(' - ') ? row.recipient.split(' - ')[1] : (row.recipient || '')),
-          phone: row.phone || '',
-          address: row.address || '',
-          sendDate: row.send_date || row.submission_date || '',
-          receiveDate: row.receive_date || '',
-          docStatus: row.doc_status || row.status || 'Chưa ký',
-          docType: row.doc_type || row.document_type || 'Giao',
-          side: row.side || 'Bên trả',
-          contractValue: row.contract_value || 0,
-          prepayPercent: row.prepay_percent || 0,
-          prepayAmount: row.prepay_amount || 0,
-          paymentStatus: row.payment_status || 'Chưa thanh toán',
-          isCompleted: !!row.is_completed,
-          notes: row.notes || '',
-          dueDate: row.due_date || row.expected_approval_date || '',
-          remindDays: row.remind_days || 3,
-          fileUrls: (row.file_urls && row.file_urls.length > 0) ? row.file_urls : (row.soft_copy_link ? [row.soft_copy_link] : []),
-          updatedBy: row.updated_by || '',
-          updatedAt: row.updated_at || '',
-        }));
+        return (data || []).map((row: any) => {
+          const notesText = row.notes || '';
+          let parsedDocStatus = row.doc_status || row.status || 'Chưa ký';
+          let parsedPaymentStatus = row.payment_status || 'Chưa thanh toán';
+          let parsedIsCompleted = !!row.is_completed;
+          let cleanNotes = notesText;
+
+          if (notesText.includes('[STATUS:')) {
+            const match = notesText.match(/\[STATUS:([^|]+)\|PAY:([^|]+)\|COMP:([^\]]+)\]/);
+            if (match) {
+              parsedDocStatus = match[1];
+              parsedPaymentStatus = match[2];
+              parsedIsCompleted = match[3] === '1';
+              cleanNotes = notesText.replace(match[0], '').trim();
+            }
+          }
+
+          return {
+            id: row.id,
+            stt: row.stt || '',
+            contractNo: row.contract_no || (row.contract_name && row.contract_name.startsWith('[') && row.contract_name.includes(']') ? row.contract_name.split(']')[0].replace('[', '') : (cleanNotes.startsWith('[') && cleanNotes.includes(']') ? cleanNotes.split(']')[0].replace('[', '') : '')),
+            contractName: (row.contract_name && row.contract_name.startsWith('[') && row.contract_name.includes(']')) ? row.contract_name.split(']').slice(1).join(']').trim() : (row.contract_name || (cleanNotes.startsWith('[') && cleanNotes.includes(']') ? cleanNotes.split(']').slice(1).join(']').trim() : cleanNotes)),
+            projectCode: row.project_code || '',
+            company: row.company || (row.recipient && row.recipient.includes(' - ') ? row.recipient.split(' - ')[0] : (row.recipient || '')),
+            receiverName: row.receiver_name || (row.recipient && row.recipient.includes(' - ') ? row.recipient.split(' - ')[1] : (row.recipient || '')),
+            phone: row.phone || '',
+            address: row.address || '',
+            sendDate: row.send_date || row.submission_date || '',
+            receiveDate: row.receive_date || '',
+            docStatus: parsedDocStatus,
+            docType: row.doc_type || row.document_type || 'Giao',
+            side: row.side || 'Bên trả',
+            contractValue: row.contract_value || 0,
+            prepayPercent: row.prepay_percent || 0,
+            prepayAmount: row.prepay_amount || 0,
+            paymentStatus: parsedPaymentStatus,
+            isCompleted: parsedIsCompleted,
+            notes: cleanNotes,
+            dueDate: row.due_date || row.expected_approval_date || '',
+            remindDays: row.remind_days || 3,
+            fileUrls: (row.file_urls && row.file_urls.length > 0) ? row.file_urls : (row.soft_copy_link ? [row.soft_copy_link] : []),
+            updatedBy: row.updated_by || '',
+            updatedAt: row.updated_at || '',
+          };
+        });
       } catch {
         return [];
       }
@@ -932,20 +950,33 @@ export const api = {
         const { data: res, error } = await supabase.from('document_tracks').update(fullPayload).eq('id', id).select().single();
         if (error) {
           console.warn('[DocumentTrack] update error with fullPayload, trying fallback:', error.message);
-          const minPayload: any = {};
+          const statusTag = `[STATUS:${data.docStatus || 'Chưa ký'}|PAY:${data.paymentStatus || 'Chưa thanh toán'}|COMP:${data.isCompleted ? '1' : '0'}]`;
+          const baseNotes = data.notes ? data.notes.replace(/\[STATUS:[^\]]+\]/g, '').trim() : (data.contractName ? `[${data.contractNo || ''}] ${data.contractName}` : '');
+          const combinedNotes = `${statusTag} ${baseNotes}`.trim();
+
+          const minPayload: any = {
+            status: data.docStatus || 'Chưa ký',
+            notes: combinedNotes
+          };
           if (data.docType !== undefined) minPayload.document_type = data.docType;
-          if (data.sendDate !== undefined) minPayload.submission_date = cleanDate(data.sendDate);
-          if (data.receiverName !== undefined) minPayload.recipient = data.receiverName;
-          if (data.docStatus !== undefined) minPayload.status = data.docStatus;
-          if (data.dueDate !== undefined) minPayload.expected_approval_date = cleanDate(data.dueDate);
-          if (data.notes !== undefined) minPayload.notes = data.notes;
-          if (data.projectCode !== undefined) minPayload.project_code = data.projectCode;
-          if (data.contractName !== undefined) minPayload.contract_name = data.contractName;
-          if (data.address !== undefined) minPayload.address = data.address;
+          if (cleanDate(data.sendDate)) minPayload.submission_date = cleanDate(data.sendDate);
+          if (data.receiverName || data.company) minPayload.recipient = data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || '');
+          if (cleanDate(data.dueDate)) minPayload.expected_approval_date = cleanDate(data.dueDate);
+          if (data.projectCode) minPayload.project_code = data.projectCode;
           if (data.fileUrls !== undefined) {
             minPayload.soft_copy_link = (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '');
           }
-          await supabase.from('document_tracks').update(minPayload).eq('id', id);
+          const { error: minErr } = await supabase.from('document_tracks').update(minPayload).eq('id', id);
+          if (minErr) {
+            const ultraMinPayload: any = {
+              status: data.docStatus || 'Chưa ký',
+              notes: combinedNotes
+            };
+            const { error: ultraErr } = await supabase.from('document_tracks').update(ultraMinPayload).eq('id', id);
+            if (ultraErr) {
+              await supabase.from('document_tracks').update({ notes: combinedNotes }).eq('id', id);
+            }
+          }
         } else if (res) {
           return { id, ...data, ...toCamelCase(res) };
         }

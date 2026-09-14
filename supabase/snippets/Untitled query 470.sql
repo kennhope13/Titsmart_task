@@ -1,0 +1,20 @@
+-- Chạy đoạn lệnh SQL này trong Supabase Studio / SQL Editor của Local:
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS contract_no text;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS contract_name text;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS company text;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS receiver_name text;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS phone text;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS address text;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS send_date text;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS receive_date text;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS doc_status text DEFAULT 'Chưa ký';
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS doc_type text DEFAULT 'Giao';
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS side text DEFAULT 'Bên trả';
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS contract_value numeric DEFAULT 0;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS prepay_percent numeric DEFAULT 0;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS prepay_amount numeric DEFAULT 0;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS payment_status text DEFAULT 'Chưa thanh toán';
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS is_completed boolean DEFAULT false;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS due_date text;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS remind_days integer DEFAULT 3;
+ALTER TABLE document_tracks ADD COLUMN IF NOT EXISTS file_urls text[];
