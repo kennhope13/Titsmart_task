@@ -801,13 +801,94 @@ export const api = {
       }
     },
     createDocumentTrack: async (data: any) => {
-      // Return exact data object with generated ID to prevent DB schema stripping
-      return { id: data.id || `doc-${Date.now()}`, ...data };
+      const cleanDate = (d: any) => {
+        if (!d || typeof d !== 'string') return null;
+        const trimmed = d.trim();
+        return /^\d{4}-\d{2}-\d{2}/.test(trimmed) ? trimmed.split('T')[0] : null;
+      };
+
+      const payload: any = {
+        // Local DB column names
+        document_type: data.docType || 'Giao',
+        submission_date: cleanDate(data.sendDate),
+        recipient: data.receiverName || '',
+        status: data.docStatus || 'Chưa ký',
+        expected_approval_date: cleanDate(data.dueDate),
+        notes: data.notes || '',
+        project_code: data.projectCode || '',
+        // Cloud & Extended DB column names
+        doc_type: data.docType || 'Giao',
+        send_date: cleanDate(data.sendDate),
+        receive_date: cleanDate(data.receiveDate),
+        receiver_name: data.receiverName || '',
+        doc_status: data.docStatus || 'Chưa ký',
+        contract_no: data.contractNo || '',
+        contract_name: data.contractName || '',
+        company: data.company || '',
+        phone: data.phone || '',
+        address: data.address || '',
+        due_date: cleanDate(data.dueDate),
+        remind_days: data.remindDays || 3,
+        side: data.side || 'Bên trả',
+        contract_value: data.contractValue || 0,
+        prepay_percent: data.prepayPercent || 0,
+        prepay_amount: data.prepayAmount || 0,
+        payment_status: data.paymentStatus || 'Chưa thanh toán',
+        is_completed: !!data.isCompleted,
+        file_urls: data.fileUrls || [],
+        updated_by: data.updatedBy || '',
+        updated_at: data.updatedAt || new Date().toISOString()
+      };
+
+      try {
+        const { data: result, error } = await supabase.from('document_tracks').insert(payload).select().single();
+        if (error) {
+          console.warn('[Supabase] Full insert failed, retrying minimal payload:', error.message || error);
+          const minPayload = {
+            document_type: data.docType || 'Giao',
+            submission_date: cleanDate(data.sendDate),
+            recipient: data.receiverName || '',
+            status: data.docStatus || 'Chưa ký',
+            expected_approval_date: cleanDate(data.dueDate),
+            notes: data.notes || '',
+            project_code: data.projectCode || ''
+          };
+          const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(minPayload).select().single();
+          if (retryError) {
+            console.error('[Supabase] Retry insert document_tracks failed:', retryError);
+            return { id: data.id || `doc-${Date.now()}`, ...data };
+          }
+          return { ...data, id: retryResult.id };
+        }
+        return { ...data, id: result.id };
+      } catch (err) {
+        console.error('[Supabase] Exception insert document_tracks:', err);
+        return { id: data.id || `doc-${Date.now()}`, ...data };
+      }
     },
     updateDocumentTrack: async (id: string, data: any) => {
+      const payload: any = {};
+      if (data.docType !== undefined) payload.document_type = data.docType;
+      if (data.sendDate !== undefined) payload.submission_date = data.sendDate;
+      if (data.receiverName !== undefined) payload.recipient = data.receiverName;
+      if (data.docStatus !== undefined) payload.status = data.docStatus;
+      if (data.dueDate !== undefined) payload.expected_approval_date = data.dueDate;
+      if (data.notes !== undefined) payload.notes = data.notes;
+      if (data.projectCode !== undefined) payload.project_code = data.projectCode;
+
+      try {
+        await supabase.from('document_tracks').update(payload).eq('id', id);
+      } catch {
+        // Ignore if error
+      }
       return { id, ...data };
     },
     deleteDocumentTrack: async (id: string) => {
+      try {
+        await supabase.from('document_tracks').delete().eq('id', id);
+      } catch {
+        // Ignore
+      }
       return { success: true };
     },
   },
