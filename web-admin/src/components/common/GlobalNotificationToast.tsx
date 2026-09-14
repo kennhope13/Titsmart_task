@@ -8,24 +8,21 @@ export const GlobalNotificationToast: React.FC = () => {
   const [activeToasts, setActiveToasts] = useState<Array<{ id: string; title: string; message: string; isOverdue: boolean }>>([]);
 
   useEffect(() => {
-    // Only show NEW real-time notifications created in the last 15 seconds as Toast popups
-    const unreadNotifs = notifications.filter(n => {
-      if (n.read) return false;
-      const timestamp = new Date(n.timestamp || '').getTime();
-      return !isNaN(timestamp) && (Date.now() - timestamp < 15000);
-    });
+    // Show 2 most recent unread notifications as Toast cards in bottom right corner
+    const unreadNotifs = notifications.filter(n => !n.read);
     
     // Deduplicate by title + message and take max 2 most recent
     const seen = new Set<string>();
     const list: Array<{ id: string; title: string; message: string; isOverdue: boolean }> = [];
     
     unreadNotifs.forEach(n => {
-      const key = `${n.title}:::${n.message}`;
+      const cleanTitle = n.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim();
+      const key = `${cleanTitle}:::${n.message}`;
       if (!seen.has(key)) {
         seen.add(key);
         list.push({
           id: n.id,
-          title: n.title,
+          title: cleanTitle,
           message: n.message,
           isOverdue: n.title.includes('quá hạn')
         });
