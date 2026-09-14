@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useRealtimeStore } from '../../services/realtimeStore';
+import { Modal } from './Modal';
 
 export const formatAuditDateTime = (isoString?: string): string => {
   if (!isoString) return '';
@@ -20,20 +21,36 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
   className = '',
 }) => {
   const [showModal, setShowModal] = useState(false);
-  const activityLogs = useRealtimeStore(state => state.activityLogs);
+  const { activityLogs, engineers } = useRealtimeStore();
 
   const formattedTime = formatAuditDateTime(updatedAt);
   const isSystemOrEmpty = !updatedBy || updatedBy === 'Hệ thống';
 
-  // Filter logs for this specific user if modal is open
-  const userLogs = React.useMemo(() => {
-    if (!updatedBy || updatedBy === 'Hệ thống') return [];
-    return activityLogs.filter(log => {
-      const logUser = String(log.user || '').trim().toLowerCase();
-      const targetUser = String(updatedBy).trim().toLowerCase();
-      return logUser === targetUser || logUser.includes(targetUser) || targetUser.includes(logUser);
+  // Extract unique user list from activityLogs and engineers
+  const userList = React.useMemo(() => {
+    const map = new Map<string, { name: string; count: number; lastTime: string; title?: string }>();
+    
+    // Aggregate log counts per user
+    activityLogs.forEach(log => {
+      const u = String(log.user || '').trim();
+      if (!u || u === 'Hệ thống') return;
+      if (!map.has(u)) {
+        const eng = engineers.find(e => e.name?.toLowerCase() === u.toLowerCase());
+        map.set(u, { name: u, count: 1, lastTime: log.timestamp || '', title: eng?.title });
+      } else {
+        const existing = map.get(u)!;
+        existing.count += 1;
+      }
     });
-  }, [activityLogs, updatedBy]);
+
+    // Make sure the current updatedBy user is in the list
+    if (updatedBy && updatedBy !== 'Hệ thống' && !map.has(updatedBy)) {
+      const eng = engineers.find(e => e.name?.toLowerCase() === updatedBy.toLowerCase());
+      map.set(updatedBy, { name: updatedBy, count: 1, lastTime: formattedTime, title: eng?.title });
+    }
+
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [activityLogs, engineers, updatedBy, formattedTime]);
 
   if (isSystemOrEmpty && !formattedTime) {
     return <div className="text-center w-full"><span className="text-slate-300 italic text-[10px]">-</span></div>;
@@ -50,7 +67,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
           e.stopPropagation();
           setShowModal(true);
         }}
-        title={`Click để xem lịch sử hoạt động của: ${updatedBy}`}
+        title={`Click để xem danh sách người cập nhật`}
         className={`flex flex-col items-center justify-center text-center text-[10px] leading-tight w-full cursor-pointer hover:bg-slate-100/80 p-1 rounded transition-colors group/audit ${className}`}
       >
         <span className="font-bold text-slate-700 truncate w-full group-hover/audit:text-primary underline decoration-dotted decoration-slate-300 underline-offset-2">
@@ -63,75 +80,72 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
         )}
       </div>
 
-      {showModal && (
-        <div 
-          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setShowModal(false)}
-        >
-          <div 
-            className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-base border border-primary/30">
-                  {updatedBy.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                    Lịch sử cập nhật: {updatedBy}
-                  </h3>
-                  <p className="text-[11px] text-slate-400 font-mono">
-                    Lần sửa gần nhất: {formattedTime || 'Chưa có thông tin'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="w-8 h-8 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
-              >
-                <span className="material-symbols-outlined text-lg">close</span>
-              </button>
-            </div>
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="Danh sách người cập nhật"
+        icon="group"
+        size="md"
+      >
+        <div className="p-3 space-y-2">
+          <p className="text-xs text-slate-500 font-medium mb-3">
+            Danh sách nhân sự thực hiện các hoạt động cập nhật trên hệ thống:
+          </p>
 
-            {/* Body */}
-            <div className="p-4 max-h-[60vh] overflow-y-auto space-y-2.5">
-              {userLogs.length === 0 ? (
-                <div className="text-center py-8 text-slate-400">
-                  <span className="material-symbols-outlined text-3xl mb-1 text-slate-300">history_toggle_off</span>
-                  <p className="text-xs">Chưa ghi nhận lịch sử hoạt động chi tiết nào của người dùng này.</p>
-                </div>
-              ) : (
-                userLogs.map((log) => (
-                  <div key={log.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex items-start gap-3 hover:border-slate-200 transition-colors">
-                    <div className={`p-1.5 rounded-md ${log.badgeBg || 'bg-blue-50'} ${log.iconColor || 'text-blue-600'} shrink-0 mt-0.5`}>
-                      <span className="material-symbols-outlined text-base">{log.icon || 'edit'}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between text-[11px] mb-1">
-                        <span className="font-bold text-slate-700">{log.project || 'Hệ thống'}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">{log.timestamp}</span>
+          {userList.length === 0 ? (
+            <div className="text-center py-6 text-slate-400 text-xs">
+              Chưa có lịch sử cập nhật.
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+              {userList.map((user) => {
+                const isCurrent = user.name.toLowerCase() === updatedBy?.toLowerCase();
+                return (
+                  <div 
+                    key={user.name} 
+                    className={`flex items-center justify-between p-2.5 transition-colors ${
+                      isCurrent ? 'bg-blue-50/60' : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                        isCurrent ? 'bg-primary text-white shadow-sm' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {user.name.charAt(0).toUpperCase()}
                       </div>
-                      <p className="text-xs text-slate-600 leading-snug break-words">{log.action}</p>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-slate-800 truncate">{user.name}</span>
+                          {isCurrent && (
+                            <span className="px-1.5 py-0.5 text-[9px] font-bold bg-primary/10 text-primary rounded border border-primary/20 shrink-0">
+                              Vừa cập nhật
+                            </span>
+                          )}
+                        </div>
+                        {user.title && <p className="text-[10px] text-slate-400 truncate">{user.title}</p>}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                        {user.count} cập nhật
+                      </span>
                     </div>
                   </div>
-                ))
-              )}
+                );
+              })}
             </div>
-
-            {/* Footer */}
-            <div className="bg-slate-50 px-5 py-3 border-t border-slate-100 flex justify-end">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-1.5 text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md transition-colors"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
+          )}
         </div>
-      )}
+
+        <div className="mt-3 pt-2 border-t border-slate-100 flex justify-end">
+          <button
+            onClick={() => setShowModal(false)}
+            className="px-4 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors"
+          >
+            Đóng
+          </button>
+        </div>
+      </Modal>
     </>
   );
 };
