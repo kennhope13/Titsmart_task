@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { useAuthStore } from '../../services/authStore';
 import { useUIStore } from '../../services/uiStore';
@@ -11,7 +11,21 @@ export const NotificationBell: React.FC = () => {
   const [showPopover, setShowPopover] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = notifications.filter(item => !item.read).length;
+  const displayNotifications = useMemo(() => {
+    const seen = new Set<string>();
+    const uniqueList: typeof notifications = [];
+    notifications.forEach(n => {
+      const cleanTitle = n.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim();
+      const key = `${cleanTitle}:::${n.message}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueList.push(n);
+      }
+    });
+    return uniqueList;
+  }, [notifications]);
+
+  const unreadCount = displayNotifications.filter(item => !item.read).length;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -55,13 +69,13 @@ export const NotificationBell: React.FC = () => {
             )}
           </div>
           <div className="max-h-[60vh] overflow-y-auto custom-scrollbar divide-y divide-slate-100">
-            {notifications.length === 0 ? (
+            {displayNotifications.length === 0 ? (
               <div className="p-8 text-center flex flex-col items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-slate-200 text-4xl">notifications_off</span>
                 <span className="text-slate-500 text-xs">Không có thông báo nào</span>
               </div>
             ) : (
-              notifications.map(notification => {
+              displayNotifications.map(notification => {
                 let dateStr = notification.timestamp;
                 try {
                   const d = new Date(notification.timestamp || '');

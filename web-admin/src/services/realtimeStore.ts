@@ -242,8 +242,10 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
     }
   });
 
-  const existingNotifIds = new Set(existingNotifications.map(n => n.id));
-  return newNotifs.filter(n => !existingNotifIds.has(n.id));
+  // Filter out any notification that has the same id OR same title+message content
+  const existingKeys = new Set(existingNotifications.map(n => `${n.id}:::${n.title}:::${n.message}`));
+  const existingIds = new Set(existingNotifications.map(n => n.id));
+  return newNotifs.filter(n => !existingIds.has(n.id) && !existingKeys.has(`${n.id}:::${n.title}:::${n.message}`));
 };
 
 interface RealtimeStoreState {
