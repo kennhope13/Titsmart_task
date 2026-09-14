@@ -526,7 +526,7 @@ export const DocumentTrackingPage: React.FC = () => {
                    <th className="p-1 text-center whitespace-nowrap">File</th>
                    <th className="p-1 text-center whitespace-nowrap">Hồ sơ</th>
                    <th className="p-1 min-w-[130px] text-center">NGƯỜI CẬP NHẬT</th>
-                   <th className="p-1 text-center whitespace-nowrap">Thao tác</th>
+                   <th className="p-1 text-center whitespace-nowrap">TT</th>
                  </tr>
                </thead>
                <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 leading-tight">
