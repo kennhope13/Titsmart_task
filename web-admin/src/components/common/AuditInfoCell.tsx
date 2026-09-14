@@ -21,9 +21,10 @@ export const formatAuditDateTime = (isoString?: string): string => {
   }
 };
 
-export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; className?: string }> = ({
+export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; projectCode?: string; className?: string }> = ({
   updatedBy,
   updatedAt,
+  projectCode,
   className = '',
 }) => {
   const [showModal, setShowModal] = useState(false);
@@ -50,9 +51,19 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
       return 0;
     };
 
+    // Filter activity logs by projectCode if provided
+    const filteredLogs = (activityLogs || []).filter(log => {
+      if (!log) return false;
+      if (projectCode) {
+        const logProj = String(log.project || '').trim().toLowerCase();
+        const pCode = String(projectCode).trim().toLowerCase();
+        if (logProj && logProj !== pCode) return false;
+      }
+      return true;
+    });
+
     // Aggregate log counts and track latest timestamp per user
-    (activityLogs || []).forEach(log => {
-      if (!log) return;
+    filteredLogs.forEach(log => {
       const u = String(log.user || '').trim();
       if (!u || u === 'Hệ thống' || u === 'Excel Sync' || u.toLowerCase().includes('excel')) return;
       const logTimeMs = parseTime(log.timestamp);
@@ -87,7 +98,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
 
     // Sort by latest update time descending (newest first)
     return Array.from(map.values()).sort((a, b) => b.rawTimeMs - a.rawTimeMs);
-  }, [showModal, activityLogs, engineers, updatedBy, updatedAt, formattedTime]);
+  }, [showModal, activityLogs, engineers, updatedBy, updatedAt, formattedTime, projectCode]);
 
   if (isSystemOrEmpty && !formattedTime) {
     return <div className="text-center w-full"><span className="text-slate-300 italic text-[10px]">-</span></div>;

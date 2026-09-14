@@ -1849,6 +1849,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             <AuditInfoCell 
                               updatedBy={subTab === 'FINANCE' ? (pRecord?.updatedBy || plan.updatedBy) : (plan.updatedBy || pRecord?.updatedBy)} 
                               updatedAt={subTab === 'FINANCE' ? (pRecord?.updatedAt || plan.updatedAt) : (plan.updatedAt || pRecord?.updatedAt)} 
+                              projectCode={plan.projectCode}
                             />
                           </td>
                       </tr>
