@@ -3,19 +3,21 @@ import { useRealtimeStore } from '../../services/realtimeStore';
 import { Modal } from './Modal';
 
 export const formatAuditDateTime = (isoString?: string): string => {
-  if (!isoString) return '';
-  // Handle formatted timestamps like "12:03 14/09/2026"
-  if (/^\d{2}:\d{2}\s+\d{2}\/\d{2}\/\d{4}$/.test(isoString.trim())) {
-    return isoString.trim();
+  if (!isoString || typeof isoString !== 'string') return '';
+  const str = isoString.trim();
+  if (!str) return '';
+  // Handle pre-formatted timestamps like "12:03 14/09/2026"
+  if (/^\d{1,2}:\d{2}\s+\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
+    return str;
   }
   try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return isoString;
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return str;
     const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
     return `${timeStr} ${dateStr}`;
   } catch {
-    return isoString || '';
+    return str;
   }
 };
 
@@ -25,36 +27,38 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
   className = '',
 }) => {
   const [showModal, setShowModal] = useState(false);
-  const { activityLogs, engineers } = useRealtimeStore();
+  const { activityLogs = [], engineers = [] } = useRealtimeStore();
 
   const formattedTime = formatAuditDateTime(updatedAt);
   const isSystemOrEmpty = !updatedBy || updatedBy === 'Hệ thống';
 
   const userList = React.useMemo(() => {
+    if (!showModal) return [];
     const map = new Map<string, { name: string; count: number; lastTime: string; rawTimeMs: number; title?: string }>();
 
-    // Helper to parse date string (supports ISO format or HH:mm DD/MM/YYYY)
+    // Helper to parse date string safely (supports ISO format or HH:mm DD/MM/YYYY)
     const parseTime = (str?: string): number => {
-      if (!str) return 0;
+      if (!str || typeof str !== 'string') return 0;
       const isoMs = new Date(str).getTime();
       if (!isNaN(isoMs)) return isoMs;
-      // If formatted as "HH:mm DD/MM/YYYY"
-      const match = str.match(/(\d{2}):(\d{2})\s+(\d{2})\/(\d{2})\/(\d{4})/);
+      const match = str.match(/(\d{1,2}):(\d{2})\s+(\d{1,2})\/(\d{1,2})\/(\d{4})/);
       if (match) {
         const [, hh, mm, d, m, y] = match;
-        return new Date(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm)).getTime();
+        const dt = new Date(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm));
+        return isNaN(dt.getTime()) ? 0 : dt.getTime();
       }
       return 0;
     };
 
     // Aggregate log counts and track latest timestamp per user
-    activityLogs.forEach(log => {
+    (activityLogs || []).forEach(log => {
+      if (!log) return;
       const u = String(log.user || '').trim();
       if (!u || u === 'Hệ thống' || u === 'Excel Sync' || u.toLowerCase().includes('excel')) return;
       const logTimeMs = parseTime(log.timestamp);
       const displayTime = formatAuditDateTime(log.timestamp);
       if (!map.has(u)) {
-        const eng = engineers.find(e => e.name?.toLowerCase() === u.toLowerCase());
+        const eng = (engineers || []).find(e => e?.name?.toLowerCase() === u.toLowerCase());
         map.set(u, { name: u, count: 1, lastTime: displayTime, rawTimeMs: logTimeMs, title: eng?.title });
       } else {
         const existing = map.get(u)!;
@@ -70,7 +74,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
     const currentMs = parseTime(updatedAt);
     if (updatedBy && updatedBy !== 'Hệ thống' && updatedBy !== 'Excel Sync' && !updatedBy.toLowerCase().includes('excel')) {
       if (!map.has(updatedBy)) {
-        const eng = engineers.find(e => e.name?.toLowerCase() === updatedBy.toLowerCase());
+        const eng = (engineers || []).find(e => e?.name?.toLowerCase() === updatedBy.toLowerCase());
         map.set(updatedBy, { name: updatedBy, count: 1, lastTime: formattedTime, rawTimeMs: currentMs, title: eng?.title });
       } else {
         const existing = map.get(updatedBy)!;
@@ -83,7 +87,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
 
     // Sort by latest update time descending (newest first)
     return Array.from(map.values()).sort((a, b) => b.rawTimeMs - a.rawTimeMs);
-  }, [activityLogs, engineers, updatedBy, updatedAt, formattedTime]);
+  }, [showModal, activityLogs, engineers, updatedBy, updatedAt, formattedTime]);
 
   if (isSystemOrEmpty && !formattedTime) {
     return <div className="text-center w-full"><span className="text-slate-300 italic text-[10px]">-</span></div>;
