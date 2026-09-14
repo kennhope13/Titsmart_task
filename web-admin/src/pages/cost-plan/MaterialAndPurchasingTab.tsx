@@ -58,6 +58,7 @@ const cleanNotes = (value?: string) => {
     .replace(/\[order:[\d.]+\]/g, '')
     .replace(/\[section\]/gi, '')
     .replace(/\[contractor\]/gi, '')
+    .replace(/\[tech-status:[^\]]+\]/gi, '')
     .replace(/\[owner\]/gi, '').replace(/\[doc-track\]/gi, '').replace(/\[doc-track\s*]/gi, '')
     .replace(/Nhà thầu cung cấp/gi, '')
     .replace(/Chủ đầu tư cung cấp/gi, '')
@@ -780,7 +781,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
       if (field === 'notes') {
         const existingTags = finalNotes.match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
+        const techStatusTag = finalNotes.match(/\[tech-status:[^\]]+\]/gi)?.[0] || '';
         let updatedNote = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+        if (techStatusTag) updatedNote = `${updatedNote} ${techStatusTag}`.trim();
         
         if (subTab === 'DOCS') {
            finalValue = `${currentTech} [DOC-NOTE] ${updatedNote} [DOC-FILENAME] ${currentFile}`;
@@ -1502,21 +1505,29 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               {/* TÌNH TRẠNG */}
                               <td className="w-[125px] p-0 align-middle text-slate-600 border-r border-slate-200">
                                 <div className="p-1">
-                                  {(() => {
-                                    const currentStatus = plan.techSpecStatus || 'Chưa xác định';
-                                    const style = getStatusColorStyle(currentStatus);
-                                    return (
-                                      <CustomSelect
-                                        value={currentStatus}
-                                        onChange={(e) => { onUpdateMaterial(plan.id, { techSpecStatus: e.target.value === 'Chưa xác định' ? '' : e.target.value }) }}
-                                        className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${style}`}
-                                      >
-                                        {['Chưa xác định', 'Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét'].map(opt => (
-                                          <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>
-                                        ))}
-                                      </CustomSelect>
-                                    );
-                                  })()}
+                                   {(() => {
+                                     const currentStatus = plan.techSpecStatus || 'Chưa xác định';
+                                     const style = getStatusColorStyle(currentStatus);
+                                     return (
+                                       <CustomSelect
+                                         value={currentStatus}
+                                         onChange={(e) => { 
+                                           const val = e.target.value === 'Chưa xác định' ? '' : e.target.value;
+                                           const rawNotes = String(plan.notes || '');
+                                           let currentTech = getTechNote(rawNotes).replace(/\[tech-status:[^\]]+\]/gi, '').trim();
+                                           if (val) currentTech = `${currentTech} [tech-status:${val}]`.trim();
+                                           const docNote = getDocNoteFull(rawNotes);
+                                           const newNotes = docNote ? `${currentTech} [DOC-NOTE]${docNote}` : currentTech;
+                                           onUpdateMaterial(plan.id, { techSpecStatus: val, notes: newNotes });
+                                         }}
+                                         className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${style}`}
+                                       >
+                                         {['Chưa xác định', 'Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét'].map(opt => (
+                                           <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>
+                                         ))}
+                                       </CustomSelect>
+                                     );
+                                   })()}
                                 </div>
                               </td>
                             

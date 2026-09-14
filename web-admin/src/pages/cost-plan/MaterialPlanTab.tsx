@@ -794,7 +794,16 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                             return (
                               <CustomSelect
                                 value={currentStatus}
-                                onChange={(e) => { onUpdate(plan.id, { techSpecStatus: e.target.value === 'Chưa xác định' ? '' : e.target.value }) }}
+                                onChange={(e) => { 
+                                  const val = e.target.value === 'Chưa xác định' ? '' : e.target.value;
+                                  const rawNotes = String(plan.notes || '');
+                                  const docNoteMatch = rawNotes.match(/\[DOC-NOTE\][\s\S]*/i);
+                                  const docNote = docNoteMatch ? docNoteMatch[0] : '';
+                                  let currentTech = rawNotes.split('[DOC-NOTE]')[0].replace(/\[tech-status:[^\]]+\]/gi, '').trim();
+                                  if (val) currentTech = `${currentTech} [tech-status:${val}]`.trim();
+                                  const newNotes = docNote ? `${currentTech} ${docNote}` : currentTech;
+                                  onUpdate(plan.id, { techSpecStatus: val, notes: newNotes });
+                                }}
                                 className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${style}`}
                               >
                                 {['Chưa xác định', 'Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét'].map(opt => (

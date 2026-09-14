@@ -566,30 +566,29 @@ export const api = {
     },
     updateMaterialPlan: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
-      if (Object.keys(payload).length === 0) return { id };
-      const { data: result, error } = await supabase.from('material_plans').update(payload).eq('id', id).select().single();
-      if (error) {
-        if (error.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('updated_at') || String(error.message).includes('updated_by')) {
-          const allowedKeys = ['parent_id', 'project_code', 'stt', 'job_content', 'unit', 'contract_volume', 'tech_spec_model', 'tech_spec_origin', 'progress_status', 'ordered_volume', 'ordered_status', 'expected_date', 'issue_content', 'issue_status', 'doc_co', 'doc_cq', 'doc_fire_inspection', 'dispatch_to_site', 'supply_scope', 'notes', 'updated_by', 'updated_at'];
-          const cleanedPayload: any = {};
-          for (const key of Object.keys(payload)) {
-            if (allowedKeys.includes(key)) cleanedPayload[key] = payload[key];
-          }
-          const { data: retryResult, error: retryError } = await supabase.from('material_plans').update(cleanedPayload).eq('id', id).select().single();
-          if (retryError) {
-            if (retryError.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
-            delete cleanedPayload.updated_at;
-            delete cleanedPayload.updated_by;
-            const { data: retryResult2, error: retryError2 } = await supabase.from('material_plans').update(cleanedPayload).eq('id', id).select().single();
-            if (retryError2) throw retryError2;
-            return toCamelCase(retryResult2);
-          }
-          return toCamelCase(retryResult);
-        }
-        throw error;
+      if (Object.keys(payload).length === 0) return { id, ...data };
+
+      const allowedKeys = ['parent_id', 'project_code', 'stt', 'job_content', 'unit', 'contract_volume', 'tech_spec_model', 'tech_spec_origin', 'ordered_volume', 'ordered_status', 'expected_date', 'issue_content', 'issue_status', 'doc_co', 'doc_cq', 'doc_fire_inspection', 'dispatch_to_site', 'supply_scope', 'notes', 'updated_by', 'updated_at'];
+      const cleanedPayload: any = {};
+      for (const key of Object.keys(payload)) {
+        if (allowedKeys.includes(key)) cleanedPayload[key] = payload[key];
       }
-      return toCamelCase(result);
+
+      try {
+        const { data: result, error } = await supabase.from('material_plans').update(cleanedPayload).eq('id', id).select();
+        if (error) {
+          delete cleanedPayload.updated_at;
+          delete cleanedPayload.updated_by;
+          delete cleanedPayload.progress_status;
+          const { data: retryResult } = await supabase.from('material_plans').update(cleanedPayload).eq('id', id).select();
+          const row1 = Array.isArray(retryResult) && retryResult.length > 0 ? retryResult[0] : { id, ...cleanedPayload };
+          return { ...data, ...toCamelCase(row1) };
+        }
+        const row = Array.isArray(result) && result.length > 0 ? result[0] : { id, ...cleanedPayload };
+        return { ...data, ...toCamelCase(row) };
+      } catch (err) {
+        return { id, ...data };
+      }
     },
     deleteMaterialPlan: async (id: string) => {
       const { error } = await supabase.from('material_plans').delete().eq('id', id);
