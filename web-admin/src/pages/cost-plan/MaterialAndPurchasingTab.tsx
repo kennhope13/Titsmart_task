@@ -41,12 +41,11 @@ const TEXT = {
 };
 
 const isParentRow = (plan: ProjectMaterialPlan) => {
-  const notes = String(plan.notes || '').toLowerCase();
-  if (notes.includes('[section]')) return true;
-
-  const stt = String(plan.stt || '').trim().toUpperCase();
-  const isSecPattern = /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || stt.startsWith('PHẦN');
-  return isSecPattern;
+  const vol = Number(plan.contractVolume || 0);
+  const unitVal = String(plan.unit || '').trim();
+  // QUY TẮC ĐƠN GIẢN VÀ TRIỆT ĐỂ:
+  // Nếu cả Khối lượng (0/rỗng) VÀ Đơn vị tính (rỗng) -> BẮT BUỘC LÀ ĐẦU MỤC (SECTION HEADER / FOLDER)
+  return vol === 0 && unitVal === '';
 };
 
 const isRootSectionRow = (plan: ProjectMaterialPlan) => {
@@ -1246,7 +1245,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   if (!node || !node.id || visited.has(node.id)) return;
                   visited.add(node.id);
 
-                  const isSec = isParentRow(node);
+                  const isSec = node.isSec || isParentRow(node);
                   if (isSec) {
                     currentSectionKey = node.id;
                   }
@@ -1283,7 +1282,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   {flattened
                     .filter(plan => plan.isSec || !collapsedSections.has(plan._sectionKey || ''))
                     .map((plan, index) => {
-                      const parent = plan.isSec;
+                      const parent = plan.isSec || isParentRow(plan);
                       const depth = plan.depth || 0;
                       const suggestedStt = '';
                       const pRecord = parent ? undefined : findPurchasingMatch(plan);

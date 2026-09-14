@@ -29,9 +29,9 @@ const TEXT = {
 };
 
 const isParentRow = (plan: ProjectMaterialPlan) => {
-  const stt = String(plan.stt || '').trim().toUpperCase();
-  const notes = String(plan.notes || '').toLowerCase();
-  return notes.includes('[section]') || /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt);
+  const vol = Number(plan.contractVolume || 0);
+  const unitVal = String(plan.unit || '').trim();
+  return vol === 0 && unitVal === '';
 };
 
 const cleanNotes = (value?: string) => {
@@ -529,7 +529,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   if (visited.has(node.id)) return;
                   visited.add(node.id);
 
-                  const isSec = isParentRow(node);
+                  const isSec = node.isSec || isParentRow(node);
                   if (isSec) {
                     currentSectionKey = node.id;
                   }
@@ -568,7 +568,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   {flattened
                     .filter(plan => plan.isSec || !collapsedSections.has(plan._sectionKey || ''))
                     .map((plan, index) => {
-                      const parent = plan.isSec;
+                      const parent = plan.isSec || isParentRow(plan);
                       const depth = plan.depth || 0;
                       
                       const suggestedStt = '';

@@ -316,13 +316,14 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const isRomanOrAlphaSection = romanRegex.test(sttLookup) || alphaSectionRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
     const cleanStt = String(stt || '').trim().replace(/\.$/, '');
     const hasNoDot = !cleanStt.includes('.');
-    const startsWithPhan = name.trim().toUpperCase().startsWith('PHẦN ') && !name.trim().toUpperCase().startsWith('PHẦN MỀM');
-    const hasNoVolumeAndUnit = (volume === 0 || !volume) && (!cleanUnitVal || cleanUnitVal === '');
-
-    // Section Header là chữ La Mã (I, II), chữ cái (A, B), chữ PHẦN, hoặc dòng số nguyên/không có dấu chấm không có khối lượng & đơn vị
-    const isMainSectionHeader = isRomanOrAlphaSection || startsWithPhan;
-    const isSectionHeader = isMainSectionHeader || (hasNoDot && hasNoVolumeAndUnit);
-    const isLevel2Item = false; // Disable level 2 logic as it conflicts with section headers
+    const hasVolumeOrUnit = (volume > 0) || (cleanUnitVal !== '');
+    // Quy tắc mới: Loại bỏ việc phụ thuộc vào từ khóa (PHẦN, Bao gồm, Hạng mục...).
+    // Một dòng CHẮC CHẮN KHÔNG PHẢI Section Header nếu nó CÓ Khối lượng hoặc CÓ Đơn vị tính.
+    // Nếu KHÔNG có Khối lượng và KHÔNG có ĐVT, nó là Section Header khi:
+    // 1. STT là chữ La Mã / Chữ cái (I, II, A, B...)
+    // 2. Không có dấu chấm trong STT (số nguyên) và hoàn toàn không có khối lượng/ĐVT
+    const isSectionHeader = !hasVolumeOrUnit && (isRomanOrAlphaSection || hasNoDot);
+    const isLevel2Item = false;
     
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
     const headerSupplyScope = isSectionHeader ? detectSupplyScope(rowText) : 'unknown';
@@ -663,9 +664,8 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
       const isRomanOrAlphaSection = romanRegex.test(sttLookup) || alphaSectionRegex.test(sttLookup) || normalizeLookupText(rawNotes).includes('section');
       const cleanStt = String(stt || '').trim().replace(/\.$/, '');
       const hasNoDot = !cleanStt.includes('.');
-      const startsWithPhan = name.toUpperCase().startsWith('PHẦN ') && !name.toUpperCase().startsWith('PHẦN MỀM');
-      const hasNoVolumeAndUnit = (volume === 0 || !volume) && (!cleanUnitVal || cleanUnitVal === '');
-      const isSectionHeader = hasNoDot && (startsWithPhan || (hasNoVolumeAndUnit && isMainSectionName(name)) || (hasNoVolumeAndUnit && isRomanOrAlphaSection));
+      const hasVolumeOrUnit = (volume > 0) || (cleanUnitVal !== '');
+      const isSectionHeader = !hasVolumeOrUnit && (isRomanOrAlphaSection || hasNoDot);
 
       const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
       const headerSupplyScope = isSectionHeader ? detectSupplyScope(cells.join(' ')) : 'unknown';
