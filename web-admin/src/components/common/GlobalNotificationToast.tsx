@@ -8,14 +8,17 @@ export const GlobalNotificationToast: React.FC = () => {
   const [activeToasts, setActiveToasts] = useState<Array<{ id: string; title: string; message: string; isOverdue: boolean }>>([]);
 
   useEffect(() => {
-    // Show 2 most recent unread notifications as Toast cards in bottom right corner
+    // Show 2 most recent unread notifications as Toast cards in bottom right corner on every app launch
     const unreadNotifs = notifications.filter(n => !n.read);
     
-    // Deduplicate by title + message and take max 2 most recent
+    // Filter out items dismissed only in this browser session
+    const dismissedInSession = new Set(JSON.parse(sessionStorage.getItem('dismissed_toasts') || '[]'));
+    
     const seen = new Set<string>();
     const list: Array<{ id: string; title: string; message: string; isOverdue: boolean }> = [];
     
     unreadNotifs.forEach(n => {
+      if (dismissedInSession.has(n.id)) return;
       const cleanTitle = n.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim();
       const key = `${cleanTitle}:::${n.message}`;
       if (!seen.has(key)) {
@@ -34,19 +37,12 @@ export const GlobalNotificationToast: React.FC = () => {
 
   const handleDismiss = (id: string) => {
     setActiveToasts(prev => prev.filter(t => t.id !== id));
-    markNotificationRead(id);
+    // Save to sessionStorage so it only hides for current session, but RE-APPEARS when app is reopened/restarted!
+    try {
+      const current = JSON.parse(sessionStorage.getItem('dismissed_toasts') || '[]');
+      sessionStorage.setItem('dismissed_toasts', JSON.stringify([...current, id]));
+    } catch {}
   };
-
-  useEffect(() => {
-    if (activeToasts.length > 0) {
-      const timer = setTimeout(() => {
-        // Auto dismiss the oldest toast after 10s
-        const oldest = activeToasts[0];
-        if (oldest) handleDismiss(oldest.id);
-      }, 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [activeToasts]);
 
   if (activeToasts.length === 0) return null;
 
