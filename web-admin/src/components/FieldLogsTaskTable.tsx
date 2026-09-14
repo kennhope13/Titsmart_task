@@ -17,37 +17,54 @@ const CustomLightbox: React.FC<{ images: string[]; index: number; onClose: () =>
 );
 
 const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => void; onEditLogClick: (log: FieldLog) => void; onDeleteLogClick?: (log: FieldLog) => void }> = ({
-
   task, logs, onClose, onEditLogClick
 }) => {
+  const [lightboxImg, setLightboxImg] = useState<string | null>(null);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
-          <h3 className="font-bold text-slate-800 text-lg">Nhật ký: {task.name}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-red-500"><span className="material-symbols-outlined">close</span></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/40 backdrop-blur-xs animate-fadeIn" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-2xl w-[96vw] max-w-[96vw] h-[94vh] flex flex-col overflow-hidden border border-slate-200" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-[#F0F5FF]">
+          <div>
+            <h3 className="font-bold text-xs sm:text-sm text-[#0F294A] flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[17px] text-[#0F294A]">edit_note</span>
+              Nhật ký hiện trường
+            </h3>
+            <p className="text-[11px] text-slate-500 font-medium">{task.name}</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-colors">
+            <span className="material-symbols-outlined text-lg">close</span>
+          </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-100">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
           {logs.length === 0 ? (
-            <p className="text-slate-500 text-center py-8">Chưa có nhật ký nào.</p>
+            <p className="text-slate-400 text-center py-12 text-sm italic">Chưa có nhật ký nào.</p>
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3.5">
               {logs.map((log) => (
-                <div key={log.id} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm flex flex-col">
-                  <div className="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                    <div className="text-xs text-slate-500 font-medium">
-                      {new Date(log.timestamp).toLocaleString('vi-VN')}
+                <div key={log.id} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-2xs flex flex-col">
+                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between">
+                    <div className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm text-blue-600">schedule</span>
+                      {new Date(log.timestamp).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </div>
-                    <button onClick={() => onEditLogClick(log)} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">edit</span> Sửa
+                    <button onClick={() => onEditLogClick(log)} className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100 hover:bg-blue-100 transition-colors">
+                      <span className="material-symbols-outlined text-sm">edit</span> Chỉnh sửa
                     </button>
                   </div>
-                  {log.note && <div className="p-3 text-sm text-slate-700">{log.note}</div>}
+                  {log.note && (
+                    <div className="p-4 text-xs leading-relaxed text-slate-800 whitespace-pre-wrap break-words font-normal font-sans">
+                      {log.note}
+                    </div>
+                  )}
                   {log.images && log.images.length > 0 && (
-                    <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-slate-100">
+                    <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 border-t border-slate-100 bg-slate-50/50">
                       {log.images.map((url, i) => (
-                        <div key={i} className="h-24 bg-slate-100 relative group rounded overflow-hidden">
-                          <img src={url} className="w-full h-full object-cover cursor-pointer hover:opacity-90" onClick={() => window.open(url, '_blank')} />
+                        <div key={i} onClick={() => setLightboxImg(url)} className="h-28 bg-slate-100 relative group rounded-lg overflow-hidden border border-slate-200 cursor-pointer shadow-2xs">
+                          <img src={url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="ảnh nhật ký" />
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="material-symbols-outlined text-white text-lg">visibility</span>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -58,6 +75,15 @@ const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => voi
           )}
         </div>
       </div>
+
+      {lightboxImg && (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightboxImg(null)}>
+          <button onClick={() => setLightboxImg(null)} className="absolute top-4 right-4 text-white hover:text-red-400">
+            <span className="material-symbols-outlined text-4xl">close</span>
+          </button>
+          <img src={lightboxImg} className="max-w-full max-h-[90vh] object-contain rounded-lg" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 };
@@ -256,84 +282,157 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
               if (depth === 1) fontStyle = "font-bold text-slate-900 text-sm";
               else if (depth === 2) fontStyle = "font-semibold text-slate-800 text-[13px]";
 
-              const taskLogs = logs.filter(l => l.taskId === t.id);
+              const taskLogs = logs.filter(l => l.taskId === t.id).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
               const allImagesForTask = taskLogs.flatMap(l => l.images);
               const allNotesForTask = taskLogs.filter(l => l.note && l.note.trim().length > 0);
 
-              // Unique dates for this task
-              const datesList = Array.from(new Set(taskLogs.map(l => l.timestamp ? new Date(l.timestamp).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '').filter(Boolean)));
+              // Group logs by Date (YYYY-MM-DD or DD/MM/YYYY) for clear multi-day tracking
+              const logsByDate = new Map<string, FieldLog[]>();
+              taskLogs.forEach(l => {
+                const dateKey = l.timestamp ? new Date(l.timestamp).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Khác';
+                const arr = logsByDate.get(dateKey) || [];
+                arr.push(l);
+                logsByDate.set(dateKey, arr);
+              });
+              const dateEntries = Array.from(logsByDate.entries());
 
               return (
-                <tr key={t.id} onClick={(e) => { e.stopPropagation(); setViewAllLogsTask(t); }} className="hover:bg-slate-50 transition-colors group cursor-pointer">
-                  <td className={`py-3 px-3 border-r border-slate-200 text-center font-mono text-xs ${depth === 1 ? 'font-bold text-slate-600' : 'text-slate-400'}`}>
+                <tr key={t.id} onClick={(e) => { e.stopPropagation(); setViewAllLogsTask(t); }} className="hover:bg-blue-50/30 transition-colors group cursor-pointer border-b border-slate-100">
+                  <td className={`py-3.5 px-3 border-r border-slate-200 text-center font-mono text-xs ${depth === 1 ? 'font-bold text-slate-700' : 'text-slate-500'}`}>
                     {t.computedStt || t.stt}
                   </td>
-                  <td className={`py-3 px-4 border-r border-slate-200 ${fontStyle}`}>
+                  <td className={`py-3.5 px-4 border-r border-slate-200 ${fontStyle}`}>
                     <div className="flex items-center gap-2" style={{ paddingLeft: `${Math.max(0, depth - 1) * 1.5}rem` }}>
                       {depth > 1 && <span className="material-symbols-outlined text-slate-300 text-sm">subdirectory_arrow_right</span>}
-                      {t.name}
-                    </div>
-                  </td>
-                  {/* CỘT THỜI GIAN THI CÔNG */}
-                  <td className="py-2.5 px-3 border-r border-slate-200 text-center">
-                    <div className="flex flex-col gap-1 items-center justify-center">
-                      {datesList.length > 0 ? (
-                        datesList.map((d, i) => (
-                          <span key={i} className="inline-flex items-center gap-1 bg-blue-50 text-blue-800 text-[11px] font-bold px-2 py-0.5 rounded border border-blue-200/80 whitespace-nowrap">
-                            <span className="material-symbols-outlined text-[12px] text-blue-600">calendar_today</span>
-                            {d}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-slate-300 text-xs italic">-</span>
+                      <span className="text-slate-800 leading-snug">{t.name}</span>
+                      {taskLogs.length > 0 && (
+                        <span className="ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/80 shrink-0" title={`${taskLogs.length} lần cập nhật`}>
+                          {taskLogs.length} nhật ký ({dateEntries.length} ngày)
+                        </span>
                       )}
                     </div>
                   </td>
-                  {/* CỘT ẢNH NHẬT KÝ */}
-                  <td className="py-2.5 px-3 border-r border-slate-200">
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                  {/* CỘT THỜI GIAN THI CÔNG (DIỄN RA NHIỀU NGÀY) */}
+                  <td className="py-3 px-3 border-r border-slate-200 text-center">
+                    <div className="flex flex-col gap-1.5 items-center justify-center">
+                      {dateEntries.length > 0 ? (
+                        dateEntries.map(([dateStr, dayLogs], i) => (
+                          <div 
+                            key={i} 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setViewAllLogsTask(t);
+                            }}
+                            className="flex items-center gap-1.5 bg-blue-50/80 text-blue-900 hover:bg-blue-100/90 text-xs font-semibold px-2.5 py-1 rounded-lg border border-blue-200 shadow-2xs whitespace-nowrap cursor-pointer transition-colors group/date"
+                            title={`Xem chi tiết nhật ký ngày ${dateStr}`}
+                          >
+                            <span className="material-symbols-outlined text-sm text-blue-600 group-hover/date:scale-110 transition-transform">calendar_today</span>
+                            <span className="font-mono">{dateStr}</span>
+                            <span className="text-[10px] bg-blue-600 text-white rounded-full w-4 h-4 inline-flex items-center justify-center font-bold">
+                              {dayLogs.length}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">-</span>
+                      )}
+                    </div>
+                  </td>
+                  {/* CỘT ẢNH NHẬT KÝ VẬN HÀNH */}
+                  <td className="py-3 px-3 border-r border-slate-200">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {allImagesForTask.length > 0 ? (
                         <>
                           {allImagesForTask.slice(0, 4).map((img, i) => (
-                            <div key={i} onClick={(e) => { e.stopPropagation(); openLightbox(allImagesForTask, i); }} className="w-11 h-11 rounded-lg overflow-hidden border border-slate-200 shadow-xs hover:scale-105 transition-transform cursor-pointer">
-                              <img src={img} className="w-full h-full object-cover" alt="nhật ký" />
+                            <div key={i} onClick={(e) => { e.stopPropagation(); openLightbox(allImagesForTask, i); }} className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 shadow-2xs hover:scale-105 transition-transform cursor-pointer relative group/img bg-slate-100">
+                              <img src={img} className="w-full h-full object-cover" alt="nhật ký hiện trường" />
+                              <div className="absolute inset-0 bg-black/25 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="material-symbols-outlined text-white text-base">visibility</span>
+                              </div>
                             </div>
                           ))}
                           {allImagesForTask.length > 4 && (
-                            <div onClick={(e) => { e.stopPropagation(); openLightbox(allImagesForTask, 4); }} className="w-11 h-11 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-extrabold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-200">
+                            <div onClick={(e) => { e.stopPropagation(); openLightbox(allImagesForTask, 4); }} className="w-12 h-12 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center text-xs font-bold cursor-pointer hover:bg-blue-100 shadow-2xs">
                               +{allImagesForTask.length - 4}
                             </div>
                           )}
                         </>
                       ) : (
-                        <span className="text-slate-300 text-xs italic">Chưa có ảnh</span>
+                        <span className="text-slate-400 text-xs italic">Chưa có ảnh</span>
                       )}
                     </div>
                   </td>
-                  {/* CỘT GHI CHÚ */}
-                  <td className="py-2.5 px-3 border-r border-slate-200">
-                    <div className="flex flex-col gap-1.5">
-                      {allNotesForTask.length > 0 ? (
-                        allNotesForTask.map((l) => (
-                          <div key={l.id} onClick={(e) => { e.stopPropagation(); onEditLogClick(l); }} className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 text-[11px] font-semibold px-2 py-1 rounded-md border border-amber-200/80 hover:bg-amber-100 transition-colors w-fit max-w-full cursor-pointer" title={l.note}>
-                            <span className="material-symbols-outlined text-[13px] text-amber-600 shrink-0">edit_note</span>
-                            <span className="truncate">{l.note}</span>
-                          </div>
-                        ))
+                  {/* CỘT NỘI DUNG NHẬT KÝ - THEO DÕI GỌN GÀNG VÀ CHUYÊN NGHIỆP */}
+                  <td className="py-3 px-3 border-r border-slate-200">
+                    <div className="flex flex-col gap-2">
+                      {dateEntries.length > 0 ? (
+                        dateEntries.slice(0, 2).map(([dateStr, dayLogs]) => {
+                          const latestLog = dayLogs[0];
+                          const extraLogsCount = dayLogs.length - 1;
+                          return (
+                            <div key={dateStr} className="flex flex-col gap-1 bg-slate-50/90 p-2 rounded-lg border border-slate-200/80">
+                              <div className="text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between border-b border-slate-200 pb-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="material-symbols-outlined text-sm text-blue-600">event</span>
+                                  <span>NGÀY {dateStr}</span>
+                                </div>
+                                {dayLogs.length > 1 && (
+                                  <span className="text-[10px] text-blue-700 bg-blue-100 font-semibold px-1.5 py-0.2 rounded">
+                                    {dayLogs.length} lượt
+                                  </span>
+                                )}
+                              </div>
+                              {latestLog && (
+                                <div 
+                                  onClick={(e) => { e.stopPropagation(); onEditLogClick(latestLog); }} 
+                                  className="flex items-start gap-2 bg-white text-slate-800 text-xs p-2 rounded-lg border border-slate-200/90 hover:border-blue-400 transition-all cursor-pointer shadow-2xs group/log"
+                                  title="Bấm để xem/sửa nhật ký này"
+                                >
+                                  <span className="material-symbols-outlined text-base text-amber-500 shrink-0 mt-0.5">edit_note</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="line-clamp-2 break-words leading-relaxed text-slate-700 font-normal">
+                                      {latestLog.note || '(Chỉ có ảnh hiện trường)'}
+                                    </p>
+                                    <div className="mt-1 flex items-center gap-2">
+                                      {latestLog.images && latestLog.images.length > 0 && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                                          <span className="material-symbols-outlined text-xs">photo_camera</span>
+                                          {latestLog.images.length} ảnh
+                                        </span>
+                                      )}
+                                      {extraLogsCount > 0 && (
+                                        <span className="text-[10px] text-slate-500 font-semibold italic">
+                                          +{extraLogsCount} cập nhật khác
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
                       ) : (
-                        <span className="text-slate-300 text-xs italic">Chưa có nội dung nhật ký</span>
+                        <span className="text-slate-400 text-xs italic">Chưa có nội dung nhật ký</span>
+                      )}
+                      {dateEntries.length > 2 && (
+                        <div className="text-center pt-0.5">
+                          <span className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer">
+                            + Xem thêm {dateEntries.length - 2} ngày khác...
+                          </span>
+                        </div>
                       )}
                     </div>
                   </td>
                   {/* CỘT NGƯỜI CẬP NHẬT */}
-                  <td className="py-2.5 px-3 border-r border-slate-200">
+                  <td className="py-3 px-3 border-r border-slate-200">
                     <AuditInfoCell updatedBy={taskLogs[0]?.updatedBy || t.updatedBy} updatedAt={taskLogs[0]?.updatedAt || t.updatedAt} />
                   </td>
                   {/* CỘT THAO TÁC */}
-                  <td className="py-2.5 px-3 text-center">
-                    <button onClick={(e) => { e.stopPropagation(); onAddLogClick(t.id); }} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:text-primary hover:border-primary hover:bg-blue-50 text-xs font-bold transition-all shadow-2xs">
-                      <span className="material-symbols-outlined text-base">add_a_photo</span>
-                      <span>Thêm ảnh</span>
+                  <td className="py-3 px-3 text-center">
+                    <button onClick={(e) => { e.stopPropagation(); onAddLogClick(t.id); }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50/50 text-xs font-semibold transition-all shadow-2xs">
+                      <span className="material-symbols-outlined text-base text-blue-600">add_a_photo</span>
+                      <span>Thêm nhật ký</span>
                     </button>
                   </td>
                 </tr>

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useParams, useOutletContext, Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
@@ -268,7 +269,7 @@ const UploadModal: React.FC<{
 
 export const FieldLogsPage: React.FC = () => {
   const { projectId } = useParams();
-  const { fieldLogs, projects, addFieldLog, deleteFieldLog, updateFieldLog, fetchFieldLogs } = useRealtimeStore();
+  const { fieldLogs, projects, tasks, addFieldLog, deleteFieldLog, updateFieldLog, fetchFieldLogs } = useRealtimeStore();
 
   const resolvedProjectCode = useMemo(() => {
     if (!projectId) return '';
@@ -343,6 +344,42 @@ export const FieldLogsPage: React.FC = () => {
     setDeletingId(null);
   };
 
+  const handleExportExcel = () => {
+    try {
+      const logsToExport = visibleLogs;
+      if (logsToExport.length === 0) {
+        alert('Không có dữ liệu nhật ký hiện trường để xuất Excel.');
+        return;
+      }
+
+      const rows: any[] = [];
+      logsToExport.forEach((l, index) => {
+        const task = tasks.find(t => t.id === l.taskId);
+        rows.push({
+          'STT': index + 1,
+          'Mã dự án': l.projectCode,
+          'Mã / STT Hạng mục': task?.stt || '-',
+          'Nội dung công việc': task?.name || 'Cập nhật chung',
+          'Thời gian thi công': new Date(l.timestamp).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+          'Giờ cập nhật': new Date(l.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          'Nội dung nhật ký': l.note || '(Chỉ có ảnh)',
+          'Số lượng ảnh': l.images?.length || 0,
+          'Người cập nhật': l.updatedBy || 'Hệ thống',
+        });
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'NhatKyHienTruong');
+      
+      const fileName = `NhatKyHienTruong_${selectedProject || 'TatCa'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+    } catch (err: any) {
+      console.error(err);
+      alert(`Lỗi khi xuất file Excel: ${err.message || 'Không xác định'}`);
+    }
+  };
+
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-slate-100 overflow-hidden">
       {/* Header */}
@@ -361,10 +398,11 @@ export const FieldLogsPage: React.FC = () => {
                 <option value="">Tất cả dự án</option>
                 {projects.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
               </CustomSelect>
-              <button onClick={() => setIsUploadOpen(true)}
-                className="flex items-center gap-2.5 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-95">
-                <span className="material-symbols-outlined text-lg">add_a_photo</span>
-                Upload ảnh
+
+              <button onClick={handleExportExcel}
+                className="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700 shadow-2xs hover:bg-emerald-100 transition-all">
+                <span className="material-symbols-outlined text-lg">download</span>
+                Xuất Excel
               </button>
             </div>
           </div>
@@ -372,11 +410,13 @@ export const FieldLogsPage: React.FC = () => {
       )}
 
       {projectId && portalNode && createPortal(
-        <button onClick={() => setIsUploadOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-bold text-white shadow-sm hover:opacity-90 active:scale-95 mr-4">
-          <span className="material-symbols-outlined text-[14px]">add_a_photo</span>
-          Upload ảnh
-        </button>
+        <div className="flex items-center gap-2 mr-4">
+          <button onClick={handleExportExcel}
+            className="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-[12px] font-bold text-emerald-700 shadow-2xs hover:bg-emerald-100 transition-all">
+            <span className="material-symbols-outlined text-[15px]">download</span>
+            Xuất Excel
+          </button>
+        </div>
       , portalNode)}
 
         <div className={`flex flex-col flex-1 min-h-0 ${(logsByProject.length === 0 && !selectedProject) || selectedProject ? '' : 'p-6'}`}>

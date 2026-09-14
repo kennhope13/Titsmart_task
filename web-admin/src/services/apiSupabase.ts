@@ -1008,12 +1008,15 @@ export const api = {
       }));
     },
     create: async (data: any) => {
-      const payload = {
+      const payload: any = {
         project_code: data.projectCode,
         notes: data.note,
         photos: data.images,
         task_id: data.taskId || null,
       };
+      if (data.timestamp) {
+        payload.created_at = data.timestamp;
+      }
       const { data: result, error } = await supabase.from('field_logs').insert(payload).select().single();
       if (error) throw error;
       return {
@@ -1039,6 +1042,7 @@ export const api = {
       const payload: any = {};
       if (data.note !== undefined) payload.notes = data.note;
       if (data.taskId !== undefined) payload.task_id = data.taskId || null;
+      if (data.timestamp !== undefined) payload.created_at = data.timestamp;
       if (data.images || data.existingImages) {
         payload.photos = [...(data.existingImages || []), ...(data.images || [])];
         const { data: oldData } = await supabase.from('field_logs').select('photos').eq('id', id).single();
@@ -1058,6 +1062,7 @@ export const api = {
         note: result.notes,
         images: result.photos || [],
         timestamp: result.created_at,
+        taskId: result.task_id,
       };
     },
   },
