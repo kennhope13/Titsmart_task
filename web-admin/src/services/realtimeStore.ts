@@ -220,7 +220,7 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
     if (diffDays < 0) {
       newNotifs.push({
         id: notifKey,
-        title: '⚠️ Hồ sơ quá hạn nộp',
+        title: 'Hồ sơ quá hạn nộp',
         message: `Hồ sơ "${docName}" đã quá hạn ${Math.abs(diffDays)} ngày (Hạn: ${effectiveDueDate}).`,
         timestamp: new Date().toISOString(),
         read: false,
@@ -230,7 +230,7 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
     } else if (diffDays <= remind) {
       newNotifs.push({
         id: notifKey,
-        title: '🔔 Nhắc hạn nộp hồ sơ',
+        title: 'Nhắc hạn nộp hồ sơ',
         message: diffDays === 0 
           ? `Hồ sơ "${docName}" đến hạn nộp hôm nay!` 
           : `Hồ sơ "${docName}" sắp đến hạn nộp (Còn ${diffDays} ngày).`,
