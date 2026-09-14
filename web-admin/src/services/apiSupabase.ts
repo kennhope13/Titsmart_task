@@ -772,11 +772,11 @@ export const api = {
         return (data || []).map((row: any) => ({
           id: row.id,
           stt: row.stt || '',
-          contractNo: row.contract_no || '',
-          contractName: row.contract_name || '',
+          contractNo: row.contract_no || (row.contract_name && row.contract_name.startsWith('[') && row.contract_name.includes(']') ? row.contract_name.split(']')[0].replace('[', '') : ''),
+          contractName: row.contract_name && row.contract_name.startsWith('[') && row.contract_name.includes(']') ? row.contract_name.split(']').slice(1).join(']').trim() : (row.contract_name || ''),
           projectCode: row.project_code || '',
-          company: row.company || '',
-          receiverName: row.receiver_name || row.recipient || '',
+          company: row.company || (row.recipient && row.recipient.includes(' - ') ? row.recipient.split(' - ')[0] : (row.recipient || '')),
+          receiverName: row.receiver_name || (row.recipient && row.recipient.includes(' - ') ? row.recipient.split(' - ')[1] : (row.recipient || '')),
           phone: row.phone || '',
           address: row.address || '',
           sendDate: row.send_date || row.submission_date || '',
@@ -810,7 +810,7 @@ export const api = {
       const fullPayload: any = {
         contract_no: data.contractNo || '',
         contract_name: data.contractName || '',
-        project_code: data.projectCode || '',
+        project_code: data.projectCode || null,
         company: data.company || '',
         receiver_name: data.receiverName || '',
         phone: data.phone || '',
@@ -834,47 +834,119 @@ export const api = {
 
       try {
         const { data: result, error } = await supabase.from('document_tracks').insert(fullPayload).select().single();
-        if (!error && result) {
+        if (error) {
+          console.warn('[DocumentTrack] fullPayload insert error:', error.message, error.details, error.hint, error.code);
+        } else if (result) {
+          console.log('[DocumentTrack] Successfully inserted via fullPayload:', result);
           return toCamelCase(result);
         }
-      } catch {
-        // Fallthrough to standard/minimal schema fallback
+      } catch (err) {
+        console.warn('[DocumentTrack] fullPayload insert exception:', err);
       }
 
       // Fallback for minimal standard schema (local/cloud before ALTER TABLE)
+      const formattedContractName = data.contractNo
+        ? (data.contractName ? `[${data.contractNo}] ${data.contractName}` : data.contractNo)
+        : (data.contractName || '');
+
+      const audit = getCurrentAuditPayload();
       const minPayload: any = {
         document_type: data.docType || 'Giao',
         submission_date: cleanDate(data.sendDate),
-        recipient: data.receiverName || '',
-        status: data.docStatus || 'Chưa ký'
+        recipient: data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || ''),
+        status: data.docStatus || 'Chưa ký',
+        contract_name: formattedContractName,
+        doc_type: data.docType || 'Giao',
+        due_date: cleanDate(data.dueDate),
+        address: data.address || '',
+        company: data.company || '',
+        contract_no: data.contractNo || '',
+        updated_by: data.updatedBy || audit.updated_by,
+        updated_at: data.updatedAt || audit.updated_at
       };
+      if (data.projectCode) minPayload.project_code = data.projectCode;
       if (cleanDate(data.dueDate)) minPayload.expected_approval_date = cleanDate(data.dueDate);
       if (data.notes) minPayload.notes = data.notes;
-      if (data.projectCode) minPayload.project_code = data.projectCode;
 
       try {
         const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(minPayload).select().single();
-        if (retryError) throw retryError;
+        if (retryError) {
+          console.error('[DocumentTrack] minPayload insert error:', retryError);
+          throw retryError;
+        }
+        console.log('[DocumentTrack] Successfully inserted via minPayload:', retryResult);
         return { ...data, ...toCamelCase(retryResult), id: retryResult.id };
       } catch (err) {
-        console.warn('[DocumentTrack] Supabase insert failed, maintaining local record:', err);
-        return { id: data.id || `doc-${Date.now()}`, ...data };
+        console.error('[DocumentTrack] Supabase insert failed completely:', err);
+        throw err;
       }
     },
     updateDocumentTrack: async (id: string, data: any) => {
-      const payload: any = {};
-      if (data.docType !== undefined) payload.document_type = data.docType;
-      if (data.sendDate !== undefined) payload.submission_date = data.sendDate;
-      if (data.receiverName !== undefined) payload.recipient = data.receiverName;
-      if (data.docStatus !== undefined) payload.status = data.docStatus;
-      if (data.dueDate !== undefined) payload.expected_approval_date = data.dueDate;
-      if (data.notes !== undefined) payload.notes = data.notes;
-      if (data.projectCode !== undefined) payload.project_code = data.projectCode;
+      const cleanDate = (d: any) => {
+        if (!d || typeof d !== 'string') return null;
+        const trimmed = d.trim();
+        return /^\d{4}-\d{2}-\d{2}/.test(trimmed) ? trimmed.split('T')[0] : null;
+      };
+
+      const fullPayload: any = {};
+      if (data.contractNo !== undefined) fullPayload.contract_no = data.contractNo;
+      if (data.contractName !== undefined) fullPayload.contract_name = data.contractName;
+      if (data.projectCode !== undefined) fullPayload.project_code = data.projectCode;
+      if (data.company !== undefined) fullPayload.company = data.company;
+      if (data.receiverName !== undefined) {
+        fullPayload.receiver_name = data.receiverName;
+        fullPayload.recipient = data.receiverName;
+      }
+      if (data.phone !== undefined) fullPayload.phone = data.phone;
+      if (data.address !== undefined) fullPayload.address = data.address;
+      if (data.sendDate !== undefined) {
+        fullPayload.send_date = cleanDate(data.sendDate);
+        fullPayload.submission_date = cleanDate(data.sendDate);
+      }
+      if (data.receiveDate !== undefined) fullPayload.receive_date = cleanDate(data.receiveDate);
+      if (data.docStatus !== undefined) {
+        fullPayload.doc_status = data.docStatus;
+        fullPayload.status = data.docStatus;
+      }
+      if (data.docType !== undefined) {
+        fullPayload.doc_type = data.docType;
+        fullPayload.document_type = data.docType;
+      }
+      if (data.side !== undefined) fullPayload.side = data.side;
+      if (data.contractValue !== undefined) fullPayload.contract_value = data.contractValue;
+      if (data.prepayPercent !== undefined) fullPayload.prepay_percent = data.prepayPercent;
+      if (data.prepayAmount !== undefined) fullPayload.prepay_amount = data.prepayAmount;
+      if (data.paymentStatus !== undefined) fullPayload.payment_status = data.paymentStatus;
+      if (data.isCompleted !== undefined) fullPayload.is_completed = !!data.isCompleted;
+      if (data.notes !== undefined) fullPayload.notes = data.notes;
+      if (data.dueDate !== undefined) {
+        fullPayload.due_date = cleanDate(data.dueDate);
+        fullPayload.expected_approval_date = cleanDate(data.dueDate);
+      }
+      if (data.remindDays !== undefined) fullPayload.remind_days = data.remindDays;
+      if (data.updatedBy !== undefined) fullPayload.updated_by = data.updatedBy;
+      fullPayload.updated_at = new Date().toISOString();
 
       try {
-        await supabase.from('document_tracks').update(payload).eq('id', id);
-      } catch {
-        // Ignore if error
+        const { data: res, error } = await supabase.from('document_tracks').update(fullPayload).eq('id', id).select().single();
+        if (error) {
+          console.warn('[DocumentTrack] update error with fullPayload, trying fallback:', error.message);
+          const minPayload: any = {};
+          if (data.docType !== undefined) minPayload.document_type = data.docType;
+          if (data.sendDate !== undefined) minPayload.submission_date = cleanDate(data.sendDate);
+          if (data.receiverName !== undefined) minPayload.recipient = data.receiverName;
+          if (data.docStatus !== undefined) minPayload.status = data.docStatus;
+          if (data.dueDate !== undefined) minPayload.expected_approval_date = cleanDate(data.dueDate);
+          if (data.notes !== undefined) minPayload.notes = data.notes;
+          if (data.projectCode !== undefined) minPayload.project_code = data.projectCode;
+          if (data.contractName !== undefined) minPayload.contract_name = data.contractName;
+          if (data.address !== undefined) minPayload.address = data.address;
+          await supabase.from('document_tracks').update(minPayload).eq('id', id);
+        } else if (res) {
+          return { id, ...data, ...toCamelCase(res) };
+        }
+      } catch (err) {
+        console.warn('Failed to update document track in DB:', err);
       }
       return { id, ...data };
     },
