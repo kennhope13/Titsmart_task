@@ -109,7 +109,9 @@ export const NotificationBell: React.FC = () => {
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start gap-2 mb-1">
-                        <span className={`font-bold truncate ${!notification.read ? 'text-slate-800' : 'text-slate-600'}`}>{notification.title}</span>
+                        <span className={`font-bold truncate ${!notification.read ? 'text-slate-800' : 'text-slate-600'}`}>
+                          {notification.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim()}
+                        </span>
                         <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">{dateStr}</span>
                       </div>
                       <p className={`leading-tight ${!notification.read ? 'text-slate-600' : 'text-slate-500'}`}>{notification.message}</p>
@@ -158,7 +160,9 @@ export const NotificationBell: React.FC = () => {
                       {item.icon || (isOverdue ? 'warning' : 'notifications')}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <h4 className={`font-bold ${isOverdue ? 'text-rose-900' : 'text-amber-900'}`}>{item.title}</h4>
+                      <h4 className={`font-bold ${isOverdue ? 'text-rose-900' : 'text-amber-900'}`}>
+                        {item.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim()}
+                      </h4>
                       <p className="text-slate-700 leading-snug mt-0.5">{item.message}</p>
                     </div>
                   </div>
