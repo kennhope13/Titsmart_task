@@ -52,15 +52,16 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
       const u = String(log.user || '').trim();
       if (!u || u === 'Hệ thống' || u === 'Excel Sync' || u.toLowerCase().includes('excel')) return;
       const logTimeMs = parseTime(log.timestamp);
+      const displayTime = formatAuditDateTime(log.timestamp);
       if (!map.has(u)) {
         const eng = engineers.find(e => e.name?.toLowerCase() === u.toLowerCase());
-        map.set(u, { name: u, count: 1, lastTime: log.timestamp || '', rawTimeMs: logTimeMs, title: eng?.title });
+        map.set(u, { name: u, count: 1, lastTime: displayTime, rawTimeMs: logTimeMs, title: eng?.title });
       } else {
         const existing = map.get(u)!;
         existing.count += 1;
         if (logTimeMs > existing.rawTimeMs) {
           existing.rawTimeMs = logTimeMs;
-          existing.lastTime = log.timestamp || existing.lastTime;
+          existing.lastTime = displayTime;
         }
       }
     });
