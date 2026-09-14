@@ -125,9 +125,14 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
                         {user.title && <p className="text-[10px] text-slate-400 truncate">{user.title}</p>}
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
-                        {user.count} cập nhật
+                    <div className="text-right shrink-0 flex flex-col items-end gap-0.5">
+                      {user.lastTime && (
+                        <span className="text-[10px] text-slate-500 font-mono font-medium">
+                          {user.lastTime}
+                        </span>
+                      )}
+                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                        {user.count} thao tác
                       </span>
                     </div>
                   </div>
