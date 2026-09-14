@@ -30,10 +30,10 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
   const userList = React.useMemo(() => {
     const map = new Map<string, { name: string; count: number; lastTime: string; title?: string }>();
     
-    // Aggregate log counts per user
+    // Aggregate log counts per user (only real people, exclude system/Excel Sync)
     activityLogs.forEach(log => {
       const u = String(log.user || '').trim();
-      if (!u || u === 'Hệ thống') return;
+      if (!u || u === 'Hệ thống' || u === 'Excel Sync' || u.toLowerCase().includes('excel')) return;
       if (!map.has(u)) {
         const eng = engineers.find(e => e.name?.toLowerCase() === u.toLowerCase());
         map.set(u, { name: u, count: 1, lastTime: log.timestamp || '', title: eng?.title });
@@ -44,7 +44,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; c
     });
 
     // Make sure the current updatedBy user is in the list
-    if (updatedBy && updatedBy !== 'Hệ thống' && !map.has(updatedBy)) {
+    if (updatedBy && updatedBy !== 'Hệ thống' && updatedBy !== 'Excel Sync' && !updatedBy.toLowerCase().includes('excel') && !map.has(updatedBy)) {
       const eng = engineers.find(e => e.name?.toLowerCase() === updatedBy.toLowerCase());
       map.set(updatedBy, { name: updatedBy, count: 1, lastTime: formattedTime, title: eng?.title });
     }
