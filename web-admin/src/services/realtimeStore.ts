@@ -203,7 +203,9 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
   const newNotifs: NotificationItem[] = [];
 
   tracks.forEach(track => {
-    if (track.isCompleted) return;
+    const isSigned = track.docStatus === 'Đã ký' || track.docStatus === 'Đã nhận đủ';
+    const isPaid = track.paymentStatus?.includes('Đã');
+    if (track.isCompleted || (isSigned && isPaid)) return;
     const effectiveDueDate = track.dueDate || track.receiveDate || track.sendDate;
     if (!effectiveDueDate) return;
     const due = new Date(effectiveDueDate);
