@@ -51,13 +51,13 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
       return 0;
     };
 
-    // Filter activity logs by projectCode if provided
+    // Filter activity logs strictly by projectCode if provided
     const filteredLogs = (activityLogs || []).filter(log => {
       if (!log) return false;
       if (projectCode) {
         const logProj = String(log.project || '').trim().toLowerCase();
         const pCode = String(projectCode).trim().toLowerCase();
-        if (logProj && logProj !== pCode) return false;
+        return logProj === pCode;
       }
       return true;
     });
