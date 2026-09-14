@@ -209,7 +209,7 @@ export const NotificationBell: React.FC = () => {
             <div className="p-3 bg-white border-t border-slate-200 flex justify-end">
               <button
                 onClick={closeCenterModal}
-                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors"
+                className="px-5 py-1.5 bg-primary hover:opacity-90 active:scale-95 text-white font-bold text-xs rounded-lg transition-all shadow-xs"
               >
                 Đã hiểu
               </button>
