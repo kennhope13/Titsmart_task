@@ -548,7 +548,7 @@ export const api = {
       const { data: result, error } = await supabase.from('material_plans').insert(payloads).select();
       if (error) {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('dispatch_to_site')) {
-          const allowedKeys = ['id', 'parent_id', 'project_code', 'stt', 'job_content', 'unit', 'contract_volume', 'tech_spec_model', 'tech_spec_origin', 'progress_status', 'ordered_volume', 'ordered_status', 'expected_date', 'issue_content', 'issue_status', 'doc_co', 'doc_cq', 'doc_fire_inspection', 'supply_scope', 'notes'];
+          const allowedKeys = ['id', 'parent_id', 'project_code', 'stt', 'job_content', 'unit', 'contract_volume', 'tech_spec_model', 'tech_spec_origin', 'tech_spec_status', 'progress_status', 'ordered_volume', 'ordered_status', 'expected_date', 'issue_content', 'issue_status', 'doc_co', 'doc_cq', 'doc_fire_inspection', 'supply_scope', 'notes'];
           const cleanedPayloads = payloads.map(p => {
             const cleanObj: any = {};
             for (const key of Object.keys(p)) {
@@ -568,7 +568,7 @@ export const api = {
       const payload = toSnakeCase(data);
       if (Object.keys(payload).length === 0) return { id, ...data };
 
-      const allowedKeys = ['parent_id', 'project_code', 'stt', 'job_content', 'unit', 'contract_volume', 'tech_spec_model', 'tech_spec_origin', 'ordered_volume', 'ordered_status', 'expected_date', 'issue_content', 'issue_status', 'doc_co', 'doc_cq', 'doc_fire_inspection', 'dispatch_to_site', 'supply_scope', 'notes', 'updated_by', 'updated_at'];
+      const allowedKeys = ['parent_id', 'project_code', 'stt', 'job_content', 'unit', 'contract_volume', 'tech_spec_model', 'tech_spec_origin', 'tech_spec_status', 'ordered_volume', 'ordered_status', 'expected_date', 'issue_content', 'issue_status', 'doc_co', 'doc_cq', 'doc_fire_inspection', 'dispatch_to_site', 'supply_scope', 'notes', 'updated_by', 'updated_at'];
       const cleanedPayload: any = {};
       for (const key of Object.keys(payload)) {
         if (allowedKeys.includes(key)) cleanedPayload[key] = payload[key];
