@@ -605,7 +605,17 @@ export const DocumentTrackingPage: React.FC = () => {
                         <span className="text-slate-300">-</span>
                       )}
                     </td>
-                    <td className="px-1 py-1 text-center"><span className={`text-[10px] font-bold ${track.docStatus?.includes('ký') || track.docStatus?.includes('đủ') ? 'text-emerald-700' : 'text-amber-700'}`}>{track.docStatus || 'Chưa rõ'}</span></td>
+                    <td className="px-1 py-1 text-center">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                        track.docStatus === 'Đã ký' || track.docStatus === 'Đã nhận đủ' 
+                          ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' 
+                          : track.docStatus === 'Chưa ký' || track.docStatus === 'Chưa nhận'
+                          ? 'text-amber-700 bg-amber-50 border border-amber-200 font-bold'
+                          : 'text-slate-600 bg-slate-100'
+                      }`}>
+                        {track.docStatus || 'Chưa ký'}
+                      </span>
+                    </td>
                     <td className="px-1 py-1">
                       <AuditInfoCell updatedBy={track.updatedBy} updatedAt={track.updatedAt} />
                     </td>
@@ -730,8 +740,8 @@ deleteDocumentTrack(track.id);
             <div><label className="block font-bold mb-1 text-amber-900">Hạn nộp / Hẹn trả 🔔</label><input type="date" value={newDoc.dueDate || ''} onChange={(e) => setNewDoc({...newDoc, dueDate: e.target.value})} className="w-full border border-amber-300 rounded-lg p-2 bg-white font-bold text-amber-900" /></div>
           </div>
           <div className="grid grid-cols-3 gapx-1 py-1 bg-slate-50 p-2 rounded-lg border">
-            <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={newDoc.contractValue} onChange={(e) => setNewDoc({...newDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
-            <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={(newDoc.prepayPercent || 0) * 100} onChange={(e) => setNewDoc({...newDoc, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={newDoc.contractValue === 0 ? '' : newDoc.contractValue} placeholder="0" onChange={(e) => setNewDoc({...newDoc, contractValue: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
+            <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={!newDoc.prepayPercent ? '' : (newDoc.prepayPercent * 100)} placeholder="0" onChange={(e) => setNewDoc({...newDoc, prepayPercent: e.target.value === '' ? 0 : Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
               <label className="block font-bold mb-1">Thanh toán</label>
               <CustomSelect value={newDoc.paymentStatus} onChange={(e) => setNewDoc({...newDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
@@ -835,8 +845,8 @@ deleteDocumentTrack(track.id);
               <div><label className="block font-bold mb-1 text-amber-900">Hạn nộp / Hẹn trả 🔔</label><input type="date" value={editingDoc.dueDate || ''} onChange={(e) => setEditingDoc({...editingDoc, dueDate: e.target.value})} className="w-full border border-amber-300 rounded-lg p-2 bg-white font-bold text-amber-900" /></div>
             </div>
             <div className="grid grid-cols-3 gapx-1 py-1 bg-slate-50 p-2 rounded-lg border">
-              <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={editingDoc.contractValue} onChange={(e) => setEditingDoc({...editingDoc, contractValue: Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
-              <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={(editingDoc.prepayPercent || 0) * 100} onChange={(e) => setEditingDoc({...editingDoc, prepayPercent: Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={editingDoc.contractValue === 0 ? '' : editingDoc.contractValue} placeholder="0" onChange={(e) => setEditingDoc({...editingDoc, contractValue: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
+              <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={editingDoc.prepayPercent === 0 ? '' : (editingDoc.prepayPercent * 100)} placeholder="0" onChange={(e) => setEditingDoc({...editingDoc, prepayPercent: e.target.value === '' ? 0 : Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div>
                 <label className="block font-bold mb-1">Thanh toán</label>
                 <CustomSelect value={editingDoc.paymentStatus} onChange={(e) => setEditingDoc({...editingDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
