@@ -1203,9 +1203,10 @@ export const ProjectCostPlanPage: React.FC = () => {
         docCo: existingMat?.docCo || false,
         docCq: existingMat?.docCq || false,
         docFireInspection: existingMat?.docFireInspection || false,
-        dispatchToSite: existingMat?.dispatchToSite || false,
         supplyScope: existingMat?.supplyScope || 'contractor',
         notes: [orderTag, isSection ? '[section]' : '', existingMat?.notes || task.notes].filter(Boolean).join(' | '),
+        updatedBy: existingMat?.updatedBy || task.updatedBy,
+        updatedAt: existingMat?.updatedAt || task.updatedAt,
       } as ProjectMaterialPlan;
     });
   }, [materialPlans, tasks, selectedProject, projects]);
@@ -1268,6 +1269,8 @@ export const ProjectCostPlanPage: React.FC = () => {
         contractStatus: existingPur?.contractStatus || 'Đã có phụ lục',
         invoiceStatus: existingPur?.invoiceStatus || 'Chưa xuất',
         notes: [orderTag, isSection ? '[section]' : '', existingPur?.notes || task.notes].filter(Boolean).join(' | '),
+        updatedBy: existingPur?.updatedBy || task.updatedBy,
+        updatedAt: existingPur?.updatedAt || task.updatedAt,
       } as ProjectPurchasing;
     });
   }, [purchasingPlans, tasks, selectedProject, projects]);

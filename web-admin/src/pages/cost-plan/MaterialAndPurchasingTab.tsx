@@ -1835,7 +1835,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           )}
 
                           <td className="bg-white group-hover:bg-slate-50 border-l border-slate-200 p-1.5 align-middle text-slate-500 min-w-[120px]">
-                            <AuditInfoCell updatedBy={plan.updatedBy || pRecord?.updatedBy} updatedAt={plan.updatedAt || pRecord?.updatedAt} />
+                            <AuditInfoCell 
+                              updatedBy={subTab === 'FINANCE' ? (pRecord?.updatedBy || plan.updatedBy) : (plan.updatedBy || pRecord?.updatedBy)} 
+                              updatedAt={subTab === 'FINANCE' ? (pRecord?.updatedAt || plan.updatedAt) : (plan.updatedAt || pRecord?.updatedAt)} 
+                            />
                           </td>
                       </tr>
                       );

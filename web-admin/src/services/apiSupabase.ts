@@ -571,12 +571,19 @@ export const api = {
       if (error) {
         if (error.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('updated_at') || String(error.message).includes('updated_by')) {
-          delete payload.updated_at;
-          delete payload.updated_by;
-          const { data: retryResult, error: retryError } = await supabase.from('material_plans').update(payload).eq('id', id).select().single();
+          const allowedKeys = ['parent_id', 'project_code', 'stt', 'job_content', 'unit', 'contract_volume', 'tech_spec_model', 'tech_spec_origin', 'progress_status', 'ordered_volume', 'ordered_status', 'expected_date', 'issue_content', 'issue_status', 'doc_co', 'doc_cq', 'doc_fire_inspection', 'dispatch_to_site', 'supply_scope', 'notes', 'updated_by', 'updated_at'];
+          const cleanedPayload: any = {};
+          for (const key of Object.keys(payload)) {
+            if (allowedKeys.includes(key)) cleanedPayload[key] = payload[key];
+          }
+          const { data: retryResult, error: retryError } = await supabase.from('material_plans').update(cleanedPayload).eq('id', id).select().single();
           if (retryError) {
             if (retryError.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
-            if (retryError) throw retryError;
+            delete cleanedPayload.updated_at;
+            delete cleanedPayload.updated_by;
+            const { data: retryResult2, error: retryError2 } = await supabase.from('material_plans').update(cleanedPayload).eq('id', id).select().single();
+            if (retryError2) throw retryError2;
+            return toCamelCase(retryResult2);
           }
           return toCamelCase(retryResult);
         }
