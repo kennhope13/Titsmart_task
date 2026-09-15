@@ -1,7 +1,7 @@
 {
   "name": "buildcore-pro-web-admin",
   "private": true,
-  "version": "3.7.81",
+  "version": "3.7.82",
   "description": "TITSMART Project Manager",
   "type": "module",
   "main": "dist-electron/main.js",
@@ -11,6 +11,7 @@
     "dev:web": "cross-env WEB_ONLY=true vite --host --mode production",
     "build": "tsc && vite build --mode production",
     "build:mobile": "vite build --config vite.config.mobile.ts --mode production && npx cap sync",
+    "build:mobile:local": "vite build --config vite.config.mobile.ts --mode development && npx cap sync",
     "preview": "vite preview",
     "build:electron": "vite build --mode production && electron-builder",
     "publish:win": "vite build --mode production && electron-builder --win --publish always"

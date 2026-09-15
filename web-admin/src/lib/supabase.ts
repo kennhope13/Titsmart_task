@@ -11,7 +11,7 @@ let supabaseUrl = CLOUD_SUPABASE_URL;
 let supabaseAnonKey = CLOUD_SUPABASE_ANON_KEY;
 
 // Khi lập trình ở môi trường dev (development mode / dev:local) -> Kết nối DB Local
-if (import.meta.env.DEV || import.meta.env.MODE === 'development' || Capacitor.isNativePlatform()) {
+if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
   const envUrl = import.meta.env.VITE_SUPABASE_URL;
   const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
