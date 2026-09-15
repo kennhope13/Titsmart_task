@@ -1731,8 +1731,8 @@ export const ProjectCostPlanPage: React.FC = () => {
       )}
 
       {/* TABS SELECTOR */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 shadow-xs border-x">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 shadow-xs border-x overflow-x-auto custom-scrollbar flex-nowrap">
+        <div className="flex items-center gap-3 sm:gap-4 flex-nowrap">
           {[
             { id: 'TECH', label: 'Đặt hàng', icon: 'list_alt', show: true },
             { id: 'DOCS', label: 'Chứng từ', icon: 'description', show: true },
@@ -1742,14 +1742,14 @@ export const ProjectCostPlanPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 py-1.5 text-[12px] font-bold border-b-2 transition-all ${
+              className={`flex items-center gap-1.5 py-2 text-[12px] font-bold border-b-2 transition-all whitespace-nowrap shrink-0 ${
                 activeTab === tab.id
                   ? 'border-primary text-primary'
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
-              <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
-              {tab.label}
+              <span className="material-symbols-outlined text-[16px] flex-shrink-0">{tab.icon}</span>
+              <span className="whitespace-nowrap">{tab.label}</span>
             </button>
           ))}
         </div>
