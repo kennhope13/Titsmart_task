@@ -15,12 +15,21 @@ if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
   const envUrl = import.meta.env.VITE_SUPABASE_URL;
   const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-  supabaseUrl = envUrl || (Capacitor.isNativePlatform() ? `http://${LOCAL_LAN_IP}:54321` : 'http://127.0.0.1:54321');
-  supabaseAnonKey = envKey || LOCAL_ANON_KEY;
+  if (envUrl && !envUrl.includes('supabase.co')) {
+    supabaseUrl = envUrl;
+    supabaseAnonKey = envKey || LOCAL_ANON_KEY;
+  } else {
+    supabaseUrl = Capacitor.isNativePlatform() ? `http://${LOCAL_LAN_IP}:54321` : 'http://127.0.0.1:54321';
+    supabaseAnonKey = LOCAL_ANON_KEY;
+  }
 } else {
   // Khi phát hành bản chính thức (Production / Build release) -> Tự động kết nối Cloud Supabase
-  supabaseUrl = import.meta.env.VITE_SUPABASE_URL || CLOUD_SUPABASE_URL;
-  supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || CLOUD_SUPABASE_ANON_KEY;
+  supabaseUrl = (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_URL.includes('supabase.co'))
+    ? import.meta.env.VITE_SUPABASE_URL 
+    : CLOUD_SUPABASE_URL;
+  supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY && !import.meta.env.VITE_SUPABASE_ANON_KEY.startsWith('eyJ'))
+    ? import.meta.env.VITE_SUPABASE_ANON_KEY 
+    : CLOUD_SUPABASE_ANON_KEY;
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
