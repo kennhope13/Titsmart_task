@@ -203,11 +203,19 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
   const newNotifs: NotificationItem[] = [];
 
   tracks.forEach(track => {
+    // Nếu hồ sơ đã hoàn thành, hoặc đã ký/nhận đủ, hoặc đã thanh toán (nếu có theo dõi), hoặc status đã xong -> không tạo thông báo
     const isSigned = track.docStatus === 'Đã ký' || track.docStatus === 'Đã nhận đủ';
     const isPaid = track.paymentStatus?.includes('Đã');
-    if (track.isCompleted || (isSigned && isPaid)) return;
+    if (track.isCompleted || isSigned || (isSigned && isPaid)) return;
+
+    // Ngày hạn chót: Nếu có dueDate thì dùng dueDate. Nếu không có dueDate nhưng đã có receiveDate (ngày nhận) thì tức là đã nhận xong -> không nhắc.
+    // Nếu chưa có receiveDate và chưa có dueDate thì dùng sendDate + remindDays hoặc sendDate
     const effectiveDueDate = track.dueDate || track.receiveDate || track.sendDate;
     if (!effectiveDueDate) return;
+
+    // Nếu đã có ngày nhận (receiveDate) và không cài hạn chót dueDate riêng -> tức là hồ sơ đã nhận xong rồi -> skip
+    if (!track.dueDate && track.receiveDate) return;
+
     const due = new Date(effectiveDueDate);
     due.setHours(0, 0, 0, 0);
     const diffTime = due.getTime() - today.getTime();
