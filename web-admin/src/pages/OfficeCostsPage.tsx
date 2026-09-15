@@ -164,43 +164,6 @@ export const OfficeCostsPage: React.FC = () => {
               </button>
             )}
           </div>
-
-          <div className="flex items-center gap-3 p-3 bg-white border-b border-slate-200 flex-wrap">
-            <div className="flex items-center gap-2">
-              <span className="text-slate-500 font-medium whitespace-nowrap text-xs">Bộ lọc:</span>
-              <CustomSelect
-                value={expenseFilterSpender}
-                onChange={e => setExpenseFilterSpender(e.target.value)}
-                className="min-w-[120px] max-w-[200px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
-              >
-                <option value="all">Tất cả người chi</option>
-                {expenseSpenderNames.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </CustomSelect>
-            </div>
-            
-            <div className="flex items-center gap-2 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-              <span className="material-symbols-outlined text-[14px] text-slate-400">calendar_month</span>
-              <div className="flex items-center gap-1">
-                <input type="date" value={expenseFilterDateFrom} onChange={e => setExpenseFilterDateFrom(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer" />
-                <span className="text-slate-300">|</span>
-                <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
-                <input type="date" value={expenseFilterDateTo} onChange={e => setExpenseFilterDateTo(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer" />
-              </div>
-            </div>
-
-            <div className="relative w-48 shrink-0 ml-auto hidden md:block">
-              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[14px]">search</span>
-              <input
-                type="text"
-                placeholder="Tìm kiếm..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1 bg-slate-100 border-none rounded text-xs focus:ring-1 focus:ring-primary focus:bg-white transition-all outline-none"
-              />
-            </div>
-          </div>
           
           <div className="flex-1 overflow-auto custom-scrollbar relative">
             <table className="w-full text-left border-collapse">
