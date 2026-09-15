@@ -78,8 +78,8 @@ export const UpdateNotifier: React.FC = () => {
         const rawBody = data.body || '';
         const notes = rawBody
           .split('\n')
-          .map((line: string) => line.replace(/^[\s*-]+/, '').trim())
-          .filter((line: string) => line.length > 0 && !line.startsWith('#'));
+          .map((line: string) => line.replace(/^[\s*-]+/, '').replace(/\*\*/g, '').trim())
+          .filter((line: string) => line.length > 0 && !line.startsWith('#') && !line.includes('Full Changelog'));
 
         setState({
           visible: true,
@@ -126,23 +126,23 @@ export const UpdateNotifier: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 w-[420px] max-w-[calc(100vw-2rem)]">
+    <div className="fixed bottom-16 md:bottom-5 right-3 md:right-5 z-[9999] w-[380px] max-w-[calc(100vw-1.5rem)]">
       <div className="rounded-xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
-        <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-1">
+        <div className="flex items-start justify-between gap-3 px-4 pt-3 pb-1">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#00236F]/5 border border-[#00236F]/10 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
               {state.status === 'downloaded' ? (
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <CheckCircle2 className="w-4 h-4 text-green-600" />
               ) : state.status === 'downloading' ? (
-                <Loader2 className="w-5 h-5 text-[#00236F] animate-spin" />
+                <Loader2 className="w-4 h-4 text-primary animate-spin" />
               ) : state.source === 'web' ? (
-                <Sparkles className="w-5 h-5 text-[#00236F]" />
+                <Sparkles className="w-4 h-4 text-primary" />
               ) : (
-                <Download className="w-5 h-5 text-[#00236F]" />
+                <Download className="w-4 h-4 text-primary" />
               )}
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-800">
+              <p className="text-xs md:text-sm font-extrabold text-slate-800">
                 {state.status === 'downloaded'
                   ? 'Đã sẵn sàng cài đặt'
                   : state.status === 'downloading'
@@ -150,28 +150,27 @@ export const UpdateNotifier: React.FC = () => {
                     : 'Có bản cập nhật mới'}
               </p>
               {state.version && (
-                <p className="text-xs text-slate-500">
-                  Phiên bản {state.version}
-                  {state.status === 'available' && ' đã có sẵn'}
+                <p className="text-[11px] text-slate-500 font-medium">
+                  Phiên bản {state.version} đã sẵn sàng
                 </p>
               )}
             </div>
           </div>
           {state.status !== 'downloading' && (
-            <button onClick={dismiss} className="text-slate-400 hover:text-slate-600" title="Để sau">
+            <button onClick={dismiss} className="text-slate-400 hover:text-slate-600 p-1" title="Để sau">
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        {/* Web: hiển thị danh sách notes dạng list */}
+        {/* Web / Mobile: hiển thị danh sách notes dạng list gọn gàng */}
         {state.source === 'web' && state.notes && state.notes.length > 0 && (
-          <div className="px-4 pt-2 pb-1">
-            <p className="text-[11px] font-bold text-slate-600 mb-1.5">Nội dung cập nhật:</p>
-            <ul className="space-y-1 max-h-32 overflow-y-auto">
+          <div className="px-4 pt-1.5 pb-1">
+            <p className="text-[11px] font-bold text-slate-600 mb-1">Nội dung cập nhật:</p>
+            <ul className="space-y-1 max-h-24 overflow-y-auto">
               {state.notes.map((note, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-slate-500">
-                  <span className="text-green-500 mt-0.5 flex-shrink-0">✓</span>
+                <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-600 leading-tight">
+                  <span className="text-emerald-500 font-bold shrink-0">✓</span>
                   <span>{note}</span>
                 </li>
               ))}
