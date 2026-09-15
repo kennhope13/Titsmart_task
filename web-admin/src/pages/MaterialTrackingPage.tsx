@@ -68,6 +68,8 @@ export const MaterialTrackingPage: React.FC = () => {
   const { projectId } = useParams();
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
   useEffect(() => { setPortalNode(document.getElementById('project-header-actions')); }, []);
+  const [showMobileExportMenu, setShowMobileExportMenu] = useState(false);
+  const [showDesktopExportMenu, setShowDesktopExportMenu] = useState(false);
   const { materials, projects, inventoryTransactions, addMaterial, addMaterialsBatch, updateMaterial, deleteMaterial, addInventoryTransaction, addInventoryTransactionsBatch, logActivity } = useRealtimeStore();
 
   const currentProject = projects.find(p => p.id === projectId || p.code === projectId);
@@ -1056,48 +1058,197 @@ export const MaterialTrackingPage: React.FC = () => {
         />
       )}
             {!projectId && (
-        <section className={`border-b border-slate-200 bg-white pl-3 py-4 md:py-0 md:h-12 flex flex-col xl:flex-row justify-between xl:items-center gap-3 pr-14`}>
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">TỔNG KHO</h2>
+        <section className="sticky top-0 z-20 border-b border-slate-200 bg-white px-3 py-3 md:py-0 md:h-12 shadow-sm">
+          <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between h-full">
+            <div className="flex items-center gap-3">
+              <h2 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">TỔNG KHO</h2>
+            </div>
+
+            <div className="flex items-center gap-2 justify-between md:justify-end w-full md:w-auto">
+              {/* Mobile & Desktop Search Input */}
+              <div className="relative flex-1 md:w-60 min-w-0">
+                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">search</span>
+                <input
+                  type="text"
+                  placeholder="Tìm vật tư..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white transition-all h-8"
+                />
+              </div>
+
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleImportExcel} 
+                accept=".xlsx,.xls,.csv" 
+                className="hidden" 
+              />
+
+              {/* Desktop Action Buttons */}
+              <div className="relative hidden md:block">
+                <button 
+                  onClick={() => setShowDesktopExportMenu(!showDesktopExportMenu)} 
+                  className="flex items-center gap-2 border border-slate-200 bg-white h-[36px] px-4 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+                >
+                  <span className="material-symbols-outlined text-base">file_download</span>
+                  Xuất file
+                  <span className="material-symbols-outlined text-xs">expand_more</span>
+                </button>
+                {showDesktopExportMenu && (
+                  <div className="fixed inset-0 z-40" onClick={() => setShowDesktopExportMenu(false)} />
+                )}
+                {showDesktopExportMenu && (
+                  <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                    <button
+                      onClick={() => {
+                        setShowDesktopExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5"
+                    >
+                      <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                      Excel (.xlsx)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowDesktopExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 border-t border-slate-100"
+                    >
+                      <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                      CSV (.csv)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowDesktopExportMenu(false);
+                        window.print();
+                      }}
+                      className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 border-t border-slate-100"
+                    >
+                      <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                      PDF (.pdf)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowDesktopExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 border-t border-slate-100"
+                    >
+                      <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                      Word (.docx)
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button onClick={() => handleOpenTransaction('IMPORT')} className="hidden md:flex items-center gap-2 bg-emerald-600 text-white h-[36px] px-4 rounded-lg text-xs font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
+                <span className="material-symbols-outlined text-base">arrow_downward</span>
+                Nhập Kho
+              </button>
+              <button onClick={() => handleOpenTransaction('EXPORT')} className="hidden md:flex items-center gap-2 bg-amber-500 text-white h-[36px] px-4 rounded-lg text-xs font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-xs">
+                <span className="material-symbols-outlined text-base">arrow_upward</span>
+                Xuất Kho
+              </button>
+
+              {/* Mobile Icon Action Buttons */}
+              <button 
+                onClick={() => handleOpenTransaction('IMPORT')} 
+                title="Nhập Kho"
+                className="md:hidden flex items-center justify-center bg-emerald-600 text-white h-8 w-8 rounded-lg hover:bg-emerald-700 active:scale-95 transition-all shadow-xs shrink-0"
+              >
+                <span className="material-symbols-outlined text-base">arrow_downward</span>
+              </button>
+
+              <button 
+                onClick={() => handleOpenTransaction('EXPORT')} 
+                title="Xuất Kho"
+                className="md:hidden flex items-center justify-center bg-amber-500 text-white h-8 w-8 rounded-lg hover:bg-amber-600 active:scale-95 transition-all shadow-xs shrink-0"
+              >
+                <span className="material-symbols-outlined text-base">arrow_upward</span>
+              </button>
+
+              {/* Mobile Export File Dropdown Menu */}
+              <div className="relative md:hidden shrink-0">
+                <button
+                  onClick={() => setShowMobileExportMenu(!showMobileExportMenu)}
+                  className="flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+                  title="Xuất file"
+                >
+                  <span className="material-symbols-outlined text-base">file_download</span>
+                </button>
+                {showMobileExportMenu && (
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowMobileExportMenu(false)}
+                  />
+                )}
+                {showMobileExportMenu && (
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                      Excel (.xlsx)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                      CSV (.csv)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        window.print();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                      PDF (.pdf)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
+                    >
+                      <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                      Word (.docx)
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleImportExcel} 
-              accept=".xlsx,.xls,.csv" 
-              className="hidden" 
-            />
-            <button 
-              onClick={() => fileInputRef.current?.click()} 
-              className="hidden md:flex items-center gap-2 border border-slate-200 bg-white h-[40px] px-5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
-            >
-              <span className="material-symbols-outlined text-base">file_upload</span>
-              Nhập Excel
-            </button>
-            <button onClick={handleExportExcel} className="flex items-center gap-2 border border-slate-200 bg-white h-[40px] px-5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs">
-              <span className="material-symbols-outlined text-base">file_download</span>
-              Xuất Excel
-            </button>
-
-            <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-2 bg-emerald-600 text-white h-[40px] px-5 rounded-lg text-[13px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
-              <span className="material-symbols-outlined text-base">arrow_downward</span>
-              Nhập Kho
-            </button>
-            <button onClick={() => handleOpenTransaction('EXPORT')} className="flex items-center gap-2 bg-amber-500 text-white h-[40px] px-5 rounded-lg text-[13px] font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-xs">
-              <span className="material-symbols-outlined text-base">arrow_upward</span>
-              Xuất Kho
-            </button>
           </div>
         </section>
       )}
 
       {projectId && portalNode && createPortal(
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-1.5 flex-nowrap w-full">
+          {/* Mobile Search Input - stretched full remaining width */}
+          <div className="relative flex-1 min-w-0 md:hidden">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+            <input
+              type="text"
+              placeholder="Tìm vật tư..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white transition-all h-8"
+            />
+          </div>
+
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -1105,25 +1256,152 @@ export const MaterialTrackingPage: React.FC = () => {
             accept=".xlsx,.xls,.csv" 
             className="hidden" 
           />
-          <button 
-            onClick={() => fileInputRef.current?.click()} 
-            className="hidden md:flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
-          >
-            <span className="material-symbols-outlined text-[14px]">file_upload</span>
-            Nhập Excel
-          </button>
-          <button onClick={handleExportExcel} className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-            <span className="material-symbols-outlined text-[14px]">file_download</span>
-            Xuất Excel
-          </button>
-          <button onClick={() => handleOpenTransaction('IMPORT')} className="flex items-center gap-1.5 bg-emerald-600 text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-sm">
+
+          {/* Desktop full buttons */}
+          <div className="relative hidden md:block">
+            <button 
+              onClick={() => setShowDesktopExportMenu(!showDesktopExportMenu)} 
+              className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[14px]">file_download</span>
+              Xuất file
+              <span className="material-symbols-outlined text-xs">expand_more</span>
+            </button>
+            {showDesktopExportMenu && (
+              <div className="fixed inset-0 z-40" onClick={() => setShowDesktopExportMenu(false)} />
+            )}
+            {showDesktopExportMenu && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                <button
+                  onClick={() => {
+                    setShowDesktopExportMenu(false);
+                    handleExportExcel();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                  Excel (.xlsx)
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDesktopExportMenu(false);
+                    handleExportExcel();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
+                >
+                  <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                  CSV (.csv)
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDesktopExportMenu(false);
+                    window.print();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
+                >
+                  <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                  PDF (.pdf)
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDesktopExportMenu(false);
+                    handleExportExcel();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
+                >
+                  <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                  Word (.docx)
+                </button>
+              </div>
+            )}
+          </div>
+          <button onClick={() => handleOpenTransaction('IMPORT')} className="hidden md:flex items-center gap-1.5 bg-emerald-600 text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-sm">
             <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
             Nhập Kho
           </button>
-          <button onClick={() => handleOpenTransaction('EXPORT')} className="flex items-center gap-1.5 bg-amber-500 text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-sm">
+          <button onClick={() => handleOpenTransaction('EXPORT')} className="hidden md:flex items-center gap-1.5 bg-amber-500 text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-sm">
             <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
             Xuất Kho
           </button>
+
+          {/* Mobile '+' Nhập kho Icon Button */}
+          <button 
+            onClick={() => handleOpenTransaction('IMPORT')} 
+            title="Nhập Kho"
+            className="md:hidden flex items-center justify-center bg-emerald-600 text-white h-8 w-8 rounded-lg hover:bg-emerald-700 active:scale-95 transition-all shadow-xs shrink-0"
+          >
+            <span className="material-symbols-outlined text-base">arrow_downward</span>
+          </button>
+
+          {/* Mobile '↑' Xuất kho Icon Button */}
+          <button 
+            onClick={() => handleOpenTransaction('EXPORT')} 
+            title="Xuất Kho"
+            className="md:hidden flex items-center justify-center bg-amber-500 text-white h-8 w-8 rounded-lg hover:bg-amber-600 active:scale-95 transition-all shadow-xs shrink-0"
+          >
+            <span className="material-symbols-outlined text-base">arrow_upward</span>
+          </button>
+
+          {/* Mobile Export File Dropdown Menu */}
+          <div className="relative md:hidden shrink-0">
+            <button
+              onClick={() => setShowMobileExportMenu(!showMobileExportMenu)}
+              className="flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+              title="Xuất file"
+            >
+              <span className="material-symbols-outlined text-base">file_download</span>
+            </button>
+            {showMobileExportMenu && (
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowMobileExportMenu(false)}
+              />
+            )}
+            {showMobileExportMenu && (
+              <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                <button
+                  onClick={() => {
+                    setShowMobileExportMenu(false);
+                    handleExportExcel();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                  Excel (.xlsx)
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMobileExportMenu(false);
+                    handleExportExcel();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                  CSV (.csv)
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMobileExportMenu(false);
+                    window.print();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                  PDF (.pdf)
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMobileExportMenu(false);
+                    handleExportExcel();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
+                >
+                  <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                  Word (.docx)
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       , portalNode)}
 
@@ -1132,29 +1410,30 @@ export const MaterialTrackingPage: React.FC = () => {
 
         {/* TABS & FILTERS */}
         <div ref={stickyHeaderRef} className="flex flex-col border-b border-slate-200 bg-white z-20">
-          <div className="flex items-center gap-4 px-4">
+          <div className="flex items-center gap-1 md:gap-4 px-2 md:px-4 overflow-x-auto custom-scrollbar">
             {[
-              { id: 'OVERVIEW', label: 'Tồn Kho Tổng Hợp', icon: 'inventory' },
-              { id: 'IMPORT', label: 'Nhật Ký Nhập Kho', icon: 'login' },
-              { id: 'EXPORT', label: 'Nhật Ký Xuất Kho', icon: 'logout' }
+              { id: 'OVERVIEW', label: 'Tồn Kho Tổng Hợp', shortLabel: 'Tồn Kho', icon: 'inventory' },
+              { id: 'IMPORT', label: 'Nhật Ký Nhập Kho', shortLabel: 'Nhập Kho', icon: 'login' },
+              { id: 'EXPORT', label: 'Nhật Ký Xuất Kho', shortLabel: 'Xuất Kho', icon: 'logout' }
             ].map(tab => (
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`app-tab-button flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-bold border-b-2 transition-all whitespace-nowrap ${
+                className={`app-tab-button flex items-center gap-1.5 md:gap-2.5 px-2 md:px-3 py-1.5 text-[12px] font-bold border-b-2 transition-all whitespace-nowrap ${
                   activeTab === tab.id 
                     ? 'border-primary text-primary' 
                     : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
                 }`}
               >
                 <span className="material-symbols-outlined text-[16px] leading-none">{tab.icon}</span>
-                {tab.label}
+                <span className="hidden md:inline">{tab.label}</span>
+                <span className="inline md:hidden">{tab.shortLabel}</span>
               </button>
             ))}
           </div>
           
-          {/* Lọc chi tiết */}
-          <div className="h-[40px] px-5 bg-slate-50/80 border-t border-slate-100 flex items-center gap-3 overflow-x-auto custom-scrollbar justify-between">
+          {/* Lọc chi tiết - ẩn trên mobile để tối ưu giao diện */}
+          <div className="hidden md:flex h-[40px] px-5 bg-slate-50/80 border-t border-slate-100 items-center gap-3 overflow-x-auto custom-scrollbar justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2.5 text-slate-500 font-bold text-xs whitespace-nowrap pr-1">
                 <span className="material-symbols-outlined text-[16px]">filter_list</span>
@@ -1221,22 +1500,22 @@ export const MaterialTrackingPage: React.FC = () => {
               <table className="w-full text-left border-collapse">
                  <thead 
                    style={{ top: 0 }}
-                   className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
+                   className="bg-slate-50 border-b border-slate-200 text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
                  >
                  <tr>
-                   <th className="p-2 w-10 text-center bg-slate-50">STT</th>
-                   {!projectId && <th className="p-2 w-[10%] bg-slate-50">Dự Án</th>}
-                   <th className="p-2 w-[8%] bg-slate-50">Danh mục</th>
-                   <th className="p-2 w-[15%] bg-slate-50">Tên Vật Tư</th>
-                   <th className="p-2 w-[8%] bg-slate-50">Mã Vật Tư</th>
-                   <th className="p-2 w-[12%] bg-slate-50">Thông Số Kỹ Thuật</th>
-                   <th className="p-2 text-center w-[6%] bg-slate-50">ĐVT</th>
-                   <th className="p-2 text-right w-[7%] bg-slate-50">Tồn Đầu</th>
-                   <th className="p-2 text-right w-[7%] bg-slate-50">Nhập</th>
-                   <th className="p-2 text-right w-[7%] bg-slate-50">Xuất</th>
-                   <th className="p-2 text-right w-[7%] bg-slate-50">Tồn Kho</th>
-                   <th className="p-2 w-[10%] bg-slate-50">Ghi Chú</th>
-                   <th className="p-2 text-center w-[5%] bg-slate-50">Thao tác</th>
+                   <th className="p-1.5 md:p-2 w-8 md:w-10 text-center bg-slate-50 whitespace-nowrap">STT</th>
+                   {!projectId && <th className="p-1.5 md:p-2 bg-slate-50 whitespace-nowrap">Dự Án</th>}
+                   <th className="p-1.5 md:p-2 bg-slate-50 whitespace-nowrap">Danh mục</th>
+                   <th className="p-1.5 md:p-2 min-w-32 md:min-w-44 bg-slate-50 whitespace-nowrap">Tên Vật Tư</th>
+                   <th className="p-1.5 md:p-2 bg-slate-50 whitespace-nowrap">Mã Vật Tư</th>
+                   <th className="p-1.5 md:p-2 bg-slate-50 whitespace-nowrap">Thông Số Kỹ Thuật</th>
+                   <th className="p-1.5 md:p-2 text-center bg-slate-50 whitespace-nowrap">ĐVT</th>
+                   <th className="p-1.5 md:p-2 text-right bg-slate-50 whitespace-nowrap">Tồn Đầu</th>
+                   <th className="p-1.5 md:p-2 text-right bg-slate-50 whitespace-nowrap">Nhập</th>
+                   <th className="p-1.5 md:p-2 text-right bg-slate-50 whitespace-nowrap">Xuất</th>
+                   <th className="p-1.5 md:p-2 text-right bg-slate-50 whitespace-nowrap">Tồn Kho</th>
+                   <th className="p-1.5 md:p-2 bg-slate-50 whitespace-nowrap">Ghi Chú</th>
+                   <th className="p-1.5 md:p-2 text-center bg-slate-50 whitespace-nowrap">Thao tác</th>
                  </tr>
                </thead>
                <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
@@ -1244,52 +1523,56 @@ export const MaterialTrackingPage: React.FC = () => {
                     const purchase = normalizePurchaseStatus(material.status);
                     return (
                       <tr key={material.id} onClick={() => openEditMaterial(material)} className="hover:bg-blue-50/50 transition-colors align-top cursor-pointer">
-                        <td className="p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
-                        {!projectId && <td className="p-3.5"><span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-600 inline-block" title={material.projectName || 'Kho Tổng'}>{material.projectName || 'Kho Tổng'}</span></td>}
-                        <td className="p-3.5 text-slate-600 text-xs">{material.category || 'Vật tư chung'}</td>
-                        <td className="p-3.5">
+                        <td className="p-2 md:p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
+                        {!projectId && <td className="p-2 md:p-3.5"><span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-600 inline-block" title={material.projectName || 'Kho Tổng'}>{material.projectName || 'Kho Tổng'}</span></td>}
+                        <td className="p-2 md:p-3.5 text-slate-600 text-xs">{material.category || 'Vật tư chung'}</td>
+                        <td className="p-2 md:p-3.5">
                           <div className="font-bold text-slate-900 leading-snug">{material.name}</div>
                         </td>
-                        <td className="p-3.5 font-mono text-slate-500 text-xs">{material.code}</td>
-                        <td className="p-3.5 text-slate-600 text-xs">
+                        <td className="p-2 md:p-3.5 font-mono text-slate-500 text-xs">{material.code}</td>
+                        <td className="p-2 md:p-3.5 text-slate-600 text-xs">
                           {material.specs || '-'}
                         </td>
-                        <td className="p-3.5 text-center text-slate-600">{material.unit}</td>
-                        <td className="p-3.5 text-right text-slate-500">{material.initialStock || 0}</td>
-                        <td className="p-3.5 text-right text-emerald-600 font-bold">+{material.totalImport || 0}</td>
-                        <td className="p-3.5 text-right text-amber-600 font-bold">-{material.totalExport || 0}</td>
-                        <td className="p-3.5 text-right font-bold text-primary text-sm">{((material.initialStock || 0) + (material.totalImport || 0) - (material.totalExport || 0)).toLocaleString('vi-VN')}</td>
-                        <td className="p-3.5 text-slate-600 text-xs max-w-xs truncate" title={material.notes || ''}>{material.notes || '-'}</td>
-                        <td className="p-3.5 text-center" onClick={(event) => event.stopPropagation()}>
+                        <td className="p-2 md:p-3.5 text-center text-slate-600">{material.unit}</td>
+                        <td className="p-2 md:p-3.5 text-right text-slate-500">{material.initialStock || 0}</td>
+                        <td className="p-2 md:p-3.5 text-right text-emerald-600 font-bold">+{material.totalImport || 0}</td>
+                        <td className="p-2 md:p-3.5 text-right text-amber-600 font-bold">-{material.totalExport || 0}</td>
+                        <td className="p-2 md:p-3.5 text-right font-bold text-primary text-sm">{((material.initialStock || 0) + (material.totalImport || 0) - (material.totalExport || 0)).toLocaleString('vi-VN')}</td>
+                        <td className="p-2 md:p-3.5 text-slate-600 text-xs max-w-xs truncate" title={material.notes || ''}>{material.notes || '-'}</td>
+                        <td className="p-2 md:p-3.5 text-center" onClick={(event) => event.stopPropagation()}>
                           <div className="flex justify-center gap-1.5">
                             <button type="button" onClick={() => setHistoryMaterial(material)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors" title="Xem lịch sử nhập/xuất">
                               <span className="material-symbols-outlined text-[15px]">history</span>
                             </button>
-                            <button type="button" onClick={() => {
-                              setTransferMaterial(material);
-                              setIsTransferModalOpen(true);
-                            }} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors" title="Chuyển kho">
-                              <span className="material-symbols-outlined text-[15px]">swap_horiz</span>
+                            <button type="button" onClick={() => openEditMaterial(material)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors" title="Chỉnh sửa">
+                              <span className="material-symbols-outlined text-[15px]">edit</span>
                             </button>
                             <button type="button" onClick={() => {
                               setConfirmConfig({
-                              isOpen: true,
-                              title: 'Xóa vật tư',
-                              message: `Bạn chắc chắn muốn xóa vật tư "${material.name}"?`,
-                              icon: 'delete',
-                              isDestructive: true,
-                              confirmText: 'Xóa',
-                              onConfirm: () => { deleteMaterial(material.id); triggerToast(`Đã xóa vật tư "${material.name}" thành công!`, 'success'); },
-                            });
-                          }} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title="Xóa vật tư">
-                            <span className="material-symbols-outlined text-[15px]">delete</span>
+                                isOpen: true,
+                                title: 'Xóa vật tư',
+                                message: `Bạn có chắc chắn muốn xóa vật tư "${material.name}" (${material.code})? Tất cả dữ liệu liên quan sẽ bị xóa!`,
+                                icon: 'danger',
+                                isDestructive: true,
+                                confirmText: 'Xóa ngay',
+                                onConfirm: async () => {
+                                  try {
+                                    await deleteMaterial(material.id);
+                                    triggerToast(`Đã xóa vật tư "${material.name}"`, 'success');
+                                  } catch (error: any) {
+                                    triggerToast(error.message || 'Lỗi khi xóa vật tư!', 'warning');
+                                  }
+                                }
+                              });
+                            }} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors" title="Xóa">
+                              <span className="material-symbols-outlined text-[15px]">delete</span>
                             </button>
                           </div>
                         </td>
                       </tr>
                     );
                   })}
-                  {filteredMaterials.length === 0 && <tr><td colSpan={10} className="p-8 text-center text-slate-500">Không có vật tư nào.</td></tr>}
+                  {filteredMaterials.length === 0 && <tr><td colSpan={13} className="p-8 text-center text-slate-500">Không có vật tư nào.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -1301,34 +1584,34 @@ export const MaterialTrackingPage: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead 
                 style={{ top: 0 }}
-                className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
+                className="bg-slate-50 border-b border-slate-200 text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
               >
                 <tr>
-                  <th className="p-3.5 w-10 text-center bg-slate-50">STT</th>
-                  <th className="p-3.5 bg-slate-50">Ngày Nhập</th>
-                  <th className="p-3.5 bg-slate-50">Mã Vật Tư</th>
-                  <th className="p-3.5 min-w-64 bg-slate-50">Tên Vật Tư</th>
-                  <th className="p-3.5 text-slate-500 bg-slate-50">Quy Cách</th>
-                  <th className="p-3.5 text-right bg-slate-50">S.Lượng Nhập</th>
-                  <th className="p-3.5 text-center bg-slate-50">ĐVT</th>
-                  {!projectId && <th className="p-3.5 bg-slate-50">Thuộc Dự Án</th>}
-                  <th className="p-3.5 bg-slate-50">Nguồn / Nhà Cung Cấp</th>
-                  <th className="p-3.5 min-w-40 bg-slate-50">Ghi chú</th>
+                  <th className="p-1.5 md:p-3.5 w-8 md:w-10 text-center bg-slate-50 whitespace-nowrap">STT</th>
+                  <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Ngày Nhập</th>
+                  <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Mã Vật Tư</th>
+                  <th className="p-1.5 md:p-3.5 min-w-32 md:min-w-64 bg-slate-50 whitespace-nowrap">Tên Vật Tư</th>
+                  <th className="p-1.5 md:p-3.5 text-slate-500 bg-slate-50 whitespace-nowrap">Quy Cách</th>
+                  <th className="p-1.5 md:p-3.5 text-right bg-slate-50 whitespace-nowrap">S.Lượng Nhập</th>
+                  <th className="p-1.5 md:p-3.5 text-center bg-slate-50 whitespace-nowrap">ĐVT</th>
+                  {!projectId && <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Thuộc Dự Án</th>}
+                  <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Nguồn / Nhà Cung Cấp</th>
+                  <th className="p-1.5 md:p-3.5 min-w-32 md:min-w-40 bg-slate-50 whitespace-nowrap">Ghi chú</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                 {imports.map((tx, index) => (
                   <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
-                    <td className="p-3.5 font-bold text-slate-900">{tx.date ? new Date(tx.date).toLocaleDateString("vi-VN") : "-"}</td>
-                    <td className="p-3.5 font-mono text-slate-500">{tx.materialCode}</td>
-                    <td className="p-3.5 font-bold text-slate-800">{tx.materialName}</td>
-                    <td className="p-3.5 text-slate-500">{tx.specs || '-'}</td>
-                    <td className="p-3.5 text-right font-bold text-emerald-600">+{tx.quantity.toLocaleString('vi-VN')}</td>
-                    <td className="p-3.5 text-center text-slate-500">{tx.unit}</td>
-                    {!projectId && <td className="p-3.5 text-slate-600 font-medium">{(materials.find(m => m.id === tx.materialId)?.projectName) || 'Kho Tổng'}</td>}
-                    <td className="p-3.5 text-slate-600">{tx.sourceOrProject || '-'}</td>
-                    <td className="p-3.5 text-slate-500 italic">{tx.notes || '-'}</td>
+                    <td className="p-2 md:p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
+                    <td className="p-2 md:p-3.5 font-bold text-slate-900 whitespace-nowrap">{tx.date ? new Date(tx.date).toLocaleDateString("vi-VN") : "-"}</td>
+                    <td className="p-2 md:p-3.5 font-mono text-slate-500">{tx.materialCode}</td>
+                    <td className="p-2 md:p-3.5 font-bold text-slate-800">{tx.materialName}</td>
+                    <td className="p-2 md:p-3.5 text-slate-500">{tx.specs || '-'}</td>
+                    <td className="p-2 md:p-3.5 text-right font-bold text-emerald-600">+{tx.quantity.toLocaleString('vi-VN')}</td>
+                    <td className="p-2 md:p-3.5 text-center text-slate-500">{tx.unit}</td>
+                    {!projectId && <td className="p-2 md:p-3.5 text-slate-600 font-medium">{(materials.find(m => m.id === tx.materialId)?.projectName) || 'Kho Tổng'}</td>}
+                    <td className="p-2 md:p-3.5 text-slate-600">{tx.sourceOrProject || '-'}</td>
+                    <td className="p-2 md:p-3.5 text-slate-500 italic">{tx.notes || '-'}</td>
                   </tr>
                 ))}
                 {imports.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-slate-500">Chưa có giao dịch nhập kho nào.</td></tr>}
@@ -1342,19 +1625,19 @@ export const MaterialTrackingPage: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead 
                 style={{ top: 0 }}
-                className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
+                className="bg-slate-50 border-b border-slate-200 text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
               >
                 <tr>
-                  <th className="p-3.5 w-10 text-center bg-slate-50">STT</th>
-                  <th className="p-3.5 bg-slate-50">Ngày Xuất</th>
-                  <th className="p-3.5 bg-slate-50">Mã Vật Tư</th>
-                  <th className="p-3.5 min-w-64 bg-slate-50">Tên Vật Tư</th>
-                  <th className="p-3.5 text-slate-500 bg-slate-50">Quy Cách</th>
-                  <th className="p-3.5 text-right bg-slate-50">S.Lượng Xuất</th>
-                  <th className="p-3.5 text-center bg-slate-50">ĐVT</th>
-                  <th className="p-3.5 bg-slate-50">Dự Án Nhận</th>
-                  <th className="p-3.5 bg-slate-50">Người Nhận</th>
-                  <th className="p-3.5 min-w-40 bg-slate-50">Ghi chú</th>
+                  <th className="p-1.5 md:p-3.5 w-8 md:w-10 text-center bg-slate-50 whitespace-nowrap">STT</th>
+                  <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Ngày Xuất</th>
+                  <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Mã Vật Tư</th>
+                  <th className="p-1.5 md:p-3.5 min-w-32 md:min-w-64 bg-slate-50 whitespace-nowrap">Tên Vật Tư</th>
+                  <th className="p-1.5 md:p-3.5 text-slate-500 bg-slate-50 whitespace-nowrap">Quy Cách</th>
+                  <th className="p-1.5 md:p-3.5 text-right bg-slate-50 whitespace-nowrap">S.Lượng Xuất</th>
+                  <th className="p-1.5 md:p-3.5 text-center bg-slate-50 whitespace-nowrap">ĐVT</th>
+                  <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Dự Án Nhận</th>
+                  <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Người Nhận</th>
+                  <th className="p-1.5 md:p-3.5 min-w-32 md:min-w-40 bg-slate-50 whitespace-nowrap">Ghi chú</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">

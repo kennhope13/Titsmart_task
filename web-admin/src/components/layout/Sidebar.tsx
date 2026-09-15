@@ -25,6 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
   const [isHovered, setIsHovered] = useState(false);
   const [showUserPopover, setShowUserPopover] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   
   const isExpanded = isExpandedProp || (sidebarHoverToExpand && isHovered) || showUserPopover;
   const navigate = useNavigate();
@@ -271,6 +272,132 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           </div>
       </aside>
 
+      {/* Mobile Bottom Sheet Modal for All Features */}
+      {isMobileDrawerOpen && (
+        <div className="md:hidden fixed inset-0 z-[100] flex flex-col justify-end">
+          {/* Backdrop Overlay */}
+          <div 
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setIsMobileDrawerOpen(false)}
+          />
+
+          {/* Bottom Sheet Card Panel */}
+          <div 
+            onTouchStart={(e) => {
+              (e.currentTarget as any)._startY = e.touches[0].clientY;
+            }}
+            onTouchMove={(e) => {
+              const startY = (e.currentTarget as any)._startY;
+              if (startY && e.touches[0].clientY - startY > 60) {
+                setIsMobileDrawerOpen(false);
+              }
+            }}
+            className="relative bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col z-[101] animate-in slide-in-from-bottom duration-300 border-t border-slate-200 pb-[calc(env(safe-area-inset-bottom,0px)+12px)]"
+          >
+            {/* Grab Handle Header */}
+            <div 
+              className="w-full flex flex-col items-center pt-3 pb-2 px-4 cursor-pointer border-b border-slate-100 select-none active:opacity-70 transition-opacity" 
+              onClick={() => setIsMobileDrawerOpen(false)}
+            >
+              <div className="w-12 h-1.5 bg-slate-300 rounded-full mb-2 hover:bg-slate-400 transition-colors" />
+              <div className="w-full flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-xl">apps</span>
+                  <h3 className="font-bold text-sm text-slate-800">Tất cả tính năng</h3>
+                </div>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsMobileDrawerOpen(false);
+                  }}
+                  className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Grid list of remaining features (excluding items already present on the bottom bar) */}
+            <div className="p-4 overflow-y-auto max-h-[60vh] space-y-4 custom-scrollbar">
+              {(() => {
+                const visibleBottomPaths = new Set(
+                  (currentProject ? [
+                    `/projects/${currentProject.id}/overview`,
+                    `/projects/${currentProject.id}/tasks`,
+                    `/projects/${currentProject.id}/cost-plan`,
+                    `/projects/${currentProject.id}/documents`,
+                  ] : [
+                    '/dashboard',
+                    '/projects',
+                    '/my-tasks',
+                    '/materials',
+                  ])
+                );
+
+                return navGroups.map((group, idx) => {
+                  const filteredItems = group.items.filter(item => !visibleBottomPaths.has(item.path));
+                  if (filteredItems.length === 0) return null;
+
+                  return (
+                    <div key={group.title || idx} className="space-y-2">
+                      {group.title && (
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                          {group.title}
+                        </div>
+                      )}
+                      <div className="grid grid-cols-4 gap-2">
+                        {filteredItems.map((item) => (
+                          <NavLink
+                            key={item.path}
+                            to={item.path}
+                            onClick={() => setIsMobileDrawerOpen(false)}
+                            className={({ isActive }) =>
+                              `flex flex-col items-center justify-center p-2.5 rounded-2xl transition-all text-center ${
+                                isActive
+                                  ? 'bg-blue-50 text-primary font-bold shadow-sm border border-blue-200'
+                                  : 'bg-slate-50 text-slate-700 font-medium hover:bg-slate-100 border border-slate-100'
+                              }`
+                            }
+                          >
+                            <span className="material-symbols-outlined text-2xl mb-1 text-primary">{item.icon}</span>
+                            <span className="text-[11px] leading-tight truncate w-full">{item.label}</span>
+                          </NavLink>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Bottom Footer User Info & Logout */}
+            {user && (
+              <div className="mx-4 mt-2 p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="truncate">
+                    <div className="text-xs font-bold text-slate-800 truncate">{user.name || user.username}</div>
+                    <div className="text-[10px] text-slate-400 truncate">{user.role || 'Quản trị viên'}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsMobileDrawerOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition-colors"
+                >
+                  <span className="material-symbols-outlined text-base">logout</span>
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Mobile Bottom Navigation Bar (Shown ONLY on screens <= 768px via css md:hidden) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-[88px] bg-white border-t border-slate-200 z-50 flex items-start justify-around px-2 pt-3 shadow-[0_-6px_20px_rgba(0,0,0,0.12)] pb-[calc(env(safe-area-inset-bottom,0px)+10px)]">
         {(currentProject ? [
@@ -278,28 +405,37 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           { label: 'Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'fact_check' },
           { label: 'Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'account_balance_wallet' },
           { label: 'Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'file_present' },
-          { label: 'Kho', path: `/projects/${currentProject.id}/inventory`, icon: 'inventory_2' },
         ] : [
           { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
           { label: 'Dự án', path: '/projects', icon: 'cell_tower' },
           { label: 'Công việc', path: '/my-tasks', icon: 'checklist' },
           { label: 'Vật tư', path: '/materials', icon: 'warehouse' },
-          { label: 'Hồ sơ', path: '/document-tracking', icon: 'folder_managed' },
-        ]).slice(0, 5).map((item) => (
+        ]).map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             end={item.path === '/'}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+              `flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[48px] ${
                 isActive ? 'text-primary font-bold' : 'text-slate-500 font-medium hover:text-slate-800'
               }`
             }
           >
             <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-            <span className="text-[10px] leading-tight truncate max-w-[64px]">{item.label}</span>
+            <span className="text-[10px] leading-tight truncate max-w-[56px]">{item.label}</span>
           </NavLink>
         ))}
+
+        {/* 5th Tab: Nút "Khác..." mở Bottom Sheet tất cả tính năng */}
+        <button
+          onClick={() => setIsMobileDrawerOpen(true)}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[48px] ${
+            isMobileDrawerOpen ? 'text-primary font-bold' : 'text-slate-500 font-medium hover:text-slate-800'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[22px]">apps</span>
+          <span className="text-[10px] leading-tight truncate max-w-[56px]">Khác...</span>
+        </button>
       </div>
 
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />

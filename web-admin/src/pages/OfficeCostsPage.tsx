@@ -87,18 +87,18 @@ export const OfficeCostsPage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-slate-50 overflow-hidden relative">
-      <section className="border-b border-slate-200 bg-white pl-3 pr-14 py-4 md:py-0 md:h-12 flex items-center justify-between gap-4 z-10 shrink-0 shadow-sm">
+      <section className="border-b border-slate-200 bg-white pl-3 pr-3 md:pr-14 py-3 md:py-0 md:h-12 flex items-center justify-between gap-4 z-10 shrink-0 shadow-sm">
         <div className="flex items-center gap-4">
-          <div><h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">CHI PHÍ VĂN PHÒNG</h2></div>
+          <div><h2 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">CHI PHÍ VĂN PHÒNG</h2></div>
         </div>
 
         <div className="flex items-center gap-3">
           {hasPermission(user, 'EDIT_EXPENSES') && (
             <button
               onClick={() => setIsNewExpenseOpen(true)}
-              className="bg-primary text-white h-[40px] px-5 rounded-lg text-[13px] font-bold hover:opacity-90 flex items-center gap-2 shadow-xs"
+              className="hidden md:flex bg-primary text-white h-[36px] px-4 rounded-lg text-xs font-bold hover:opacity-90 items-center gap-2 shadow-xs"
             >
-              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span className="material-symbols-outlined text-base">add</span>
               Thêm chi phí mới
             </button>
           )}
@@ -142,6 +142,29 @@ export const OfficeCostsPage: React.FC = () => {
 
         {/* BẢNG CHI PHÍ */}
         <div className="flex-1 bg-white overflow-hidden flex flex-col min-h-0">
+          {/* Mobile Search + Action Row */}
+          <div className="md:hidden flex items-center gap-2 p-2.5 bg-white border-b border-slate-200">
+            <div className="relative flex-1 min-w-0">
+              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">search</span>
+              <input
+                type="text"
+                placeholder="Tìm kiếm..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white transition-all h-9"
+              />
+            </div>
+            {hasPermission(user, 'EDIT_EXPENSES') && (
+              <button
+                onClick={() => setIsNewExpenseOpen(true)}
+                title="Thêm chi phí mới"
+                className="flex items-center justify-center bg-primary text-white h-9 w-9 rounded-lg hover:opacity-90 active:scale-95 transition-all shadow-xs shrink-0"
+              >
+                <span className="material-symbols-outlined text-lg">add</span>
+              </button>
+            )}
+          </div>
+
           <div className="flex items-center gap-3 p-3 bg-white border-b border-slate-200 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium whitespace-nowrap text-xs">Bộ lọc:</span>
@@ -167,7 +190,7 @@ export const OfficeCostsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="relative w-48 shrink-0 ml-auto">
+            <div className="relative w-48 shrink-0 ml-auto hidden md:block">
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[14px]">search</span>
               <input
                 type="text"

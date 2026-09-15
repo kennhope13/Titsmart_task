@@ -91,15 +91,17 @@ const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => voi
 
 interface FieldLogsTaskTableProps {
   selectedProject: string;
+  searchQuery?: string;
   logs: FieldLog[];
   onAddLogClick: (taskId: string) => void;
   onEditLogClick: (log: FieldLog) => void;
   onDeleteLogClick?: (log: FieldLog) => void;
 }
 
-export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selectedProject, logs, onAddLogClick, onEditLogClick, onDeleteLogClick }) => {
+export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selectedProject, searchQuery = '', logs, onAddLogClick, onEditLogClick, onDeleteLogClick }) => {
   const { tasks } = useRealtimeStore();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [isScrolledHorizontally, setIsScrolledHorizontally] = useState(false);
   
   // Lightbox state
   const [lightboxIndex, setLightboxIndex] = useState(-1);
@@ -107,8 +109,24 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
   const [viewAllLogsTask, setViewAllLogsTask] = useState<Task | null>(null);
 
   const displayTasks = useMemo(() => {
-    return tasks.filter(t => t.projectCode === selectedProject);
-  }, [tasks, selectedProject]);
+    let filtered = tasks.filter(t => t.projectCode === selectedProject);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const cleanQ = searchQuery.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      filtered = filtered.filter(t => {
+        const rawMatch = (t.stt || '').toLowerCase().includes(q) || (t.name || '').toLowerCase().includes(q);
+        if (rawMatch) return true;
+        const cleanName = (t.name || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        return cleanName.includes(cleanQ);
+      });
+    }
+    return filtered;
+  }, [tasks, selectedProject, searchQuery]);
+
+  const maxSttWidth = useMemo(() => {
+    const maxLen = Math.max(...displayTasks.map((t) => String(t.stt || '').length), 3);
+    return Math.max(48, Math.min(maxLen * 8 + 14, 90));
+  }, [displayTasks]);
 
   const groupedTasks = useMemo(() => {
     const map = new Map<string, any>();
@@ -235,17 +253,23 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-white pb-24">
-      <table className="w-full text-left text-sm text-slate-600 border-collapse">
-        <thead className="bg-slate-50 text-xs uppercase text-slate-500 font-bold sticky top-0 z-20 shadow-sm border-b border-slate-200">
+    <div 
+      className="flex-1 overflow-auto bg-white pb-24 custom-scrollbar"
+      onScroll={(e) => {
+        const scrollLeft = e.currentTarget.scrollLeft;
+        setIsScrolledHorizontally(scrollLeft > 10);
+      }}
+    >
+      <table className="w-full text-left text-sm text-slate-600 border-collapse table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+        <thead className="bg-slate-50 text-[11px] md:text-xs uppercase text-slate-500 font-bold sticky top-0 z-20 shadow-sm border-b border-slate-200">
           <tr>
-            <th className="py-3 px-3 border-r border-slate-200 w-16 text-center">STT</th>
-            <th className="py-3 px-4 border-r border-slate-200">NỘI DUNG CÔNG VIỆC</th>
-            <th className="py-3 px-3 border-r border-slate-200 w-36 text-center">THỜI GIAN THI CÔNG</th>
-            <th className="py-3 px-3 border-r border-slate-200 w-72">ẢNH NHẬT KÝ VẬN HÀNH</th>
-            <th className="py-3 px-3 border-r border-slate-200 w-64">NỘI DUNG NHẬT KÝ / THI CÔNG HỆ THỐNG</th>
-            <th className="py-3 px-3 border-r border-slate-200 w-40">NGƯỜI CẬP NHẬT</th>
-            <th className="py-3 px-3 w-28 text-center">THAO TÁC</th>
+            <th style={{ width: "var(--stt-width)", minWidth: 42 }} className={`sticky left-0 z-20 md:static py-2.5 px-2 md:py-3 md:px-3 bg-slate-50 text-center border-r border-slate-200 whitespace-nowrap transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>STT</th>
+            <th className={`sticky z-20 md:static py-2.5 px-3 md:py-3 md:px-4 w-[220px] min-w-[220px] max-w-[220px] md:w-auto md:min-w-0 md:max-w-none bg-slate-50 border-r border-slate-200 whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)" }}>NỘI DUNG CÔNG VIỆC</th>
+            <th className="py-2.5 px-2 md:py-3 md:px-3 border-r border-slate-200 w-32 md:w-36 text-center whitespace-nowrap">THỜI GIAN</th>
+            <th className="py-2.5 px-2 md:py-3 md:px-3 border-r border-slate-200 w-48 md:w-72 whitespace-nowrap">ẢNH</th>
+            <th className="py-2.5 px-2 md:py-3 md:px-3 border-r border-slate-200 w-44 md:w-64 whitespace-nowrap">NỘI DUNG</th>
+            <th className="py-2.5 px-2 md:py-3 md:px-3 border-r border-slate-200 w-32 md:w-40 whitespace-nowrap">NGƯỜI CẬP NHẬT</th>
+            <th className="py-2.5 px-2 md:py-3 md:px-3 w-20 md:w-28 text-center whitespace-nowrap">TT</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200">
@@ -260,9 +284,9 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                 const isCollapsed = collapsedSections.has(t._sectionKey || '');
                 return (
                   <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                    <td className="py-3 px-3 border-r border-blue-200 text-center font-mono text-xs">{t.computedStt || t.stt}</td>
-                    <td colSpan={6} className="py-3 px-4 font-extrabold text-xs">
-                      <div className="flex items-center gap-2">
+                    <td className={`sticky left-0 z-10 md:static py-3 px-3 bg-blue-50/90 border-r border-blue-200 text-center font-mono text-xs transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>{t.computedStt || t.stt}</td>
+                    <td colSpan={isScrolledHorizontally ? 1 : 6} className={`sticky z-10 md:static py-3 px-4 bg-blue-50/90 font-extrabold text-xs shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)", width: isScrolledHorizontally ? "220px" : "auto", minWidth: isScrolledHorizontally ? "220px" : "auto", maxWidth: isScrolledHorizontally ? "220px" : "auto" }}>
+                      <div className="flex items-center gap-2 min-w-0 w-full overflow-hidden">
                         <button
                           onClick={() => toggleSection(t._sectionKey || '')}
                           className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
@@ -270,7 +294,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                           <span className={`material-symbols-outlined text-base transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                         </button>
                         <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                        <span className="flex-1 uppercase">{t.name}</span>
+                        <span className="flex-1 uppercase truncate min-w-0">{t.name}</span>
                       </div>
                     </td>
                   </tr>
@@ -298,16 +322,16 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
 
               return (
                 <tr key={t.id} onClick={(e) => { e.stopPropagation(); setViewAllLogsTask(t); }} className="hover:bg-blue-50/30 transition-colors group cursor-pointer border-b border-slate-100">
-                  <td className={`py-3.5 px-3 border-r border-slate-200 text-center font-mono text-xs ${depth === 1 ? 'font-bold text-slate-700' : 'text-slate-500'}`}>
+                  <td className={`sticky left-0 z-10 md:static py-3.5 px-3 bg-white border-r border-slate-200 text-center font-mono text-xs transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''} ${depth === 1 ? 'font-bold text-slate-700' : 'text-slate-500'}`}>
                     {t.computedStt || t.stt}
                   </td>
-                  <td className={`py-3.5 px-4 border-r border-slate-200 ${fontStyle}`}>
-                    <div className="flex items-center gap-2" style={{ paddingLeft: `${Math.max(0, depth - 1) * 1.5}rem` }}>
-                      {depth > 1 && <span className="material-symbols-outlined text-slate-300 text-sm">subdirectory_arrow_right</span>}
-                      <span className="text-slate-800 leading-snug">{t.name}</span>
+                  <td className={`sticky z-10 md:static py-3.5 px-4 bg-white border-r border-slate-200 ${fontStyle} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)", width: "220px", minWidth: "220px", maxWidth: "220px" }}>
+                    <div className="flex items-center gap-2 min-w-0 w-full" style={{ paddingLeft: `${Math.max(0, depth - 1) * 1}rem` }}>
+                      {depth > 1 && <span className="material-symbols-outlined text-slate-300 text-sm shrink-0">subdirectory_arrow_right</span>}
+                      <span className="text-slate-800 leading-snug truncate flex-1 min-w-0" title={t.name}>{t.name}</span>
                       {taskLogs.length > 0 && (
-                        <span className="ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/80 shrink-0" title={`${taskLogs.length} lần cập nhật`}>
-                          {taskLogs.length} nhật ký ({dateEntries.length} ngày)
+                        <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200/80 shrink-0" title={`${taskLogs.length} lần cập nhật`}>
+                          {taskLogs.length}
                         </span>
                       )}
                     </div>

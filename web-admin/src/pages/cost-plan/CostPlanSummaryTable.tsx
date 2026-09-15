@@ -62,19 +62,19 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
   return (
     <div className="w-full">
       <div className="w-full overflow-x-auto custom-scrollbar">
-        <div className="flex gap-3 w-full items-start justify-center">
+        <div className="flex gap-1 md:gap-3 w-full items-start justify-center p-1 md:p-0">
           
           {/* QUỸ */}
-          <table className="border-collapse text-sm flex-1 min-w-[140px] bg-white">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white">
             <thead>
               <tr>
-                <th className="border border-slate-300 bg-blue-100 text-blue-900 py-1 px-2 text-[11px] font-bold text-center uppercase">QUỸ</th>
+                <th className="border border-slate-300 bg-blue-100 text-blue-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">QUỸ</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td 
-                  className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800 cursor-pointer hover:bg-slate-50 transition-colors"
+                  className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800 cursor-pointer hover:bg-slate-50 transition-colors"
                   onClick={() => {
                     if (!editingProjectFund) {
                       setProjectFundInput(summary.totalProjectFund === 0 ? '' : summary.totalProjectFund.toString());
@@ -105,7 +105,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
                       }}
                     />
                   ) : (
-                    <div className="flex items-center justify-center gap-2 group">
+                    <div className="flex items-center justify-center gap-1 group">
                       <span>{money(summary.totalProjectFund)}</span>
                     </div>
                   )}
@@ -115,15 +115,15 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
           </table>
 
           {/* TỔNG CHI */}
-          <table className="border-collapse text-sm flex-1 min-w-[140px] bg-white">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white">
             <thead>
               <tr>
-                <th className="border border-slate-300 bg-blue-100 text-blue-900 py-1 px-2 text-[11px] font-bold text-center uppercase">TỔNG CHI</th>
+                <th className="border border-slate-300 bg-blue-100 text-blue-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">TỔNG CHI</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800">
+                <td className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800">
                   {money(summary.totalChi)}
                 </td>
               </tr>
@@ -131,15 +131,15 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
           </table>
 
           {/* TỒN CUỐI KỲ */}
-          <table className="border-collapse text-sm flex-1 min-w-[140px] bg-white">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white">
             <thead>
               <tr>
-                <th className="border border-slate-300 bg-blue-100 text-blue-900 py-1 px-2 text-[11px] font-bold text-center uppercase">TỒN CUỐI KỲ</th>
+                <th className="border border-slate-300 bg-blue-100 text-blue-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">TỒN CUỐI KỲ</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800">
+                <td className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800">
                   {money(summary.tonCuoiKy)}
                 </td>
               </tr>
@@ -147,35 +147,35 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
           </table>
 
           {/* TRÌNH */}
-          <table className="border-collapse text-sm flex-1 min-w-[140px] bg-white">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white">
             <thead>
               <tr>
-                <th className="border border-slate-300 bg-orange-200 text-orange-900 py-1 px-2 text-[11px] font-bold text-center uppercase">TRÌNH</th>
+                <th className="border border-slate-300 bg-orange-200 text-orange-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">TRÌNH</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-slate-800 relative">
+                <td className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800 relative">
                   {money(summary.totalProjectExpense)}
-                  
                 </td>
               </tr>
             </tbody>
           </table>
 
           {/* CHI TIẾT CÁ NHÂN (Button to open Modal) */}
-          <table className="border-collapse text-sm w-44 shrink-0 bg-white cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowPersonalModal(true)}>
+          <table className="border-collapse text-xs md:text-sm w-28 md:w-44 shrink-0 bg-white cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowPersonalModal(true)}>
             <thead>
               <tr>
-                <th className="border border-slate-300 bg-emerald-100 text-emerald-900 py-1 px-2 text-[11px] font-bold text-center uppercase">CHI TIẾT CÁ NHÂN</th>
+                <th className="border border-slate-300 bg-emerald-100 text-emerald-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">CHI TIẾT CÁ NHÂN</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border border-slate-300 text-center py-1.5 px-2 text-sm font-bold text-emerald-700 bg-emerald-50">
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="material-symbols-outlined text-[18px]">group</span>
-                    <span>Xem chi tiết</span>
+                <td className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-emerald-700 bg-emerald-50">
+                  <div className="flex items-center justify-center gap-1">
+                    <span className="material-symbols-outlined text-[14px] md:text-[18px]">group</span>
+                    <span className="hidden sm:inline">Xem chi tiết</span>
+                    <span className="sm:hidden text-[11px]">Xem</span>
                   </div>
                 </td>
               </tr>

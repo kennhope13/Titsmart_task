@@ -169,6 +169,8 @@ export const DocumentTrackingPage: React.FC = () => {
   useEffect(() => { setPortalNode(document.getElementById('project-header-actions')); }, []);
   const [isNewDocOpen, setIsNewDocOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentTrack | null>(null);
+  const [showMobileExportMenu, setShowMobileExportMenu] = useState(false);
+  const [showMobileSearchInput, setShowMobileSearchInput] = useState(false);
 
   // Forms state
   const [newDoc, setNewDoc] = useState<Partial<DocumentTrack>>({
@@ -387,7 +389,19 @@ export const DocumentTrackingPage: React.FC = () => {
       )}
 
       {projectId && portalNode && createPortal(
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-1.5 flex-nowrap w-full">
+          {/* Mobile Search Input - stretched full remaining width */}
+          <div className="relative flex-1 min-w-0 md:hidden">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+            <input
+              type="text"
+              placeholder="Tìm nhanh hồ sơ..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white transition-all h-8"
+            />
+          </div>
+
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -395,6 +409,8 @@ export const DocumentTrackingPage: React.FC = () => {
             accept=".xlsx,.xls,.csv" 
             className="hidden" 
           />
+
+          {/* Desktop full buttons */}
           <button 
             onClick={() => fileInputRef.current?.click()} 
             className="hidden md:flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
@@ -404,7 +420,7 @@ export const DocumentTrackingPage: React.FC = () => {
           </button>
           <button 
             onClick={handleExportExcel} 
-            className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+            className="hidden md:flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
           >
             <span className="material-symbols-outlined text-[14px]">file_download</span>
             Xuất Excel
@@ -415,12 +431,95 @@ export const DocumentTrackingPage: React.FC = () => {
               setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
               setIsNewDocOpen(true);
             }} 
-            className="flex items-center gap-1.5 bg-primary text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+            className="hidden md:flex items-center gap-1.5 bg-primary text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm"
           >
             <span className="material-symbols-outlined text-[14px]">add</span>
             Thêm hồ sơ mới
           </button>
-          
+
+          {/* Mobile '+' Icon Button */}
+          <button 
+            onClick={() => {
+              const code = resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '');
+              setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
+              setIsNewDocOpen(true);
+            }} 
+            title="Thêm hồ sơ mới"
+            className="md:hidden flex items-center justify-center bg-primary text-white h-8 w-8 rounded-lg hover:opacity-90 active:scale-95 transition-all shadow-xs shrink-0"
+          >
+            <span className="material-symbols-outlined text-base">add</span>
+          </button>
+
+          {/* Mobile Export Icon Button (Green light style) */}
+          <div className="relative md:hidden shrink-0">
+            <button
+              onClick={() => setShowMobileExportMenu(!showMobileExportMenu)}
+              className="flex items-center justify-center h-8 w-8 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-xs"
+              title="Xuất file"
+            >
+              <span className="material-symbols-outlined text-base">file_download</span>
+            </button>
+            {showMobileExportMenu && (
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowMobileExportMenu(false)}
+              />
+            )}
+            {showMobileExportMenu && (
+              <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                <button
+                  onClick={() => {
+                    setShowMobileExportMenu(false);
+                    handleExportExcel();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                  Excel (.xlsx)
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMobileExportMenu(false);
+                    handleExportExcel();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                  CSV (.csv)
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMobileExportMenu(false);
+                    window.print();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                  PDF (.pdf)
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMobileExportMenu(false);
+                    handleExportExcel();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                  Word (.docx)
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMobileExportMenu(false);
+                    fileInputRef.current?.click();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 mt-1 pt-2"
+                >
+                  <span className="material-symbols-outlined text-base text-indigo-600">upload_file</span>
+                  Nhập file Excel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       , portalNode)}
 
@@ -428,7 +527,7 @@ export const DocumentTrackingPage: React.FC = () => {
       {/* TABS & TABLE */}
       <section className="bg-white flex flex-col flex-1 min-w-0 min-h-0 border-y border-slate-200 rounded-none shadow-none overflow-hidden">
 
-          <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap">
+          <div className="hidden md:flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
                 <span className="material-symbols-outlined text-[16px]">filter_list</span>

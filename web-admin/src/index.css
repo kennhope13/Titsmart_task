@@ -616,8 +616,8 @@ input[type="number"] {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* Hide fixed sidebar completely on mobile */
-  aside.fixed.left-0 {
+  /* Hide fixed sidebar desktop element completely on mobile, but keep drawer aside visible */
+  aside.fixed.left-0:not(.mobile-drawer-aside) {
     display: none !important;
   }
 

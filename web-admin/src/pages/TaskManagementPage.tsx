@@ -1648,17 +1648,47 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
             <button
               onClick={openNewTaskModal}
               title="Thêm đầu mục"
-              className="flex items-center justify-center gap-1 bg-primary text-white px-2.5 py-1 rounded-lg text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-8"
+              className="flex items-center justify-center gap-1 bg-primary text-white h-8 w-8 rounded-lg hover:opacity-90 active:scale-95 shadow-xs shrink-0"
             >
               <span className="material-symbols-outlined text-base">add</span>
             </button>
-            <button
-              onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-              title="Xuất file"
-              className="flex items-center justify-center gap-1 border border-emerald-200 bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition-all shadow-xs whitespace-nowrap h-8"
-            >
-              <span className="material-symbols-outlined text-base text-emerald-700">download</span>
-            </button>
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                title="Xuất file"
+                className="flex items-center justify-center h-8 w-8 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-xs shrink-0"
+              >
+                <span className="material-symbols-outlined text-base">file_download</span>
+              </button>
+              {isExportMenuOpen && (
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setIsExportMenuOpen(false)}
+                />
+              )}
+              {isExportMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1.5 space-y-0.5 animate-in fade-in zoom-in duration-100">
+                  {([
+                    ['xlsx', 'Excel (.xlsx)', 'grid_on', 'text-green-600'],
+                    ['csv', 'CSV (.csv)', 'csv', 'text-teal-600'],
+                    ['pdf', 'PDF (.pdf)', 'picture_as_pdf', 'text-red-600'],
+                    ['docx', 'Word (.docx)', 'description', 'text-blue-600'],
+                  ] as Array<[ExportFileFormat, string, string, string]>).map(([format, label, icon, iconColor]) => (
+                    <button
+                      key={format}
+                      onClick={() => {
+                        setIsExportMenuOpen(false);
+                        handleExportFile(format);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <span className={`material-symbols-outlined text-base ${iconColor}`}>{icon}</span>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

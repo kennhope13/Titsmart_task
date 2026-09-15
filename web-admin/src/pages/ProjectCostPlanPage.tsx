@@ -1920,8 +1920,8 @@ export const ProjectCostPlanPage: React.FC = () => {
             {/* CHI TIẾT PHIẾU CHI */}
 
             <div className="bg-white border-t border-slate-200 overflow-hidden flex-1 flex flex-col">
-              <div className="flex border-b border-slate-100 bg-slate-50 px-5 py-1.5 gap-3 sticky top-0 z-20 items-center text-xs text-slate-600 flex-nowrap overflow-x-auto custom-scrollbar overflow-y-hidden">
-                  <div className="flex items-center gap-3">
+              <div className="flex border-b border-slate-100 bg-slate-50 px-3 md:px-5 py-1.5 gap-2 md:gap-3 sticky top-0 z-20 items-center text-xs text-slate-600 flex-nowrap overflow-x-auto custom-scrollbar">
+                  <div className="hidden md:flex items-center gap-3">
                     <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
                       <span className="material-symbols-outlined text-[16px]">filter_list</span>
                     </div>
@@ -1964,25 +1964,26 @@ export const ProjectCostPlanPage: React.FC = () => {
                         ))}
                       </CustomSelect>
                     </div>
+                  </div>
 
-                    <div className="relative w-48 shrink-0 ml-2">
-                      <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[14px]">search</span>
-                      <input
-                        type="text"
-                        placeholder="Tìm kiếm..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-8 pr-3 py-1 bg-slate-100 border-none rounded text-xs focus:ring-1 focus:ring-primary focus:bg-white transition-all outline-none"
-                      />
-                    </div>
+                  <div className="relative flex-1 md:w-48 shrink-0">
+                    <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[14px]">search</span>
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 bg-slate-100 border-none rounded text-xs focus:ring-1 focus:ring-primary focus:bg-white transition-all outline-none h-8"
+                    />
                   </div>
 
                   <button
                     onClick={() => setIsNewExpenseOpen(true)}
-                    className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary-dark transition-colors shadow-sm ml-auto"
+                    className="flex items-center justify-center gap-1 bg-primary text-white px-2 md:px-3 h-8 rounded-lg text-xs font-bold hover:bg-primary-dark transition-colors shadow-sm ml-auto whitespace-nowrap min-w-[32px]"
+                    title="Thêm phiếu chi"
                   >
                     <span className="material-symbols-outlined text-[16px]">add</span>
-                    Thêm phiếu chi
+                    <span className="hidden md:inline">Thêm phiếu chi</span>
                   </button>
                 </div>
                 <div className="overflow-x-auto">

@@ -100,24 +100,35 @@ export const TaskAssignmentPage: React.FC = () => {
     setSelectedEngineerId('');
   };
 
+  const [isScrolledHorizontally, setIsScrolledHorizontally] = useState(false);
+
+  const handleTableScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollLeft = e.currentTarget.scrollLeft;
+    if (scrollLeft > 10 && !isScrolledHorizontally) {
+      setIsScrolledHorizontally(true);
+    } else if (scrollLeft <= 10 && isScrolledHorizontally) {
+      setIsScrolledHorizontally(false);
+    }
+  };
+
   if (user?.role !== 'admin' && user?.role !== 'Quản trị viên') {
     return <div className="p-8 text-center text-red-500 font-bold">Bạn không có quyền truy cập trang này.</div>;
   }
 
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
-      <div className="bg-white border-b border-slate-200 pl-3 pr-14 py-4 md:py-3 lg:py-0 lg:min-h-[3rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0 shadow-sm flex-wrap">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 flex-wrap">
+      <div className="bg-white border-b border-slate-200 pl-3 pr-3 py-4 md:py-3 lg:py-0 lg:min-h-[3rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0 shadow-sm flex-wrap">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 flex-wrap w-full lg:w-auto">
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">
             CÔNG VIỆC
           </h1>
           <SharedTaskTabs activeTab={activeTab as any} onTabChange={(t) => { setActiveTab(t); setSelectedTaskIds([]); }} />
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-start">
           <CustomSelect 
             value={filterProjectCode} 
             onChange={(e) => setFilterProjectCode(e.target.value)}
-            className="w-[240px] text-xs font-bold text-slate-800"
+            className="flex-1 sm:w-[240px] text-xs font-bold text-slate-800"
           >
             <option value="all">-- Tất cả Dự án --</option>
             {projects.map(p => (
@@ -128,7 +139,7 @@ export const TaskAssignmentPage: React.FC = () => {
             <button 
               disabled={selectedTaskIds.length === 0}
               onClick={() => setIsModalOpen(true)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded text-sm font-bold shadow-sm transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded text-xs sm:text-sm font-bold shadow-sm transition-all whitespace-nowrap shrink-0 ${
                 selectedTaskIds.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
             >
@@ -140,12 +151,17 @@ export const TaskAssignmentPage: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col border-t border-slate-200">
-        <div className="w-full h-full overflow-auto custom-scrollbar bg-white">
+        <div 
+          className="w-full h-full overflow-auto custom-scrollbar bg-white"
+          onScroll={handleTableScroll}
+        >
           <table className="w-full text-left border-collapse text-sm min-w-[1000px]">
             <thead className="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase sticky top-0 z-10 shadow-[0_1px_0_0_#e2e8f0]">
               <tr>
                 {activeTab === 'unassigned' && (
-                  <th className="sticky left-0 z-20 py-2.5 px-3 w-[50px] min-w-[50px] bg-slate-50 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                  <th className={`py-2.5 px-3 w-[50px] min-w-[50px] bg-slate-50 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${
+                    isScrolledHorizontally ? 'hidden sm:table-cell sticky left-0 z-20' : 'sticky left-0 z-20'
+                  }`}>
                     <input 
                       type="checkbox" 
                       className="w-4 h-4 cursor-pointer accent-primary"
@@ -154,7 +170,9 @@ export const TaskAssignmentPage: React.FC = () => {
                     />
                   </th>
                 )}
-                <th className="py-2.5 px-4 w-[250px] border-r border-slate-200">Dự án</th>
+                <th className={`py-2.5 px-4 w-[250px] border-r border-slate-200 bg-slate-50 ${
+                  isScrolledHorizontally ? 'sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''
+                }`}>Dự án</th>
                 <th className="py-2.5 px-4 border-r border-slate-200">Nội dung công việc</th>
                 <th className="py-2.5 px-4 w-40 border-r border-slate-200">Người phụ trách</th>
                 <th className="py-2.5 px-4 w-32 border-r border-slate-200">Trạng thái</th>
@@ -175,7 +193,9 @@ export const TaskAssignmentPage: React.FC = () => {
                   return (
                     <tr key={t.id} className={`hover:bg-blue-50/50 transition-colors cursor-pointer ${isChecked && activeTab === 'unassigned' ? 'bg-blue-50/50' : 'bg-white'}`} onClick={() => { if (activeTab === 'unassigned') handleToggleTask(t.id); }}>
                       {activeTab === 'unassigned' && (
-                        <td className={`sticky left-0 z-10 py-2.5 px-3 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isChecked ? 'bg-blue-50' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
+                        <td className={`py-2.5 px-3 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isChecked ? 'bg-blue-50' : 'bg-white'} ${
+                          isScrolledHorizontally ? 'hidden sm:table-cell sticky left-0 z-10' : 'sticky left-0 z-10'
+                        }`} onClick={e => e.stopPropagation()}>
                           <input 
                             type="checkbox" 
                             className="w-4 h-4 cursor-pointer accent-primary"
@@ -184,7 +204,9 @@ export const TaskAssignmentPage: React.FC = () => {
                           />
                         </td>
                       )}
-                      <td className="py-2.5 px-4 font-bold text-slate-700 text-[11px] uppercase border-r border-slate-200">{p ? p.name : t.projectCode}</td>
+                      <td className={`py-2.5 px-4 font-bold text-slate-700 text-[11px] uppercase border-r border-slate-200 ${isChecked ? 'bg-blue-50' : 'bg-white'} ${
+                        isScrolledHorizontally ? 'sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''
+                      }`}>{p ? p.name : t.projectCode}</td>
                       <td className="py-2.5 px-4 font-medium text-slate-800 text-xs border-l border-slate-200 flex flex-col">
                         <span>{t.name}</span>
                         {t.sectionName && t.sectionName !== t.name && (
