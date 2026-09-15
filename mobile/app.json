@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "TITSMART",
+    "slug": "titsmart-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#00236f",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.titsmart.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Ứng dụng cần truy cập camera để chấm công và chụp ảnh hiện trường.",
+        "NSLocationWhenInUseUsageDescription": "Ứng dụng cần truy cập vị trí để ghi tọa độ chấm công.",
+        "NSPhotoLibraryUsageDescription": "Ứng dụng cần truy cập thư viện ảnh để tải lên nhật ký hiện trường."
+      }
+    },
+    "android": {
+      "package": "com.titsmart.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#00236f"
+      },
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-location",
+      "expo-image-picker",
+      "expo-secure-store"
+    ]
+  }
+}

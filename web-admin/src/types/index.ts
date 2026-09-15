@@ -188,6 +188,20 @@ export interface NotificationItem {
   icon?: string;
 }
 
+export interface DirectMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string;
+  receiverId?: string;
+  projectCode?: string;
+  content: string;
+  fileUrl?: string;
+  fileType?: 'image' | 'file';
+  readBy?: string[];
+  createdAt: string;
+}
+
 export interface ActivityLog {
   id: string;
   user: string;

@@ -1171,5 +1171,54 @@ export const api = {
       if (error) throw error;
       return { success: true };
     }
+  },
+
+  directMessages: {
+    getAll: async () => {
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (error) {
+        console.error('Failed to fetch direct messages:', error);
+        return [];
+      }
+      return mapArray(data || []);
+    },
+    sendMessage: async (messageData: {
+      senderId: string;
+      senderName: string;
+      senderAvatar?: string;
+      receiverId?: string;
+      projectCode?: string;
+      content: string;
+      fileUrl?: string;
+      fileType?: 'image' | 'file';
+    }) => {
+      const payload = toSnakeCase(messageData);
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .insert(payload)
+        .select()
+        .single();
+      if (error) throw error;
+      return toCamelCase(data);
+    },
+    markAsRead: async (messageId: string, userId: string) => {
+      const { data: current } = await supabase
+        .from('direct_messages')
+        .select('read_by')
+        .eq('id', messageId)
+        .single();
+      
+      const currentRead = Array.isArray(current?.read_by) ? current.read_by : [];
+      if (!currentRead.includes(userId)) {
+        const updatedRead = [...currentRead, userId];
+        await supabase
+          .from('direct_messages')
+          .update({ read_by: updatedRead })
+          .eq('id', messageId);
+      }
+    }
   }
 };
