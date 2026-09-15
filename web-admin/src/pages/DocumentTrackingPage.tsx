@@ -348,10 +348,10 @@ export const DocumentTrackingPage: React.FC = () => {
             {!projectId && (
         <section className="border-b border-slate-200 bg-white shadow-sm px-4 md:px-6 pr-14 py-2.5 md:py-0 md:h-12 flex flex-row justify-between items-center gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <h1 className="page-header-title text-sm md:text-lg text-slate-900 border-l-4 border-primary pl-2 uppercase font-extrabold truncate">QUẢN LÝ HỒ SƠ</h1>
+            <h1 className="page-header-title text-base md:text-lg text-slate-900 border-l-4 border-primary pl-2 uppercase font-extrabold truncate">QUẢN LÝ HỒ SƠ</h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -361,117 +361,29 @@ export const DocumentTrackingPage: React.FC = () => {
             />
             <button 
               onClick={() => fileInputRef.current?.click()} 
-              className="hidden md:flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+              className="flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
             >
               <span className="material-symbols-outlined text-sm">file_upload</span>
               Nhập Excel
             </button>
-
-            {/* Desktop Export Button */}
             <button 
               onClick={handleExportExcel} 
-              className="hidden md:flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+              className="flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
             >
               <span className="material-symbols-outlined text-sm">file_download</span>
               Xuất Excel
             </button>
-
-            {/* Desktop Add Button */}
             <button 
               onClick={() => {
                 const code = resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '');
                 setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
                 setIsNewDocOpen(true);
               }} 
-              className="hidden md:flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs"
+              className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Thêm hồ sơ mới
             </button>
-
-            {/* Mobile Compact '+' Add Button */}
-            <button 
-              onClick={() => {
-                const code = resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '');
-                setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
-                setIsNewDocOpen(true);
-              }} 
-              title="Thêm hồ sơ mới"
-              className="md:hidden flex items-center justify-center bg-primary text-white h-8 w-8 rounded-lg hover:opacity-90 active:scale-95 transition-all shadow-xs shrink-0"
-            >
-              <span className="material-symbols-outlined text-base">add</span>
-            </button>
-
-            {/* Mobile Compact Green Light Export Dropdown */}
-            <div className="relative md:hidden shrink-0">
-              <button
-                onClick={() => setShowMobileExportMenu(!showMobileExportMenu)}
-                className="flex items-center justify-center h-8 w-8 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-xs"
-                title="Xuất file"
-              >
-                <span className="material-symbols-outlined text-base">file_download</span>
-              </button>
-              {showMobileExportMenu && (
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setShowMobileExportMenu(false)}
-                />
-              )}
-              {showMobileExportMenu && (
-                <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
-                  <button
-                    onClick={() => {
-                      setShowMobileExportMenu(false);
-                      handleExportExcel();
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
-                    Excel (.xlsx)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMobileExportMenu(false);
-                      handleExportExcel();
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-base text-teal-600">csv</span>
-                    CSV (.csv)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMobileExportMenu(false);
-                      window.print();
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
-                    PDF (.pdf)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMobileExportMenu(false);
-                      handleExportExcel();
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-base text-blue-600">description</span>
-                    Word (.docx)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMobileExportMenu(false);
-                      fileInputRef.current?.click();
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 mt-1 pt-2"
-                  >
-                    <span className="material-symbols-outlined text-base text-indigo-600">upload_file</span>
-                    Nhập file Excel
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         </section>
       )}
@@ -614,6 +526,106 @@ export const DocumentTrackingPage: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden p-0 space-y-0">
       {/* TABS & TABLE */}
       <section className="bg-white flex flex-col flex-1 min-w-0 min-h-0 border-y border-slate-200 rounded-none shadow-none overflow-hidden">
+
+          {/* Mobile Search & Action Toolbar for Non-Project View */}
+          {!projectId && (
+            <div className="flex md:hidden items-center gap-1.5 px-3 py-2 border-b border-slate-200 bg-white sticky top-0 z-20">
+              <div className="relative flex-1 min-w-0">
+                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                <input
+                  type="text"
+                  placeholder="Tìm nhanh hồ sơ..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white transition-all h-8"
+                />
+              </div>
+
+              {/* Mobile '+' Icon Button */}
+              <button 
+                onClick={() => {
+                  const code = filterProjectCode !== 'all' ? filterProjectCode : '';
+                  setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
+                  setIsNewDocOpen(true);
+                }} 
+                title="Thêm hồ sơ mới"
+                className="flex items-center justify-center bg-primary text-white h-8 w-8 rounded-lg hover:opacity-90 active:scale-95 transition-all shadow-xs shrink-0"
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+              </button>
+
+              {/* Mobile Export Icon Button (Green light style) */}
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setShowMobileExportMenu(!showMobileExportMenu)}
+                  className="flex items-center justify-center h-8 w-8 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-xs"
+                  title="Xuất file"
+                >
+                  <span className="material-symbols-outlined text-base">file_download</span>
+                </button>
+                {showMobileExportMenu && (
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowMobileExportMenu(false)}
+                  />
+                )}
+                {showMobileExportMenu && (
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                      Excel (.xlsx)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                      CSV (.csv)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        window.print();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                      PDF (.pdf)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                      Word (.docx)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        fileInputRef.current?.click();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 mt-1 pt-2"
+                    >
+                      <span className="material-symbols-outlined text-base text-indigo-600">upload_file</span>
+                      Nhập file Excel
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="hidden md:flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 flex-wrap">
             <div className="flex items-center gap-3">
