@@ -116,12 +116,39 @@ export const UpdateNotifier: React.FC = () => {
 
   const dismiss = () => setState({ ...state, visible: false });
 
-  const handleWebUpdate = () => {
-    // Nếu có URL tải về (file APK hoặc GitHub Release Page), mở URL để người dùng cài đặt
-    if (state.message && state.message.startsWith('http')) {
-      window.open(state.message, '_system');
+  const handleWebUpdate = async () => {
+    const downloadUrl = (state.message && state.message.startsWith('http')) 
+      ? state.message 
+      : 'https://github.com/kennhope13/Titsmart_task/releases/latest';
+
+    // Nếu là file APK, kích hoạt tải trực tiếp ngầm thông qua thẻ HTML download
+    if (downloadUrl.endsWith('.apk')) {
+      setState((s) => ({ ...s, status: 'downloading', percent: 0 }));
+      try {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `TITSMART_v${state.version || 'latest'}.apk`;
+        link.target = '_self';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Giả lập tiến trình tải cho người dùng thấy ngay trên UI Pop-up
+        let progress = 10;
+        const progressInterval = setInterval(() => {
+          progress += 20;
+          if (progress >= 100) {
+            clearInterval(progressInterval);
+            setState((s) => ({ ...s, status: 'downloaded' }));
+          } else {
+            setState((s) => ({ ...s, percent: progress }));
+          }
+        }, 400);
+      } catch (err) {
+        window.location.href = downloadUrl;
+      }
     } else {
-      window.open('https://github.com/kennhope13/Titsmart_task/releases/latest', '_blank');
+      window.open(downloadUrl, '_system');
     }
   };
 
