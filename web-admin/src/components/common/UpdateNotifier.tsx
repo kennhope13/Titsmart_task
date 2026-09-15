@@ -59,9 +59,41 @@ export const UpdateNotifier: React.FC = () => {
     });
   }, []);
 
-  // Disable web update popup notification
+  // ─── Web & Mobile In-App Update Checker (GitHub Releases) ───
   const checkWebVersion = useCallback(async () => {
-    return;
+    try {
+      const response = await fetch('https://api.github.com/repos/kennhope13/Titsmart_task/releases/latest', {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      const latestTag = (data.tag_name || '').replace(/^v/, '').trim();
+      const currentVer = import.meta.env.VITE_APP_VERSION || '1.0.0';
+
+      if (latestTag && compareVersions(latestTag, currentVer) > 0) {
+        // Tìm link tải APK nếu có trong assets
+        const apkAsset = data.assets?.find((a: any) => a.name.endsWith('.apk'));
+        const downloadUrl = apkAsset?.browser_download_url || data.html_url || 'https://github.com/kennhope13/Titsmart_task/releases/latest';
+
+        const rawBody = data.body || '';
+        const notes = rawBody
+          .split('\n')
+          .map((line: string) => line.replace(/^[\s*-]+/, '').trim())
+          .filter((line: string) => line.length > 0 && !line.startsWith('#'));
+
+        setState({
+          visible: true,
+          status: 'available',
+          version: latestTag,
+          releaseNotes: rawBody,
+          notes: notes.length > 0 ? notes : ['Cải tiến hiệu năng & tối ưu giao diện mới nhất'],
+          message: downloadUrl,
+          source: 'web'
+        });
+      }
+    } catch (err) {
+      console.warn('[UpdateNotifier] Check release failed:', err);
+    }
   }, []);
 
   useEffect(() => {
@@ -85,15 +117,12 @@ export const UpdateNotifier: React.FC = () => {
   const dismiss = () => setState({ ...state, visible: false });
 
   const handleWebUpdate = () => {
-    // Tự động tải lại ứng dụng và cập nhật mã nguồn mới ngầm mà không nhảy sang trang Web
-    try {
-      if ('caches' in window) {
-        caches.keys().then((names) => {
-          names.forEach((name) => caches.delete(name));
-        });
-      }
-    } catch (e) {}
-    window.location.reload();
+    // Nếu có URL tải về (file APK hoặc GitHub Release Page), mở URL để người dùng cài đặt
+    if (state.message && state.message.startsWith('http')) {
+      window.open(state.message, '_system');
+    } else {
+      window.open('https://github.com/kennhope13/Titsmart_task/releases/latest', '_blank');
+    }
   };
 
   return (
