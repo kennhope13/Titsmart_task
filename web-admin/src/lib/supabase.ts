@@ -11,12 +11,12 @@ let supabaseUrl = CLOUD_SUPABASE_URL;
 let supabaseAnonKey = CLOUD_SUPABASE_ANON_KEY;
 
 // Khi lập trình ở môi trường dev (development mode / dev:local) -> Kết nối DB Local
-if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
+if (import.meta.env.DEV || import.meta.env.MODE === 'development' || Capacitor.isNativePlatform()) {
   const envUrl = import.meta.env.VITE_SUPABASE_URL;
   const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
   if (envUrl && !envUrl.includes('supabase.co')) {
-    supabaseUrl = envUrl;
+    supabaseUrl = Capacitor.isNativePlatform() ? envUrl.replace('127.0.0.1', LOCAL_LAN_IP).replace('localhost', LOCAL_LAN_IP) : envUrl;
     supabaseAnonKey = envKey || LOCAL_ANON_KEY;
   } else {
     supabaseUrl = Capacitor.isNativePlatform() ? `http://${LOCAL_LAN_IP}:54321` : 'http://127.0.0.1:54321';
