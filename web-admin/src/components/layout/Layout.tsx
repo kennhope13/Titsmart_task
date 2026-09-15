@@ -23,8 +23,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="h-screen bg-slate-50 text-slate-800 flex flex-col font-sans overflow-hidden relative">
       <Sidebar isExpanded={isSidebarExpanded} toggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)} />
       
-      <div className={`${isSidebarExpanded ? 'ml-[170px]' : 'ml-[56px]'} flex flex-col h-screen flex-1 overflow-hidden transition-all duration-300 ease-in-out relative`}>
-        <div className="absolute top-[6px] right-14 z-[60]">
+      <div className={`layout-content-wrapper ${isSidebarExpanded ? 'ml-[170px]' : 'ml-[56px]'} flex flex-col h-screen flex-1 overflow-hidden transition-all duration-300 ease-in-out relative`}>
+        <div className="absolute top-[6px] right-14 z-[60] realtime-clock-container">
           <RealtimeClock />
         </div>
         <NotificationBell />

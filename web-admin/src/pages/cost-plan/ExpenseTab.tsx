@@ -43,7 +43,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
     <div className="flex flex-col w-full max-w-full h-full overflow-hidden">
       {/* Filter Bar */}
       <div className="flex border-b border-slate-200 bg-white px-4 py-2 gap-3 sticky top-0 z-10 items-center justify-between text-xs text-slate-600 flex-wrap">
-        <div className="flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-3">
           <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
@@ -90,7 +90,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
           </div>
         </div>
         
-        <div className="flex-1 w-full max-w-[200px] relative">
+        <div className="flex-1 w-full md:max-w-[200px] relative">
           <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
           <input 
             type="text" 

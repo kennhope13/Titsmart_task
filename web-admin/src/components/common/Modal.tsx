@@ -35,13 +35,13 @@ export const Modal: React.FC<ModalProps> = ({
     ? 'max-w-[99vw] h-[98vh] my-auto'
     : size === 'full'
     ? 'max-w-[98vw] h-[95vh]'
-    : `${modalSizeClasses[size]} max-h-[95vh]`;
+    : `${modalSizeClasses[size]} max-h-[92vh] md:max-h-[95vh]`;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4 animate-fadeIn">
-      <div className={`bg-white rounded-lg shadow-2xl border border-outline-variant w-full ${sizeClass} overflow-hidden flex flex-col transition-all duration-200`}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4 pt-[calc(env(safe-area-inset-top,0px)+56px)] pb-20 md:pb-4 animate-fadeIn">
+      <div className={`bg-white rounded-2xl shadow-2xl border border-outline-variant w-full ${sizeClass} overflow-hidden flex flex-col transition-all duration-200`}>
         {/* Modal Header */}
-        <div className="px-3 py-1.5 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
+        <div className="px-4 py-2 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
           <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 truncate">
             {icon && <span className="material-symbols-outlined text-[17px]">{icon}</span>}
             <span className="truncate">{title}</span>
@@ -58,7 +58,7 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Modal Content */}
-        <div className="p-1.5 sm:p-2 overflow-y-auto custom-scrollbar flex-1 flex flex-col">{children}</div>
+        <div className="p-3.5 sm:p-4 overflow-y-auto custom-scrollbar flex-1 flex flex-col">{children}</div>
       </div>
     </div>
   );

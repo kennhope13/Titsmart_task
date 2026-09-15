@@ -26,6 +26,7 @@ interface MaterialAndPurchasingTabProps {
   userRole?: string;
   selectedProject: string;
   onAddMaterial: (plan: any) => void;
+  onExportExcel?: () => void;
 }
 
 const TEXT = {
@@ -320,7 +321,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   statusFilter,
   setStatusFilter,
   userRole,
-  activeSubTab
+  activeSubTab,
+  onExportExcel
 }) => {
   const subTab = activeSubTab || 'TECH';
   const materials = useRealtimeStore(state => state.materials);
@@ -336,6 +338,19 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const [filterContractStatus, setFilterContractStatus] = useState('all');
   const [filterPaymentDate, setFilterPaymentDate] = useState('all');
   const [filterInvoiceStatus, setFilterInvoiceStatus] = useState('all');
+  const [isScrolledHorizontally, setIsScrolledHorizontally] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const exportMenuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setIsExportMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
 
   // Pre-computed map for fast O(1) purchasing lookup (eliminates lag on large datasets)
@@ -907,16 +922,16 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         <option value="Chờ phê duyệt" />
       </datalist>
 
-      <div className="flex flex-col border-b border-slate-200 sticky top-0 z-10 bg-slate-50">
+      <div className="flex flex-col border-b border-slate-200 sticky top-0 z-40 bg-slate-50">
         
         
 
-        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-nowrap overflow-x-auto custom-scrollbar overflow-y-hidden" >
-          <div className="flex items-center gap-1.5.5 font-bold text-slate-500 whitespace-nowrap">
+        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 text-xs text-slate-600 flex-nowrap overflow-visible relative">
+          <div className="hidden md:flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px]">filter_list</span>
           </div>
           
-          <div className="flex items-center gap-1.5 flex-nowrap">
+          <div className="hidden md:flex items-center gap-1.5 flex-nowrap">
             <div className="flex items-center gap-1.5">
               <span className="text-slate-500 font-medium whitespace-nowrap">Đầu mục:</span>
               <CustomSelect
@@ -1061,8 +1076,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 ml-auto">
-            <div className="relative w-32 sm:w-40">
+          <div className="flex items-center gap-1.5 ml-auto w-full md:w-auto">
+            <div className="relative flex-1 md:w-40 h-8 flex items-center">
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">
                 search
               </span>
@@ -1071,29 +1086,67 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 placeholder="Tìm kiếm..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1 bg-slate-100 border-none rounded text-xs focus:ring-1 focus:ring-primary focus:bg-white transition-all outline-none"
+                className="w-full h-8 pl-8 pr-3 bg-slate-100 border-none rounded text-xs focus:ring-1 focus:ring-primary focus:bg-white transition-all outline-none"
               />
             </div>
 
             {onAddSection && subTab !== 'FINANCE' && (
               <button
                 onClick={onAddSection}
-                className="flex items-center gap-1.5 bg-primary text-white px-2 py-1 rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
+                className="flex items-center justify-center gap-1.5 bg-primary text-white rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-8 px-2 min-w-[32px]"
+                title="Thêm đầu mục"
               >
                 <span className="material-symbols-outlined text-sm">add</span>
-                <span>Thêm đầu mục</span>
+                <span className="hidden md:inline">Thêm đầu mục</span>
               </button>
+            )}
+
+            {onExportExcel && (
+              <div className="relative flex-shrink-0" ref={exportMenuRef}>
+                <button
+                  onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                  title="Xuất file"
+                  className="flex items-center justify-center gap-1 border border-emerald-200 bg-emerald-50 text-emerald-800 rounded-lg text-[11px] font-bold hover:bg-emerald-100 active:scale-95 shadow-xs whitespace-nowrap h-8 px-2.5 min-w-[32px]"
+                >
+                  <span className="material-symbols-outlined text-sm text-emerald-700">download</span>
+                  <span className="hidden md:inline">Xuất file</span>
+                  <span className="material-symbols-outlined text-xs text-emerald-700 hidden md:inline">expand_more</span>
+                </button>
+
+                {isExportMenuOpen && (
+                  <div className="absolute right-0 mt-1 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1 space-y-0.5">
+                    {[
+                      { format: 'xlsx', label: 'Excel (.xlsx)', icon: 'table_view' },
+                      { format: 'csv', label: 'CSV (.csv)', icon: 'csv' },
+                      { format: 'pdf', label: 'PDF (.pdf)', icon: 'picture_as_pdf' },
+                      { format: 'docx', label: 'Word (.docx)', icon: 'description' },
+                    ].map(({ format, label, icon }) => (
+                      <button
+                        key={format}
+                        onClick={() => {
+                          setIsExportMenuOpen(false);
+                          if (onExportExcel) onExportExcel();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-sm text-emerald-600">{icon}</span>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      <div className="w-full max-w-full min-h-0 flex-1 overflow-x-auto custom-scrollbar">
+      <div className="w-full max-w-full min-h-0 flex-1 overflow-x-auto custom-scrollbar" onScroll={(e) => setIsScrolledHorizontally(e.currentTarget.scrollLeft > 10)}>
         <table className="w-full table-fixed border-collapse text-left text-xs" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
           <thead className="sticky top-0 z-30 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
-              <th rowSpan={2} style={{ minWidth: 50, width: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
-              <th rowSpan={2} style={{ minWidth: 280, width: 320, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left ">NỘI DUNG</th>
+              <th rowSpan={2} style={{ minWidth: 50, width: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className={`sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>STT</th>
+              <th rowSpan={2} style={{ minWidth: 280, width: 320, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', left: isScrolledHorizontally ? '0px' : "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left ">NỘI DUNG</th>
               {(subTab === 'TECH' || subTab === 'DOCS' || subTab === 'FINANCE') && (
                 <>
                   <th rowSpan={2} style={{ minWidth: 65, width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
@@ -1294,11 +1347,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                         const isCollapsed = collapsedSections.has(plan._sectionKey || '');
                         return (
                           <tr key={plan.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                            <td className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
+                            <td className={`sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>
                               {plan.stt}
                             </td>
-                            <td colSpan={colSpanCount + 1} className="bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={plan.jobContent}>
-                              <div className="flex items-center gap-1.5 min-w-0 overflow-hidden whitespace-normal break-words">
+                            <td colSpan={isScrolledHorizontally ? 1 : colSpanCount + 1} style={{ left: isScrolledHorizontally ? '0px' : 'var(--stt-width)', width: isScrolledHorizontally ? '220px' : 'auto', minWidth: isScrolledHorizontally ? '220px' : 'auto', maxWidth: isScrolledHorizontally ? '220px' : 'auto' }} className={`sticky z-10 md:static bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary ${isScrolledHorizontally ? 'whitespace-nowrap overflow-hidden' : 'whitespace-normal break-words'}`} title={plan.jobContent}>
+                              <div className="flex items-center gap-1.5 min-w-0 w-full overflow-hidden">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
                                   className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
@@ -1307,7 +1360,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                                 </button>
                                 <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                                <span className="flex-1 cursor-pointer hover:underline break-words leading-tight" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }}>
+                                <span className="flex-1 min-w-0 cursor-pointer hover:underline truncate whitespace-nowrap overflow-hidden md:break-words leading-tight" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }}>
                                   {plan.jobContent}
                                 </span>
                                 {onAddSubtask && subTab !== 'FINANCE' && (
@@ -1355,7 +1408,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           }
                         }} className={rowClass}>
                           {/* STT */}
-                          <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-middle text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
+                          <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-middle text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle} ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>
                             {editingCell?.id === plan.id && editingCell?.field === 'stt' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -1372,7 +1425,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           </td>
                           
                           {/* NỘI DUNG */}
-                          <td className={`sticky z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 p-0 align-middle text-left overflow-hidden ${fontStyle}`} style={{ left: "var(--stt-width)" }}>
+                          <td className={`sticky z-10 md:static ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 p-0 align-middle text-left overflow-hidden ${fontStyle}`} style={{ left: isScrolledHorizontally ? '0px' : "var(--stt-width)" }}>
                             {editingCell?.id === plan.id && editingCell?.field === 'jobContent' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"

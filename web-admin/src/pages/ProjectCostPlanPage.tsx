@@ -1763,32 +1763,6 @@ export const ProjectCostPlanPage: React.FC = () => {
               accept=".xlsx,.xls,.csv"
               className="hidden"
             />
-            <button
-              onClick={() => {
-                if (!selectedProject) {
-                  triggerToast('Vui lòng khởi tạo dự án trước khi nhập dữ liệu!', 'warning');
-                  return;
-                }
-                fileInputRef.current?.click();
-              }}
-              className="flex items-center gap-2 border border-slate-200 bg-white px-2.5 py-1.5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
-            >
-              <span className="material-symbols-outlined text-sm">file_upload</span>
-              Nhập Excel
-            </button>
-            <button
-              onClick={() => {
-                if (!selectedProject) {
-                  triggerToast('Vui lòng khởi tạo dự án trước khi xuất dữ liệu!', 'warning');
-                  return;
-                }
-                handleExportExcel();
-              }}
-              className="flex items-center gap-2 border border-slate-200 bg-white px-2.5 py-1.5 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
-            >
-              <span className="material-symbols-outlined text-sm">file_download</span>
-              Xuất Excel
-            </button>
 
             {(activeTab !== 'TECH' && activeTab !== 'DOCS' && activeTab !== 'FINANCE' && activeTab !== 'EXPENSE') && activeTab !== 'PURCHASING' && (
               <button
@@ -1853,6 +1827,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               setIsNewPlanOpen(true);
               setNewPlanData(prev => ({ ...prev, stt: '', jobContent: '' }));
             }}
+            onExportExcel={handleExportExcel}
           />
         )}
 

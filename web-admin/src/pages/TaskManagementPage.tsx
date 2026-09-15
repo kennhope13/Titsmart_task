@@ -242,6 +242,7 @@ const hasSyncedRef = useRef(false);
   // Column Filters
   const [filterSection, setFilterSection] = useState<string>('all');
   const [filterUnit, setFilterUnit] = useState<string>('all');
+  const [isScrolledHorizontally, setIsScrolledHorizontally] = useState(false);
   
   // Detailed Attribute Filters
   const [filterPurchase, setFilterPurchase] = useState<string>('all');
@@ -1627,22 +1628,55 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
         )}
 
         {/* TOOLBAR BỘ LỌC */}
-      <div className="px-3 py-2">
-        {/* Row 1: DETAILED ATTRIBUTE FILTERS */}
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-slate-400 flex items-center gap-2">
+      <div className="px-3 py-1.5 border-b border-slate-100">
+        {/* Mobile Filter Row (Search + Buttons) */}
+        <div className="flex md:hidden items-center justify-between gap-2 text-xs">
+          <div className="relative flex-1 min-w-[140px]">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+              search
+            </span>
+            <input
+              type="text"
+              placeholder="Tìm nhanh công việc..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-7 pr-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:bg-white focus:outline-none h-8"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={openNewTaskModal}
+              title="Thêm đầu mục"
+              className="flex items-center justify-center gap-1 bg-primary text-white px-2.5 py-1 rounded-lg text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-8"
+            >
+              <span className="material-symbols-outlined text-base">add</span>
+            </button>
+            <button
+              onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+              title="Xuất file"
+              className="flex items-center justify-center gap-1 border border-emerald-200 bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition-all shadow-xs whitespace-nowrap h-8"
+            >
+              <span className="material-symbols-outlined text-base text-emerald-700">download</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Single-Row Filter Toolbar */}
+        <div className="hidden md:flex items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="font-bold text-slate-400 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">filter_list</span>
               Lọc chi tiết:
             </span>
 
             {!projectId && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Dự án:</span>
                 <CustomSelect
                   value={selectedProjectCode}
                   onChange={(e) => setSelectedProjectCode(e.target.value)}
-                  className="h-7 min-w-[120px] max-w-[200px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-bold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
+                  className="h-7 min-w-[120px] max-w-[180px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-bold text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
                 >
                   <option value="all">Tất cả dự án</option>
                   {projects.map((p) => (
@@ -1654,76 +1688,63 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
               </div>
             )}
 
-
-
-            <div className="flex items-center gap-2">
-
-
-
-
+            <div className="flex items-center gap-1.5">
               <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Đầu mục:</span>
-
-
-
-
               <CustomSelect
-              value={filterSection}
-              onChange={(e) => setFilterSection(e.target.value)}
-              className="h-7 min-w-[80px] max-w-[130px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
-            >
-              <option value="all">Tất cả</option>
-              {columnSections.map((value) => (
-                <option key={value} value={value}>{truncateText(value, 42)}</option>
-              ))}
-            </CustomSelect>
+                value={filterSection}
+                onChange={(e) => setFilterSection(e.target.value)}
+                className="h-7 min-w-[80px] max-w-[130px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
+              >
+                <option value="all">Tất cả</option>
+                {columnSections.map((value) => (
+                  <option key={value} value={value}>{truncateText(value, 42)}</option>
+                ))}
+              </CustomSelect>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">ĐVT:</span>
               <CustomSelect
-              value={filterUnit}
-              onChange={(e) => setFilterUnit(e.target.value)}
-              className="h-7 min-w-[70px] max-w-[100px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
-            >
-              <option value="all">Tất cả</option>
-              {columnUnits.map((value) => (
-                <option key={value} value={value}>{value}</option>
-              ))}
-            </CustomSelect>
+                value={filterUnit}
+                onChange={(e) => setFilterUnit(e.target.value)}
+                className="h-7 min-w-[70px] max-w-[100px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
+              >
+                <option value="all">Tất cả</option>
+                {columnUnits.map((value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
+              </CustomSelect>
             </div>
 
-            
-
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">TT Đặt hàng:</span>
               <CustomSelect
-              value={filterPurchase}
-              onChange={(e) => setFilterPurchase(e.target.value)}
-              className="h-7 min-w-[70px] max-w-[100px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
-            >
-              <option value="all">Tất cả</option>
-              {columnPurchaseStatuses.map((value) => (
-                <option key={value} value={value}>{value}</option>
-              ))}
-            </CustomSelect>
+                value={filterPurchase}
+                onChange={(e) => setFilterPurchase(e.target.value)}
+                className="h-7 min-w-[70px] max-w-[100px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
+              >
+                <option value="all">Tất cả</option>
+                {columnPurchaseStatuses.map((value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
+              </CustomSelect>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">TĐ Thi công:</span>
               <CustomSelect
-              value={filterConstr}
-              onChange={(e) => setFilterConstr(e.target.value)}
-              className="h-7 min-w-[70px] max-w-[100px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
-            >
-              <option value="all">Tất cả</option>
-              {columnConstrStatuses.map((value) => (
-                <option key={value} value={value}>{value}</option>
-              ))}
-            </CustomSelect>
+                value={filterConstr}
+                onChange={(e) => setFilterConstr(e.target.value)}
+                className="h-7 min-w-[70px] max-w-[100px] rounded border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-700 shadow-xs outline-none transition-colors hover:border-blue-200 hover:bg-slate-50 focus:border-primary"
+              >
+                <option value="all">Tất cả</option>
+                {columnConstrStatuses.map((value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
+              </CustomSelect>
             </div>
 
-{/* Search */}
-            <div className="relative w-full md:w-48">
+            <div className="relative w-48 ml-1">
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
                 search
               </span>
@@ -1732,22 +1753,25 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                 placeholder="Tìm nhanh công việc..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-7 pr-2 py-1 bg-slate-50 border border-slate-200 rounded text-[11px] focus:ring-1 focus:ring-primary focus:bg-white focus:outline-none h-7"
+                className="w-full pl-7 pr-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:bg-white focus:outline-none h-7"
               />
             </div>
           </div>
-          <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
+
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={openNewTaskModal}
-              className="flex items-center gap-2 bg-primary text-white px-2 py-1 rounded text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
+              title="Thêm đầu mục"
+              className="flex items-center justify-center gap-1 bg-primary text-white px-2.5 py-1 rounded-lg text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
             >
-              <span className="material-symbols-outlined text-sm">add</span>
+              <span className="material-symbols-outlined text-base">add</span>
               <span>Thêm đầu mục</span>
             </button>
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                className="flex items-center gap-2 border border-emerald-200 bg-emerald-50 text-emerald-800 px-2 py-1 rounded text-[11px] font-bold hover:bg-emerald-100 transition-all shadow-xs whitespace-nowrap h-7"
+                title="Xuất file"
+                className="flex items-center justify-center gap-1 border border-emerald-200 bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition-all shadow-xs whitespace-nowrap h-7"
               >
                 <span className="material-symbols-outlined text-base text-emerald-700">download</span>
                 <span>Xuất file</span>
@@ -1774,18 +1798,23 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                 </div>
               )}
             </div>
-            
           </div>
         </div>
       </div>
       {/* Main Data Table */}
       <div className="border-t border-slate-200 flex flex-col flex-1 overflow-hidden">
-        <div className="w-full overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
-          <table className="min-w-[1060px] w-full text-left border-collapse text-[11px] table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+        <div 
+          onScroll={(e) => {
+            const scrollLeft = e.currentTarget.scrollLeft;
+            setIsScrolledHorizontally(scrollLeft > 10);
+          }}
+          className="w-full overflow-x-auto overflow-y-auto flex-1 custom-scrollbar"
+        >
+          <table className="min-w-[1350px] w-full text-left border-collapse text-[11px] table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
             <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
               <tr>
-                <th style={{ width: "var(--stt-width)", minWidth: 42 }} className="sticky left-0 z-20 py-2 px-1 bg-slate-50 bg-clip-padding text-center border-b border-r border-slate-200 whitespace-nowrap">STT</th>
-                <th className="sticky z-20 py-2 px-2 w-full min-w-[300px] bg-slate-50 bg-clip-padding border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" style={{ left: "var(--stt-width)" }}>NỘI DUNG</th>
+                <th style={{ width: "var(--stt-width)", minWidth: 42 }} className={`sticky left-0 z-20 md:static py-2 px-1 bg-slate-50 text-center border-b border-r border-slate-200 whitespace-nowrap transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>STT</th>
+                <th className={`sticky z-20 md:static py-2 px-2 w-[220px] min-w-[220px] max-w-[220px] md:w-[280px] md:min-w-[280px] md:max-w-[280px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)" }}>NỘI DUNG</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
@@ -1797,7 +1826,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                     <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">GIAO VIỆC</th>
                   )}
                 <th className="py-2 px-1 w-[130px] border-b border-slate-200 whitespace-nowrap text-center">NGƯỜI CẬP NHẬT</th>
-                <th className="sticky right-0 z-20 bg-slate-50 bg-clip-padding py-2 px-1 w-[150px] min-w-[150px] border-b border-l border-slate-200 whitespace-nowrap shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">GHI CHÚ</th>
+                <th className="bg-slate-50 py-2 px-1 w-[150px] min-w-[150px] border-b border-l border-slate-200 whitespace-nowrap">GHI CHÚ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
@@ -1810,9 +1839,9 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                     const isCollapsed = collapsedSections.has(t._sectionKey || '');
                     return (
                       <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                        <td onClick={() => handleOpenEditModal(t)} className="sticky left-0 z-10 py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap">{(t as any).computedStt || t.stt}</td>
-                        <td colSpan={hasPermission(authStore.user, 'ASSIGN_TASKS') ? 9 : 8} className="sticky z-10 py-2 px-2 bg-blue-50/90 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" style={{ left: "var(--stt-width)" }}>
-                          <div className="flex items-start gap-2 whitespace-normal break-words">
+                        <td onClick={() => handleOpenEditModal(t)} className={`sticky left-0 z-10 md:static py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>{(t as any).computedStt || t.stt}</td>
+                        <td colSpan={isScrolledHorizontally ? 1 : (hasPermission(authStore.user, 'ASSIGN_TASKS') ? 9 : 8)} className={`sticky z-10 md:static py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)", width: isScrolledHorizontally ? "220px" : "auto", minWidth: isScrolledHorizontally ? "220px" : "auto", maxWidth: isScrolledHorizontally ? "220px" : "auto" }}>
+                          <div className="flex items-center gap-1.5 min-w-0 w-full overflow-hidden">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}
                               className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
@@ -1821,14 +1850,14 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                               <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                             </button>
                             <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                            <span onClick={() => handleOpenEditModal(t)} className="cursor-pointer hover:underline flex-1 break-words leading-tight pt-0.5">
+                            <span onClick={() => handleOpenEditModal(t)} className="cursor-pointer hover:underline flex-1 min-w-0 truncate whitespace-nowrap overflow-hidden md:break-words leading-tight pt-0.5" title={t.name}>
                               {t.stt ? `${t.stt} - ` : ''}{t.name}
                             </span>
                             <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-base">add_circle</span></button>
                             <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-base">delete</span></button>
                           </div>
                         </td>
-                        <td className="sticky right-0 z-10 bg-blue-50/90 border-l border-blue-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] py-2 px-1 text-slate-500 truncate" title={cleanNotes(t.notes)}>
+                        <td className="bg-blue-50/90 border-l border-blue-200 py-2 px-1 text-slate-500 truncate" title={cleanNotes(t.notes)}>
                           {cleanNotes(t.notes)}
                         </td>
                       </tr>
@@ -1869,14 +1898,14 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
 
                   return (
                     <tr key={t.id} className={rowClass} onDoubleClick={() => handleOpenEditModal(t)}>
-                      <td className={`sticky left-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 font-mono text-center whitespace-nowrap ${sttStyle}`}>
+                      <td className={`sticky left-0 z-10 md:static py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 font-mono text-center whitespace-nowrap ${sttStyle} transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>
                         {editingCell?.id === t.id && editingCell?.field === 'stt' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10px]" />
                         ) : (
                           <span onClick={() => startEditing(t.id, 'stt', (t as any).computedStt || t.stt)} className="cursor-pointer hover:bg-slate-200/50 block w-full px-1">{(t as any).computedStt || t.stt || idx + 1}</span>
                         )}
                       </td>
-                      <td className={`sticky z-10 py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 transition-colors whitespace-normal break-words ${fontStyle}`} style={{ left: "var(--stt-width)" }} title={t.name}>
+                      <td className={`sticky z-10 md:static py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none border-r border-slate-200 transition-colors whitespace-normal break-words ${fontStyle} transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)" }} title={t.name}>
                         {editingCell?.id === t.id && editingCell?.field === 'name' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 focus:outline-primary text-[13px] font-medium" />
                         ) : (
@@ -1966,7 +1995,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                       <td className="py-1.5 px-1 text-left border-r border-slate-200 whitespace-nowrap">
                         <AuditInfoCell updatedBy={t.updatedBy} updatedAt={t.updatedAt} />
                       </td>
-                      <td className={`sticky right-0 z-10 py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-l border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-slate-500 whitespace-normal break-words leading-tight`} title={cleanNotes(t.notes)}>
+                      <td className="py-1.5 px-1 group-hover:bg-slate-100 border-l border-slate-200 text-slate-500 whitespace-normal break-words leading-tight" title={cleanNotes(t.notes)}>
                         {editingCell?.id === t.id && editingCell?.field === 'notes' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-slate-700 font-bold focus:outline-primary text-[10px]" />
                         ) : (

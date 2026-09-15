@@ -132,31 +132,31 @@ export const OcrUploadPanel: React.FC<OcrUploadPanelProps> = ({ onExtracted, com
 
   return (
     <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3 text-xs">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-2 md:gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 font-extrabold text-primary">
+          <div className="flex items-center gap-2 font-extrabold text-primary text-xs">
             <span className="material-symbols-outlined text-base">upload_file</span>
             Nhập từ phụ lục
           </div>
-          <p className="mt-1 text-slate-600">Tải ảnh, Excel/CSV, TXT, DOCX hoặc PDF. OCR chỉ dùng cho ảnh và PDF scan; các file có text sẽ được đọc trực tiếp.</p>
+          <p className="mt-0.5 text-[11px] text-slate-600 leading-tight">Tải ảnh, Excel, PDF hoặc TXT/DOCX. File scan sẽ được OCR tự động.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex h-9 w-28 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 font-bold text-primary hover:bg-blue-50"
+            className="flex-1 sm:flex-none inline-flex h-8 sm:h-9 px-2.5 sm:px-3 items-center justify-center gap-1 rounded-lg border border-blue-200 bg-white text-xs font-bold text-primary hover:bg-blue-50"
           >
             <span className="material-symbols-outlined text-sm">attach_file</span>
-            Chon file
+            Chọn file
           </button>
           <button
             type="button"
             onClick={runExtraction}
             disabled={isProcessing || !selectedFile}
-            className="inline-flex h-9 w-28 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 sm:flex-none inline-flex h-8 sm:h-9 px-2.5 sm:px-3 items-center justify-center gap-1 rounded-lg bg-primary text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-sm">auto_fix_high</span>
-            {isProcessing ? 'Dang doc...' : 'Doc file'}
+            {isProcessing ? 'Đang đọc...' : 'Đọc file'}
           </button>
         </div>
       </div>
@@ -170,7 +170,7 @@ export const OcrUploadPanel: React.FC<OcrUploadPanelProps> = ({ onExtracted, com
       />
 
       <div
-        className="mt-3 rounded-lg border border-dashed border-blue-200 bg-white/70 p-3"
+        className={`mt-3 rounded-lg border border-dashed border-blue-200 bg-white/70 p-3 ${selectedFile ? 'block' : 'hidden sm:block'}`}
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
           event.preventDefault();

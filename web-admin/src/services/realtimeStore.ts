@@ -2063,16 +2063,23 @@ export function setupRealtimeSync() {
     channel.on('postgres_changes', { event: '*', schema: 'public', table: tableName }, debouncedRefresh);
   });
 
-  channel.subscribe((status: string) => {
-    console.log('[Realtime] Trạng thái kết nối (Single Channel):', status);
-  });
+  try {
+    channel.subscribe((status: string, err?: any) => {
+      console.log('[Realtime] Trạng thái kết nối (Single Channel):', status);
+      if (err) console.warn('[Realtime] Realtime subscription error ignored:', err);
+    });
+  } catch (e) {
+    console.warn('[Realtime] Could not subscribe to realtime channel', e);
+  }
 
   realtimeChannel = channel;
   console.log('[Realtime] Đã kích hoạt 1 kênh đồng bộ thời gian thực tối ưu duy nhất cho 14 bảng.');
 
   return () => {
     if (realtimeChannel) {
-      supabase.removeChannel(realtimeChannel);
+      try {
+        supabase.removeChannel(realtimeChannel);
+      } catch (e) {}
       realtimeChannel = null;
     }
   };

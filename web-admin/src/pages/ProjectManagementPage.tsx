@@ -783,26 +783,29 @@ export const ProjectManagementPage: React.FC = () => {
                 Hoàn thành <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.completed}</span>
               </button>
             </div>
-          <div className="relative w-full sm:w-64 flex items-center">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder={TEXT.searchProject}
-              className="w-full pl-9 pr-3 h-[38px] border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
-            />
+          <div className="flex items-center gap-2 w-full md:w-auto flex-nowrap">
+            <div className="relative flex-1 sm:w-64 flex items-center">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder={TEXT.searchProject}
+                className="w-full pl-9 pr-3 h-[38px] border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+              />
+            </div>
+            { hasPermission(user, "CREATE_PROJECTS") ? (
+            <button
+              type="button"
+              onClick={() => setIsNewProjectModalOpen(true)}
+              title={TEXT.createProject}
+              className="flex items-center justify-center gap-2 bg-primary text-white px-3 md:px-3.5 h-[38px] rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap shrink-0"
+            >
+              <span className="material-symbols-outlined text-lg">add</span>
+              <span className="hidden md:inline">{TEXT.createProject}</span>
+            </button>
+            ) : null}
           </div>
-          { hasPermission(user, "CREATE_PROJECTS") ? (
-          <button
-            type="button"
-            onClick={() => setIsNewProjectModalOpen(true)}
-            className="flex items-center gap-2.5 bg-primary text-white px-3.5 h-[38px] rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap"
-          >
-            <span className="material-symbols-outlined text-sm">add</span>
-            {TEXT.createProject}
-          </button>
-          ) : null}
         </div>
       </section>
 

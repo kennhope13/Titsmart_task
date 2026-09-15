@@ -271,6 +271,37 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           </div>
       </aside>
 
+      {/* Mobile Bottom Navigation Bar (Shown ONLY on screens <= 768px via css md:hidden) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-[88px] bg-white border-t border-slate-200 z-50 flex items-start justify-around px-2 pt-3 shadow-[0_-6px_20px_rgba(0,0,0,0.12)] pb-[calc(env(safe-area-inset-bottom,0px)+10px)]">
+        {(currentProject ? [
+          { label: 'Tổng quan', path: `/projects/${currentProject.id}/overview`, icon: 'dashboard' },
+          { label: 'Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'fact_check' },
+          { label: 'Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'account_balance_wallet' },
+          { label: 'Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'file_present' },
+          { label: 'Kho', path: `/projects/${currentProject.id}/inventory`, icon: 'inventory_2' },
+        ] : [
+          { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
+          { label: 'Dự án', path: '/projects', icon: 'cell_tower' },
+          { label: 'Công việc', path: '/my-tasks', icon: 'checklist' },
+          { label: 'Vật tư', path: '/materials', icon: 'warehouse' },
+          { label: 'Hồ sơ', path: '/document-tracking', icon: 'folder_managed' },
+        ]).slice(0, 5).map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.path === '/'}
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+                isActive ? 'text-primary font-bold' : 'text-slate-500 font-medium hover:text-slate-800'
+              }`
+            }
+          >
+            <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
+            <span className="text-[10px] leading-tight truncate max-w-[64px]">{item.label}</span>
+          </NavLink>
+        ))}
+      </div>
+
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
 
       {/* Full screen backdrop when logging out to prevent any user actions */}

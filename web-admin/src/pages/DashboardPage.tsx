@@ -147,6 +147,16 @@ export const DashboardPage: React.FC = () => {
     </div>
   );
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const yAxisWidth = isMobile ? 110 : 220;
+
   return (
     <div className="flex flex-col flex-1 h-full bg-slate-50 overflow-hidden text-slate-800">
       <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm pl-3 pr-14 py-2 md:h-12 flex flex-col md:flex-row justify-start items-start md:items-center gap-4 shrink-0 flex-wrap relative">
@@ -235,13 +245,13 @@ export const DashboardPage: React.FC = () => {
             
             <ChartBox title="TIẾN ĐỘ THI CÔNG (%)" onClick={() => navigate("/projects")}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={progressData} margin={{ top: 10, right: 40, left: 0, bottom: 0 }} layout="vertical">
+                <BarChart data={progressData} margin={{ top: 10, right: 35, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                   <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#475569' }} hide />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: isMobile ? 10 : 11, fill: '#475569' }} tickLine={false} axisLine={false} width={yAxisWidth} />
                   <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(val: number) => [`${val}%`, 'Tiến độ']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                   <Bar dataKey="Tiến độ (%)" radius={[0, 4, 4, 0]} maxBarSize={20}>
-                    <LabelList dataKey="Tiến độ (%)" position="right" formatter={(val: number) => `${val}%`} style={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} />
+                    <LabelList dataKey="Tiến độ (%)" position="right" formatter={(val: number) => `${val}%`} style={{ fontSize: isMobile ? 10 : 11, fill: '#475569', fontWeight: 600 }} />
                     {progressData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry["Tiến độ (%)"] >= 100 ? '#10b981' : entry["Tiến độ (%)"] >= 60 ? '#3b82f6' : entry["Tiến độ (%)"] >= 30 ? '#f59e0b' : '#94a3b8'} />
                     ))}
@@ -252,13 +262,13 @@ export const DashboardPage: React.FC = () => {
 
             <ChartBox title="TỔNG CHI PHÍ THỰC TẾ (VNĐ)" onClick={() => navigate("/cost-plan")}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={costData} margin={{ top: 10, right: 90, left: 0, bottom: 0 }} layout="vertical">
+                <BarChart data={costData} margin={{ top: 10, right: isMobile ? 65 : 90, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                   <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: isMobile ? 10 : 11, fill: '#475569' }} tickLine={false} axisLine={false} width={yAxisWidth} />
                   <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(val: number) => [new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val), 'Tổng chi']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                   <Bar dataKey="Tổng chi (VNĐ)" fill="#f43f5e" radius={[0, 4, 4, 0]} maxBarSize={20}>
-                    <LabelList dataKey="Tổng chi (VNĐ)" position="right" formatter={(val: number) => new Intl.NumberFormat('vi-VN').format(val) + ' ₫'} style={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} />
+                    <LabelList dataKey="Tổng chi (VNĐ)" position="right" formatter={(val: number) => new Intl.NumberFormat('vi-VN').format(val) + ' ₫'} style={{ fontSize: isMobile ? 9 : 11, fill: '#475569', fontWeight: 600 }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -269,15 +279,15 @@ export const DashboardPage: React.FC = () => {
                 {paymentData.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-slate-400">Không có dữ liệu hợp đồng</div>
                 ) : (
-                  <BarChart data={paymentData} margin={{ top: 10, right: 90, left: 0, bottom: 0 }} layout="vertical">
+                  <BarChart data={paymentData} margin={{ top: 10, right: isMobile ? 65 : 90, left: 0, bottom: 0 }} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                     <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: isMobile ? 10 : 11, fill: '#475569' }} tickLine={false} axisLine={false} width={yAxisWidth} />
                     <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(val: number) => [new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)]} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                     <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={10} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
                     <Bar dataKey="Tổng Hợp đồng" fill="#94a3b8" barSize={12} radius={[0, 4, 4, 0]} />
                     <Bar dataKey="Đã giải ngân" fill="#10b981" barSize={12} radius={[0, 4, 4, 0]}>
-                      <LabelList dataKey="Đã giải ngân" position="right" formatter={(val: number) => new Intl.NumberFormat('vi-VN').format(val) + ' ₫'} style={{ fontSize: 11, fill: '#10b981', fontWeight: 600 }} />
+                      <LabelList dataKey="Đã giải ngân" position="right" formatter={(val: number) => new Intl.NumberFormat('vi-VN').format(val) + ' ₫'} style={{ fontSize: isMobile ? 9 : 11, fill: '#10b981', fontWeight: 600 }} />
                     </Bar>
                   </BarChart>
                 )}
@@ -292,7 +302,7 @@ export const DashboardPage: React.FC = () => {
                   <BarChart data={issueData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                     <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} width={220} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: isMobile ? 10 : 11, fill: '#475569' }} tickLine={false} axisLine={false} width={yAxisWidth} />
                     <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                     <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={10} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
                     <Bar dataKey="Tồn đọng" stackId="a" fill="#ef4444" barSize={20} />

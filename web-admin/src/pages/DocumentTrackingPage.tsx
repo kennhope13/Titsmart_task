@@ -359,7 +359,7 @@ export const DocumentTrackingPage: React.FC = () => {
             />
             <button 
               onClick={() => fileInputRef.current?.click()} 
-              className="flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+              className="hidden md:flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
             >
               <span className="material-symbols-outlined text-sm">file_upload</span>
               Nhập Excel
@@ -397,7 +397,7 @@ export const DocumentTrackingPage: React.FC = () => {
           />
           <button 
             onClick={() => fileInputRef.current?.click()} 
-            className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+            className="hidden md:flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
           >
             <span className="material-symbols-outlined text-[14px]">file_upload</span>
             Nhập Excel

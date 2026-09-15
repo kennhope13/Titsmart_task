@@ -608,18 +608,81 @@ input[type="number"] {
 .electron-drag { -webkit-app-region: drag; }
 .electron-no-drag { -webkit-app-region: no-drag;
 }
-/* Fix Electron drag region overlapping buttons */
-main > div > header,
-main > div > section.border-b:first-child,
-main > div > div.border-b.bg-white:first-child {
-  position: relative;
-  z-index: 40 !important;
-  -webkit-app-region: drag;
-}
+/* Mobile Responsive Overrides - Mobile Only (does NOT affect desktop) */
+@media (max-width: 768px) {
+  /* Safe Area Inset for Mobile Status Bar Notch */
+  body {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 
-main > div > header *,
-main > div > section.border-b:first-child *,
-main > div > div.border-b.bg-white:first-child * {
-  -webkit-app-region: no-drag;
+  /* Hide fixed sidebar completely on mobile */
+  aside.fixed.left-0 {
+    display: none !important;
+  }
+
+  /* Main content container takes 100% full screen width without margin-left and has bottom padding for mobile navbar */
+  .layout-content-wrapper {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-bottom: 5.75rem !important; /* reserve space for bottom navigation bar */
+  }
+
+  /* Shift notification bell down on mobile below status bar notch */
+  .mobile-notif-bell {
+    top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+  }
+
+  /* Shift top headers down on mobile screens */
+  main > div > section.border-b:first-child,
+  main > div > header:first-child {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+    padding: 0.75rem 0.75rem !important;
+  }
+
+  main > div > section.border-b:first-child > div,
+  main > div > header:first-child > div {
+    width: 100% !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+  }
+
+  /* Page title padding and font size on mobile */
+  .page-title {
+    font-size: 16px !important;
+  }
+
+  /* Compact grid columns & container padding on mobile screen */
+  .p-6, .p-4 {
+    padding: 0.75rem !important;
+  }
+
+  /* Single column cards on mobile */
+  .grid-cols-1 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Hide clock on mobile screens to save top space */
+  .realtime-clock-container {
+    display: none !important;
+  }
+
+  /* Table mobile optimizations: ensure content column has exact width for horizontal scroll */
+  .task-management-screen table th:nth-child(2),
+  .task-management-screen table td:nth-child(2) {
+    min-width: 220px !important;
+    max-width: 220px !important;
+    width: 220px !important;
+    overflow: hidden !important;
+  }
+
+  /* Hide detailed dropdown filter containers on mobile, keep only search bar */
+  .task-management-screen .flex.flex-wrap.items-center.gap-2 > div:not(.relative),
+  .task-management-screen .flex.flex-wrap.items-center.gap-2 > span {
+    display: none !important;
+  }
 }
 

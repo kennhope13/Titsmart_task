@@ -65,25 +65,56 @@ export const ProjectDetailPage: React.FC = () => {
   return (
     <div className="flex-col h-full bg-slate-50 flex overflow-hidden">
       {/* Top Project Bar */}
-      <div className="bg-white border-b border-slate-200 pl-4 pr-14 py-4 md:py-3 lg:py-0 lg:min-h-[3rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 shrink-0 flex-wrap">
-        <div className="flex items-center flex-wrap gap-2">
-          <Link to="/projects" className="page-title text-lg font-extrabold text-slate-900 hover:text-primary transition-colors border-l-4 border-primary pl-2 uppercase shrink-0 cursor-pointer">
-            {project.name}
+      <div className="bg-white border-b border-slate-200 pl-3 md:pl-4 pr-14 py-1.5 md:py-3 lg:py-0 lg:min-h-[3rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-1 lg:gap-3 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Link
+            to="/projects"
+            className="md:hidden inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
+            title="Quay lại tất cả dự án"
+          >
+            <span className="material-symbols-outlined text-base">arrow_back</span>
           </Link>
-          {activeTab && (
-            <>
-              <span className="material-symbols-outlined text-slate-400 text-[14px] shrink-0">arrow_forward_ios</span>
-              <a href={activeTab.path} onClick={(e) => handleTabClick(e, activeTab.path)} className="text-[15px] font-bold text-slate-700 hover:text-primary transition-colors shrink-0 cursor-pointer">
-                {activeTab.label}
-              </a>
-            </>
-          )}
-          {subTitle && (
-            <>
-              <span className="material-symbols-outlined text-slate-400 text-[12px] shrink-0">arrow_forward_ios</span>
-              <span className="text-[14px] font-medium text-slate-600 truncate">{subTitle}</span>
-            </>
-          )}
+
+          {/* Mobile View Header Layout (Stacked under blue bar) */}
+          <div className="md:hidden border-l-4 border-primary pl-2 flex flex-col gap-0.5">
+            <Link to="/projects" className="page-title text-base font-extrabold text-slate-900 hover:text-primary transition-colors uppercase shrink-0 cursor-pointer leading-tight">
+              {project.name}
+            </Link>
+            {activeTab && (
+              <div className="flex items-center gap-1.5">
+                <a href={activeTab.path} onClick={(e) => handleTabClick(e, activeTab.path)} className="text-xs font-bold text-slate-600 hover:text-primary transition-colors shrink-0 cursor-pointer leading-tight">
+                  {activeTab.label}
+                </a>
+                {subTitle && (
+                  <>
+                    <span className="material-symbols-outlined text-slate-400 text-[12px] shrink-0">arrow_forward_ios</span>
+                    <span className="text-xs font-medium text-slate-600 truncate">{subTitle}</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop View Header Layout (Standard horizontal layout) */}
+          <div className="hidden md:flex items-center gap-2">
+            <Link to="/projects" className="page-title text-base md:text-lg font-extrabold text-slate-900 hover:text-primary transition-colors border-l-4 border-primary pl-2 uppercase shrink-0 cursor-pointer">
+              {project.name}
+            </Link>
+            {activeTab && (
+              <>
+                <span className="material-symbols-outlined text-slate-400 text-[14px] shrink-0">arrow_forward_ios</span>
+                <a href={activeTab.path} onClick={(e) => handleTabClick(e, activeTab.path)} className="text-[15px] font-bold text-slate-700 hover:text-primary transition-colors shrink-0 cursor-pointer">
+                  {activeTab.label}
+                </a>
+              </>
+            )}
+            {subTitle && (
+              <>
+                <span className="material-symbols-outlined text-slate-400 text-[12px] shrink-0">arrow_forward_ios</span>
+                <span className="text-[14px] font-medium text-slate-600 truncate">{subTitle}</span>
+              </>
+            )}
+          </div>
         </div>
 
         <div id="project-header-actions" className="flex items-center gap-2 shrink-0 ml-auto flex-wrap justify-end"></div>
