@@ -71,9 +71,10 @@ export const UpdateNotifier: React.FC = () => {
       const currentVer = import.meta.env.VITE_APP_VERSION || '1.0.0';
 
       if (latestTag && compareVersions(latestTag, currentVer) > 0) {
-        // Tìm link tải APK nếu có trong assets
-        const apkAsset = data.assets?.find((a: any) => a.name.endsWith('.apk'));
-        const downloadUrl = apkAsset?.browser_download_url || data.html_url || 'https://github.com/kennhope13/Titsmart_task/releases/latest';
+        // Tìm link tải APK trực tiếp từ release assets hoặc URL quy chuẩn
+        const apkAsset = data.assets?.find((a: any) => a.name.toLowerCase().endsWith('.apk'));
+        const downloadUrl = apkAsset?.browser_download_url 
+          || `https://github.com/kennhope13/Titsmart_task/releases/download/v${latestTag}/TITSMART-v${latestTag}.apk`;
 
         const rawBody = data.body || '';
         const notes = rawBody
@@ -119,36 +120,48 @@ export const UpdateNotifier: React.FC = () => {
   const handleWebUpdate = async () => {
     const downloadUrl = (state.message && state.message.startsWith('http')) 
       ? state.message 
-      : 'https://github.com/kennhope13/Titsmart_task/releases/latest';
+      : `https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`;
 
-    // Nếu là file APK, kích hoạt tải trực tiếp ngầm thông qua thẻ HTML download
-    if (downloadUrl.endsWith('.apk')) {
-      setState((s) => ({ ...s, status: 'downloading', percent: 0 }));
-      try {
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = `TITSMART_v${state.version || 'latest'}.apk`;
-        link.target = '_self';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    setState((s) => ({ ...s, status: 'downloading', percent: 0 }));
 
-        // Giả lập tiến trình tải cho người dùng thấy ngay trên UI Pop-up
-        let progress = 10;
-        const progressInterval = setInterval(() => {
-          progress += 20;
-          if (progress >= 100) {
-            clearInterval(progressInterval);
-            setState((s) => ({ ...s, status: 'downloaded' }));
-          } else {
-            setState((s) => ({ ...s, percent: progress }));
-          }
-        }, 400);
-      } catch (err) {
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', downloadUrl, true);
+      xhr.responseType = 'blob';
+
+      xhr.onprogress = (event) => {
+        if (event.lengthComputable && event.total > 0) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setState((s) => ({ ...s, status: 'downloading', percent }));
+        } else {
+          // Fallback giả lập nếu server không trả về Content-Length
+          setState((s) => ({ ...s, status: 'downloading', percent: Math.min((s.percent || 0) + 15, 90) }));
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const blob = xhr.response;
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = `TITSMART-v${state.version || 'latest'}.apk`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setState((s) => ({ ...s, status: 'downloaded', percent: 100 }));
+        } else {
+          window.location.href = downloadUrl;
+        }
+      };
+
+      xhr.onerror = () => {
         window.location.href = downloadUrl;
-      }
-    } else {
-      window.open(downloadUrl, '_system');
+      };
+
+      xhr.send();
+    } catch (err) {
+      window.location.href = downloadUrl;
     }
   };
 
