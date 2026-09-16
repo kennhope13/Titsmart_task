@@ -337,23 +337,30 @@ export const AttendancePage: React.FC = () => {
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
         <div className="flex items-center gap-4">
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">Chấm công & Nghỉ phép</h1>
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
             <button
               onClick={() => setMainTab('attendance')}
-              className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mainTab === 'attendance' ? 'bg-white text-primary shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${mainTab === 'attendance' ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
             >
+              <span className="material-symbols-outlined text-[16px]">fingerprint</span>
               Chấm công
             </button>
             <button
               onClick={() => setMainTab('leave')}
-              className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mainTab === 'leave' ? 'bg-white text-primary shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${mainTab === 'leave' ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
             >
+              <span className="material-symbols-outlined text-[16px]">event_busy</span>
               Xin nghỉ phép
+              {leaves.filter(l => l.status === 'PENDING').length > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 bg-red-500 text-white rounded-full text-[10px] font-extrabold">
+                  {leaves.filter(l => l.status === 'PENDING').length}
+                </span>
+              )}
             </button>
           </div>
         </div>
         {isAdmin && (
-          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
+          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5 border border-slate-200">
             <button
               onClick={() => setTab('my')}
               className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${tab === 'my' ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}

@@ -106,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       { label: 'Quản lý hồ sơ', path: '/document-tracking', icon: 'folder_managed', req: 'VIEW_DOCUMENTS' },
       { label: 'Nhân sự', path: '/personnel', icon: 'groups', req: 'VIEW_USERS' },
       { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history', req: 'VIEW_ACTIVITY_LOG' },
-      { label: 'Chấm công', path: '/attendance', icon: 'schedule', req: 'VIEW_TASKS' }
+      {label: 'Chấm công & Nghỉ phép', path: '/attendance', icon: 'schedule', req: 'VIEW_TASKS' }
     ];
 
     return [{
