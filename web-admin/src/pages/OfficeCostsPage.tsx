@@ -116,6 +116,67 @@ export const OfficeCostsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Desktop Export File Dropdown */}
+          <div className="relative hidden md:block">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs cursor-pointer relative z-50"
+            >
+              <span className="material-symbols-outlined text-[14px]">file_download</span>
+              Xuất file
+            </button>
+            {showExportMenu && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowExportMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                  <button
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      handleExportExcel();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                    Excel (.xlsx)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      handleExportExcel();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                    CSV (.csv)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      window.print();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                    PDF (.pdf)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      handleExportExcel();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                    Word (.docx)
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
           {hasPermission(user, 'EDIT_EXPENSES') && (
             <button
               onClick={() => setIsNewExpenseOpen(true)}
