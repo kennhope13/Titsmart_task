@@ -334,20 +334,22 @@ export const AttendancePage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-slate-100 overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
-        <div className="flex items-center gap-4">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+        <div className="flex items-center gap-4 relative z-30 pointer-events-auto">
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">Chấm công & Nghỉ phép</h1>
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 relative z-30 pointer-events-auto">
             <button
+              type="button"
               onClick={() => setMainTab('attendance')}
-              className={`px-3 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${mainTab === 'attendance' ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 cursor-pointer select-none ${mainTab === 'attendance' ? 'bg-primary text-white shadow-xs font-black' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200'}`}
             >
               <span className="material-symbols-outlined text-[16px]">fingerprint</span>
               Chấm công
             </button>
             <button
+              type="button"
               onClick={() => setMainTab('leave')}
-              className={`px-3 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${mainTab === 'leave' ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 cursor-pointer select-none ${mainTab === 'leave' ? 'bg-primary text-white shadow-xs font-black' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200'}`}
             >
               <span className="material-symbols-outlined text-[16px]">event_busy</span>
               Xin nghỉ phép
