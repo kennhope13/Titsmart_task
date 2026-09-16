@@ -14,6 +14,80 @@ export const NotificationBell: React.FC = () => {
   const [showCenterModal, setShowCenterModal] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
 
+  // ─── Dragging functionality state & refs ───
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(() => {
+    try {
+      const saved = localStorage.getItem('titsmart_notif_bell_pos');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  });
+
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({ startX: 0, startY: 0, initX: 0, initY: 0 });
+  const hasMovedRef = useRef(false);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Only left click or touch
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+
+    const bellElem = popoverRef.current;
+    if (!bellElem) return;
+
+    const rect = bellElem.getBoundingClientRect();
+    const currentX = position ? position.x : rect.left;
+    const currentY = position ? position.y : rect.top;
+
+    isDraggingRef.current = true;
+    hasMovedRef.current = false;
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: currentX,
+      initY: currentY,
+    };
+
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+
+    const dx = e.clientX - dragStartRef.current.startX;
+    const dy = e.clientY - dragStartRef.current.startY;
+
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      hasMovedRef.current = true;
+    }
+
+    const newX = Math.max(10, Math.min(window.innerWidth - 50, dragStartRef.current.initX + dx));
+    const newY = Math.max(10, Math.min(window.innerHeight - 50, dragStartRef.current.initY + dy));
+
+    setPosition({ x: newX, y: newY });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+
+    try {
+      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    } catch (err) {}
+
+    if (position) {
+      localStorage.setItem('titsmart_notif_bell_pos', JSON.stringify(position));
+    }
+  };
+
+  const handleBellClick = (e: React.MouseEvent) => {
+    // If user dragged the bell, do not open popover
+    if (hasMovedRef.current) {
+      e.stopPropagation();
+      return;
+    }
+    setShowPopover(!showPopover);
+  };
+
   const handleNotificationClick = (notification: any) => {
     if (!notification.read) {
       markNotificationRead(notification.id);
@@ -93,16 +167,27 @@ export const NotificationBell: React.FC = () => {
   }
 
   return (
-    <div ref={popoverRef} className="absolute top-[2px] md:top-[6px] right-3 z-[70]">
+    <div
+      ref={popoverRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      style={
+        position
+          ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
+          : undefined
+      }
+      className={`z-[9990] touch-none select-none ${position ? '' : 'absolute top-[2px] md:top-[6px] right-3'}`}
+    >
       <button
-        onClick={() => setShowPopover(!showPopover)}
-        title="Thông báo hệ thống"
-        className={`w-[36px] h-[36px] rounded-md flex items-center justify-center transition-all relative border shadow-sm cursor-pointer
+        onClick={handleBellClick}
+        title="Thông báo hệ thống (Nhấn giữ & kéo để di chuyển)"
+        className={`w-[36px] h-[36px] rounded-md flex items-center justify-center transition-all relative border shadow-sm cursor-grab active:cursor-grabbing
           ${showPopover ? 'bg-blue-50 border-blue-200 text-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800'}`}
       >
-        <span className="material-symbols-outlined text-[20px]">notifications</span>
+        <span className="material-symbols-outlined text-[20px] pointer-events-none">notifications</span>
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white pointer-events-none"></span>
         )}
       </button>
 
