@@ -122,6 +122,15 @@ export const UpdateNotifier: React.FC = () => {
       ? state.message 
       : `https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`;
 
+    // Nếu chạy trên Capacitor Android Native, tải APK trực tiếp để người dùng cài đặt
+    const isCapacitorNative = !!(window as any).Capacitor?.isNativePlatform?.();
+
+    if (isCapacitorNative) {
+      window.open(downloadUrl, '_system');
+      dismiss();
+      return;
+    }
+
     setState((s) => ({ ...s, status: 'downloading', percent: 0 }));
 
     try {
@@ -134,7 +143,6 @@ export const UpdateNotifier: React.FC = () => {
           const percent = Math.round((event.loaded / event.total) * 100);
           setState((s) => ({ ...s, status: 'downloading', percent }));
         } else {
-          // Fallback giả lập nếu server không trả về Content-Length
           setState((s) => ({ ...s, status: 'downloading', percent: Math.min((s.percent || 0) + 15, 90) }));
         }
       };
@@ -151,7 +159,6 @@ export const UpdateNotifier: React.FC = () => {
           document.body.removeChild(link);
           setState((s) => ({ ...s, status: 'downloaded', percent: 100 }));
         } else {
-          // Tự động làm mới ứng dụng (Web Live Reload) nếu là cập nhật giao diện
           window.location.reload();
         }
       };
@@ -190,11 +197,9 @@ export const UpdateNotifier: React.FC = () => {
                     ? 'Đang tải bản cập nhật'
                     : 'Có bản cập nhật mới'}
               </p>
-              {state.version && (
-                <p className="text-[11px] text-slate-500 font-medium">
-                  Phiên bản {state.version} đã sẵn sàng
-                </p>
-              )}
+              <p className="text-[11px] text-slate-500 font-medium">
+                Phiên bản thiết bị: <span className="font-bold text-slate-700">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</span> → Mới: <span className="font-bold text-primary">v{state.version || 'mới'}</span>
+              </p>
             </div>
           </div>
           {state.status !== 'downloading' && (

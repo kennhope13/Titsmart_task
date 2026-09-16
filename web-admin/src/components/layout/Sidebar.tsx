@@ -379,7 +379,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                   </div>
                   <div className="truncate">
                     <div className="text-xs font-bold text-slate-800 truncate">{user.name || user.username}</div>
-                    <div className="text-[10px] text-slate-400 truncate">{user.role || 'Quản trị viên'}</div>
+                    <div className="text-[10px] text-slate-400 truncate flex items-center gap-1">
+                      <span>{user.role || 'Quản trị viên'}</span>
+                      <span>•</span>
+                      <span className="font-mono text-primary font-bold">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</span>
+                    </div>
                   </div>
                 </div>
                 <button
