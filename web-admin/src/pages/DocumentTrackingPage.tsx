@@ -376,10 +376,11 @@ export const DocumentTrackingPage: React.FC = () => {
             <div className="relative hidden md:block">
               <button 
                 onClick={() => setShowExportMenu(!showExportMenu)} 
-                className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs cursor-pointer relative z-50"
+                className="flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-3.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs cursor-pointer relative z-50"
               >
                 <span className="material-symbols-outlined text-[14px]">file_download</span>
-                Xuất file
+                <span>Xuất file</span>
+                <span className="material-symbols-outlined text-xs text-slate-400">expand_more</span>
               </button>
               {showExportMenu && (
                 <>
@@ -462,10 +463,11 @@ export const DocumentTrackingPage: React.FC = () => {
             <div className="relative md:hidden shrink-0">
               <button
                 onClick={() => setShowMobileExportMenu(!showMobileExportMenu)}
-                className="flex items-center justify-center h-8 w-8 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-xs"
+                className="flex items-center justify-center h-8 px-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-xs gap-0.5"
                 title="Xuất file"
               >
                 <span className="material-symbols-outlined text-base">file_download</span>
+                <span className="material-symbols-outlined text-xs">expand_more</span>
               </button>
               {showMobileExportMenu && (
                 <div 
@@ -558,10 +560,11 @@ export const DocumentTrackingPage: React.FC = () => {
           <div className="relative hidden md:block">
             <button 
               onClick={() => setShowExportMenu(!showExportMenu)} 
-              className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs cursor-pointer relative z-50"
+              className="flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-3.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs cursor-pointer relative z-50"
             >
               <span className="material-symbols-outlined text-[14px]">file_download</span>
-              Xuất file
+              <span>Xuất file</span>
+              <span className="material-symbols-outlined text-xs text-slate-400">expand_more</span>
             </button>
             {showExportMenu && (
               <>
