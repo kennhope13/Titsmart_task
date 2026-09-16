@@ -58,13 +58,21 @@ export const App: React.FC = () => {
   useEffect(() => {
     refreshUser();
 
-    // Xử lý nút back phần cứng trên Android: Thoát ứng dụng ngay lập tức
+    // Xử lý nút back phần cứng trên Android: Quay lại trang trước hoặc thoát app khi ở trang gốc
     const capApp = (window as any).Capacitor?.Plugins?.App;
     let backListener: any = null;
 
     if (capApp && typeof capApp.addListener === 'function') {
-      capApp.addListener('backButton', () => {
-        capApp.exitApp();
+      capApp.addListener('backButton', (data: any) => {
+        const hash = window.location.hash || '';
+        const path = window.location.pathname || '';
+        const isRoot = hash === '' || hash === '#/' || hash === '#/projects' || path === '/' || path === '/projects';
+        
+        if (data?.canGoBack && !isRoot) {
+          window.history.back();
+        } else {
+          capApp.exitApp();
+        }
       }).then((handle: any) => {
         backListener = handle;
       }).catch((err: any) => {
