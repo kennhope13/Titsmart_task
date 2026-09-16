@@ -1089,11 +1089,11 @@ export const MaterialTrackingPage: React.FC = () => {
               <div className="relative hidden md:block">
                 <button 
                   onClick={() => setShowDesktopExportMenu(!showDesktopExportMenu)} 
-                  className="flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-3.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs cursor-pointer relative z-50"
+                  className="flex items-center gap-1.5 border border-emerald-200 bg-emerald-50 h-[34px] px-3.5 rounded-lg text-xs font-bold text-emerald-700 hover:bg-emerald-100 active:scale-95 transition-all shadow-xs cursor-pointer relative z-50"
                 >
                   <span className="material-symbols-outlined text-[14px]">file_download</span>
                   <span>Xuất file</span>
-                  <span className="material-symbols-outlined text-xs text-slate-400">expand_more</span>
+                  <span className="material-symbols-outlined text-xs">expand_more</span>
                 </button>
                 {showDesktopExportMenu && (
                   <div className="fixed inset-0 z-[9998]" onClick={() => setShowDesktopExportMenu(false)} />

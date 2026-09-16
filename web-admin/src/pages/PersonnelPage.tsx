@@ -338,7 +338,7 @@ export const PersonnelPage: React.FC = () => {
             <div className="relative hidden md:block">
               <button 
                 onClick={() => setShowExportMenu(!showExportMenu)} 
-                className="flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs relative z-50 cursor-pointer"
+                className="flex items-center gap-1.5 border border-emerald-200 bg-emerald-50 h-[34px] px-3.5 rounded-lg text-xs font-bold text-emerald-700 hover:bg-emerald-100 active:scale-95 transition-all shadow-xs relative z-50 cursor-pointer"
                 title="Xuất file"
               >
                 <span className="material-symbols-outlined text-[14px]">file_download</span>
