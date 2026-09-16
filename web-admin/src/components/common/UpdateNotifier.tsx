@@ -151,12 +151,13 @@ export const UpdateNotifier: React.FC = () => {
           document.body.removeChild(link);
           setState((s) => ({ ...s, status: 'downloaded', percent: 100 }));
         } else {
-          window.location.href = downloadUrl;
+          // Tự động làm mới ứng dụng (Web Live Reload) nếu là cập nhật giao diện
+          window.location.reload();
         }
       };
 
       xhr.onerror = () => {
-        window.location.href = downloadUrl;
+        window.location.reload();
       };
 
       xhr.send();
