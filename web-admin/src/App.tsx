@@ -57,6 +57,26 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     refreshUser();
+
+    // Xử lý nút back phần cứng trên Android: Thoát ứng dụng ngay lập tức
+    const capApp = (window as any).Capacitor?.Plugins?.App;
+    let backListener: any = null;
+
+    if (capApp && typeof capApp.addListener === 'function') {
+      capApp.addListener('backButton', () => {
+        capApp.exitApp();
+      }).then((handle: any) => {
+        backListener = handle;
+      }).catch((err: any) => {
+        console.warn('Capacitor backButton listener failed:', err);
+      });
+    }
+
+    return () => {
+      if (backListener && typeof backListener.remove === 'function') {
+        backListener.remove();
+      }
+    };
   }, [refreshUser]);
 
   useEffect(() => {
