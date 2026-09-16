@@ -214,6 +214,36 @@ export const OfficeCostsPage: React.FC = () => {
                     <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
                     Excel (.xlsx)
                   </button>
+                  <button
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      handleExportExcel();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                    CSV (.csv)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      window.print();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                    PDF (.pdf)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      handleExportExcel();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                    Word (.docx)
+                  </button>
                 </div>
               )}
             </div>
