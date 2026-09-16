@@ -169,6 +169,7 @@ export const DocumentTrackingPage: React.FC = () => {
   useEffect(() => { setPortalNode(document.getElementById('project-header-actions')); }, []);
   const [isNewDocOpen, setIsNewDocOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentTrack | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [showMobileExportMenu, setShowMobileExportMenu] = useState(false);
   const [showMobileSearchInput, setShowMobileSearchInput] = useState(false);
 
