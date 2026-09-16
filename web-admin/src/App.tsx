@@ -58,12 +58,13 @@ export const App: React.FC = () => {
   useEffect(() => {
     refreshUser();
 
-    // Xử lý nút back phần ứng trên Android: Quay lại trang trước khi ở trang con, chỉ thoát ứng dụng khi ở trang gốc
+    // Xử lý nút back phần cứng trên Android (thanh điều hướng hệ thống)
+    // Sử dụng canGoBack từ Capacitor để biết WebView có thể quay lại không
     const capApp = (window as any).Capacitor?.Plugins?.App;
     let backListener: any = null;
 
     if (capApp && typeof capApp.addListener === 'function') {
-      capApp.addListener('backButton', () => {
+      capApp.addListener('backButton', (data: { canGoBack: boolean }) => {
         const hash = (window.location.hash || '').replace(/^#/, '');
         const cleanPath = hash.split('?')[0];
 
@@ -74,14 +75,15 @@ export const App: React.FC = () => {
           cleanPath === '/dashboard' ||
           cleanPath === '/login';
 
-        if (isRootScreen) {
+        if (data?.canGoBack) {
+          // WebView có thể quay lại → luôn quay lại (không thoát app)
+          window.history.back();
+        } else if (isRootScreen) {
+          // Không còn trang để quay lại VÀ đang ở trang gốc → thoát app
           capApp.exitApp();
         } else {
-          if (window.history.length > 1) {
-            window.history.back();
-          } else {
-            window.location.hash = '#/projects';
-          }
+          // Không còn history nhưng đang ở trang con → về trang chủ thay vì thoát
+          window.location.hash = '#/projects';
         }
       }).then((handle: any) => {
         backListener = handle;
