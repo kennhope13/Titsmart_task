@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Project, Task, Engineer, Issue, FieldLog, DirectMessage } from '../types';
+import { Project, Task, Engineer, Issue, FieldLog, DirectMessage, LeaveRequest } from '../types';
 import { api } from './apiSupabase';
 import { useAuthStore } from './authStore';
 
@@ -10,6 +10,7 @@ interface DataStoreState {
   issues: Issue[];
   fieldLogs: FieldLog[];
   directMessages: DirectMessage[];
+  leaves: LeaveRequest[];
   isLoading: boolean;
   
   fetchProjects: () => Promise<void>;
@@ -18,6 +19,8 @@ interface DataStoreState {
   fetchIssues: (projectId?: string) => Promise<void>;
   fetchFieldLogs: () => Promise<void>;
   fetchDirectMessages: () => Promise<void>;
+  fetchLeaves: () => Promise<void>;
+  createLeave: (input: { userId: string; userName: string; leaveType: string; startDate: string; endDate: string; totalDays: number; reason: string }) => Promise<void>;
   sendDirectMessage: (msg: {
     senderId: string;
     senderName: string;
@@ -39,6 +42,7 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
   issues: [],
   fieldLogs: [],
   directMessages: [],
+  leaves: [],
   isLoading: false,
 
   filterByUserProjects: (data) => {
@@ -110,6 +114,29 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
     } catch (e) {
       console.error(e);
       set({ isLoading: false });
+    }
+  },
+
+  fetchLeaves: async () => {
+    try {
+      set({ isLoading: true });
+      const user = useAuthStore.getState().user;
+      if (!user) return;
+      const data = user.role === 'admin' ? await api.leaves.getAll() : await api.leaves.getByUser(user.id);
+      set({ leaves: data as LeaveRequest[], isLoading: false });
+    } catch (e) {
+      console.error(e);
+      set({ isLoading: false });
+    }
+  },
+
+  createLeave: async (input) => {
+    try {
+      const newLeave = await api.leaves.create(input);
+      set(state => ({ leaves: [newLeave as LeaveRequest, ...state.leaves] }));
+    } catch (e) {
+      console.error(e);
+      throw e;
     }
   },
 

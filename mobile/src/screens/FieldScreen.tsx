@@ -1,17 +1,18 @@
-﻿import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, SafeAreaView, Alert, Image } from 'react-native';
 import { useDataStore } from '../services/dataStore';
 import { useAuthStore } from '../services/authStore';
 
 export const FieldScreen = () => {
-  const { fieldLogs, fetchFieldLogs, isLoading } = useDataStore();
+  const { fieldLogs, fetchFieldLogs, leaves, fetchLeaves, createLeave, isLoading } = useDataStore();
   const user = useAuthStore(state => state.user);
   const [refreshing, setRefreshing] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
 
   const loadData = useCallback(async () => {
     await fetchFieldLogs();
-  }, [fetchFieldLogs]);
+    await fetchLeaves();
+  }, [fetchFieldLogs, fetchLeaves]);
 
   useEffect(() => {
     loadData();
@@ -34,6 +35,38 @@ export const FieldScreen = () => {
           onPress: () => setIsCheckedIn(!isCheckedIn)
         }
       ]
+    );
+  };
+
+  const handleLeaveRequestPrompt = () => {
+    Alert.prompt(
+      'Xin nghỉ phép',
+      'Nhập lý do xin nghỉ phép (Ví dụ: Nghỉ phép năm 1 ngày):',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Gửi đơn',
+          onPress: async (reason?: string) => {
+            if (!reason || !reason.trim() || !user) return;
+            try {
+              const today = new Date().toISOString().split('T')[0];
+              await createLeave({
+                userId: user.id,
+                userName: user.name || user.username || 'Nhân viên',
+                leaveType: 'Nghỉ phép năm',
+                startDate: today,
+                endDate: today,
+                totalDays: 1,
+                reason: reason.trim(),
+              });
+              Alert.alert('Thành công', 'Đơn xin nghỉ phép đã được gửi!');
+            } catch (e: any) {
+              Alert.alert('Lỗi', e.message || 'Không thể gửi đơn xin nghỉ');
+            }
+          }
+        }
+      ],
+      'plain-text'
     );
   };
 
@@ -63,8 +96,38 @@ export const FieldScreen = () => {
                 {isCheckedIn ? 'CHECK OUT' : 'CHECK IN'}
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.leaveBtn}
+              onPress={handleLeaveRequestPrompt}
+            >
+              <Text style={styles.leaveBtnText}>+ Xin nghỉ phép</Text>
+            </TouchableOpacity>
           </View>
         </View>
+
+        {/* Leave Requests Section */}
+        {leaves.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Đơn xin nghỉ phép của tôi</Text>
+            {leaves.slice(0, 3).map(l => (
+              <View key={l.id} style={styles.logCard}>
+                <View style={styles.logHeader}>
+                  <Text style={styles.logProjectCode}>{l.leaveType}</Text>
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                    color: l.status === 'APPROVED' ? '#059669' : l.status === 'REJECTED' ? '#dc2626' : '#d97706'
+                  }}>
+                    {l.status === 'APPROVED' ? 'Đã duyệt' : l.status === 'REJECTED' ? 'Từ chối' : 'Chờ duyệt'}
+                  </Text>
+                </View>
+                <Text style={styles.logTime}>Thời gian: {l.startDate} → {l.endDate} ({l.totalDays} ngày)</Text>
+                <Text style={styles.logNote}>Lý do: {l.reason}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Field Logs Section */}
         <View style={styles.section}>
@@ -187,6 +250,20 @@ const styles = StyleSheet.create({
   checkBtnText: {
     color: '#ffffff',
     fontSize: 20,
+    fontWeight: 'bold',
+  },
+  leaveBtn: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  leaveBtnText: {
+    color: '#00236f',
+    fontSize: 14,
     fontWeight: 'bold',
   },
   logCard: {

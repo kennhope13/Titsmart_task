@@ -1173,6 +1173,79 @@ export const api = {
     }
   },
 
+  leaves: {
+    getAll: async () => {
+      const { data, error } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .eq('icon', 'LEAVE_REQUEST')
+        .order('timestamp', { ascending: false });
+      if (error) throw error;
+      return (data || []).map(row => {
+        try {
+          const payload = JSON.parse(row.action);
+          return { id: row.id, ...payload };
+        } catch { return null; }
+      }).filter(Boolean);
+    },
+    getByUser: async (userId: string) => {
+      const { data, error } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .eq('icon', 'LEAVE_REQUEST')
+        .order('timestamp', { ascending: false });
+      if (error) throw error;
+      return (data || []).map(row => {
+        try {
+          const payload = JSON.parse(row.action);
+          if (payload.userId !== userId) return null;
+          return { id: row.id, ...payload };
+        } catch { return null; }
+      }).filter(Boolean);
+    },
+    create: async (input: { userId: string; userName: string; leaveType: string; startDate: string; endDate: string; totalDays: number; reason: string }) => {
+      const payloadData = {
+        userId: input.userId,
+        userName: input.userName,
+        leaveType: input.leaveType,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        totalDays: input.totalDays,
+        reason: input.reason,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+      };
+      const payload = {
+        user: input.userName,
+        project: 'Tài khoản',
+        icon: 'LEAVE_REQUEST',
+        action: JSON.stringify(payloadData),
+        timestamp: payloadData.createdAt,
+      };
+      const { data, error } = await supabase.from('activity_logs').insert(payload).select().single();
+      if (error) throw error;
+      return { id: data.id, ...payloadData } as any;
+    },
+    review: async (id: string, reviewData: { status: 'APPROVED' | 'REJECTED'; reviewerId: string; reviewerName: string; reviewNote?: string }) => {
+      const { data: row, error: fetchErr } = await supabase.from('activity_logs').select('action').eq('id', id).single();
+      if (fetchErr) throw fetchErr;
+      const payloadData = JSON.parse(row.action);
+      payloadData.status = reviewData.status;
+      payloadData.reviewerId = reviewData.reviewerId;
+      payloadData.reviewerName = reviewData.reviewerName;
+      if (reviewData.reviewNote) payloadData.reviewNote = reviewData.reviewNote;
+
+      const { data, error } = await supabase.from('activity_logs').update({ action: JSON.stringify(payloadData) }).eq('id', id).select().single();
+      if (error) throw error;
+      return { id: data.id, ...payloadData } as any;
+    },
+    delete: async (id: string) => {
+      const { error } = await supabase.from('activity_logs').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    }
+  },
+
   directMessages: {
     getAll: async () => {
       const { data, error } = await supabase
