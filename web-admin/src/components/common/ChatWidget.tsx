@@ -224,14 +224,8 @@ export const ChatWidget: React.FC = () => {
 
   const MessagePanel = () => (
     <>
-      {/* Target header with back button on mobile */}
-      <div className="px-3 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center gap-2 shrink-0">
-        <button
-          onClick={() => setMobileView('contacts')}
-          className="sm:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 transition-colors text-slate-600"
-        >
-          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-        </button>
+      {/* Sub-header: only show on desktop (sm+), mobile already has it in the blue main header */}
+      <div className="hidden sm:flex px-3 py-2 bg-slate-50 border-b border-slate-100 items-center shrink-0">
         <span className="font-bold text-[13px] text-slate-800 truncate flex-1">
           {selectedTarget?.type === 'project' ? `🏢 ${selectedTarget?.name}` : `👤 ${selectedTarget?.name}`}
         </span>
