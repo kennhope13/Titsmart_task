@@ -1089,17 +1089,17 @@ export const MaterialTrackingPage: React.FC = () => {
               <div className="relative hidden md:block">
                 <button 
                   onClick={() => setShowDesktopExportMenu(!showDesktopExportMenu)} 
-                  className="flex items-center gap-2 border border-slate-200 bg-white h-[36px] px-4 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+                  className="flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-3.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs cursor-pointer relative z-50"
                 >
-                  <span className="material-symbols-outlined text-base">file_download</span>
-                  Xuất file
-                  <span className="material-symbols-outlined text-xs">expand_more</span>
+                  <span className="material-symbols-outlined text-[14px]">file_download</span>
+                  <span>Xuất file</span>
+                  <span className="material-symbols-outlined text-xs text-slate-400">expand_more</span>
                 </button>
                 {showDesktopExportMenu && (
-                  <div className="fixed inset-0 z-40" onClick={() => setShowDesktopExportMenu(false)} />
+                  <div className="fixed inset-0 z-[9998]" onClick={() => setShowDesktopExportMenu(false)} />
                 )}
                 {showDesktopExportMenu && (
-                  <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                  <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 z-[9999] animate-in fade-in zoom-in duration-100">
                     <button
                       onClick={() => {
                         setShowDesktopExportMenu(false);
@@ -1144,12 +1144,12 @@ export const MaterialTrackingPage: React.FC = () => {
                 )}
               </div>
 
-              <button onClick={() => handleOpenTransaction('IMPORT')} className="hidden md:flex items-center gap-2 bg-emerald-600 text-white h-[36px] px-4 rounded-lg text-xs font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs">
-                <span className="material-symbols-outlined text-base">arrow_downward</span>
+              <button onClick={() => handleOpenTransaction('IMPORT')} className="hidden md:flex items-center gap-1.5 bg-emerald-600 text-white h-[34px] px-3.5 rounded-lg text-xs font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-xs cursor-pointer">
+                <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
                 Nhập Kho
               </button>
-              <button onClick={() => handleOpenTransaction('EXPORT')} className="hidden md:flex items-center gap-2 bg-amber-500 text-white h-[36px] px-4 rounded-lg text-xs font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-xs">
-                <span className="material-symbols-outlined text-base">arrow_upward</span>
+              <button onClick={() => handleOpenTransaction('EXPORT')} className="hidden md:flex items-center gap-1.5 bg-amber-500 text-white h-[34px] px-3.5 rounded-lg text-xs font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-xs cursor-pointer">
+                <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
                 Xuất Kho
               </button>
 
@@ -1174,19 +1174,20 @@ export const MaterialTrackingPage: React.FC = () => {
               <div className="relative md:hidden shrink-0">
                 <button
                   onClick={() => setShowMobileExportMenu(!showMobileExportMenu)}
-                  className="flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+                  className="flex items-center justify-center h-8 px-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 active:scale-95 transition-all shadow-xs gap-0.5"
                   title="Xuất file"
                 >
                   <span className="material-symbols-outlined text-base">file_download</span>
+                  <span className="material-symbols-outlined text-xs">expand_more</span>
                 </button>
                 {showMobileExportMenu && (
                   <div 
-                    className="fixed inset-0 z-40" 
+                    className="fixed inset-0 z-[9998]" 
                     onClick={() => setShowMobileExportMenu(false)}
                   />
                 )}
                 {showMobileExportMenu && (
-                  <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 z-[9999] animate-in fade-in zoom-in duration-100">
                     <button
                       onClick={() => {
                         setShowMobileExportMenu(false);
