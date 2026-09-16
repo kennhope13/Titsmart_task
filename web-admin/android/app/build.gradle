@@ -20,8 +20,20 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    buildTypes {
+    signingConfigs {
         release {
+            storeFile file('titsmart-release.jks')
+            storePassword 'titsmart123'
+            keyAlias 'titsmart'
+            keyPassword 'titsmart123'
+        }
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.release
+        }
+        release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
