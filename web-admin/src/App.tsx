@@ -58,20 +58,30 @@ export const App: React.FC = () => {
   useEffect(() => {
     refreshUser();
 
-    // Xử lý nút back phần cứng trên Android: Quay lại trang trước hoặc thoát app khi ở trang gốc
+    // Xử lý nút back phần ứng trên Android: Quay lại trang trước khi ở trang con, chỉ thoát ứng dụng khi ở trang gốc
     const capApp = (window as any).Capacitor?.Plugins?.App;
     let backListener: any = null;
 
     if (capApp && typeof capApp.addListener === 'function') {
-      capApp.addListener('backButton', (data: any) => {
-        const hash = window.location.hash || '';
-        const path = window.location.pathname || '';
-        const isRoot = hash === '' || hash === '#/' || hash === '#/projects' || path === '/' || path === '/projects';
-        
-        if (data?.canGoBack && !isRoot) {
-          window.history.back();
-        } else {
+      capApp.addListener('backButton', () => {
+        const hash = (window.location.hash || '').replace(/^#/, '');
+        const cleanPath = hash.split('?')[0];
+
+        const isRootScreen =
+          cleanPath === '' ||
+          cleanPath === '/' ||
+          cleanPath === '/projects' ||
+          cleanPath === '/dashboard' ||
+          cleanPath === '/login';
+
+        if (isRootScreen) {
           capApp.exitApp();
+        } else {
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            window.location.hash = '#/projects';
+          }
         }
       }).then((handle: any) => {
         backListener = handle;

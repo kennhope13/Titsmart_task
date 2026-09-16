@@ -16,7 +16,7 @@ export const ProjectDetailPage: React.FC = () => {
 
   const handleTabClick = (e: React.MouseEvent, path: string) => {
     e.preventDefault();
-    navigate(path, { replace: true, state: { reset: Date.now() } });
+    navigate(path, { state: { reset: Date.now() } });
   };
 
   const project = useMemo(() => {
