@@ -1615,7 +1615,23 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
             </button>
           )}
           <div className="min-w-0 flex-1 flex items-center gap-3">
-            <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase whitespace-nowrap flex-shrink-0">QUẢN LÝ TIẾN ĐỘ CÔNG VIỆC <span className="text-[10px] text-slate-400 font-mono font-normal tracking-normal lowercase ml-1">v1.1.88</span></h2>
+            <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase whitespace-nowrap flex-shrink-0">CÔNG VIỆC <span className="text-[10px] text-slate-400 font-mono font-normal tracking-normal lowercase ml-1">v1.1.88</span></h2>
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 ml-2">
+              <button
+                type="button"
+                onClick={() => setAssignFilter('mine')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${assignFilter === 'mine' ? 'bg-white text-primary shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                Công việc của tôi
+              </button>
+              <button
+                type="button"
+                onClick={() => setAssignFilter('all')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${assignFilter === 'all' ? 'bg-white text-primary shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                Tất cả công việc
+              </button>
+            </div>
             {selectedProjectFromUrl && (
               <div className="inline-flex min-w-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[13px] font-bold text-slate-700">
                 <span className="truncate">Dự án: {currentProject?.name || selectedProjectFromUrl}</span>
