@@ -320,15 +320,15 @@ export const PersonnelPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 justify-between md:justify-end w-full md:w-auto pt-0.5 md:pt-0 flex-wrap">
-            {/* Mobile Search Input */}
-            <div className="relative flex-1 md:hidden min-w-[120px]">
+            {/* Search Input (Mobile + Desktop) */}
+            <div className="relative flex-1 min-w-[120px] md:w-56 md:flex-initial">
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">search</span>
               <input
                 type="text"
                 placeholder="Tìm nhân sự..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white transition-all h-8"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white transition-all h-8 md:h-[34px]"
               />
             </div>
 
@@ -474,21 +474,6 @@ export const PersonnelPage: React.FC = () => {
       <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col pb-4">
       <section className="flex-1 grid grid-cols-1 gap-0 overflow-hidden">
         <div className="bg-white border-b border-r border-slate-200 shadow-xs overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-white">
-              <div className="flex flex-wrap gap-2">
-                {filters.map((item) => <button key={item.key} onClick={() => setFilter(item.key)} className={`app-tab-button flex items-center gap-2.5 px-3 py-1.5 border-b-2 transition-all whitespace-nowrap ${filter === item.key ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}>{item.label}</button>)}
-              </div>
-              <div className="relative hidden md:block w-full max-w-xs">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm nhân sự..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all"
-                />
-              </div>
-            </div>
           <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative">
             <table className="w-full text-xs text-left border-collapse">
               <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Họ tên</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Mã NV</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Vai trò / Chức danh</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Dự án</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">SĐT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th>{hasPermission(user, 'MANAGE_USERS') && <th className="text-left p-3 bg-slate-50 whitespace-nowrap">Chức năng</th>}</tr></thead>
