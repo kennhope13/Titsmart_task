@@ -110,7 +110,7 @@ export const OfficeCostsPage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-slate-50 overflow-hidden relative">
-      <section className="border-b border-slate-200 bg-white pl-3 pr-3 md:pr-20 py-3 md:py-0 md:h-12 flex items-center justify-between gap-4 z-10 shrink-0 shadow-sm">
+      <section className="border-b border-slate-200 bg-white pl-3 pr-3 md:pr-20 py-3 md:py-0 md:h-12 flex items-center justify-between gap-4 z-50 shrink-0 shadow-sm relative">
         <div className="flex items-center gap-4">
           <div><h2 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">CHI PHÍ VĂN PHÒNG</h2></div>
         </div>
@@ -128,10 +128,10 @@ export const OfficeCostsPage: React.FC = () => {
             {showExportMenu && (
               <>
                 <div 
-                  className="fixed inset-0 z-40" 
+                  className="fixed inset-0 z-[9998]" 
                   onClick={() => setShowExportMenu(false)}
                 />
-                <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 z-[9999] animate-in fade-in zoom-in duration-100">
                   <button
                     onClick={() => {
                       setShowExportMenu(false);
