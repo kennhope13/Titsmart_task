@@ -93,7 +93,7 @@ export const NotificationBell: React.FC = () => {
   }
 
   return (
-    <div ref={popoverRef} className="absolute top-[5px] md:top-[6px] right-3 z-[70]">
+    <div ref={popoverRef} className="absolute top-[2px] md:top-[6px] right-3 z-[70]">
       <button
         onClick={() => setShowPopover(!showPopover)}
         title="Thông báo hệ thống"

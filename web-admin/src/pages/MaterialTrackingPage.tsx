@@ -1058,13 +1058,13 @@ export const MaterialTrackingPage: React.FC = () => {
         />
       )}
             {!projectId && (
-        <section className="sticky top-0 z-20 border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-3 md:py-0 md:h-12 shadow-sm">
-          <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between h-full">
-            <div className="flex items-center gap-3">
+        <section className="sticky top-0 z-20 border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-2.5 md:py-0 md:h-12 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between h-full">
+            <div className="flex items-center gap-3 h-8 md:h-auto mb-1 md:mb-0">
               <h2 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">TỔNG KHO</h2>
             </div>
 
-            <div className="flex items-center gap-2 justify-between md:justify-end w-full md:w-auto">
+            <div className="flex items-center gap-2 justify-between md:justify-end w-full md:w-auto pt-0.5 md:pt-0">
               {/* Mobile & Desktop Search Input */}
               <div className="relative flex-1 md:w-60 min-w-0">
                 <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">search</span>

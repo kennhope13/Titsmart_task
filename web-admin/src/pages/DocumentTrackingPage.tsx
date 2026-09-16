@@ -346,12 +346,12 @@ export const DocumentTrackingPage: React.FC = () => {
       
       {/* HEADER SECTION */}
             {!projectId && (
-        <section className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-          <div className="flex items-center justify-between w-full md:w-auto">
+        <section className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-16 md:pr-20 py-2.5 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center">
+          <div className="flex items-center justify-between w-full md:w-auto h-8 md:h-auto mb-1 md:mb-0">
             <h1 className="page-header-title text-base md:text-lg text-slate-900 border-l-4 border-primary pl-2 uppercase font-extrabold truncate">QUẢN LÝ HỒ SƠ</h1>
           </div>
 
-          <div className="flex items-center gap-1.5 w-full md:w-auto">
+          <div className="flex items-center gap-1.5 w-full md:w-auto pt-0.5 md:pt-0">
             <input 
               type="file" 
               ref={fileInputRef} 
