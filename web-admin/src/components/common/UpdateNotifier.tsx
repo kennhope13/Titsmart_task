@@ -122,10 +122,12 @@ export const UpdateNotifier: React.FC = () => {
       ? state.message 
       : `https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`;
 
-    // Nếu chạy trên Capacitor Android Native, tải APK trực tiếp để người dùng cài đặt
+    // Ưu tiên tải trực tiếp file APK cho Android Native hoặc trình duyệt mobile
     const isCapacitorNative = !!(window as any).Capacitor?.isNativePlatform?.();
+    const isMobileBrowser = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 
-    if (isCapacitorNative) {
+    if (isCapacitorNative || isMobileBrowser) {
+      // Mở trình duyệt hệ thống để tải file APK cài đặt
       window.open(downloadUrl, '_system');
       dismiss();
       return;
@@ -159,17 +161,20 @@ export const UpdateNotifier: React.FC = () => {
           document.body.removeChild(link);
           setState((s) => ({ ...s, status: 'downloaded', percent: 100 }));
         } else {
-          window.location.reload();
+          window.open(downloadUrl, '_blank');
+          dismiss();
         }
       };
 
       xhr.onerror = () => {
-        window.location.reload();
+        window.open(downloadUrl, '_blank');
+        dismiss();
       };
 
       xhr.send();
     } catch (err) {
-      window.location.href = downloadUrl;
+      window.open(downloadUrl, '_blank');
+      dismiss();
     }
   };
 
