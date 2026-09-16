@@ -1116,7 +1116,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 {isExportMenuOpen && (
                   <div className="absolute right-0 mt-1 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1 space-y-0.5">
                     {[
-                      { format: 'xlsx', label: 'Excel (.xlsx)', icon: 'table_view' },
+                      { format: 'xlsx', label: 'Excel (.xlsx)', icon: 'grid_on' },
                       { format: 'csv', label: 'CSV (.csv)', icon: 'csv' },
                       { format: 'pdf', label: 'PDF (.pdf)', icon: 'picture_as_pdf' },
                       { format: 'docx', label: 'Word (.docx)', icon: 'description' },

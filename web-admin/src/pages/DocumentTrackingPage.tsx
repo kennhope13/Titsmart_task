@@ -374,16 +374,16 @@ export const DocumentTrackingPage: React.FC = () => {
 
             <button 
               onClick={() => fileInputRef.current?.click()} 
-              className="hidden md:flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+              className="hidden md:flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs cursor-pointer"
             >
-              <span className="material-symbols-outlined text-sm">file_upload</span>
+              <span className="material-symbols-outlined text-[14px]">file_upload</span>
               Nhập Excel
             </button>
             <button 
               onClick={handleExportExcel} 
-              className="hidden md:flex items-center gap-2 border border-slate-200 bg-white px-4 py-2 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+              className="hidden md:flex items-center gap-1.5 border border-slate-200 bg-white h-[34px] px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs cursor-pointer"
             >
-              <span className="material-symbols-outlined text-sm">file_download</span>
+              <span className="material-symbols-outlined text-[14px]">file_download</span>
               Xuất Excel
             </button>
             <button 
@@ -392,9 +392,9 @@ export const DocumentTrackingPage: React.FC = () => {
                 setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
                 setIsNewDocOpen(true);
               }} 
-              className="hidden md:flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-[13px] font-bold hover:opacity-90 active:scale-95 shadow-xs"
+              className="hidden md:flex items-center gap-1.5 bg-primary text-white h-[34px] px-3 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer"
             >
-              <span className="material-symbols-outlined text-sm">add</span>
+              <span className="material-symbols-outlined text-[14px]">add</span>
               Thêm hồ sơ mới
             </button>
 

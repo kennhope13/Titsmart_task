@@ -96,9 +96,9 @@ export const OfficeCostsPage: React.FC = () => {
           {hasPermission(user, 'EDIT_EXPENSES') && (
             <button
               onClick={() => setIsNewExpenseOpen(true)}
-              className="hidden md:flex bg-primary text-white h-[36px] px-4 rounded-lg text-xs font-bold hover:opacity-90 items-center gap-2 shadow-xs"
+              className="hidden md:flex bg-primary text-white h-[34px] px-3.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all items-center gap-1.5 shadow-xs cursor-pointer"
             >
-              <span className="material-symbols-outlined text-base">add</span>
+              <span className="material-symbols-outlined text-[14px]">add</span>
               Thêm chi phí mới
             </button>
           )}

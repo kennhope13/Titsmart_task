@@ -174,38 +174,38 @@ export const ActivityLogPage: React.FC = () => {
 
         
           <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
-          <span className="flex items-center justify-center px-3 h-[38px] rounded-full bg-blue-50 text-primary text-[13px] font-bold border border-blue-100 whitespace-nowrap">
+          <span className="flex items-center justify-center px-3 h-[34px] rounded-lg bg-blue-50 text-primary text-xs font-bold border border-blue-100 whitespace-nowrap">
             {filteredLogs.length} thao tác
           </span>
-          <div className="relative w-full sm:w-64 flex items-center">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+          <div className="relative w-full sm:w-60 flex items-center">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm hành động, nhân sự..."
-              className="w-full pl-9 pr-3 h-[38px] bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all"
+              className="w-full pl-8 pr-3 h-[34px] bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:bg-white focus:outline-none transition-all"
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-3 h-[38px] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
-              <span className="text-[11px] font-bold text-slate-500 mr-2">Từ</span>
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2.5 h-[34px] focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
+              <span className="text-[11px] font-bold text-slate-500 mr-1.5">Từ</span>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="bg-transparent text-[13px] font-bold text-slate-700 focus:outline-none w-28"
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-26 cursor-pointer"
               />
             </div>
             
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-3 h-[38px] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
-              <span className="text-[11px] font-bold text-slate-500 mr-2">Đến</span>
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2.5 h-[34px] focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
+              <span className="text-[11px] font-bold text-slate-500 mr-1.5">Đến</span>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="bg-transparent text-[13px] font-bold text-slate-700 focus:outline-none w-28"
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-26 cursor-pointer"
               />
             </div>
           </div>
