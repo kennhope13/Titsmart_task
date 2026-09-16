@@ -188,6 +188,41 @@ export interface NotificationItem {
   icon?: string;
 }
 
+export type LeaveType = 'Nghỉ phép năm' | 'Nghỉ bệnh' | 'Nghỉ việc riêng' | 'Nghỉ không lương' | 'Khác';
+export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface LeaveRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  leaveType: LeaveType;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  reason: string;
+  status: LeaveStatus;
+  reviewerId?: string;
+  reviewerName?: string;
+  reviewNote?: string;
+  createdAt: string;
+  updatedBy?: string;
+  updatedAt?: string;
+}
+
+export interface DirectMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string;
+  receiverId?: string;
+  projectCode?: string;
+  content: string;
+  fileUrl?: string;
+  fileType?: 'image' | 'file';
+  readBy?: string[];
+  createdAt: string;
+}
+
 export interface ActivityLog {
   id: string;
   user: string;

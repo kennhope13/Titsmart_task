@@ -5,6 +5,8 @@ import { BackToTop } from '../common/BackToTop';
 import { NotificationBell } from '../common/NotificationBell';
 import { RealtimeClock } from '../common/RealtimeClock';
 
+import { ChatWidget } from '../common/ChatWidget';
+
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -31,6 +33,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <main className="flex-1 bg-slate-50 flex flex-col w-full max-w-full overflow-hidden page-has-floating-bell">{children}</main>
       </div>
       <BackToTop />
+      <ChatWidget />
     </div>
   );
 };

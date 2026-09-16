@@ -15,7 +15,8 @@ import {
   ProjectExpense,
   LaborPayroll,
   DocumentTrack,
-  FieldLog
+  FieldLog,
+  DirectMessage
 } from '../types';
 import { api } from './apiSupabase';
 import { AuthUser, useAuthStore } from './authStore';
@@ -275,6 +276,21 @@ interface RealtimeStoreState {
   laborPayrolls: LaborPayroll[];
   documentTracks: DocumentTrack[];
   fieldLogs: FieldLog[];
+  directMessages: DirectMessage[];
+
+  // Chat Actions
+  fetchDirectMessages: () => Promise<void>;
+  sendDirectMessage: (msg: {
+    senderId: string;
+    senderName: string;
+    senderAvatar?: string;
+    receiverId?: string;
+    projectCode?: string;
+    content: string;
+    fileUrl?: string;
+    fileType?: 'image' | 'file';
+  }) => Promise<void>;
+  markDirectMessageRead: (messageId: string, userId: string) => Promise<void>;
 
   // Fetch Actions
   fetchProjects: () => Promise<void>;
@@ -644,6 +660,47 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     laborPayrolls: savedState.laborPayrolls || [],
     documentTracks: savedState.documentTracks || [],
     fieldLogs: savedState.fieldLogs || [],
+    directMessages: [],
+
+    fetchDirectMessages: async () => {
+      try {
+        const directMessages = await api.directMessages.getAll();
+        set({ directMessages });
+      } catch (e) {
+        console.error('Failed to fetch direct messages', e);
+      }
+    },
+
+    sendDirectMessage: async (msg) => {
+      try {
+        const newMsg = await api.directMessages.sendMessage(msg);
+        set(state => ({
+          directMessages: [...state.directMessages, newMsg]
+        }));
+      } catch (e) {
+        console.error('Failed to send direct message', e);
+        throw e;
+      }
+    },
+
+    markDirectMessageRead: async (messageId, userId) => {
+      try {
+        await api.directMessages.markAsRead(messageId, userId);
+        set(state => ({
+          directMessages: state.directMessages.map(m => {
+            if (m.id === messageId) {
+              const currentRead = Array.isArray(m.readBy) ? m.readBy : [];
+              if (!currentRead.includes(userId)) {
+                return { ...m, readBy: [...currentRead, userId] };
+              }
+            }
+            return m;
+          })
+        }));
+      } catch (e) {
+        console.error('Failed to mark message as read', e);
+      }
+    },
 
     fetchProjects: async () => {
       try {
@@ -2009,7 +2066,7 @@ const REALTIME_TABLES = [
   'projects', 'tasks', 'materials', 'issues', 'engineers',
   'notifications', 'inventory_transactions',
   'material_plans', 'purchasing_plans', 'expenses',
-  'labor_payrolls', 'document_tracks', 'field_logs'
+  'labor_payrolls', 'document_tracks', 'field_logs', 'direct_messages'
 ];
 
 let realtimeChannel: any = null;
@@ -2032,6 +2089,13 @@ export function setupRealtimeSync() {
     if (payload && payload.table) {
       changedTables.add(payload.table);
     }
+
+    // Đối với tin nhắn chat real-time, fetch lập tức không qua debounce 4s
+    if (payload && payload.table === 'direct_messages') {
+      useRealtimeStore.getState().fetchDirectMessages();
+      return;
+    }
+
     if (refreshTimeout) clearTimeout(refreshTimeout);
     refreshTimeout = setTimeout(() => {
       const store = useRealtimeStore.getState();
@@ -2053,6 +2117,7 @@ export function setupRealtimeSync() {
       if (tables.length === 0 || tables.includes('expenses') || tables.includes('labor_payrolls')) store.fetchAccounting();
       if (tables.length === 0 || tables.includes('field_logs')) store.fetchFieldLogs();
       if (tables.length === 0 || tables.includes('notifications')) store.fetchNotifications();
+      if (tables.length === 0 || tables.includes('direct_messages')) store.fetchDirectMessages();
     }, 4000);
   };
 
