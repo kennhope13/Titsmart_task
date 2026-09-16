@@ -159,7 +159,7 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-slate-50 overflow-hidden text-slate-800">
-      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm pl-3 pr-14 py-2 md:h-12 flex flex-col md:flex-row justify-start items-start md:items-center gap-4 shrink-0 flex-wrap relative">
+      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm pl-3 pr-16 md:pr-20 py-2 md:h-12 flex flex-col md:flex-row justify-start items-start md:items-center gap-4 shrink-0 flex-wrap relative">
         <div className="flex items-center gap-6">
           <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter'] whitespace-nowrap">TỔNG QUAN CHUNG</h1>
           

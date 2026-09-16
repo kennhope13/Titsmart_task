@@ -90,7 +90,7 @@ export const IssueResolutionPage: React.FC = () => {
 
   return (
     <div className="h-full overflow-hidden bg-slate-50 flex flex-col">
-      <section className="bg-white border-b border-slate-200 shadow-xs px-5 py-4 flex items-center gap-4 flex-shrink-0">
+      <section className="bg-white border-b border-slate-200 shadow-xs pl-5 pr-16 md:pr-20 py-4 flex items-center gap-4 flex-shrink-0">
         <div>
           <div className="flex items-center gap-3">
             <h2 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">Xử lý sự cố</h2>

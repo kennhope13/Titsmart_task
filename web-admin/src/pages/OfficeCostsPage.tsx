@@ -87,7 +87,7 @@ export const OfficeCostsPage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-slate-50 overflow-hidden relative">
-      <section className="border-b border-slate-200 bg-white pl-3 pr-3 md:pr-14 py-3 md:py-0 md:h-12 flex items-center justify-between gap-4 z-10 shrink-0 shadow-sm">
+      <section className="border-b border-slate-200 bg-white pl-3 pr-3 md:pr-20 py-3 md:py-0 md:h-12 flex items-center justify-between gap-4 z-10 shrink-0 shadow-sm">
         <div className="flex items-center gap-4">
           <div><h2 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">CHI PHÍ VĂN PHÒNG</h2></div>
         </div>

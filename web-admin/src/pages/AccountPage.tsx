@@ -24,7 +24,7 @@ export const AccountPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
-      <section className={`bg-white px-6 md:h-12 flex items-center border-b border-slate-200 shadow-sm pr-6`}>
+      <section className={`bg-white px-6 md:h-12 flex items-center border-b border-slate-200 shadow-sm pr-16 md:pr-20`}>
         <div className="flex items-center gap-3">
           <div className="h-6 w-[2px] bg-primary"></div>
           <h2 className="text-lg font-extrabold text-primary uppercase tracking-wide">TÀI KHOẢN</h2>

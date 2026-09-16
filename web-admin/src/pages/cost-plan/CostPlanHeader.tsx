@@ -15,7 +15,7 @@ export const CostPlanHeader: React.FC<CostPlanHeaderProps> = ({
   const selectedProjectName = projects.find((project) => project.code === selectedProject)?.name || selectedProject || 'Chưa chọn dự án';
 
   return (
-    <section className="border-b border-slate-200 bg-white px-3 py-4 md:py-0 md:h-12">
+    <section className="border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-4 md:py-0 md:h-12">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between h-full">
         <div className="min-w-0">
           <div className="flex items-center gap-3">

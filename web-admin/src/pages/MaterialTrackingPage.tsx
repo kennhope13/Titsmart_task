@@ -1058,7 +1058,7 @@ export const MaterialTrackingPage: React.FC = () => {
         />
       )}
             {!projectId && (
-        <section className="sticky top-0 z-20 border-b border-slate-200 bg-white px-3 py-3 md:py-0 md:h-12 shadow-sm">
+        <section className="sticky top-0 z-20 border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-3 md:py-0 md:h-12 shadow-sm">
           <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between h-full">
             <div className="flex items-center gap-3">
               <h2 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">TỔNG KHO</h2>
