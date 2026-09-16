@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../services/authStore';
 import { Modal } from '../components/common/Modal';
@@ -33,6 +34,28 @@ export const OfficeCostsPage: React.FC = () => {
   const [expenseFilterDateFrom, setExpenseFilterDateFrom] = useState('');
   const [expenseFilterDateTo, setExpenseFilterDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
+  const handleExportExcel = () => {
+    const data = filteredExpenses.map((exp, index) => ({
+      'STT': index + 1,
+      'Ngày': exp.date || '',
+      'Người chi': exp.spenderName || '',
+      'Nội dung': exp.content || '',
+      'Diễn giải': exp.description || '',
+      'ĐVT': exp.unit || '',
+      'Số lượng': exp.quantity || 0,
+      'Đơn giá (đ)': exp.unitPrice || 0,
+      'Thuế VAT (%)': exp.taxAmount || 0,
+      'Thành tiền (đ)': exp.totalAmount || 0,
+      'Thực thu (đ)': exp.incomeAmount || 0,
+      'Ghi chú': exp.notes || ''
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'ChiPhiVanPhong');
+    XLSX.writeFile(wb, `Chi_Phi_Van_Phong_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
   const [newExpenseData, setNewExpenseData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -163,6 +186,37 @@ export const OfficeCostsPage: React.FC = () => {
                 <span className="material-symbols-outlined text-lg">add</span>
               </button>
             )}
+            
+            {/* Mobile Export File Button */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="flex items-center justify-center h-9 w-9 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 active:scale-95 transition-all shadow-xs"
+                title="Xuất file"
+              >
+                <span className="material-symbols-outlined text-lg">file_download</span>
+              </button>
+              {showExportMenu && (
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowExportMenu(false)}
+                />
+              )}
+              {showExportMenu && (
+                <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                  <button
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      handleExportExcel();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                    Excel (.xlsx)
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="flex-1 overflow-auto custom-scrollbar relative">
