@@ -321,10 +321,10 @@ export const ChatWidget: React.FC = () => {
   );
 
   return (
-    <div className="fixed z-50 pointer-events-none" style={{ inset: 0 }}>
+    <div className="fixed z-[9999] pointer-events-none" style={{ inset: 0 }}>
       {/* ===== MOBILE: Full-screen modal ===== */}
       {isOpen && (
-        <div className="sm:hidden fixed inset-0 z-50 flex flex-col bg-white pointer-events-auto"
+        <div className="sm:hidden fixed inset-0 z-[9999] flex flex-col bg-white pointer-events-auto"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 88px)' }}>
           {/* Header */}
           <div className="bg-blue-900 text-white px-4 flex items-center justify-between shadow-md shrink-0"
@@ -542,7 +542,7 @@ export const ChatWidget: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="sm:hidden fixed right-4 z-50 w-12 h-12 rounded-xl bg-blue-900 text-white shadow-xl flex items-center justify-center active:scale-95 transition-all duration-200 pointer-events-auto"
+          className="sm:hidden fixed right-4 z-[9999] w-12 h-12 rounded-xl bg-blue-900 text-white shadow-xl flex items-center justify-center active:scale-95 transition-all duration-200 pointer-events-auto"
           style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}
           title="Nội bộ Titsmart"
         >
