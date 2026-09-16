@@ -153,7 +153,7 @@ export const UpdateNotifier: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-16 md:bottom-5 right-3 md:right-5 z-[9999] w-[380px] max-w-[calc(100vw-1.5rem)]">
+    <div className="fixed bottom-24 md:bottom-5 right-3 md:right-5 z-[9999] w-[380px] max-w-[calc(100vw-1.5rem)] pb-[env(safe-area-inset-bottom,0px)]">
       <div className="rounded-xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
         <div className="flex items-start justify-between gap-3 px-4 pt-3 pb-1">
           <div className="flex items-center gap-3">
