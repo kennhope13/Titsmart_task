@@ -363,6 +363,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                             <span className="text-[11px] leading-tight truncate w-full">{item.label}</span>
                           </NavLink>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMobileDrawerOpen(false);
+                            setShowSettingsModal(true);
+                          }}
+                          className="flex flex-col items-center justify-center p-2.5 rounded-2xl transition-all text-center bg-slate-50 text-slate-700 font-medium hover:bg-slate-100 border border-slate-100"
+                        >
+                          <span className="material-symbols-outlined text-2xl mb-1 text-primary">settings</span>
+                          <span className="text-[11px] leading-tight truncate w-full">Cài đặt</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -372,8 +383,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
 
             {/* Bottom Footer User Info & Logout */}
             {user && (
-              <div className="mx-4 mt-2 p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="mx-4 mt-2 p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 overflow-hidden min-w-0 flex-1">
                   <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
                     {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
@@ -386,16 +397,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setIsMobileDrawerOpen(false);
-                    handleLogout();
-                  }}
-                  className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition-colors"
-                >
-                  <span className="material-symbols-outlined text-base">logout</span>
-                  Đăng xuất
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => {
+                      setIsMobileDrawerOpen(false);
+                      setShowSettingsModal(true);
+                    }}
+                    className="flex items-center gap-1 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 px-2.5 py-1.5 rounded-xl transition-colors shadow-2xs"
+                    title="Cài đặt giao diện"
+                  >
+                    <span className="material-symbols-outlined text-base text-slate-600">settings</span>
+                    Cài đặt
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsMobileDrawerOpen(false);
+                      handleLogout();
+                    }}
+                    className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-xl transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-base">logout</span>
+                    Đăng xuất
+                  </button>
+                </div>
               </div>
             )}
           </div>
