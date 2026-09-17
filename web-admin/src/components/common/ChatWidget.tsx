@@ -199,7 +199,8 @@ export const ChatWidget: React.FC = () => {
     const isForMe = msg.receiverId === currentUser.id || msg.receiverId === currentUser.username ||
       (msg.projectCode && currentUser.projectCodes?.includes(msg.projectCode));
     const isNotMine = msg.senderId !== currentUser.id && msg.senderId !== currentUser.username;
-    const isUnread = !Array.isArray(msg.readBy) || !msg.readBy.includes(currentUser.id);
+    const readArray = Array.isArray(msg.readBy) ? msg.readBy : [];
+    const isUnread = !readArray.includes(currentUser.id) && (!currentUser.username || !readArray.includes(currentUser.username));
     return isForMe && isNotMine && isUnread;
   }).length : 0;
 
@@ -535,9 +536,9 @@ export const ChatWidget: React.FC = () => {
                     <button
                       key={u.id}
                       onClick={() => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar })}
-                      className={`w-full text-left px-2.5 py-2 text-[12px] truncate font-medium flex items-center gap-1.5 transition-colors ${isSelected ? 'bg-blue-100 text-blue-900 font-bold border-r-2 border-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}
+                      className={`w-full text-left px-3 py-2.5 text-[13px] truncate font-medium flex items-center gap-2 transition-colors ${isSelected ? 'bg-blue-100 text-blue-900 font-bold border-r-2 border-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}
                     >
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                       <span className="flex-1 truncate">{u.name}</span>
                       {unread > 0 && (
                         <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0">{unread}</span>
