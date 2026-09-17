@@ -108,6 +108,12 @@ export const ChatWidget: React.FC = () => {
     fetchDirectMessages();
     fetchEngineers();
     fetchProjects();
+
+    const interval = setInterval(() => {
+      fetchDirectMessages();
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const scrollToBottom = () => {
@@ -133,12 +139,17 @@ export const ChatWidget: React.FC = () => {
     if (selectedTarget.type === 'project') {
       return msg.projectCode === selectedTarget.id;
     } else {
-      return (
-        (msg.senderId === currentUser.id && msg.receiverId === selectedTarget.id) ||
-        (msg.senderId === selectedTarget.id && msg.receiverId === currentUser.id) ||
-        (msg.senderId === currentUser.username && msg.receiverId === selectedTarget.id) ||
-        (msg.senderId === selectedTarget.id && msg.receiverId === currentUser.username)
-      );
+      const myId = currentUser.id;
+      const myUsername = currentUser.username;
+      const targetId = selectedTarget.id;
+      const targetUsername = (selectedTarget as any).username;
+
+      const isSenderMe = (myId && msg.senderId === myId) || (myUsername && msg.senderId === myUsername);
+      const isReceiverMe = (myId && msg.receiverId === myId) || (myUsername && msg.receiverId === myUsername);
+      const isSenderTarget = (targetId && msg.senderId === targetId) || (targetUsername && msg.senderId === targetUsername);
+      const isReceiverTarget = (targetId && msg.receiverId === targetId) || (targetUsername && msg.receiverId === targetUsername);
+
+      return (isSenderMe && isReceiverTarget) || (isSenderTarget && isReceiverMe);
     }
   });
 
@@ -215,7 +226,7 @@ export const ChatWidget: React.FC = () => {
     }
   };
 
-  const handleSelectTarget = (target: { type: 'user' | 'project'; id: string; name: string; avatar?: string }) => {
+  const handleSelectTarget = (target: { type: 'user' | 'project'; id: string; username?: string; name: string; avatar?: string }) => {
     setSelectedTarget(target);
     setMobileView('messages');
   };
@@ -230,15 +241,20 @@ export const ChatWidget: React.FC = () => {
   const otherUsers = engineers.filter(e => e.id !== currentUser.id && e.username !== currentUser.username);
 
   // Unread count per conversation (for badge in contact list)
-  const getUnreadForTarget = (type: 'user' | 'project', id: string) => {
+  const getUnreadForTarget = (type: 'user' | 'project', id: string, username?: string) => {
     return directMessages.filter(msg => {
-      const isNotMine = msg.senderId !== currentUser.id && msg.senderId !== currentUser.username;
-      const isUnread = !Array.isArray(msg.readBy) || !msg.readBy.includes(currentUser.id);
+      const myId = currentUser.id;
+      const myUsername = currentUser.username;
+      const isNotMine = (myId ? msg.senderId !== myId : true) && (myUsername ? msg.senderId !== myUsername : true);
+      
+      const readArray = Array.isArray(msg.readBy) ? msg.readBy : [];
+      const isUnread = !(myId && readArray.includes(myId)) && !(myUsername && readArray.includes(myUsername));
+      
       if (type === 'project') return msg.projectCode === id && isNotMine && isUnread;
-      return (
-        (msg.senderId === id && (msg.receiverId === currentUser.id || msg.receiverId === currentUser.username)) &&
-        isNotMine && isUnread
-      );
+      
+      const isFromTarget = (id && msg.senderId === id) || (username && msg.senderId === username);
+      const isToMe = (myId && msg.receiverId === myId) || (myUsername && msg.receiverId === myUsername);
+      return isFromTarget && isToMe && isNotMine && isUnread;
     }).length;
   };
 
@@ -275,12 +291,12 @@ export const ChatWidget: React.FC = () => {
         <div className="px-4 py-4 text-[12px] text-slate-400 text-center">Chưa có đồng nghiệp nào.</div>
       )}
       {otherUsers.map(u => {
-        const isSelected = selectedTarget?.type === 'user' && selectedTarget.id === u.id;
-        const unread = getUnreadForTarget('user', u.id);
+        const isSelected = selectedTarget?.type === 'user' && (selectedTarget.id === u.id || (selectedTarget as any).username === u.username);
+        const unread = getUnreadForTarget('user', u.id, u.username);
         return (
           <button
             key={u.id}
-            onClick={() => handleSelectTarget({ type: 'user', id: u.id, name: u.name, avatar: u.avatar })}
+            onClick={() => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar })}
             className={`w-full text-left px-4 py-3 text-[13px] flex items-center gap-3 border-b border-slate-50 transition-colors ${isSelected ? 'bg-blue-50 text-blue-900 font-bold' : 'text-slate-700 hover:bg-slate-50 active:bg-slate-100'}`}
           >
             <div className="relative shrink-0">
@@ -304,98 +320,6 @@ export const ChatWidget: React.FC = () => {
         );
       })}
     </div>
-  );
-
-  const MessagePanel = () => (
-    <>
-      {/* Sub-header: only show on desktop (sm+), mobile already has it in the blue main header */}
-      <div className="hidden sm:flex px-3 py-2 bg-slate-50 border-b border-slate-100 items-center shrink-0">
-        <span className="font-bold text-[13px] text-slate-800 truncate flex-1">
-          {selectedTarget?.type === 'project' ? `🏢 ${selectedTarget?.name}` : `👤 ${selectedTarget?.name}`}
-        </span>
-      </div>
-
-      {/* Messages list */}
-      <div className="flex-1 p-3 overflow-y-auto overscroll-contain space-y-3 bg-slate-50/50">
-        {currentMessages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-400 text-[12px]">
-            <span className="material-symbols-outlined text-[40px] mb-2 text-slate-300">chat_bubble_outline</span>
-            <span className="font-semibold">Chưa có tin nhắn nào.</span>
-            <span>Hãy gửi tin nhắn đầu tiên!</span>
-          </div>
-        ) : (
-          currentMessages.map(msg => {
-            const isMe = msg.senderId === currentUser.id || msg.senderId === currentUser.username;
-            return (
-              <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5">
-                  {!isMe && <span className="font-semibold text-slate-600">{msg.senderName}</span>}
-                  <span>{new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-                <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-[13px] leading-relaxed shadow-sm ${isMe ? 'bg-blue-900 text-white rounded-tr-sm' : 'bg-white text-slate-800 border border-slate-200 rounded-tl-sm'}`}>
-                  {msg.content}
-                  {msg.fileUrl && (
-                    <div className="mt-1.5">
-                      {msg.fileType === 'image' ? (
-                        <img src={msg.fileUrl} alt="attachment" className="max-w-full max-h-[200px] rounded-lg object-cover border" />
-                      ) : (
-                        <a href={msg.fileUrl} target="_blank" rel="noreferrer" className="underline text-blue-300 text-[11px] block truncate">
-                          📁 Tệp đính kèm
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input bar */}
-      <form onSubmit={handleSend} className="p-2 border-t border-slate-100 bg-white flex flex-col gap-1 shrink-0">
-        {selectedFile && (
-          <div className="flex items-center justify-between bg-blue-50 px-2 py-1 rounded-lg text-[11px] text-blue-900">
-            <span className="truncate max-w-[80%]">📎 {selectedFile.name}</span>
-            <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 font-bold ml-2">✕</button>
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            className="hidden"
-            accept="image/*,.pdf,.doc,.docx"
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="p-2 text-slate-400 hover:text-blue-900 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
-            title="Đính kèm ảnh/file"
-          >
-            <span className="material-symbols-outlined text-[20px]">attach_file</span>
-          </button>
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputText}
-            onChange={e => setInputText(e.target.value)}
-            placeholder="Nhập tin nhắn..."
-            className="flex-1 px-3 py-2 text-[13px] bg-slate-100 border border-slate-200 rounded-full focus:bg-white focus:border-blue-900 outline-none transition-all"
-          />
-          <button
-            type="submit"
-            disabled={!inputText.trim() && !selectedFile}
-            className="p-2 bg-blue-900 text-white rounded-full hover:bg-blue-800 disabled:opacity-40 disabled:hover:bg-blue-900 transition-colors shrink-0"
-          >
-            <span className="material-symbols-outlined text-[18px]">send</span>
-          </button>
-        </div>
-      </form>
-    </>
   );
 
   if (!showChatWidget || !currentUser) return null;
@@ -438,7 +362,66 @@ export const ChatWidget: React.FC = () => {
             {mobileView === 'contacts' ? (
               <ContactList />
             ) : selectedTarget ? (
-              <MessagePanel />
+              <>
+                <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-slate-50/50">
+                  {currentMessages.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-400 text-[12px]">
+                      <span className="material-symbols-outlined text-[40px] mb-2 text-slate-300">chat_bubble_outline</span>
+                      <span className="font-semibold">Chưa có tin nhắn nào.</span>
+                    </div>
+                  ) : (
+                    currentMessages.map(msg => {
+                      const isMe = msg.senderId === currentUser.id || msg.senderId === currentUser.username;
+                      return (
+                        <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                          <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5">
+                            {!isMe && <span className="font-semibold text-slate-600">{msg.senderName}</span>}
+                            <span>{new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <div className={`max-w-[85%] px-3 py-2 rounded-md text-[13px] leading-relaxed shadow-sm ${isMe ? 'bg-blue-900 text-white' : 'bg-white text-slate-800 border border-slate-200'}`}>
+                            {msg.content}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <form onSubmit={handleSend} className="p-2 border-t border-slate-100 bg-white flex flex-col gap-1 shrink-0">
+                  {selectedFile && (
+                    <div className="flex items-center justify-between bg-blue-50 px-2 py-1 rounded text-[11px] text-blue-900">
+                      <span className="truncate max-w-[200px]">📎 {selectedFile.name}</span>
+                      <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 font-bold ml-2">✕</button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*,.pdf,.doc,.docx" />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="p-1.5 text-slate-400 hover:text-blue-900 hover:bg-slate-100 rounded transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">attach_file</span>
+                    </button>
+                    <input
+                      type="text"
+                      value={inputText}
+                      onChange={e => setInputText(e.target.value)}
+                      placeholder="Nhập tin nhắn..."
+                      className="flex-1 px-3 py-1.5 text-[13px] bg-slate-100 border border-slate-200 rounded focus:bg-white focus:border-blue-900 outline-none transition-all"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!inputText.trim() && !selectedFile}
+                      className="px-2.5 py-1.5 bg-blue-900 text-white rounded hover:bg-blue-800 disabled:opacity-40 transition-colors shrink-0 flex items-center justify-center"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">send</span>
+                    </button>
+                  </div>
+                </form>
+              </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-400 text-[13px]">
                 <span className="material-symbols-outlined text-[48px] text-slate-300 mb-3">forum</span>
@@ -453,7 +436,7 @@ export const ChatWidget: React.FC = () => {
       {/* ===== DESKTOP: Floating panel ===== */}
       <div className="hidden sm:flex fixed bottom-5 right-5 z-50 flex-col items-end pointer-events-auto">
         {isOpen && (
-          <div className="w-[400px] h-[540px] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden mb-3 animate-in fade-in slide-in-from-bottom-5 duration-200">
+          <div className="w-[440px] h-[540px] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden mb-3 animate-in fade-in slide-in-from-bottom-5 duration-200">
             {/* Header */}
             <div className="bg-blue-900 text-white px-4 py-3 flex items-center justify-between shadow-md shrink-0">
               <div className="flex items-center gap-2">
@@ -470,7 +453,7 @@ export const ChatWidget: React.FC = () => {
 
             <div className="flex-1 flex overflow-hidden">
               {/* Contact sidebar */}
-              <div className="w-[150px] border-r border-slate-100 bg-slate-50 flex flex-col overflow-y-auto shrink-0">
+              <div className="w-[135px] border-r border-slate-100 bg-slate-50 flex flex-col overflow-y-auto shrink-0">
                 <div className="px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Nhóm Dự Án</div>
                 {projects.map(p => {
                   const isSelected = selectedTarget?.type === 'project' && selectedTarget.id === p.code;
@@ -491,12 +474,12 @@ export const ChatWidget: React.FC = () => {
 
                 <div className="px-2 py-2 mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Đồng Nghiệp</div>
                 {otherUsers.map(u => {
-                  const isSelected = selectedTarget?.type === 'user' && selectedTarget.id === u.id;
-                  const unread = getUnreadForTarget('user', u.id);
+                  const isSelected = selectedTarget?.type === 'user' && (selectedTarget.id === u.id || (selectedTarget as any).username === u.username);
+                  const unread = getUnreadForTarget('user', u.id, u.username);
                   return (
                     <button
                       key={u.id}
-                      onClick={() => handleSelectTarget({ type: 'user', id: u.id, name: u.name, avatar: u.avatar })}
+                      onClick={() => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar })}
                       className={`w-full text-left px-2.5 py-2 text-[12px] truncate font-medium flex items-center gap-1.5 transition-colors ${isSelected ? 'bg-blue-100 text-blue-900 font-bold border-r-2 border-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}
                     >
                       <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
@@ -582,7 +565,7 @@ export const ChatWidget: React.FC = () => {
                         <button
                           type="submit"
                           disabled={!inputText.trim() && !selectedFile}
-                          className="p-1.5 bg-blue-900 text-white rounded hover:bg-blue-800 disabled:opacity-40 transition-colors"
+                          className="px-2.5 py-1.5 bg-blue-900 text-white rounded hover:bg-blue-800 disabled:opacity-40 transition-colors shrink-0 flex items-center justify-center"
                         >
                           <span className="material-symbols-outlined text-[18px]">send</span>
                         </button>
