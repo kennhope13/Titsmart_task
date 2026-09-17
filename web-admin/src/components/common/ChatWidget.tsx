@@ -483,7 +483,7 @@ export const ChatWidget: React.FC = () => {
       {/* ===== DESKTOP: Floating panel ===== */}
       <div className="hidden sm:flex fixed bottom-5 right-5 z-50 flex-col items-end pointer-events-auto">
         {isOpen && (
-          <div className="w-[440px] h-[540px] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden mb-3 animate-in fade-in slide-in-from-bottom-5 duration-200">
+          <div className="w-[660px] max-w-[calc(100vw-40px)] h-[580px] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden mb-3 animate-in fade-in slide-in-from-bottom-5 duration-200">
             {/* Header */}
             <div className="bg-blue-900 text-white px-4 py-3 flex items-center justify-between shadow-md shrink-0">
               <div className="flex items-center gap-2">
@@ -500,20 +500,23 @@ export const ChatWidget: React.FC = () => {
 
             <div className="flex-1 flex overflow-hidden">
               {/* Contact sidebar */}
-              <div className="w-[135px] border-r border-slate-100 bg-slate-50 flex flex-col overflow-y-auto shrink-0">
+              <div className="w-[250px] border-r border-slate-100 bg-slate-50 flex flex-col overflow-y-auto shrink-0">
                 <div className="px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Nhóm Dự Án</div>
                 {projects.map(p => {
                   const isSelected = selectedTarget?.type === 'project' && selectedTarget.id === p.code;
                   const unread = getUnreadForTarget('project', p.code);
+                  const displayName = p.name || p.code;
                   return (
                     <button
                       key={p.id}
                       onClick={() => handleSelectTarget({ type: 'project', id: p.code, name: p.name })}
-                      className={`w-full text-left px-2.5 py-2 text-[12px] truncate font-medium transition-colors flex items-center gap-1 ${isSelected ? 'bg-blue-100 text-blue-900 font-bold border-r-2 border-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}
+                      className={`w-full text-left px-2.5 py-2 text-[12px] font-medium transition-colors flex items-start gap-1.5 ${isSelected ? 'bg-blue-100 text-blue-900 font-bold border-r-2 border-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}
+                      title={displayName}
                     >
-                      <span className="flex-1 truncate">🏢 {p.code}</span>
+                      <span className="shrink-0 mt-0.5">🏢</span>
+                      <span className="flex-1 leading-snug break-words">{displayName}</span>
                       {unread > 0 && (
-                        <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0">{unread}</span>
+                        <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">{unread}</span>
                       )}
                     </button>
                   );
