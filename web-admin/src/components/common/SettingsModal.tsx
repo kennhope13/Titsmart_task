@@ -12,9 +12,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     sidebarHoverToExpand,
     sidebarShowToggleButton,
     showNotificationBell,
+    autoShowNotificationPopup,
     setSidebarHoverToExpand,
     setSidebarShowToggleButton,
     setShowNotificationBell,
+    setAutoShowNotificationPopup,
   } = useUIStore();
 
   return (
@@ -135,6 +137,62 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <input
                 type="radio"
                 checked={!showNotificationBell}
+                readOnly
+                className="w-4 h-4 text-primary focus:ring-primary border-slate-300 pointer-events-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="h-px bg-slate-100"></div>
+
+        {/* Section 3: Auto-show Notification Popup on startup */}
+        <div className="space-y-2.5">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+            Bảng thông báo tự động (Notification Popup)
+          </label>
+          <div className="grid grid-cols-1 gap-2">
+            <div
+              onClick={() => setAutoShowNotificationPopup(true)}
+              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
+                autoShowNotificationPopup
+                  ? 'border-primary bg-blue-50/50 text-primary font-bold shadow-2xs'
+                  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-base">web_stories</span>
+                <div className="text-xs">
+                  <div className="font-bold">Tự động hiện bảng thông báo</div>
+                  <div className="text-[11px] text-slate-500 font-normal">Tự động bật cửa sổ thông báo ở giữa màn hình mỗi khi đăng nhập/mở ứng dụng</div>
+                </div>
+              </div>
+              <input
+                type="radio"
+                checked={autoShowNotificationPopup}
+                readOnly
+                className="w-4 h-4 text-primary focus:ring-primary border-slate-300 pointer-events-none"
+              />
+            </div>
+
+            <div
+              onClick={() => setAutoShowNotificationPopup(false)}
+              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
+                !autoShowNotificationPopup
+                  ? 'border-primary bg-blue-50/50 text-primary font-bold shadow-2xs'
+                  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-base">do_not_disturb_on</span>
+                <div className="text-xs">
+                  <div className="font-bold font-bold">Tắt tự động hiện</div>
+                  <div className="text-[11px] text-slate-500 font-normal">Không tự động bật cửa sổ thông báo khi mở ứng dụng (chỉ báo ở nút chuông)</div>
+                </div>
+              </div>
+              <input
+                type="radio"
+                checked={!autoShowNotificationPopup}
                 readOnly
                 className="w-4 h-4 text-primary focus:ring-primary border-slate-300 pointer-events-none"
               />

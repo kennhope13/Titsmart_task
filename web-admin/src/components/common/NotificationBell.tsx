@@ -9,6 +9,7 @@ export const NotificationBell: React.FC = () => {
   const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
   const showNotificationBell = useUIStore(state => state.showNotificationBell);
+  const autoShowNotificationPopup = useUIStore(state => state.autoShowNotificationPopup);
   
   const [showPopover, setShowPopover] = useState(false);
   const [showCenterModal, setShowCenterModal] = useState(false);
@@ -135,10 +136,10 @@ export const NotificationBell: React.FC = () => {
 
   useEffect(() => {
     const hasShown = sessionStorage.getItem('has_shown_center_notif_modal');
-    if (!hasShown && centerModalNotifications.length > 0) {
+    if (autoShowNotificationPopup && !hasShown && centerModalNotifications.length > 0) {
       setShowCenterModal(true);
     }
-  }, [centerModalNotifications]);
+  }, [centerModalNotifications, autoShowNotificationPopup]);
 
   const closeCenterModal = () => {
     setShowCenterModal(false);
