@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '../../services/authStore';
 import { useRealtimeStore } from '../../services/realtimeStore';
+import { useUIStore } from '../../services/uiStore';
 import { DirectMessage, Engineer, Project } from '../../types';
 
 export const ChatWidget: React.FC = () => {
   const currentUser = useAuthStore(state => state.user);
+  const showChatWidget = useUIStore(state => state.showChatWidget);
   const { engineers, projects, directMessages, fetchDirectMessages, sendDirectMessage, markDirectMessageRead, fetchEngineers, fetchProjects } = useRealtimeStore();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +20,79 @@ export const ChatWidget: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // ─── Dragging functionality state & refs ───
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(() => {
+    try {
+      const saved = localStorage.getItem('titsmart_chat_button_pos');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  });
+
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({ startX: 0, startY: 0, initX: 0, initY: 0 });
+  const hasMovedRef = useRef(false);
+  const buttonRef = useRef<HTMLDivElement>(null);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+
+    const btnElem = buttonRef.current;
+    if (!btnElem) return;
+
+    const rect = btnElem.getBoundingClientRect();
+    const currentX = position ? position.x : rect.left;
+    const currentY = position ? position.y : rect.top;
+
+    isDraggingRef.current = true;
+    hasMovedRef.current = false;
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: currentX,
+      initY: currentY,
+    };
+
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+
+    const dx = e.clientX - dragStartRef.current.startX;
+    const dy = e.clientY - dragStartRef.current.startY;
+
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      hasMovedRef.current = true;
+    }
+
+    const newX = Math.max(10, Math.min(window.innerWidth - 60, dragStartRef.current.initX + dx));
+    const newY = Math.max(10, Math.min(window.innerHeight - 60, dragStartRef.current.initY + dy));
+
+    setPosition({ x: newX, y: newY });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+
+    try {
+      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    } catch (err) {}
+
+    if (position) {
+      localStorage.setItem('titsmart_chat_button_pos', JSON.stringify(position));
+    }
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    if (hasMovedRef.current) {
+      e.stopPropagation();
+      return;
+    }
+    setIsOpen(true);
+  };
 
   useEffect(() => {
     fetchDirectMessages();
@@ -313,6 +388,8 @@ export const ChatWidget: React.FC = () => {
     </>
   );
 
+  if (!showChatWidget || !currentUser) return null;
+
   return (
     <div className="fixed z-[9999] pointer-events-none" style={{ inset: 0 }}>
       {/* ===== MOBILE: Full-screen modal ===== */}
@@ -426,8 +503,8 @@ export const ChatWidget: React.FC = () => {
               <div className="flex-1 flex flex-col overflow-hidden">
                 {selectedTarget ? (
                   <>
-                    <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center shrink-0">
-                      <span className="font-bold text-[13px] text-slate-800 truncate">
+                    <div className="hidden sm:flex px-3 py-2 bg-slate-50 border-b border-slate-100 items-center shrink-0">
+                      <span className="font-bold text-[13px] text-slate-800 truncate flex-1">
                         {selectedTarget.type === 'project' ? `🏢 ${selectedTarget.name}` : `👤 ${selectedTarget.name}`}
                       </span>
                     </div>
@@ -513,39 +590,40 @@ export const ChatWidget: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
 
-        {/* Floating button */}
-        {!isOpen && (
+      {/* Draggable Floating Chat Button (Desktop & Mobile) */}
+      {!isOpen && (
+        <div
+          ref={buttonRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          style={
+            position
+              ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
+              : undefined
+          }
+          className={`fixed z-[9990] touch-none select-none pointer-events-auto ${
+            position
+              ? ''
+              : 'right-4 sm:right-5 bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] sm:bottom-5'
+          }`}
+        >
           <button
-            onClick={() => setIsOpen(true)}
-            className="relative w-12 h-12 rounded-xl bg-blue-900 text-white shadow-xl flex items-center justify-center hover:bg-blue-800 hover:scale-105 active:scale-95 transition-all duration-200"
-            title="Nội bộ Titsmart"
+            type="button"
+            onClick={handleButtonClick}
+            title="Nội bộ Titsmart (Nhấn giữ & kéo để di chuyển)"
+            className="w-12 h-12 rounded-xl bg-blue-900 text-white shadow-xl flex items-center justify-center hover:bg-blue-800 hover:scale-105 active:scale-95 transition-all duration-200 cursor-grab active:cursor-grabbing relative"
           >
-            <span className="material-symbols-outlined text-[22px]">chat</span>
+            <span className="material-symbols-outlined text-[22px] pointer-events-none">chat</span>
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-bounce border-2 border-white">
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-bounce border-2 border-white pointer-events-none">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
-        )}
-      </div>
-
-      {/* Mobile floating button (only shown when chat is closed) */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="sm:hidden fixed right-4 z-[9999] w-12 h-12 rounded-xl bg-blue-900 text-white shadow-xl flex items-center justify-center active:scale-95 transition-all duration-200 pointer-events-auto"
-          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}
-          title="Nội bộ Titsmart"
-        >
-          <span className="material-symbols-outlined text-[22px]">chat</span>
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-bounce border-2 border-white">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </button>
+        </div>
       )}
     </div>
   );

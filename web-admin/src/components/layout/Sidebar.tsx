@@ -23,27 +23,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
   const currentProject = projects.find(p => p.id === currentProjectId || p.code === currentProjectId);
 
   const [isHovered, setIsHovered] = useState(false);
-  const [showUserPopover, setShowUserPopover] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   
-  const isExpanded = isExpandedProp || (sidebarHoverToExpand && isHovered) || showUserPopover;
+  const isExpanded = isExpandedProp || (sidebarHoverToExpand && isHovered);
   const navigate = useNavigate();
   const unreadCount = notifications.filter((item) => !item.read).length;
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
   const sidebarRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-        setShowUserPopover(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -199,76 +186,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         <div className="pt-4 pb-4 px-2 border-t border-slate-100 relative flex flex-col gap-2">
             {/* User Profile */}
             <button
-              onClick={() => {
-                setShowUserPopover(!showUserPopover);
-              }}
-              className={`flex items-center rounded-xl transition-all overflow-hidden whitespace-normal h-10
-                ${isExpanded ? 'w-full px-3 py-3 gap-3 h-auto' : 'w-10 justify-center gap-0'}
-                ${
-                showUserPopover
-                  ? 'bg-blue-50 ring-1 ring-blue-100'
-                  : 'hover:bg-slate-50'
+              type="button"
+              onClick={() => setShowSettingsModal(true)}
+              title="Cài đặt hệ thống & Tài khoản"
+              className={`flex items-center rounded-xl transition-all overflow-hidden whitespace-normal h-10 hover:bg-slate-100 ${
+                isExpanded ? 'w-full px-3 py-3 gap-3 h-auto' : 'w-10 justify-center gap-0'
               }`}
             >
-                <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-slate-400 bg-slate-100 uppercase shadow-sm border border-slate-200">
-                  <span className="material-symbols-outlined text-[20px]">person</span>
-                </div>
-                <div className={`text-left leading-tight transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-1 opacity-100 delay-0 min-w-0' : 'flex-none w-0 opacity-0 delay-200'}`}>
-                  <span className="block font-bold text-xs text-slate-800 truncate" title={user?.name}>
-                    {user?.name ? user.name.trim().split(' ').pop() : 'Admin'}
-                  </span>
-                  <span className="block text-[10px] text-slate-500 truncate" title={user?.title}>{user?.title || 'Quản trị viên'}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowUserPopover(false);
-                    setShowSettingsModal(true);
-                  }}
-                  title="Cài đặt giao diện"
-                  className={`material-symbols-outlined text-base text-slate-400 hover:text-primary transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-shrink-0 opacity-100 delay-0 w-[16px]' : 'w-0 opacity-0 delay-200'}`}
-                >
-                  settings
-                </button>
-              </button>
-
-            {showUserPopover && (
-              <div className="absolute bottom-full left-2 mb-2 w-40 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50">
-                <div className="p-1.5 space-y-0.5">
-                  <button 
-                    onClick={() => {
-                      setShowUserPopover(false);
-                      alert('Chức năng đổi mật khẩu sẽ kết nối API ở bản đầy đủ.');
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-lg">lock_reset</span>
-                    Đổi mật khẩu
-                  </button>
-                  
-                  <div className="h-px bg-slate-100 my-1 mx-2"></div>
-                  <button 
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {isLoggingOut ? (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
-                    ) : (
-                      <span className="material-symbols-outlined text-lg">logout</span>
-                    )}
-                    {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
-                  </button>
-                  <div className="h-px bg-slate-100 my-1 mx-2"></div>
-                  <div className="px-3 py-1.5 text-center">
-                    <span className="text-[10px] font-mono text-slate-400 font-semibold">
-                      Phiên bản {import.meta.env.VITE_APP_VERSION || '1.0.0'}
-                    </span>
-                  </div>
-                </div>
+              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-slate-400 bg-slate-100 uppercase shadow-sm border border-slate-200">
+                <span className="material-symbols-outlined text-[20px]">person</span>
               </div>
-            )}
+              <div className={`text-left leading-tight transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-1 opacity-100 delay-0 min-w-0' : 'flex-none w-0 opacity-0 delay-200'}`}>
+                <span className="block font-bold text-xs text-slate-800 truncate" title={user?.name}>
+                  {user?.name ? user.name.trim().split(' ').pop() : 'Admin'}
+                </span>
+                <span className="block text-[10px] text-slate-500 truncate" title={user?.title}>{user?.title || 'Quản trị viên'}</span>
+              </div>
+              <span
+                className={`material-symbols-outlined text-base text-slate-400 hover:text-primary transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-shrink-0 opacity-100 delay-0 w-[16px]' : 'w-0 opacity-0 delay-200'}`}
+              >
+                settings
+              </span>
+            </button>
           </div>
       </aside>
 
@@ -363,17 +302,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                             <span className="text-[11px] leading-tight truncate w-full">{item.label}</span>
                           </NavLink>
                         ))}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsMobileDrawerOpen(false);
-                            setShowSettingsModal(true);
-                          }}
-                          className="flex flex-col items-center justify-center p-2.5 rounded-2xl transition-all text-center bg-slate-50 text-slate-700 font-medium hover:bg-slate-100 border border-slate-100"
-                        >
-                          <span className="material-symbols-outlined text-2xl mb-1 text-primary">settings</span>
-                          <span className="text-[11px] leading-tight truncate w-full">Cài đặt</span>
-                        </button>
                       </div>
                     </div>
                   );
@@ -397,27 +325,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="shrink-0">
                   <button
                     onClick={() => {
                       setIsMobileDrawerOpen(false);
                       setShowSettingsModal(true);
                     }}
-                    className="flex items-center gap-1 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 px-2.5 py-1.5 rounded-xl transition-colors shadow-2xs"
-                    title="Cài đặt giao diện"
+                    className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 px-3 py-1.5 rounded-xl transition-colors shadow-2xs"
+                    title="Cài đặt hệ thống"
                   >
                     <span className="material-symbols-outlined text-base text-slate-600">settings</span>
                     Cài đặt
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsMobileDrawerOpen(false);
-                      handleLogout();
-                    }}
-                    className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-xl transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-base">logout</span>
-                    Đăng xuất
                   </button>
                 </div>
               </div>
