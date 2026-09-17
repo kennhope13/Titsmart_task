@@ -23,7 +23,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="h-screen bg-slate-50 text-slate-800 flex flex-col font-sans overflow-hidden relative">
       <Sidebar isExpanded={isSidebarExpanded} toggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)} />
       
-      <div className={`layout-content-wrapper ${isSidebarExpanded ? 'ml-[170px]' : 'ml-[56px]'} flex flex-col h-screen flex-1 overflow-hidden transition-all duration-300 ease-in-out relative`}>
+      <div className={`layout-content-wrapper ${isSidebarExpanded ? 'ml-[170px]' : 'ml-[56px]'} flex flex-col h-screen flex-1 overflow-hidden transition-all duration-300 ease-in-out relative pt-[env(safe-area-inset-top,0px)]`}>
         <div className="fixed top-[6px] right-16 z-[60] realtime-clock-container">
           <RealtimeClock />
         </div>

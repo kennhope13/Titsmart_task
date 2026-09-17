@@ -200,7 +200,7 @@ export const NotificationBell: React.FC = () => {
           ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
           : undefined
       }
-      className={`z-[9990] touch-none select-none ${position ? '' : 'fixed top-[6px] right-4'}`}
+      className={`z-[9990] touch-none select-none ${position ? '' : 'fixed top-[calc(env(safe-area-inset-top,0px)+6px)] right-4'}`}
     >
       <button
         onClick={handleBellClick}
