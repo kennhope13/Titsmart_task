@@ -21,14 +21,8 @@ export const ChatWidget: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // ─── Dragging functionality state & refs ───
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(() => {
-    try {
-      const saved = localStorage.getItem('titsmart_chat_button_pos');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return null;
-  });
+  // ─── Dragging functionality state & refs (transient per session, resets to default on reload) ───
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
 
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({ startX: 0, startY: 0, initX: 0, initY: 0 });
@@ -80,10 +74,6 @@ export const ChatWidget: React.FC = () => {
     try {
       (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
     } catch (err) {}
-
-    if (position) {
-      localStorage.setItem('titsmart_chat_button_pos', JSON.stringify(position));
-    }
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
@@ -93,6 +83,26 @@ export const ChatWidget: React.FC = () => {
     }
     setIsOpen(true);
   };
+
+  useEffect(() => {
+    const clampPos = () => {
+      setPosition(prev => {
+        if (!prev) return null;
+        const maxX = window.innerWidth - 60;
+        const maxY = window.innerHeight - 60;
+        const clampedX = Math.max(10, Math.min(maxX, prev.x));
+        const clampedY = Math.max(10, Math.min(maxY, prev.y));
+        if (clampedX !== prev.x || clampedY !== prev.y) {
+          return { x: clampedX, y: clampedY };
+        }
+        return prev;
+      });
+    };
+
+    clampPos();
+    window.addEventListener('resize', clampPos);
+    return () => window.removeEventListener('resize', clampPos);
+  }, []);
 
   useEffect(() => {
     fetchDirectMessages();

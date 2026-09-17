@@ -15,14 +15,8 @@ export const NotificationBell: React.FC = () => {
   const [showCenterModal, setShowCenterModal] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  // ─── Dragging functionality state & refs ───
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(() => {
-    try {
-      const saved = localStorage.getItem('titsmart_notif_bell_pos');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return null;
-  });
+  // ─── Dragging functionality state & refs (transient per session, resets to default on reload) ───
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
 
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({ startX: 0, startY: 0, initX: 0, initY: 0 });
@@ -74,10 +68,6 @@ export const NotificationBell: React.FC = () => {
     try {
       (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
     } catch (err) {}
-
-    if (position) {
-      localStorage.setItem('titsmart_notif_bell_pos', JSON.stringify(position));
-    }
   };
 
   const handleBellClick = (e: React.MouseEvent) => {
@@ -149,6 +139,26 @@ export const NotificationBell: React.FC = () => {
   const unreadCount = displayNotifications.filter(item => !item.read).length;
 
   useEffect(() => {
+    const clampPos = () => {
+      setPosition(prev => {
+        if (!prev) return null;
+        const maxX = window.innerWidth - 50;
+        const maxY = window.innerHeight - 50;
+        const clampedX = Math.max(10, Math.min(maxX, prev.x));
+        const clampedY = Math.max(10, Math.min(maxY, prev.y));
+        if (clampedX !== prev.x || clampedY !== prev.y) {
+          return { x: clampedX, y: clampedY };
+        }
+        return prev;
+      });
+    };
+
+    clampPos();
+    window.addEventListener('resize', clampPos);
+    return () => window.removeEventListener('resize', clampPos);
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
         setShowPopover(false);
@@ -178,7 +188,7 @@ export const NotificationBell: React.FC = () => {
           ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
           : undefined
       }
-      className={`z-[9990] touch-none select-none ${position ? '' : 'absolute top-[2px] md:top-[6px] right-3'}`}
+      className={`z-[9990] touch-none select-none ${position ? '' : 'fixed top-[6px] right-4'}`}
     >
       <button
         onClick={handleBellClick}
