@@ -25,7 +25,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isDestructive = true,
 }) => {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} icon={icon} size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={title} icon={icon} size="md" requireConfirmOnClose={false}>
       <div className="py-2 text-slate-600 text-sm">{message}</div>
       <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end gap-3">
         <button
@@ -44,7 +44,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           className={`px-4 py-2 font-medium rounded-lg text-white transition-colors ${
             isDestructive
               ? 'bg-red-600 hover:bg-red-700 shadow-sm shadow-red-200'
-              : 'bg-primary hover:bg-blue-700 shadow-sm shadow-blue-200'
+              : 'bg-primary hover:bg-primary/90 shadow-sm shadow-blue-200'
           }`}
         >
           {confirmText}

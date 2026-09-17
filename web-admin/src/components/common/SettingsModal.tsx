@@ -40,6 +40,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       title="Cài đặt hệ thống"
       icon="settings"
       size="md"
+      requireConfirmOnClose={false}
     >
       <div className="p-4 space-y-3">
         {/* Row 1: Sidebar Mode (Desktop Only) */}
