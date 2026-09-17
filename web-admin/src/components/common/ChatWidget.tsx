@@ -139,15 +139,14 @@ export const ChatWidget: React.FC = () => {
     if (selectedTarget.type === 'project') {
       return msg.projectCode === selectedTarget.id;
     } else {
-      const myId = currentUser.id;
-      const myUsername = currentUser.username;
-      const targetId = selectedTarget.id;
-      const targetUsername = (selectedTarget as any).username;
+      const myIds = [currentUser.id, currentUser.username, currentUser.name].filter(Boolean);
+      const targetObj = selectedTarget as any;
+      const targetIds = [selectedTarget.id, targetObj.username, targetObj.name].filter(Boolean);
 
-      const isSenderMe = (myId && msg.senderId === myId) || (myUsername && msg.senderId === myUsername);
-      const isReceiverMe = (myId && msg.receiverId === myId) || (myUsername && msg.receiverId === myUsername);
-      const isSenderTarget = (targetId && msg.senderId === targetId) || (targetUsername && msg.senderId === targetUsername);
-      const isReceiverTarget = (targetId && msg.receiverId === targetId) || (targetUsername && msg.receiverId === targetUsername);
+      const isSenderMe = myIds.includes(msg.senderId);
+      const isReceiverMe = myIds.includes(msg.receiverId || '');
+      const isSenderTarget = targetIds.includes(msg.senderId);
+      const isReceiverTarget = targetIds.includes(msg.receiverId || '');
 
       return (isSenderMe && isReceiverTarget) || (isSenderTarget && isReceiverMe);
     }
@@ -165,11 +164,12 @@ export const ChatWidget: React.FC = () => {
   // Mark as read when viewing
   useEffect(() => {
     if (!currentUser || !isOpen || !selectedTarget || currentMessages.length === 0) return;
+    const myId = currentUser.username || currentUser.id;
     currentMessages.forEach(msg => {
       const isNotMine = msg.senderId !== currentUser.id && msg.senderId !== currentUser.username;
-      const isUnread = !Array.isArray(msg.readBy) || !msg.readBy.includes(currentUser.id);
+      const isUnread = !Array.isArray(msg.readBy) || (!msg.readBy.includes(currentUser.id) && !msg.readBy.includes(currentUser.username));
       if (isNotMine && isUnread) {
-        markDirectMessageRead(msg.id, currentUser.id);
+        markDirectMessageRead(msg.id, myId);
       }
     });
   }, [isOpen, selectedTarget, currentMessages.length, currentUser]);
@@ -182,10 +182,10 @@ export const ChatWidget: React.FC = () => {
 
     const content = inputText.trim() || (selectedFile?.type === 'image' ? 'Đã gửi một hình ảnh' : 'Đã gửi tệp đính kèm');
     const msgData = {
-      senderId: currentUser.id || currentUser.username,
+      senderId: currentUser.username || currentUser.id,
       senderName: currentUser.name || currentUser.username,
       senderAvatar: currentUser.avatar,
-      receiverId: selectedTarget.type === 'user' ? selectedTarget.id : undefined,
+      receiverId: selectedTarget.type === 'user' ? ((selectedTarget as any).username || selectedTarget.id) : undefined,
       projectCode: selectedTarget.type === 'project' ? selectedTarget.id : undefined,
       content,
       fileUrl: selectedFile?.url,
@@ -243,17 +243,17 @@ export const ChatWidget: React.FC = () => {
   // Unread count per conversation (for badge in contact list)
   const getUnreadForTarget = (type: 'user' | 'project', id: string, username?: string) => {
     return directMessages.filter(msg => {
-      const myId = currentUser.id;
-      const myUsername = currentUser.username;
-      const isNotMine = (myId ? msg.senderId !== myId : true) && (myUsername ? msg.senderId !== myUsername : true);
+      const myIds = [currentUser.id, currentUser.username, currentUser.name].filter(Boolean);
+      const isNotMine = !myIds.includes(msg.senderId);
       
       const readArray = Array.isArray(msg.readBy) ? msg.readBy : [];
-      const isUnread = !(myId && readArray.includes(myId)) && !(myUsername && readArray.includes(myUsername));
+      const isUnread = !myIds.some(myId => readArray.includes(myId));
       
       if (type === 'project') return msg.projectCode === id && isNotMine && isUnread;
       
-      const isFromTarget = (id && msg.senderId === id) || (username && msg.senderId === username);
-      const isToMe = (myId && msg.receiverId === myId) || (myUsername && msg.receiverId === myUsername);
+      const targetIds = [id, username].filter(Boolean);
+      const isFromTarget = targetIds.includes(msg.senderId);
+      const isToMe = myIds.includes(msg.receiverId || '');
       return isFromTarget && isToMe && isNotMine && isUnread;
     }).length;
   };
