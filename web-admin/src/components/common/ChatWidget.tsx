@@ -3,6 +3,7 @@ import { useAuthStore } from '../../services/authStore';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { useUIStore } from '../../services/uiStore';
 import { DirectMessage, Engineer, Project } from '../../types';
+import { supabase } from '../../lib/supabase';
 
 export const ChatWidget: React.FC = () => {
   const currentUser = useAuthStore(state => state.user);
@@ -104,6 +105,8 @@ export const ChatWidget: React.FC = () => {
     return () => window.removeEventListener('resize', clampPos);
   }, []);
 
+  const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
+
   useEffect(() => {
     fetchDirectMessages();
     fetchEngineers();
@@ -115,6 +118,45 @@ export const ChatWidget: React.FC = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Supabase Presence tracking for real-time online status
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const presenceChannel = supabase.channel('titsmart-online-users', {
+      config: { presence: { key: currentUser.username || currentUser.id } }
+    });
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const activeIds: string[] = [];
+        Object.values(state).forEach((presences: any) => {
+          if (Array.isArray(presences)) {
+            presences.forEach((p: any) => {
+              if (p.userId) activeIds.push(p.userId);
+              if (p.username) activeIds.push(p.username);
+              if (p.name) activeIds.push(p.name);
+            });
+          }
+        });
+        setOnlineUserIds(Array.from(new Set(activeIds)));
+      })
+      .subscribe(async (status: string) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            userId: currentUser.id,
+            username: currentUser.username,
+            name: currentUser.name,
+            onlineAt: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [currentUser]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -293,6 +335,11 @@ export const ChatWidget: React.FC = () => {
       {otherUsers.map(u => {
         const isSelected = selectedTarget?.type === 'user' && (selectedTarget.id === u.id || (selectedTarget as any).username === u.username);
         const unread = getUnreadForTarget('user', u.id, u.username);
+        const isOnline = Boolean(
+          (u.id && onlineUserIds.includes(u.id)) ||
+          (u.username && onlineUserIds.includes(u.username)) ||
+          (u.name && onlineUserIds.includes(u.name))
+        );
         return (
           <button
             key={u.id}
@@ -307,7 +354,7 @@ export const ChatWidget: React.FC = () => {
                   {u.name?.charAt(0)?.toUpperCase()}
                 </div>
               )}
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+              <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
             </div>
             <span className="flex-1 truncate font-medium">{u.name}</span>
             {unread > 0 && (
@@ -476,13 +523,18 @@ export const ChatWidget: React.FC = () => {
                 {otherUsers.map(u => {
                   const isSelected = selectedTarget?.type === 'user' && (selectedTarget.id === u.id || (selectedTarget as any).username === u.username);
                   const unread = getUnreadForTarget('user', u.id, u.username);
+                  const isOnline = Boolean(
+                    (u.id && onlineUserIds.includes(u.id)) ||
+                    (u.username && onlineUserIds.includes(u.username)) ||
+                    (u.name && onlineUserIds.includes(u.name))
+                  );
                   return (
                     <button
                       key={u.id}
                       onClick={() => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar })}
                       className={`w-full text-left px-2.5 py-2 text-[12px] truncate font-medium flex items-center gap-1.5 transition-colors ${isSelected ? 'bg-blue-100 text-blue-900 font-bold border-r-2 border-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}
                     >
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                       <span className="flex-1 truncate">{u.name}</span>
                       {unread > 0 && (
                         <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0">{unread}</span>
