@@ -334,82 +334,132 @@ export const AttendancePage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-slate-100 overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
-        <div className="flex items-center gap-4 relative z-30 pointer-events-auto">
-          <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">Chấm công & Nghỉ phép</h1>
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 relative z-30 pointer-events-auto">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white px-2 py-1.5 md:py-0 md:h-12 flex items-center justify-between gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="border-l-4 border-primary pl-1.5 flex items-center">
+            <h1 className="page-title text-xs sm:text-sm md:text-base font-extrabold text-slate-900 uppercase shrink-0">
+              {mainTab === 'attendance' ? 'Chấm công' : 'Nghỉ phép'}
+            </h1>
+          </div>
+          <div className="inline-flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0">
             <button
               type="button"
               onClick={() => setMainTab('attendance')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 cursor-pointer select-none ${mainTab === 'attendance' ? 'bg-primary text-white shadow-xs font-black' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200'}`}
+              className={`px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 text-[11px] sm:text-xs font-bold rounded-md transition-all flex items-center gap-0.5 sm:gap-1 cursor-pointer select-none shrink-0 ${mainTab === 'attendance' ? 'bg-primary text-white shadow-xs font-black' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200'}`}
             >
-              <span className="material-symbols-outlined text-[16px]">fingerprint</span>
-              Chấm công
+              <span className="material-symbols-outlined text-[13px] sm:text-[14px]">fingerprint</span>
+              <span>Chấm công</span>
             </button>
             <button
               type="button"
               onClick={() => setMainTab('leave')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 cursor-pointer select-none ${mainTab === 'leave' ? 'bg-primary text-white shadow-xs font-black' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200'}`}
+              className={`px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 text-[11px] sm:text-xs font-bold rounded-md transition-all flex items-center gap-0.5 sm:gap-1 cursor-pointer select-none shrink-0 ${mainTab === 'leave' ? 'bg-primary text-white shadow-xs font-black' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200'}`}
             >
-              <span className="material-symbols-outlined text-[16px]">event_busy</span>
-              Xin nghỉ phép
+              <span className="material-symbols-outlined text-[13px] sm:text-[14px]">event_busy</span>
+              <span>Xin nghỉ</span>
               {leaves.filter(l => l.status === 'PENDING').length > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 bg-red-500 text-white rounded-full text-[10px] font-extrabold">
+                <span className="ml-0.5 px-1 py-0.2 bg-red-500 text-white rounded-full text-[9px] font-extrabold">
                   {leaves.filter(l => l.status === 'PENDING').length}
                 </span>
               )}
             </button>
           </div>
         </div>
-        {isAdmin && (
-          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+
+        {/* Desktop-only Right controls (My/All switcher + Action Button) pushed to far right */}
+        <div className="hidden md:flex items-center gap-3 shrink-0">
+          {isAdmin && (
+            <div className="inline-flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0">
+              <button
+                onClick={() => setTab('my')}
+                className={`px-2.5 py-1 rounded-md transition-all ${tab === 'my' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+              >Của tôi</button>
+              <button
+                onClick={() => setTab('all')}
+                className={`px-2.5 py-1 rounded-md transition-all ${tab === 'all' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+              >Tất cả</button>
+            </div>
+          )}
+
+          {mainTab === 'attendance' ? (
+            activeSession ? (
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  Đang làm
+                </span>
+                <button
+                  onClick={() => setShowCheckOutModal(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
+                >
+                  <span className="material-symbols-outlined text-[16px]">logout</span>
+                  Ra ca
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowCheckInModal(true)}
+                className="flex items-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
+              >
+                <span className="material-symbols-outlined text-[16px]">login</span>
+                Vào ca
+              </button>
+            )
+          ) : (
             <button
-              onClick={() => setTab('my')}
-              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${tab === 'my' ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}
-            >Của tôi</button>
-            <button
-              onClick={() => setTab('all')}
-              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${tab === 'all' ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}
-            >Tất cả</button>
-          </div>
-        )}
+              onClick={() => setShowLeaveModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span>Tạo đơn xin nghỉ</span>
+            </button>
+          )}
+        </div>
       </header>
 
       {mainTab === 'attendance' ? (
         <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col bg-slate-50">
-          {/* Check-in / Check-out Bar */}
-          <div className="bg-white border-b border-slate-200 shadow-xs shrink-0">
-            <div className="px-4 py-3 flex items-center gap-3 flex-wrap">
-              <span className="material-symbols-outlined text-primary text-[20px]">fingerprint</span>
-              <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide flex-1 min-w-[200px]">
-                {activeSession ? 'Đang trong ca làm việc' : 'Quản lý chấm công'}
-              </h2>
+          {/* Check-in / Check-out Bar (Mobile only) */}
+          <div className="bg-white border-b border-slate-200 shadow-xs shrink-0 md:hidden">
+            <div className="px-3 py-2 sm:px-4 sm:py-2 flex items-center justify-between gap-2">
+              {isAdmin ? (
+                <div className="inline-flex md:hidden items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0">
+                  <button
+                    onClick={() => setTab('my')}
+                    className={`px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-md text-[10px] sm:text-xs transition-all ${tab === 'my' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                  >Của tôi</button>
+                  <button
+                    onClick={() => setTab('all')}
+                    className={`px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-md text-[10px] sm:text-xs transition-all ${tab === 'all' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                  >Tất cả</button>
+                </div>
+              ) : <div />}
 
               {activeSession ? (
-                <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                <div className="flex items-center gap-3 sm:gap-4 flex-wrap justify-end">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                     Đang làm
                   </span>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-xs sm:text-sm text-slate-600">
                     <span className="hidden sm:inline">Giờ vào: </span>
                     <span className="font-bold text-slate-800">{formatDateTime(activeSession.checkInTime)}</span>
                   </p>
                   <button
                     onClick={() => setShowCheckOutModal(true)}
-                    className="flex items-center gap-2 px-5 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-lg shadow-sm transition-colors shrink-0"
+                    className="flex items-center gap-1.5 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
                   >
-                    <span className="material-symbols-outlined text-[18px]">logout</span>
-                    Check-out (Ra ca)
+                    <span className="material-symbols-outlined text-[16px] sm:text-[18px]">logout</span>
+                    Ra ca
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => setShowCheckInModal(true)}
-                  className="flex items-center gap-2 px-6 py-1.5 bg-primary hover:bg-blue-800 text-white font-bold text-sm rounded-lg shadow-sm transition-colors shrink-0"
+                  className="flex items-center gap-1.5 px-5 py-1.5 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
                 >
-                  <span className="material-symbols-outlined text-[18px]">login</span>
-                  Check-in (Vào ca)
+                  <span className="material-symbols-outlined text-[16px] sm:text-[18px]">login</span>
+                  Vào ca
                 </button>
               )}
             </div>
@@ -473,7 +523,7 @@ export const AttendancePage: React.FC = () => {
                       <th className="p-3">Dự án</th>
                       <th className="p-3">Ghi chú</th>
                       <th className="p-3 text-center">Hình ảnh</th>
-                      {isAdmin && <th className="p-3 text-center w-16">Thao tác</th>}
+                      {isAdmin && <th className="p-3 text-center w-12">TT</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -536,17 +586,25 @@ export const AttendancePage: React.FC = () => {
       ) : (
         /* Tab Xin nghỉ phép */
         <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col bg-slate-50">
-          <div className="bg-white border-b border-slate-200 shadow-xs px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-[20px]">event_busy</span>
-              <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">Danh sách Đơn xin nghỉ phép</h2>
-            </div>
+          <div className="bg-white border-b border-slate-200 shadow-xs px-3 py-2 sm:px-4 sm:py-2 flex items-center justify-between gap-2 md:hidden">
+            {isAdmin ? (
+              <div className="inline-flex md:hidden items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0">
+                <button
+                  onClick={() => setTab('my')}
+                  className={`px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-md text-[10px] sm:text-xs transition-all ${tab === 'my' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                >Của tôi</button>
+                <button
+                  onClick={() => setTab('all')}
+                  className={`px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-md text-[10px] sm:text-xs transition-all ${tab === 'all' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                >Tất cả</button>
+              </div>
+            ) : <div />}
             <button
               onClick={() => setShowLeaveModal(true)}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-blue-800 text-white font-bold text-xs rounded-lg shadow-sm transition-colors"
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
             >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              Tạo đơn xin nghỉ
+              <span className="material-symbols-outlined text-[16px] sm:text-[18px]">add</span>
+              <span>Tạo đơn xin nghỉ</span>
             </button>
           </div>
 
@@ -565,7 +623,7 @@ export const AttendancePage: React.FC = () => {
                     <th className="p-3">Lý do</th>
                     <th className="p-3 text-center">Trạng thái</th>
                     <th className="p-3">Người duyệt / Ghi chú</th>
-                    <th className="p-3 text-center w-24">Thao tác</th>
+                    <th className="p-3 text-center w-16">TT</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -718,18 +776,20 @@ export const AttendancePage: React.FC = () => {
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none resize-none"
               />
             </div>
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200">
               <button
+                type="button"
                 onClick={() => handleReviewLeave('REJECTED')}
                 disabled={isSubmitting}
-                className="px-4 py-2 bg-red-600 text-white font-bold rounded-lg text-sm hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold rounded-lg text-sm transition-all disabled:opacity-50"
               >
                 Từ chối
               </button>
               <button
+                type="button"
                 onClick={() => handleReviewLeave('APPROVED')}
                 disabled={isSubmitting}
-                className="px-5 py-2 bg-emerald-600 text-white font-bold rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50"
+                className="px-5 py-2 bg-primary hover:bg-primary/90 text-white font-bold rounded-lg text-sm shadow-sm transition-all disabled:opacity-50"
               >
                 Chấp thuận duyệt
               </button>

@@ -2090,9 +2090,10 @@ export function setupRealtimeSync() {
       changedTables.add(payload.table);
     }
 
-    // Đối với tin nhắn chat real-time, fetch lập tức không qua debounce 4s
-    if (payload && payload.table === 'direct_messages') {
-      useRealtimeStore.getState().fetchDirectMessages();
+    // Đối với tin nhắn chat real-time & thông báo mới, fetch lập tức không qua debounce 4s
+    if (payload && (payload.table === 'direct_messages' || payload.table === 'notifications')) {
+      if (payload.table === 'direct_messages') useRealtimeStore.getState().fetchDirectMessages();
+      if (payload.table === 'notifications') useRealtimeStore.getState().fetchNotifications();
       return;
     }
 

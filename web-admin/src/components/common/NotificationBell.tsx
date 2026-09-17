@@ -139,6 +139,18 @@ export const NotificationBell: React.FC = () => {
   const unreadCount = displayNotifications.filter(item => !item.read).length;
 
   useEffect(() => {
+    // Initial fetch
+    useRealtimeStore.getState().fetchNotifications();
+
+    // 3s Polling fallback for instant notifications update across all devices
+    const interval = setInterval(() => {
+      useRealtimeStore.getState().fetchNotifications();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     const clampPos = () => {
       setPosition(prev => {
         if (!prev) return null;
