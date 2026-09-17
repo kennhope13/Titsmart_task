@@ -27,184 +27,102 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       icon="settings"
       size="md"
     >
-      <div className="p-5 space-y-5 overflow-y-auto">
-        {/* Section 1: Navigation Bar Mode */}
-        <div className="space-y-2.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-            Chế độ thanh điều hướng (Sidebar)
-          </label>
-          <div className="grid grid-cols-1 gap-2">
-            <div
+      <div className="p-4 space-y-3">
+        {/* Row 1: Sidebar Mode */}
+        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+          <div className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-lg text-slate-600">side_navigation</span>
+            <span className="text-xs font-bold text-slate-800">Thanh điều hướng</span>
+          </div>
+          <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg border border-slate-200/60 shrink-0">
+            <button
+              type="button"
               onClick={() => {
                 setSidebarShowToggleButton(true);
                 setSidebarHoverToExpand(false);
               }}
-              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                sidebarShowToggleButton
-                  ? 'border-primary bg-blue-50/50 text-primary font-bold shadow-2xs'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                sidebarShowToggleButton ? 'bg-white text-primary shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-base">push_pin</span>
-                <div className="text-xs">
-                  <div className="font-bold">Sử dụng nút ghim</div>
-                  <div className="text-[11px] text-slate-500 font-normal">Bấm vào biểu tượng logo để cố định mở/thu nhỏ</div>
-                </div>
-              </div>
-              <input
-                type="radio"
-                checked={sidebarShowToggleButton}
-                readOnly
-                className="w-4 h-4 text-primary focus:ring-primary border-slate-300 pointer-events-none"
-              />
-            </div>
-
-            <div
+              Ghim
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 setSidebarHoverToExpand(true);
                 setSidebarShowToggleButton(false);
               }}
-              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                sidebarHoverToExpand
-                  ? 'border-primary bg-blue-50/50 text-primary font-bold shadow-2xs'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                sidebarHoverToExpand ? 'bg-white text-primary shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-base">mouse</span>
-                <div className="text-xs">
-                  <div className="font-bold">Mở rộng khi trỏ chuột</div>
-                  <div className="text-[11px] text-slate-500 font-normal">Tự động mở rộng danh mục khi di chuột vào sidebar</div>
-                </div>
-              </div>
-              <input
-                type="radio"
-                checked={sidebarHoverToExpand}
-                readOnly
-                className="w-4 h-4 text-primary focus:ring-primary border-slate-300 pointer-events-none"
-              />
-            </div>
+              Rê chuột
+            </button>
           </div>
         </div>
 
-        <div className="h-px bg-slate-100"></div>
-
-        {/* Section 2: Notification Bell Display */}
-        <div className="space-y-2.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-            Biểu tượng thông báo (Notification Bell)
-          </label>
-          <div className="grid grid-cols-1 gap-2">
-            <div
+        {/* Row 2: Notification Bell */}
+        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+          <div className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-lg text-slate-600">notifications</span>
+            <span className="text-xs font-bold text-slate-800">Nút chuông thông báo</span>
+          </div>
+          <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg border border-slate-200/60 shrink-0">
+            <button
+              type="button"
               onClick={() => setShowNotificationBell(true)}
-              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                showNotificationBell
-                  ? 'border-primary bg-blue-50/50 text-primary font-bold shadow-2xs'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                showNotificationBell ? 'bg-white text-emerald-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-base">notifications</span>
-                <div className="text-xs">
-                  <div className="font-bold">Hiển thị nút chuông</div>
-                  <div className="text-[11px] text-slate-500 font-normal">Hiện nút chuông ở góc trên bên phải màn hình</div>
-                </div>
-              </div>
-              <input
-                type="radio"
-                checked={showNotificationBell}
-                readOnly
-                className="w-4 h-4 text-primary focus:ring-primary border-slate-300 pointer-events-none"
-              />
-            </div>
-
-            <div
+              Bật
+            </button>
+            <button
+              type="button"
               onClick={() => setShowNotificationBell(false)}
-              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                !showNotificationBell
-                  ? 'border-primary bg-blue-50/50 text-primary font-bold shadow-2xs'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                !showNotificationBell ? 'bg-white text-rose-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-base">notifications_off</span>
-                <div className="text-xs">
-                  <div className="font-bold">Ẩn nút chuông</div>
-                  <div className="text-[11px] text-slate-500 font-normal">Ẩn chuông thông báo khỏi thanh tiêu đề trên</div>
-                </div>
-              </div>
-              <input
-                type="radio"
-                checked={!showNotificationBell}
-                readOnly
-                className="w-4 h-4 text-primary focus:ring-primary border-slate-300 pointer-events-none"
-              />
-            </div>
+              Tắt
+            </button>
           </div>
         </div>
 
-        <div className="h-px bg-slate-100"></div>
-
-        {/* Section 3: Auto-show Notification Popup on startup */}
-        <div className="space-y-2.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-            Bảng thông báo tự động (Notification Popup)
-          </label>
-          <div className="grid grid-cols-1 gap-2">
-            <div
+        {/* Row 3: Auto Notification Popup on startup */}
+        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+          <div className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-lg text-slate-600">web_stories</span>
+            <span className="text-xs font-bold text-slate-800">Thông báo khi mở app</span>
+          </div>
+          <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg border border-slate-200/60 shrink-0">
+            <button
+              type="button"
               onClick={() => setAutoShowNotificationPopup(true)}
-              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                autoShowNotificationPopup
-                  ? 'border-primary bg-blue-50/50 text-primary font-bold shadow-2xs'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                autoShowNotificationPopup ? 'bg-white text-emerald-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-base">web_stories</span>
-                <div className="text-xs">
-                  <div className="font-bold">Tự động hiện bảng thông báo</div>
-                  <div className="text-[11px] text-slate-500 font-normal">Tự động bật cửa sổ thông báo ở giữa màn hình mỗi khi đăng nhập/mở ứng dụng</div>
-                </div>
-              </div>
-              <input
-                type="radio"
-                checked={autoShowNotificationPopup}
-                readOnly
-                className="w-4 h-4 text-primary focus:ring-primary border-slate-300 pointer-events-none"
-              />
-            </div>
-
-            <div
+              Bật
+            </button>
+            <button
+              type="button"
               onClick={() => setAutoShowNotificationPopup(false)}
-              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                !autoShowNotificationPopup
-                  ? 'border-primary bg-blue-50/50 text-primary font-bold shadow-2xs'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                !autoShowNotificationPopup ? 'bg-white text-rose-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-base">do_not_disturb_on</span>
-                <div className="text-xs">
-                  <div className="font-bold font-bold">Tắt tự động hiện</div>
-                  <div className="text-[11px] text-slate-500 font-normal">Không tự động bật cửa sổ thông báo khi mở ứng dụng (chỉ báo ở nút chuông)</div>
-                </div>
-              </div>
-              <input
-                type="radio"
-                checked={!autoShowNotificationPopup}
-                readOnly
-                className="w-4 h-4 text-primary focus:ring-primary border-slate-300 pointer-events-none"
-              />
-            </div>
+              Tắt
+            </button>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="pt-3 border-t border-slate-100 flex justify-end">
+        <div className="pt-2 border-t border-slate-100 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-md bg-primary text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-2xs"
+            className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-xs"
           >
             Đóng
           </button>

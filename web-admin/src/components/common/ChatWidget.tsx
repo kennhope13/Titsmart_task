@@ -42,11 +42,9 @@ export const ChatWidget: React.FC = () => {
     }
   }, [mobileView, selectedTarget]);
 
-  if (!currentUser) return null;
-
   // Filter messages for current conversation
   const currentMessages = directMessages.filter(msg => {
-    if (!selectedTarget) return false;
+    if (!selectedTarget || !currentUser) return false;
     if (selectedTarget.type === 'project') {
       return msg.projectCode === selectedTarget.id;
     } else {
@@ -60,26 +58,27 @@ export const ChatWidget: React.FC = () => {
   });
 
   // Count unread messages
-  const unreadCount = directMessages.filter(msg => {
+  const unreadCount = currentUser ? directMessages.filter(msg => {
     const isForMe = msg.receiverId === currentUser.id || msg.receiverId === currentUser.username ||
       (msg.projectCode && currentUser.projectCodes?.includes(msg.projectCode));
     const isNotMine = msg.senderId !== currentUser.id && msg.senderId !== currentUser.username;
     const isUnread = !Array.isArray(msg.readBy) || !msg.readBy.includes(currentUser.id);
     return isForMe && isNotMine && isUnread;
-  }).length;
+  }).length : 0;
 
   // Mark as read when viewing
   useEffect(() => {
-    if (isOpen && selectedTarget && currentMessages.length > 0) {
-      currentMessages.forEach(msg => {
-        const isNotMine = msg.senderId !== currentUser.id && msg.senderId !== currentUser.username;
-        const isUnread = !Array.isArray(msg.readBy) || !msg.readBy.includes(currentUser.id);
-        if (isNotMine && isUnread) {
-          markDirectMessageRead(msg.id, currentUser.id);
-        }
-      });
-    }
-  }, [isOpen, selectedTarget, currentMessages.length]);
+    if (!currentUser || !isOpen || !selectedTarget || currentMessages.length === 0) return;
+    currentMessages.forEach(msg => {
+      const isNotMine = msg.senderId !== currentUser.id && msg.senderId !== currentUser.username;
+      const isUnread = !Array.isArray(msg.readBy) || !msg.readBy.includes(currentUser.id);
+      if (isNotMine && isUnread) {
+        markDirectMessageRead(msg.id, currentUser.id);
+      }
+    });
+  }, [isOpen, selectedTarget, currentMessages.length, currentUser]);
+
+  if (!currentUser) return null;
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
