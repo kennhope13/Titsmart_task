@@ -1146,7 +1146,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           <thead className="sticky top-0 z-30 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
               <th rowSpan={2} style={{ minWidth: 50, width: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className={`sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>STT</th>
-              <th rowSpan={2} style={{ minWidth: 280, width: 320, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', left: isScrolledHorizontally ? '0px' : "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left ">NỘI DUNG</th>
+              <th rowSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', left: isScrolledHorizontally ? '0px' : "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left w-[170px] min-w-[150px] sm:w-[320px] sm:min-w-[280px]">NỘI DUNG</th>
               {(subTab === 'TECH' || subTab === 'DOCS' || subTab === 'FINANCE') && (
                 <>
                   <th rowSpan={2} style={{ minWidth: 65, width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
@@ -1178,12 +1178,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               {subTab === 'FINANCE' && (
                 <>
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐH</th>
-                  <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">ĐƠN GIÁ MUA</th>
+                  <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">ĐƠN GIÁ BÁN</th>
                   <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">VAT %</th>
-                  <th rowSpan={2} style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THÀNH TIỀN MUA</th>
+                  <th rowSpan={2} style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THÀNH TIỀN BÁN</th>
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">% TẠM ỨNG</th>
-                  <th rowSpan={2} style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THỰC CHI (đ)</th>
-                  <th rowSpan={2} style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">CÒN LẠI (đ)</th>
+                  <th rowSpan={2} style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">CHI PHÍ (GIÁ VỐN) (đ)</th>
+                  <th rowSpan={2} style={{ width: 105, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">LỢI NHUẬN (đ)</th>
                   <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TÌNH TRẠNG HĐ</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HẠN THANH TOÁN</th>
                   <th rowSpan={2} style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HÓA ĐƠN VAT</th>
@@ -1670,7 +1670,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   );
                                 })())}
                               </td>
-                              {/* ĐƠN GIÁ MUA */}
+                              {/* ĐƠN GIÁ BÁN */}
                               <td className="p-0 align-middle text-right font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'unitPrice' && editingCell?.isPurchasing ? (
                                   <input
@@ -1708,7 +1708,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   );
                                 })())}
                               </td>
-                              {/* THÀNH TIỀN MUA */}
+                              {/* THÀNH TIỀN BÁN */}
                               <td className="p-1.5 align-middle text-right font-mono font-bold text-slate-800 border-r border-slate-200 leading-tight">
                                 {(() => {
                                   const effectiveVol = pRecord?.volumeOrder || plan.contractVolume || 0;
@@ -1735,7 +1735,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   <span onClick={() => pRecord && startEditing(plan.id, 'prepayPercent', pRecord.prepayPercent, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 whitespace-nowrap overflow-hidden text-ellipsis" title={showNumber(pRecord?.prepayPercent)}>{showPercent(pRecord?.prepayPercent)}</span>
                                 )}
                               </td>
-                              {/* THỰC CHI */}
+                              {/* CHI PHÍ (GIÁ VỐN) */}
                               <td className="p-0 align-middle text-right font-mono text-slate-600 border-r border-slate-200 leading-tight">
                                 {editingCell?.id === plan.id && editingCell?.field === 'prepayAmount' && editingCell?.isPurchasing ? (
                                   <input
@@ -1751,9 +1751,22 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   <span onClick={() => pRecord && startEditing(plan.id, 'prepayAmount', pRecord.prepayAmount, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-end px-1.5 py-1.5" title={showNumber(pRecord?.prepayAmount)}>{showNumber(pRecord?.prepayAmount) || '-'}</span>
                                 )}
                               </td>
-                              {/* CÒN LẠI */}
-                              <td className="p-1.5 align-middle text-right font-mono text-slate-500 border-r border-slate-200 leading-tight">
-                                {pRecord ? showNumber((pRecord.totalAmount || 0) - (pRecord.prepayAmount || 0)) : '-'}
+                              {/* LỢI NHUẬN (= Thành tiền bán - Giá vốn) */}
+                              <td className="p-1.5 align-middle text-right font-mono font-bold text-emerald-700 border-r border-slate-200 leading-tight">
+                                {(() => {
+                                  const effectiveVol = pRecord?.volumeOrder || plan.contractVolume || 0;
+                                  const effectivePrice = pRecord?.unitPrice || (plan as any).unitPrice || 0;
+                                  const effectiveVat = pRecord?.vatRate !== undefined ? pRecord.vatRate : ((plan as any).vatRate !== undefined ? (plan as any).vatRate : 10);
+                                  const effectiveVatAmt = pRecord?.vatAmount || (effectiveVol * effectivePrice * effectiveVat / 100);
+                                  const effectiveTotal = pRecord?.totalAmount || (plan as any).totalAmount || ((effectiveVol * effectivePrice) + effectiveVatAmt);
+                                  const costAmount = pRecord?.prepayAmount || 0;
+                                  const profit = effectiveTotal - costAmount;
+                                  return (
+                                    <span className={profit < 0 ? 'text-rose-600' : 'text-emerald-700'}>
+                                      {showNumber(profit) || '0'}
+                                    </span>
+                                  );
+                                })()}
                               </td>
 
                               {/* TÌNH TRẠNG HĐ */}
