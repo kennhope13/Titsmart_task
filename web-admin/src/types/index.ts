@@ -285,6 +285,10 @@ export interface ProjectPurchasing {
   paymentDate?: string;
   invoiceStatus?: string;
   supplier?: string;
+  costPaidAmount?: number;
+  costPaymentDate?: string;
+  costPaymentMethod?: string;
+  costPayerName?: string;
   notes?: string;
   updatedBy?: string;
   updatedAt?: string;

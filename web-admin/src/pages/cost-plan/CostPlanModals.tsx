@@ -220,7 +220,20 @@ export const CostPlanModals: React.FC<ModalsProps> = ({
                 </CustomSelect>
               </div>
               <div className="md:col-span-3"><label className="block text-[13px] font-bold text-slate-700 mb-1">Nhà cung cấp chi phí đầu vào (Giá vốn)</label><input type="text" name="supplier" defaultValue={editingPurchasing?.supplier} placeholder="Tên nhà cung cấp..." className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-              <div className="md:col-span-3"><label className="block text-[13px] font-bold text-slate-700 mb-1">Ghi chú</label><textarea name="notes" defaultValue={editingPurchasing?.notes} rows={2} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
+
+              <div className="md:col-span-3 border-t pt-4 mt-2"><h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><span className="material-symbols-outlined text-lg">receipt_long</span> Thanh toán Chi phí (Giá vốn)</h4></div>
+              <div><label className="block text-[13px] font-bold text-slate-700 mb-1">Đã thanh toán (giá vốn) (đ)</label><input type="number" step="any" name="costPaidAmount" defaultValue={editingPurchasing?.costPaidAmount} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
+              <div><label className="block text-[13px] font-bold text-slate-700 mb-1">Ngày thanh toán</label><input type="date" name="costPaymentDate" defaultValue={editingPurchasing?.costPaymentDate} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
+              <div>
+                <label className="block text-[13px] font-bold text-slate-700 mb-1">Hình thức thanh toán</label>
+                <CustomSelect name="costPaymentMethod" defaultValue={editingPurchasing?.costPaymentMethod || 'Chuyển khoản'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
+                  <option value="Chuyển khoản">Chuyển khoản</option>
+                  <option value="Tiền mặt">Tiền mặt</option>
+                  <option value="Ví điện tử">Ví điện tử</option>
+                  <option value="Khác">Khác</option>
+                </CustomSelect>
+              </div>
+              <div><label className="block text-[13px] font-bold text-slate-700 mb-1">Người thanh toán</label><input type="text" name="costPayerName" defaultValue={editingPurchasing?.costPayerName} placeholder="Tên người thanh toán..." className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button type="button" onClick={() => { setIsNewPurchasingOpen(false); setEditingPurchasing(null); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Hủy</button>

@@ -754,7 +754,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         const finalNotes = String(activeRecord.notes || '');
         const existingTags = finalNotes.match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
         finalValue = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
-      } else if (field === 'volumeOrder' || field === 'unitPrice' || field === 'vatRate' || field === 'prepayPercent' || field === 'prepayAmount') {
+      } else if (field === 'volumeOrder' || field === 'unitPrice' || field === 'vatRate' || field === 'prepayPercent' || field === 'prepayAmount' || field === 'costPaidAmount') {
         finalValue = Number(tempValue || 0);
       }
       
@@ -834,7 +834,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const colSpanCount = useMemo(() => {
     if (subTab === 'TECH') return 10;
     if (subTab === 'DOCS') return 7;
-    if (subTab === 'FINANCE') return 13;
+    if (subTab === 'FINANCE') return 17;
     return 9;
   }, [subTab]);
 
@@ -1184,6 +1184,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">% TẠM ỨNG</th>
                   <th rowSpan={2} style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">CHI PHÍ (GIÁ VỐN) (đ)</th>
                   <th rowSpan={2} style={{ width: 140, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NHÀ CUNG CẤP (GIÁ VỐN)</th>
+                  <th rowSpan={2} style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">ĐÃ THANH TOÁN (GIÁ VỐN) (đ)</th>
+                  <th rowSpan={2} style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGÀY THANH TOÁN</th>
+                  <th rowSpan={2} style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HÌNH THỨC TT</th>
+                  <th rowSpan={2} style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI THANH TOÁN</th>
                   <th rowSpan={2} style={{ width: 105, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">LỢI NHUẬN (đ)</th>
                   <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TÌNH TRẠNG HĐ</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HẠN THANH TOÁN</th>
@@ -1767,6 +1771,80 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   />
                                 ) : (
                                   <span onClick={() => pRecord && startEditing(plan.id, 'supplier', pRecord.supplier || '', true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 text-slate-800" title={pRecord?.supplier || 'Click để nhập'}>{pRecord?.supplier || <span className="text-slate-300 font-normal">-</span>}</span>
+                                )}
+                              </td>
+
+                              {/* ĐÃ THANH TOÁN (GIÁ VỐN) */}
+                              <td className="p-0 align-middle text-right font-mono text-slate-600 border-r border-slate-200 leading-tight">
+                                {editingCell?.id === plan.id && editingCell?.field === 'costPaidAmount' && editingCell?.isPurchasing ? (
+                                  <input
+                                    type="number" step="any"
+                                    value={tempValue}
+                                    onChange={(e) => setTempValue(e.target.value)}
+                                    onBlur={() => saveEditing(plan, pRecord)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
+                                    autoFocus
+                                    className="w-full text-right bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none border-none rounded"
+                                  />
+                                ) : (
+                                  <span onClick={() => pRecord && startEditing(plan.id, 'costPaidAmount', pRecord.costPaidAmount, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-end px-1.5 py-1.5 text-blue-700 font-semibold" title={showNumber(pRecord?.costPaidAmount)}>{showNumber(pRecord?.costPaidAmount) || '-'}</span>
+                                )}
+                              </td>
+
+                              {/* NGÀY THANH TOÁN */}
+                              <td className="p-0 align-middle text-center text-xs text-slate-700 border-r border-slate-200 leading-tight">
+                                {editingCell?.id === plan.id && editingCell?.field === 'costPaymentDate' && editingCell?.isPurchasing ? (
+                                  <input
+                                    type="date"
+                                    value={tempValue}
+                                    onChange={(e) => setTempValue(e.target.value)}
+                                    onBlur={() => saveEditing(plan, pRecord)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
+                                    autoFocus
+                                    className="w-full text-center bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none border-none rounded"
+                                  />
+                                ) : (
+                                  <span onClick={() => pRecord && startEditing(plan.id, 'costPaymentDate', pRecord.costPaymentDate || '', true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 text-slate-800" title={pRecord?.costPaymentDate || 'Click để chọn ngày'}>{pRecord?.costPaymentDate || <span className="text-slate-300 font-normal">-</span>}</span>
+                                )}
+                              </td>
+
+                              {/* HÌNH THỨC TT */}
+                              <td className="p-0 align-middle text-center text-xs text-slate-700 border-r border-slate-200 leading-tight">
+                                {editingCell?.id === plan.id && editingCell?.field === 'costPaymentMethod' && editingCell?.isPurchasing ? (
+                                  <CustomSelect
+                                    value={tempValue || 'Chuyển khoản'}
+                                    onChange={(e) => {
+                                      setTempValue(e.target.value);
+                                      if (pRecord) onUpdatePurchasing(pRecord.id, { ...pRecord, costPaymentMethod: e.target.value });
+                                      setEditingCell(null);
+                                    }}
+                                    className="w-full text-center bg-white text-slate-900 font-semibold text-xs px-1 py-1 h-[28px] rounded border"
+                                  >
+                                    <option value="Chuyển khoản">Chuyển khoản</option>
+                                    <option value="Tiền mặt">Tiền mặt</option>
+                                    <option value="Ví điện tử">Ví điện tử</option>
+                                    <option value="Khác">Khác</option>
+                                  </CustomSelect>
+                                ) : (
+                                  <span onClick={() => pRecord && startEditing(plan.id, 'costPaymentMethod', pRecord.costPaymentMethod || '', true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 text-slate-800" title={pRecord?.costPaymentMethod || 'Click để chọn'}>{pRecord?.costPaymentMethod || <span className="text-slate-300 font-normal">-</span>}</span>
+                                )}
+                              </td>
+
+                              {/* NGƯỜI THANH TOÁN */}
+                              <td className="p-0 align-middle text-center text-xs text-slate-700 border-r border-slate-200 leading-tight">
+                                {editingCell?.id === plan.id && editingCell?.field === 'costPayerName' && editingCell?.isPurchasing ? (
+                                  <input
+                                    type="text"
+                                    value={tempValue}
+                                    onChange={(e) => setTempValue(e.target.value)}
+                                    onBlur={() => saveEditing(plan, pRecord)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
+                                    autoFocus
+                                    placeholder="Tên người thanh toán..."
+                                    className="w-full text-center bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none border-none rounded"
+                                  />
+                                ) : (
+                                  <span onClick={() => pRecord && startEditing(plan.id, 'costPayerName', pRecord.costPayerName || '', true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 text-slate-800" title={pRecord?.costPayerName || 'Click để nhập'}>{pRecord?.costPayerName || <span className="text-slate-300 font-normal">-</span>}</span>
                                 )}
                               </td>
                               {/* LỢI NHUẬN (= Thành tiền bán - Giá vốn) */}
