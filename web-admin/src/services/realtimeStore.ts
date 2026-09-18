@@ -2090,10 +2090,17 @@ export function setupRealtimeSync() {
       changedTables.add(payload.table);
     }
 
-    // Đối với tin nhắn chat real-time & thông báo mới, fetch lập tức không qua debounce 4s
-    if (payload && (payload.table === 'direct_messages' || payload.table === 'notifications')) {
-      if (payload.table === 'direct_messages') useRealtimeStore.getState().fetchDirectMessages();
-      if (payload.table === 'notifications') useRealtimeStore.getState().fetchNotifications();
+    // Đối với tin nhắn chat real-time, thông báo mới hoặc phân quyền nhân sự/dự án, fetch tức thì
+    if (payload && (payload.table === 'direct_messages' || payload.table === 'notifications' || payload.table === 'engineers' || payload.table === 'projects')) {
+      const store = useRealtimeStore.getState();
+      if (payload.table === 'direct_messages') store.fetchDirectMessages();
+      if (payload.table === 'notifications') store.fetchNotifications();
+      if (payload.table === 'engineers') {
+        store.fetchEngineers().then(() => {
+          store.fetchProjects();
+        });
+      }
+      if (payload.table === 'projects') store.fetchProjects();
       return;
     }
 
