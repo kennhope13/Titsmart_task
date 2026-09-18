@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { ProjectMaterialPlan, ProjectPurchasing, getStatusColorStyle, getTextColorStyle, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
@@ -404,6 +404,39 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const [fastDocType, setFastDocType] = useState<string | null>(null);
   const [fastDocModels, setFastDocModels] = useState<ModelEntry[]>([]);
   const [previewFile, setPreviewFile] = useState<{ url: string; title: string } | null>(null);
+
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [isMouseDown, setIsMouseDown] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeftState, setScrollLeftState] = useState(0);
+  const [hasDragged, setHasDragged] = useState(false);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Ignore if clicking on interactive elements (input, select, button, etc.)
+    const target = e.target as HTMLElement;
+    if (target.closest('input, select, button, option, textarea, a')) return;
+    
+    if (!tableContainerRef.current) return;
+    setIsMouseDown(true);
+    setHasDragged(false);
+    setStartX(e.pageX - tableContainerRef.current.offsetLeft);
+    setScrollLeftState(tableContainerRef.current.scrollLeft);
+  };
+
+  const handleMouseLeaveOrUp = () => {
+    setIsMouseDown(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isMouseDown || !tableContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - tableContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5; // Drag speed multiplier
+    if (Math.abs(walk) > 5) {
+      setHasDragged(true);
+    }
+    tableContainerRef.current.scrollLeft = scrollLeftState - walk;
+  };
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const toggleSection = (sectionKey: string) => {
@@ -1177,12 +1210,20 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         </div>
       </div>
 
-      <div className="w-full max-w-full min-h-0 flex-1 overflow-x-auto custom-scrollbar" onScroll={(e) => setIsScrolledHorizontally(e.currentTarget.scrollLeft > 10)}>
+      <div 
+        ref={tableContainerRef}
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeaveOrUp}
+        onMouseUp={handleMouseLeaveOrUp}
+        onMouseMove={handleMouseMove}
+        className={`w-full max-w-full min-h-0 flex-1 overflow-x-auto custom-scrollbar select-none ${isMouseDown ? 'cursor-grabbing' : 'cursor-grab'}`} 
+        onScroll={(e) => setIsScrolledHorizontally(e.currentTarget.scrollLeft > 10)}
+      >
         <table className="w-full table-fixed border-collapse text-left text-xs" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
           <thead className="sticky top-0 z-30 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
-              <th rowSpan={2} style={{ minWidth: 50, width: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className={`sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>STT</th>
-              <th rowSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', left: isScrolledHorizontally ? '0px' : "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left w-[170px] min-w-[150px] sm:w-[320px] sm:min-w-[280px]">NỘI DUNG</th>
+              <th rowSpan={2} style={{ minWidth: 50, width: "var(--stt-width)", left: 0, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
+              <th rowSpan={2} style={{ left: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left w-[170px] min-w-[150px] sm:w-[320px] sm:min-w-[280px]">NỘI DUNG</th>
               {(subTab === 'TECH' || subTab === 'DOCS' || subTab === 'FINANCE') && (
                 <>
                   <th rowSpan={2} style={{ minWidth: 65, width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
@@ -1388,10 +1429,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                         const isCollapsed = collapsedSections.has(plan._sectionKey || '');
                         return (
                           <tr key={plan.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                            <td className={`sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>
+                            <td style={{ left: 0 }} className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
                               {plan.stt}
                             </td>
-                            <td colSpan={isScrolledHorizontally ? 1 : colSpanCount + 1} style={{ left: isScrolledHorizontally ? '0px' : 'var(--stt-width)', width: isScrolledHorizontally ? '220px' : 'auto', minWidth: isScrolledHorizontally ? '220px' : 'auto', maxWidth: isScrolledHorizontally ? '220px' : 'auto' }} className={`sticky z-10 md:static bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary ${isScrolledHorizontally ? 'whitespace-nowrap overflow-hidden' : 'whitespace-normal break-words'}`} title={plan.jobContent}>
+                            <td colSpan={colSpanCount + 1} style={{ left: 'var(--stt-width)', width: 'auto', minWidth: 'auto', maxWidth: 'auto' }} className="sticky left-[var(--stt-width)] z-10 md:static bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={plan.jobContent}>
                               <div className="flex items-center gap-1.5 min-w-0 w-full overflow-hidden">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
@@ -1449,7 +1490,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           }
                         }} className={rowClass}>
                           {/* STT */}
-                          <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-middle text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle} ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>
+                          <td style={{ left: 0 }} className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-middle text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
                             {editingCell?.id === plan.id && editingCell?.field === 'stt' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -1466,7 +1507,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           </td>
                           
                           {/* NỘI DUNG */}
-                          <td className={`sticky z-10 md:static ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 p-0 align-middle text-left overflow-hidden ${fontStyle}`} style={{ left: isScrolledHorizontally ? '0px' : "var(--stt-width)" }}>
+                          <td className={`sticky left-[var(--stt-width)] z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 p-0 align-middle text-left overflow-hidden ${fontStyle}`} style={{ left: "var(--stt-width)" }}>
                             {editingCell?.id === plan.id && editingCell?.field === 'jobContent' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -2061,10 +2102,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           {subTab === 'FINANCE' && (
             <tfoot className="sticky bottom-0 z-30 border-t-2 border-slate-400 bg-slate-100 font-extrabold text-slate-800 shadow-[0_-3px_10px_rgba(0,0,0,0.12)] text-[11px]">
               <tr className="bg-slate-100">
-                <td style={{ minWidth: 50, width: "var(--stt-width)", borderRight: '1px solid #94a3b8' }} className={`sticky left-0 z-20 bg-slate-100 px-1 py-2 text-center font-black ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>
+                <td style={{ minWidth: 50, width: "var(--stt-width)", left: 0, borderRight: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-100 px-1 py-2 text-center font-black">
                   ∑
                 </td>
-                <td style={{ borderRight: '1px solid #94a3b8', left: isScrolledHorizontally ? '0px' : "var(--stt-width)" }} className="sticky z-20 bg-slate-100 px-2 py-2 text-left font-black w-[170px] min-w-[150px] sm:w-[320px] sm:min-w-[280px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase text-primary">
+                <td style={{ borderRight: '1px solid #94a3b8', left: "var(--stt-width)" }} className="sticky left-[var(--stt-width)] z-20 bg-slate-100 px-2 py-2 text-left font-black w-[170px] min-w-[150px] sm:w-[320px] sm:min-w-[280px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase text-primary">
                   TỔNG DỰ ÁN
                 </td>
                 <td className="border-r border-slate-300 p-1 text-center">-</td>
