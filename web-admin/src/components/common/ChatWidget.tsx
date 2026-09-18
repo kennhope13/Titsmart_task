@@ -377,7 +377,7 @@ export const ChatWidget: React.FC = () => {
       {/* ===== MOBILE: Full-screen modal ===== */}
       {isOpen && (
         <div className="sm:hidden fixed inset-0 z-[9999] flex flex-col bg-white pointer-events-auto"
-          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 88px)' }}>
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           {/* Header */}
           <div className="bg-blue-900 text-white px-4 flex items-center justify-between shadow-md shrink-0"
             style={{ paddingTop: 'calc(env(safe-area-inset-top, 12px) + 10px)', paddingBottom: '12px' }}>
