@@ -128,9 +128,68 @@ jobs:
         update_release: true
         fail_on_unmatched_files: false
 
+  build-ios:
+    name: Build iOS App (.ipa)
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    - name: Install Web-Admin Dependencies
+      working-directory: ./web-admin
+      run: npm install
+
+    - name: Get App Version
+      id: version
+      working-directory: ./web-admin
+      run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
+    - name: Build Web Mobile Bundle & Sync Capacitor iOS
+      working-directory: ./web-admin
+      env:
+        VITE_SUPABASE_URL: "https://nvdonaaxbtqjfmxtlgzb.supabase.co"
+        VITE_SUPABASE_ANON_KEY: "sb_publishable_gzUeVF_f2jadDuuii66pCw_W_0xmqjg"
+      run: |
+        npx vite build --config vite.config.mobile.ts --mode production
+        npx cap add ios || true
+        npx cap sync ios
+
+    - name: Build iOS App Archive
+      working-directory: ./web-admin/ios/App
+      run: |
+        xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO archive -archivePath App.xcarchive
+
+    - name: Export Unsigned IPA
+      working-directory: ./web-admin/ios/App
+      run: |
+        mkdir -p Payload
+        cp -r App.xcarchive/Products/Applications/App.app Payload/
+        zip -r TITSMART-v${{ env.version }}.ipa Payload
+
+    - name: Upload iOS App Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TITSMART-iOS-v${{ env.version }}
+        path: web-admin/ios/App/TITSMART-v${{ env.version }}.ipa
+
+    - name: Attach IPA to GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ env.version }}
+        files: |
+          web-admin/ios/App/TITSMART-v${{ env.version }}.ipa
+        update_release: true
+        fail_on_unmatched_files: false
+
   send-email:
     name: Send Email Notification
-    needs: [build-electron, build-android]
+    needs: [build-electron, build-android, build-ios]
     runs-on: ubuntu-latest
 
     steps:
@@ -157,4 +216,5 @@ jobs:
         to: kythuat@titsmart.vn
         from: Hệ thống TITSMART <kythuat@titsmart.vn>
         html_body: file://mail_body.html
+
 
