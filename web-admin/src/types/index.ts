@@ -389,7 +389,8 @@ export const getTextColorStyle = (status?: string) => {
 export const getStatusColorStyle = (status?: string) => {
   if (!status) return "border-slate-200 bg-slate-50 text-slate-600";
   const s = status.toLowerCase();
-  if (s.includes("không có") || s.includes("vướng mắc") || s.includes("hủy") || s.includes("chưa đáp ứng") || s.includes("chưa ký") || s.includes("chưa xuất") || s.includes("không cần")) return "border-red-200 bg-red-50 text-red-700";
+  if (s.includes("nhân công")) return "border-indigo-200 bg-indigo-50 text-indigo-700";
+  if (s.includes("ko có") || s.includes("không có") || s.includes("vướng mắc") || s.includes("hủy") || s.includes("chưa đáp ứng") || s.includes("chưa ký") || s.includes("chưa xuất") || s.includes("không cần")) return "border-red-200 bg-red-50 text-red-700";
   if (s.includes("đã có hàng") || s.includes("đã nhận") || s.includes("đã thi công") || s.includes("hoàn thành") || s.includes("đã ký") || s.includes("đã xuất") || (s.includes("đáp ứng") && !s.includes("chưa"))) return "border-emerald-200 bg-emerald-50 text-emerald-700";
   if (s.includes("đang đặt") || s.includes("đang giao") || s.includes("đang trình") || s.includes("đang kiểm") || s.includes("ete") || s.includes("xem xét") || s.includes("đang thương thảo")) return "border-amber-200 bg-amber-50 text-amber-700";
   if (s.includes("đã đặt hàng") || s.includes("đang thi công")) return "border-blue-200 bg-blue-50 text-blue-700";

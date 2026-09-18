@@ -1896,13 +1896,14 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               {/* HÓA ĐƠN VAT */}
                               <td className="p-1 align-middle text-center border-r border-slate-200">
                                 <CustomSelect
-                                  value={pRecord?.invoiceStatus || 'Chưa xuất'}
+                                  value={pRecord?.invoiceStatus || 'Chưa xuất HĐ'}
                                   onChange={(e) => { if (pRecord) onUpdatePurchasing(pRecord.id, { ...pRecord, invoiceStatus: e.target.value }) }}
-                                  className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(pRecord?.invoiceStatus || 'Chưa xuất')}`}
+                                  className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(pRecord?.invoiceStatus || 'Chưa xuất HĐ')}`}
                                 >
-                                  <option value="Chưa xuất" className={getStatusColorStyle('Chưa xuất')}>Chưa xuất</option>
-                                  <option value="Đã xuất" className={getStatusColorStyle('Đã xuất')}>Đã xuất</option>
-                                  <option value="Không cần VAT" className={getStatusColorStyle('Không cần VAT')}>Không cần VAT</option>
+                                  <option value="Chưa xuất HĐ" className={getStatusColorStyle('Chưa xuất HĐ')}>Chưa xuất HĐ</option>
+                                  <option value="Đã xuất HĐ" className={getStatusColorStyle('Đã xuất HĐ')}>Đã xuất HĐ</option>
+                                  <option value="Ko có HĐ" className={getStatusColorStyle('Ko có HĐ')}>Ko có HĐ</option>
+                                  <option value="Nhân công" className={getStatusColorStyle('Nhân công')}>Nhân công</option>
                                 </CustomSelect>
                               </td>
                             </>

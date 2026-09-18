@@ -214,9 +214,12 @@ export const CostPlanModals: React.FC<ModalsProps> = ({
                 </CustomSelect>
               </div>
               <div>
-                <label className="block text-[13px] font-bold text-slate-700 mb-1">Trạng thái Hóa đơn</label>
-                <CustomSelect name="invoiceStatus" defaultValue={editingPurchasing?.invoiceStatus || 'Chưa nhận'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
-                  <option>Chưa nhận</option><option>Đã nhận</option>
+                <label className="block text-[13px] font-bold text-slate-700 mb-1">Hóa đơn VAT đầu vào (Giá vốn)</label>
+                <CustomSelect name="invoiceStatus" defaultValue={editingPurchasing?.invoiceStatus || 'Chưa xuất HĐ'} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none">
+                  <option value="Chưa xuất HĐ">Chưa xuất HĐ</option>
+                  <option value="Đã xuất HĐ">Đã xuất HĐ</option>
+                  <option value="Ko có HĐ">Ko có HĐ</option>
+                  <option value="Nhân công">Nhân công</option>
                 </CustomSelect>
               </div>
               <div className="md:col-span-3"><label className="block text-[13px] font-bold text-slate-700 mb-1">Nhà cung cấp chi phí đầu vào (Giá vốn)</label><input type="text" name="supplier" defaultValue={editingPurchasing?.supplier} placeholder="Tên nhà cung cấp..." className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
