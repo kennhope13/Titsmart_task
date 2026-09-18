@@ -301,7 +301,7 @@ export const ChatWidget: React.FC = () => {
     }).length;
   };
 
-  const ContactList = () => (
+  const renderContactList = () => (
     <div className="flex-1 overflow-y-auto overscroll-contain">
       <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 border-b border-slate-100">
         Nhóm Dự Án
@@ -408,7 +408,7 @@ export const ChatWidget: React.FC = () => {
           {/* Body */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {mobileView === 'contacts' ? (
-              <ContactList />
+              renderContactList()
             ) : selectedTarget ? (
               <>
                 <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-slate-50/50">
@@ -663,11 +663,11 @@ export const ChatWidget: React.FC = () => {
             type="button"
             onClick={handleButtonClick}
             title="Nội bộ Titsmart (Nhấn giữ & kéo để di chuyển)"
-            className="w-12 h-12 rounded-xl bg-blue-900 text-white shadow-xl flex items-center justify-center hover:bg-blue-800 hover:scale-105 active:scale-95 transition-all duration-200 cursor-grab active:cursor-grabbing relative"
+            className="w-12 h-12 rounded-xl bg-blue-900 text-white shadow-xl flex items-center justify-center hover:bg-blue-800 hover:scale-105 active:scale-95 transition-all duration-200 cursor-grab active:cursor-grabbing relative overflow-visible"
           >
             <span className="material-symbols-outlined text-[22px] pointer-events-none">chat</span>
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-bounce border-2 border-white pointer-events-none">
+              <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none flex items-center justify-center border-2 border-white pointer-events-none z-20 shadow-md">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
