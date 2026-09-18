@@ -284,6 +284,7 @@ export interface ProjectPurchasing {
   contractStatus: string;
   paymentDate?: string;
   invoiceStatus?: string;
+  supplier?: string;
   notes?: string;
   updatedBy?: string;
   updatedAt?: string;

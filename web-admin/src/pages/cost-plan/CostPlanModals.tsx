@@ -219,6 +219,7 @@ export const CostPlanModals: React.FC<ModalsProps> = ({
                   <option>Chưa nhận</option><option>Đã nhận</option>
                 </CustomSelect>
               </div>
+              <div className="md:col-span-3"><label className="block text-[13px] font-bold text-slate-700 mb-1">Nhà cung cấp chi phí đầu vào (Giá vốn)</label><input type="text" name="supplier" defaultValue={editingPurchasing?.supplier} placeholder="Tên nhà cung cấp..." className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
               <div className="md:col-span-3"><label className="block text-[13px] font-bold text-slate-700 mb-1">Ghi chú</label><textarea name="notes" defaultValue={editingPurchasing?.notes} rows={2} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
             </div>
             <div className="flex justify-end gap-3 mt-6">

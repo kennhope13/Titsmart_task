@@ -834,7 +834,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const colSpanCount = useMemo(() => {
     if (subTab === 'TECH') return 10;
     if (subTab === 'DOCS') return 7;
-    if (subTab === 'FINANCE') return 12;
+    if (subTab === 'FINANCE') return 13;
     return 9;
   }, [subTab]);
 
@@ -1183,6 +1183,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   <th rowSpan={2} style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THÀNH TIỀN BÁN</th>
                   <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">% TẠM ỨNG</th>
                   <th rowSpan={2} style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">CHI PHÍ (GIÁ VỐN) (đ)</th>
+                  <th rowSpan={2} style={{ width: 140, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NHÀ CUNG CẤP (GIÁ VỐN)</th>
                   <th rowSpan={2} style={{ width: 105, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">LỢI NHUẬN (đ)</th>
                   <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TÌNH TRẠNG HĐ</th>
                   <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HẠN THANH TOÁN</th>
@@ -1749,6 +1750,23 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   />
                                 ) : (
                                   <span onClick={() => pRecord && startEditing(plan.id, 'prepayAmount', pRecord.prepayAmount, true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-end px-1.5 py-1.5" title={showNumber(pRecord?.prepayAmount)}>{showNumber(pRecord?.prepayAmount) || '-'}</span>
+                                )}
+                              </td>
+                              {/* NHÀ CUNG CẤP (GIÁ VỐN) */}
+                              <td className="p-0 align-middle text-center text-xs text-slate-700 border-r border-slate-200 leading-tight">
+                                {editingCell?.id === plan.id && editingCell?.field === 'supplier' && editingCell?.isPurchasing ? (
+                                  <input
+                                    type="text"
+                                    value={tempValue}
+                                    onChange={(e) => setTempValue(e.target.value)}
+                                    onBlur={() => saveEditing(plan, pRecord)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
+                                    autoFocus
+                                    placeholder="Nhà cung cấp..."
+                                    className="w-full text-center bg-white text-slate-900 font-semibold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none border-none rounded"
+                                  />
+                                ) : (
+                                  <span onClick={() => pRecord && startEditing(plan.id, 'supplier', pRecord.supplier || '', true)} className="cursor-pointer hover:bg-slate-100 flex items-center min-h-[32px] w-full justify-center px-1.5 py-1.5 text-slate-800" title={pRecord?.supplier || 'Click để nhập'}>{pRecord?.supplier || <span className="text-slate-300 font-normal">-</span>}</span>
                                 )}
                               </td>
                               {/* LỢI NHUẬN (= Thành tiền bán - Giá vốn) */}
