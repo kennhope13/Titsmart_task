@@ -623,7 +623,7 @@ export const api = {
       const { data: result, error } = await supabase.from('purchasing_plans').insert(payloads).select();
       if (error) {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
-          const allowedKeys = ['id', 'project_code', 'stt', 'content', 'unit', 'volume_contract', 'volume_order', 'unit_price', 'vat_rate', 'vat_amount', 'total_amount', 'prepay_percent', 'prepay_amount', 'remaining_amount', 'order_status', 'contract_status', 'invoice_status', 'notes', 'expected_date', 'payment_date'];
+          const allowedKeys = ['id', 'project_code', 'stt', 'content', 'unit', 'volume_contract', 'volume_order', 'unit_price', 'vat_rate', 'vat_amount', 'total_amount', 'prepay_percent', 'prepay_amount', 'supplier', 'cost_paid_amount', 'cost_payment_date', 'cost_payment_method', 'cost_payer_name', 'remaining_amount', 'order_status', 'contract_status', 'invoice_status', 'notes', 'expected_date', 'payment_date'];
           const cleanedPayloads = payloads.map(p => {
             const cleanObj: any = {};
             for (const key of Object.keys(p)) {

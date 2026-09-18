@@ -831,10 +831,46 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     return Math.max(50, maxLen * 7.5 + 16);
   }, [data]);
 
+  const totals = useMemo(() => {
+    let sell = 0;
+    let cost = 0;
+    let costPaid = 0;
+
+    data.forEach((plan) => {
+      const vol = Number(plan.contractVolume || 0);
+      const unitVal = String(plan.unit || '').trim();
+      if (vol === 0 && unitVal === '') return;
+
+      const pRecord = purchasingData.find(
+        (p) => (p.materialPlanId && p.materialPlanId === plan.id) || (p.stt === plan.stt && p.projectCode === plan.projectCode)
+      );
+
+      const effectiveVol = pRecord?.volumeOrder || plan.contractVolume || 0;
+      const effectivePrice = pRecord?.unitPrice || (plan as any).unitPrice || 0;
+      const effectiveVat = pRecord?.vatRate !== undefined ? pRecord.vatRate : ((plan as any).vatRate !== undefined ? (plan as any).vatRate : 10);
+      const effectiveVatAmt = pRecord?.vatAmount || (effectiveVol * effectivePrice * effectiveVat / 100);
+      const effectiveTotal = pRecord?.totalAmount || (plan as any).totalAmount || ((effectiveVol * effectivePrice) + effectiveVatAmt);
+
+      const costAmt = pRecord?.prepayAmount || 0;
+      const costPaidAmt = pRecord?.costPaidAmount || 0;
+
+      sell += effectiveTotal;
+      cost += costAmt;
+      costPaid += costPaidAmt;
+    });
+
+    return {
+      sell,
+      cost,
+      costPaid,
+      profit: sell - cost,
+    };
+  }, [data, purchasingData]);
+
   const colSpanCount = useMemo(() => {
     if (subTab === 'TECH') return 10;
     if (subTab === 'DOCS') return 7;
-    if (subTab === 'FINANCE') return 17;
+    if (subTab === 'FINANCE') return 23;
     return 9;
   }, [subTab]);
 
@@ -2022,6 +2058,43 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               );
             })()}
           </tbody>
+          {subTab === 'FINANCE' && (
+            <tfoot className="sticky bottom-0 z-30 border-t-2 border-slate-400 bg-slate-100 font-extrabold text-slate-800 shadow-[0_-3px_10px_rgba(0,0,0,0.12)] text-[11px]">
+              <tr className="bg-slate-100">
+                <td style={{ minWidth: 50, width: "var(--stt-width)", borderRight: '1px solid #94a3b8' }} className={`sticky left-0 z-20 bg-slate-100 px-1 py-2 text-center font-black ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>
+                  ∑
+                </td>
+                <td style={{ borderRight: '1px solid #94a3b8', left: isScrolledHorizontally ? '0px' : "var(--stt-width)" }} className="sticky z-20 bg-slate-100 px-2 py-2 text-left font-black w-[170px] min-w-[150px] sm:w-[320px] sm:min-w-[280px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase text-primary">
+                  TỔNG DỰ ÁN
+                </td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-right font-mono font-black text-slate-900 px-1.5">{showNumber(totals.sell)}</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-right font-mono font-black text-slate-900 px-1.5">{showNumber(totals.cost)}</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-right font-mono font-black text-blue-700 px-1.5">{showNumber(totals.costPaid)}</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-right font-mono font-black px-1.5">
+                  <span className={totals.profit < 0 ? 'text-rose-600' : 'text-emerald-700'}>
+                    {showNumber(totals.profit)}
+                  </span>
+                </td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="border-r border-slate-300 p-1 text-center">-</td>
+                <td className="p-1 text-center">-</td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
     </div>
