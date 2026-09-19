@@ -475,8 +475,8 @@ export const PersonnelPage: React.FC = () => {
       <section className="flex-1 grid grid-cols-1 gap-0 overflow-hidden">
         <div className="bg-white border-b border-r border-slate-200 shadow-xs overflow-hidden flex flex-col">
           <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative">
-            <table className="w-full text-xs text-left border-collapse">
-              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Họ tên</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Mã NV</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Vai trò / Chức danh</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Dự án</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">SĐT</th><th className="text-left p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th>{hasPermission(user, 'MANAGE_USERS') && <th className="text-left p-3 bg-slate-50 whitespace-nowrap">Chức năng</th>}</tr></thead>
+            <table className="w-full text-[11px] sm:text-xs text-left border-collapse">
+              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[10px] sm:text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-2 sm:p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Họ tên</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Mã NV</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Vai trò / Chức danh</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Dự án</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">SĐT</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th>{hasPermission(user, 'MANAGE_USERS') && <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Chức năng</th>}</tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {people.map((person, index) => (
                   <tr
@@ -484,14 +484,14 @@ export const PersonnelPage: React.FC = () => {
                     className="cursor-pointer hover:bg-slate-50"
                     onClick={() => openEditModal(person)}
                   >
-                    <td className="p-3 text-center font-mono font-bold text-slate-400 whitespace-nowrap">{index + 1}</td>
-                    <td className="p-3 text-sm font-semibold text-slate-900 tracking-tight min-w-[140px] whitespace-nowrap">
+                    <td className="p-2 sm:p-3 text-center font-mono font-bold text-slate-400 whitespace-nowrap text-[10px] sm:text-xs">{index + 1}</td>
+                    <td className="p-2 sm:p-3 text-xs sm:text-sm font-semibold text-slate-900 tracking-tight min-w-[120px] whitespace-nowrap">
                       <div>{person.name}</div>
                     </td>
-                    <td className="p-3 font-mono font-bold text-primary max-w-[160px] truncate whitespace-nowrap" title={person.code}>{person.code}</td>
-                    <td className="p-3 text-slate-700 font-semibold max-w-[120px] truncate whitespace-nowrap" title={person.username || '-'}>{person.username || '-'}</td>
-                    <td className="p-3 whitespace-nowrap">
-                      <span className={`text-[11px] font-bold ${
+                    <td className="p-2 sm:p-3 font-mono font-bold text-primary max-w-[140px] truncate whitespace-nowrap text-[10px] sm:text-xs" title={person.code}>{person.code}</td>
+                    <td className="p-2 sm:p-3 text-slate-700 font-semibold max-w-[110px] truncate whitespace-nowrap text-[10px] sm:text-xs" title={person.username || '-'}>{person.username || '-'}</td>
+                    <td className="p-2 sm:p-3 whitespace-nowrap">
+                      <span className={`text-[10px] sm:text-[11px] font-bold ${
                         person.role === 'Quản trị viên' ? 'text-purple-700' :
                         person.role === 'Quản lý dự án' ? 'text-blue-700' :
                         person.role === 'Kỹ sư hiện trường' ? 'text-orange-700' :
@@ -500,22 +500,22 @@ export const PersonnelPage: React.FC = () => {
                         {person.role}
                       </span>
                     </td>
-                    <td className="p-3 max-w-[200px] whitespace-nowrap">
+                    <td className="p-2 sm:p-3 max-w-[180px] whitespace-nowrap">
                       {person.assignedProjects.length === 0 ? (
-                        <span className="text-slate-400 text-[11px] italic">Chưa phân công</span>
+                        <span className="text-slate-400 text-[10px] sm:text-[11px] italic">Chưa phân công</span>
                       ) : (
-                        <div className="flex flex-wrap gap-y-0.5 max-w-[200px] truncate" title={person.assignedProjects.map((mp: any) => mp.name).join(', ')}>
+                        <div className="flex flex-wrap gap-y-0.5 max-w-[180px] truncate" title={person.assignedProjects.map((mp: any) => mp.name).join(', ')}>
                           {person.assignedProjects.map((mp: any, i: number, arr: any[]) => (
-                            <span key={mp.code} className="text-primary text-[11px] font-bold whitespace-nowrap">
+                            <span key={mp.code} className="text-primary text-[10px] sm:text-[11px] font-bold whitespace-nowrap">
                               {mp.name}{i < arr.length - 1 ? ', ' : ''}
                             </span>
                           ))}
                         </div>
                       )}
                     </td>
-                    <td className="p-3 text-slate-600 whitespace-nowrap">{person.phone || 'Chưa cập nhật'}</td>
-                    <td className="p-3 whitespace-nowrap"><span className={`text-[11px] font-bold ${person.locked ? 'text-red-700' : 'text-emerald-700'}`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>
-                    <td className="p-3 min-w-[150px] whitespace-nowrap">
+                    <td className="p-2 sm:p-3 text-slate-600 whitespace-nowrap text-[10px] sm:text-xs">{person.phone || 'Chưa cập nhật'}</td>
+                    <td className="p-2 sm:p-3 whitespace-nowrap"><span className={`text-[10px] sm:text-[11px] font-bold ${person.locked ? 'text-red-700' : 'text-emerald-700'}`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>
+                    <td className="p-2 sm:p-3 min-w-[140px] whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
                         <button
                           onClick={(event) => {
