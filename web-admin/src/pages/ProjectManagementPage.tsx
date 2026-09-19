@@ -762,25 +762,25 @@ export const ProjectManagementPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 flex-1 justify-end min-w-0">
-          <div className="inline-flex bg-slate-100/90 p-0.5 rounded-xl border border-slate-200/80 shrink-0 shadow-xs relative z-10">
+          <div className="flex sm:inline-flex w-full sm:w-auto bg-slate-100/90 p-0.5 rounded-xl border border-slate-200/80 shrink-0 shadow-xs relative z-10">
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
-              className={`relative z-10 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'all' ? 'bg-white shadow-sm text-slate-800 ring-1 ring-slate-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`flex-1 sm:flex-initial justify-center whitespace-nowrap relative z-10 px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'all' ? 'bg-white shadow-sm text-slate-800 ring-1 ring-slate-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <span>Tất cả</span> <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.all}</span>
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter('active')}
-              className={`relative z-10 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'active' ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`flex-1 sm:flex-initial justify-center whitespace-nowrap relative z-10 px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'active' ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <span>Đang triển khai</span> <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.active}</span>
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter('completed')}
-              className={`relative z-10 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'completed' ? 'bg-white shadow-sm text-emerald-600 ring-1 ring-emerald-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`flex-1 sm:flex-initial justify-center whitespace-nowrap relative z-10 px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'completed' ? 'bg-white shadow-sm text-emerald-600 ring-1 ring-emerald-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <span>Hoàn thành</span> <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.completed}</span>
             </button>
