@@ -1407,7 +1407,7 @@ export const MaterialTrackingPage: React.FC = () => {
         </div>
       , portalNode)}
 
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden pb-[60px] md:pb-0">
         <section className="bg-white flex flex-col flex-1 min-w-0 min-h-0">
 
         {/* TABS & FILTERS */}
