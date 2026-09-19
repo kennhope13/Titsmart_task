@@ -274,7 +274,7 @@ export const PersonnelPage: React.FC = () => {
         });
 
         if (duplicate) {
-          triggerToast(`Cảnh báo: Nhân sự "${duplicate.name}" (Tài khoản/Mã: ${(duplicate as any).username || duplicate.code || 'Đã tồn tại'}) đã có trong hệ thống! Vui lòng kiểm tra và chỉnh sửa nhân sự sẵn có thay vì tạo trùng lặp.`, 'warning');
+          triggerToast('Cảnh báo: Tên đăng nhập hoặc tài khoản này đã tồn tại trong hệ thống! Vui lòng kiểm tra lại.', 'warning');
           setSubmitting(false);
           return;
         }
