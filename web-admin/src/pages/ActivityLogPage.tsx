@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
 
@@ -116,6 +117,7 @@ export const ActivityLogPage: React.FC = () => {
   const [dateTo, setDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const filteredLogs = useMemo(() => {
     return activityLogs.filter((log) => {
@@ -136,6 +138,20 @@ export const ActivityLogPage: React.FC = () => {
       return matchDate && matchSearch;
     });
   }, [activityLogs, dateFrom, dateTo, searchQuery]);
+
+  const handleExportExcel = () => {
+    const data = filteredLogs.map((log, index) => ({
+      'STT': index + 1,
+      'Thời gian': log.timestamp || '',
+      'Nhân sự': log.user || '',
+      'Dự án': getProjectName(log.project) || '',
+      'Thao tác / Hành động': log.action || ''
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'NhatKyHoatDong');
+    XLSX.writeFile(wb, `Nhat_Ky_Hoat_Dong_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
   const groupedLogs = useMemo(() => {
     return filteredLogs.reduce((acc: Record<string, typeof activityLogs>, log) => {
@@ -221,6 +237,69 @@ export const ActivityLogPage: React.FC = () => {
                 <span className="hidden sm:inline">Xóa lọc</span>
               </button>
             )}
+
+            {/* Export File Dropdown Menu */}
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="flex items-center gap-1.5 border border-emerald-200 bg-emerald-50 h-8 px-3 rounded-lg text-xs font-bold text-emerald-700 hover:bg-emerald-100 active:scale-95 transition-all shadow-xs cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[14px]">file_download</span>
+                <span>Xuất file</span>
+                <span className="material-symbols-outlined text-xs">expand_more</span>
+              </button>
+              {showExportMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[9998]"
+                    onClick={() => setShowExportMenu(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 z-[9999] animate-in fade-in zoom-in duration-100">
+                    <button
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                      Excel (.xlsx)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                      CSV (.csv)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        window.print();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                      PDF (.pdf)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer border-t border-slate-100"
+                    >
+                      <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                      Word (.docx)
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </section>
