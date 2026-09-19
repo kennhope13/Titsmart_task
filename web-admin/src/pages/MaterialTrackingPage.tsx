@@ -377,18 +377,30 @@ export const MaterialTrackingPage: React.FC = () => {
         }
       });
 
-      // 1. Update existing materials with clean codes and sync materialName from import logs if it was Multimode/Singlemode
+      // 1. Update existing materials with clean codes by stripping duplicated MULTIMODE / SINGLEMODE suffix combinations
       for (const m of materials) {
-        let rawCode = (m.code || '').replace(/-\d+$/, ''); // Bỏ các số hậu tố -1, -2 cũ
-        let cleanCode = cleanCodeString(rawCode);
-        let name = m.name || '';
+        let originalCode = m.code || '';
+        let cleanCode = originalCode;
 
-        // Match import transaction by materialCode (e.g. SC/UPC-LC/UPC 15 mét) or by exact specs
+        // Nếu mã chứa cả SINGLEMODE và MULTIMODE nối nhau (vd: FC-UPC-LC-UPC-10-MET-SINGLEMODE-MULTIMODE hoặc LC-PC-LC-PC-20-MET-MULTIMODE-1-SINGLEMODE)
+        if (cleanCode.includes('SINGLEMODE') && cleanCode.includes('MULTIMODE')) {
+          if ((m.name || '').toUpperCase().includes('MULTIMODE')) {
+            cleanCode = cleanCode.replace(/-(SINGLEMODE|MULTIMODE)(-\d+)?/gi, '') + '-MULTIMODE';
+          } else if ((m.name || '').toUpperCase().includes('SINGLEMODE')) {
+            cleanCode = cleanCode.replace(/-(SINGLEMODE|MULTIMODE)(-\d+)?/gi, '') + '-SINGLEMODE';
+          } else {
+            cleanCode = cleanCode.replace(/-(SINGLEMODE|MULTIMODE)(-\d+)?/gi, '');
+          }
+        }
+
+        // Xóa dấu -1, -2 lặp lại ở cuối mã nếu có
+        cleanCode = cleanCode.replace(/-\d+$/, '');
+
+        let name = m.name || '';
         const matchingTx = inventoryTransactions.find(tx => 
           tx.type === 'IMPORT' && 
           tx.materialName &&
-          ((tx.materialCode && cleanCodeString(tx.materialCode) === cleanCode) ||
-           (tx.materialCode && cleanCodeString(tx.materialCode).includes(cleanCodeString(m.specs || ''))) ||
+          ((tx.materialCode && cleanCodeString(tx.materialCode) === cleanCodeString(originalCode)) ||
            (m.specs && tx.specs && tx.specs.trim().toLowerCase() === m.specs.trim().toLowerCase()))
         );
 
@@ -399,8 +411,8 @@ export const MaterialTrackingPage: React.FC = () => {
         const projectKey = m.projectCode || 'COMPANY';
         usedCodes.add(`${projectKey}:::${cleanCode.toLowerCase()}`);
 
-        if (name !== m.name) {
-          await updateMaterial(m.id, { name });
+        if (cleanCode !== m.code || name !== m.name) {
+          await updateMaterial(m.id, { code: cleanCode, name });
           updatedCount++;
         }
       }
@@ -1301,6 +1313,10 @@ export const MaterialTrackingPage: React.FC = () => {
               </div>
             )}
           </div>
+          <button onClick={handleSyncCodeFromImportLogs} title="Chuẩn hóa lại tất cả mã bị trùng SINGLEMODE-MULTIMODE" className="hidden md:flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-2.5 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-sm">
+            <span className="material-symbols-outlined text-[14px] text-primary">sync</span>
+            Chuẩn hóa Mã
+          </button>
           <button onClick={() => handleOpenTransaction('IMPORT')} className="hidden md:flex items-center gap-1.5 bg-emerald-600 text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-sm">
             <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
             Nhập Kho
