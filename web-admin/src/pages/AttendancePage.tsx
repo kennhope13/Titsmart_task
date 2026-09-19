@@ -58,7 +58,7 @@ export const AttendancePage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tab, setTab] = useState<'my' | 'all'>('my');
-  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+  const [filterDate, setFilterDate] = useState('');
   const [filterUser, setFilterUser] = useState('');
   const [checkInImage, setCheckInImage] = useState<string | null>(null);
   const [checkOutImage, setCheckOutImage] = useState<string | null>(null);
@@ -323,7 +323,7 @@ export const AttendancePage: React.FC = () => {
   const filteredLogs = logs.filter(l => {
     if (filterDate) {
       const logDate = new Date(l.checkInTime).toISOString().split('T')[0];
-      if (logDate !== filterDate) return false;
+      if (logDate !== filterDate && l.checkOutTime) return false;
     }
     if (filterUser && l.userId !== filterUser) return false;
     return true;
@@ -465,32 +465,49 @@ export const AttendancePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Filters for Admin */}
-          {tab === 'all' && isAdmin && (
+          {/* Filters Bar */}
+          {mainTab === 'attendance' && (
             <div className="px-4 py-2 border-b border-slate-200 bg-white flex flex-wrap items-center gap-3 shrink-0 shadow-xs relative z-10">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-slate-400 text-[18px]">calendar_month</span>
                 <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)}
-                  className="px-2.5 py-1 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50" />
+                  className="px-2.5 py-1 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer" />
+                {filterDate ? (
+                  <button 
+                    type="button"
+                    onClick={() => setFilterDate('')}
+                    className="px-2 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded flex items-center gap-1 transition-colors border border-slate-200 cursor-pointer"
+                    title="Hiển thị tất cả các ngày"
+                  >
+                    <span className="material-symbols-outlined text-xs">close</span>
+                    Tất cả ngày
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-slate-500 font-semibold italic">(Tất cả các ngày)</span>
+                )}
               </div>
-              <div className="h-4 w-px bg-slate-200"></div>
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-slate-400 text-[18px]">person</span>
-                <CustomSelect value={filterUser} onChange={e => setFilterUser(e.target.value)}
-                  searchable={true}
-                  className="px-2.5 py-1 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 min-w-[150px]">
-                  <option value="">Tất cả nhân viên</option>
-                  {engineers.map(e => (
-                    <option key={e.id} value={e.id}>{e.name}</option>
-                  ))}
-                </CustomSelect>
-              </div>
+              {isAdmin && tab === 'all' && (
+                <>
+                  <div className="h-4 w-px bg-slate-200"></div>
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 text-[18px]">person</span>
+                    <CustomSelect value={filterUser} onChange={e => setFilterUser(e.target.value)}
+                      searchable={true}
+                      className="px-2.5 py-1 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 min-w-[150px]">
+                      <option value="">Tất cả nhân viên</option>
+                      {engineers.map(e => (
+                        <option key={e.id} value={e.id}>{e.name}</option>
+                      ))}
+                    </CustomSelect>
+                  </div>
+                </>
+              )}
               <div className="ml-auto flex items-center gap-3">
                 <div className="px-2.5 py-1 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200">
                   {filteredLogs.length} bản ghi
                 </div>
                 {filteredLogs.length > 0 && (
-                  <button onClick={handleExportExcel} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-sm">
+                  <button onClick={handleExportExcel} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-sm cursor-pointer">
                     <span className="material-symbols-outlined text-[16px]">download</span>
                     Xuất Excel
                   </button>
