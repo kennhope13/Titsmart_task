@@ -24,9 +24,9 @@ const normalizePurchaseStatus = (status?: string) => {
   return status;
 };
 
-const cleanCodeString = (str: string) => {
+const cleanCodeString = (str: string, name?: string) => {
   if (!str) return '';
-  return str
+  let res = str
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // Bỏ dấu tiếng Việt
     .replace(/đ/g, "d")
@@ -35,6 +35,20 @@ const cleanCodeString = (str: string) => {
     .replace(/[^A-Z0-9]/g, "-") // Chuyển khoảng trắng, dấu tiếng Việt/ký tự đặc biệt thành dấu -
     .replace(/-+/g, "-") // Loại bỏ dấu - liên tiếp
     .replace(/^-|-$/g, ""); // Xóa dấu - ở đầu và cuối
+
+  if (res.includes('SINGLEMODE') && res.includes('MULTIMODE')) {
+    const uppercaseName = (name || '').toUpperCase();
+    if (uppercaseName.includes('MULTIMODE')) {
+      res = res.replace(/-(SINGLEMODE|MULTIMODE)(-\d+)?/gi, '') + '-MULTIMODE';
+    } else if (uppercaseName.includes('SINGLEMODE')) {
+      res = res.replace(/-(SINGLEMODE|MULTIMODE)(-\d+)?/gi, '') + '-SINGLEMODE';
+    } else {
+      res = res.replace(/-SINGLEMODE-MULTIMODE/gi, '-MULTIMODE')
+               .replace(/-MULTIMODE-SINGLEMODE/gi, '-SINGLEMODE')
+               .replace(/-(SINGLEMODE|MULTIMODE)(-\d+)?-(SINGLEMODE|MULTIMODE)(-\d+)?/gi, '-$1');
+    }
+  }
+  return res;
 };
 
 const generateMaterialCode = (name: string, suffix?: string) => {
@@ -192,7 +206,7 @@ export const MaterialTrackingPage: React.FC = () => {
             const unit = String(row[6] || 'Cái').trim();
             
             let rawCode = String(row[3] || '').trim();
-            let finalCode = rawCode ? cleanCodeString(rawCode) : '';
+            let finalCode = rawCode ? cleanCodeString(rawCode, finalName) : '';
             if (!finalCode) {
               let suffixNum = 0;
               let codeBase = specs ? `${finalName}-${specs}` : finalName;
@@ -204,7 +218,7 @@ export const MaterialTrackingPage: React.FC = () => {
             } else {
               // If user provided a code, but it's a duplicate (e.g. same code for Singlemode and Multimode), combine Code + Name to differentiate
               if (usedCodes.has(finalCode)) {
-                let codeWithName = cleanCodeString(`${finalCode}-${finalName}`);
+                let codeWithName = cleanCodeString(`${finalCode}-${finalName}`, finalName);
                 finalCode = codeWithName;
                 
                 // If it's STILL a duplicate even after adding name, then append a number suffix
@@ -447,16 +461,16 @@ export const MaterialTrackingPage: React.FC = () => {
         
         const exists = materials.some(m => 
           (m.name.toLowerCase() === grpName.toLowerCase() && (m.specs || '').toLowerCase() === grpSpecs.toLowerCase()) ||
-          (grp.materialCode && cleanCodeString(m.code).includes(cleanCodeString(grp.materialCode)) && m.name.toLowerCase() === grpName.toLowerCase())
+          (grp.materialCode && cleanCodeString(m.code, m.name).includes(cleanCodeString(grp.materialCode, grpName)) && m.name.toLowerCase() === grpName.toLowerCase())
         );
 
         if (!exists) {
           currentStt++;
           let rawCode = grp.materialCode || `${grpName}-${grpSpecs}`;
-          let cleanCode = cleanCodeString(rawCode);
+          let cleanCode = cleanCodeString(rawCode, grpName);
 
-          if (!cleanCode.includes(cleanCodeString(grpName))) {
-            cleanCode = cleanCodeString(`${cleanCode}-${grpName}`);
+          if (!cleanCode.includes(cleanCodeString(grpName, grpName))) {
+            cleanCode = cleanCodeString(`${cleanCode}-${grpName}`, grpName);
           }
 
           let suffixNum = 0;
@@ -1585,7 +1599,7 @@ export const MaterialTrackingPage: React.FC = () => {
                         <td className="p-2 md:p-3.5">
                           <div className="font-bold text-slate-900 leading-snug">{material.name}</div>
                         </td>
-                        <td className="p-2 md:p-3.5 font-mono text-slate-500 text-xs">{material.code}</td>
+                        <td className="p-2 md:p-3.5 font-mono text-slate-500 text-xs">{cleanCodeString(material.code, material.name)}</td>
                         <td className="p-2 md:p-3.5 text-slate-600 text-xs">
                           {material.specs || '-'}
                         </td>
@@ -1660,7 +1674,7 @@ export const MaterialTrackingPage: React.FC = () => {
                   <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
                     <td className="p-2 md:p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
                     <td className="p-2 md:p-3.5 font-bold text-slate-900 whitespace-nowrap">{tx.date ? new Date(tx.date).toLocaleDateString("vi-VN") : "-"}</td>
-                    <td className="p-2 md:p-3.5 font-mono text-slate-500">{tx.materialCode}</td>
+                    <td className="p-2 md:p-3.5 font-mono text-slate-500">{cleanCodeString(tx.materialCode, tx.materialName)}</td>
                     <td className="p-2 md:p-3.5 font-bold text-slate-800">{tx.materialName}</td>
                     <td className="p-2 md:p-3.5 text-slate-500">{tx.specs || '-'}</td>
                     <td className="p-2 md:p-3.5 text-right font-bold text-emerald-600">+{tx.quantity.toLocaleString('vi-VN')}</td>
@@ -1701,7 +1715,7 @@ export const MaterialTrackingPage: React.FC = () => {
                   <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
                     <td className="p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
                     <td className="p-3.5 font-bold text-slate-900">{tx.date ? new Date(tx.date).toLocaleDateString("vi-VN") : "-"}</td>
-                    <td className="p-3.5 font-mono text-slate-500">{tx.materialCode}</td>
+                    <td className="p-3.5 font-mono text-slate-500">{cleanCodeString(tx.materialCode, tx.materialName)}</td>
                     <td className="p-3.5 font-bold text-slate-800">{tx.materialName}</td>
                     <td className="p-3.5 text-slate-500">{tx.specs || '-'}</td>
                     <td className="p-3.5 text-right font-bold text-amber-600">-{tx.quantity.toLocaleString('vi-VN')}</td>
