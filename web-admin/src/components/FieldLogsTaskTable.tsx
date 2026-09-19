@@ -254,7 +254,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
 
   return (
     <div 
-      className="flex-1 overflow-auto bg-white pb-24 custom-scrollbar"
+      className="flex-1 overflow-auto bg-white pb-[60px] md:pb-0 custom-scrollbar"
       onScroll={(e) => {
         const scrollLeft = e.currentTarget.scrollLeft;
         setIsScrolledHorizontally(scrollLeft > 10);
