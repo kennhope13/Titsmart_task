@@ -756,38 +756,38 @@ export const ProjectManagementPage: React.FC = () => {
       <LoadingSpinner loading={loading} message={loadingMessage} />
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
 
-      <section className="sticky top-0 z-20 border-b border-slate-200 bg-white shadow-sm pl-3 pr-12 md:pr-14 min-h-[2.75rem] md:min-h-[3.25rem] py-0.5 md:py-1.5 flex flex-wrap lg:flex-nowrap justify-between items-center gap-2">
-        <div className="flex items-center gap-2 shrink-0">
+      <section className="sticky top-0 z-20 border-b border-slate-200 bg-white shadow-sm pl-3 pr-12 md:pr-14 py-1.5 md:py-2 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2">
+        <div className="flex items-center justify-between gap-2 shrink-0">
           <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2">{TEXT.projectManagement}</h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 flex-1 justify-end min-w-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 justify-end min-w-0">
           <div className="flex sm:inline-flex w-full sm:w-auto bg-slate-100/90 p-0.5 rounded-xl border border-slate-200/80 shrink-0 shadow-xs relative z-10">
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
-              className={`flex-1 sm:flex-initial justify-center whitespace-nowrap relative z-10 px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'all' ? 'bg-white shadow-sm text-slate-800 ring-1 ring-slate-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`flex-1 sm:flex-initial justify-center whitespace-nowrap relative z-10 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'all' ? 'bg-white shadow-sm text-slate-800 ring-1 ring-slate-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <span>Tất cả</span> <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.all}</span>
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter('active')}
-              className={`flex-1 sm:flex-initial justify-center whitespace-nowrap relative z-10 px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'active' ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`flex-1 sm:flex-initial justify-center whitespace-nowrap relative z-10 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'active' ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <span>Đang triển khai</span> <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.active}</span>
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter('completed')}
-              className={`flex-1 sm:flex-initial justify-center whitespace-nowrap relative z-10 px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'completed' ? 'bg-white shadow-sm text-emerald-600 ring-1 ring-emerald-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`flex-1 sm:flex-initial justify-center whitespace-nowrap relative z-10 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none active:scale-95 ${statusFilter === 'completed' ? 'bg-white shadow-sm text-emerald-600 ring-1 ring-emerald-200 font-extrabold' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <span>Hoàn thành</span> <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.completed}</span>
             </button>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <div className="relative min-w-[130px] max-w-[180px] flex items-center">
+            <div className="relative flex-1 sm:w-auto min-w-[130px] sm:max-w-[180px] flex items-center">
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
               <input
                 type="text"
@@ -805,7 +805,8 @@ export const ProjectManagementPage: React.FC = () => {
                 className="flex items-center justify-center gap-1 bg-primary text-white px-3 h-[34px] rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">add</span>
-                <span>Tạo dự án mới</span>
+                <span className="hidden sm:inline">Tạo dự án mới</span>
+                <span className="sm:hidden">Tạo mới</span>
               </button>
             )}
           </div>
