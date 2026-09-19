@@ -167,45 +167,48 @@ export const ActivityLogPage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-hidden">
       {/* HEADER SECTION */}
-      <section className={`border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-4 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0`}>
-        <div className="flex items-center gap-4">
-          <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">NHẬT KÝ HOẠT ĐỘNG</h1>
-        </div>
-
-        
-          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
-          <span className="flex items-center justify-center px-3 h-[34px] rounded-lg bg-blue-50 text-primary text-xs font-bold border border-blue-100 whitespace-nowrap">
+      <section className="sticky top-0 z-30 border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-4 shrink-0 shadow-sm">
+        <div className="flex items-center gap-2.5 h-8 md:h-auto justify-between w-full md:w-auto">
+          <h1 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">NHẬT KÝ HOẠT ĐỘNG</h1>
+          <span className="flex items-center justify-center px-2 py-0.5 rounded-lg bg-blue-50 text-primary text-[11px] font-bold border border-blue-100 whitespace-nowrap md:hidden">
             {filteredLogs.length} thao tác
           </span>
-          <div className="relative w-full sm:w-60 flex items-center">
-            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap md:flex-nowrap">
+          <span className="hidden md:flex items-center justify-center px-3 h-8 rounded-lg bg-blue-50 text-primary text-xs font-bold border border-blue-100 whitespace-nowrap">
+            {filteredLogs.length} thao tác
+          </span>
+          
+          <div className="relative flex-1 md:w-60 min-w-0">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">search</span>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm hành động, nhân sự..."
-              className="w-full pl-8 pr-3 h-[34px] bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:bg-white focus:outline-none transition-all"
+              placeholder="Tìm hành động, nhân sự..."
+              className="w-full pl-8 pr-2 h-8 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:bg-white focus:outline-none transition-all"
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2.5 h-[34px] focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
-              <span className="text-[11px] font-bold text-slate-500 mr-1.5">Từ</span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 h-8 focus-within:ring-1 focus-within:ring-primary transition-all">
+              <span className="text-[10px] md:text-[11px] font-bold text-slate-400 mr-1">Từ</span>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-26 cursor-pointer"
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-[105px] md:w-26 cursor-pointer"
               />
             </div>
             
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2.5 h-[34px] focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
-              <span className="text-[11px] font-bold text-slate-500 mr-1.5">Đến</span>
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 h-8 focus-within:ring-1 focus-within:ring-primary transition-all">
+              <span className="text-[10px] md:text-[11px] font-bold text-slate-400 mr-1">Đến</span>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-26 cursor-pointer"
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-[105px] md:w-26 cursor-pointer"
               />
             </div>
           </div>
@@ -214,10 +217,11 @@ export const ActivityLogPage: React.FC = () => {
             <button
               type="button"
               onClick={clearFilters}
-              className="flex items-center justify-center gap-2 px-3 h-[38px] border border-slate-200 bg-white rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors"
+              title="Xóa lọc"
+              className="flex items-center justify-center gap-1 px-2 md:px-3 h-8 border border-slate-200 bg-white rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors shrink-0"
             >
-              <span className="material-symbols-outlined text-[14px]">filter_alt_off</span>
-              Xóa lọc
+              <span className="material-symbols-outlined text-sm">filter_alt_off</span>
+              <span className="hidden sm:inline">Xóa lọc</span>
             </button>
           )}
         </div>
