@@ -180,7 +180,7 @@ export const ActivityLogPage: React.FC = () => {
             {filteredLogs.length} thao tác
           </span>
           
-          <div className="relative w-full md:w-56 min-w-0">
+          <div className="relative hidden md:block w-56 min-w-0">
             <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">search</span>
             <input
               type="text"
