@@ -269,7 +269,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                     '/dashboard',
                     '/projects',
                     '/my-tasks',
-                    '/materials',
+                    '/office-costs',
                   ])
                 );
 
