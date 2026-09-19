@@ -167,20 +167,20 @@ export const ActivityLogPage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-hidden">
       {/* HEADER SECTION */}
-      <section className="sticky top-0 z-30 border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-4 shrink-0 shadow-sm">
-        <div className="flex items-center gap-2.5 h-8 md:h-auto justify-between w-full md:w-auto">
+      <section className="sticky top-0 z-30 border-b border-slate-200 bg-white px-3 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-4 shrink-0 shadow-xs">
+        <div className="flex items-center justify-between w-full md:w-auto h-8 md:h-auto pr-12 md:pr-0">
           <h1 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">NHẬT KÝ HOẠT ĐỘNG</h1>
           <span className="flex items-center justify-center px-2 py-0.5 rounded-lg bg-blue-50 text-primary text-[11px] font-bold border border-blue-100 whitespace-nowrap md:hidden">
             {filteredLogs.length} thao tác
           </span>
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap md:flex-nowrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto justify-end">
           <span className="hidden md:flex items-center justify-center px-3 h-8 rounded-lg bg-blue-50 text-primary text-xs font-bold border border-blue-100 whitespace-nowrap">
             {filteredLogs.length} thao tác
           </span>
           
-          <div className="relative flex-1 md:w-60 min-w-0">
+          <div className="relative w-full md:w-56 min-w-0">
             <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">search</span>
             <input
               type="text"
@@ -191,35 +191,37 @@ export const ActivityLogPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 h-8 focus-within:ring-1 focus-within:ring-primary transition-all shrink-0">
-            <span className="text-[11px] font-bold text-slate-400 mr-1">Từ</span>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="bg-transparent text-[11px] font-semibold text-slate-700 focus:outline-none w-[100px] cursor-pointer"
-            />
-            <span className="text-slate-300 mx-1.5 font-light">|</span>
-            <span className="text-[11px] font-bold text-slate-400 mr-1">Đến</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="bg-transparent text-[11px] font-semibold text-slate-700 focus:outline-none w-[100px] cursor-pointer"
-            />
-          </div>
+          <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+            <div className="flex-1 sm:flex-none flex items-center justify-between bg-white border border-slate-200 rounded-lg px-2 h-8 focus-within:ring-1 focus-within:ring-primary transition-all">
+              <span className="text-[11px] font-bold text-slate-400 mr-1 shrink-0">Từ</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="bg-transparent text-[11px] font-semibold text-slate-700 focus:outline-none w-[100px] cursor-pointer"
+              />
+              <span className="text-slate-300 mx-1 font-light shrink-0">|</span>
+              <span className="text-[11px] font-bold text-slate-400 mr-1 shrink-0">Đến</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="bg-transparent text-[11px] font-semibold text-slate-700 focus:outline-none w-[100px] cursor-pointer"
+              />
+            </div>
 
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              title="Xóa lọc"
-              className="flex items-center justify-center gap-1 px-2 md:px-3 h-8 border border-slate-200 bg-white rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors shrink-0"
-            >
-              <span className="material-symbols-outlined text-sm">filter_alt_off</span>
-              <span className="hidden sm:inline">Xóa lọc</span>
-            </button>
-          )}
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                title="Xóa lọc"
+                className="flex items-center justify-center gap-1 px-2.5 h-8 border border-slate-200 bg-white rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors shrink-0"
+              >
+                <span className="material-symbols-outlined text-sm">filter_alt_off</span>
+                <span className="hidden sm:inline">Xóa lọc</span>
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
