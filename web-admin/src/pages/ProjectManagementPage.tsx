@@ -763,24 +763,27 @@ export const ProjectManagementPage: React.FC = () => {
 
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto justify-end">
-            <div className="grid grid-cols-3 bg-slate-100 p-0.5 rounded-lg border border-slate-200 w-full sm:w-auto shrink-0">
+            <div className="grid grid-cols-3 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 w-full sm:w-auto shrink-0 shadow-xs">
               <button
+                type="button"
                 onClick={() => setStatusFilter('all')}
-                className={`px-2 sm:px-3 py-1.5 text-[11px] font-bold rounded-md transition-all text-center flex items-center justify-center gap-1 ${statusFilter === 'all' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 sm:px-4 py-2 min-h-[38px] text-[12px] font-bold rounded-lg transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer select-none active:scale-95 ${statusFilter === 'all' ? 'bg-white shadow-sm text-slate-800 ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
               >
-                <span>Tất cả</span> <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.all}</span>
+                <span>Tất cả</span> <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.all}</span>
               </button>
               <button
+                type="button"
                 onClick={() => setStatusFilter('active')}
-                className={`px-2 sm:px-3 py-1.5 text-[11px] font-bold rounded-md transition-all text-center flex items-center justify-center gap-1 ${statusFilter === 'active' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 sm:px-4 py-2 min-h-[38px] text-[12px] font-bold rounded-lg transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer select-none active:scale-95 ${statusFilter === 'active' ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-200' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
               >
-                <span>Đang triển khai</span> <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.active}</span>
+                <span>Đang triển khai</span> <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.active}</span>
               </button>
               <button
+                type="button"
                 onClick={() => setStatusFilter('completed')}
-                className={`px-2 sm:px-3 py-1.5 text-[11px] font-bold rounded-md transition-all text-center flex items-center justify-center gap-1 ${statusFilter === 'completed' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 sm:px-4 py-2 min-h-[38px] text-[12px] font-bold rounded-lg transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer select-none active:scale-95 ${statusFilter === 'completed' ? 'bg-white shadow-sm text-emerald-600 ring-1 ring-emerald-200' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
               >
-                <span>Hoàn thành</span> <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.completed}</span>
+                <span>Hoàn thành</span> <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.completed}</span>
               </button>
             </div>
           <div className="flex items-center gap-2 w-full md:w-auto flex-nowrap">
