@@ -485,12 +485,12 @@ export const PersonnelPage: React.FC = () => {
                     onClick={() => openEditModal(person)}
                   >
                     <td className="p-3 text-center font-mono font-bold text-slate-400 whitespace-nowrap">{index + 1}</td>
-                    <td className="p-3 text-sm font-semibold text-slate-900 tracking-tight">
-                      <div className="break-words">{person.name}</div>
+                    <td className="p-3 text-sm font-semibold text-slate-900 tracking-tight min-w-[140px] whitespace-nowrap">
+                      <div>{person.name}</div>
                     </td>
-                    <td className="p-3 font-mono font-bold text-primary break-all">{person.code}</td>
-                    <td className="p-3 text-slate-700 font-semibold break-all">{person.username || '-'}</td>
-                    <td className="p-3 break-words">
+                    <td className="p-3 font-mono font-bold text-primary max-w-[160px] truncate whitespace-nowrap" title={person.code}>{person.code}</td>
+                    <td className="p-3 text-slate-700 font-semibold max-w-[120px] truncate whitespace-nowrap" title={person.username || '-'}>{person.username || '-'}</td>
+                    <td className="p-3 whitespace-nowrap">
                       <span className={`text-[11px] font-bold ${
                         person.role === 'Quản trị viên' ? 'text-purple-700' :
                         person.role === 'Quản lý dự án' ? 'text-blue-700' :
@@ -500,13 +500,13 @@ export const PersonnelPage: React.FC = () => {
                         {person.role}
                       </span>
                     </td>
-                    <td className="p-3">
+                    <td className="p-3 max-w-[200px] whitespace-nowrap">
                       {person.assignedProjects.length === 0 ? (
                         <span className="text-slate-400 text-[11px] italic">Chưa phân công</span>
                       ) : (
-                        <div className="flex flex-wrap gap-y-0.5">
+                        <div className="flex flex-wrap gap-y-0.5 max-w-[200px] truncate" title={person.assignedProjects.map((mp: any) => mp.name).join(', ')}>
                           {person.assignedProjects.map((mp: any, i: number, arr: any[]) => (
-                            <span key={mp.code} className="text-primary text-[11px] font-bold break-words">
+                            <span key={mp.code} className="text-primary text-[11px] font-bold whitespace-nowrap">
                               {mp.name}{i < arr.length - 1 ? ', ' : ''}
                             </span>
                           ))}
