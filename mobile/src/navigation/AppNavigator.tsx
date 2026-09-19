@@ -70,9 +70,9 @@ const MainTabs = () => {
       <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Tổng quan' }} />
       <Tab.Screen name="Projects" component={ProjectsScreen} options={{ title: 'Dự án' }} />
       <Tab.Screen name="Tasks" component={TasksScreen} options={{ title: 'Công việc' }} />
-      <Tab.Screen name="Field" component={FieldScreen} options={{ title: 'Hiện trường' }} />
-      <Tab.Screen name="Materials" component={MaterialsScreen} options={{ title: 'Tổng kho' }} />
       <Tab.Screen name="OfficeCosts" component={OfficeCostsScreen} options={{ title: 'Quỹ VP' }} />
+      <Tab.Screen name="Materials" component={MaterialsScreen} options={{ title: 'Tổng kho' }} />
+      <Tab.Screen name="Field" component={FieldScreen} options={{ title: 'Hiện trường' }} />
       <Tab.Screen name="Personnel" component={PersonnelScreen} options={{ title: 'Nhân sự' }} />
       <Tab.Screen name="ActivityLog" component={ActivityLogScreen} options={{ title: 'Nhật ký' }} />
       <Tab.Screen name="Account" component={AccountScreen} options={{ title: 'Tài khoản' }} />

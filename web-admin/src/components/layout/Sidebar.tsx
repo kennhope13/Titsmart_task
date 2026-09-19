@@ -88,12 +88,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       { label: 'Tổng quan', path: '/dashboard', icon: 'analytics', req: 'VIEW_PROJECTS' },
       { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower', req: 'VIEW_PROJECTS' },
       { label: 'Công việc', path: '/my-tasks', icon: 'checklist', req: 'VIEW_TASKS' },
-      { label: 'Tổng kho', path: '/materials', icon: 'warehouse', req: 'VIEW_MATERIALS' },
       { label: 'Chi phí văn phòng', path: '/office-costs', icon: 'account_balance_wallet', req: 'VIEW_OFFICE_COSTS' },
       { label: 'Quản lý hồ sơ', path: '/document-tracking', icon: 'folder_managed', req: 'VIEW_DOCUMENTS' },
+      { label: 'Tổng kho', path: '/materials', icon: 'warehouse', req: 'VIEW_MATERIALS' },
+      { label: 'Chấm công & Nghỉ phép', path: '/attendance', icon: 'schedule', req: 'VIEW_TASKS' },
       { label: 'Nhân sự', path: '/personnel', icon: 'groups', req: 'VIEW_USERS' },
-      { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history', req: 'VIEW_ACTIVITY_LOG' },
-      {label: 'Chấm công & Nghỉ phép', path: '/attendance', icon: 'schedule', req: 'VIEW_TASKS' }
+      { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history', req: 'VIEW_ACTIVITY_LOG' }
     ];
 
     return [{
@@ -355,7 +355,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
           { label: 'Dự án', path: '/projects', icon: 'cell_tower' },
           { label: 'Công việc', path: '/my-tasks', icon: 'checklist' },
-          { label: 'Vật tư', path: '/materials', icon: 'warehouse' },
+          { label: 'Chi phí VP', path: '/office-costs', icon: 'account_balance_wallet' },
         ]).map((item) => (
           <NavLink
             key={item.path}
