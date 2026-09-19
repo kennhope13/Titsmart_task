@@ -763,24 +763,24 @@ export const ProjectManagementPage: React.FC = () => {
 
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto justify-end">
-            <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 overflow-x-auto max-w-full shrink-0">
+            <div className="grid grid-cols-3 bg-slate-100 p-0.5 rounded-lg border border-slate-200 w-full sm:w-auto shrink-0">
               <button
                 onClick={() => setStatusFilter('all')}
-                className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all whitespace-nowrap ${statusFilter === 'all' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-2 sm:px-3 py-1.5 text-[11px] font-bold rounded-md transition-all text-center flex items-center justify-center gap-1 ${statusFilter === 'all' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                Tất cả <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.all}</span>
+                <span>Tất cả</span> <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.all}</span>
               </button>
               <button
                 onClick={() => setStatusFilter('active')}
-                className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all whitespace-nowrap ${statusFilter === 'active' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-2 sm:px-3 py-1.5 text-[11px] font-bold rounded-md transition-all text-center flex items-center justify-center gap-1 ${statusFilter === 'active' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                Đang triển khai <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.active}</span>
+                <span>Đang triển khai</span> <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.active}</span>
               </button>
               <button
                 onClick={() => setStatusFilter('completed')}
-                className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all whitespace-nowrap ${statusFilter === 'completed' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-2 sm:px-3 py-1.5 text-[11px] font-bold rounded-md transition-all text-center flex items-center justify-center gap-1 ${statusFilter === 'completed' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                Hoàn thành <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.completed}</span>
+                <span>Hoàn thành</span> <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/50 text-slate-500'}`}>{counts.completed}</span>
               </button>
             </div>
           <div className="flex items-center gap-2 w-full md:w-auto flex-nowrap">

@@ -4,6 +4,28 @@ import { useRealtimeStore } from '../services/realtimeStore';
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Cell, Tooltip, Legend, LabelList, PieChart, Pie } from 'recharts';
 
 
+interface ChartBoxProps {
+  title: string;
+  children: React.ReactNode;
+  span?: number;
+  onClick?: () => void;
+}
+
+const ChartBox: React.FC<ChartBoxProps> = React.memo(({ title, children, span = 1, onClick }) => (
+  <div 
+    className={`group relative flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs h-[330px] xl:col-span-${span} overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-md hover:border-blue-300 transition-all duration-200' : ''}`}
+    onClick={onClick}
+  >
+    <div className={`h-1 w-full ${onClick ? 'bg-slate-100 group-hover:bg-blue-400' : 'bg-slate-100'} transition-colors`} />
+    <div className="bg-white border-b border-slate-100 px-3 py-2 flex justify-between items-center">
+      <span className={`text-sm font-extrabold text-slate-800 truncate ${onClick ? 'group-hover:text-primary transition-colors' : ''}`}>{title}</span>
+    </div>
+    <div className="flex-1 h-[270px] relative p-2 overflow-hidden">
+      {children}
+    </div>
+  </div>
+));
+
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { 
@@ -132,21 +154,6 @@ export const DashboardPage: React.FC = () => {
     }).sort((a, b) => b.total - a.total).slice(0, 10);
   }, [displayEnhancedProjects, issues]);
 
-  const ChartBox = ({ title, children, span = 1, onClick }: { title: string, children: React.ReactNode, span?: number, onClick?: () => void }) => (
-    <div 
-      className={`group relative flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs h-full xl:col-span-${span} overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-md hover:border-blue-300 transition-all duration-200' : ''}`}
-      onClick={onClick}
-    >
-      <div className={`h-1 w-full ${onClick ? 'bg-slate-100 group-hover:bg-blue-400' : 'bg-slate-100'} transition-colors`} />
-      <div className="bg-white border-b border-slate-100 px-3 py-2 flex justify-between items-center">
-        <span className={`text-sm font-extrabold text-slate-800 truncate ${onClick ? 'group-hover:text-primary transition-colors' : ''}`}>{title}</span>
-      </div>
-      <div className="flex-1 min-h-0 relative p-2">
-        {children}
-      </div>
-    </div>
-  );
-
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
@@ -244,7 +251,7 @@ export const DashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 auto-rows-[350px]">
             
             <ChartBox title="TIẾN ĐỘ THI CÔNG (%)" onClick={() => navigate("/projects")}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 <BarChart data={progressData} margin={{ top: 10, right: 35, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                   <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#475569' }} hide />
@@ -261,7 +268,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             <ChartBox title="TỔNG CHI PHÍ THỰC TẾ (VNĐ)" onClick={() => navigate("/cost-plan")}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 <BarChart data={costData} margin={{ top: 10, right: isMobile ? 65 : 90, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                   <XAxis type="number" hide />
@@ -275,7 +282,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             <ChartBox title="TIẾN ĐỘ THANH TOÁN / GIẢI NGÂN (VNĐ)" onClick={() => navigate("/documents")}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 {paymentData.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-slate-400">Không có dữ liệu hợp đồng</div>
                 ) : (
@@ -295,7 +302,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             <ChartBox title="THỐNG KÊ SỰ CỐ / VƯỚNG MẮC" onClick={() => navigate("/activity-log")}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 {issueData.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-slate-400">Không có dữ liệu sự cố</div>
                 ) : (

@@ -345,7 +345,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       )}
 
       {/* Mobile Bottom Navigation Bar (Shown ONLY on screens <= 768px via css md:hidden) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-[88px] bg-white border-t border-slate-200 z-50 flex items-start justify-around px-2 pt-3 shadow-[0_-6px_20px_rgba(0,0,0,0.12)] pb-[calc(env(safe-area-inset-bottom,0px)+10px)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-[58px] bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom,0px)]">
         {(currentProject ? [
           { label: 'Tổng quan', path: `/projects/${currentProject.id}/overview`, icon: 'dashboard' },
           { label: 'Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'fact_check' },
@@ -362,12 +362,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
             to={item.path}
             end={item.path === '/'}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[48px] ${
+              `flex flex-col items-center justify-center py-0.5 px-2 rounded-lg transition-colors min-w-[48px] ${
                 isActive ? 'text-primary font-bold' : 'text-slate-500 font-medium hover:text-slate-800'
               }`
             }
           >
-            <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
+            <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
             <span className="text-[10px] leading-tight truncate max-w-[56px]">{item.label}</span>
           </NavLink>
         ))}
@@ -375,11 +375,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         {/* 5th Tab: Nút "Khác..." mở Bottom Sheet tất cả tính năng */}
         <button
           onClick={() => setIsMobileDrawerOpen(true)}
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[48px] ${
+          className={`flex flex-col items-center justify-center py-0.5 px-2 rounded-lg transition-colors min-w-[48px] ${
             isMobileDrawerOpen ? 'text-primary font-bold' : 'text-slate-500 font-medium hover:text-slate-800'
           }`}
         >
-          <span className="material-symbols-outlined text-[22px]">apps</span>
+          <span className="material-symbols-outlined text-[20px]">apps</span>
           <span className="text-[10px] leading-tight truncate max-w-[56px]">Khác...</span>
         </button>
       </div>
