@@ -975,7 +975,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const handleOpenTransaction = (type: 'IMPORT' | 'EXPORT') => {
     setTransactionType(type);
-    setTxMaterialId(filteredMaterials.length > 0 ? filteredMaterials[0].id : '');
+    setTxMaterialId('');
     setTxQuantity(1);
     setTxDate(new Date().toISOString().split('T')[0]);
     setTxSourceOrProject('');
