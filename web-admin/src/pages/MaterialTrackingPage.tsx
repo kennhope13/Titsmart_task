@@ -885,17 +885,12 @@ export const MaterialTrackingPage: React.FC = () => {
     const usedCodes = new Set(materials.map(m => (m.code || '').toLowerCase()));
 
     if (finalCode) {
-      // Nếu mã người dùng nhập bị trùng (VD cùng nhập SC/UPC-LC/UPC 15 mét cho cả Singlemode và Multimode), tự động kết hợp thêm Tên vật tư vào Mã để phân biệt
-      if (usedCodes.has(finalCode.toLowerCase())) {
-        let codeWithName = cleanCodeString(`${finalCode}-${matName}`);
-        finalCode = codeWithName;
-        
-        let suffixNum = 0;
-        let baseUserCode = finalCode;
-        while (usedCodes.has(finalCode.toLowerCase())) {
-          suffixNum++;
-          finalCode = `${baseUserCode}-${suffixNum}`;
-        }
+      // Nếu mã người dùng tự nhập đã tồn tại trong hệ thống, chỉ thêm hậu tố số (-1, -2) thay vì đổi hẳn tên mã
+      let baseUserCode = finalCode;
+      let suffixNum = 0;
+      while (usedCodes.has(finalCode.toLowerCase())) {
+        suffixNum++;
+        finalCode = `${baseUserCode}-${suffixNum}`;
       }
     } else {
       let suffixNum = 0;
