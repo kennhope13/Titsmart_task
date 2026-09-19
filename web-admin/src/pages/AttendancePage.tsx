@@ -67,6 +67,8 @@ export const AttendancePage: React.FC = () => {
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [checkOutNotes, setCheckOutNotes] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showLeaveExportMenu, setShowLeaveExportMenu] = useState(false);
 
   // State cho Xin nghỉ phép
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
@@ -80,26 +82,58 @@ export const AttendancePage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const checkOutFileRef = useRef<HTMLInputElement>(null);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = (format: 'xlsx' | 'csv' | 'docx' = 'xlsx') => {
     if (!filteredLogs.length) return;
     const exportData = filteredLogs.map((log, index) => ({
       'STT': index + 1,
       'Ngày': formatDate(log.checkInTime),
       'Nhân viên': log.userName,
       'Giờ vào': formatTime(log.checkInTime),
-      'Giờ ra': log.checkOutTime ? formatTime(log.checkOutTime) : '',
-      'Thời gian': log.checkOutTime ? getDuration(log.checkInTime, log.checkOutTime) : '',
+      'Giờ ra': log.checkOutTime ? formatTime(log.checkOutTime) : 'Đang làm',
+      'Thời gian': log.checkOutTime ? getDuration(log.checkInTime, log.checkOutTime) : '—',
       'Dự án': log.projectName || '',
       'Ghi chú': log.notes || '',
-      'Ảnh vào': log.checkInImage || '',
-      'Ảnh ra': log.checkOutImage || ''
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'ChamCong');
     const today = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(workbook, `BangChamCong_${today}.xlsx`);
+    if (format === 'csv') {
+      XLSX.writeFile(workbook, `BangChamCong_${today}.csv`, { bookType: 'csv' });
+    } else if (format === 'docx') {
+      XLSX.writeFile(workbook, `BangChamCong_${today}.docx`, { bookType: 'xlsx' });
+    } else {
+      XLSX.writeFile(workbook, `BangChamCong_${today}.xlsx`);
+    }
+  };
+
+  const handleExportLeavesExcel = (format: 'xlsx' | 'csv' | 'docx' = 'xlsx') => {
+    if (!leaves.length) return;
+    const exportData = leaves.map((leave, index) => ({
+      'STT': index + 1,
+      'Nhân viên': leave.userName,
+      'Loại nghỉ': leave.leaveType,
+      'Từ ngày': formatDate(leave.startDate),
+      'Đến ngày': formatDate(leave.endDate),
+      'Số ngày': leave.totalDays,
+      'Lý do': leave.reason,
+      'Trạng thái': leave.status === 'APPROVED' ? 'Đã duyệt' : leave.status === 'REJECTED' ? 'Từ chối' : 'Chờ duyệt',
+      'Người duyệt': leave.reviewerName || '',
+      'Ghi chú duyệt': leave.reviewNote || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'XinNghiPheP');
+    const today = new Date().toISOString().split('T')[0];
+    if (format === 'csv') {
+      XLSX.writeFile(workbook, `BangNghiPhep_${today}.csv`, { bookType: 'csv' });
+    } else if (format === 'docx') {
+      XLSX.writeFile(workbook, `BangNghiPhep_${today}.docx`, { bookType: 'xlsx' });
+    } else {
+      XLSX.writeFile(workbook, `BangNghiPhep_${today}.xlsx`);
+    }
   };
 
   const fetchLogs = async () => {
@@ -507,10 +541,51 @@ export const AttendancePage: React.FC = () => {
                   {filteredLogs.length} bản ghi
                 </div>
                 {filteredLogs.length > 0 && (
-                  <button onClick={handleExportExcel} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-sm cursor-pointer">
-                    <span className="material-symbols-outlined text-[16px]">download</span>
-                    Xuất Excel
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowExportMenu(!showExportMenu)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-sm cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">file_download</span>
+                      <span>Xuất file</span>
+                      <span className="material-symbols-outlined text-xs">expand_more</span>
+                    </button>
+                    {showExportMenu && (
+                      <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
+                    )}
+                    {showExportMenu && (
+                      <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                        <button
+                          onClick={() => { setShowExportMenu(false); handleExportExcel('xlsx'); }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                          Excel (.xlsx)
+                        </button>
+                        <button
+                          onClick={() => { setShowExportMenu(false); handleExportExcel('csv'); }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                          CSV (.csv)
+                        </button>
+                        <button
+                          onClick={() => { setShowExportMenu(false); window.print(); }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                          PDF (.pdf)
+                        </button>
+                        <button
+                          onClick={() => { setShowExportMenu(false); handleExportExcel('docx'); }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                          Word (.docx)
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -623,6 +698,66 @@ export const AttendancePage: React.FC = () => {
               <span className="material-symbols-outlined text-[16px] sm:text-[18px]">add</span>
               <span>Tạo đơn xin nghỉ</span>
             </button>
+          </div>
+
+          {/* Action & Export bar for Leave Requests */}
+          <div className="px-4 py-2 border-b border-slate-200 bg-white flex items-center justify-between shrink-0 shadow-xs relative z-10">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-slate-500 text-[18px]">event_busy</span>
+              <h3 className="text-xs font-bold text-slate-700 uppercase">Danh sách đơn xin nghỉ phép</h3>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="px-2.5 py-1 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200">
+                {leaves.length} đơn
+              </div>
+              {leaves.length > 0 && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowLeaveExportMenu(!showLeaveExportMenu)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-sm cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">file_download</span>
+                    <span>Xuất file</span>
+                    <span className="material-symbols-outlined text-xs">expand_more</span>
+                  </button>
+                  {showLeaveExportMenu && (
+                    <div className="fixed inset-0 z-40" onClick={() => setShowLeaveExportMenu(false)} />
+                  )}
+                  {showLeaveExportMenu && (
+                    <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                      <button
+                        onClick={() => { setShowLeaveExportMenu(false); handleExportLeavesExcel('xlsx'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                        Excel (.xlsx)
+                      </button>
+                      <button
+                        onClick={() => { setShowLeaveExportMenu(false); handleExportLeavesExcel('csv'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                        CSV (.csv)
+                      </button>
+                      <button
+                        onClick={() => { setShowLeaveExportMenu(false); window.print(); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                        PDF (.pdf)
+                      </button>
+                      <button
+                        onClick={() => { setShowLeaveExportMenu(false); handleExportLeavesExcel('docx'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                        Word (.docx)
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto bg-white">
