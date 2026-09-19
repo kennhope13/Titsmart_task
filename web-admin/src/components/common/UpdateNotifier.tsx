@@ -127,8 +127,8 @@ export const UpdateNotifier: React.FC = () => {
     const isMobileBrowser = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 
     if (isCapacitorNative || isMobileBrowser) {
-      // Mở trình duyệt hệ thống để tải file APK cài đặt
-      window.open(downloadUrl, '_system');
+      // Chuyển hướng trực tiếp URL tải APK để trình duyệt Android kích hoạt Download Manager hệ thống
+      window.location.href = downloadUrl;
       dismiss();
       return;
     }
