@@ -392,25 +392,15 @@ export const MaterialTrackingPage: React.FC = () => {
            (m.specs && tx.specs && tx.specs.trim().toLowerCase() === m.specs.trim().toLowerCase()))
         );
 
-        if (matchingTx && matchingTx.materialName) {
+        if (matchingTx && matchingTx.materialName && (!m.name || m.name === 'Dây nhảy')) {
           name = matchingTx.materialName.trim();
         }
-
-        if (!name) name = 'Singlemode';
-
-        // Ensure material code includes the name (e.g. MULTIMODE or SINGLEMODE)
-        if (name && !cleanCode.includes(cleanCodeString(name))) {
-          cleanCode = cleanCodeString(`${cleanCode}-${name}`);
-        }
-
-        // Strip trailing -1, -2 suffix cleanly
-        cleanCode = cleanCode.replace(/-\d+$/, '');
 
         const projectKey = m.projectCode || 'COMPANY';
         usedCodes.add(`${projectKey}:::${cleanCode.toLowerCase()}`);
 
-        if (cleanCode !== m.code || name !== m.name) {
-          await updateMaterial(m.id, { code: cleanCode, name });
+        if (name !== m.name) {
+          await updateMaterial(m.id, { name });
           updatedCount++;
         }
       }
