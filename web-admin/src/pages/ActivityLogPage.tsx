@@ -191,26 +191,22 @@ export const ActivityLogPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 h-8 focus-within:ring-1 focus-within:ring-primary transition-all">
-              <span className="text-[10px] md:text-[11px] font-bold text-slate-400 mr-1">Từ</span>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-[105px] md:w-26 cursor-pointer"
-              />
-            </div>
-            
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 h-8 focus-within:ring-1 focus-within:ring-primary transition-all">
-              <span className="text-[10px] md:text-[11px] font-bold text-slate-400 mr-1">Đến</span>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-[105px] md:w-26 cursor-pointer"
-              />
-            </div>
+          <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 h-8 focus-within:ring-1 focus-within:ring-primary transition-all shrink-0">
+            <span className="text-[11px] font-bold text-slate-400 mr-1">Từ</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="bg-transparent text-[11px] font-semibold text-slate-700 focus:outline-none w-[100px] cursor-pointer"
+            />
+            <span className="text-slate-300 mx-1.5 font-light">|</span>
+            <span className="text-[11px] font-bold text-slate-400 mr-1">Đến</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="bg-transparent text-[11px] font-semibold text-slate-700 focus:outline-none w-[100px] cursor-pointer"
+            />
           </div>
 
           {hasFilters && (

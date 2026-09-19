@@ -218,20 +218,21 @@ export const ActivityLogTab: React.FC<ActivityLogTabProps> = ({
           ))}
         </CustomSelect>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] font-bold text-slate-400">Từ</span>
+        <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus-within:ring-2 focus-within:ring-primary/20 shadow-sm shrink-0">
+          <span className="text-[11px] font-bold text-slate-400 mr-1">Từ</span>
           <input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+            className="bg-transparent text-xs font-medium text-slate-700 focus:outline-none w-[100px] cursor-pointer"
           />
-          <span className="text-[11px] font-bold text-slate-400">đến</span>
+          <span className="text-slate-300 mx-1.5 font-light">|</span>
+          <span className="text-[11px] font-bold text-slate-400 mr-1">Đến</span>
           <input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+            className="bg-transparent text-xs font-medium text-slate-700 focus:outline-none w-[100px] cursor-pointer"
           />
         </div>
 
