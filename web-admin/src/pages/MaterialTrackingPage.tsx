@@ -751,13 +751,80 @@ export const MaterialTrackingPage: React.FC = () => {
     return result;
   }, [materials, activeTab, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, searchQuery]);
 
-  const imports = inventoryTransactions
-    .filter(tx => tx.type === "IMPORT" && (!projectCodeFilter || materials.find(m => m.id === tx.materialId)?.projectCode === projectCodeFilter))
-    .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
+  const imports = useMemo(() => {
+    return inventoryTransactions
+      .filter(tx => {
+        if (tx.type !== "IMPORT") return false;
+        const mat = materials.find(m => m.id === tx.materialId);
+        const mProjCode = mat?.projectCode || 'COMPANY';
+        
+        if (projectCodeFilter && mProjCode !== projectCodeFilter) return false;
+        if (filterProject && mProjCode !== filterProject) return false;
+        if (filterCategory && ((mat?.category) || 'Vật tư chung') !== filterCategory) return false;
+        if (filterName && (tx.materialName || mat?.name) !== filterName) return false;
+        if (filterUnit && (tx.unit || mat?.unit) !== filterUnit) return false;
 
-  const exports = inventoryTransactions
-    .filter(tx => tx.type === "EXPORT" && (!projectCodeFilter || materials.find(m => m.id === tx.materialId)?.projectCode === projectCodeFilter))
-    .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
+        if (searchQuery.trim()) {
+          const rawQ = searchQuery.toLowerCase().trim();
+          const rawMatch = (tx.materialCode || mat?.code || '').toLowerCase().includes(rawQ) || 
+                           (tx.materialName || mat?.name || '').toLowerCase().includes(rawQ) || 
+                           (tx.specs || mat?.specs || '').toLowerCase().includes(rawQ) ||
+                           (tx.sourceOrProject || '').toLowerCase().includes(rawQ) ||
+                           (tx.notes || '').toLowerCase().includes(rawQ);
+          
+          if (!rawMatch) {
+            const cleanQuery = searchQuery.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            const words = cleanQuery.split(/[^a-z0-9]+/i).filter(Boolean);
+            
+            const cleanText = `${tx.materialCode || mat?.code || ''} ${tx.materialName || mat?.name || ''} ${tx.specs || mat?.specs || ''} ${tx.sourceOrProject || ''} ${tx.notes || ''}`
+              .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            
+            const matchesAllWords = words.length > 0 && words.every(w => cleanText.includes(w));
+            if (!matchesAllWords) return false;
+          }
+        }
+        return true;
+      })
+      .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
+  }, [inventoryTransactions, materials, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, searchQuery]);
+
+  const exports = useMemo(() => {
+    return inventoryTransactions
+      .filter(tx => {
+        if (tx.type !== "EXPORT") return false;
+        const mat = materials.find(m => m.id === tx.materialId);
+        const mProjCode = mat?.projectCode || 'COMPANY';
+
+        if (projectCodeFilter && mProjCode !== projectCodeFilter) return false;
+        if (filterProject && mProjCode !== filterProject) return false;
+        if (filterCategory && ((mat?.category) || 'Vật tư chung') !== filterCategory) return false;
+        if (filterName && (tx.materialName || mat?.name) !== filterName) return false;
+        if (filterUnit && (tx.unit || mat?.unit) !== filterUnit) return false;
+
+        if (searchQuery.trim()) {
+          const rawQ = searchQuery.toLowerCase().trim();
+          const rawMatch = (tx.materialCode || mat?.code || '').toLowerCase().includes(rawQ) || 
+                           (tx.materialName || mat?.name || '').toLowerCase().includes(rawQ) || 
+                           (tx.specs || mat?.specs || '').toLowerCase().includes(rawQ) ||
+                           (tx.sourceOrProject || '').toLowerCase().includes(rawQ) ||
+                           (tx.receiverName || '').toLowerCase().includes(rawQ) ||
+                           (tx.notes || '').toLowerCase().includes(rawQ);
+          
+          if (!rawMatch) {
+            const cleanQuery = searchQuery.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            const words = cleanQuery.split(/[^a-z0-9]+/i).filter(Boolean);
+            
+            const cleanText = `${tx.materialCode || mat?.code || ''} ${tx.materialName || mat?.name || ''} ${tx.specs || mat?.specs || ''} ${tx.sourceOrProject || ''} ${tx.receiverName || ''} ${tx.notes || ''}`
+              .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            
+            const matchesAllWords = words.length > 0 && words.every(w => cleanText.includes(w));
+            if (!matchesAllWords) return false;
+          }
+        }
+        return true;
+      })
+      .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
+  }, [inventoryTransactions, materials, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, searchQuery]);
 
   const summaryCards = [
     { label: 'Tổng vật tư', value: filteredMaterials.length, icon: 'inventory_2', tone: 'text-slate-700 bg-slate-100' },
@@ -1479,19 +1546,6 @@ export const MaterialTrackingPage: React.FC = () => {
                 <option value="">ĐVT: Tất cả</option>
                 {uniqueUnits.map(u => <option key={u} value={u}>{u}</option>)}
               </CustomSelect>
-            </div>
-            
-            <div className="flex items-center flex-shrink-0">
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">search</span>
-                <input
-                  type="text"
-                  placeholder="Tìm tên, mã vật tư..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-7 pr-2 py-1 border border-slate-200 rounded text-xs w-[180px] focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-                />
-              </div>
             </div>
           </div>
         </div>
