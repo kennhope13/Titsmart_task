@@ -756,7 +756,7 @@ export const ProjectManagementPage: React.FC = () => {
       <LoadingSpinner loading={loading} message={loadingMessage} />
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
 
-      <section className="sticky top-0 z-20 border-b border-slate-200 bg-white shadow-sm pl-3 pr-12 md:pr-14 min-h-[3.25rem] py-1.5 flex flex-wrap lg:flex-nowrap justify-between items-center gap-2">
+      <section className="sticky top-0 z-20 border-b border-slate-200 bg-white shadow-sm pl-3 pr-12 md:pr-14 min-h-[2.75rem] md:min-h-[3.25rem] py-0.5 md:py-1.5 flex flex-wrap lg:flex-nowrap justify-between items-center gap-2">
         <div className="flex items-center gap-2 shrink-0">
           <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2">{TEXT.projectManagement}</h1>
         </div>
