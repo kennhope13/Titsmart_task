@@ -1683,6 +1683,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   const [newLaborData, setNewLaborData] = useState<Partial<LaborPayroll>>({
     stt: '', date: new Date().toISOString().split('T')[0], content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''
   });
+  const [historyExpense, setHistoryExpense] = useState<any | null>(null);
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
@@ -1846,7 +1847,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               <CostPlanSummaryTable
                 expenses={currentProjExpenses}
                 labors={currentProjLabor}
-                onAllocateFund={(name, amount) => {
+                onAllocateFund={(name, amount, date) => {
                   if (name === 'KHÁC') return;
 
                   let targetName = name;
@@ -1886,34 +1887,29 @@ export const ProjectCostPlanPage: React.FC = () => {
                   }
 
                   const diff = newTotal - currentTotalFund;
-                  if (diff === 0) return;
+                  if (diff <= 0) return;
 
                   const adjustmentContent = name === '__PROJECT__' ? 'Quỹ Công Trình' : 'Cấp quỹ';
-                  const adjustmentRecord = personExpenses.find(e => e.content === adjustmentContent && (e.totalAmount || 0) === 0);
+                  const hasFundRecords = personExpenses.some(e => e.content === adjustmentContent || e.incomeAmount > 0);
 
-                  if (adjustmentRecord) {
-                    updateExpense(adjustmentRecord.id, {
-                      ...adjustmentRecord,
-                      incomeAmount: (adjustmentRecord.incomeAmount || 0) + diff,
-                      balanceFund: (adjustmentRecord.balanceFund || 0) + diff
-                    });
-                  } else {
-                    addExpense({
-                      projectCode: selectedProject,
-                      spenderName: targetName,
-                      content: adjustmentContent,
-                      description: name === '__PROJECT__' ? 'Khởi tạo Quỹ Công Trình' : `Cấp quỹ cho ${targetName}`,
-                      date: new Date().toISOString().split('T')[0],
-                      quantity: 0,
-                      unitPrice: 0,
-                      taxAmount: 0,
-                      totalAmount: 0,
-                      incomeAmount: diff,
-                      balanceFund: diff,
-                      notes: user?.name || user?.username || 'Cấp quỹ'
-                    } as any);
-                  }
-                  triggerToast(`Đã cập nhật ${title.toLowerCase()}`, 'success');
+                  addExpense({
+                    projectCode: selectedProject,
+                    spenderName: targetName,
+                    content: adjustmentContent,
+                    description: hasFundRecords 
+                      ? (name === '__PROJECT__' ? 'Nạp thêm Quỹ Công Trình' : `Nạp thêm quỹ cho ${targetName}`)
+                      : (name === '__PROJECT__' ? 'Khởi tạo Quỹ Công Trình' : `Cấp quỹ cho ${targetName}`),
+                    date: date || new Date().toISOString().split('T')[0],
+                    quantity: 0,
+                    unitPrice: 0,
+                    taxAmount: 0,
+                    totalAmount: 0,
+                    incomeAmount: diff,
+                    balanceFund: diff,
+                    notes: user?.name || user?.username || 'Cấp quỹ'
+                  } as any);
+
+                  triggerToast(`Đã nạp thêm ${diff.toLocaleString('vi-VN')} VNĐ vào ${title.toLowerCase()}`, 'success');
                 }}
               />
             </div>
@@ -2039,10 +2035,25 @@ export const ProjectCostPlanPage: React.FC = () => {
                             </td>
                             <td className="px-2 py-1.5 text-slate-400 text-center">-</td>
                             <td className="px-2 py-1.5 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
-                            <td className="px-2 py-1.5 text-center" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: exp.id, type: 'expense', title: 'Xóa phiếu chi', itemName: `khoản chi "${exp.content}"` }); }}>
-                              <button className="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded-md hover:bg-rose-50 flex items-center justify-center mx-auto" title="Xóa khoản chi này">
-                                <span className="material-symbols-outlined text-[14px]">delete</span>
-                              </button>
+                            <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setHistoryExpense(exp)}
+                                  className="inline-flex items-center justify-center w-6 h-6 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                  title="Xem lịch sử"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">history</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteConfirm({ isOpen: true, id: exp.id, type: 'expense', title: 'Xóa phiếu chi', itemName: `khoản chi "${exp.content}"` })}
+                                  className="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded-md hover:bg-rose-50 flex items-center justify-center"
+                                  title="Xóa khoản chi này"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">delete</span>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -2090,10 +2101,25 @@ export const ProjectCostPlanPage: React.FC = () => {
                               </div>
                             </td>
                             <td className="px-2 py-1.5 text-slate-400">-</td>
-                            <td className="px-2 py-1.5 text-center" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ isOpen: true, id: lab.id, type: 'labor', title: 'Xóa nhân công', itemName: `nhân công "${lab.workerName}"` }); }}>
-                              <button className="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded-md hover:bg-rose-50 flex items-center justify-center mx-auto" title="Xóa nhân công này">
-                                <span className="material-symbols-outlined text-[14px]">delete</span>
-                              </button>
+                            <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setHistoryExpense(lab)}
+                                  className="inline-flex items-center justify-center w-6 h-6 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                  title="Xem lịch sử"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">history</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteConfirm({ isOpen: true, id: lab.id, type: 'labor', title: 'Xóa nhân công', itemName: `nhân công "${lab.workerName}"` })}
+                                  className="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded-md hover:bg-rose-50 flex items-center justify-center"
+                                  title="Xóa khoản này"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">delete</span>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -3171,8 +3197,10 @@ export const ProjectCostPlanPage: React.FC = () => {
           e.preventDefault();
           const qty = Number(newExpenseData.quantity || 1);
           const price = Number(newExpenseData.unitPrice || 0);
-          const vat = Number((newExpenseData as any).vatAmount || 0);
-          const total = qty * price + vat;
+          const vat = Number((newExpenseData as any).vatAmount || (newExpenseData as any).taxAmount || 0);
+          const rawTotal = qty * price;
+          const vatAmt = vat > 0 ? (vat <= 100 ? (rawTotal * vat / 100) : vat) : 0;
+          const total = Math.round(rawTotal + vatAmt);
 
           try {
             await addExpense({
@@ -3198,6 +3226,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                 const itemQty = Number(item.quantity || 1);
                 const itemPrice = Number(item.unitPrice || 0);
                 const itemVat = Number(item.taxAmount || 0);
+                const itemRaw = itemQty * itemPrice;
+                const itemVatAmt = itemVat > 0 ? (itemVat <= 100 ? (itemRaw * itemVat / 100) : itemVat) : 0;
                 return addExpense({
                   projectCode: selectedProject,
                   stt: String(currentProjExpenses.length + 2 + idx),
@@ -3209,7 +3239,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   quantity: itemQty,
                   unitPrice: itemPrice,
                   taxAmount: itemVat,
-                  totalAmount: itemQty * itemPrice + itemVat,
+                  totalAmount: Math.round(itemRaw + itemVatAmt),
                   incomeAmount: Number(item.incomeAmount || 0),
                   balanceFund: 0,
                   notes: newExpenseData.notes || '',
@@ -3250,8 +3280,8 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={newExpenseData.unit} onChange={(e) => setNewExpenseData({...newExpenseData, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={newExpenseData.quantity} onChange={(e) => setNewExpenseData({...newExpenseData, quantity: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={newExpenseData.unitPrice} onChange={(e) => setNewExpenseData({...newExpenseData, unitPrice: (e.target.value as any)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+            <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={newExpenseData.quantity === 0 || (newExpenseData.quantity as any) === '0' ? '' : newExpenseData.quantity} onChange={(e) => setNewExpenseData({...newExpenseData, quantity: e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any})} className="w-full border rounded-lg p-2 bg-white" placeholder="0" /></div>
+            <div><label className="block font-bold mb-1">Đơn giá (đ)</label><input type="number" step="any" value={newExpenseData.unitPrice === 0 || (newExpenseData.unitPrice as any) === '0' ? '' : newExpenseData.unitPrice} onChange={(e) => setNewExpenseData({...newExpenseData, unitPrice: e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any})} className="w-full border rounded-lg p-2 font-bold bg-white" placeholder="0" /></div>
           </div>
 
           {additionalItems.map((item, index) => (
@@ -3263,8 +3293,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <div><label className="block font-bold mb-1 text-slate-500">Diễn giải/ Chi tiết *</label><input type="text" required value={item.description} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].description = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
                 <div className="grid grid-cols-3 gap-3">
                   <div><label className="block font-bold mb-1 text-slate-500">ĐVT</label><input type="text" value={item.unit} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unit = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
-                  <div><label className="block font-bold mb-1 text-slate-500">Số lượng</label><input type="number" step="any" value={item.quantity} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].quantity = (e.target.value as any); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
-                  <div><label className="block font-bold mb-1 text-slate-500">Đơn giá</label><input type="number" step="any" value={item.unitPrice} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unitPrice = (e.target.value as any); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Số lượng</label><input type="number" step="any" value={item.quantity === 0 || (item.quantity as any) === '0' ? '' : item.quantity} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].quantity = e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" placeholder="0" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Đơn giá</label><input type="number" step="any" value={item.unitPrice === 0 || (item.unitPrice as any) === '0' ? '' : item.unitPrice} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unitPrice = e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" placeholder="0" /></div>
                 </div>
               </div>
             </div>
@@ -3276,15 +3306,17 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={(newExpenseData as any).vatAmount || 0} onChange={(e) => setNewExpenseData({...newExpenseData, vatAmount: (e.target.value as any)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={(newExpenseData as any).incomeAmount || 0} onChange={(e) => setNewExpenseData({...newExpenseData, incomeAmount: (e.target.value as any)} as any)} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">VAT (%)</label><input type="number" step="any" value={(newExpenseData as any).vatAmount === 0 || (newExpenseData as any).vatAmount === '0' ? '' : (newExpenseData as any).vatAmount} onChange={(e) => setNewExpenseData({...newExpenseData, vatAmount: e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any} as any)} className="w-full border rounded-lg p-2 bg-white" placeholder="0" /></div>
+            <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={(newExpenseData as any).incomeAmount === 0 || (newExpenseData as any).incomeAmount === '0' ? '' : (newExpenseData as any).incomeAmount} onChange={(e) => setNewExpenseData({...newExpenseData, incomeAmount: e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any} as any)} className="w-full border rounded-lg p-2 bg-white" placeholder="0" /></div>
 
           </div>
           {(() => {
             const liveQty = Number(newExpenseData.quantity || 0);
             const livePrice = Number(newExpenseData.unitPrice || 0);
-            const liveVat = Number((newExpenseData as any).vatAmount || 0);
-            const liveTotal = liveQty * livePrice + liveVat;
+            const liveVat = Number((newExpenseData as any).vatAmount || (newExpenseData as any).taxAmount || 0);
+            const liveRaw = liveQty * livePrice;
+            const liveVatAmt = liveVat > 0 ? (liveVat <= 100 ? (liveRaw * liveVat / 100) : liveVat) : 0;
+            const liveTotal = Math.round(liveRaw + liveVatAmt);
             return (
               <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between text-[13px] font-bold">
                 <span className="text-slate-600">Thành tiền tự động:</span>
@@ -3328,7 +3360,9 @@ export const ProjectCostPlanPage: React.FC = () => {
           <form onSubmit={async (e) => { e.preventDefault(); const qty = Number(editingExpense.quantity || 1);
             const price = Number(editingExpense.unitPrice || 0);
             const vat = Number(editingExpense.taxAmount || 0);
-            const total = qty * price + vat;
+            const rawTotal = qty * price;
+            const vatAmt = vat > 0 ? (vat <= 100 ? (rawTotal * vat / 100) : vat) : 0;
+            const total = Math.round(rawTotal + vatAmt);
 
             await updateExpense(editingExpense.id, {
               ...editingExpense,
@@ -3340,6 +3374,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                 const itemQty = Number(item.quantity || 1);
                 const itemPrice = Number(item.unitPrice || 0);
                 const itemVat = Number(item.taxAmount || 0);
+                const itemRaw = itemQty * itemPrice;
+                const itemVatAmt = itemVat > 0 ? (itemVat <= 100 ? (itemRaw * itemVat / 100) : itemVat) : 0;
                 return addExpense({
                   projectCode: selectedProject,
                   stt: String(currentProjExpenses.length + 1 + idx),
@@ -3351,7 +3387,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   quantity: itemQty,
                   unitPrice: itemPrice,
                   taxAmount: itemVat,
-                  totalAmount: itemQty * itemPrice + itemVat,
+                  totalAmount: Math.round(itemRaw + itemVatAmt),
                   incomeAmount: Number(item.incomeAmount || 0),
                   balanceFund: 0,
                   notes: editingExpense.notes || '',
@@ -3388,8 +3424,8 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">ĐVT</label><input type="text" value={editingExpense.unit} onChange={(e) => setEditingExpense({...editingExpense, unit: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={editingExpense.quantity} onChange={(e) => setEditingExpense({...editingExpense, quantity: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" step="any" value={editingExpense.unitPrice} onChange={(e) => setEditingExpense({...editingExpense, unitPrice: (e.target.value as any)})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+              <div><label className="block font-bold mb-1">Số lượng</label><input type="number" step="any" value={editingExpense.quantity === 0 || (editingExpense.quantity as any) === '0' ? '' : editingExpense.quantity} onChange={(e) => setEditingExpense({...editingExpense, quantity: e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any})} className="w-full border rounded-lg p-2 bg-white" placeholder="0" /></div>
+              <div><label className="block font-bold mb-1">Đơn giá</label><input type="number" step="any" value={editingExpense.unitPrice === 0 || (editingExpense.unitPrice as any) === '0' ? '' : editingExpense.unitPrice} onChange={(e) => setEditingExpense({...editingExpense, unitPrice: e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any})} className="w-full border rounded-lg p-2 font-bold bg-white" placeholder="0" /></div>
             </div>
 
           {additionalItems.map((item, index) => (
@@ -3401,8 +3437,8 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <div><label className="block font-bold mb-1 text-slate-500">Diễn giải/ Chi tiết *</label><input type="text" required value={item.description} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].description = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
                 <div className="grid grid-cols-3 gap-3">
                   <div><label className="block font-bold mb-1 text-slate-500">ĐVT</label><input type="text" value={item.unit} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unit = e.target.value; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
-                  <div><label className="block font-bold mb-1 text-slate-500">Số lượng</label><input type="number" step="any" value={item.quantity} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].quantity = (e.target.value as any); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" /></div>
-                  <div><label className="block font-bold mb-1 text-slate-500">Đơn giá</label><input type="number" step="any" value={item.unitPrice} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unitPrice = (e.target.value as any); setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Số lượng</label><input type="number" step="any" value={item.quantity === 0 || (item.quantity as any) === '0' ? '' : item.quantity} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].quantity = e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 bg-white" placeholder="0" /></div>
+                  <div><label className="block font-bold mb-1 text-slate-500">Đơn giá</label><input type="number" step="any" value={item.unitPrice === 0 || (item.unitPrice as any) === '0' ? '' : item.unitPrice} onChange={(e) => { const newItems = [...additionalItems]; newItems[index].unitPrice = e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any; setAdditionalItems(newItems); }} className="w-full border rounded-lg p-2 font-bold bg-white" placeholder="0" /></div>
                 </div>
               </div>
             </div>
@@ -3414,15 +3450,16 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <div><label className="block font-bold mb-1">VAT (đ)</label><input type="number" step="any" value={editingExpense.taxAmount || 0} onChange={(e) => setEditingExpense({...editingExpense, taxAmount: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={editingExpense.incomeAmount || 0} onChange={(e) => setEditingExpense({...editingExpense, incomeAmount: (e.target.value as any)})} className="w-full border rounded-lg p-2 bg-white" /></div>
-
+              <div><label className="block font-bold mb-1">VAT (%)</label><input type="number" step="any" value={editingExpense.taxAmount === 0 || (editingExpense.taxAmount as any) === '0' ? '' : editingExpense.taxAmount} onChange={(e) => setEditingExpense({...editingExpense, taxAmount: e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any})} className="w-full border rounded-lg p-2 bg-white" placeholder="0" /></div>
+              <div><label className="block font-bold mb-1">Thực thu (đ)</label><input type="number" step="any" value={editingExpense.incomeAmount === 0 || (editingExpense.incomeAmount as any) === '0' ? '' : editingExpense.incomeAmount} onChange={(e) => setEditingExpense({...editingExpense, incomeAmount: e.target.value === '' ? '' as any : e.target.value.replace(/^0+(?=\d)/, '') as any})} className="w-full border rounded-lg p-2 bg-white" placeholder="0" /></div>
             </div>
             {(() => {
               const editQty = Number(editingExpense.quantity || 0);
               const editPrice = Number(editingExpense.unitPrice || 0);
               const editVat = Number(editingExpense.taxAmount || 0);
-              const editTotal = editQty * editPrice + editVat;
+              const editRaw = editQty * editPrice;
+              const editVatAmt = editVat > 0 ? (editVat <= 100 ? (editRaw * editVat / 100) : editVat) : 0;
+              const editTotal = Math.round(editRaw + editVatAmt);
               return (
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between text-[13px] font-bold">
                   <span className="text-slate-600">Thành tiền tự động:</span>
@@ -3665,6 +3702,76 @@ export const ProjectCostPlanPage: React.FC = () => {
           <option key={i} value={name} />
         ))}
       </datalist>
+
+      {historyExpense && (
+        <Modal isOpen={!!historyExpense} onClose={() => setHistoryExpense(null)} title="LỊCH SỬ GIAO DỊCH / CHI PHÍ" size="xl">
+          <div className="p-4 space-y-4">
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs flex flex-wrap gap-4 justify-between items-center">
+              <div>
+                <span className="text-slate-500 font-medium">Nội dung / Diễn giải: </span>
+                <span className="font-bold text-slate-800">{historyExpense.content || historyExpense.workerName || '-'}</span>
+                {historyExpense.description && <span className="text-slate-600 font-normal"> - {historyExpense.description}</span>}
+              </div>
+              <div>
+                <span className="text-slate-500 font-medium">Người phụ trách / Nhận: </span>
+                <span className="font-bold text-blue-700">{historyExpense.spenderName || historyExpense.workerName || 'DỰ ÁN'}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-100 text-center">
+                <div className="text-slate-500 text-[11px] mb-1">Số lượng & ĐVT</div>
+                <div className="font-bold text-blue-900 text-sm">{historyExpense.quantity || 1} {historyExpense.unit || 'cái'}</div>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                <div className="text-slate-500 text-[11px] mb-1">Đơn giá</div>
+                <div className="font-bold text-slate-800 text-sm">{(historyExpense.unitPrice || 0).toLocaleString('vi-VN')} đ</div>
+              </div>
+              <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-100 text-center">
+                <div className="text-slate-500 text-[11px] mb-1">Thuế VAT</div>
+                <div className="font-bold text-amber-800 text-sm">{historyExpense.taxAmount || 0}%</div>
+              </div>
+              <div className="p-3 bg-emerald-50/70 rounded-xl border border-emerald-100 text-center">
+                <div className="text-slate-500 text-[11px] mb-1">Thực thu / Nạp quỹ</div>
+                <div className="font-bold text-emerald-700 text-sm">
+                  {(historyExpense.incomeAmount || 0).toLocaleString('vi-VN')} đ
+                </div>
+              </div>
+            </div>
+
+            <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
+                  <tr>
+                    <th className="p-2.5 text-center w-10">STT</th>
+                    <th className="p-2.5">Ngày</th>
+                    <th className="p-2.5">Người PT</th>
+                    <th className="p-2.5">Nội dung</th>
+                    <th className="p-2.5 text-right">Thành tiền</th>
+                    <th className="p-2.5 text-right">Thực thu</th>
+                    <th className="p-2.5">Ghi chú</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {currentProjExpenses
+                    .filter(e => (historyExpense.spenderName && e.spenderName === historyExpense.spenderName) || (historyExpense.content && e.content === historyExpense.content))
+                    .map((exp, idx) => (
+                      <tr key={exp.id} className={exp.id === historyExpense.id ? 'bg-blue-50/50 font-semibold' : 'hover:bg-slate-50'}>
+                        <td className="p-2.5 text-center text-slate-400">{idx + 1}</td>
+                        <td className="p-2.5 whitespace-nowrap">{exp.date || '-'}</td>
+                        <td className="p-2.5">{exp.spenderName || '-'}</td>
+                        <td className="p-2.5 font-bold text-slate-800">{exp.content} <span className="font-normal text-slate-500">{exp.description}</span></td>
+                        <td className="p-2.5 text-right text-rose-600 font-bold">{exp.totalAmount ? exp.totalAmount.toLocaleString('vi-VN') + ' đ' : '-'}</td>
+                        <td className="p-2.5 text-right text-emerald-600 font-bold">{exp.incomeAmount ? exp.incomeAmount.toLocaleString('vi-VN') + ' đ' : '-'}</td>
+                        <td className="p-2.5 text-slate-500 text-xs">{exp.notes || '-'}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

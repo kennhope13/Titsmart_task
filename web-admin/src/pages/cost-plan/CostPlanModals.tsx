@@ -116,7 +116,9 @@ export const CostPlanModals: React.FC<ModalsProps> = ({
     const qty = Number(form.quantity.value || 0);
     const price = Number(form.unitPrice.value || 0);
     const tax = Number(form.taxAmount.value || 0);
-    form.totalAmount.value = (qty * price + tax).toString();
+    const rawTotal = qty * price;
+    const vatAmt = tax > 0 ? (tax <= 100 ? (rawTotal * tax / 100) : tax) : 0;
+    form.totalAmount.value = Math.round(rawTotal + vatAmt).toString();
   };
 
   const calcLabor = (e: React.ChangeEvent<HTMLFormElement>) => {
@@ -268,7 +270,7 @@ export const CostPlanModals: React.FC<ModalsProps> = ({
               
               <div className="md:col-span-2 border-t pt-4 mt-2"><h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><span className="material-symbols-outlined text-lg">calculate</span> Tài chính</h4></div>
               <div><label className="block text-[13px] font-bold text-slate-700 mb-1">Đơn giá (đ)</label><input type="number" step="any" name="unitPrice" defaultValue={editingExpense?.unitPrice} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-              <div><label className="block text-[13px] font-bold text-slate-700 mb-1">Thuế VAT (đ)</label><input type="number" step="any" name="taxAmount" defaultValue={editingExpense?.taxAmount} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
+              <div><label className="block text-[13px] font-bold text-slate-700 mb-1">Thuế VAT (%)</label><input type="number" step="any" name="taxAmount" defaultValue={editingExpense?.taxAmount} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" /></div>
               <div className="md:col-span-2"><label className="block text-[13px] font-bold text-slate-700 mb-1">Thành tiền (Tự động)</label><input type="number" step="any" name="totalAmount" readOnly defaultValue={editingExpense?.totalAmount} className="w-full p-2 border border-rose-200 bg-rose-50 font-bold text-rose-700 rounded-lg outline-none" /></div>
               
               <div className="md:col-span-2 border-t pt-4 mt-2"><h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><span className="material-symbols-outlined text-lg">receipt_long</span> Chứng từ & Ghi chú</h4></div>

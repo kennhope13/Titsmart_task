@@ -5,15 +5,30 @@ import { ProjectExpense, LaborPayroll } from '../../types';
 interface CostPlanSummaryTableProps {
   expenses: ProjectExpense[];
   labors: LaborPayroll[];
-  onAllocateFund?: (spenderName: string, amount?: number) => void;
+  onAllocateFund?: (spenderName: string, amount?: number, date?: string) => void;
 }
 
 const money = (value: number) => value.toLocaleString('vi-VN');
 
 export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expenses, labors, onAllocateFund }) => {
+  const [showAddFundModal, setShowAddFundModal] = useState(false);
+  const [fundAmountInput, setFundAmountInput] = useState('');
+  const [fundDateInput, setFundDateInput] = useState(new Date().toISOString().split('T')[0]);
   const [editingProjectFund, setEditingProjectFund] = useState(false);
   const [showPersonalModal, setShowPersonalModal] = useState(false);
-  const [projectFundInput, setProjectFundInput] = useState('');
+
+  const handleSaveFundModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onAllocateFund && fundAmountInput.trim() !== '') {
+      const addedVal = Number(fundAmountInput.replace(/[,.]/g, ''));
+      if (!isNaN(addedVal) && addedVal > 0) {
+        const newTotalFund = summary.totalProjectFund + addedVal;
+        onAllocateFund('__PROJECT__', newTotalFund, fundDateInput);
+      }
+    }
+    setShowAddFundModal(false);
+    setFundAmountInput('');
+  };
   
 
   
@@ -68,47 +83,32 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
           <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white">
             <thead>
               <tr>
-                <th className="border border-slate-300 bg-blue-100 text-blue-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">QUỸ</th>
+                <th className="border border-slate-300 bg-blue-100 text-blue-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">
+                  <div className="flex items-center justify-center gap-1">
+                    <span>QUỸ</span>
+                    {onAllocateFund && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFundAmountInput('');
+                          setFundDateInput(new Date().toISOString().split('T')[0]);
+                          setShowAddFundModal(true);
+                        }}
+                        className="inline-flex items-center justify-center p-0.5 rounded text-blue-600 hover:text-blue-800 hover:bg-blue-100 transition-colors cursor-pointer"
+                        title="Thêm / Nạp Quỹ"
+                      >
+                        <span className="material-symbols-outlined text-[16px] leading-none">add_circle</span>
+                      </button>
+                    )}
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td 
-                  className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800 cursor-pointer hover:bg-slate-50 transition-colors"
-                  onClick={() => {
-                    if (!editingProjectFund) {
-                      setProjectFundInput(summary.totalProjectFund === 0 ? '' : summary.totalProjectFund.toString());
-                      setEditingProjectFund(true);
-                    }
-                  }}
-                >
-                  {editingProjectFund ? (
-                    <input
-                      autoFocus
-                      type="number"
-                      className="w-full text-center border-2 border-primary rounded outline-none px-1 text-slate-900"
-                      value={projectFundInput}
-                      onChange={e => setProjectFundInput(e.target.value)}
-                      onBlur={() => {
-                        setEditingProjectFund(false);
-                        if (onAllocateFund && projectFundInput.trim() !== '') {
-                          const val = Number(projectFundInput);
-                          if (!isNaN(val) && val !== summary.totalProjectFund) {
-                            onAllocateFund('__PROJECT__', val);
-                          }
-                        }
-                      }}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.currentTarget.blur();
-                        }
-                      }}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center gap-1 group">
-                      <span>{money(summary.totalProjectFund)}</span>
-                    </div>
-                  )}
+                <td className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800">
+                  <span>{money(summary.totalProjectFund)}</span>
                 </td>
               </tr>
             </tbody>
@@ -261,6 +261,80 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({ expe
             );
           })}
         </div>
+      </Modal>
+
+      <Modal isOpen={showAddFundModal} onClose={() => setShowAddFundModal(false)} title="THÊM / NẠP QUỸ CÔNG TRÌNH" size="md">
+        <form onSubmit={handleSaveFundModal} className="p-4 space-y-4">
+          <div className="bg-blue-50/60 p-3.5 rounded-xl border border-blue-100 space-y-2 text-xs">
+            <div className="flex justify-between items-center text-slate-600">
+              <span className="font-medium">Quỹ ban đầu / hiện tại:</span>
+              <span className="font-bold text-slate-800 text-sm">{money(summary.totalProjectFund)} VNĐ</span>
+            </div>
+            
+            {fundAmountInput.trim() !== '' && !isNaN(Number(fundAmountInput.replace(/[,.]/g, ''))) && Number(fundAmountInput.replace(/[,.]/g, '')) > 0 && (
+              <>
+                <div className="flex justify-between items-center text-emerald-600 border-t border-blue-100 pt-2">
+                  <span className="font-medium">Nạp thêm:</span>
+                  <span className="font-bold text-emerald-700 text-sm">
+                    + {money(Number(fundAmountInput.replace(/[,.]/g, '')))} VNĐ
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-blue-900 border-t border-blue-200/60 pt-2 font-bold">
+                  <span>Tổng quỹ sau khi nạp:</span>
+                  <span className="text-base text-blue-700">
+                    {money(summary.totalProjectFund + Number(fundAmountInput.replace(/[,.]/g, '')))} VNĐ
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Ngày nạp *
+              </label>
+              <input
+                type="date"
+                required
+                value={fundDateInput}
+                onChange={(e) => setFundDateInput(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Nhập số tiền nạp thêm (VNĐ)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={fundAmountInput}
+                onChange={(e) => setFundAmountInput(e.target.value)}
+                placeholder="Ví dụ: 5000000"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                autoFocus
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setShowAddFundModal(false)}
+              className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100 text-xs transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold text-xs hover:opacity-90 transition-opacity shadow-xs"
+            >
+              Lưu Quỹ
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

@@ -6,9 +6,10 @@ interface CatalogTabProps {
   materials: Material[];
   onEdit: (material: Material) => void;
   onDelete: (material: Material) => void;
+  onHistory?: (material: Material) => void;
 }
 
-export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDelete }) => {
+export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDelete, onHistory }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const updateColumnFilter = (key: string, value: string) => {
@@ -88,9 +89,16 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
               <AuditInfoCell updatedBy={material.updatedBy} updatedAt={material.updatedAt} />
             </td>
             <td className="px-2 py-3 text-center" onClick={(event) => event.stopPropagation()}>
-              <button type="button" onClick={() => onDelete(material)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title={'X\u00f3a v\u1eadt t\u01b0'}>
-                <span className="material-symbols-outlined text-base">delete</span>
-              </button>
+              <div className="flex items-center justify-center gap-1.5">
+                {onHistory && (
+                  <button type="button" onClick={() => onHistory(material)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors" title="Xem lịch sử nhập/xuất">
+                    <span className="material-symbols-outlined text-[15px]">history</span>
+                  </button>
+                )}
+                <button type="button" onClick={() => onDelete(material)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors" title="Xóa vật tư">
+                  <span className="material-symbols-outlined text-base">delete</span>
+                </button>
+              </div>
             </td>
           </tr>
         ))}

@@ -704,11 +704,18 @@ export const api = {
     },
     updateExpense: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
+      delete payload.id;
+      delete payload.auto_balance;
+      delete payload.auto_balance_fund;
+      delete payload.autobalance;
       const { data: result, error } = await supabase.from('expenses').update(payload).eq('id', id).select().single();
       if (error) {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
           delete payload.updated_at;
           delete payload.updated_by;
+          delete payload.auto_balance;
+          delete payload.auto_balance_fund;
+          delete payload.autobalance;
           const { data: retryResult, error: retryError } = await supabase.from('expenses').update(payload).eq('id', id).select().single();
           if (retryError) throw retryError;
           return toCamelCase(retryResult);
