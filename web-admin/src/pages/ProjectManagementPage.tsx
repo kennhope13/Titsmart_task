@@ -762,12 +762,12 @@ export const ProjectManagementPage: React.FC = () => {
             <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">{TEXT.projectManagement}</h1>
           </div>
 
-          <div className="h-[34px] flex items-center w-full md:w-auto bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 relative z-50 no-drag-region electron-no-drag gap-0.5" style={{ WebkitAppRegion: 'no-drag' } as any}>
+          <div className="h-[34px] flex items-center w-full md:w-[480px] bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 relative z-50 no-drag-region electron-no-drag gap-0.5" style={{ WebkitAppRegion: 'no-drag' } as any}>
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 md:flex-initial h-[28px] px-3 md:px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'all' ? 'bg-white shadow-xs text-slate-800 ring-1 ring-slate-200/80 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`flex-1 h-[28px] px-3 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'all' ? 'bg-white shadow-xs text-slate-800 ring-1 ring-slate-200/80 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
               <span>Tất cả</span> <span className={`px-1.5 py-0.5 min-w-[20px] text-center rounded-full text-[10px] font-medium leading-none ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.all}</span>
             </button>
@@ -775,7 +775,7 @@ export const ProjectManagementPage: React.FC = () => {
               type="button"
               onClick={() => setStatusFilter('active')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 md:flex-initial h-[28px] px-3 md:px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'active' ? 'bg-white shadow-xs text-blue-600 ring-1 ring-blue-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`flex-1 h-[28px] px-3 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'active' ? 'bg-white shadow-xs text-blue-600 ring-1 ring-blue-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
               <span>Đang triển khai</span> <span className={`px-1.5 py-0.5 min-w-[20px] text-center rounded-full text-[10px] font-medium leading-none ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.active}</span>
             </button>
@@ -783,7 +783,7 @@ export const ProjectManagementPage: React.FC = () => {
               type="button"
               onClick={() => setStatusFilter('completed')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 md:flex-initial h-[28px] px-3 md:px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'completed' ? 'bg-white shadow-xs text-emerald-600 ring-1 ring-emerald-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`flex-1 h-[28px] px-3 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'completed' ? 'bg-white shadow-xs text-emerald-600 ring-1 ring-emerald-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
               <span>Hoàn thành</span> <span className={`px-1.5 py-0.5 min-w-[20px] text-center rounded-full text-[10px] font-medium leading-none ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.completed}</span>
             </button>
