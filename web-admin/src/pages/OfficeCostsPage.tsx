@@ -62,7 +62,7 @@ export const OfficeCostsPage: React.FC = () => {
     content: 'Văn phòng phẩm',
     description: '',
     spenderName: '',
-    unit: 'cái',
+    unit: '',
     quantity: 1,
     unitPrice: '' as any,
     taxAmount: '' as any,
@@ -212,7 +212,7 @@ export const OfficeCostsPage: React.FC = () => {
                 content: 'Quỹ',
                 description: `Cấp quỹ cho ${targetName}`,
                 spenderName: targetName,
-                unit: 'lần',
+                unit: '',
                 quantity: 0,
                 unitPrice: 0,
                 taxAmount: 0,
@@ -403,7 +403,7 @@ export const OfficeCostsPage: React.FC = () => {
               content: newExpenseData.content || 'Văn phòng phẩm',
               description: newExpenseData.description,
               spenderName: newExpenseData.spenderName || user?.name || 'CÔNG TY',
-              unit: newExpenseData.unit || 'cái',
+              unit: newExpenseData.unit || '',
               quantity: qty,
               unitPrice: price,
               taxAmount: vat,
@@ -428,7 +428,7 @@ export const OfficeCostsPage: React.FC = () => {
                   content: newExpenseData.content || 'Văn phòng phẩm',
                   description: item.description || '',
                   spenderName: newExpenseData.spenderName || user?.name || 'CÔNG TY',
-                  unit: item.unit || 'cái',
+                  unit: item.unit || '',
                   quantity: itemQty,
                   unitPrice: itemPrice,
                   taxAmount: itemVat,
@@ -489,7 +489,7 @@ export const OfficeCostsPage: React.FC = () => {
             </div>
           ))}
           <div className="pt-2">
-            <button type="button" onClick={() => setAdditionalItems([...additionalItems, { description: '', unit: 'cái', quantity: 1, unitPrice: 0, taxAmount: 0, incomeAmount: 0 }])} className="flex items-center gap-1 text-primary hover:text-blue-700 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg w-fit cursor-pointer">
+            <button type="button" onClick={() => setAdditionalItems([...additionalItems, { description: '', unit: '', quantity: 1, unitPrice: 0, taxAmount: 0, incomeAmount: 0 }])} className="flex items-center gap-1 text-primary hover:text-blue-700 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg w-fit cursor-pointer">
               <span className="material-symbols-outlined text-[16px]">add</span> Thêm thiết bị khác
             </button>
           </div>
@@ -552,7 +552,7 @@ export const OfficeCostsPage: React.FC = () => {
                     content: editingExpense.content || 'Văn phòng phẩm',
                     description: item.description || '',
                     spenderName: editingExpense.spenderName || user?.name || 'CÔNG TY',
-                    unit: item.unit || 'cái',
+                    unit: item.unit || '',
                     quantity: itemQty,
                     unitPrice: itemPrice,
                     taxAmount: itemVat,
@@ -610,7 +610,7 @@ export const OfficeCostsPage: React.FC = () => {
               </div>
             ))}
             <div className="pt-2">
-              <button type="button" onClick={() => setAdditionalItems([...additionalItems, { description: '', unit: 'cái', quantity: 1, unitPrice: 0, taxAmount: 0, incomeAmount: 0 }])} className="flex items-center gap-1 text-primary hover:text-blue-700 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg w-fit cursor-pointer">
+              <button type="button" onClick={() => setAdditionalItems([...additionalItems, { description: '', unit: '', quantity: 1, unitPrice: 0, taxAmount: 0, incomeAmount: 0 }])} className="flex items-center gap-1 text-primary hover:text-blue-700 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg w-fit cursor-pointer">
                 <span className="material-symbols-outlined text-[16px]">add</span> Thêm thiết bị khác
               </button>
             </div>

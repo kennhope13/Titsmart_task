@@ -19,7 +19,7 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({ isOpen, material, 
   const [name, setName] = useState('');
   const [specs, setSpecs] = useState('');
   const [initialStock, setInitialStock] = useState(0);
-  const [unit, setUnit] = useState('Cái');
+  const [unit, setUnit] = useState('');
   const [unitPrice, setUnitPrice] = useState(0);
   const [supplier, setSupplier] = useState('');
   const [notes, setNotes] = useState('');
@@ -33,7 +33,7 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({ isOpen, material, 
     setName(material?.name || '');
     setSpecs(material?.specs || material?.englishName || '');
     setInitialStock(material?.initialStock || 0);
-    setUnit(material?.unit || 'Cái');
+    setUnit(material?.unit || '');
     setUnitPrice(material?.unitPrice || 0);
     setSupplier(material?.supplier || '');
     setNotes(material?.notes || '');
@@ -60,7 +60,7 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({ isOpen, material, 
       currentStock: initialStock + totalImport - totalExport,
       totalImport,
       totalExport,
-      unit: unit.trim() || 'Cái',
+      unit: unit.trim() || '',
       unitPrice,
       status: purchaseStatus,
       constrStatus: constructionStatus,

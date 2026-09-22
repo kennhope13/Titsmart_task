@@ -51,7 +51,7 @@ const EMPTY_MODEL: ModelEntry = {
 };
 
 const EMPTY_FORM: FormState = {
-  jobContent: '', unit: 'Cái', contractVolume: 1,
+  jobContent: '', unit: '', contractVolume: 1,
   models: [{ ...EMPTY_MODEL, docs: [{ ...EMPTY_DOC }] }],
   notes: '',
 };
@@ -452,7 +452,7 @@ export const DocumentCertificateTab: React.FC<DocumentCertificateTabProps> = ({
 
   const toFormState = (item: ProjectMaterialPlan): FormState => ({
     jobContent: item.jobContent || '',
-    unit: item.unit || 'Cái',
+    unit: item.unit || '',
     contractVolume: item.contractVolume ?? 1,
     models: decodeModels(item.issueContent),
     notes: cleanNotes(item.notes),

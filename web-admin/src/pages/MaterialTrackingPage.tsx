@@ -203,7 +203,7 @@ export const MaterialTrackingPage: React.FC = () => {
             
             const sttVal = numVal(row[0]) || (importCount + materialsToAdd.length + 1);
             
-            const unit = String(row[6] || 'Cái').trim();
+            const unit = String(row[6] || '').trim();
             
             let rawCode = String(row[3] || '').trim();
             let finalCode = rawCode ? cleanCodeString(rawCode, finalName) : '';
@@ -241,7 +241,7 @@ export const MaterialTrackingPage: React.FC = () => {
               projectCode: currentProject ? currentProject.code : (selectedAddProject || 'COMPANY'),
               projectName: currentProject ? currentProject.name : (projects.find(p => p.code === selectedAddProject)?.name || 'Kho Tổng (Kho Công Ty)'),
               specs: specs,
-              unit: unit || 'Cái',
+              unit: unit || '',
               initialStock: numVal(row[7] || 0),
               currentStock: numVal(row[8] || numVal(row[7] || 0)),
               totalImport: numVal(row[9] || 0),
@@ -270,7 +270,7 @@ export const MaterialTrackingPage: React.FC = () => {
                     materialName: m.name,
                     specs: m.specs || '',
                     quantity: m.currentStock || m.initialStock || 0,
-                    unit: m.unit || 'Cái',
+                    unit: m.unit || '',
                     sourceOrProject: 'Tồn đầu kỳ / Import',
                     notes: 'Nhập tự động từ file Tồn Kho Tổng Hợp'
                   }));
@@ -315,7 +315,7 @@ export const MaterialTrackingPage: React.FC = () => {
               materialCode: matCode,
               materialName: matName,
               specs: String(row[4] || ''),
-              unit: String(row[5] || 'cái'),
+              unit: String(row[5] || ''),
               quantity: numVal(row[6]),
               sourceOrProject: String(row[7] || ''),
               receiverName: isImport ? '' : String(row[8] || ''),
@@ -644,7 +644,7 @@ export const MaterialTrackingPage: React.FC = () => {
   const [addCategory, setAddCategory] = useState('');
   const [description, setDescription] = useState('');
   const [volume, setVolume] = useState(1);
-  const [unit, setUnit] = useState('cái');
+  const [unit, setUnit] = useState('');
   const [unitPrice, setUnitPrice] = useState(0);
   const [supplier, setSupplier] = useState('');
   const [purchaseStatus, setPurchaseStatus] = useState('Chưa đặt hàng');
@@ -657,7 +657,7 @@ export const MaterialTrackingPage: React.FC = () => {
   const [editCategory, setEditCategory] = useState('');
   const [editSupplier, setEditSupplier] = useState('');
   const [editInitialStock, setEditInitialStock] = useState(0);
-  const [editUnit, setEditUnit] = useState('cái');
+  const [editUnit, setEditUnit] = useState('');
   const [editUnitPrice, setEditUnitPrice] = useState(0);
 
   // Transaction form state
@@ -857,7 +857,7 @@ export const MaterialTrackingPage: React.FC = () => {
     setEditCategory(material.category || '');
     setEditSupplier(material.supplier || '');
     setEditInitialStock(material.initialStock || 0);
-    setEditUnit(material.unit || 'cái');
+    setEditUnit(material.unit || '');
     setEditUnitPrice(material.unitPrice || 0);
   };
 
@@ -1030,7 +1030,7 @@ export const MaterialTrackingPage: React.FC = () => {
     setMatName('');
     setDescription('');
     setVolume(1);
-    setUnit('cái');
+    setUnit('');
     setUnitPrice(0);
     setSupplier('');
     setPurchaseStatus('Chưa đặt hàng');

@@ -450,7 +450,7 @@ const mergeInventoryTransactionIntoState = (
     materialName: txMaterial.name,
     category: txMaterial.category || newTransaction.category || '',
     specs: txMaterial.specs || txMaterial.englishName || newTransaction.specs || '',
-    unit: txMaterial.unit || newTransaction.unit || 'Cái',
+    unit: txMaterial.unit || newTransaction.unit || '',
   } : newTransaction;
 
   return {

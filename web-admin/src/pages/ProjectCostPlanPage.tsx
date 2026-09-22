@@ -1672,16 +1672,16 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   // Form states for creating items
   const [newPlanData, setNewPlanData] = useState<Partial<ProjectMaterialPlan> & { isContractor?: boolean }>({
-    stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true
+    stt: '', jobContent: '', unit: '', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true
   });
   const [newPurchasingData, setNewPurchasingData] = useState<Partial<ProjectPurchasing>>({
-    stt: '', content: '', unit: 'bộ', volumeContract: 1, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''
+    stt: '', content: '', unit: '', volumeContract: 1, volumeOrder: 0, unitPrice: 0, vatRate: 10, prepayPercent: 0, orderStatus: 'Chưa đặt hàng', contractStatus: 'Chưa ký', paymentDate: '', invoiceStatus: 'Chưa xuất', notes: ''
   });
   const [newExpenseData, setNewExpenseData] = useState<Partial<ProjectExpense>>({
-    stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''
+    stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', unit: '', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''
   });
   const [newLaborData, setNewLaborData] = useState<Partial<LaborPayroll>>({
-    stt: '', date: new Date().toISOString().split('T')[0], content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''
+    stt: '', date: new Date().toISOString().split('T')[0], content: 'TT tiền công', description: 'Lương thợ điện', unit: '', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''
   });
   const [historyExpense, setHistoryExpense] = useState<any | null>(null);
 
@@ -3210,7 +3210,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               content: newExpenseData.content || 'Vật tư/ thiết bị',
               description: newExpenseData.description || '',
               spenderName: newExpenseData.spenderName || '',
-              unit: newExpenseData.unit || 'cái',
+              unit: newExpenseData.unit || '',
               quantity: qty,
               unitPrice: price,
               taxAmount: vat,
@@ -3235,7 +3235,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   content: newExpenseData.content || 'Vật tư/ thiết bị',
                   description: item.description || '',
                   spenderName: newExpenseData.spenderName || '',
-                  unit: item.unit || 'cái',
+                  unit: item.unit || '',
                   quantity: itemQty,
                   unitPrice: itemPrice,
                   taxAmount: itemVat,
@@ -3249,7 +3249,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             }
 
             setIsNewExpenseOpen(false);
-            setNewExpenseData({stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', spenderName: '', unit: 'cái', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''});
+            setNewExpenseData({stt: '', date: new Date().toISOString().split('T')[0], content: 'Vật tư/ thiết bị', description: '', spenderName: '', unit: '', quantity: 1, unitPrice: 0, notes: '', invoiceUrl: ''});
             setAdditionalItems([]);
             triggerToast('Đã thêm Chi phí thành công!', 'success');
           } catch (err: any) {
@@ -3300,7 +3300,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
           ))}
           <div className="pt-2">
-            <button type="button" onClick={() => setAdditionalItems([...additionalItems, { description: '', unit: 'cái', quantity: 1, unitPrice: 0, taxAmount: 0, incomeAmount: 0 }])} className="flex items-center gap-1 text-primary hover:text-blue-700 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg w-fit">
+            <button type="button" onClick={() => setAdditionalItems([...additionalItems, { description: '', unit: '', quantity: 1, unitPrice: 0, taxAmount: 0, incomeAmount: 0 }])} className="flex items-center gap-1 text-primary hover:text-blue-700 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg w-fit">
               <span className="material-symbols-outlined text-[16px]">add</span> Thêm thiết bị khác
             </button>
           </div>
@@ -3383,7 +3383,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                   content: editingExpense.content || 'Vật tư/ thiết bị',
                   description: item.description || '',
                   spenderName: editingExpense.spenderName || '',
-                  unit: item.unit || 'cái',
+                  unit: item.unit || '',
                   quantity: itemQty,
                   unitPrice: itemPrice,
                   taxAmount: itemVat,
@@ -3444,7 +3444,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             </div>
           ))}
           <div className="pt-2">
-            <button type="button" onClick={() => setAdditionalItems([...additionalItems, { description: '', unit: 'cái', quantity: 1, unitPrice: 0, taxAmount: 0, incomeAmount: 0 }])} className="flex items-center gap-1 text-primary hover:text-blue-700 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg w-fit">
+            <button type="button" onClick={() => setAdditionalItems([...additionalItems, { description: '', unit: '', quantity: 1, unitPrice: 0, taxAmount: 0, incomeAmount: 0 }])} className="flex items-center gap-1 text-primary hover:text-blue-700 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg w-fit">
               <span className="material-symbols-outlined text-[16px]">add</span> Thêm thiết bị khác
             </button>
           </div>
@@ -3721,7 +3721,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-100 text-center">
                 <div className="text-slate-500 text-[11px] mb-1">Số lượng & ĐVT</div>
-                <div className="font-bold text-blue-900 text-sm">{historyExpense.quantity || 1} {historyExpense.unit || 'cái'}</div>
+                <div className="font-bold text-blue-900 text-sm">{historyExpense.quantity || 1} {historyExpense.unit || ''}</div>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
                 <div className="text-slate-500 text-[11px] mb-1">Đơn giá</div>
