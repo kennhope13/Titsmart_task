@@ -757,17 +757,17 @@ export const ProjectManagementPage: React.FC = () => {
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
 
       <section className="sticky top-0 z-50 border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 relative no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
-        <div className="flex items-center justify-between gap-2 shrink-0 h-8 md:h-auto mb-1 md:mb-0">
-          <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2">{TEXT.projectManagement}</h1>
-        </div>
+        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 w-full md:w-auto">
+          <div className="flex items-center justify-between gap-2 shrink-0 h-8 md:h-auto">
+            <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">{TEXT.projectManagement}</h1>
+          </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 justify-end min-w-0">
-          <div className="h-[34px] flex items-center w-full sm:w-auto bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 relative z-50 no-drag-region electron-no-drag gap-0.5" style={{ WebkitAppRegion: 'no-drag' } as any}>
+          <div className="h-[34px] flex items-center w-full md:w-auto bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 relative z-50 no-drag-region electron-no-drag gap-0.5" style={{ WebkitAppRegion: 'no-drag' } as any}>
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 sm:flex-initial h-[28px] px-3 sm:px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'all' ? 'bg-white shadow-xs text-slate-800 ring-1 ring-slate-200/80 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`flex-1 md:flex-initial h-[28px] px-3 md:px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'all' ? 'bg-white shadow-xs text-slate-800 ring-1 ring-slate-200/80 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
               <span>Tất cả</span> <span className={`px-1.5 py-0.5 min-w-[20px] text-center rounded-full text-[10px] font-medium leading-none ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.all}</span>
             </button>
@@ -775,7 +775,7 @@ export const ProjectManagementPage: React.FC = () => {
               type="button"
               onClick={() => setStatusFilter('active')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 sm:flex-initial h-[28px] px-3 sm:px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'active' ? 'bg-white shadow-xs text-blue-600 ring-1 ring-blue-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`flex-1 md:flex-initial h-[28px] px-3 md:px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'active' ? 'bg-white shadow-xs text-blue-600 ring-1 ring-blue-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
               <span>Đang triển khai</span> <span className={`px-1.5 py-0.5 min-w-[20px] text-center rounded-full text-[10px] font-medium leading-none ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.active}</span>
             </button>
@@ -783,36 +783,36 @@ export const ProjectManagementPage: React.FC = () => {
               type="button"
               onClick={() => setStatusFilter('completed')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 sm:flex-initial h-[28px] px-3 sm:px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'completed' ? 'bg-white shadow-xs text-emerald-600 ring-1 ring-emerald-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`flex-1 md:flex-initial h-[28px] px-3 md:px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'completed' ? 'bg-white shadow-xs text-emerald-600 ring-1 ring-emerald-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
               <span>Hoàn thành</span> <span className={`px-1.5 py-0.5 min-w-[20px] text-center rounded-full text-[10px] font-medium leading-none ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.completed}</span>
             </button>
           </div>
+        </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="relative flex-1 sm:w-auto min-w-[130px] sm:max-w-[180px] flex items-center">
-              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder={TEXT.searchProject}
-                className="w-full pl-8 pr-2.5 h-[34px] border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-white"
-              />
-            </div>
-            {hasPermission(user, "CREATE_PROJECTS") && (
-              <button
-                type="button"
-                onClick={() => setIsNewProjectModalOpen(true)}
-                title={TEXT.createProject}
-                className="flex items-center justify-center gap-1 bg-primary text-white px-3 h-[34px] rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[16px]">add</span>
-                <span className="hidden sm:inline">Tạo dự án mới</span>
-                <span className="sm:hidden">Tạo mới</span>
-              </button>
-            )}
+        <div className="flex items-center gap-2 w-full md:w-auto justify-end shrink-0">
+          <div className="relative flex-1 md:w-auto min-w-[140px] md:w-[200px] flex items-center">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={TEXT.searchProject}
+              className="w-full pl-8 pr-2.5 h-[34px] border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-white"
+            />
           </div>
+          {hasPermission(user, "CREATE_PROJECTS") && (
+            <button
+              type="button"
+              onClick={() => setIsNewProjectModalOpen(true)}
+              title={TEXT.createProject}
+              className="flex items-center justify-center gap-1 bg-primary text-white px-3 h-[34px] rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span className="hidden sm:inline">Tạo dự án mới</span>
+              <span className="sm:hidden">Tạo mới</span>
+            </button>
+          )}
         </div>
       </section>
 
