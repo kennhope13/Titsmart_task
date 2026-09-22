@@ -65,29 +65,29 @@ export const ProjectDetailPage: React.FC = () => {
   return (
     <div className="flex-col h-full bg-slate-50 flex overflow-hidden">
       {/* Top Project Bar */}
-      <div className="bg-white border-b border-slate-200 pl-3 md:pl-4 pr-3 md:pr-20 py-1.5 md:py-3 lg:py-0 lg:min-h-[3rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-1 lg:gap-3 shrink-0 flex-wrap relative z-30">
-        <div className="flex items-center gap-2">
+      <div className="bg-white border-b border-slate-200 px-3 md:px-6 pr-3 md:pr-20 py-2 md:py-0 min-h-[3rem] flex items-center justify-between gap-2 shrink-0 relative z-30 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <Link
             to="/projects"
-            className="md:hidden inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
+            className="md:hidden inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
             title="Quay lại tất cả dự án"
           >
             <span className="material-symbols-outlined text-base">arrow_back</span>
           </Link>
 
-          {/* Mobile View Header Layout (Stacked under blue bar) */}
-          <div className="md:hidden border-l-4 border-primary pl-2 flex flex-col gap-0.5">
-            <Link to="/projects" className="page-title text-base font-extrabold text-slate-900 hover:text-primary transition-colors uppercase shrink-0 cursor-pointer leading-tight">
+          {/* Mobile View Header Layout */}
+          <div className="md:hidden border-l-4 border-primary pl-2 flex flex-col gap-0.5 min-w-0 flex-1">
+            <Link to="/projects" className="page-title text-sm font-extrabold text-slate-900 hover:text-primary transition-colors uppercase truncate cursor-pointer leading-tight">
               {project.name}
             </Link>
             {activeTab && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <a href={activeTab.path} onClick={(e) => handleTabClick(e, activeTab.path)} className="text-xs font-bold text-slate-600 hover:text-primary transition-colors shrink-0 cursor-pointer leading-tight">
                   {activeTab.label}
                 </a>
                 {subTitle && (
                   <>
-                    <span className="material-symbols-outlined text-slate-400 text-[12px] shrink-0">arrow_forward_ios</span>
+                    <span className="material-symbols-outlined text-slate-400 text-[10px] shrink-0">arrow_forward_ios</span>
                     <span className="text-xs font-medium text-slate-600 truncate">{subTitle}</span>
                   </>
                 )}
@@ -96,7 +96,7 @@ export const ProjectDetailPage: React.FC = () => {
           </div>
 
           {/* Desktop View Header Layout (Standard horizontal layout) */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2 min-w-0">
             <Link to="/projects" className="page-title text-base md:text-lg font-extrabold text-slate-900 hover:text-primary transition-colors border-l-4 border-primary pl-2 uppercase shrink-0 cursor-pointer">
               {project.name}
             </Link>
@@ -117,7 +117,7 @@ export const ProjectDetailPage: React.FC = () => {
           </div>
         </div>
 
-        <div id="project-header-actions" className="flex items-center gap-2 shrink-0 w-full md:w-auto md:ml-auto justify-end mt-1 md:mt-0"></div>
+        <div id="project-header-actions" className="flex items-center gap-2 shrink-0 justify-end"></div>
       </div>
 
 
