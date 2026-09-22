@@ -38,6 +38,8 @@ export const PersonnelPage: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
   const [deletingPerson, setDeletingPerson] = useState<{ id: string; name: string } | null>(null);
+  const [viewingProjectsPerson, setViewingProjectsPerson] = useState<any | null>(null);
+  const [projectModalSearch, setProjectModalSearch] = useState('');
 
   const toggleProjectCode = (code: string) => {
     setSelectedProjectCodes(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
@@ -500,17 +502,26 @@ export const PersonnelPage: React.FC = () => {
                         {person.role}
                       </span>
                     </td>
-                    <td className="p-2 sm:p-3 max-w-[180px] whitespace-nowrap">
+                    <td className="p-2 sm:p-3 whitespace-nowrap">
                       {person.assignedProjects.length === 0 ? (
                         <span className="text-slate-400 text-[10px] sm:text-[11px] italic">Chưa phân công</span>
                       ) : (
-                        <div className="flex flex-wrap gap-y-0.5 max-w-[180px] truncate" title={person.assignedProjects.map((mp: any) => mp.name).join(', ')}>
-                          {person.assignedProjects.map((mp: any, i: number, arr: any[]) => (
-                            <span key={mp.code} className="text-primary text-[10px] sm:text-[11px] font-bold whitespace-nowrap">
-                              {mp.name}{i < arr.length - 1 ? ', ' : ''}
-                            </span>
-                          ))}
-                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProjectModalSearch('');
+                            setViewingProjectsPerson(person);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-primary hover:bg-blue-100 border border-blue-200 text-[11px] sm:text-xs font-bold transition-all active:scale-95 shadow-2xs cursor-pointer group"
+                          title={`Xem ${person.assignedProjects.length} dự án tham gia`}
+                        >
+                          <span className="material-symbols-outlined text-[15px] group-hover:scale-110 transition-transform">folder_open</span>
+                          <span>Xem dự án</span>
+                          <span className="px-1.5 py-0.2 bg-primary text-white rounded-full text-[10px] font-bold">
+                            {person.assignedProjects.length}
+                          </span>
+                        </button>
                       )}
                     </td>
                     <td className="p-2 sm:p-3 text-slate-600 whitespace-nowrap text-[10px] sm:text-xs">{person.phone || 'Chưa cập nhật'}</td>
@@ -694,6 +705,101 @@ export const PersonnelPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Modal Xem danh sách dự án của nhân sự */}
+      <Modal
+        size="md"
+        isOpen={Boolean(viewingProjectsPerson)}
+        onClose={() => setViewingProjectsPerson(null)}
+        title={`Dự án tham gia - ${viewingProjectsPerson?.name || ''}`}
+      >
+        <div className="space-y-3 p-1">
+          <div className="flex items-center justify-between text-xs text-slate-500 pb-2.5 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-700">Mã NV:</span>
+              <span className="font-mono font-bold text-primary">{viewingProjectsPerson?.code}</span>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-blue-50 text-primary font-bold text-xs border border-blue-100">
+              {viewingProjectsPerson?.assignedProjects?.length || 0} dự án
+            </span>
+          </div>
+
+          {(viewingProjectsPerson?.assignedProjects?.length || 0) > 4 && (
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+              <input
+                type="text"
+                value={projectModalSearch}
+                onChange={(e) => setProjectModalSearch(e.target.value)}
+                placeholder="Tìm kiếm dự án..."
+                className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 focus:bg-white transition-all"
+              />
+            </div>
+          )}
+
+          <div className="max-h-[55vh] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+            {viewingProjectsPerson?.assignedProjects
+              ?.filter((p: any) => !projectModalSearch || p.name?.toLowerCase().includes(projectModalSearch.toLowerCase()) || p.code?.toLowerCase().includes(projectModalSearch.toLowerCase()))
+              .map((p: any, idx: number) => {
+                const matchedProject = projects.find(proj => 
+                  (proj.code || '').trim().toUpperCase() === (p.code || '').trim().toUpperCase() || 
+                  (proj.id || '').trim().toUpperCase() === (p.code || '').trim().toUpperCase() || 
+                  proj.name?.trim().toUpperCase() === p.name?.trim().toUpperCase()
+                );
+                return (
+                  <div
+                    key={p.code || idx}
+                    className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-blue-50/40 hover:border-blue-300 transition-all shadow-2xs"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-6 h-6 rounded-md bg-slate-100 text-slate-600 font-extrabold text-[11px] flex items-center justify-center shrink-0">
+                        {String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate" title={p.name}>
+                          {p.name}
+                        </p>
+                        {p.code && p.code !== 'COMPANY' && (
+                          <span className="text-[10px] font-mono font-semibold text-slate-400">
+                            Mã: {p.code}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {matchedProject && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setViewingProjectsPerson(null);
+                          window.location.href = `#/projects/${matchedProject.id}/overview`;
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-primary hover:text-white text-primary border border-blue-200 text-[11px] font-bold whitespace-nowrap shrink-0 active:scale-95 transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                        title="Đi đến dự án này"
+                      >
+                        <span>Mở</span>
+                        <span className="material-symbols-outlined text-[13px]">arrow_forward</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            {(!viewingProjectsPerson?.assignedProjects || viewingProjectsPerson.assignedProjects.length === 0) && (
+              <p className="text-xs text-slate-400 italic text-center py-4">Chưa phân công dự án nào.</p>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setViewingProjectsPerson(null)}
+              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 active:scale-95 transition-all cursor-pointer"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
     </div>
   );
