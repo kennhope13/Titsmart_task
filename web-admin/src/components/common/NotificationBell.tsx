@@ -4,7 +4,12 @@ import { useRealtimeStore } from '../../services/realtimeStore';
 import { useAuthStore } from '../../services/authStore';
 import { useUIStore } from '../../services/uiStore';
 
-export const NotificationBell: React.FC = () => {
+interface NotificationBellProps {
+  isSidebar?: boolean;
+  isExpanded?: boolean;
+}
+
+export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = false, isExpanded = false }) => {
   const navigate = useNavigate();
   const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
@@ -189,6 +194,157 @@ export const NotificationBell: React.FC = () => {
     return null;
   }
 
+  if (isSidebar) {
+    return (
+      <div ref={popoverRef} className="relative w-full">
+        <button
+          onClick={handleBellClick}
+          title="Thông báo hệ thống"
+          className={`flex items-center rounded-xl transition-all overflow-hidden whitespace-normal h-10 hover:bg-slate-100 relative ${
+            isExpanded ? 'w-full px-2.5 py-2 gap-2.5 h-auto' : 'w-10 justify-center gap-0'
+          } ${showPopover ? 'bg-blue-50 text-primary' : 'text-slate-700'}`}
+        >
+          <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-slate-600 bg-slate-100 shadow-xs border border-slate-200 relative">
+            <span className="material-symbols-outlined text-[20px]">notifications</span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[9px] font-black flex items-center justify-center border-2 border-white">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </div>
+          <div className={`text-left leading-tight transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-1 opacity-100 delay-0 min-w-0' : 'flex-none w-0 opacity-0 delay-200'}`}>
+            <span className="block font-bold text-xs text-slate-800 truncate">
+              Thông báo
+            </span>
+            <span className="block text-[10px] text-slate-500 truncate">
+              {unreadCount > 0 ? `${unreadCount} tin mới` : 'Không có tin mới'}
+            </span>
+          </div>
+          {unreadCount > 0 && isExpanded && (
+            <span className="flex-shrink-0 px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] font-black rounded-full">
+              {unreadCount}
+            </span>
+          )}
+        </button>
+
+        {showPopover && (
+          <div className="fixed left-[60px] md:left-[175px] bottom-6 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-slate-200 overflow-hidden z-[9999] w-[340px] animate-in fade-in slide-in-from-left-2 duration-150">
+            <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/70">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-lg">notifications</span>
+                <h3 className="font-bold text-sm text-slate-800">Thông báo hệ thống</h3>
+              </div>
+              {notifications.length > 0 && (
+                <button onClick={clearNotifications} className="text-[11px] text-primary font-bold hover:underline cursor-pointer">Xóa tất cả</button>
+              )}
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar divide-y divide-slate-100">
+              {displayNotifications.length === 0 ? (
+                <div className="p-8 text-center flex flex-col items-center justify-center gap-2">
+                  <span className="material-symbols-outlined text-slate-200 text-4xl">notifications_off</span>
+                  <span className="text-slate-500 text-xs">Không có thông báo nào</span>
+                </div>
+              ) : (
+                displayNotifications.map(notification => {
+                  let dateStr = notification.timestamp;
+                  try {
+                    const d = new Date(notification.timestamp || '');
+                    if (!isNaN(d.getTime())) {
+                      dateStr = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')} ${d.getDate()}/${d.getMonth()+1}`;
+                    }
+                  } catch(e) {}
+                  
+                  const isOverdue = notification.title.includes('quá hạn');
+                  const iconName = isOverdue ? 'warning' : (notification.icon || 'notifications');
+                  const iconColorClass = isOverdue ? 'text-amber-700' : (!notification.read ? 'text-primary' : 'text-slate-400');
+
+                  return (
+                    <div
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`p-3 text-xs hover:bg-blue-50/50 cursor-pointer flex gap-3 transition-colors ${!notification.read ? 'bg-blue-50/30 font-medium' : 'opacity-75'}`}
+                    >
+                      <span className={`material-symbols-outlined text-lg flex-shrink-0 ${iconColorClass}`}>
+                        {iconName}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <span className={`font-bold truncate ${!notification.read ? 'text-slate-800' : 'text-slate-600'}`}>
+                            {notification.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim()}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">{dateStr}</span>
+                        </div>
+                        <p className={`leading-tight ${!notification.read ? 'text-slate-600' : 'text-slate-500'}`}>{notification.message}</p>
+                      </div>
+                      {!notification.read && (
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* MODAL POPUP GIỮA MÀN HÌNH */}
+        {showCenterModal && centerModalNotifications.length > 0 && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border border-outline-variant flex flex-col max-h-[80vh]">
+              <div className="px-3 py-1.5 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
+                <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 truncate">
+                  <span className="material-symbols-outlined text-[17px]">notifications</span>
+                  <span className="truncate">Thông báo</span>
+                </h3>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={closeCenterModal}
+                    title="Đóng"
+                    className="p-1 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[20px] block">close</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-4 overflow-y-auto space-y-3 bg-slate-50 flex-1">
+                {centerModalNotifications.map(n => (
+                  <div
+                    key={n.id}
+                    onClick={() => handleNotificationClick(n)}
+                    className="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs flex items-start gap-3 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
+                  >
+                    <div className={`p-2 rounded-lg shrink-0 ${n.title.includes('quá hạn') ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+                      <span className="material-symbols-outlined text-xl">
+                        {n.title.includes('quá hạn') ? 'warning' : 'event_available'}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-xs text-slate-800 group-hover:text-blue-600 transition-colors flex items-center justify-between">
+                        <span>{n.title}</span>
+                        <span className="material-symbols-outlined text-sm text-slate-400 group-hover:text-blue-600 transition-colors">chevron_right</span>
+                      </h4>
+                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">{n.message}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-3 bg-white border-t border-slate-200 flex justify-end">
+                <button
+                  onClick={closeCenterModal}
+                  className="px-5 py-1.5 bg-primary hover:opacity-90 active:scale-95 text-white font-bold text-xs rounded-lg transition-all shadow-xs cursor-pointer"
+                >
+                  Đã hiểu
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       ref={popoverRef}
@@ -205,12 +361,14 @@ export const NotificationBell: React.FC = () => {
       <button
         onClick={handleBellClick}
         title="Thông báo hệ thống (Nhấn giữ & kéo để di chuyển)"
-        className={`w-[36px] h-[36px] rounded-md flex items-center justify-center transition-all relative border shadow-sm cursor-grab active:cursor-grabbing
+        className={`w-[36px] h-[36px] rounded-lg flex items-center justify-center transition-all relative border shadow-xs cursor-grab active:cursor-grabbing
           ${showPopover ? 'bg-blue-50 border-blue-200 text-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800'}`}
       >
         <span className="material-symbols-outlined text-[20px] pointer-events-none">notifications</span>
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white pointer-events-none"></span>
+          <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white rounded-full text-[10px] font-black flex items-center justify-center border-2 border-white pointer-events-none shadow-xs">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
         )}
       </button>
 

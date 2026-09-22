@@ -1601,33 +1601,35 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
       <section className="task-management-screen bg-white border-y border-r border-slate-200 shadow-xs flex flex-col flex-1 overflow-hidden">
       {/* Page Header (Only show if not nested) */}
         {!projectId && (
-      <div className={`px-3 md:px-5 pr-16 md:pr-20 py-2.5 md:py-2 flex flex-col lg:flex-row justify-between lg:items-center border-b border-slate-100`}>
-        <div className="flex items-center justify-between w-full lg:w-auto h-8 lg:h-auto mb-1 lg:mb-0">
+      <div className="sticky top-0 z-50 px-3 md:px-6 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col lg:flex-row justify-between lg:items-center border-b border-slate-200 bg-white shadow-sm relative no-drag-region electron-no-drag" style={{ WebkitAppRegion: "no-drag" } as any}>
+        <div className="flex items-center justify-between w-full lg:w-auto h-8 md:h-auto mb-1 lg:mb-0">
           {selectedProjectFromUrl && (
             <button
               type="button"
               onClick={() => navigate('/projects')}
-              className="relative z-[35] inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:bg-slate-100 active:scale-95 mr-2" style={{ WebkitAppRegion: "no-drag" } as any}
+              className="relative z-50 inline-flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-xs transition-all hover:bg-slate-100 active:scale-95 mr-2 no-drag-region electron-no-drag cursor-pointer" style={{ WebkitAppRegion: "no-drag" } as any}
               title="Quay lại tất cả dự án"
               aria-label="Quay lại tất cả dự án"
             >
               <span className="material-symbols-outlined text-base">arrow_back</span>
             </button>
           )}
-          <div className="min-w-0 flex-1 flex items-center gap-2">
+          <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <h2 className="page-title text-base lg:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase whitespace-nowrap flex-shrink-0">QUẢN LÝ TIẾN ĐỘ CÔNG VIỆC <span className="text-[10px] text-slate-400 font-mono font-normal tracking-normal lowercase ml-1">v1.1.88</span></h2>
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 ml-2">
+            <div className="h-[34px] flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 ml-2 no-drag-region electron-no-drag shrink-0 relative z-50" style={{ WebkitAppRegion: "no-drag" } as any}>
               <button
                 type="button"
                 onClick={() => setAssignFilter('mine')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${assignFilter === 'mine' ? 'bg-white text-primary shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                style={{ WebkitAppRegion: "no-drag" } as any}
+                className={`h-[28px] px-3 flex items-center justify-center text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${assignFilter === 'mine' ? 'bg-white text-primary shadow-xs font-semibold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
               >
                 Công việc của tôi
               </button>
               <button
                 type="button"
                 onClick={() => setAssignFilter('all')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${assignFilter === 'all' ? 'bg-white text-primary shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                style={{ WebkitAppRegion: "no-drag" } as any}
+                className={`h-[28px] px-3 flex items-center justify-center text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${assignFilter === 'all' ? 'bg-white text-primary shadow-xs font-semibold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
               >
                 Tất cả công việc
               </button>

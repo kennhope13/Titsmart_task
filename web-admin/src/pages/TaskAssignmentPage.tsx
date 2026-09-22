@@ -117,18 +117,18 @@ export const TaskAssignmentPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
-      <div className="bg-white border-b border-slate-200 pl-3 pr-3 md:pr-16 lg:pr-20 py-4 md:py-3 lg:py-0 lg:min-h-[3rem] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0 shadow-sm flex-wrap">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 flex-wrap w-full lg:w-auto">
-          <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">
+      <div className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 relative z-50 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+        <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto h-8 md:h-auto mb-1 md:mb-0">
+          <h1 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">
             CÔNG VIỆC
           </h1>
           <SharedTaskTabs activeTab={activeTab as any} onTabChange={(t) => { setActiveTab(t); setSelectedTaskIds([]); }} />
         </div>
-        <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-start">
+        <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-between md:justify-start">
           <CustomSelect 
             value={filterProjectCode} 
             onChange={(e) => setFilterProjectCode(e.target.value)}
-            className="flex-1 sm:w-[240px] text-xs font-bold text-slate-800"
+            className="flex-1 md:w-[240px] h-[34px] text-xs font-bold text-slate-800"
           >
             <option value="all">-- Tất cả Dự án --</option>
             {projects.map(p => (

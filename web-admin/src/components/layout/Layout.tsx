@@ -24,12 +24,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Sidebar isExpanded={isSidebarExpanded} toggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)} />
       
       <div className={`layout-content-wrapper ${isSidebarExpanded ? 'ml-[170px]' : 'ml-[56px]'} flex flex-col h-screen flex-1 overflow-hidden transition-all duration-300 ease-in-out relative`}>
-        <div className="fixed top-[6px] right-16 z-[60] realtime-clock-container">
-          <RealtimeClock />
-        </div>
-        <NotificationBell />
-        <main className="flex-1 bg-slate-50 flex flex-col w-full max-w-full overflow-hidden page-has-floating-bell">{children}</main>
+        <RealtimeClock />
+        <main className="flex-1 bg-slate-50 flex flex-col w-full max-w-full overflow-hidden">{children}</main>
       </div>
+      <NotificationBell />
       <BackToTop />
     </div>
   );

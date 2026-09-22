@@ -5,6 +5,7 @@ import { useRealtimeStore } from '../../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../../services/authStore';
 import { useUIStore } from '../../services/uiStore';
 import { SettingsModal } from '../common/SettingsModal';
+import { NotificationBell } from '../common/NotificationBell';
 
 interface SidebarProps {
   isExpanded?: boolean;
@@ -183,17 +184,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           ))}
 
           </nav>
-        <div className="pt-4 pb-4 px-2 border-t border-slate-100 relative flex flex-col gap-2">
+        <div className="pt-3 pb-3 px-2 border-t border-slate-100 relative flex flex-col gap-1.5">
             {/* User Profile */}
             <button
               type="button"
               onClick={() => setShowSettingsModal(true)}
               title="Cài đặt hệ thống & Tài khoản"
               className={`flex items-center rounded-xl transition-all overflow-hidden whitespace-normal h-10 hover:bg-slate-100 ${
-                isExpanded ? 'w-full px-3 py-3 gap-3 h-auto' : 'w-10 justify-center gap-0'
+                isExpanded ? 'w-full px-2.5 py-2 gap-2.5 h-auto' : 'w-10 justify-center gap-0'
               }`}
             >
-              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-slate-400 bg-slate-100 uppercase shadow-sm border border-slate-200">
+              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-slate-400 bg-slate-100 uppercase shadow-xs border border-slate-200">
                 <span className="material-symbols-outlined text-[20px]">person</span>
               </div>
               <div className={`text-left leading-tight transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-1 opacity-100 delay-0 min-w-0' : 'flex-none w-0 opacity-0 delay-200'}`}>

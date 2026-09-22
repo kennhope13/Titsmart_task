@@ -166,14 +166,15 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-slate-50 overflow-hidden text-slate-800">
-      <section className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm pl-3 pr-16 md:pr-20 py-2 md:h-12 flex flex-col md:flex-row justify-start items-start md:items-center gap-4 shrink-0 flex-wrap relative">
-        <div className="flex items-center gap-6">
-          <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter'] whitespace-nowrap">TỔNG QUAN CHUNG</h1>
+      <section className="sticky top-0 z-50 border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-start items-start md:items-center gap-4 shrink-0 relative no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+        <div className="flex items-center gap-6 h-8 md:h-auto mb-1 md:mb-0">
+          <h1 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter'] whitespace-nowrap">TỔNG QUAN CHUNG</h1>
           
-          <div className="relative" ref={filterRef}>
+          <div className="relative z-50 no-drag-region electron-no-drag" ref={filterRef} style={{ WebkitAppRegion: 'no-drag' } as any}>
             <button 
               onClick={() => setIsFilterOpen(!isFilterOpen)} 
-              className="flex items-center justify-between w-64 md:w-72 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              style={{ WebkitAppRegion: 'no-drag' } as any}
+              className="flex items-center justify-between w-64 md:w-72 h-[34px] px-3.5 bg-white border border-slate-200 rounded-lg shadow-xs text-xs font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer select-none no-drag-region electron-no-drag"
             >
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px] text-slate-400">filter_list</span>

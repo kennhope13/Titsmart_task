@@ -603,10 +603,14 @@ input[type="number"] {
 @keyframes shimmer { 100% { transform: translateX(100%); } }
 
 .drag-region { -webkit-app-region: drag; }
-.no-drag-region { -webkit-app-region: no-drag; }
+.no-drag-region { -webkit-app-region: no-drag !important; }
 
 .electron-drag { -webkit-app-region: drag; }
-.electron-no-drag { -webkit-app-region: no-drag;
+.electron-no-drag { -webkit-app-region: no-drag !important; }
+
+/* Ensure header buttons, tabs, dropdowns, inputs are always clickable and never intercepted by window drag */
+button, input, select, textarea, a, .clickable-tab, [role="button"], .no-drag-region * {
+  -webkit-app-region: no-drag !important;
 }
 /* Mobile Responsive Overrides - Mobile Only (does NOT affect desktop) */
 @media (max-width: 768px) {
