@@ -1,131 +1,90 @@
-import { app, BrowserWindow, shell, ipcMain } from "electron";
-import path from "path";
-import { fileURLToPath } from "url";
-import updatePkg from "electron-updater";
-const { autoUpdater } = updatePkg;
-const __filename$1 = fileURLToPath(import.meta.url);
-const __dirname$1 = path.dirname(__filename$1);
-let mainWindow;
-const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
-function createWindow() {
-  mainWindow = new BrowserWindow({
+import { app as s, BrowserWindow as c, shell as u, ipcMain as i } from "electron";
+import d from "path";
+import { fileURLToPath as m } from "url";
+import f from "electron-updater";
+const { autoUpdater: o } = f, w = m(import.meta.url), r = d.dirname(w);
+let a;
+const l = process.env.VITE_DEV_SERVER_URL;
+function p() {
+  a = new c({
     width: 1200,
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    autoHideMenuBar: true,
+    autoHideMenuBar: !0,
     // titleBarStyle: 'hidden', // Lấy cảm hứng từ Notion (giấu thanh tiêu đề mặc định)
     // titleBarOverlay: {
     //   color: '#ffffff',
     //   symbolColor: '#00236f',
     // },
     webPreferences: {
-      preload: path.join(__dirname$1, "preload.mjs"),
-      nodeIntegration: false,
-      contextIsolation: true
+      preload: d.join(r, "preload.mjs"),
+      nodeIntegration: !1,
+      contextIsolation: !0
     }
-  });
-  if (VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile(path.join(process.env.DIST || path.join(__dirname$1, "../dist"), "index.html"));
-  }
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith("http://") || url.startsWith("https://")) {
-      shell.openExternal(url);
-    }
-    return { action: "deny" };
-  });
+  }), l ? (a.loadURL(l), a.webContents.openDevTools()) : a.loadFile(d.join(process.env.DIST || d.join(r, "../dist"), "index.html")), a.webContents.setWindowOpenHandler(({ url: e }) => ((e.startsWith("http://") || e.startsWith("https://")) && u.openExternal(e), { action: "deny" }));
 }
-function sendToRenderer(channel, data) {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send(channel, data);
-  }
+function n(e, t) {
+  a && !a.isDestroyed() && a.webContents.send(e, t);
 }
-function normalizeReleaseNotes(notes) {
-  if (Array.isArray(notes)) {
-    return notes.map((n) => typeof n === "string" ? n : (n == null ? void 0 : n.note) ?? "").filter(Boolean).join("\n");
-  }
-  return notes ?? "";
+function g(e) {
+  return Array.isArray(e) ? e.map((t) => typeof t == "string" ? t : (t == null ? void 0 : t.note) ?? "").filter(Boolean).join(`
+`) : e ?? "";
 }
-function setupAutoUpdater() {
-  if (!app.isPackaged) return;
-  autoUpdater.autoDownload = false;
-  autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.on("checking-for-update", () => {
-    sendToRenderer("update:status", { status: "checking" });
-  });
-  ipcMain.on("open-external", async (event, url) => {
-    if (url && typeof url === "string") {
+function v() {
+  s.isPackaged && (o.autoDownload = !1, o.autoInstallOnAppQuit = !0, o.on("checking-for-update", () => {
+    n("update:status", { status: "checking" });
+  }), i.on("open-external", async (e, t) => {
+    if (t && typeof t == "string")
       try {
-        await shell.openExternal(url);
-      } catch (error) {
-        require("electron").dialog.showErrorBox("Lỗi mở ảnh", `Không thể mở đường dẫn: ${url}
-Lý do: ${error.message}`);
+        await u.openExternal(t);
+      } catch (h) {
+        require("electron").dialog.showErrorBox("Lỗi mở ảnh", `Không thể mở đường dẫn: ${t}
+Lý do: ${h.message}`);
       }
-    }
-  });
-  autoUpdater.on("update-available", (info) => {
-    sendToRenderer("update:status", {
+  }), o.on("update-available", (e) => {
+    n("update:status", {
       status: "available",
-      version: info.version,
-      releaseNotes: normalizeReleaseNotes(info.releaseNotes)
+      version: e.version,
+      releaseNotes: g(e.releaseNotes)
     });
-  });
-  autoUpdater.on("update-not-available", (info) => {
-    sendToRenderer("update:status", { status: "not-available", version: info.version });
-  });
-  autoUpdater.on("download-progress", (progress) => {
-    sendToRenderer("update:status", {
+  }), o.on("update-not-available", (e) => {
+    n("update:status", { status: "not-available", version: e.version });
+  }), o.on("download-progress", (e) => {
+    n("update:status", {
       status: "downloading",
-      percent: Math.round(progress.percent),
-      transferred: progress.transferred,
-      total: progress.total,
-      bytesPerSecond: progress.bytesPerSecond
+      percent: Math.round(e.percent),
+      transferred: e.transferred,
+      total: e.total,
+      bytesPerSecond: e.bytesPerSecond
     });
-  });
-  autoUpdater.on("update-downloaded", (info) => {
-    sendToRenderer("update:status", { status: "downloaded", version: info.version });
-  });
-  autoUpdater.on("error", (err) => {
-    sendToRenderer("update:status", { status: "error", message: (err == null ? void 0 : err.message) ?? String(err) });
-  });
-  ipcMain.on("update:check", () => {
-    autoUpdater.checkForUpdates();
-  });
-  ipcMain.on("update:download", () => {
-    autoUpdater.downloadUpdate();
-  });
-  ipcMain.on("update:install", () => {
-    autoUpdater.quitAndInstall();
-  });
-  setTimeout(() => {
-    autoUpdater.checkForUpdates().catch((err) => {
-      sendToRenderer("update:status", { status: "error", message: (err == null ? void 0 : err.message) ?? String(err) });
+  }), o.on("update-downloaded", (e) => {
+    n("update:status", { status: "downloaded", version: e.version });
+  }), o.on("error", (e) => {
+    n("update:status", { status: "error", message: (e == null ? void 0 : e.message) ?? String(e) });
+  }), i.on("update:check", () => {
+    o.checkForUpdates();
+  }), i.on("update:download", () => {
+    o.downloadUpdate();
+  }), i.on("update:install", () => {
+    o.quitAndInstall();
+  }), setTimeout(() => {
+    o.checkForUpdates().catch((e) => {
+      n("update:status", { status: "error", message: (e == null ? void 0 : e.message) ?? String(e) });
     });
-  }, 5e3);
+  }, 5e3));
 }
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-    mainWindow = null;
-  }
+s.on("window-all-closed", () => {
+  process.platform !== "darwin" && (s.quit(), a = null);
 });
-app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+s.on("activate", () => {
+  c.getAllWindows().length === 0 && p();
 });
-app.commandLine.appendSwitch("disable-http2");
-app.whenReady().then(() => {
-  createWindow();
-  setupAutoUpdater();
-  if (mainWindow) {
-    mainWindow.webContents.session.clearCache().then(() => {
-      console.log("[Electron] Session cache cleared successfully");
-    }).catch((err) => {
-      console.error("[Electron] Failed to clear session cache:", err);
-    });
-  }
+s.commandLine.appendSwitch("disable-http2");
+s.whenReady().then(() => {
+  p(), v(), a && a.webContents.session.clearCache().then(() => {
+    console.log("[Electron] Session cache cleared successfully");
+  }).catch((e) => {
+    console.error("[Electron] Failed to clear session cache:", e);
+  });
 });

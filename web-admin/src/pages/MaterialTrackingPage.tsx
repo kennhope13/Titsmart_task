@@ -381,7 +381,7 @@ export const MaterialTrackingPage: React.FC = () => {
             materialCode: tx.materialCode,
             materialName: tx.materialName,
             specs: tx.specs || '',
-            unit: tx.unit || 'sợi',
+            unit: tx.unit || '',
             totalQty: tx.quantity || 0,
             sourceOrProject: tx.sourceOrProject || ''
           });
