@@ -166,6 +166,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     deleteTask,
     updateTask,
     fetchAccounting,
+    logActivity,
   } = useRealtimeStore();
 
   useEffect(() => {
@@ -1841,12 +1842,60 @@ export const ProjectCostPlanPage: React.FC = () => {
         {activeTab === 'EXPENSE' && (
           <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-white flex flex-col" id="expense-unified-view">
 
-
             {/* 1. BẢNG TỔNG QUAN */}
             <div className="shrink-0 w-full overflow-x-auto">
               <CostPlanSummaryTable
                 expenses={currentProjExpenses}
                 labors={currentProjLabor}
+                projects={projects}
+                currentProjectCode={selectedProject}
+                onTransferFund={async ({ fromSpender, toProjectCode, toSpender, amount, date, notes }) => {
+                  try {
+                    const toProjObj = projects.find(p => p.code === toProjectCode);
+                    const toProjName = toProjObj ? toProjObj.name : toProjectCode;
+                    const fromProjObj = projects.find(p => p.code === selectedProject);
+                    const fromProjName = fromProjObj ? fromProjObj.name : selectedProject;
+
+                    // 1. Dòng Xuất/Chi giảm quỹ tại Dự án hiện tại
+                    await addExpense({
+                      projectCode: selectedProject,
+                      spenderName: fromSpender || 'DỰ ÁN',
+                      content: `Chuyển quỹ đến ${toProjName}`,
+                      description: `Chuyển quỹ cho ${toSpender} (${toProjName})${notes ? ` - ${notes}` : ''}`,
+                      date: date || new Date().toISOString().split('T')[0],
+                      quantity: 1,
+                      unit: '',
+                      unitPrice: amount,
+                      taxAmount: 0,
+                      totalAmount: amount,
+                      incomeAmount: 0,
+                      balanceFund: 0,
+                      notes: `Chuyển quỹ đến ${toProjectCode}: ${user?.name || user?.username || ''}`
+                    } as any);
+
+                    // 2. Dòng Nạp/Thu tăng quỹ tại Dự án đích
+                    await addExpense({
+                      projectCode: toProjectCode,
+                      spenderName: toSpender || fromSpender || 'DỰ ÁN',
+                      content: toSpender === 'DỰ ÁN' ? 'Quỹ Công Trình' : 'Cấp quỹ',
+                      description: `Nhận chuyển quỹ từ ${fromProjName} (${fromSpender})${notes ? ` - ${notes}` : ''}`,
+                      date: date || new Date().toISOString().split('T')[0],
+                      quantity: 0,
+                      unit: '',
+                      unitPrice: 0,
+                      taxAmount: 0,
+                      totalAmount: 0,
+                      incomeAmount: amount,
+                      balanceFund: amount,
+                      notes: `Nhận từ ${selectedProject}: ${user?.name || user?.username || ''}`
+                    } as any);
+
+                    logActivity('Chuyển quỹ', `${fromProjName} -> ${toProjName}: ${amount.toLocaleString('vi-VN')} đ`);
+                    triggerToast(`Đã chuyển quỹ ${amount.toLocaleString('vi-VN')} đ sang dự án ${toProjName} thành công!`, 'success');
+                  } catch (error: any) {
+                    triggerToast(error.message || 'Lỗi khi thực hiện chuyển quỹ!', 'warning');
+                  }
+                }}
                 onAllocateFund={(name, amount, date) => {
                   if (name === 'KHÁC') return;
 
