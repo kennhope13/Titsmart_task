@@ -752,11 +752,11 @@ export const ProjectManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="project-management-page flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-y-auto">
+    <div className="project-management-page flex flex-col flex-1 h-full bg-slate-50 relative overflow-hidden">
       <LoadingSpinner loading={loading} message={loadingMessage} />
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
 
-      <section className="sticky top-0 z-50 border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 relative no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+      <section className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 relative z-50 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 w-full md:w-auto">
           <div className="flex items-center justify-between gap-2 shrink-0 h-8 md:h-auto">
             <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">{TEXT.projectManagement}</h1>
@@ -816,7 +816,7 @@ export const ProjectManagementPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="p-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6">
         {isFetchingProjects && projects.length === 0 ? (
           <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center">
               <svg className="animate-spin h-12 w-12 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
