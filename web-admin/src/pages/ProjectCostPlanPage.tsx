@@ -2601,22 +2601,6 @@ export const ProjectCostPlanPage: React.FC = () => {
             </>
           )}
 
-          {isCreatingSectionHeader && (
-            <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 mb-3">
-              <input
-                type="checkbox"
-                id="isContractorCheckHeader"
-                checked={!!newPlanData.isContractor}
-                onChange={(e) => setNewPlanData({...newPlanData, isContractor: e.target.checked})}
-                className="w-4 h-4 accent-amber-500"
-              />
-              <label htmlFor="isContractorCheckHeader" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
-                Tự động đồng bộ Đầu mục này sang tab Mua hàng
-              </label>
-            </div>
-          )}
-
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newPlanData.notes} onChange={(e) => setNewPlanData({...newPlanData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewPlanOpen(false); setParentPlanIdForNew(null); setIsCreatingSectionHeader(false); setNewPlanData({stt: '', jobContent: '', unit: 'bộ', contractVolume: 1, techSpecModel: '', techSpecOrigin: '', progressStatus: 'Chưa thi công', orderedVolume: 0, orderedStatus: 'Chưa đặt hàng', expectedDate: '', issueContent: '', docCo: false, docCq: false, docFireInspection: false, dispatchToSite: false, notes: '', isContractor: true}); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">{isCreatingSectionHeader ? 'Lưu Đầu Mục' : 'Thêm Hạng Mục'}</button></div>
         </form>
