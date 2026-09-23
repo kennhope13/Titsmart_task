@@ -608,10 +608,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
       {/* FLOATING REALTIME INCOMING NOTIFICATION BANNER/TOAST */}
       {incomingPopupNotif && (
-        <div className="fixed top-5 right-5 z-[99999] max-w-sm w-full animate-bounce-in shadow-2xl rounded-xl border border-blue-500/30 bg-white/95 backdrop-blur-md overflow-hidden transition-all">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 py-2 flex items-center justify-between text-white">
+        <div className="fixed top-5 right-5 z-[99999] max-w-sm w-full animate-bounce-in shadow-2xl rounded-xl border border-primary/20 bg-white/95 backdrop-blur-md overflow-hidden transition-all">
+          <div className="bg-primary px-3.5 py-2 flex items-center justify-between text-white">
             <div className="flex items-center gap-2 font-bold text-xs">
-              <span className="material-symbols-outlined text-[18px] animate-spin-slow">notifications_active</span>
+              <span className="material-symbols-outlined text-[18px]">notifications_active</span>
               <span>Thông báo mới</span>
             </div>
             <button
@@ -623,7 +623,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
             </button>
           </div>
           <div className="p-3.5 flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-blue-50 text-blue-600 shrink-0 mt-0.5">
+            <div className="p-2 rounded-xl bg-surface-container text-primary shrink-0 mt-0.5">
               <span className="material-symbols-outlined text-xl">
                 {incomingPopupNotif.icon || 'assignment_ind'}
               </span>
@@ -635,7 +635,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
                 <span className="text-[10px] text-slate-400 font-medium">Vừa xong</span>
                 <button
                   onClick={() => handleNotificationClick(incomingPopupNotif)}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-[11px] font-bold rounded-lg transition-all shadow-xs flex items-center gap-1"
+                  className="px-3 py-1 bg-primary hover:opacity-90 active:scale-95 text-white text-[11px] font-bold rounded-lg transition-all shadow-xs flex items-center gap-1"
                 >
                   <span>Xem ngay</span>
                   <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
