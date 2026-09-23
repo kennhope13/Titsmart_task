@@ -185,19 +185,48 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     setShowPopover(!showPopover);
   };
 
-  const handleClearAll = async (e: React.MouseEvent) => {
+  // Per-user dismissed/cleared notification IDs (so each user account only deletes notifications for themselves)
+  const userStorageKey = useMemo(() => {
+    const uKey = user?.id || user?.username || 'guest';
+    return `buildcore_dismissed_notifs_${uKey}`;
+  }, [user]);
+
+  const [dismissedNotifIds, setDismissedNotifIds] = useState<Set<string>>(() => {
+    try {
+      const uKey = user?.id || user?.username || 'guest';
+      const raw = localStorage.getItem(`buildcore_dismissed_notifs_${uKey}`);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Keep dismissed state in sync if user changes
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(userStorageKey);
+      setDismissedNotifIds(raw ? new Set(JSON.parse(raw)) : new Set());
+    } catch {
+      setDismissedNotifIds(new Set());
+    }
+  }, [userStorageKey]);
+
+  const handleClearAll = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Xóa tất cả các thông báo đã đọc
+    // Xóa tất cả các thông báo đã đọc CHO RIÊNG TÀI KHOẢN HIỆN TẠI
     const readIds = displayNotifications.filter(n => n.read).map(n => n.id);
     if (readIds.length === 0) return;
-    try {
-      const store = useRealtimeStore.getState();
-      for (const id of readIds) {
-        await store.deleteNotification(id);
+
+    setDismissedNotifIds(prev => {
+      const next = new Set(prev);
+      readIds.forEach(id => next.add(id));
+      try {
+        localStorage.setItem(userStorageKey, JSON.stringify(Array.from(next)));
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err);
-    }
+      return next;
+    });
   };
 
   const handleNotificationClick = (notification: any) => {
@@ -233,6 +262,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     notifications.forEach(n => {
       // Filter out notifications not intended for this user
       if (!isNotificationForUser(n, user, engineers)) return;
+      // Filter out notifications dismissed by this specific user account
+      if (dismissedNotifIds.has(n.id)) return;
 
       const cleanTitle = n.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim();
       const key = `${cleanTitle}:::${n.message}`;
@@ -242,7 +273,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       }
     });
     return uniqueList;
-  }, [notifications, user, engineers]);
+  }, [notifications, user, engineers, dismissedNotifIds]);
 
   // Priority notifications: Overdue 1-2 days or Due soon
   const centerModalNotifications = useMemo(() => {
