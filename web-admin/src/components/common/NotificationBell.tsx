@@ -250,7 +250,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     } else if (title.includes('điểm danh') || message.includes('điểm danh')) {
       navigate('/attendance');
     } else if (title.includes('giao việc') || title.includes('công việc') || title.includes('nhiệm vụ') || message.includes('nhiệm vụ') || message.includes('công việc')) {
-      navigate('/tasks');
+      navigate('/my-tasks');
     } else if (title.includes('nhật ký') || message.includes('nhật ký')) {
       navigate('/field-logs');
     }

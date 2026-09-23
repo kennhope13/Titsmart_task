@@ -1697,24 +1697,6 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
           )}
           <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <h2 className="page-title text-base lg:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase whitespace-nowrap flex-shrink-0">QUẢN LÝ TIẾN ĐỘ CÔNG VIỆC <span className="text-[10px] text-slate-400 font-mono font-normal tracking-normal lowercase ml-1">v1.1.88</span></h2>
-            <div className="h-[34px] flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 ml-2 no-drag-region electron-no-drag shrink-0 relative z-50" style={{ WebkitAppRegion: "no-drag" } as any}>
-              <button
-                type="button"
-                onClick={() => setAssignFilter('mine')}
-                style={{ WebkitAppRegion: "no-drag" } as any}
-                className={`h-[28px] px-3 flex items-center justify-center text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${assignFilter === 'mine' ? 'bg-white text-primary shadow-xs font-semibold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
-              >
-                Công việc của tôi
-              </button>
-              <button
-                type="button"
-                onClick={() => setAssignFilter('all')}
-                style={{ WebkitAppRegion: "no-drag" } as any}
-                className={`h-[28px] px-3 flex items-center justify-center text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${assignFilter === 'all' ? 'bg-white text-primary shadow-xs font-semibold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
-              >
-                Tất cả công việc
-              </button>
-            </div>
             {selectedProjectFromUrl && (
               <div className="inline-flex min-w-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-bold text-slate-700">
                 <span className="truncate">Dự án: {currentProject?.name || selectedProjectFromUrl}</span>
