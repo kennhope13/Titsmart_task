@@ -185,6 +185,30 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     setShowPopover(!showPopover);
   };
 
+  const handleClearAll = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await clearNotifications();
+      sessionStorage.setItem('notif_cleared_timestamp', Date.now().toString());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleClearRead = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const readIds = displayNotifications.filter(n => n.read).map(n => n.id);
+    if (readIds.length === 0) return;
+    try {
+      const store = useRealtimeStore.getState();
+      for (const id of readIds) {
+        await store.deleteNotification(id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleNotificationClick = (notification: any) => {
     if (!notification.read) {
       markNotificationRead(notification.id);
@@ -360,10 +384,27 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
             <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/70">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-lg">notifications</span>
-                <h3 className="font-bold text-sm text-slate-800">Thông báo hệ thống</h3>
+                <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
               </div>
-              {notifications.length > 0 && (
-                <button onClick={clearNotifications} className="text-[11px] text-primary font-bold hover:underline cursor-pointer">Xóa tất cả</button>
+              {displayNotifications.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {displayNotifications.some(n => n.read) && (
+                    <button
+                      type="button"
+                      onClick={handleClearRead}
+                      className="text-[11px] text-slate-500 hover:text-slate-800 font-medium hover:underline cursor-pointer"
+                    >
+                      Xóa đã đọc
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    className="text-[11px] text-primary font-bold hover:underline cursor-pointer"
+                  >
+                    Xóa tất cả
+                  </button>
+                </div>
               )}
             </div>
             <div className="max-h-[60vh] overflow-y-auto custom-scrollbar divide-y divide-slate-100">
@@ -504,8 +545,25 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
         <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50 w-[320px]">
           <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
-            {notifications.length > 0 && (
-              <button onClick={clearNotifications} className="text-[11px] text-primary font-bold hover:underline">Xóa tất cả</button>
+            {displayNotifications.length > 0 && (
+              <div className="flex items-center gap-2">
+                {displayNotifications.some(n => n.read) && (
+                  <button
+                    type="button"
+                    onClick={handleClearRead}
+                    className="text-[11px] text-slate-500 hover:text-slate-800 font-medium hover:underline cursor-pointer"
+                  >
+                    Xóa đã đọc
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="text-[11px] text-primary font-bold hover:underline cursor-pointer"
+                >
+                  Xóa tất cả
+                </button>
+              </div>
             )}
           </div>
           <div className="max-h-[60vh] overflow-y-auto custom-scrollbar divide-y divide-slate-100">

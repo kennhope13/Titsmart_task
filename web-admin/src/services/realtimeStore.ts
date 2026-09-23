@@ -329,8 +329,9 @@ interface RealtimeStoreState {
   addIssue: (issue: Omit<Issue, 'id'>) => void;
   updateIssueStatus: (id: string, status: IssueStatus) => void;
   addDirective: (issueId: string, directive: string) => void;
-
   markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
   clearNotifications: () => void;
   addNotification: (notif: Omit<NotificationItem, 'id' | 'timestamp' | 'read'>) => Promise<void>;
   fetchNotifications: () => Promise<void>;
@@ -1504,15 +1505,45 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
+    markAllNotificationsRead: async () => {
+      try {
+        await api.notifications.markAllRead();
+        set((state) => {
+          const nextNotifs = state.notifications.map((n) => ({ ...n, read: true }));
+          persistAndNotify({ notifications: nextNotifs });
+          return { notifications: nextNotifs };
+        });
+      } catch (e) {
+        console.error('Failed to mark all read', e);
+      }
+    },
+
+    deleteNotification: async (id) => {
+      try {
+        await api.notifications.delete(id);
+        set((state) => {
+          const nextNotifs = state.notifications.filter((n) => n.id !== id);
+          persistAndNotify({ notifications: nextNotifs });
+          return { notifications: nextNotifs };
+        });
+      } catch (e) {
+        console.error('Failed to delete notification', e);
+      }
+    },
+
     clearNotifications: async () => {
       try {
         await api.notifications.clear();
-        set((state) => {
+        set(() => {
           persistAndNotify({ notifications: [] });
           return { notifications: [] };
         });
       } catch (e) {
         console.error('Failed to clear notifications', e);
+        set(() => {
+          persistAndNotify({ notifications: [] });
+          return { notifications: [] };
+        });
       }
     },
 

@@ -1165,9 +1165,22 @@ export const api = {
       if (error) throw error;
       return { success: true };
     },
-    clear: async () => {
-      const { error } = await supabase.from('notifications').delete().neq('id', '0');
+    markAllRead: async () => {
+      const { error } = await supabase.from('notifications').update({ read: true }).eq('read', false);
       if (error) throw error;
+      return { success: true };
+    },
+    delete: async (id: string) => {
+      const { error } = await supabase.from('notifications').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    },
+    clear: async () => {
+      const { error } = await supabase.from('notifications').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) {
+        // Fallback delete all
+        await supabase.from('notifications').delete().gt('id', 0);
+      }
       return { success: true };
     }
   },
