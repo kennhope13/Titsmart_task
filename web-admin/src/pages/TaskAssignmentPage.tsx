@@ -25,6 +25,7 @@ export const TaskAssignmentPage: React.FC = () => {
   
   const [filterProjectCode, setFilterProjectCode] = useState('all');
   const urlTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'my-tasks' | null;
+  const highlightedTaskId = searchParams.get('taskId');
   const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned' | 'my-tasks'>(() => urlTab || (location.state as any)?.tab || 'unassigned');
 
   useEffect(() => {
@@ -56,8 +57,18 @@ export const TaskAssignmentPage: React.FC = () => {
     if (filterProjectCode !== 'all') {
       filtered = filtered.filter(t => t.projectCode === filterProjectCode);
     }
-    return filtered;
-  }, [tasks, filterProjectCode, activeTab]);
+
+    // Sắp xếp đưa những công việc VỪA MỚI CẬP NHẬT lên đầu bảng
+    return filtered.sort((a, b) => {
+      // Ưu tiên dòng đang được click từ thông báo
+      if (highlightedTaskId && a.id === highlightedTaskId) return -1;
+      if (highlightedTaskId && b.id === highlightedTaskId) return 1;
+
+      const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [tasks, filterProjectCode, activeTab, highlightedTaskId]);
 
   const handleToggleSelectAll = () => {
     if (selectedTaskIds.length === displayedTasks.length && displayedTasks.length > 0) {
@@ -204,8 +215,19 @@ export const TaskAssignmentPage: React.FC = () => {
                 displayedTasks.map((t, idx) => {
                   const p = projects.find(proj => proj.code === t.projectCode);
                   const isChecked = selectedTaskIds.includes(t.id);
+                  const isTargetTask = highlightedTaskId === t.id;
                   return (
-                    <tr key={t.id} className={`hover:bg-blue-50/50 transition-colors cursor-pointer ${isChecked && activeTab === 'unassigned' ? 'bg-blue-50/50' : 'bg-white'}`} onClick={() => { if (activeTab === 'unassigned') handleToggleTask(t.id); }}>
+                    <tr 
+                      key={t.id} 
+                      className={`transition-all cursor-pointer ${
+                        isTargetTask 
+                          ? 'bg-amber-50/90 ring-2 ring-amber-400 font-medium animate-pulse' 
+                          : isChecked && activeTab === 'unassigned' 
+                            ? 'bg-blue-50/50' 
+                            : 'bg-white hover:bg-blue-50/50'
+                      }`} 
+                      onClick={() => { if (activeTab === 'unassigned') handleToggleTask(t.id); }}
+                    >
                       {activeTab === 'unassigned' && (
                         <td className={`py-2.5 px-3 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isChecked ? 'bg-blue-50' : 'bg-white'} ${
                           isScrolledHorizontally ? 'hidden sm:table-cell sticky left-0 z-10' : 'sticky left-0 z-10'
@@ -222,7 +244,14 @@ export const TaskAssignmentPage: React.FC = () => {
                         isScrolledHorizontally ? 'sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''
                       }`}>{p ? p.name : t.projectCode}</td>
                       <td className="py-2.5 px-4 font-medium text-slate-800 text-xs border-l border-slate-200 flex flex-col">
-                        <span>{t.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span>{t.name}</span>
+                          {isTargetTask && (
+                            <span className="px-1.5 py-0.5 text-[9px] font-bold bg-amber-500 text-white rounded shrink-0 shadow-2xs">
+                              Vừa nhận/xong
+                            </span>
+                          )}
+                        </div>
                         {t.sectionName && t.sectionName !== t.name && (
                           <span className="text-[10px] text-slate-500 mt-1">{t.sectionName}</span>
                         )}

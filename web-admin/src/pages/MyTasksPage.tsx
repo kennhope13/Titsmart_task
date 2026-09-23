@@ -63,6 +63,7 @@ export const MyTasksPage: React.FC = () => {
       await store.addNotification({
         title: 'Nhân sự đã nhận việc',
         message: `${userName} đã xác nhận nhận công việc "${task.name}" thuộc dự án ${task.projectCode}.`,
+        link: `/task-assignment?tab=assigned&taskId=${task.id}`,
         type: `task_accepted:::${task.assignerId || 'admin'}:::${task.assignerName || 'Quản lý'}`,
         icon: 'check_circle'
       });
@@ -81,6 +82,7 @@ export const MyTasksPage: React.FC = () => {
       await store.addNotification({
         title: 'Báo cáo hoàn thành công việc',
         message: `${userName} đã báo cáo xong công việc "${task.name}" thuộc dự án ${task.projectCode}.`,
+        link: `/task-assignment?tab=assigned&taskId=${task.id}`,
         type: `task_completed:::${task.assignerId || 'admin'}:::${task.assignerName || 'Quản lý'}`,
         icon: 'done_all'
       });
