@@ -9,6 +9,18 @@
     display: inline-block;
     line-height: 1;
   }
+
+  /* Ẩn badge Netlify / Netlify Feedback Drawer */
+  [data-netlify-deploy-id],
+  .netlify-badge,
+  #netlify-feedback-drawer,
+  iframe[src*="netlify"],
+  div[class*="netlify"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
 }
 
 /* Custom Scrollbar Styling */
