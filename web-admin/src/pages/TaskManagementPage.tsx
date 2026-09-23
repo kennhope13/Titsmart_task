@@ -1414,6 +1414,13 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
     const map = new Map<string, any>();
     const roots: any[] = [];
 
+    const isTaskSectionHeader = (node: any) => {
+      if (node?.isSectionHeader) return true;
+      const vol = Number(node?.volume || 0);
+      const unitVal = String(node?.unit || '').trim();
+      return vol === 0 && unitVal === '';
+    };
+
     // Synthesize missing parent section headers if any child items exist (max 30 items)
     const sttSet = new Set(displayTasks.map(t => `${t.projectCode || ''}:::${String(t.stt || '').trim()}`));
     const missingParents: any[] = [];
@@ -1458,7 +1465,42 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
       }
     });
 
-    const fullTasks = [...missingParents, ...displayTasks];
+    // Synthesize section headers for any sectionName that has tasks but no explicit header
+    const existingSectionNames = new Set(
+      displayTasks
+        .filter(t => isTaskSectionHeader(t))
+        .map(t => `${t.projectCode || ''}:::${(t.name || t.sectionName || '').trim().toLowerCase()}`)
+    );
+
+    const neededSections = new Map<string, any>();
+    displayTasks.forEach(t => {
+      if (!isTaskSectionHeader(t) && t.sectionName && t.sectionName.trim().length > 0) {
+        const secKey = `${t.projectCode || ''}:::${t.sectionName.trim().toLowerCase()}`;
+        if (!existingSectionNames.has(secKey) && !neededSections.has(secKey)) {
+          const romanMatch = extractLeadingRomanNumber(t.sectionName);
+          const sttVal = romanMatch !== null ? toRoman(romanMatch) : '';
+          neededSections.set(secKey, {
+            id: `synth_section_${t.projectCode}_${t.sectionName}`,
+            stt: sttVal || t.sectionName.split(/[\.\-\s]/)[0] || '',
+            name: t.sectionName,
+            projectCode: t.projectCode,
+            projectName: t.projectName,
+            isSectionHeader: true,
+            sectionName: t.sectionName,
+            volume: 0,
+            unit: '',
+            progress: 0,
+            status: 'Chưa làm',
+            purchaseStatus: '',
+            constrStatus: '',
+            isDone: false,
+            notes: '[section]'
+          });
+        }
+      }
+    });
+
+    const fullTasks = [...missingParents, ...Array.from(neededSections.values()), ...displayTasks];
 
     // Initialize map with all fullTasks
     fullTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
@@ -1470,15 +1512,41 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
 
     // Resolve parent globally for all tasks (strictly within same project)
     const resolveParentId = (item: any) => {
-      if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) return item.parentId;
+      // 1. Explicit parent task
+      if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) {
+        return item.parentId;
+      }
+
+      // 2. Dotted STT hierarchy
       if (item.stt && String(item.stt).includes('.')) {
         const parts = String(item.stt).split('.');
         parts.pop();
         const parentStt = parts.join('.');
-        const parentItem = sttToItemMap.get(`${item.projectCode || ''}:::${parentStt}`);
-        if (parentItem && parentItem.id !== item.id && map.has(parentItem.id)) return parentItem.id;
+        const sameSecParent = fullTasks.find(x => 
+          (x.projectCode || '') === (item.projectCode || '') && 
+          x.id !== item.id &&
+          String(x.stt || '').trim() === parentStt &&
+          (x.sectionName === item.sectionName || isTaskSectionHeader(x))
+        );
+        if (sameSecParent && map.has(sameSecParent.id)) return sameSecParent.id;
+
+        const anyParent = sttToItemMap.get(`${item.projectCode || ''}:::${parentStt}`);
+        if (anyParent && anyParent.id !== item.id && map.has(anyParent.id)) return anyParent.id;
       }
-      return (item.parentId && item.parentId !== item.id) ? item.parentId : undefined;
+
+      // 3. If item is NOT a section header, attach it to its section header in the same project
+      if (!isTaskSectionHeader(item) && item.sectionName && item.sectionName.trim().length > 0) {
+        const secHeader = fullTasks.find(x => 
+          (x.projectCode || '') === (item.projectCode || '') &&
+          x.id !== item.id &&
+          isTaskSectionHeader(x) &&
+          (x.name?.trim().toLowerCase() === item.sectionName.trim().toLowerCase() ||
+           x.sectionName?.trim().toLowerCase() === item.sectionName.trim().toLowerCase())
+        );
+        if (secHeader && map.has(secHeader.id)) return secHeader.id;
+      }
+
+      return undefined;
     };
 
     fullTasks.forEach((t) => {
@@ -1491,13 +1559,6 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
     });
 
     let currentSectionKey = '';
-    const isTaskSectionHeader = (node: any) => {
-      const vol = Number(node.volume || 0);
-      const unitVal = String(node.unit || '').trim();
-      // QUY TẮC ĐƠN GIẢN VÀ TRIỆT ĐỂ:
-      // Nếu Khối lượng (0/rỗng) VÀ Đơn vị tính (rỗng) -> BẮT BUỘC LÀ ĐẦU MỤC (SECTION HEADER / FOLDER)
-      return vol === 0 && unitVal === '';
-    };
 
     const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '', visited = new Set<string>()) => {
       if (currentDepth > 15) return; // Safety guard: max 15 depth level to prevent OOM crash

@@ -174,14 +174,31 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
     const fullTasks = [...missingParents, ...displayTasks];
     fullTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
 
+    const isTaskSectionHeader = (node: any) => {
+      if (node?.isSectionHeader) return true;
+      const vol = Number(node?.volume || 0);
+      const unitVal = String(node?.unit || '').trim();
+      return vol === 0 && unitVal === '';
+    };
+
     const resolveParentId = (item: any) => {
       if (item.parentId && map.has(item.parentId)) return item.parentId;
       if (item.stt && item.stt.includes('.')) {
         const parts = item.stt.split('.');
         parts.pop();
         const parentStt = parts.join('.');
-        const parentItem = fullTasks.find((r) => r.stt === parentStt);
+        const parentItem = fullTasks.find((r) => r.stt === parentStt && (r.sectionName === item.sectionName || isTaskSectionHeader(r)));
         if (parentItem && map.has(parentItem.id)) return parentItem.id;
+      }
+      if (!isTaskSectionHeader(item) && item.sectionName && item.sectionName.trim().length > 0) {
+        const secHeader = fullTasks.find(x => 
+          (x.projectCode || '') === (item.projectCode || '') &&
+          x.id !== item.id &&
+          isTaskSectionHeader(x) &&
+          (x.name?.trim().toLowerCase() === item.sectionName.trim().toLowerCase() ||
+           x.sectionName?.trim().toLowerCase() === item.sectionName.trim().toLowerCase())
+        );
+        if (secHeader && map.has(secHeader.id)) return secHeader.id;
       }
       return item.parentId;
     };
@@ -196,13 +213,6 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
     });
 
     let currentSectionKey = '';
-    const isTaskSectionHeader = (node: any) => {
-      const vol = Number(node.volume || 0);
-      const unitVal = String(node.unit || '').trim();
-      // QUY TẮC ĐƠN GIẢN VÀ TRIỆT ĐỂ:
-      // Nếu Khối lượng (0/rỗng) VÀ Đơn vị tính (rỗng) -> BẮT BUỘC LÀ ĐẦU MỤC (SECTION HEADER / FOLDER)
-      return vol === 0 && unitVal === '';
-    };
 
     const flattened: any[] = [];
     const flattenTree = (nodes: any[], currentDepth: number = 0) => {
