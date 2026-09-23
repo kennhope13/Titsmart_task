@@ -93,15 +93,17 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     return false;
   }
 
-  // 5. Attendance notifications (e.g. 'Chấm công vào ca: Phan Ngọc Huy đã check-in...')
-  if (title.includes('Chấm công') || message.includes('check-in')) {
-    if (myNames.some(n => message.toLowerCase().includes(n) || title.toLowerCase().includes(n))) return true;
-    return false; // Other staff's attendance shouldn't clutter this user's notifications
+  // 5. Attendance notifications (e.g. 'Chấm công vào ca', 'Chấm công ra ca'): ONLY for Admin/Managers, do not send to regular staff
+  if (title.includes('Chấm công') || message.includes('check-in') || message.includes('check-out') || typeStr.startsWith('attendance')) {
+    // Non-admin users should NEVER receive attendance notifications
+    return false;
   }
 
-  // 6. Leave requests
-  if (title.includes('nghỉ phép') || message.includes('nghỉ phép')) {
-    if (myNames.some(n => message.toLowerCase().includes(n))) return true;
+  // 6. Leave requests: Only for Admin/Managers (unless it's an approval notification for the specific user)
+  if (title.includes('nghỉ phép') || message.includes('nghỉ phép') || typeStr.startsWith('leave')) {
+    if (title.includes('đã được duyệt') || title.includes('từ chối')) {
+      if (myNames.some(n => message.toLowerCase().includes(n))) return true;
+    }
     return false;
   }
 
