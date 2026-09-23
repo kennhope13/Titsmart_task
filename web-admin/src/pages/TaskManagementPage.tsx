@@ -156,7 +156,7 @@ export const TaskManagementPage: React.FC = () => {
       await store.addNotification({
         title: 'Nhân sự đã nhận việc',
         message: `${userName} đã xác nhận nhận công việc "${task.name}" thuộc dự án ${task.projectCode}.`,
-        type: 'task_assigned',
+        type: `task_accepted:::${task.assignerId || 'admin'}:::${task.assignerName || 'Quản lý'}`,
         icon: 'check_circle'
       });
     }

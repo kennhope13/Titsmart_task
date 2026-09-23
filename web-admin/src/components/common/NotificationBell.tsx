@@ -69,11 +69,11 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     return false; // Type specified a target recipient that didn't match this non-admin user
   }
 
-  // 3. Check title / message for task assignment (e.g. 'Giao việc: Phan Ngọc Huy', '... cho Phan Ngọc Huy.')
+  // 3. Check title / message for task assignment & task acceptance (e.g. 'Giao việc: Phan Ngọc Huy', 'Nhân sự đã nhận việc', 'Báo cáo hoàn thành công việc')
   const title = String(notification.title || '');
   const message = String(notification.message || '');
   
-  if (title.startsWith('Giao việc:') || title.includes('được giao') || typeStr === 'task_assigned') {
+  if (title.startsWith('Giao việc:') || title.includes('được giao') || typeStr.startsWith('task_assigned')) {
     if (title.startsWith('Giao việc:')) {
       const assignedTo = title.replace('Giao việc:', '').trim().toLowerCase();
       if (myNames.some(n => assignedTo.includes(n) || n.includes(assignedTo))) return true;
@@ -87,13 +87,19 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     }
   }
 
-  // 4. Attendance notifications (e.g. 'Chấm công vào ca: Phan Ngọc Huy đã check-in...')
+  // 4. Task acceptance and task completion notifications: Only for assigner or admin
+  if (title.includes('đã nhận việc') || title.includes('hoàn thành công việc') || typeStr.startsWith('task_accepted') || typeStr.startsWith('task_completed')) {
+    // If user is neither admin nor the creator/assigner specified in metadata, hide it
+    return false;
+  }
+
+  // 5. Attendance notifications (e.g. 'Chấm công vào ca: Phan Ngọc Huy đã check-in...')
   if (title.includes('Chấm công') || message.includes('check-in')) {
     if (myNames.some(n => message.toLowerCase().includes(n) || title.toLowerCase().includes(n))) return true;
     return false; // Other staff's attendance shouldn't clutter this user's notifications
   }
 
-  // 5. Leave requests
+  // 6. Leave requests
   if (title.includes('nghỉ phép') || message.includes('nghỉ phép')) {
     if (myNames.some(n => message.toLowerCase().includes(n))) return true;
     return false;
