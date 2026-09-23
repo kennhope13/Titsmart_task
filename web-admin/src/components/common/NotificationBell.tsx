@@ -220,13 +220,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
   const handleClearAll = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Xóa tất cả các thông báo hiển thị CHO RIÊNG TÀI KHOẢN HIỆN TẠI
-    const allIds = displayNotifications.map(n => n.id);
-    if (allIds.length === 0) return;
+    // CHỈ xóa các thông báo ĐÃ ĐỌC cho riêng tài khoản hiện tại (giữ lại các thông báo chưa đọc)
+    const readIds = displayNotifications.filter(n => n.read).map(n => n.id);
+    if (readIds.length === 0) return;
 
     setDismissedNotifIds(prev => {
       const next = new Set(prev);
-      allIds.forEach(id => next.add(id));
+      readIds.forEach(id => next.add(id));
       try {
         localStorage.setItem(userStorageKey, JSON.stringify(Array.from(next)));
       } catch (err) {
@@ -584,14 +584,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
         <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50 w-[320px]">
           <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
-            {displayNotifications.length > 0 && (
+            {displayNotifications.some(n => n.read) && (
               <button
                 type="button"
                 onClick={handleClearAll}
                 className="text-[11px] text-primary font-bold hover:underline cursor-pointer transition-colors"
-                title="Xóa tất cả thông báo"
+                title="Xóa tất cả các thông báo đã đọc"
               >
-                Xóa tất cả
+                Xóa đã đọc
               </button>
             )}
           </div>
