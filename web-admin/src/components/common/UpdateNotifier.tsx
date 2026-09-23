@@ -118,15 +118,38 @@ export const UpdateNotifier: React.FC = () => {
   const dismiss = () => setState({ ...state, visible: false });
 
   const handleWebUpdate = async () => {
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isCapacitorNative = !!(window as any).Capacitor?.isNativePlatform?.();
+    const isAndroid = /android/i.test(navigator.userAgent);
+
+    // Xử lý riêng cho iPhone / iOS / PWA Web App:
+    // Làm mới cache bộ nhớ và tải lại phiên bản mới nhất ngay lập tức mà không cần tải file APK
+    if (isIOS) {
+      setIsInstalling(true);
+      try {
+        if ('caches' in window) {
+          const cacheKeys = await caches.keys();
+          await Promise.all(cacheKeys.map(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(r => r.unregister()));
+        }
+      } catch (err) {
+        console.warn('Lỗi dọn cache iOS:', err);
+      }
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+      return;
+    }
+
     const downloadUrl = (state.message && state.message.startsWith('http')) 
       ? state.message 
       : `https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`;
 
-    // Ưu tiên tải trực tiếp file APK cho Android Native hoặc trình duyệt mobile
-    const isCapacitorNative = !!(window as any).Capacitor?.isNativePlatform?.();
-    const isMobileBrowser = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
-
-    if (isCapacitorNative || isMobileBrowser) {
+    // Ưu tiên tải trực tiếp file APK cho Android Native hoặc trình duyệt Android
+    if (isCapacitorNative || isAndroid) {
       // Chuyển hướng trực tiếp URL tải APK để trình duyệt Android kích hoạt Download Manager hệ thống
       window.location.href = downloadUrl;
       dismiss();
