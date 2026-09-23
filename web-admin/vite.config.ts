@@ -50,6 +50,10 @@ export default defineConfig(({ mode }) => ({
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
   },
   base: './',
+  build: {
+    target: ['es2020', 'safari14', 'ios14', 'chrome87', 'firefox78'],
+    cssTarget: 'safari14',
+  },
   plugins: [
     react(),
     terminalDbLoggerPlugin(mode),

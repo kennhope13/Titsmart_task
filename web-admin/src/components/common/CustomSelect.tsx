@@ -122,15 +122,40 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const hasBorder = className.includes('border');
   const hasRounded = className.includes('rounded');
 
-  const layoutClassesRegex = /(?<=^|\s)(flex-1|flex-auto|flex-initial|flex-none|w-[^\s]+|h-[^\s]+|min-w-[^\s]+|max-w-[^\s]+|min-h-[^\s]+|max-h-[^\s]+|hidden|block|inline-block)(?=\s|$)/g;
-  const layoutClassesMatch = className.match(layoutClassesRegex);
-  const layoutClasses = layoutClassesMatch ? layoutClassesMatch.join(' ') : 'inline-block w-full';
+  // Tránh dùng Regex Lookbehind (?<=) vì gây UI Crash trên Safari / iOS < 16.4
+  const tokens = className.split(/\s+/).filter(Boolean);
+  const layoutClasses = tokens.filter(t => 
+    t.startsWith('flex-') || 
+    t.startsWith('w-') || 
+    t.startsWith('h-') || 
+    t.startsWith('min-w-') || 
+    t.startsWith('max-w-') || 
+    t.startsWith('min-h-') || 
+    t.startsWith('max-h-') || 
+    ['hidden', 'block', 'inline-block'].includes(t)
+  ).join(' ') || 'inline-block w-full';
 
-  const fontSizeRegex = /(?<=^|\s)(text-(xs|sm|base|lg|xl|2xl|\[\d+px\]))(?=\s|$)/;
-  const fontSizeMatch = className.match(fontSizeRegex);
-  const fontSizeClass = fontSizeMatch ? fontSizeMatch[1] : '';
+  const fontSizeToken = tokens.find(t => 
+    t.startsWith('text-xs') || 
+    t.startsWith('text-sm') || 
+    t.startsWith('text-base') || 
+    t.startsWith('text-lg') || 
+    t.startsWith('text-xl') || 
+    t.startsWith('text-2xl') || 
+    t.startsWith('text-[')
+  );
+  const fontSizeClass = fontSizeToken || '';
 
-  const innerClassName = className.replace(layoutClassesRegex, '').trim();
+  const innerClassName = tokens.filter(t => 
+    !t.startsWith('flex-') && 
+    !t.startsWith('w-') && 
+    !t.startsWith('h-') && 
+    !t.startsWith('min-w-') && 
+    !t.startsWith('max-w-') && 
+    !t.startsWith('min-h-') && 
+    !t.startsWith('max-h-') && 
+    !['hidden', 'block', 'inline-block'].includes(t)
+  ).join(' ');
 
   const triggerClassName = `relative flex items-center justify-between min-w-0 w-full h-full ${
     hasPadding ? '' : 'px-3 py-2'
