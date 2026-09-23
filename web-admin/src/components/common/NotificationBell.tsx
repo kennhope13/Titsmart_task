@@ -11,18 +11,23 @@ interface NotificationBellProps {
 
 const playNotificationSound = () => {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
     osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
-    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
-    osc.stop(ctx.currentTime + 0.35);
+    osc.stop(ctx.currentTime + 0.3);
+    setTimeout(() => {
+      try { ctx.close(); } catch {}
+    }, 500);
   } catch {}
 };
 
@@ -286,23 +291,25 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
   // Realtime incoming popup notification for new unread notifications
   useEffect(() => {
+    const getNotifKey = (n: any) => `${n.id}:::${n.title}:::${n.message}`;
+
     if (knownNotifIdsRef.current === null) {
-      // First load: record existing IDs so we don't spam popup on initial mount
-      knownNotifIdsRef.current = new Set(displayNotifications.map(n => n.id));
+      // First load: record existing notification signatures so we don't spam popup on initial mount
+      knownNotifIdsRef.current = new Set(displayNotifications.map(getNotifKey));
       return;
     }
 
-    // Find any new unread notification
-    const brandNewNotif = displayNotifications.find(n => !n.read && !knownNotifIdsRef.current!.has(n.id));
+    // Find any new unread notification that has not been popped up in this session
+    const brandNewNotif = displayNotifications.find(n => !n.read && !knownNotifIdsRef.current!.has(getNotifKey(n)));
     if (brandNewNotif) {
-      knownNotifIdsRef.current.add(brandNewNotif.id);
+      knownNotifIdsRef.current.add(getNotifKey(brandNewNotif));
       setIncomingPopupNotif(brandNewNotif);
       playNotificationSound();
 
-      // Auto dismiss incoming popup after 7 seconds
+      // Auto dismiss incoming popup after 5 seconds
       const timer = setTimeout(() => {
         setIncomingPopupNotif(null);
-      }, 7000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [displayNotifications]);
