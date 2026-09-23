@@ -31,6 +31,15 @@ export const TaskAssignmentPage: React.FC = () => {
     }
   }, [location.state]);
 
+  // Fast background polling fallback so task status updates immediately across all browsers
+  useEffect(() => {
+    useRealtimeStore.getState().fetchTasks(undefined);
+    const interval = setInterval(() => {
+      useRealtimeStore.getState().fetchTasks(undefined);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   const displayedTasks = useMemo(() => {
     let filtered = tasks.filter(t => !t.isSectionHeader);
     if (activeTab === 'unassigned') {

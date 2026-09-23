@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { useRealtimeStore } from '../services/realtimeStore';
@@ -15,6 +15,15 @@ export const MyTasksPage: React.FC = () => {
   };
 
   const [filterProjectCode, setFilterProjectCode] = useState('all');
+
+  // Background polling for tasks
+  useEffect(() => {
+    useRealtimeStore.getState().fetchTasks(undefined);
+    const interval = setInterval(() => {
+      useRealtimeStore.getState().fetchTasks(undefined);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const myTasks = useMemo(() => {
     if (!user) return [];
