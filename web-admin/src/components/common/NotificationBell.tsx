@@ -299,8 +299,24 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       return;
     }
 
-    // Find any new unread notification that has not been popped up in this session
-    const brandNewNotif = displayNotifications.find(n => !n.read && !knownNotifIdsRef.current!.has(getNotifKey(n)));
+    // Chỉ bật banner popup nổi nếu thông báo là mới phát sinh trong vòng 30 giây gần nhất
+    const now = Date.now();
+    const brandNewNotif = displayNotifications.find(n => {
+      if (n.read) return false;
+      if (knownNotifIdsRef.current!.has(getNotifKey(n))) return false;
+      
+      // Kiểm tra thời gian tạo thông báo
+      try {
+        const notifTime = new Date(n.timestamp).getTime();
+        if (!isNaN(notifTime) && now - notifTime > 30000) {
+          // Thông báo cũ (đã tạo hơn 30s trước) -> Đánh dấu đã biết để không hiện popup làm phiền
+          knownNotifIdsRef.current!.add(getNotifKey(n));
+          return false;
+        }
+      } catch {}
+      return true;
+    });
+
     if (brandNewNotif) {
       knownNotifIdsRef.current.add(getNotifKey(brandNewNotif));
       setIncomingPopupNotif(brandNewNotif);
