@@ -245,6 +245,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
     if (link) {
       navigate(link);
+    } else if (title.includes('đã nhận việc') || title.includes('hoàn thành công việc') || (notification.type && notification.type.startsWith('task_accepted')) || (notification.type && notification.type.startsWith('task_completed'))) {
+      navigate('/task-assignment?tab=assigned', { state: { tab: 'assigned' } });
     } else if (title.includes('hồ sơ') || message.includes('hồ sơ')) {
       navigate('/document-tracking');
     } else if (title.includes('điểm danh') || message.includes('điểm danh')) {

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { useRealtimeStore } from '../services/realtimeStore';
@@ -11,6 +11,7 @@ export const TaskAssignmentPage: React.FC = () => {
   const { tasks, projects, engineers, updateTask } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -23,13 +24,17 @@ export const TaskAssignmentPage: React.FC = () => {
   const [selectedEngineerId, setSelectedEngineerId] = useState('');
   
   const [filterProjectCode, setFilterProjectCode] = useState('all');
-  const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned' | 'my-tasks'>(() => (location.state as any)?.tab || 'unassigned');
+  const urlTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'my-tasks' | null;
+  const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned' | 'my-tasks'>(() => urlTab || (location.state as any)?.tab || 'unassigned');
 
   useEffect(() => {
-    if ((location.state as any)?.tab) {
+    const qTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'my-tasks' | null;
+    if (qTab) {
+      setActiveTab(qTab);
+    } else if ((location.state as any)?.tab) {
       setActiveTab((location.state as any).tab);
     }
-  }, [location.state]);
+  }, [location.state, searchParams]);
 
   // Fast background polling fallback so task status updates immediately across all browsers
   useEffect(() => {
