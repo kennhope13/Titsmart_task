@@ -89,7 +89,7 @@ export const TaskAssignmentPage: React.FC = () => {
       store.addNotification({
         title: `Giao việc: ${engName}`,
         message: `${assignerName} đã giao ${selectedTaskIds.length} công việc mới cho ${engName}.`,
-        type: 'task_assigned',
+        type: `task_assigned:::${selectedEngineerId}:::${engName}`,
         icon: 'assignment_ind'
       });
     }

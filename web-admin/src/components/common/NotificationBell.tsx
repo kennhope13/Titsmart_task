@@ -9,16 +9,111 @@ interface NotificationBellProps {
   isExpanded?: boolean;
 }
 
+const playNotificationSound = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  } catch {}
+};
+
+const isNotificationForUser = (notification: any, user: any, engineers: any[] = []) => {
+  if (!user) return true;
+  const role = String(user.role || '').toLowerCase();
+  const username = String(user.username || '').toLowerCase();
+  const name = String(user.name || '').toLowerCase();
+  const userId = String(user.id || '').toLowerCase();
+
+  const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || username === 'admin';
+  if (isAdmin) return true; // Admins and managers can see all notifications
+
+  // Find engineer object corresponding to current user if any
+  const myEng = engineers.find(e => 
+    (e.id && String(e.id).toLowerCase() === userId) ||
+    (e.name && String(e.name).toLowerCase() === name) ||
+    (e.username && String(e.username).toLowerCase() === username) ||
+    (e.phone && user.phone && String(e.phone) === String(user.phone))
+  );
+  const myNames = [name, username, myEng?.name?.toLowerCase()].filter(Boolean) as string[];
+
+  // 1. Check explicit recipient properties if available
+  if (notification.recipientId) {
+    if (String(notification.recipientId).toLowerCase() === userId || (myEng && String(notification.recipientId).toLowerCase() === String(myEng.id).toLowerCase())) {
+      return true;
+    }
+  }
+  if (notification.recipientName) {
+    const rName = String(notification.recipientName).toLowerCase();
+    if (myNames.some(n => rName.includes(n) || n.includes(rName))) {
+      return true;
+    }
+  }
+
+  // 2. Check metadata in type (e.g. 'task_assigned:::RECIPIENT_ID:::RECIPIENT_NAME')
+  const typeStr = String(notification.type || '');
+  if (typeStr.includes(':::')) {
+    const parts = typeStr.split(':::');
+    const targetId = parts[1]?.toLowerCase();
+    const targetName = parts[2]?.toLowerCase();
+    if (targetId && (targetId === userId || (myEng && targetId === String(myEng.id).toLowerCase()))) return true;
+    if (targetName && myNames.some(n => targetName.includes(n) || n.includes(targetName))) return true;
+    return false; // Type specified a target recipient that didn't match this non-admin user
+  }
+
+  // 3. Check title / message for task assignment (e.g. 'Giao việc: Phan Ngọc Huy', '... cho Phan Ngọc Huy.')
+  const title = String(notification.title || '');
+  const message = String(notification.message || '');
+  
+  if (title.startsWith('Giao việc:') || title.includes('được giao') || typeStr === 'task_assigned') {
+    if (title.startsWith('Giao việc:')) {
+      const assignedTo = title.replace('Giao việc:', '').trim().toLowerCase();
+      if (myNames.some(n => assignedTo.includes(n) || n.includes(assignedTo))) return true;
+      return false; // Targeted to someone else
+    }
+    const match = message.match(/cho\s+([^.]+)\.?$/i);
+    if (match) {
+      const assignedTo = match[1].trim().toLowerCase();
+      if (assignedTo === 'bạn' || myNames.some(n => assignedTo.includes(n) || n.includes(assignedTo))) return true;
+      return false; // Targeted to someone else
+    }
+  }
+
+  // 4. Attendance notifications (e.g. 'Chấm công vào ca: Phan Ngọc Huy đã check-in...')
+  if (title.includes('Chấm công') || message.includes('check-in')) {
+    if (myNames.some(n => message.toLowerCase().includes(n) || title.toLowerCase().includes(n))) return true;
+    return false; // Other staff's attendance shouldn't clutter this user's notifications
+  }
+
+  // 5. Leave requests
+  if (title.includes('nghỉ phép') || message.includes('nghỉ phép')) {
+    if (myNames.some(n => message.toLowerCase().includes(n))) return true;
+    return false;
+  }
+
+  return true;
+};
+
 export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = false, isExpanded = false }) => {
   const navigate = useNavigate();
-  const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
+  const { notifications, engineers, markNotificationRead, clearNotifications } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
   const showNotificationBell = useUIStore(state => state.showNotificationBell);
   const autoShowNotificationPopup = useUIStore(state => state.autoShowNotificationPopup);
   
   const [showPopover, setShowPopover] = useState(false);
   const [showCenterModal, setShowCenterModal] = useState(false);
+  const [incomingPopupNotif, setIncomingPopupNotif] = useState<any | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const knownNotifIdsRef = useRef<Set<string> | null>(null);
 
   // ─── Dragging functionality state & refs (transient per session, resets to default on reload) ───
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
@@ -90,6 +185,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     }
     setShowPopover(false);
     setShowCenterModal(false);
+    setIncomingPopupNotif(null);
     sessionStorage.setItem('has_shown_center_notif_modal', 'true');
 
     // Điều hướng theo loại thông báo
@@ -114,6 +210,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     const seen = new Set<string>();
     const uniqueList: typeof notifications = [];
     notifications.forEach(n => {
+      // Filter out notifications not intended for this user
+      if (!isNotificationForUser(n, user, engineers)) return;
+
       const cleanTitle = n.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim();
       const key = `${cleanTitle}:::${n.message}`;
       if (!seen.has(key)) {
@@ -122,11 +221,34 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       }
     });
     return uniqueList;
-  }, [notifications]);
+  }, [notifications, user, engineers]);
 
   // Priority notifications: Overdue 1-2 days or Due soon
   const centerModalNotifications = useMemo(() => {
     return displayNotifications.filter(n => !n.read);
+  }, [displayNotifications]);
+
+  // Realtime incoming popup notification for new unread notifications
+  useEffect(() => {
+    if (knownNotifIdsRef.current === null) {
+      // First load: record existing IDs so we don't spam popup on initial mount
+      knownNotifIdsRef.current = new Set(displayNotifications.map(n => n.id));
+      return;
+    }
+
+    // Find any new unread notification
+    const brandNewNotif = displayNotifications.find(n => !n.read && !knownNotifIdsRef.current!.has(n.id));
+    if (brandNewNotif) {
+      knownNotifIdsRef.current.add(brandNewNotif.id);
+      setIncomingPopupNotif(brandNewNotif);
+      playNotificationSound();
+
+      // Auto dismiss incoming popup after 7 seconds
+      const timer = setTimeout(() => {
+        setIncomingPopupNotif(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
   }, [displayNotifications]);
 
   useEffect(() => {
@@ -479,6 +601,46 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
               >
                 Đã hiểu
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FLOATING REALTIME INCOMING NOTIFICATION BANNER/TOAST */}
+      {incomingPopupNotif && (
+        <div className="fixed top-5 right-5 z-[99999] max-w-sm w-full animate-bounce-in shadow-2xl rounded-xl border border-blue-500/30 bg-white/95 backdrop-blur-md overflow-hidden transition-all">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 py-2 flex items-center justify-between text-white">
+            <div className="flex items-center gap-2 font-bold text-xs">
+              <span className="material-symbols-outlined text-[18px] animate-spin-slow">notifications_active</span>
+              <span>Thông báo mới</span>
+            </div>
+            <button
+              onClick={() => setIncomingPopupNotif(null)}
+              className="p-1 hover:bg-white/20 rounded-md transition-colors"
+              title="Đóng"
+            >
+              <span className="material-symbols-outlined text-[16px] block">close</span>
+            </button>
+          </div>
+          <div className="p-3.5 flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-blue-50 text-blue-600 shrink-0 mt-0.5">
+              <span className="material-symbols-outlined text-xl">
+                {incomingPopupNotif.icon || 'assignment_ind'}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-xs font-bold text-slate-800 leading-snug">{incomingPopupNotif.title}</h4>
+              <p className="text-[11px] text-slate-600 mt-1 line-clamp-3 leading-relaxed">{incomingPopupNotif.message}</p>
+              <div className="mt-2.5 flex items-center justify-between">
+                <span className="text-[10px] text-slate-400 font-medium">Vừa xong</span>
+                <button
+                  onClick={() => handleNotificationClick(incomingPopupNotif)}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-[11px] font-bold rounded-lg transition-all shadow-xs flex items-center gap-1"
+                >
+                  <span>Xem ngay</span>
+                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

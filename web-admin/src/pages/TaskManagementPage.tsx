@@ -497,7 +497,7 @@ const hasSyncedRef = useRef(false);
         store.addNotification({
           title: `Giao việc: ${targetName}`,
           message: `${assignerName} đã giao công việc "${editName}" thuộc dự án ${editingTask.projectName || editingTask.projectCode} cho ${targetName}.`,
-          type: 'task_assigned',
+          type: `task_assigned:::${editEngineerId}:::${targetName}`,
           icon: 'assignment_ind'
         });
       }
@@ -2200,7 +2200,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                     await store.addNotification({
                       title: `Giao việc: ${names}`,
                       message: `${assignerName} đã giao công việc "${assigningTask.name}" thuộc dự án ${assigningTask.projectName || assigningTask.projectCode} cho ${names}.`,
-                      type: 'task_assigned',
+                      type: `task_assigned:::${ids}:::${names}`,
                       icon: 'assignment_ind'
                     });
                   }
