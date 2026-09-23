@@ -491,11 +491,12 @@ const hasSyncedRef = useRef(false);
     if (editEngineerId && editEngineerId !== (editingTask.assignedEngineerId || '')) {
       const store = useRealtimeStore.getState();
       const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
-      store.logActivity(`Quản lý ${assignerName} đã GIAO CÔNG VIỆC: "${editName}" cho ${eng?.name || 'nhân sự'}`, editingTask.projectName || editingTask.projectCode || 'Dự án');
+      const targetName = eng?.name || 'nhân sự';
+      store.logActivity(`Quản lý ${assignerName} đã GIAO CÔNG VIỆC: "${editName}" cho ${targetName}`, editingTask.projectName || editingTask.projectCode || 'Dự án');
       if (store.addNotification) {
         store.addNotification({
-          title: 'Công việc mới được giao',
-          message: `${assignerName} đã giao công việc "${editName}" thuộc dự án ${editingTask.projectName || editingTask.projectCode} cho bạn.`,
+          title: `Giao việc: ${targetName}`,
+          message: `${assignerName} đã giao công việc "${editName}" thuộc dự án ${editingTask.projectName || editingTask.projectCode} cho ${targetName}.`,
           type: 'task_assigned',
           icon: 'assignment_ind'
         });
@@ -2197,8 +2198,8 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                   store.logActivity(`Quản lý ${assignerName} đã GIAO CÔNG VIỆC: "${assigningTask.name}" cho ${names}`, assigningTask.projectName || assigningTask.projectCode || 'Dự án');
                   if (store.addNotification) {
                     await store.addNotification({
-                      title: 'Công việc mới được giao',
-                      message: `${assignerName} đã giao công việc "${assigningTask.name}" thuộc dự án ${assigningTask.projectName || assigningTask.projectCode} cho bạn.`,
+                      title: `Giao việc: ${names}`,
+                      message: `${assignerName} đã giao công việc "${assigningTask.name}" thuộc dự án ${assigningTask.projectName || assigningTask.projectCode} cho ${names}.`,
                       type: 'task_assigned',
                       icon: 'assignment_ind'
                     });

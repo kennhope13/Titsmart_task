@@ -16,6 +16,15 @@ const filters = [
   { key: 'locked', label: 'Bị khóa' },
 ];
 
+const ALL_AVAILABLE_PERMISSIONS: Permission[] = [
+  'VIEW_PROJECTS', 'CREATE_PROJECTS', 'EDIT_PROJECTS', 'DELETE_PROJECTS',
+  'VIEW_TASKS', 'IMPORT_TASKS', 'EDIT_TASKS', 'ASSIGN_TASKS', 'UPDATE_TASK_PROGRESS', 'APPROVE_TASKS', 'VIEW_FIELD_LOGS', 'MANAGE_FIELD_LOGS',
+  'VIEW_MATERIALS', 'IMPORT_MATERIALS', 'EDIT_MATERIALS', 'UPDATE_MATERIAL_STATUS', 'MANAGE_INVENTORY',
+  'VIEW_FINANCE', 'EDIT_PRICES', 'VIEW_PAYMENTS', 'EDIT_PAYMENTS', 'VIEW_EXPENSES', 'EDIT_EXPENSES', 'VIEW_OFFICE_COSTS',
+  'VIEW_USERS', 'MANAGE_USERS', 'MANAGE_PERMISSIONS', 'MANAGE_PAYROLL', 'EXPORT_DATA', 'VIEW_ACTIVITY_LOG',
+  'VIEW_PROJECT_DIAGRAM', 'VIEW_DOCUMENTS', 'MANAGE_DOCUMENTS'
+];
+
 export const PersonnelPage: React.FC = () => {
   const { engineers, projects, createEngineer, updateEngineer, deleteEngineer, fetchProjects } = useRealtimeStore();
   const [filter, setFilter] = useState('all');
@@ -631,7 +640,21 @@ export const PersonnelPage: React.FC = () => {
 
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-[13px] font-bold text-slate-700 uppercase">Phân quyền chi tiết</h3>
-                
+                <label className="flex items-center gap-1.5 text-xs font-bold text-primary hover:text-blue-700 cursor-pointer select-none bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded transition-colors border border-blue-200">
+                  <input
+                    type="checkbox"
+                    checked={ALL_AVAILABLE_PERMISSIONS.every(p => permissions.includes(p))}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setPermissions([...ALL_AVAILABLE_PERMISSIONS]);
+                      } else {
+                        setPermissions([]);
+                      }
+                    }}
+                    className="accent-primary w-4 h-4 cursor-pointer rounded"
+                  />
+                  <span>Chọn tất cả</span>
+                </label>
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 {/* DỰ ÁN */}

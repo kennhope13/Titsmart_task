@@ -28,14 +28,13 @@ const TEXT = {
   confirmDelete: 'Xóa hạng mục kế hoạch vật tư này?',
 };
 
-const isParentRow = (plan: ProjectMaterialPlan) => {
-  if (String(plan.notes || '').toLowerCase().includes('[section]')) return true;
-  const stt = String(plan.stt || '').trim();
+const isParentRow = (plan: any) => {
+  if (plan?.isSec) return true;
+  if (String(plan?.notes || '').toLowerCase().includes('[section]')) return true;
+  const stt = String(plan?.stt || '').trim();
   if (/^[A-Z]{1,2}$/i.test(stt)) return true;
   if (/^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt)) return true;
-  const vol = Number(plan.contractVolume || 0);
-  const unitVal = String(plan.unit || '').trim();
-  return vol === 0 && unitVal === '';
+  return false;
 };
 
 const cleanNotes = (value?: string) => {
@@ -506,6 +505,16 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                   const parentStt = parts.join('.');
                   const parentItem = sttToItemMap.get(`${item.projectCode || ''}:::${parentStt}`);
                   if (parentItem && parentItem.id !== item.id && map.has(parentItem.id)) return parentItem.id;
+                }
+                if (!isParentRow(item) && (item as any).sectionName && String((item as any).sectionName).trim().length > 0) {
+                  const secHeader = fullTasks.find((x: any) => 
+                    (x.projectCode || '') === (item.projectCode || '') &&
+                    x.id !== item.id &&
+                    isParentRow(x) &&
+                    ((x.jobContent || x.name || '').trim().toLowerCase() === (item as any).sectionName.trim().toLowerCase() ||
+                     (x.sectionName || '').trim().toLowerCase() === (item as any).sectionName.trim().toLowerCase())
+                  );
+                  if (secHeader && map.has(secHeader.id)) return secHeader.id;
                 }
                 return (item.parentId && item.parentId !== item.id) ? item.parentId : undefined;
               };

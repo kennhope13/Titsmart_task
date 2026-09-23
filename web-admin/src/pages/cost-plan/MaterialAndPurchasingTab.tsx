@@ -41,14 +41,13 @@ const TEXT = {
   confirmDelete: 'Xóa hạng mục kế hoạch vật tư này?',
 };
 
-const isParentRow = (plan: ProjectMaterialPlan) => {
-  if (String(plan.notes || '').toLowerCase().includes('[section]')) return true;
-  const stt = String(plan.stt || '').trim();
+const isParentRow = (plan: any) => {
+  if (plan?.isSec) return true;
+  if (String(plan?.notes || '').toLowerCase().includes('[section]')) return true;
+  const stt = String(plan?.stt || '').trim();
   if (/^[A-Z]{1,2}$/i.test(stt)) return true;
   if (/^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt)) return true;
-  const vol = Number(plan.contractVolume || 0);
-  const unitVal = String(plan.unit || '').trim();
-  return vol === 0 && unitVal === '';
+  return false;
 };
 
 const isRootSectionRow = (plan: ProjectMaterialPlan) => {
@@ -687,10 +686,15 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     };
 
     const sortedFiltered = filtered.sort((a, b) => {
+      const sttComp = compareTaskStt(a.stt, b.stt);
+      if (sttComp !== 0) return sttComp;
+      const orderA = orderTagValue(a.notes);
+      const orderB = orderTagValue(b.notes);
+      if (orderA !== null && orderB !== null && orderA !== orderB) return orderA - orderB;
       const posA = originalOrderMap.get(a.id) ?? 0;
       const posB = originalOrderMap.get(b.id) ?? 0;
       if (posA !== posB) return posA - posB;
-      return compareSttHierarchy(a.stt, b.stt);
+      return (a.jobContent || '').localeCompare(b.jobContent || '', 'vi', { numeric: true, sensitivity: 'base' });
     });
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
   }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder, filterModel, filterOrigin, filterDocs, filterExpectedDateFrom, filterExpectedDateTo, filterContractStatus, filterPaymentDate, filterInvoiceStatus, purchasingMatchMap]);
@@ -1348,6 +1352,16 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   const parentItem = sttToItemMap.get(`${item.projectCode || ''}:::${parentStt}`);
                   if (parentItem && parentItem.id !== item.id && map.has(parentItem.id)) return parentItem.id;
                 }
+                if (!isParentRow(item) && item.sectionName && String(item.sectionName).trim().length > 0) {
+                  const secHeader = fullTasks.find(x => 
+                    (x.projectCode || '') === (item.projectCode || '') &&
+                    x.id !== item.id &&
+                    isParentRow(x) &&
+                    ((x.jobContent || x.name || '').trim().toLowerCase() === item.sectionName.trim().toLowerCase() ||
+                     (x.sectionName || '').trim().toLowerCase() === item.sectionName.trim().toLowerCase())
+                  );
+                  if (secHeader && map.has(secHeader.id)) return secHeader.id;
+                }
                 return (item.parentId && item.parentId !== item.id) ? item.parentId : undefined;
               };
 
@@ -1367,6 +1381,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 if (currentDepth > 15) return; // Safety guard against OOM crash
 
                 nodes.sort((a, b) => {
+                  const sttCompare = compareTaskStt(a.stt, b.stt);
+                  if (sttCompare !== 0) return sttCompare;
                   const orderTagValue = (notes?: string): number | null => {
                     const m = String(notes || '').match(/\[order:([\d.]+)\]/);
                     return m ? parseFloat(m[1]) : null;
@@ -1376,8 +1392,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   if (orderA !== null && orderB !== null && orderA !== orderB) {
                     return orderA - orderB;
                   }
-                  const sttCompare = compareTaskStt(a.stt, b.stt);
-                  if (sttCompare !== 0) return sttCompare;
                   return (a.jobContent || a.name || '').localeCompare(b.jobContent || b.name || '', 'vi', { numeric: true, sensitivity: 'base' });
                 });
 
