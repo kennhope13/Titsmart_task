@@ -1819,15 +1819,21 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateExpense: async (id, fields) => {
       try {
-        const updated = normalizeExpense(await api.accounting.updateExpense(id, fields));
+        const res = await api.accounting.updateExpense(id, fields);
+        const updated = normalizeExpense(res);
         set((state) => {
-          const nextExps = state.expenses.map((e) => (e.id === id ? updated : e));
+          const nextExps = state.expenses.map((e) => (e.id === id ? { ...e, ...updated, ...fields } : e));
           get().logActivity('Cập nhật chi phí: ' + (updated.content || id), 'COMPANY');
           persistAndNotify({ expenses: nextExps });
           return { expenses: nextExps };
         });
       } catch (e) {
         console.error('Failed to update expense', e);
+        set((state) => {
+          const nextExps = state.expenses.map((e) => (e.id === id ? { ...e, ...fields } : e));
+          persistAndNotify({ expenses: nextExps });
+          return { expenses: nextExps };
+        });
       }
     },
 

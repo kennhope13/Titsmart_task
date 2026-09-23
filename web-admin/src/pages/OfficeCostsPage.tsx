@@ -10,6 +10,30 @@ import { ImageUpload } from '../components/common/ImageUpload';
 import { CostPlanSummaryTable } from './cost-plan/CostPlanSummaryTable';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
 
+const formatDateForInput = (d?: string) => {
+  if (!d) return '';
+  const str = String(d).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    return str.substring(0, 10);
+  }
+  if (str.includes('/')) {
+    const parts = str.split('/');
+    if (parts.length === 3) {
+      const d = parts[0].padStart(2, '0');
+      const m = parts[1].padStart(2, '0');
+      const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+      return `${y}-${m}-${d}`;
+    }
+  }
+  try {
+    const dt = new Date(str);
+    if (!isNaN(dt.getTime())) {
+      return dt.toISOString().split('T')[0];
+    }
+  } catch {}
+  return str;
+};
+
 export const OfficeCostsPage: React.FC = () => {
   const { user } = useAuthStore();
   const { expenses, engineers, addExpense, updateExpense, deleteExpense } = useRealtimeStore();
@@ -536,7 +560,8 @@ export const OfficeCostsPage: React.FC = () => {
               const rawTotal = qty * price;
               const vatAmt = vat > 0 ? (vat <= 100 ? (rawTotal * vat / 100) : vat) : 0;
               const total = Math.round(rawTotal + vatAmt);
-              await updateExpense(editingExpense.id, { ...editingExpense, totalAmount: total });
+              const cleanDate = formatDateForInput(editingExpense.date) || new Date().toISOString().split('T')[0];
+              await updateExpense(editingExpense.id, { ...editingExpense, date: cleanDate, totalAmount: total });
 
               if (additionalItems.length > 0) {
                 await Promise.all(additionalItems.map((item, idx) => {
@@ -548,7 +573,7 @@ export const OfficeCostsPage: React.FC = () => {
                   return addExpense({
                     projectCode: 'OFFICE',
                     stt: String(currentProjExpenses.length + 1 + idx + 1),
-                    date: editingExpense.date || new Date().toISOString().split('T')[0],
+                    date: cleanDate,
                     content: editingExpense.content || 'Văn phòng phẩm',
                     description: item.description || '',
                     spenderName: editingExpense.spenderName || user?.name || 'CÔNG TY',
@@ -573,7 +598,7 @@ export const OfficeCostsPage: React.FC = () => {
           }} className="space-y-3 text-xs">
             {/* Same layout as new expense */}
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={editingExpense.date} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={formatDateForInput(editingExpense.date)} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div>
                 <label className="block font-bold mb-1">Người chi / Nguồn quỹ</label>
                 <CustomSelect value={editingExpense.spenderName} onChange={(e) => setEditingExpense({...editingExpense, spenderName: e.target.value})} searchable={true} allowCustomInput={true} className="w-full border rounded-lg p-2 bg-white text-xs">

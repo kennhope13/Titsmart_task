@@ -28,7 +28,23 @@ const toSnakeCase = (obj: any) => {
   const result: any = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      if (key.startsWith('_') || key === 'subTasks' || key === 'children' || key === 'computedStt' || key === 'isSec' || key === 'depth' || key === 'projectId') continue;
+      if (
+        key.startsWith('_') ||
+        key === 'subTasks' ||
+        key === 'children' ||
+        key === 'computedStt' ||
+        key === 'isSec' ||
+        key === 'depth' ||
+        key === 'projectId' ||
+        key === 'isLabor' ||
+        key === 'is_labor' ||
+        key === 'autoBalance' ||
+        key === 'auto_balance' ||
+        key === 'auto_balance_fund' ||
+        key === 'balance_fund' ||
+        key === 'autobalance' ||
+        key === 'balanceFund'
+      ) continue;
       const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
       let val = obj[key];
 
@@ -45,6 +61,18 @@ const toSnakeCase = (obj: any) => {
             snakeKey === 'timestamp'
           ) {
             val = null;
+          }
+        } else if (snakeKey === 'date' || snakeKey.endsWith('_date')) {
+          if (trimmed.includes('T')) {
+            val = trimmed.split('T')[0];
+          } else if (trimmed.includes('/')) {
+            const parts = trimmed.split('/');
+            if (parts.length === 3) {
+              const d = parts[0].padStart(2, '0');
+              const m = parts[1].padStart(2, '0');
+              const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+              val = `${y}-${m}-${d}`;
+            }
           }
         }
       }

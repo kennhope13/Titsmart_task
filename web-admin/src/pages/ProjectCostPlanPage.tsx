@@ -80,6 +80,30 @@ const parseDateValue = (dStr?: string) => {
   return new Date(s).getTime() || 0;
 };
 
+const formatDateForInput = (d?: string) => {
+  if (!d) return '';
+  const str = String(d).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    return str.substring(0, 10);
+  }
+  if (str.includes('/')) {
+    const parts = str.split('/');
+    if (parts.length === 3) {
+      const d = parts[0].padStart(2, '0');
+      const m = parts[1].padStart(2, '0');
+      const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+      return `${y}-${m}-${d}`;
+    }
+  }
+  try {
+    const dt = new Date(str);
+    if (!isNaN(dt.getTime())) {
+      return dt.toISOString().split('T')[0];
+    }
+  } catch {}
+  return str;
+};
+
 const normalizePlanKey = (stt?: string, content?: string, _parentId?: string) =>
   `${String(stt || '').trim()}|${String(content || '').trim().toLowerCase()}`;
 
@@ -3397,8 +3421,10 @@ export const ProjectCostPlanPage: React.FC = () => {
             const vatAmt = vat > 0 ? (vat <= 100 ? (rawTotal * vat / 100) : vat) : 0;
             const total = Math.round(rawTotal + vatAmt);
 
+            const cleanDate = formatDateForInput(editingExpense.date) || new Date().toISOString().split('T')[0];
             await updateExpense(editingExpense.id, {
               ...editingExpense,
+              date: cleanDate,
               totalAmount: total
             });
 
@@ -3412,7 +3438,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 return addExpense({
                   projectCode: selectedProject,
                   stt: String(currentProjExpenses.length + 1 + idx),
-                  date: editingExpense.date || new Date().toISOString().split('T')[0],
+                  date: cleanDate,
                   content: editingExpense.content || 'Vật tư/ thiết bị',
                   description: item.description || '',
                   spenderName: editingExpense.spenderName || '',
@@ -3434,7 +3460,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             triggerToast('Đã cập nhật Chi phí thành công!', 'success');
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={editingExpense.date} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={formatDateForInput(editingExpense.date)} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div>
                 <label className="block font-bold mb-1">Người phụ trách / Nguồn quỹ</label>
                 <CustomSelect value={editingExpense.spenderName || ''} onChange={(e) => setEditingExpense({...editingExpense, spenderName: e.target.value})} searchable={true} allowCustomInput={true} className="w-full border rounded-lg p-2 bg-white text-xs">
