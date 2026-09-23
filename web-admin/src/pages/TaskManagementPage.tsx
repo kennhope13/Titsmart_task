@@ -487,9 +487,19 @@ const hasSyncedRef = useRef(false);
       parentId: editParentId || undefined,
     });
 
-    // Đồng bộ trạng thái sang tab Kế hoạch Vật tư & Mua hàng
-    if (!editingTask.isSectionHeader) {
-      // syncTaskStatusToCostPlan(editingTask, editPurchaseStatus, editConstrStatus);
+    // Gửi thông báo realtime nếu có giao việc mới qua modal sửa
+    if (editEngineerId && editEngineerId !== (editingTask.assignedEngineerId || '')) {
+      const store = useRealtimeStore.getState();
+      const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
+      store.logActivity(`Quản lý ${assignerName} đã GIAO CÔNG VIỆC: "${editName}" cho ${eng?.name || 'nhân sự'}`, editingTask.projectName || editingTask.projectCode || 'Dự án');
+      if (store.addNotification) {
+        store.addNotification({
+          title: 'Công việc mới được giao',
+          message: `${assignerName} đã giao công việc "${editName}" thuộc dự án ${editingTask.projectName || editingTask.projectCode} cho bạn.`,
+          type: 'task_assigned',
+          icon: 'assignment_ind'
+        });
+      }
     }
 
     triggerToast(`Đã cập nhật \"${editName}\" thành công!`, 'success');
@@ -1294,9 +1304,10 @@ const hasSyncedRef = useRef(false);
           notes: '[section]',
         });
       }
+      setIsNewTaskModalOpen(false);
       setIsSectionHeader(false);
-      setSectionSelect(createdSectionName);
-      triggerToast('Đã tạo Đầu mục lớn. Bạn có thể thêm Hạng mục nhỏ trong đầu mục này.', 'success');
+      setSectionSelect('default');
+      triggerToast('Đã tạo Đầu mục lớn thành công!', 'success');
       return;
     }
 
@@ -2166,7 +2177,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
           <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-100">
             <button onClick={() => { setAssigningTask(null); setAssigningUserIds([]); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
             <button 
-              onClick={() => {
+              onClick={async () => {
                 if (!assigningTask) return;
                 const selectedEngs = engineers.filter(e => assigningUserIds.includes(e.id));
                 const names = selectedEngs.map(e => e.name).join(', ');
@@ -2178,6 +2189,22 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                   assignerId: authStore.user?.id,
                   status: ids ? 'Chờ nhận việc' : assigningTask.status
                 });
+
+                // Gửi thông báo realtime & nhật ký hoạt động
+                const store = useRealtimeStore.getState();
+                const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
+                if (ids && selectedEngs.length > 0) {
+                  store.logActivity(`Quản lý ${assignerName} đã GIAO CÔNG VIỆC: "${assigningTask.name}" cho ${names}`, assigningTask.projectName || assigningTask.projectCode || 'Dự án');
+                  if (store.addNotification) {
+                    await store.addNotification({
+                      title: 'Công việc mới được giao',
+                      message: `${assignerName} đã giao công việc "${assigningTask.name}" thuộc dự án ${assigningTask.projectName || assigningTask.projectCode} cho bạn.`,
+                      type: 'task_assigned',
+                      icon: 'assignment_ind'
+                    });
+                  }
+                }
+
                 setAssigningTask(null);
                 setAssigningUserIds([]);
                 triggerToast('Đã giao việc thành công!', 'success');

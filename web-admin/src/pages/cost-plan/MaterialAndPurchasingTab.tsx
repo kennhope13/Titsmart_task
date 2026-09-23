@@ -42,10 +42,12 @@ const TEXT = {
 };
 
 const isParentRow = (plan: ProjectMaterialPlan) => {
+  if (String(plan.notes || '').toLowerCase().includes('[section]')) return true;
+  const stt = String(plan.stt || '').trim();
+  if (/^[A-Z]{1,2}$/i.test(stt)) return true;
+  if (/^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt)) return true;
   const vol = Number(plan.contractVolume || 0);
   const unitVal = String(plan.unit || '').trim();
-  // QUY TẮC ĐƠN GIẢN VÀ TRIỆT ĐỂ:
-  // Nếu cả Khối lượng (0/rỗng) VÀ Đơn vị tính (rỗng) -> BẮT BUỘC LÀ ĐẦU MỤC (SECTION HEADER / FOLDER)
   return vol === 0 && unitVal === '';
 };
 

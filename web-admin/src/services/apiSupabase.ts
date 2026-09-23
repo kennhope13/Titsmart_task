@@ -30,7 +30,47 @@ const toSnakeCase = (obj: any) => {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       if (key.startsWith('_') || key === 'subTasks' || key === 'children' || key === 'computedStt' || key === 'isSec' || key === 'depth' || key === 'projectId') continue;
       const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-      result[snakeKey] = obj[key];
+      let val = obj[key];
+
+      // Convert empty string for date / time fields to null (tránh lỗi PostgreSQL 22007: invalid input syntax for type date: "")
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        if (trimmed === '') {
+          if (
+            snakeKey.endsWith('_date') ||
+            snakeKey.endsWith('_at') ||
+            snakeKey.endsWith('_time') ||
+            snakeKey === 'date' ||
+            snakeKey === 'time' ||
+            snakeKey === 'timestamp'
+          ) {
+            val = null;
+          }
+        }
+      }
+
+      // UUID sanitization (tránh lỗi 22P02: invalid input syntax for type uuid)
+      if (
+        snakeKey.endsWith('_id') ||
+        snakeKey === 'parent_id' ||
+        snakeKey === 'manager_id' ||
+        snakeKey === 'assigner_id' ||
+        snakeKey === 'reviewer_id' ||
+        snakeKey === 'assigned_engineer_id' ||
+        snakeKey === 'material_plan_id'
+      ) {
+        if (val && typeof val === 'string' && !UUID_RE.test(val)) {
+          val = null;
+        } else if (!val) {
+          val = null;
+        }
+      } else if (snakeKey === 'id') {
+        if (val && typeof val === 'string' && !UUID_RE.test(val)) {
+          continue; // bỏ qua id không hợp lệ để Postgres tự sinh UUID
+        }
+      }
+
+      result[snakeKey] = val;
     }
   }
   const audit = getCurrentAuditPayload();

@@ -2298,14 +2298,14 @@ export const ProjectCostPlanPage: React.FC = () => {
             projectCode: selectedProject,
             stt: autoStt,
             jobContent: newPlanData.jobContent || '',
-            unit: newPlanData.unit || 'bộ',
-            contractVolume: Number(newPlanData.contractVolume || 1),
-            techSpecModel: newPlanData.techSpecModel || '',
-            techSpecOrigin: newPlanData.techSpecOrigin || '',
-            progressStatus: newPlanData.progressStatus || 'Chưa thi công',
-            orderedVolume: Number(newPlanData.orderedVolume || 0),
-            orderedStatus: newPlanData.orderedStatus || 'Chưa đặt hàng',
-            expectedDate: newPlanData.expectedDate || '',
+            unit: isCreatingSectionHeader ? '' : (newPlanData.unit || 'bộ'),
+            contractVolume: isCreatingSectionHeader ? 0 : Number(newPlanData.contractVolume || 1),
+            techSpecModel: isCreatingSectionHeader ? '' : (newPlanData.techSpecModel || ''),
+            techSpecOrigin: isCreatingSectionHeader ? '' : (newPlanData.techSpecOrigin || ''),
+            progressStatus: isCreatingSectionHeader ? '' : (newPlanData.progressStatus || 'Chưa thi công'),
+            orderedVolume: 0,
+            orderedStatus: isCreatingSectionHeader ? '' : (newPlanData.orderedStatus || 'Chưa đặt hàng'),
+            expectedDate: newPlanData.expectedDate || undefined,
             issueContent: newPlanData.issueContent || '',
             docCo: !!newPlanData.docCo,
             docCq: !!newPlanData.docCq,
@@ -2320,7 +2320,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           if (isContractor) {
             if (createdMaterialId) syncingIdsRef.current.add(createdMaterialId);
             try {
-              const contractVol = Number(newPlanData.contractVolume || 1);
+              const contractVol = isCreatingSectionHeader ? 0 : Number(newPlanData.contractVolume || 1);
               let purchasingParentId = undefined;
               if (parentId) {
                 const findPurchasingMatch = (matId: string): string | undefined => {
@@ -2347,7 +2347,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                 materialPlanId: createdMaterialId,
                 stt: autoStt,
                 content: newPlanData.jobContent || '',
-                unit: newPlanData.unit || 'bộ',
+                unit: isCreatingSectionHeader ? '' : (newPlanData.unit || 'bộ'),
                 volumeContract: contractVol,
                 volumeOrder: 0,
                 unitPrice: 0,
@@ -2357,9 +2357,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                 prepayPercent: 0,
                 prepayAmount: 0,
                 remainingAmount: 0,
-                orderStatus: 'Chưa đặt hàng',
-                contractStatus: 'Chưa ký',
-                invoiceStatus: 'Chưa xuất',
+                orderStatus: isCreatingSectionHeader ? '' : 'Chưa đặt hàng',
+                contractStatus: isCreatingSectionHeader ? '' : 'Chưa ký',
+                invoiceStatus: isCreatingSectionHeader ? '' : 'Chưa xuất',
                 notes: baseNote,
                 parentId: purchasingParentId || undefined
               });
@@ -2416,12 +2416,12 @@ export const ProjectCostPlanPage: React.FC = () => {
             name: newPlanData.jobContent || '',
             projectCode: selectedProject,
             projectName: projName,
-            volume: Number(newPlanData.contractVolume || 1),
-            unit: newPlanData.unit || 'bộ',
+            volume: isCreatingSectionHeader ? 0 : Number(newPlanData.contractVolume || 1),
+            unit: isCreatingSectionHeader ? '' : (newPlanData.unit || 'bộ'),
             progress: 0,
             status: 'Chưa làm',
-            purchaseStatus: 'Chưa đặt hàng',
-            constrStatus: 'Chưa thi công',
+            purchaseStatus: isCreatingSectionHeader ? '' : 'Chưa đặt hàng',
+            constrStatus: isCreatingSectionHeader ? '' : 'Chưa thi công',
             isDone: false,
             isSectionHeader: isCreatingSectionHeader,
             sectionName: currentSectionName,
