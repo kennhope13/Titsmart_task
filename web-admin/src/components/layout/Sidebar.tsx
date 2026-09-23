@@ -112,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         ref={sidebarRef} 
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[170px]' : 'w-[56px]'}`}
+        className={`hidden md:flex fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[170px]' : 'w-[56px]'}`}
       >
         <div className="relative h-12 px-2 flex items-center gap-2 border-b border-slate-100 min-w-[170px]">
           <div className="flex-1 flex items-center gap-3 min-w-0">
