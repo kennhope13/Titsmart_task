@@ -19,7 +19,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   disabled = false,
   required = false,
   searchable = false,
-    allowCustomInput = false,
+  allowCustomInput = false,
+  placeholder,
   ...rest
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -43,7 +44,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   });
 
   const selectedOption = options.find((opt) => String(opt.value) === String(value));
-  const displayLabel = selectedOption ? selectedOption.label : (value ? String(value) : '');
+  const isUuid = typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  const displayLabel = selectedOption
+    ? selectedOption.label
+    : (allowCustomInput && value
+        ? String(value)
+        : (isUuid ? (placeholder || '-- Không có --') : (value && value !== 'default' ? String(value) : (placeholder || ''))));
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

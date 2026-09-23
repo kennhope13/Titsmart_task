@@ -411,8 +411,8 @@ const hasSyncedRef = useRef(false);
       setProjectCode(parentTask.projectCode);
     }
     setIsSectionHeader(false);
-    setSectionSelect(parentTask.sectionName || 'default');
-    setParentIdSelect(parentTask.id);
+    setSectionSelect(parentTask.sectionName || (parentTask.isSectionHeader ? parentTask.name : 'default'));
+    setParentIdSelect(parentTask.isSectionHeader ? 'default' : parentTask.id);
     setName('');
     
     const siblingTasks = activeTasksForProj.filter(t => t.parentId === parentTask.id);
@@ -447,7 +447,15 @@ const hasSyncedRef = useRef(false);
     setEditIssueStatus(t.issueStatus || '');
     setEditNotes(t.notes || '');
     setEditEngineerId(t.assignedEngineerId || '');
-    setEditParentId(t.parentId || '');
+
+    let parentIdVal = t.parentId || '';
+    if (parentIdVal) {
+      const parentTaskObj = tasks.find(x => x.id === parentIdVal);
+      if (!parentTaskObj || parentTaskObj.isSectionHeader) {
+        parentIdVal = '';
+      }
+    }
+    setEditParentId(parentIdVal);
     setIsEditTaskModalOpen(true);
   };
 
@@ -2135,7 +2143,23 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
           {editingTask && !editingTask.isSectionHeader && (
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block font-bold text-slate-700 mb-1">Thuộc Đầu mục cha</label><CustomSelect value={editSectionName} onChange={(e) => setEditSectionName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/50 font-bold text-primary">{uniqueSectionsForProj.map((sec) => (<option key={sec} value={sec}>{truncateText(sec, 55)}</option>))}<option value="__CUSTOM__">+ Nhập Đầu mục cha mới...</option></CustomSelect>{editSectionName === '__CUSTOM__' && (<input type="text" required placeholder="VD: XIII. HỆ THỐNG ĐIỆN CHIẾU SÁNG" value={editCustomSection} onChange={(e) => setEditCustomSection(e.target.value)} className="w-full mt-2 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" />)}</div>
-              <div><label className="block font-bold text-slate-700 mb-1">Thuộc Hạng mục cha (tuỳ chọn)</label><CustomSelect value={editParentId} onChange={(e) => setEditParentId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold"><option value="">-- Không có --</option>{tasks.filter(t => t.projectCode === editingTask.projectCode && !t.isSectionHeader && t.sectionName === editSectionName && t.id !== editingTask.id).map(t => (<option key={t.id} value={t.id}>{truncateText(t.name, 40)}</option>))}</CustomSelect></div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Thuộc Hạng mục cha (tuỳ chọn)</label>
+                <CustomSelect
+                  value={editParentId}
+                  onChange={(e) => setEditParentId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold"
+                >
+                  <option value="">-- Không có --</option>
+                  {tasks
+                    .filter((t) => t.projectCode === editingTask.projectCode && !t.isSectionHeader && t.id !== editingTask.id && (t.sectionName === editSectionName || t.id === editParentId))
+                    .map((t) => (
+                      <option key={t.id} value={t.id} title={t.name}>
+                        {t.stt ? `${t.stt} - ` : ''}{truncateText(t.name, 45)}
+                      </option>
+                    ))}
+                </CustomSelect>
+              </div>
             </div>
           )}
           <div><label className="block font-bold text-slate-700 mb-1">Nội dung Công việc *</label><textarea required rows={4} value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
@@ -2200,10 +2224,10 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                 >
                   <option value="default">-- Không có --</option>
                   {activeTasksForProj
-                    .filter((t) => !t.isSectionHeader && t.sectionName === sectionSelect)
+                    .filter((t) => !t.isSectionHeader && (t.sectionName === sectionSelect || t.id === parentIdSelect))
                     .map((t) => (
                       <option key={t.id} value={t.id} title={t.name}>
-                        {t.name}
+                        {t.stt ? `${t.stt} - ` : ''}{truncateText(t.name, 45)}
                       </option>
                     ))}
                 </CustomSelect>
