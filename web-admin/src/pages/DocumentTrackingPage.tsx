@@ -227,23 +227,31 @@ export const DocumentTrackingPage: React.FC = () => {
     const highlightParam = searchParams.get('highlight');
     const searchParam = searchParams.get('search');
     
-    if (pParam) {
-      setFilterProjectCode(pParam);
-    }
-    if (docIdParam) {
-      setHighlightId(docIdParam);
-      setIsHighlightActive(true);
-    }
     if (highlightParam) {
       setHighlightKeyword(highlightParam.toLowerCase().trim());
       setIsHighlightActive(true);
+      // Hiển thị tất cả dự án để nhìn thấy toàn bộ danh sách
+      if (!resolvedProjectCode) {
+        setFilterProjectCode('all');
+      }
+    } else if (docIdParam) {
+      setHighlightId(docIdParam);
+      setIsHighlightActive(true);
+      if (!resolvedProjectCode) {
+        setFilterProjectCode('all');
+      }
+    } else if (pParam) {
+      setFilterProjectCode(pParam);
     }
-    // Only filter if searchParam is explicitly given without highlight intent
+    
     if (searchParam && !highlightParam) {
       setHighlightKeyword(searchParam.toLowerCase().trim());
       setIsHighlightActive(true);
+      if (!resolvedProjectCode) {
+        setFilterProjectCode('all');
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, resolvedProjectCode]);
   const [filterDocStatus, setFilterDocStatus] = useState('all');
   const [filterPaymentStatus, setFilterPaymentStatus] = useState('all');
   const [filterDocType, setFilterDocType] = useState('all');

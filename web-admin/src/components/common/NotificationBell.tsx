@@ -299,7 +299,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
     if (titleLower.includes('hồ sơ') || msgLower.includes('hồ sơ') || (notification.type && notification.type.includes('document'))) {
       const params = new URLSearchParams();
-      if (pCode && pCode !== 'Hệ thống') params.set('project', pCode);
       if (itemName) params.set('highlight', itemName);
       navigate(`/document-tracking${params.toString() ? `?${params.toString()}` : ''}`);
     } else if (titleLower.includes('nhật ký') || msgLower.includes('nhật ký') || (notification.type && notification.type.includes('field_log'))) {
