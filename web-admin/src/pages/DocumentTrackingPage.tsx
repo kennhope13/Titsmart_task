@@ -925,13 +925,20 @@ export const DocumentTrackingPage: React.FC = () => {
                       <div className="flex items-center justify-center gap-1.5">
                         {canManageItem(user, track) ? (
                           <button onClick={() => {
+                            const docLabel = track.contractNo || track.contractName || 'này';
                             setConfirmConfig({
                               isOpen: true,
                               title: 'Xóa thông tin theo dõi hồ sơ',
-                              message: `Bạn chắc chắn muốn xóa hồ sơ hợp đồng "${track.contractNo || track.contractName || 'này'}"?`,
-                              onConfirm: () => {
-                                deleteDocumentTrack(track.id);
-                                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                              message: `Bạn chắc chắn muốn xóa hồ sơ hợp đồng "${docLabel}"?`,
+                              onConfirm: async () => {
+                                try {
+                                  await deleteDocumentTrack(track.id);
+                                  triggerToast(`Đã xóa hồ sơ "${docLabel}" thành công!`, 'success');
+                                } catch (err) {
+                                  triggerToast('Lỗi khi xóa hồ sơ, vui lòng thử lại!', 'warning');
+                                } finally {
+                                  setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                                }
                               },
                               isDestructive: true,
                               confirmText: 'Xóa'
