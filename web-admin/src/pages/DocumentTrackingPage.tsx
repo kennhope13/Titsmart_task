@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { useParams, useOutletContext } from 'react-router-dom';
+import { useParams, useSearchParams, useOutletContext } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, hasPermission, canManageItem } from '../services/authStore';
@@ -186,6 +186,7 @@ export const DocumentTrackingPage: React.FC = () => {
   };
 
   const { projectId } = useParams();
+  const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
 
   const resolvedProjectCode = useMemo(() => {
@@ -215,6 +216,17 @@ export const DocumentTrackingPage: React.FC = () => {
       setNewDoc(prev => ({ ...prev, projectCode: resolvedProjectCode }));
     }
   }, [resolvedProjectCode]);
+
+  useEffect(() => {
+    const pParam = searchParams.get('project');
+    const qParam = searchParams.get('search');
+    if (pParam) {
+      setFilterProjectCode(pParam);
+    }
+    if (qParam) {
+      setSearchQuery(qParam);
+    }
+  }, [searchParams]);
   const [filterDocStatus, setFilterDocStatus] = useState('all');
   const [filterPaymentStatus, setFilterPaymentStatus] = useState('all');
   const [filterDocType, setFilterDocType] = useState('all');

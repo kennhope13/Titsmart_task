@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
 import { api } from '../services/apiSupabase';
@@ -47,10 +48,20 @@ const getDuration = (checkIn: string, checkOut?: string) => {
 
 export const AttendancePage: React.FC = () => {
   const { user } = useAuthStore();
+  const [searchParams] = useSearchParams();
   const { projects, engineers, addNotification } = useRealtimeStore();
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
 
   const [mainTab, setMainTab] = useState<'attendance' | 'leave'>('attendance');
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'leave' || tabParam === 'leaves') {
+      setMainTab('leave');
+    } else if (tabParam === 'attendance') {
+      setMainTab('attendance');
+    }
+  }, [searchParams]);
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSession, setActiveSession] = useState<AttendanceLog | null>(null);

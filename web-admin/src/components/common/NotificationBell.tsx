@@ -274,22 +274,60 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     sessionStorage.setItem('has_shown_center_notif_modal', 'true');
 
     // Điều hướng theo loại thông báo
-    const title = (notification.title || '').toLowerCase();
-    const message = (notification.message || '').toLowerCase();
     const link = notification.link || '';
-
     if (link) {
       navigate(link);
-    } else if (title.includes('đã nhận việc') || title.includes('hoàn thành công việc') || (notification.type && notification.type.startsWith('task_accepted')) || (notification.type && notification.type.startsWith('task_completed'))) {
+      return;
+    }
+
+    const title = (notification.title || '');
+    const message = (notification.message || '');
+    const titleLower = title.toLowerCase();
+    const msgLower = message.toLowerCase();
+
+    // Trích xuất mã dự án nếu có dạng [PROJECT_CODE]
+    const pCodeMatch = message.match(/\[([A-Za-z0-9_-]+)\]/);
+    const pCode = pCodeMatch ? pCodeMatch[1] : '';
+
+    // Trích xuất tên hạng mục/hồ sơ sau dấu hai chấm nếu có
+    let itemName = '';
+    if (title.includes(':')) {
+      itemName = title.split(':').slice(1).join(':').trim();
+    } else if (message.includes(':')) {
+      itemName = message.split(':').slice(1).join(':').trim();
+    }
+
+    if (titleLower.includes('hồ sơ') || msgLower.includes('hồ sơ') || (notification.type && notification.type.includes('document'))) {
+      const params = new URLSearchParams();
+      if (pCode && pCode !== 'Hệ thống') params.set('project', pCode);
+      if (itemName) params.set('search', itemName);
+      navigate(`/document-tracking${params.toString() ? `?${params.toString()}` : ''}`);
+    } else if (titleLower.includes('nhật ký') || msgLower.includes('nhật ký') || (notification.type && notification.type.includes('field_log'))) {
+      const params = new URLSearchParams();
+      if (pCode && pCode !== 'Hệ thống') params.set('project', pCode);
+      navigate(`/field-logs${params.toString() ? `?${params.toString()}` : ''}`);
+    } else if (
+      titleLower.includes('đã nhận việc') || 
+      titleLower.includes('hoàn thành') || 
+      (notification.type && (notification.type.startsWith('task_accepted') || notification.type.startsWith('task_completed')))
+    ) {
       navigate('/task-assignment?tab=assigned', { state: { tab: 'assigned' } });
-    } else if (title.includes('hồ sơ') || message.includes('hồ sơ')) {
-      navigate('/document-tracking');
-    } else if (title.includes('điểm danh') || message.includes('điểm danh')) {
-      navigate('/attendance');
-    } else if (title.includes('giao việc') || title.includes('công việc') || title.includes('nhiệm vụ') || message.includes('nhiệm vụ') || message.includes('công việc')) {
+    } else if (
+      titleLower.includes('giao việc') || 
+      titleLower.includes('công việc') || 
+      titleLower.includes('nhiệm vụ') || 
+      msgLower.includes('nhiệm vụ') || 
+      msgLower.includes('công việc')
+    ) {
       navigate('/my-tasks');
-    } else if (title.includes('nhật ký') || message.includes('nhật ký')) {
-      navigate('/field-logs');
+    } else if (titleLower.includes('nghỉ phép') || msgLower.includes('nghỉ phép')) {
+      navigate('/attendance?tab=leaves');
+    } else if (titleLower.includes('điểm danh') || msgLower.includes('điểm danh')) {
+      navigate('/attendance');
+    } else if (pCode && pCode !== 'Hệ thống' && pCode !== 'COMPANY') {
+      navigate(`/projects/${encodeURIComponent(pCode)}`);
+    } else {
+      navigate('/projects');
     }
   };
 
@@ -729,14 +767,20 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
       {/* FLOATING REALTIME INCOMING NOTIFICATION BANNER/TOAST */}
       {incomingPopupNotif && (
-        <div className="fixed top-5 right-5 z-[99999] max-w-sm w-full animate-bounce-in shadow-2xl rounded-xl border border-primary/20 bg-white/95 backdrop-blur-md overflow-hidden transition-all">
+        <div
+          onClick={() => handleNotificationClick(incomingPopupNotif)}
+          className="fixed top-5 right-5 z-[99999] max-w-sm w-full animate-bounce-in shadow-2xl rounded-xl border border-primary/30 bg-white/95 backdrop-blur-md overflow-hidden transition-all cursor-pointer hover:shadow-primary/25 hover:border-primary/60 hover:scale-[1.01] active:scale-[0.99] group select-none"
+        >
           <div className="bg-primary px-3.5 py-2 flex items-center justify-between text-white">
             <div className="flex items-center gap-2 font-bold text-xs">
               <span className="material-symbols-outlined text-[18px]">notifications_active</span>
               <span>Thông báo mới</span>
             </div>
             <button
-              onClick={() => setIncomingPopupNotif(null)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIncomingPopupNotif(null);
+              }}
               className="p-1 hover:bg-white/20 rounded-md transition-colors"
               title="Đóng"
             >
@@ -744,23 +788,19 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
             </button>
           </div>
           <div className="p-3.5 flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-surface-container text-primary shrink-0 mt-0.5">
+            <div className="p-2.5 rounded-xl bg-blue-50 text-primary shrink-0 mt-0.5 group-hover:bg-primary group-hover:text-white transition-colors">
               <span className="material-symbols-outlined text-xl">
                 {incomingPopupNotif.icon || 'assignment_ind'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-xs font-bold text-slate-800 leading-snug">{incomingPopupNotif.title}</h4>
+              <h4 className="text-xs font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors">{incomingPopupNotif.title}</h4>
               <p className="text-[11px] text-slate-600 mt-1 line-clamp-3 leading-relaxed">{incomingPopupNotif.message}</p>
-              <div className="mt-2.5 flex items-center justify-between">
+              <div className="mt-2 flex items-center justify-between">
                 <span className="text-[10px] text-slate-400 font-medium">Vừa xong</span>
-                <button
-                  onClick={() => handleNotificationClick(incomingPopupNotif)}
-                  className="px-3 py-1 bg-primary hover:opacity-90 active:scale-95 text-white text-[11px] font-bold rounded-lg transition-all shadow-xs flex items-center gap-1"
-                >
-                  <span>Xem ngay</span>
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                </button>
+                <span className="text-[10px] text-primary font-bold opacity-70 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                  Nhấn để mở chi tiết &rarr;
+                </span>
               </div>
             </div>
           </div>

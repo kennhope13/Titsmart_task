@@ -2057,7 +2057,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           message: `[${pCode}] ${actorName} đã thêm hồ sơ: ${docName}`,
           type: `document_update:::${targetScope}`,
           icon: 'description',
-          link: '/document-tracking'
+          link: `/document-tracking?project=${encodeURIComponent(pCode)}&search=${encodeURIComponent(docName)}`
         }).catch(() => {});
       } catch (e) {
         console.warn('Failed to persist document track to DB, retaining local state', e);
@@ -2105,7 +2105,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           message: `[${pCode}] ${actorName} đã cập nhật hồ sơ: ${docName}`,
           type: `document_update:::${targetScope}`,
           icon: 'description',
-          link: '/document-tracking'
+          link: `/document-tracking?project=${encodeURIComponent(pCode)}&search=${encodeURIComponent(docName)}`
         }).catch(() => {});
       } catch (e) {
         console.warn('Failed to update document track, updated locally', e);
@@ -2148,7 +2148,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           message: `[${pCode}] ${actorName} đã cập nhật nhật ký hiện trường`,
           type: `field_log:::${targetScope}`,
           icon: 'history_edu',
-          link: '/field-logs'
+          link: `/field-logs?project=${encodeURIComponent(pCode)}`
         }).catch(() => {});
       } catch (e) {
         console.error('Failed to update field log', e);
@@ -2176,7 +2176,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           message: `[${pCode}] ${actorName} đã thêm nhật ký hiện trường`,
           type: `field_log:::${targetScope}`,
           icon: 'history_edu',
-          link: '/field-logs'
+          link: `/field-logs?project=${encodeURIComponent(pCode)}`
         }).catch(() => {});
       } catch (e) {
         console.error('Failed to add field log', e);

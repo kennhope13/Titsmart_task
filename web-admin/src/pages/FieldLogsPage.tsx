@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, canManageItem } from '../services/authStore';
-import { useParams, useOutletContext, Link } from 'react-router-dom';
+import { useParams, useSearchParams, useOutletContext, Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { FieldLog } from '../types';
 import { FieldLogsTaskTable } from '../components/FieldLogsTaskTable';
@@ -294,6 +294,7 @@ const UploadModal: React.FC<{
 export const FieldLogsPage: React.FC = () => {
   const { user } = useAuthStore();
   const { projectId } = useParams();
+  const [searchParams] = useSearchParams();
   const { fieldLogs, projects, tasks, addFieldLog, deleteFieldLog, updateFieldLog, fetchFieldLogs } = useRealtimeStore();
 
   const resolvedProjectCode = useMemo(() => {
@@ -309,6 +310,13 @@ export const FieldLogsPage: React.FC = () => {
       setSelectedProject(resolvedProjectCode);
     }
   }, [resolvedProjectCode]);
+
+  useEffect(() => {
+    const pParam = searchParams.get('project');
+    if (pParam) {
+      setSelectedProject(pParam);
+    }
+  }, [searchParams]);
 
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
   useEffect(() => { setPortalNode(document.getElementById('project-header-actions')); }, []);
