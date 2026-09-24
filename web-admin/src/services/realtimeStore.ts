@@ -1993,13 +1993,18 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { documentTracks: nextTracks, notifications: nextNotifs };
         });
 
-        // Broadcast realtime notification to project members & admin
+        // Broadcast realtime notification
+        const currentUser = useAuthStore.getState().user;
+        const isActorAdmin = currentUser?.role === 'admin' || currentUser?.role === 'quản trị viên' || currentUser?.role === 'pm' || currentUser?.role === 'quản lý dự án' || currentUser?.role === 'manager' || currentUser?.username === 'admin';
         const pCode = trackData.projectCode || 'COMPANY';
+        const targetScope = isActorAdmin ? 'ALL' : pCode;
         const docName = trackData.contractName || trackData.contractNo || 'hồ sơ';
+        const actorName = audit.updatedBy || currentUser?.name || currentUser?.username || 'Thành viên';
+
         get().addNotification({
           title: `Hồ sơ mới: ${docName}`,
-          message: `[${pCode}] ${audit.updatedBy || 'Thành viên'} đã thêm hồ sơ: ${docName}`,
-          type: `document_update:::${pCode}`,
+          message: `[${pCode}] ${actorName} đã thêm hồ sơ: ${docName}`,
+          type: `document_update:::${targetScope}`,
           icon: 'description',
           link: '/document-tracking'
         }).catch(() => {});
@@ -2036,14 +2041,19 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         });
         get().logActivity('Cập nhật hồ sơ gửi đi: ' + (updated?.contractName || id), 'COMPANY');
 
-        // Broadcast realtime notification to project members & admin
+        // Broadcast realtime notification
+        const currentUser = useAuthStore.getState().user;
+        const isActorAdmin = currentUser?.role === 'admin' || currentUser?.role === 'quản trị viên' || currentUser?.role === 'pm' || currentUser?.role === 'quản lý dự án' || currentUser?.role === 'manager' || currentUser?.username === 'admin';
         const currentDoc = get().documentTracks.find(d => d.id === id);
         const pCode = fields.projectCode || currentDoc?.projectCode || 'COMPANY';
+        const targetScope = isActorAdmin ? 'ALL' : pCode;
         const docName = fields.contractName || currentDoc?.contractName || fields.contractNo || currentDoc?.contractNo || 'hồ sơ';
+        const actorName = audit.updatedBy || currentUser?.name || currentUser?.username || 'Thành viên';
+
         get().addNotification({
           title: `Cập nhật hồ sơ: ${docName}`,
-          message: `[${pCode}] ${audit.updatedBy || 'Thành viên'} đã cập nhật hồ sơ: ${docName}`,
-          type: `document_update:::${pCode}`,
+          message: `[${pCode}] ${actorName} đã cập nhật hồ sơ: ${docName}`,
+          type: `document_update:::${targetScope}`,
           icon: 'description',
           link: '/document-tracking'
         }).catch(() => {});
@@ -2077,12 +2087,17 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { fieldLogs: nextLogs };
         });
 
+        const currentUser = useAuthStore.getState().user;
+        const isActorAdmin = currentUser?.role === 'admin' || currentUser?.role === 'quản trị viên' || currentUser?.role === 'pm' || currentUser?.role === 'quản lý dự án' || currentUser?.role === 'manager' || currentUser?.username === 'admin';
         const currentLog = get().fieldLogs.find(l => l.id === id);
         const pCode = updated?.projectCode || (input as any)?.projectCode || currentLog?.projectCode || 'COMPANY';
+        const targetScope = isActorAdmin ? 'ALL' : pCode;
+        const actorName = audit.updatedBy || currentUser?.name || currentUser?.username || 'Kỹ sư';
+
         get().addNotification({
           title: `Cập nhật nhật ký hiện trường: ${pCode}`,
-          message: `[${pCode}] ${audit.updatedBy || 'Kỹ sư'} đã cập nhật nhật ký hiện trường`,
-          type: `field_log:::${pCode}`,
+          message: `[${pCode}] ${actorName} đã cập nhật nhật ký hiện trường`,
+          type: `field_log:::${targetScope}`,
           icon: 'history_edu',
           link: '/field-logs'
         }).catch(() => {});
@@ -2102,11 +2117,16 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { fieldLogs: nextLogs };
         });
 
+        const currentUser = useAuthStore.getState().user;
+        const isActorAdmin = currentUser?.role === 'admin' || currentUser?.role === 'quản trị viên' || currentUser?.role === 'pm' || currentUser?.role === 'quản lý dự án' || currentUser?.role === 'manager' || currentUser?.username === 'admin';
         const pCode = created.projectCode || input.projectCode || 'COMPANY';
+        const targetScope = isActorAdmin ? 'ALL' : pCode;
+        const actorName = audit.updatedBy || currentUser?.name || currentUser?.username || 'Kỹ sư';
+
         get().addNotification({
           title: `Nhật ký công trình mới: ${pCode}`,
-          message: `[${pCode}] ${audit.updatedBy || 'Kỹ sư'} đã thêm nhật ký hiện trường`,
-          type: `field_log:::${pCode}`,
+          message: `[${pCode}] ${actorName} đã thêm nhật ký hiện trường`,
+          type: `field_log:::${targetScope}`,
           icon: 'history_edu',
           link: '/field-logs'
         }).catch(() => {});
