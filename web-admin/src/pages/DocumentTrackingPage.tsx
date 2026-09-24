@@ -217,14 +217,31 @@ export const DocumentTrackingPage: React.FC = () => {
     }
   }, [resolvedProjectCode]);
 
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [highlightKeyword, setHighlightKeyword] = useState<string | null>(null);
+  const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
+
   useEffect(() => {
     const pParam = searchParams.get('project');
-    const qParam = searchParams.get('search');
+    const docIdParam = searchParams.get('docId');
+    const highlightParam = searchParams.get('highlight');
+    const searchParam = searchParams.get('search');
+    
     if (pParam) {
       setFilterProjectCode(pParam);
     }
-    if (qParam) {
-      setSearchQuery(qParam);
+    if (docIdParam) {
+      setHighlightId(docIdParam);
+      setIsHighlightActive(true);
+    }
+    if (highlightParam) {
+      setHighlightKeyword(highlightParam.toLowerCase().trim());
+      setIsHighlightActive(true);
+    }
+    // Only filter if searchParam is explicitly given without highlight intent
+    if (searchParam && !highlightParam) {
+      setHighlightKeyword(searchParam.toLowerCase().trim());
+      setIsHighlightActive(true);
     }
   }, [searchParams]);
   const [filterDocStatus, setFilterDocStatus] = useState('all');
@@ -315,6 +332,26 @@ export const DocumentTrackingPage: React.FC = () => {
       return String(a.contractNo || '').localeCompare(String(b.contractNo || ''), 'vi');
     });
   }, [documentTracks, filterProjectCode, filterDocStatus, filterPaymentStatus, filterDueStatus, searchQuery, projects]);
+
+  useEffect(() => {
+    if (isHighlightActive && (highlightId || highlightKeyword)) {
+      const timer = setTimeout(() => {
+        const elem = document.querySelector('.highlighted-doc-row');
+        if (elem) {
+          elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 400);
+
+      const fadeTimer = setTimeout(() => {
+        setIsHighlightActive(false);
+      }, 9000);
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(fadeTimer);
+      };
+    }
+  }, [isHighlightActive, highlightId, highlightKeyword, filteredTracks]);
 
   // Computed summary metrics
   const summary = useMemo(() => {
@@ -844,10 +881,36 @@ export const DocumentTrackingPage: React.FC = () => {
                    <th className="p-1 text-center whitespace-nowrap">TT</th>
                  </tr>
                </thead>
-               <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 leading-tight">
-                {filteredTracks.map((track) => (
-                  <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc({ ...track, notes: (track.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim() })}>
-                    <td className="px-1 py-1 text-center">
+                <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 leading-tight">
+                {filteredTracks.map((track) => {
+                  const isMatch = Boolean(
+                    (highlightId && track.id === highlightId) ||
+                    (highlightKeyword && (
+                      (track.contractName || '').toLowerCase().includes(highlightKeyword) ||
+                      (track.contractNo || '').toLowerCase().includes(highlightKeyword)
+                    ))
+                  );
+
+                  return (
+                  <tr 
+                    key={track.id} 
+                    className={`transition-all align-top cursor-pointer ${
+                      isMatch
+                        ? `highlighted-doc-row bg-amber-50/90 ring-2 ring-inset ring-amber-400 border-y-2 border-amber-400 shadow-sm ${isHighlightActive ? 'animate-pulse' : ''}`
+                        : 'hover:bg-blue-50/20'
+                    }`} 
+                    onClick={() => {
+                      setIsHighlightActive(false);
+                      setEditingDoc({ ...track, notes: (track.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim() });
+                    }}
+                  >
+                    <td className="px-1 py-1 text-center relative">
+                      {isMatch && (
+                        <span className="absolute -left-1 top-1 flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                      )}
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         track.side === 'Bên nhận' ? 'bg-emerald-50 text-emerald-600' :
                         track.side === 'Bên gửi' ? 'bg-indigo-50 text-indigo-600' :
@@ -858,7 +921,12 @@ export const DocumentTrackingPage: React.FC = () => {
                     </td>
                     {!projectId && <td className="px-1 py-1 text-[13px] font-bold text-slate-600">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
                     <td className="px-1 py-1 font-mono text-[11px] break-words break-all">{track.contractNo || '-'}</td>
-                    <td className="px-1 py-1"><div className="font-extrabold text-slate-900 leading-snug max-w-[160px] whitespace-normal line-clamp-2" title={track.contractName}>{track.contractName}</div></td>
+                    <td className="px-1 py-1">
+                      <div className="font-extrabold text-slate-900 leading-snug max-w-[160px] whitespace-normal line-clamp-2" title={track.contractName}>
+                        {track.contractName}
+                        {isMatch && <span className="ml-1 inline-block text-[9px] bg-amber-500 text-white font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Mới</span>}
+                      </div>
+                    </td>
                     <td className="px-1 py-1"><div className="font-bold text-slate-800 max-w-[130px] whitespace-normal line-clamp-2" title={track.company}>{track.company || '-'}</div></td>
                     <td className="px-1 py-1">
                       <div className="font-semibold text-slate-700">{track.receiverName || '-'}</div>
@@ -970,7 +1038,8 @@ export const DocumentTrackingPage: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
 
