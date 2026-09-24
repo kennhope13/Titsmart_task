@@ -408,7 +408,7 @@ export const OfficeCostsPage: React.FC = () => {
                       key={exp.id}
                       className={`transition-colors align-middle ${
                         isHighlighted
-                          ? 'highlighted-expense-row bg-amber-50/70 border-l-4 border-l-amber-400 border-y border-amber-200/50 font-medium'
+                          ? 'highlighted-expense-row bg-amber-100/60 hover:bg-amber-100/80 border-l-4 border-l-amber-500 border-y border-amber-300/70 ring-1 ring-inset ring-amber-300/50 font-medium'
                           : 'hover:bg-slate-50/50'
                       } ${canManage ? 'cursor-pointer' : 'cursor-default'}`}
                       onClick={() => {
