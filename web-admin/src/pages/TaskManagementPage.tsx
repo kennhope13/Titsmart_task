@@ -142,6 +142,30 @@ export const TaskManagementPage: React.FC = () => {
 
   const selectedProjectFromUrl = resolvedProjectCode || searchParams.get('project') || '';
 
+  const highlightTaskId = searchParams.get('taskId');
+  const highlightKeyword = searchParams.get('highlight') || searchParams.get('search');
+  const [isHighlightActive, setIsHighlightActive] = useState(false);
+
+  useEffect(() => {
+    if (highlightTaskId || highlightKeyword) {
+      setIsHighlightActive(true);
+      const timer = setTimeout(() => setIsHighlightActive(false), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightTaskId, highlightKeyword]);
+
+  useEffect(() => {
+    if (isHighlightActive) {
+      const timer = setTimeout(() => {
+        const el = document.querySelector('.system-row-highlighted');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isHighlightActive, tasks]);
+
   const handleAcceptTask = async (task: Task) => {
     handleUpdateTaskSync(task.id, { status: 'Đang làm', progress: 0.05, constrStatus: 'Đang thi công' });
     triggerToast('Đã xác nhận nhận việc!', 'success');
@@ -2004,7 +2028,16 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                     stickyBg = 'bg-[#ecfdf5]';
                   }
                   
-                  const rowClass = `hover:bg-slate-100 transition-colors border-b border-slate-50 ${rowBg}`;
+                  const isHighlighted = isHighlightActive && (
+                    (highlightTaskId && t.id === highlightTaskId) ||
+                    (highlightKeyword && (
+                      t.name?.toLowerCase().includes(highlightKeyword.toLowerCase()) ||
+                      t.stt?.toLowerCase() === highlightKeyword.toLowerCase() ||
+                      (t as any).computedStt?.toString().toLowerCase() === highlightKeyword.toLowerCase()
+                    ))
+                  );
+
+                  const rowClass = `hover:bg-slate-100 transition-colors border-b border-slate-50 ${isHighlighted ? 'highlighted-task-row system-row-highlighted' : rowBg}`;
 
                   return (
                     <tr key={t.id} className={rowClass} onDoubleClick={() => handleOpenEditModal(t)}>
