@@ -420,11 +420,22 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       titleLower.includes('công việc') || 
       titleLower.includes('nhiệm vụ') || 
       msgLower.includes('nhiệm vụ') || 
-      msgLower.includes('công việc')
+      msgLower.includes('công việc') ||
+      (notification.type && notification.type.startsWith('task_assigned'))
     ) {
       const params = new URLSearchParams();
       if (taskName) params.set('highlight', taskName);
       else if (itemName) params.set('highlight', itemName);
+
+      const role = String(user?.role || '').toLowerCase();
+      const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || user?.username === 'admin';
+
+      if (isAdmin) {
+        params.set('tab', 'assigned');
+        navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'assigned' } });
+      } else {
+        navigate(`/my-tasks?${params.toString()}`);
+      }
     } else if (
       titleLower.includes('chấm công') || 
       titleLower.includes('vào ca') || 
