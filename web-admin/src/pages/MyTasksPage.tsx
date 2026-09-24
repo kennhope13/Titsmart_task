@@ -174,11 +174,11 @@ export const MyTasksPage: React.FC = () => {
                       onClick={() => setIsHighlightActive(false)}
                       className={`flex flex-col bg-white border rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md ${
                         isMatch
-                          ? `highlighted-task-card ring-2 ring-amber-400 bg-amber-50/70 border-amber-400 shadow-md ${isHighlightActive ? 'animate-pulse' : ''}`
+                          ? 'highlighted-task-card ring-1 ring-amber-300 bg-amber-50/50 border-amber-300'
                           : isWaiting ? 'border-amber-300 ring-1 ring-amber-100' : isDone ? 'border-emerald-200 opacity-70' : 'border-slate-200'
                       }`}
                     >
-                      <div className={`px-4 py-2 border-b text-xs font-bold flex justify-between items-center ${isMatch ? 'bg-amber-100/80 text-amber-900 border-amber-200' : isWaiting ? 'bg-amber-50 text-amber-800 border-amber-100' : isDone ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 'bg-blue-50 text-blue-800 border-blue-100'}`}>
+                      <div className={`px-4 py-2 border-b text-xs font-bold flex justify-between items-center ${isMatch ? 'bg-amber-50/90 text-amber-900 border-amber-200' : isWaiting ? 'bg-amber-50 text-amber-800 border-amber-100' : isDone ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 'bg-blue-50 text-blue-800 border-blue-100'}`}>
                         <span className="truncate pr-2">{p ? p.name : t.projectCode}</span>
                         <span className="shrink-0 px-2 py-0.5 bg-white/60 rounded-full">{t.status || 'Chưa làm'}</span>
                       </div>

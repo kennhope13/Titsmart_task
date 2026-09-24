@@ -904,7 +904,7 @@ export const DocumentTrackingPage: React.FC = () => {
                     key={track.id} 
                     className={`transition-all align-top cursor-pointer ${
                       isMatch
-                        ? `highlighted-doc-row bg-amber-100/80 hover:bg-amber-100 ring-2 ring-inset ring-amber-400 border-y-2 border-amber-400 shadow-sm ${isHighlightActive ? 'animate-pulse' : ''}`
+                        ? 'highlighted-doc-row bg-amber-50/70 hover:bg-amber-50/90 border-l-4 border-l-amber-400 border-y border-amber-200/50'
                         : 'hover:bg-blue-50/20'
                     }`} 
                     onClick={() => {

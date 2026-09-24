@@ -822,7 +822,7 @@ export const AttendancePage: React.FC = () => {
                       onClick={() => setIsHighlightActive(false)}
                       className={`transition-colors ${
                         isMatch
-                          ? `highlighted-leave-row bg-amber-100/90 ring-2 ring-inset ring-amber-400 font-semibold ${isHighlightActive ? 'animate-pulse' : ''}`
+                          ? 'highlighted-leave-row bg-amber-50/70 border-l-4 border-l-amber-400 border-y border-amber-200/50 font-medium'
                           : 'hover:bg-slate-50'
                       }`}
                     >

@@ -248,7 +248,7 @@ export const TaskAssignmentPage: React.FC = () => {
                       key={t.id} 
                       className={`transition-all cursor-pointer ${
                         isTargetTask 
-                          ? 'highlighted-task-assignment-row bg-amber-100/90 ring-2 ring-inset ring-amber-400 border-y-2 border-amber-400 font-medium' 
+                          ? 'highlighted-task-assignment-row bg-amber-50/70 border-l-4 border-l-amber-400 border-y border-amber-200/50 font-medium' 
                           : isChecked && activeTab === 'unassigned' 
                             ? 'bg-blue-50/50' 
                             : 'bg-white hover:bg-blue-50/50'
