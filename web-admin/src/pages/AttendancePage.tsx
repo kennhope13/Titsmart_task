@@ -77,6 +77,14 @@ export const AttendancePage: React.FC = () => {
   // State cho Xin nghỉ phép
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaveType, setLeaveType] = useState<LeaveType>('Nghỉ phép năm');
+  const [leaveStartDate, setLeaveStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [leaveEndDate, setLeaveEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [leaveReason, setLeaveReason] = useState('');
+  const [reviewLeave, setReviewLeave] = useState<LeaveRequest | null>(null);
+  const [reviewNote, setReviewNote] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const checkOutFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -108,14 +116,6 @@ export const AttendancePage: React.FC = () => {
       };
     }
   }, [isHighlightActive, highlightLeaveId, leaves]);
-  const [leaveType, setLeaveType] = useState<LeaveType>('Nghỉ phép năm');
-  const [leaveStartDate, setLeaveStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [leaveEndDate, setLeaveEndDate] = useState(new Date().toISOString().split('T')[0]);
-  const [leaveReason, setLeaveReason] = useState('');
-  const [reviewLeave, setReviewLeave] = useState<LeaveRequest | null>(null);
-  const [reviewNote, setReviewNote] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const checkOutFileRef = useRef<HTMLInputElement>(null);
 
   const handleExportExcel = (format: 'xlsx' | 'csv' | 'docx' = 'xlsx') => {
     if (!filteredLogs.length) return;

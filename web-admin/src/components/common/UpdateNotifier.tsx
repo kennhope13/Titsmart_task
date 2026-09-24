@@ -32,6 +32,7 @@ function compareVersions(a: string, b: string): number {
 
 export const UpdateNotifier: React.FC = () => {
   const [state, setState] = useState<UiState>(initialState);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   // ─── Electron auto-update (giữ nguyên logic cũ) ───
   useEffect(() => {
@@ -112,8 +113,6 @@ export const UpdateNotifier: React.FC = () => {
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [checkWebVersion]);
-
-  if (!state.visible) return null;
 
   const dismiss = () => setState({ ...state, visible: false });
 
@@ -201,8 +200,6 @@ export const UpdateNotifier: React.FC = () => {
     }
   };
 
-  const [isInstalling, setIsInstalling] = useState(false);
-
   const handleInstallAndRestart = () => {
     setIsInstalling(true);
     // Trigger electron auto-updater install
@@ -212,6 +209,10 @@ export const UpdateNotifier: React.FC = () => {
       console.error(e);
     }
   };
+
+  if (!state.visible && !isInstalling) {
+    return null;
+  }
 
   return (
     <>
@@ -233,6 +234,7 @@ export const UpdateNotifier: React.FC = () => {
         </div>
       )}
 
+      {state.visible && (
       <div className="fixed bottom-24 md:bottom-5 right-3 md:right-5 z-[9999] w-[380px] max-w-[calc(100vw-1.5rem)] pb-[env(safe-area-inset-bottom,0px)]">
         <div className="rounded-xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
           <div className="flex items-start justify-between gap-3 px-4 pt-3 pb-1">
@@ -375,6 +377,7 @@ export const UpdateNotifier: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
     </>
   );
 };
