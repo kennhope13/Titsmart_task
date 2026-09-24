@@ -20,10 +20,25 @@ export const TaskAssignmentPage: React.FC = () => {
     setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  const handleQuickApprove = (e: React.MouseEvent, taskId: string, taskName: string) => {
+  const handleQuickApprove = async (e: React.MouseEvent, task: any) => {
     e.stopPropagation();
-    updateTask(taskId, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' });
-    triggerToast(`Đã nghiệm thu hoàn thành: "${taskName}"!`, 'success');
+    updateTask(task.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' });
+    triggerToast(`Đã nghiệm thu hoàn thành: "${task.name}"!`, 'success');
+
+    const store = useRealtimeStore.getState();
+    const adminName = user?.name || user?.username || 'Quản lý';
+    store.logActivity(`Quản lý ${adminName} đã NGHIỆM THU HOÀN THÀNH công việc: "${task.name}"`, task.projectCode);
+
+    if (store.addNotification && (task.assignedEngineerId || task.assignedEngineerName)) {
+      const engId = task.assignedEngineerId || '';
+      const engName = task.assignedEngineerName?.split('|')[0] || '';
+      await store.addNotification({
+        title: `Công việc đã nghiệm thu`,
+        message: `Quản lý ${adminName} đã nghiệm thu hoàn thành công việc "${task.name}" [${task.projectCode}].`,
+        type: `task_approved:::${engId}:::${engName}`,
+        icon: 'verified'
+      });
+    }
   };
 
   const handleRowClick = (task: any, pCode?: string) => {
@@ -322,7 +337,7 @@ export const TaskAssignmentPage: React.FC = () => {
                           {t.status === 'Chờ nghiệm thu' && hasPermission(user, 'APPROVE_TASKS') && (
                             <button
                               type="button"
-                              onClick={(e) => handleQuickApprove(e, t.id, t.name)}
+                              onClick={(e) => handleQuickApprove(e, t)}
                               className="px-2 py-0.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold text-[10px] rounded shadow-xs flex items-center gap-1 transition-all"
                               title="Nghiệm thu hoàn thành ngay lập tức"
                             >

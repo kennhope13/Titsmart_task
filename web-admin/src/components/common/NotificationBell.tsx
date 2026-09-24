@@ -312,13 +312,19 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     } else if (
       titleLower.includes('đã hoàn thành') || 
       titleLower.includes('nghiệm thu') ||
-      (notification.type && notification.type.startsWith('task_completed'))
+      (notification.type && (notification.type.startsWith('task_completed') || notification.type.startsWith('task_approved')))
     ) {
+      const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
       const params = new URLSearchParams();
-      params.set('tab', 'completed');
       if (taskName) params.set('highlight', taskName);
       else if (itemName) params.set('highlight', itemName);
-      navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'completed' } });
+
+      if (isAdmin) {
+        params.set('tab', 'completed');
+        navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'completed' } });
+      } else {
+        navigate(`/my-tasks?${params.toString()}`);
+      }
     } else if (
       titleLower.includes('đã nhận việc') || 
       titleLower.includes('báo cáo xong') ||

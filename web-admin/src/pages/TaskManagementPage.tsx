@@ -186,6 +186,26 @@ export const TaskManagementPage: React.FC = () => {
     }
   };
 
+  const handleApproveTask = async (task: Task) => {
+    handleUpdateTaskSync(task.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' });
+    triggerToast(`Đã nghiệm thu hoàn thành: "${task.name}"!`, 'success');
+
+    const store = useRealtimeStore.getState();
+    const adminName = authStore.user?.name || authStore.user?.username || 'Quản lý';
+    store.logActivity(`Quản lý ${adminName} đã NGHIỆM THU HOÀN THÀNH công việc: "${task.name}"`, task.projectName || task.projectCode);
+
+    if (store.addNotification && (task.assignedEngineerId || task.assignedEngineerName)) {
+      const engId = task.assignedEngineerId || '';
+      const engName = task.assignedEngineerName?.split('|')[0] || '';
+      await store.addNotification({
+        title: 'Công việc đã được nghiệm thu',
+        message: `Quản lý ${adminName} đã nghiệm thu hoàn thành công việc "${task.name}" [${task.projectCode}].`,
+        type: `task_approved:::${engId}:::${engName}`,
+        icon: 'verified'
+      });
+    }
+  };
+
   // Cập nhật trạng thái công việc (độc lập audit theo từng tab)
   const handleUpdateTaskSync = (id: string, updates: Partial<Task>) => {
     updateTask(id, updates);
@@ -2128,7 +2148,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                               <button onClick={(e) => { e.stopPropagation(); handleUpdateTaskSync(t.id, { status: 'Chờ nghiệm thu', progress: 1, constrStatus: 'Đã hoàn thành' }); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Báo cáo xong</button>
                             )}
                             {hasPermission(authStore.user, 'APPROVE_TASKS') && t.status === 'Chờ nghiệm thu' && (
-                              <button onClick={(e) => { e.stopPropagation(); handleUpdateTaskSync(t.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' }); }} className="text-[9px] bg-purple-500 pointer-events-auto hover:bg-purple-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nghiệm thu</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleApproveTask(t); }} className="text-[9px] bg-purple-500 pointer-events-auto hover:bg-purple-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nghiệm thu</button>
                             )}
                             
                             
