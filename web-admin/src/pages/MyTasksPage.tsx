@@ -129,11 +129,13 @@ export const MyTasksPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
-      <div className="border-b border-slate-200 bg-white shadow-sm px-2 sm:px-4 md:px-6 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 relative z-50 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
-        <div className="flex items-center gap-1.5 sm:gap-3 w-full md:w-auto min-w-0 overflow-hidden">
-          <h1 className="page-title text-xs sm:text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-1.5 sm:pl-2 uppercase shrink-0 whitespace-nowrap">
-            CÔNG VIỆC
-          </h1>
+      <div className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 md:pr-20 py-2.5 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 md:gap-2 relative z-50 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 w-full md:w-auto min-w-0">
+          <div className="flex items-center justify-between gap-2 shrink-0 h-7 sm:h-8 md:h-auto pr-12 md:pr-0">
+            <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">
+              CÔNG VIỆC
+            </h1>
+          </div>
           <SharedTaskTabs activeTab="my-tasks" />
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
