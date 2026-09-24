@@ -77,12 +77,21 @@ export const canManageItem = (user: AuthUser | null | undefined, item: any, requ
   const currentUserName = String(user.name || '').trim().toLowerCase();
   const currentUsername = String(user.username || '').trim().toLowerCase();
 
-  const itemCreatorId = String(item.createdById || item.created_by_id || item.uploaderId || item.uploader_id || item.userId || item.user_id || '').trim().toLowerCase();
-  const itemCreatorName = String(item.createdByName || item.created_by_name || item.createdBy || item.created_by || item.uploaderName || item.user || '').trim().toLowerCase();
+  const itemCreatorId = String(
+    item.createdById || item.created_by_id || item.uploaderId || item.uploader_id || 
+    item.userId || item.user_id || item.authorId || item.author_id || item.assignerId || item.assigner_id || ''
+  ).trim().toLowerCase();
+
+  const itemCreatorName = String(
+    item.createdByName || item.created_by_name || item.createdBy || item.created_by || 
+    item.uploaderName || item.uploader_name || item.user || item.userName || item.user_name ||
+    item.author || item.authorName || item.spenderName || item.assignerName || ''
+  ).trim().toLowerCase();
+
   const itemUpdatedBy = String(item.updatedBy || item.updated_by || '').trim().toLowerCase();
 
   // 1. Khớp ID người tạo
-  if (currentUserId && itemCreatorId && currentUserId === itemCreatorId) return true;
+  if (currentUserId && itemCreatorId && (currentUserId === itemCreatorId || currentUserId.includes(itemCreatorId) || itemCreatorId.includes(currentUserId))) return true;
 
   // 2. Khớp Tên người tạo
   if (currentUserName && itemCreatorName && (itemCreatorName.includes(currentUserName) || currentUserName.includes(itemCreatorName))) return true;
@@ -91,7 +100,7 @@ export const canManageItem = (user: AuthUser | null | undefined, item: any, requ
   if (currentUsername && itemCreatorName && itemCreatorName === currentUsername) return true;
 
   // 4. Fallback: Nếu không có creator field nhưng updatedBy khớp chính chủ
-  if (itemUpdatedBy && (itemUpdatedBy === currentUserName || itemUpdatedBy === currentUsername)) return true;
+  if (itemUpdatedBy && (itemUpdatedBy === currentUserName || itemUpdatedBy === currentUsername || (currentUserName && itemUpdatedBy.includes(currentUserName)))) return true;
 
   return false;
 };

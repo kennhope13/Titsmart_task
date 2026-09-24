@@ -53,15 +53,8 @@ export const AttendancePage: React.FC = () => {
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
 
   const [mainTab, setMainTab] = useState<'attendance' | 'leave'>('attendance');
-
-  useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam === 'leave' || tabParam === 'leaves') {
-      setMainTab('leave');
-    } else if (tabParam === 'attendance') {
-      setMainTab('attendance');
-    }
-  }, [searchParams]);
+  const [highlightLeaveId, setHighlightLeaveId] = useState<string | null>(null);
+  const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSession, setActiveSession] = useState<AttendanceLog | null>(null);
@@ -84,6 +77,37 @@ export const AttendancePage: React.FC = () => {
   // State cho Xin nghỉ phép
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    const leaveIdParam = searchParams.get('leaveId') || searchParams.get('id');
+    const highlightParam = searchParams.get('highlight');
+    if (tabParam === 'leave' || tabParam === 'leaves' || leaveIdParam || highlightParam) {
+      setMainTab('leave');
+      if (leaveIdParam) {
+        setHighlightLeaveId(leaveIdParam);
+        setIsHighlightActive(true);
+      }
+    } else if (tabParam === 'attendance') {
+      setMainTab('attendance');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (isHighlightActive && highlightLeaveId) {
+      const timer = setTimeout(() => {
+        const elem = document.querySelector('.highlighted-leave-row');
+        if (elem) {
+          elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 400);
+      const fadeTimer = setTimeout(() => setIsHighlightActive(false), 9000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(fadeTimer);
+      };
+    }
+  }, [isHighlightActive, highlightLeaveId, leaves]);
   const [leaveType, setLeaveType] = useState<LeaveType>('Nghỉ phép năm');
   const [leaveStartDate, setLeaveStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [leaveEndDate, setLeaveEndDate] = useState(new Date().toISOString().split('T')[0]);
@@ -790,8 +814,18 @@ export const AttendancePage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {leaves.map((l, idx) => (
-                    <tr key={l.id} className="hover:bg-slate-50 transition-colors">
+                  {leaves.map((l, idx) => {
+                    const isMatch = Boolean(highlightLeaveId && l.id === highlightLeaveId);
+                    return (
+                    <tr 
+                      key={l.id} 
+                      onClick={() => setIsHighlightActive(false)}
+                      className={`transition-colors ${
+                        isMatch
+                          ? `highlighted-leave-row bg-amber-100/90 ring-2 ring-inset ring-amber-400 font-semibold ${isHighlightActive ? 'animate-pulse' : ''}`
+                          : 'hover:bg-slate-50'
+                      }`}
+                    >
                       <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
                       <td className="p-3 font-bold text-slate-800">{l.userName}</td>
                       <td className="p-3 font-semibold text-slate-700">{l.leaveType}</td>
@@ -835,7 +869,7 @@ export const AttendancePage: React.FC = () => {
                               Duyệt
                             </button>
                           )}
-                          {(isAdmin || l.userId === user?.id) && (
+                          {(isAdmin || l.userId === user?.id || (user?.username && l.userName === user.name)) && (
                             <button
                               onClick={() => handleDeleteLeave(l.id)}
                               className="w-7 h-7 rounded-full inline-flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
@@ -846,7 +880,8 @@ export const AttendancePage: React.FC = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )}

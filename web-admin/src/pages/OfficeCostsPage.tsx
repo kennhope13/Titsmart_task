@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
-import { useAuthStore, hasPermission } from '../services/authStore';
+import { useAuthStore, hasPermission, canManageItem } from '../services/authStore';
 import { Modal } from '../components/common/Modal';
 import { FileViewerItem } from '../components/common/FileViewerItem';
 import { Toast } from '../components/common/Toast';
@@ -52,6 +53,11 @@ export const OfficeCostsPage: React.FC = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [searchParams] = useSearchParams();
+  const [highlightExpenseId, setHighlightExpenseId] = useState<string | null>(null);
+  const [highlightKeyword, setHighlightKeyword] = useState<string | null>(null);
+  const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
+
   const [expenseFilterSpender, setExpenseFilterSpender] = useState('all');
   const [expenseFilterContent, setExpenseFilterContent] = useState('all');
   const [expenseFilterUnit, setExpenseFilterUnit] = useState('all');
@@ -59,27 +65,6 @@ export const OfficeCostsPage: React.FC = () => {
   const [expenseFilterDateTo, setExpenseFilterDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
-
-  const handleExportExcel = () => {
-    const data = filteredExpenses.map((exp, index) => ({
-      'STT': index + 1,
-      'Ngày': exp.date || '',
-      'Người chi': exp.spenderName || '',
-      'Nội dung': exp.content || '',
-      'Diễn giải': exp.description || '',
-      'ĐVT': exp.unit || '',
-      'Số lượng': exp.quantity || 0,
-      'Đơn giá (đ)': exp.unitPrice || 0,
-      'Thuế VAT (%)': exp.taxAmount || 0,
-      'Thành tiền (đ)': exp.totalAmount || 0,
-      'Thực thu (đ)': exp.incomeAmount || 0,
-      'Ghi chú': exp.notes || ''
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'ChiPhiVanPhong');
-    XLSX.writeFile(wb, `Chi_Phi_Van_Phong_${new Date().toISOString().split('T')[0]}.xlsx`);
-  };
 
   const [newExpenseData, setNewExpenseData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -131,6 +116,56 @@ export const OfficeCostsPage: React.FC = () => {
       return true;
     });
   }, [currentProjExpenses, expenseFilterSpender, expenseFilterContent, expenseFilterUnit, expenseFilterDateFrom, expenseFilterDateTo, searchQuery]);
+
+  useEffect(() => {
+    const idParam = searchParams.get('id') || searchParams.get('expenseId');
+    const highlightParam = searchParams.get('highlight') || searchParams.get('search');
+    if (idParam) {
+      setHighlightExpenseId(idParam);
+      setIsHighlightActive(true);
+    }
+    if (highlightParam) {
+      setHighlightKeyword(highlightParam.toLowerCase().trim());
+      setIsHighlightActive(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (isHighlightActive && (highlightExpenseId || highlightKeyword)) {
+      const timer = setTimeout(() => {
+        const elem = document.querySelector('.highlighted-expense-row');
+        if (elem) {
+          elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 400);
+      const fadeTimer = setTimeout(() => setIsHighlightActive(false), 9000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(fadeTimer);
+      };
+    }
+  }, [isHighlightActive, highlightExpenseId, highlightKeyword, filteredExpenses]);
+
+  const handleExportExcel = () => {
+    const data = filteredExpenses.map((exp, index) => ({
+      'STT': index + 1,
+      'Ngày': exp.date || '',
+      'Người chi': exp.spenderName || '',
+      'Nội dung': exp.content || '',
+      'Diễn giải': exp.description || '',
+      'ĐVT': exp.unit || '',
+      'Số lượng': exp.quantity || 0,
+      'Đơn giá (đ)': exp.unitPrice || 0,
+      'Thuế VAT (%)': exp.taxAmount || 0,
+      'Thành tiền (đ)': exp.totalAmount || 0,
+      'Thực thu (đ)': exp.incomeAmount || 0,
+      'Ghi chú': exp.notes || ''
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'ChiPhiVanPhong');
+    XLSX.writeFile(wb, `Chi_Phi_Van_Phong_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-slate-50 overflow-hidden relative">
@@ -357,44 +392,75 @@ export const OfficeCostsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-[12px] text-slate-700 leading-tight">
-                {filteredExpenses.map((exp) => (
-                  <tr key={exp.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => { if (hasPermission(user, 'EDIT_EXPENSES')) setEditingExpense(exp); }}>
-                    <td className="px-2 py-1.5 font-semibold text-slate-900 whitespace-nowrap">{exp.date ? exp.date.substring(2) : '-'}</td>
-                    <td className="px-2 py-1.5 font-semibold line-clamp-2" title={exp.spenderName}>{exp.spenderName || '-'}</td>
-                    <td className="px-2 py-1.5">
-                      <div className="font-bold text-slate-900 line-clamp-1" title={exp.content}>{exp.content}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-1" title={exp.description}>{exp.description}</div>
-                    </td>
-                    <td className="px-2 py-1.5 text-left">{exp.unit}</td>
-                    <td className="px-2 py-1.5 text-right">{exp.quantity || '-'}</td>
-                    <td className="px-2 py-1.5 text-right whitespace-nowrap">{exp.unitPrice ? exp.unitPrice.toLocaleString('vi-VN') : '-'}</td>
-                    <td className="px-2 py-1.5 text-right whitespace-nowrap">{exp.taxAmount ? `${exp.taxAmount}%` : '-'}</td>
-                    <td className="px-2 py-1.5 text-right font-bold text-rose-600 whitespace-nowrap">{exp.totalAmount ? exp.totalAmount.toLocaleString('vi-VN') : '-'}</td>
-                    <td className="px-2 py-1.5 text-right font-bold text-emerald-600 whitespace-nowrap">{exp.incomeAmount ? exp.incomeAmount.toLocaleString('vi-VN') : '-'}</td>
-                    <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
-                      {exp.invoiceUrl ? (
-                        <button onClick={() => setPreviewImage(exp.invoiceUrl!)} className="text-[10px] text-primary hover:underline font-bold whitespace-nowrap">Xem</button>
-                      ) : <span className="text-slate-300">-</span>}
-                    </td>
-                    <td className="px-2 py-1.5 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
-                    <td className="px-2 py-1.5">
-                      <AuditInfoCell updatedBy={exp.updatedBy} updatedAt={exp.updatedAt} />
-                    </td>
-                    {hasPermission(user, 'EDIT_EXPENSES') && (
-                      <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => {
-                          setDeleteConfirm({
-                            isOpen: true,
-                            id: exp.id,
-                            title: exp.description || exp.content || 'Chi phí'
-                          });
-                        }} className="text-slate-400 hover:text-rose-500 p-1">
-                          <span className="material-symbols-outlined text-[16px] block">delete</span>
-                        </button>
+                {filteredExpenses.map((exp) => {
+                  const canManage = canManageItem(user, exp, 'EDIT_EXPENSES');
+                  const isHighlighted = isHighlightActive && (
+                    (highlightExpenseId && String(exp.id) === String(highlightExpenseId)) ||
+                    (highlightKeyword && (
+                      exp.content?.toLowerCase().includes(highlightKeyword) ||
+                      exp.description?.toLowerCase().includes(highlightKeyword) ||
+                      exp.spenderName?.toLowerCase().includes(highlightKeyword)
+                    ))
+                  );
+
+                  return (
+                    <tr
+                      key={exp.id}
+                      className={`transition-colors align-middle ${
+                        isHighlighted
+                          ? 'highlighted-expense-row bg-amber-100/80 ring-2 ring-inset ring-amber-400 border-y-2 border-amber-400 font-medium'
+                          : 'hover:bg-slate-50/50'
+                      } ${canManage ? 'cursor-pointer' : 'cursor-default'}`}
+                      onClick={() => {
+                        if (canManage) setEditingExpense(exp);
+                        else triggerToast('Bạn không có quyền chỉnh sửa mục do người khác tạo', 'warning');
+                      }}
+                    >
+                      <td className="px-2 py-1.5 font-semibold text-slate-900 whitespace-nowrap">{exp.date ? exp.date.substring(2) : '-'}</td>
+                      <td className="px-2 py-1.5 font-semibold line-clamp-2" title={exp.spenderName}>{exp.spenderName || '-'}</td>
+                      <td className="px-2 py-1.5">
+                        <div className="font-bold text-slate-900 line-clamp-1" title={exp.content}>{exp.content}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-1" title={exp.description}>{exp.description}</div>
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td className="px-2 py-1.5 text-left">{exp.unit}</td>
+                      <td className="px-2 py-1.5 text-right">{exp.quantity || '-'}</td>
+                      <td className="px-2 py-1.5 text-right whitespace-nowrap">{exp.unitPrice ? exp.unitPrice.toLocaleString('vi-VN') : '-'}</td>
+                      <td className="px-2 py-1.5 text-right whitespace-nowrap">{exp.taxAmount ? `${exp.taxAmount}%` : '-'}</td>
+                      <td className="px-2 py-1.5 text-right font-bold text-rose-600 whitespace-nowrap">{exp.totalAmount ? exp.totalAmount.toLocaleString('vi-VN') : '-'}</td>
+                      <td className="px-2 py-1.5 text-right font-bold text-emerald-600 whitespace-nowrap">{exp.incomeAmount ? exp.incomeAmount.toLocaleString('vi-VN') : '-'}</td>
+                      <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
+                        {exp.invoiceUrl ? (
+                          <button onClick={() => setPreviewImage(exp.invoiceUrl!)} className="text-[10px] text-primary hover:underline font-bold whitespace-nowrap">Xem</button>
+                        ) : <span className="text-slate-300">-</span>}
+                      </td>
+                      <td className="px-2 py-1.5 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
+                      <td className="px-2 py-1.5">
+                        <AuditInfoCell updatedBy={exp.updatedBy} updatedAt={exp.updatedAt} />
+                      </td>
+                      <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
+                        {canManage ? (
+                          <button
+                            onClick={() => {
+                              setDeleteConfirm({
+                                isOpen: true,
+                                id: exp.id,
+                                title: exp.description || exp.content || 'Chi phí'
+                              });
+                            }}
+                            title="Xóa chi phí"
+                            className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[16px] block">delete</span>
+                          </button>
+                        ) : (
+                          <span className="text-slate-300 p-1 inline-block" title="Khóa: Chỉ người tạo hoặc Admin mới có quyền sửa/xóa">
+                            <span className="material-symbols-outlined text-[15px] block text-slate-300">lock</span>
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {filteredExpenses.length === 0 && (
                   <tr>
                     <td colSpan={13} className="px-2 py-8 text-center text-slate-500">Không có dữ liệu chi phí nào</td>

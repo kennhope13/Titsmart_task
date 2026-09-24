@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { useRealtimeStore } from '../services/realtimeStore';
@@ -7,6 +8,7 @@ import { useAuthStore } from '../services/authStore';
 export const MyTasksPage: React.FC = () => {
   const { tasks, projects, updateTask } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
+  const [searchParams] = useSearchParams();
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -15,6 +17,24 @@ export const MyTasksPage: React.FC = () => {
   };
 
   const [filterProjectCode, setFilterProjectCode] = useState('all');
+  const [highlightTaskId, setHighlightTaskId] = useState<string | null>(null);
+  const [highlightKeyword, setHighlightKeyword] = useState<string | null>(null);
+  const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
+
+  useEffect(() => {
+    const tid = searchParams.get('taskId') || searchParams.get('id');
+    const highlight = searchParams.get('highlight') || searchParams.get('search');
+    if (tid) {
+      setHighlightTaskId(tid);
+      setIsHighlightActive(true);
+      setFilterProjectCode('all');
+    }
+    if (highlight) {
+      setHighlightKeyword(highlight.toLowerCase().trim());
+      setIsHighlightActive(true);
+      setFilterProjectCode('all');
+    }
+  }, [searchParams]);
 
   // Background polling for tasks
   useEffect(() => {
@@ -36,6 +56,8 @@ export const MyTasksPage: React.FC = () => {
     }
     // Sort by status: Chờ nhận việc -> Đang làm -> others
     return filtered.sort((a, b) => {
+      if (highlightTaskId && a.id === highlightTaskId) return -1;
+      if (highlightTaskId && b.id === highlightTaskId) return 1;
       const rank = (status: string) => {
         if (status === 'Chờ nhận việc') return 1;
         if (status === 'Đang làm' || status === 'Chưa làm') return 2;
@@ -44,7 +66,23 @@ export const MyTasksPage: React.FC = () => {
       };
       return rank(a.status || '') - rank(b.status || '');
     });
-  }, [tasks, filterProjectCode, user]);
+  }, [tasks, filterProjectCode, user, highlightTaskId]);
+
+  useEffect(() => {
+    if (isHighlightActive && (highlightTaskId || highlightKeyword)) {
+      const timer = setTimeout(() => {
+        const elem = document.querySelector('.highlighted-task-card');
+        if (elem) {
+          elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 400);
+      const fadeTimer = setTimeout(() => setIsHighlightActive(false), 9000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(fadeTimer);
+      };
+    }
+  }, [isHighlightActive, highlightTaskId, highlightKeyword, myTasks]);
 
   const myProjects = useMemo(() => {
     const projectCodes = new Set(myTasks.map(t => t.projectCode));
@@ -125,10 +163,22 @@ export const MyTasksPage: React.FC = () => {
                   const isWaiting = t.status === 'Chờ nhận việc';
                   const isDoing = t.status === 'Đang làm' || t.status === 'Chưa làm';
                   const isDone = t.status === 'Chờ nghiệm thu' || t.status === 'Hoàn thành';
+                  const isMatch = Boolean(
+                    (highlightTaskId && t.id === highlightTaskId) ||
+                    (highlightKeyword && (t.name || '').toLowerCase().includes(highlightKeyword))
+                  );
                   
                   return (
-                    <div key={t.id} className={`flex flex-col bg-white border rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md ${isWaiting ? 'border-amber-300 ring-1 ring-amber-100' : isDone ? 'border-emerald-200 opacity-70' : 'border-slate-200'}`}>
-                      <div className={`px-4 py-2 border-b text-xs font-bold flex justify-between items-center ${isWaiting ? 'bg-amber-50 text-amber-800 border-amber-100' : isDone ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 'bg-blue-50 text-blue-800 border-blue-100'}`}>
+                    <div 
+                      key={t.id} 
+                      onClick={() => setIsHighlightActive(false)}
+                      className={`flex flex-col bg-white border rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md ${
+                        isMatch
+                          ? `highlighted-task-card ring-2 ring-amber-400 bg-amber-50/70 border-amber-400 shadow-md ${isHighlightActive ? 'animate-pulse' : ''}`
+                          : isWaiting ? 'border-amber-300 ring-1 ring-amber-100' : isDone ? 'border-emerald-200 opacity-70' : 'border-slate-200'
+                      }`}
+                    >
+                      <div className={`px-4 py-2 border-b text-xs font-bold flex justify-between items-center ${isMatch ? 'bg-amber-100/80 text-amber-900 border-amber-200' : isWaiting ? 'bg-amber-50 text-amber-800 border-amber-100' : isDone ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 'bg-blue-50 text-blue-800 border-blue-100'}`}>
                         <span className="truncate pr-2">{p ? p.name : t.projectCode}</span>
                         <span className="shrink-0 px-2 py-0.5 bg-white/60 rounded-full">{t.status || 'Chưa làm'}</span>
                       </div>
