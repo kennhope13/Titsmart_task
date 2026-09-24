@@ -227,15 +227,16 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
 
     const docName = track.contractNo || track.contractName || 'Hồ sơ';
     const notifKey = `due-doc-${track.id}-${effectiveDueDate}`;
+    const pCode = track.projectCode || 'COMPANY';
 
     if (diffDays < 0 && Math.abs(diffDays) <= 2) {
       newNotifs.push({
         id: notifKey,
         title: 'Hồ sơ quá hạn nộp',
-        message: `Hồ sơ "${docName}" đã quá hạn ${Math.abs(diffDays)} ngày (Hạn: ${effectiveDueDate}).`,
+        message: `[${pCode}] Hồ sơ "${docName}" đã quá hạn ${Math.abs(diffDays)} ngày (Hạn: ${effectiveDueDate}).`,
         timestamp: new Date().toISOString(),
         read: false,
-        type: 'system',
+        type: `document_due:::${pCode}`,
         icon: 'warning'
       });
     } else if (diffDays >= 0 && diffDays <= remind) {
@@ -243,11 +244,11 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
         id: notifKey,
         title: 'Nhắc hạn nộp hồ sơ',
         message: diffDays === 0 
-          ? `Hồ sơ "${docName}" đến hạn nộp hôm nay!` 
-          : `Hồ sơ "${docName}" sắp đến hạn nộp (Còn ${diffDays} ngày).`,
+          ? `[${pCode}] Hồ sơ "${docName}" đến hạn nộp hôm nay!` 
+          : `[${pCode}] Hồ sơ "${docName}" sắp đến hạn nộp (Còn ${diffDays} ngày).`,
         timestamp: new Date().toISOString(),
         read: false,
-        type: 'system',
+        type: `document_due:::${pCode}`,
         icon: 'notifications'
       });
     }
@@ -1995,9 +1996,8 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
         // Broadcast realtime notification
         const currentUser = useAuthStore.getState().user;
-        const isActorAdmin = currentUser?.role === 'admin' || currentUser?.role === 'quản trị viên' || currentUser?.role === 'pm' || currentUser?.role === 'quản lý dự án' || currentUser?.role === 'manager' || currentUser?.username === 'admin';
         const pCode = trackData.projectCode || 'COMPANY';
-        const targetScope = isActorAdmin ? 'ALL' : pCode;
+        const targetScope = pCode;
         const docName = trackData.contractName || trackData.contractNo || 'hồ sơ';
         const actorName = audit.updatedBy || currentUser?.name || currentUser?.username || 'Thành viên';
 
@@ -2043,10 +2043,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
         // Broadcast realtime notification
         const currentUser = useAuthStore.getState().user;
-        const isActorAdmin = currentUser?.role === 'admin' || currentUser?.role === 'quản trị viên' || currentUser?.role === 'pm' || currentUser?.role === 'quản lý dự án' || currentUser?.role === 'manager' || currentUser?.username === 'admin';
         const currentDoc = get().documentTracks.find(d => d.id === id);
         const pCode = fields.projectCode || currentDoc?.projectCode || 'COMPANY';
-        const targetScope = isActorAdmin ? 'ALL' : pCode;
+        const targetScope = pCode;
         const docName = fields.contractName || currentDoc?.contractName || fields.contractNo || currentDoc?.contractNo || 'hồ sơ';
         const actorName = audit.updatedBy || currentUser?.name || currentUser?.username || 'Thành viên';
 
@@ -2088,10 +2087,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         });
 
         const currentUser = useAuthStore.getState().user;
-        const isActorAdmin = currentUser?.role === 'admin' || currentUser?.role === 'quản trị viên' || currentUser?.role === 'pm' || currentUser?.role === 'quản lý dự án' || currentUser?.role === 'manager' || currentUser?.username === 'admin';
         const currentLog = get().fieldLogs.find(l => l.id === id);
         const pCode = updated?.projectCode || (input as any)?.projectCode || currentLog?.projectCode || 'COMPANY';
-        const targetScope = isActorAdmin ? 'ALL' : pCode;
+        const targetScope = pCode;
         const actorName = audit.updatedBy || currentUser?.name || currentUser?.username || 'Kỹ sư';
 
         get().addNotification({
@@ -2118,9 +2116,8 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         });
 
         const currentUser = useAuthStore.getState().user;
-        const isActorAdmin = currentUser?.role === 'admin' || currentUser?.role === 'quản trị viên' || currentUser?.role === 'pm' || currentUser?.role === 'quản lý dự án' || currentUser?.role === 'manager' || currentUser?.username === 'admin';
         const pCode = created.projectCode || input.projectCode || 'COMPANY';
-        const targetScope = isActorAdmin ? 'ALL' : pCode;
+        const targetScope = pCode;
         const actorName = audit.updatedBy || currentUser?.name || currentUser?.username || 'Kỹ sư';
 
         get().addNotification({
