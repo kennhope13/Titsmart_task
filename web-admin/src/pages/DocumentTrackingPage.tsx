@@ -14,7 +14,7 @@ import { FileUpload } from '../components/common/FileUpload';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
 
 export const DocumentTrackingPage: React.FC = () => {
-  const { documentTracks, projects, updateProject, addDocumentTrack, updateDocumentTrack, deleteDocumentTrack, logActivity } = useRealtimeStore();
+  const { documentTracks, projects, updateProject, addDocumentTrack, updateDocumentTrack, deleteDocumentTrack, fetchAccounting, logActivity } = useRealtimeStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -200,6 +200,14 @@ export const DocumentTrackingPage: React.FC = () => {
 
   // Filters state
   const [filterProjectCode, setFilterProjectCode] = useState('all');
+
+  useEffect(() => {
+    fetchAccounting();
+    const interval = setInterval(() => {
+      fetchAccounting();
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (resolvedProjectCode) {

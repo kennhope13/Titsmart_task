@@ -920,27 +920,27 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
               ...local,
               ...fetched,
               // Only fallback to local if fetched value is strictly empty string/undefined
-              contractNo: fetched.contractNo ?? local.contractNo ?? '',
-              contractName: fetched.contractName ?? local.contractName ?? '',
-              projectCode: fetched.projectCode ?? local.projectCode ?? '',
-              company: fetched.company ?? local.company ?? '',
-              receiverName: fetched.receiverName ?? local.receiverName ?? '',
-              phone: fetched.phone ?? local.phone ?? '',
-              address: fetched.address ?? local.address ?? '',
-              sendDate: fetched.sendDate ?? local.sendDate ?? '',
-              receiveDate: fetched.receiveDate ?? local.receiveDate ?? '',
-              dueDate: fetched.dueDate ?? local.dueDate ?? '',
+              contractNo: fetched.contractNo || local.contractNo || '',
+              contractName: fetched.contractName || local.contractName || '',
+              projectCode: fetched.projectCode || local.projectCode || '',
+              company: fetched.company || local.company || '',
+              receiverName: fetched.receiverName || local.receiverName || '',
+              phone: fetched.phone || local.phone || '',
+              address: fetched.address || local.address || '',
+              sendDate: fetched.sendDate || local.sendDate || '',
+              receiveDate: fetched.receiveDate || local.receiveDate || '',
+              dueDate: fetched.dueDate || local.dueDate || '',
               remindDays: fetched.remindDays ?? local.remindDays ?? 3,
-              docStatus: fetched.docStatus ?? local.docStatus ?? 'Chưa ký',
-              paymentStatus: fetched.paymentStatus ?? local.paymentStatus ?? 'Chưa thanh toán',
+              docStatus: fetched.docStatus || local.docStatus || 'Chưa ký',
+              paymentStatus: fetched.paymentStatus || local.paymentStatus || 'Chưa thanh toán',
               contractValue: fetched.contractValue ?? local.contractValue ?? 0,
               prepayPercent: fetched.prepayPercent ?? local.prepayPercent ?? 0,
               prepayAmount: fetched.prepayAmount ?? local.prepayAmount ?? 0,
               isCompleted: fetched.isCompleted !== undefined ? fetched.isCompleted : local.isCompleted,
-              docType: fetched.docType ?? local.docType ?? 'Giao',
-              side: fetched.side ?? local.side ?? 'Bên trả',
+              docType: fetched.docType || local.docType || 'Giao',
+              side: fetched.side || local.side || 'Bên trả',
               fileUrls: (fetched.fileUrls && fetched.fileUrls.length > 0) ? fetched.fileUrls : (local.fileUrls || []),
-              notes: fetched.notes ?? local.notes ?? '',
+              notes: (fetched.notes || local.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
               createdById: fetched.createdById || local.createdById || '',
               createdByName: fetched.createdByName || local.createdByName || '',
               updatedBy: fetched.updatedBy || local.updatedBy || '',
@@ -948,9 +948,18 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
             };
           });
 
+          // Only keep truly pending temporary optimistic items created in the last 15 seconds
           const fetchedIds = new Set(documentTracks.map(d => d.id));
-          const localOnlyDocs = currentLocal.filter(d => !fetchedIds.has(d.id));
-          const merged = [...mergedFetched, ...localOnlyDocs];
+          const now = Date.now();
+          const pendingOptimisticDocs = currentLocal.filter(d => {
+            if (fetchedIds.has(d.id)) return false;
+            const isTempId = d.id.startsWith('doc-') || d.id.startsWith('temp-') || d.id.startsWith('local-');
+            if (!isTempId) return false;
+            const idTimestamp = Number(d.id.replace(/\D/g, ''));
+            return Number.isFinite(idTimestamp) && (now - idTimestamp < 15000);
+          });
+
+          const merged = [...mergedFetched, ...pendingOptimisticDocs];
           nextState.documentTracks = filterByProject(merged, 'projectCode');
           
           // Auto generate due / overdue notifications for document tracks
