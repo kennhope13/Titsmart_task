@@ -297,6 +297,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       itemName = message.split(':').slice(1).join(':').trim();
     }
 
+    // Trích xuất tên công việc trong ngoặc kép nếu có
+    const quoteMatch = message.match(/"([^"]+)"/);
+    const taskName = quoteMatch ? quoteMatch[1] : '';
+
     if (titleLower.includes('hồ sơ') || msgLower.includes('hồ sơ') || (notification.type && notification.type.includes('document'))) {
       const params = new URLSearchParams();
       if (itemName) params.set('highlight', itemName);
@@ -310,7 +314,11 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       titleLower.includes('hoàn thành') || 
       (notification.type && (notification.type.startsWith('task_accepted') || notification.type.startsWith('task_completed')))
     ) {
-      navigate('/task-assignment?tab=assigned', { state: { tab: 'assigned' } });
+      const params = new URLSearchParams();
+      params.set('tab', 'assigned');
+      if (taskName) params.set('highlight', taskName);
+      else if (itemName) params.set('highlight', itemName);
+      navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'assigned' } });
     } else if (
       titleLower.includes('giao việc') || 
       titleLower.includes('công việc') || 
@@ -318,7 +326,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       msgLower.includes('nhiệm vụ') || 
       msgLower.includes('công việc')
     ) {
-      navigate('/my-tasks');
+      const params = new URLSearchParams();
+      if (taskName) params.set('highlight', taskName);
+      else if (itemName) params.set('highlight', itemName);
+      navigate(`/my-tasks${params.toString() ? `?${params.toString()}` : ''}`);
     } else if (titleLower.includes('nghỉ phép') || msgLower.includes('nghỉ phép')) {
       navigate('/attendance?tab=leaves');
     } else if (titleLower.includes('điểm danh') || msgLower.includes('điểm danh')) {
@@ -797,9 +808,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
               <p className="text-[11px] text-slate-600 mt-1 line-clamp-3 leading-relaxed">{incomingPopupNotif.message}</p>
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-[10px] text-slate-400 font-medium">Vừa xong</span>
-                <span className="text-[10px] text-primary font-bold opacity-70 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                  Nhấn để mở chi tiết &rarr;
-                </span>
               </div>
             </div>
           </div>

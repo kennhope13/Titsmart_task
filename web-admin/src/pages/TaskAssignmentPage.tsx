@@ -26,6 +26,8 @@ export const TaskAssignmentPage: React.FC = () => {
   const [filterProjectCode, setFilterProjectCode] = useState('all');
   const urlTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'my-tasks' | null;
   const highlightedTaskId = searchParams.get('taskId');
+  const highlightKeyword = searchParams.get('highlight')?.toLowerCase().trim() || null;
+  const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned' | 'my-tasks'>(() => urlTab || (location.state as any)?.tab || 'unassigned');
 
   useEffect(() => {
@@ -35,7 +37,10 @@ export const TaskAssignmentPage: React.FC = () => {
     } else if ((location.state as any)?.tab) {
       setActiveTab((location.state as any).tab);
     }
-  }, [location.state, searchParams]);
+    if (highlightedTaskId || highlightKeyword) {
+      setIsHighlightActive(true);
+    }
+  }, [location.state, searchParams, highlightedTaskId, highlightKeyword]);
 
   // Fast background polling fallback so task status updates immediately across all browsers
   useEffect(() => {
@@ -69,6 +74,22 @@ export const TaskAssignmentPage: React.FC = () => {
       return timeB - timeA;
     });
   }, [tasks, filterProjectCode, activeTab, highlightedTaskId]);
+
+  useEffect(() => {
+    if (isHighlightActive && (highlightedTaskId || highlightKeyword)) {
+      const timer = setTimeout(() => {
+        const elem = document.querySelector('.highlighted-task-assignment-row');
+        if (elem) {
+          elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 400);
+      const fadeTimer = setTimeout(() => setIsHighlightActive(false), 9000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(fadeTimer);
+      };
+    }
+  }, [isHighlightActive, highlightedTaskId, highlightKeyword, displayedTasks]);
 
   const handleToggleSelectAll = () => {
     if (selectedTaskIds.length === displayedTasks.length && displayedTasks.length > 0) {
@@ -215,13 +236,19 @@ export const TaskAssignmentPage: React.FC = () => {
                 displayedTasks.map((t, idx) => {
                   const p = projects.find(proj => proj.code === t.projectCode);
                   const isChecked = selectedTaskIds.includes(t.id);
-                  const isTargetTask = highlightedTaskId === t.id;
+                  const isTargetTask = isHighlightActive && (
+                    (highlightedTaskId && t.id === highlightedTaskId) ||
+                    (highlightKeyword && (
+                      t.name?.toLowerCase().includes(highlightKeyword) ||
+                      t.sectionName?.toLowerCase().includes(highlightKeyword)
+                    ))
+                  );
                   return (
                     <tr 
                       key={t.id} 
                       className={`transition-all cursor-pointer ${
                         isTargetTask 
-                          ? 'bg-amber-50/90 ring-2 ring-amber-400 font-medium animate-pulse' 
+                          ? 'highlighted-task-assignment-row bg-amber-100/90 ring-2 ring-inset ring-amber-400 border-y-2 border-amber-400 font-medium' 
                           : isChecked && activeTab === 'unassigned' 
                             ? 'bg-blue-50/50' 
                             : 'bg-white hover:bg-blue-50/50'
@@ -246,11 +273,6 @@ export const TaskAssignmentPage: React.FC = () => {
                       <td className="py-2.5 px-4 font-medium text-slate-800 text-xs border-l border-slate-200 flex flex-col">
                         <div className="flex items-center gap-2">
                           <span>{t.name}</span>
-                          {isTargetTask && (
-                            <span className="px-1.5 py-0.5 text-[9px] font-bold bg-amber-500 text-white rounded shrink-0 shadow-2xs">
-                              Vừa nhận/xong
-                            </span>
-                          )}
                         </div>
                         {t.sectionName && t.sectionName !== t.name && (
                           <span className="text-[10px] text-slate-500 mt-1">{t.sectionName}</span>
