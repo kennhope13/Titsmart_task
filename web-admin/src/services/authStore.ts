@@ -53,15 +53,23 @@ export const hasPermission = (user: AuthUser | null | undefined, perm: Permissio
 /**
  * Kiểm tra quyền quản lý (Sửa/Xóa):
  * - Admin / Quản trị viên / PM: Toàn quyền với tất cả file/hồ sơ/dữ liệu
- * - Nhân sự khác: Chỉ có quyền với file/hồ sơ DO CHÍNH MÌNH TẠO HOẶC TẢI LÊN
+ * - Nhân sự có quyền chi tiết tương ứng (VD: 'MANAGE_DOCUMENTS', 'EDIT_DOCUMENTS', 'DELETE_PROJECTS',...): Toàn quyền quản lý
+ * - Hoặc chính chủ người tạo/tải lên
  */
-export const canManageItem = (user: AuthUser | null | undefined, item: any): boolean => {
+export const canManageItem = (user: AuthUser | null | undefined, item: any, requiredPerm: Permission = 'MANAGE_DOCUMENTS'): boolean => {
   if (!user) return false;
   
   const role = String(user.role || '').toLowerCase();
   const username = String(user.username || '').toLowerCase();
   const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || username === 'admin';
   if (isAdmin) return true;
+
+  // Nếu người dùng được Admin tích chọn quyền chi tiết tương ứng (VD: Quản lý hồ sơ 'MANAGE_DOCUMENTS')
+  if (user.permissions && Array.isArray(user.permissions)) {
+    if (user.permissions.includes(requiredPerm) || user.permissions.includes('MANAGE_DOCUMENTS')) {
+      return true;
+    }
+  }
 
   if (!item) return false;
 
