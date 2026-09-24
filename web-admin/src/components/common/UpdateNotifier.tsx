@@ -210,41 +210,116 @@ export const UpdateNotifier: React.FC = () => {
     }
   };
 
+  // Tự động kích hoạt cài đặt và khởi động lại sau 2 giây khi đã tải xong trên Electron
+  useEffect(() => {
+    if (state.status === 'downloaded' && state.source === 'electron') {
+      const timer = setTimeout(() => {
+        handleInstallAndRestart();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [state.status, state.source]);
+
   if (!state.visible && !isInstalling) {
     return null;
   }
 
+  const isUpdating = state.status === 'downloading' || state.status === 'downloaded' || isInstalling;
+
   return (
     <>
-      {/* FULLSCREEN BLOCKING OVERLAY KHI ĐANG CÀI ĐẶT & KHỞI ĐỘNG LẠI HOẶC CẬP NHẬT */}
-      {isInstalling && (
-        <div className="fixed inset-0 z-[999999] bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white select-none cursor-wait animate-fadeIn">
-          <div className="bg-white/10 p-5 rounded-2xl border border-white/20 flex flex-col items-center max-w-sm w-full text-center shadow-2xl">
-            <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mb-4 text-emerald-400">
-              <Loader2 className="w-7 h-7 animate-spin" />
+      {/* ─── FULLSCREEN BLOCKING OVERLAY KHI ĐANG TẢI & CÀI ĐẶT BẢN CẬP NHẬT ─── */}
+      {isUpdating && (
+        <div 
+          className="fixed inset-0 z-[999999] bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 text-white select-none cursor-wait animate-fadeIn pointer-events-auto"
+          style={{ WebkitAppRegion: 'no-drag' } as any}
+        >
+          <div className="bg-slate-900/95 border border-slate-700/80 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
+            {/* Background Glow */}
+            <div className="absolute -top-16 -left-16 w-36 h-36 bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-16 -right-16 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-2xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center mb-4 text-sky-400 shadow-inner relative z-10">
+              {state.status === 'downloaded' ? (
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 animate-pulse" />
+              ) : isInstalling ? (
+                <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+              ) : (
+                <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
+              )}
             </div>
-            <h3 className="text-base font-bold text-white mb-1.5">Đang cài đặt bản cập nhật mới...</h3>
-            <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Hệ thống đang tiến hành cập nhật ứng dụng lên phiên bản <b>v{state.version || ''}</b> và sẽ tự động khởi động lại ngay. Vui lòng không tắt hoặc thao tác trên phần mềm.
+
+            {/* Title */}
+            <h2 className="text-lg sm:text-xl font-bold text-white mb-1.5 relative z-10">
+              {isInstalling 
+                ? 'Đang cài đặt bản cập nhật...'
+                : state.status === 'downloaded'
+                  ? 'Đã tải xong bản cập nhật!'
+                  : 'Đang tải bản cập nhật mới...'}
+            </h2>
+
+            {/* Version info */}
+            <p className="text-xs text-slate-300 font-medium mb-4 relative z-10">
+              Phiên bản hiện tại: <span className="font-bold text-slate-200">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</span>
+              {' → '}
+              Phiên bản mới: <span className="font-bold text-emerald-400">v{state.version || 'mới'}</span>
             </p>
-            <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-              <div className="bg-emerald-500 h-full w-full animate-pulse"></div>
+
+            {/* Progress bar */}
+            {state.status === 'downloading' && (
+              <div className="w-full mb-4 relative z-10">
+                <div className="flex justify-between items-center text-xs font-semibold text-slate-300 mb-1.5">
+                  <span>Tiến độ tải dữ liệu</span>
+                  <span className="text-sky-400 font-bold text-sm">{state.percent ?? 0}%</span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700/60 p-0.5">
+                  <div 
+                    className="bg-gradient-to-r from-sky-500 via-indigo-500 to-emerald-400 h-full transition-all duration-300 rounded-full shadow-sm"
+                    style={{ width: `${Math.max(state.percent ?? 0, 4)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Notice / Warning box */}
+            <div className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-left mb-4 flex items-start gap-2.5 relative z-10">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-[11px] sm:text-xs text-amber-200/90 leading-relaxed font-medium">
+                {state.status === 'downloaded' || isInstalling
+                  ? 'Hệ thống đang chuẩn bị cài đặt và sẽ tự động khởi động lại ứng dụng trong giây lát.'
+                  : 'Hệ thống đang tạm khóa thao tác để bảo toàn dữ liệu trong quá trình cập nhật. Vui lòng không đóng ứng dụng.'}
+              </p>
             </div>
+
+            {/* Actions for downloaded state */}
+            {state.status === 'downloaded' && !isInstalling && (
+              <button
+                onClick={handleInstallAndRestart}
+                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-98 relative z-10"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Cài đặt & Khởi động lại ngay
+              </button>
+            )}
+
+            {isInstalling && (
+              <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden relative z-10">
+                <div className="bg-emerald-500 h-full w-full animate-pulse"></div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {state.visible && (
+      {/* ─── TOAST / BANNER THÔNG BÁO KHI CÓ BẢN MỚI HOẶC LỖI (CHƯA TẢI) ─── */}
+      {state.visible && !isUpdating && (
       <div className="fixed bottom-24 md:bottom-5 right-3 md:right-5 z-[9999] w-[380px] max-w-[calc(100vw-1.5rem)] pb-[env(safe-area-inset-bottom,0px)]">
         <div className="rounded-xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
           <div className="flex items-start justify-between gap-3 px-4 pt-3 pb-1">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                {state.status === 'downloaded' ? (
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                ) : state.status === 'downloading' ? (
-                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                ) : state.source === 'web' ? (
+                {state.source === 'web' ? (
                   <Sparkles className="w-4 h-4 text-primary" />
                 ) : (
                   <Download className="w-4 h-4 text-primary" />
@@ -252,22 +327,16 @@ export const UpdateNotifier: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs md:text-sm font-extrabold text-slate-800">
-                  {state.status === 'downloaded'
-                    ? 'Đã sẵn sàng cài đặt'
-                    : state.status === 'downloading'
-                      ? 'Đang tải bản cập nhật'
-                      : 'Có bản cập nhật mới'}
+                  {state.status === 'error' ? 'Lỗi cập nhật' : 'Có bản cập nhật mới'}
                 </p>
                 <p className="text-[11px] text-slate-500 font-medium">
                   Phiên bản thiết bị: <span className="font-bold text-slate-700">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</span> → Mới: <span className="font-bold text-primary">v{state.version || 'mới'}</span>
                 </p>
               </div>
             </div>
-            {state.status !== 'downloading' && (
-              <button onClick={dismiss} className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer" title="Để sau">
-                <X className="w-4 h-4" />
-              </button>
-            )}
+            <button onClick={dismiss} className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer" title="Để sau">
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Web / Mobile: hiển thị danh sách notes dạng list gọn gàng */}
@@ -317,15 +386,6 @@ export const UpdateNotifier: React.FC = () => {
             </div>
           )}
 
-          {state.status === 'downloading' && (
-            <div className="px-4 pt-2">
-              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-[#00236F] transition-all" style={{ width: `${state.percent ?? 0}%` }} />
-              </div>
-              <p className="text-xs text-slate-500 mt-1.5">{state.percent ?? 0}%</p>
-            </div>
-          )}
-
           <div className="flex items-center justify-end gap-2 px-4 pb-3.5 pt-2">
             {state.status === 'available' && (
               <>
@@ -345,7 +405,10 @@ export const UpdateNotifier: React.FC = () => {
                   </button>
                 ) : (
                   <button
-                    onClick={() => window.electronAPI?.downloadUpdate()}
+                    onClick={() => {
+                      setState(s => ({ ...s, status: 'downloading', percent: 0 }));
+                      window.electronAPI?.downloadUpdate();
+                    }}
                     className="px-3 py-1.5 text-sm font-semibold text-white bg-[#00236F] hover:bg-[#001a56] rounded-lg transition-colors cursor-pointer active:scale-95"
                   >
                     Cập nhật ngay
@@ -353,26 +416,13 @@ export const UpdateNotifier: React.FC = () => {
                 )}
               </>
             )}
-            {state.status === 'downloading' && (
-              <span className="text-xs text-slate-400 inline-flex items-center gap-1">
-                <AlertTriangle className="w-3.5 h-3.5" /> Không đóng app khi đang tải
-              </span>
-            )}
-            {state.status === 'downloaded' && (
-              <>
-                <button
-                  onClick={dismiss}
-                  className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                >
-                  Để sau
-                </button>
-                <button
-                  onClick={handleInstallAndRestart}
-                  className="px-3 py-1.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-md hover:shadow-lg"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" /> Cài đặt & khởi động lại
-                </button>
-              </>
+            {state.status === 'error' && (
+              <button
+                onClick={dismiss}
+                className="px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
             )}
           </div>
         </div>
