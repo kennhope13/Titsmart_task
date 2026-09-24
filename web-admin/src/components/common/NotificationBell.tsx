@@ -64,6 +64,35 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   const tLow = title.toLowerCase();
   const mLow = message.toLowerCase();
 
+  // 0. SENDER / CREATOR FILTER: Người tạo ra hành động / thông báo thì TUYỆT ĐỐI KHÔNG nhận thông báo về chính mình
+  if (notification.senderId && myIds.includes(String(notification.senderId).toLowerCase())) {
+    return false;
+  }
+  if (notification.createdById && myIds.includes(String(notification.createdById).toLowerCase())) {
+    return false;
+  }
+  if (notification.senderName && myNames.some(n => String(notification.senderName).toLowerCase() === n)) {
+    return false;
+  }
+
+  // Nhận diện người thực hiện hành động qua nội dung message / title
+  for (const myName of myNames) {
+    if (
+      mLow.startsWith(myName + ' đã ') ||
+      mLow.startsWith(myName + ' vừa ') ||
+      mLow.startsWith('quản lý ' + myName + ' đã ') ||
+      mLow.startsWith('kỹ sư ' + myName + ' đã ') ||
+      mLow.startsWith('nhân sự ' + myName + ' đã ') ||
+      tLow.startsWith(myName + ' đã ') ||
+      tLow.startsWith(myName + ' vừa ')
+    ) {
+      return false; // Chính tài khoản hiện tại vừa tạo hành động này
+    }
+  }
+  if (isAdmin && (mLow.startsWith('quản trị hệ thống đã ') || mLow.startsWith('quản trị viên đã '))) {
+    return false; // Admin vừa thao tác hành động này
+  }
+
   // 1. Task assignment notifications ("Giao việc: ..."): ONLY for the assigned engineers, NEVER for the assigner / admin who assigned it
   if (title.startsWith('Giao việc:') || title.includes('được giao') || typeStr.startsWith('task_assigned')) {
     if (typeStr.startsWith('task_assigned:::')) {

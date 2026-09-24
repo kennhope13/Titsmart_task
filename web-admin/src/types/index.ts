@@ -187,6 +187,10 @@ export interface NotificationItem {
   type: 'task_assigned' | 'issue_alert' | 'material_update' | 'system' | string;
   icon?: string;
   link?: string;
+  senderId?: string;
+  senderName?: string;
+  createdById?: string;
+  createdByName?: string;
 }
 
 export type LeaveType = 'Nghỉ phép năm' | 'Nghỉ bệnh' | 'Nghỉ việc riêng' | 'Nghỉ không lương' | 'Khác';

@@ -1609,7 +1609,25 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     addNotification: async (notif) => {
       try {
-        const createdNotif = await api.notifications.create(notif);
+        const currentUser = (window as any).__titsmart_current_user || null;
+        let senderId = notif.senderId || notif.createdById || '';
+        let senderName = notif.senderName || notif.createdByName || '';
+        if (!senderId || !senderName) {
+          try {
+            const rawAuth = localStorage.getItem('auth_user') || localStorage.getItem('buildcore_auth_user');
+            if (rawAuth) {
+              const u = JSON.parse(rawAuth);
+              if (!senderId) senderId = u.id || '';
+              if (!senderName) senderName = u.name || u.username || '';
+            }
+          } catch {}
+        }
+        const payloadWithSender = {
+          ...notif,
+          senderId,
+          senderName
+        };
+        const createdNotif = await api.notifications.create(payloadWithSender);
         set((state) => {
           const nextNotifs = [createdNotif, ...state.notifications];
           persistAndNotify({ notifications: nextNotifs });

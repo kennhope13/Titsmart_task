@@ -1251,7 +1251,7 @@ export const api = {
   },
   notifications: {
     create: async (data: Omit<NotificationItem, 'id' | 'timestamp' | 'read'>) => {
-      const payload = {
+      const payload: any = {
         title: data.title,
         message: data.message,
         type: data.type,
@@ -1259,9 +1259,29 @@ export const api = {
         read: false,
         timestamp: new Date().toISOString()
       };
-      const { data: result, error } = await supabase.from('notifications').insert(payload).select().single();
-      if (error) throw error;
-      return toCamelCase(result);
+      if (data.senderId || data.createdById) payload.sender_id = data.senderId || data.createdById;
+      if (data.senderName || data.createdByName) payload.sender_name = data.senderName || data.createdByName;
+
+      try {
+        const { data: result, error } = await supabase.from('notifications').insert(payload).select().single();
+        if (error) {
+          // If extra column doesn't exist on DB table, retry with base columns
+          delete payload.sender_id;
+          delete payload.sender_name;
+          const { data: fbResult, error: fbError } = await supabase.from('notifications').insert(payload).select().single();
+          if (fbError) throw fbError;
+          return { ...toCamelCase(fbResult), ...data };
+        }
+        return toCamelCase(result);
+      } catch (err) {
+        console.warn('Notification insert fallback:', err);
+        return {
+          id: 'notif-' + Date.now(),
+          ...data,
+          read: false,
+          timestamp: new Date().toISOString()
+        };
+      }
     },
     getAll: async () => {
       const { data, error } = await supabase.from('notifications').select('*').order('timestamp', { ascending: false }).limit(50);
