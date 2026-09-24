@@ -1,7 +1,7 @@
 {
   "name": "buildcore-pro-web-admin",
   "private": true,
-  "version": "3.8.91",
+  "version": "3.8.92",
   "description": "TITSMART Project Manager",
   "type": "module",
   "main": "dist-electron/main.js",
@@ -53,6 +53,7 @@
     "electron": "^43.3.0",
     "electron-builder": "^26.15.3",
     "postcss": "^8.4.38",
+    "puppeteer-core": "^25.12.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.2.2",
     "vite": "^5.1.6",

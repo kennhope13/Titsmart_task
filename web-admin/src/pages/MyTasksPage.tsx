@@ -129,9 +129,9 @@ export const MyTasksPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
-      <div className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 relative z-50 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
-        <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto h-8 md:h-auto mb-1 md:mb-0">
-          <h1 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">
+      <div className="border-b border-slate-200 bg-white shadow-sm px-2 sm:px-4 md:px-6 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 relative z-50 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+        <div className="flex items-center gap-1.5 sm:gap-3 w-full md:w-auto min-w-0 overflow-hidden">
+          <h1 className="page-title text-sm sm:text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-1.5 sm:pl-2 uppercase shrink-0 hidden sm:block">
             CÔNG VIỆC
           </h1>
           <SharedTaskTabs activeTab="my-tasks" />
