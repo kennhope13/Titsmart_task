@@ -181,18 +181,30 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     const current = get().user;
     if (!current) return;
     try {
-      const { data: engineerData } = await supabase
-        .from('engineers')
-        .select('*')
-        .eq('username', current.username)
-        .maybeSingle();
+      let query = supabase.from('engineers').select('*');
+      if (current.username) {
+        query = query.eq('username', current.username);
+      } else if (current.email) {
+        query = query.eq('email', current.email);
+      } else if (current.id) {
+        query = query.eq('id', current.id);
+      }
+      const { data: engineerData } = await query.maybeSingle();
       if (engineerData) {
+        if (engineerData.is_locked || engineerData.isLocked) {
+          get().logout();
+          window.location.href = '/login';
+          return;
+        }
         const updatedUser = {
           ...current,
           name: engineerData.name || current.name,
           title: engineerData.title || current.title,
-          projectCodes: engineerData.project_codes || [],
+          projectCodes: engineerData.project_codes || engineerData.projectCodes || [],
           permissions: engineerData.permissions || current.permissions,
+          role: engineerData.role === 'Quản trị viên' ? 'admin' :
+                engineerData.role === 'Quản lý dự án' ? 'pm' :
+                engineerData.role === 'Kỹ sư hiện trường' ? 'engineer' : current.role,
         };
         localStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser));
         set({ user: updatedUser });

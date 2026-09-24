@@ -602,10 +602,48 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
   let channel: BroadcastChannel | null = null;
   if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
     channel = new BroadcastChannel('buildcore_excel_events');
-    channel.onmessage = (event) => {
+    channel.onmessage = (event: MessageEvent) => {
       if (event.data?.type === 'SYNC_STATE') {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) set(JSON.parse(raw));
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            set(parsed);
+            if (Array.isArray(parsed.engineers)) {
+              const authStore = useAuthStore.getState();
+              const currentUser = authStore.user;
+              if (currentUser) {
+                const matchedEngineer = parsed.engineers.find(
+                  (e: any) =>
+                    (e.id && e.id === currentUser.id) ||
+                    (e.email && currentUser.email && e.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+                    (e.username && currentUser.username && e.username.toLowerCase() === currentUser.username.toLowerCase())
+                );
+                if (matchedEngineer) {
+                  if (matchedEngineer.isLocked || matchedEngineer.is_locked) {
+                    authStore.logout();
+                    window.location.href = '/login';
+                    return;
+                  }
+                  const updatedUser = {
+                    ...currentUser,
+                    id: matchedEngineer.id || currentUser.id,
+                    projectCodes: matchedEngineer.projectCodes || matchedEngineer.project_codes || [],
+                    permissions: matchedEngineer.permissions || currentUser.permissions,
+                    role: matchedEngineer.role === 'Quản trị viên' ? 'admin' :
+                          matchedEngineer.role === 'Quản lý dự án' ? 'pm' :
+                          matchedEngineer.role === 'Kỹ sư hiện trường' ? 'engineer' : currentUser.role,
+                    name: matchedEngineer.name || currentUser.name,
+                    title: matchedEngineer.title || currentUser.title,
+                  };
+                  authStore.updateUser(updatedUser);
+                }
+              }
+            }
+          } catch (err) {
+            console.error('[BroadcastChannel] parse error', err);
+          }
+        }
       }
     };
   }
