@@ -904,7 +904,7 @@ export const DocumentTrackingPage: React.FC = () => {
                     key={track.id} 
                     className={`transition-all align-top cursor-pointer ${
                       isMatch
-                        ? `highlighted-doc-row bg-amber-50/90 ring-2 ring-inset ring-amber-400 border-y-2 border-amber-400 shadow-sm ${isHighlightActive ? 'animate-pulse' : ''}`
+                        ? `highlighted-doc-row bg-amber-100/80 hover:bg-amber-100 ring-2 ring-inset ring-amber-400 border-y-2 border-amber-400 shadow-sm ${isHighlightActive ? 'animate-pulse' : ''}`
                         : 'hover:bg-blue-50/20'
                     }`} 
                     onClick={() => {
@@ -912,13 +912,7 @@ export const DocumentTrackingPage: React.FC = () => {
                       setEditingDoc({ ...track, notes: (track.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim() });
                     }}
                   >
-                    <td className="px-1 py-1 text-center relative">
-                      {isMatch && (
-                        <span className="absolute -left-1 top-1 flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                        </span>
-                      )}
+                    <td className="px-1 py-1 text-center">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         track.side === 'Bên nhận' ? 'bg-emerald-50 text-emerald-600' :
                         track.side === 'Bên gửi' ? 'bg-indigo-50 text-indigo-600' :
@@ -932,7 +926,6 @@ export const DocumentTrackingPage: React.FC = () => {
                     <td className="px-1 py-1">
                       <div className="font-extrabold text-slate-900 leading-snug max-w-[160px] whitespace-normal line-clamp-2" title={track.contractName}>
                         {track.contractName}
-                        {isMatch && <span className="ml-1 inline-block text-[9px] bg-amber-500 text-white font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Mới</span>}
                       </div>
                     </td>
                     <td className="px-1 py-1"><div className="font-bold text-slate-800 max-w-[130px] whitespace-normal line-clamp-2" title={track.company}>{track.company || '-'}</div></td>
