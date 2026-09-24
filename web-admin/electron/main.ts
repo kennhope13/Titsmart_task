@@ -65,6 +65,8 @@ function setupAutoUpdater() {
 
   autoUpdater.autoDownload = false; // Không tải về ngay, để người dùng chọn
   autoUpdater.autoInstallOnAppQuit = true; // Nếu đã tải xong thì cài khi thoát app
+  autoUpdater.disableDifferentialDownload = true; // Tải 1 luồng trực tiếp toàn bộ gói .exe, ngăn GitHub bóp băng thông chia nhỏ file
+  autoUpdater.disableWebInstaller = true;
 
   autoUpdater.on('checking-for-update', () => {
     sendToRenderer('update:status', { status: 'checking' });

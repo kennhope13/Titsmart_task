@@ -10,6 +10,9 @@ type UiState = {
   releaseNotes?: string;
   notes?: string[];
   percent?: number;
+  transferred?: number;
+  total?: number;
+  bytesPerSecond?: number;
   message?: string;
   source?: 'electron' | 'web';
 };
@@ -45,7 +48,16 @@ export const UpdateNotifier: React.FC = () => {
           setState({ visible: true, status: 'available', version: p.version, releaseNotes: p.releaseNotes, source: 'electron' });
           break;
         case 'downloading':
-          setState((s) => ({ ...s, visible: true, status: 'downloading', percent: p.percent, source: 'electron' }));
+          setState((s) => ({
+            ...s,
+            visible: true,
+            status: 'downloading',
+            percent: p.percent,
+            transferred: p.transferred,
+            total: p.total,
+            bytesPerSecond: p.bytesPerSecond,
+            source: 'electron',
+          }));
           break;
         case 'downloaded':
           setState((s) => ({ ...s, visible: true, status: 'downloaded', version: p.version, source: 'electron' }));
@@ -270,7 +282,12 @@ export const UpdateNotifier: React.FC = () => {
             {state.status === 'downloading' && (
               <div className="w-full mb-4 relative z-10">
                 <div className="flex justify-between items-center text-xs font-semibold text-slate-300 mb-1.5">
-                  <span>Tiến độ tải dữ liệu</span>
+                  <span>
+                    {state.transferred && state.total 
+                      ? `${(state.transferred / (1024 * 1024)).toFixed(1)} MB / ${(state.total / (1024 * 1024)).toFixed(1)} MB`
+                      : 'Tiến độ tải dữ liệu'}
+                    {state.bytesPerSecond ? ` • ${(state.bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s` : ''}
+                  </span>
                   <span className="text-sky-400 font-bold text-sm">{state.percent ?? 0}%</span>
                 </div>
                 <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700/60 p-0.5">
