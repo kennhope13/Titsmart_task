@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
-import { useAuthStore, hasPermission } from '../services/authStore';
+import { useAuthStore, hasPermission, canManageItem } from '../services/authStore';
 import { Project, Task } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
@@ -938,9 +938,9 @@ export const ProjectManagementPage: React.FC = () => {
                   </div>
 
                   {/* Nút sửa/xóa — hiện khi hover */}
-                  { (hasPermission(user, "EDIT_PROJECTS") || hasPermission(user, "DELETE_PROJECTS")) && (
+                  { (canManageItem(user, project, "EDIT_PROJECTS") || canManageItem(user, project, "DELETE_PROJECTS")) && (
                     <div className="absolute top-2 right-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                      {hasPermission(user, "EDIT_PROJECTS") && (<button
+                      {canManageItem(user, project, "EDIT_PROJECTS") && (<button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); openEditModal(project); }}
                         title="Sửa tên dự án"
@@ -948,7 +948,7 @@ export const ProjectManagementPage: React.FC = () => {
                       >
                         <span className="material-symbols-outlined text-[16px]">edit</span>
                       </button>)}
-                      {hasPermission(user, "DELETE_PROJECTS") && (<button
+                      {canManageItem(user, project, "DELETE_PROJECTS") && (<button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setProjectToDelete(project); }}
                         title={TEXT.deleteProject}
