@@ -1,13 +1,14 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { useRealtimeStore } from '../services/realtimeStore';
-import { useAuthStore } from '../services/authStore';
+import { useAuthStore, hasPermission } from '../services/authStore';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
 
 export const TaskAssignmentPage: React.FC = () => {
+  const navigate = useNavigate();
   const { tasks, projects, engineers, updateTask } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
   const location = useLocation();
@@ -17,6 +18,23 @@ export const TaskAssignmentPage: React.FC = () => {
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
     setToastState({ show: true, message, type });
     setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const handleQuickApprove = (e: React.MouseEvent, taskId: string, taskName: string) => {
+    e.stopPropagation();
+    updateTask(taskId, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' });
+    triggerToast(`Đã nghiệm thu hoàn thành: "${taskName}"!`, 'success');
+  };
+
+  const handleRowClick = (task: any, pCode?: string) => {
+    if (activeTab === 'unassigned') {
+      handleToggleTask(task.id);
+    } else {
+      const targetProjectCode = pCode || task.projectCode;
+      if (targetProjectCode) {
+        navigate(`/projects/${encodeURIComponent(targetProjectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`);
+      }
+    }
   };
 
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
@@ -246,14 +264,15 @@ export const TaskAssignmentPage: React.FC = () => {
                   return (
                     <tr 
                       key={t.id} 
-                      className={`transition-all cursor-pointer ${
+                      className={`transition-all cursor-pointer group ${
                         isTargetTask 
                           ? 'highlighted-task-assignment-row bg-amber-100/60 hover:bg-amber-100/80 border-l-4 border-l-amber-500 border-y border-amber-300/70 ring-1 ring-inset ring-amber-300/50 font-medium' 
                           : isChecked && activeTab === 'unassigned' 
                             ? 'bg-blue-50/50' 
                             : 'bg-white hover:bg-blue-50/50'
                       }`} 
-                      onClick={() => { if (activeTab === 'unassigned') handleToggleTask(t.id); }}
+                      onClick={() => handleRowClick(t, p?.code || t.projectCode)}
+                      title={activeTab === 'assigned' ? "Nhấn vào dòng này để đi đến nghiệm thu công việc trong dự án" : undefined}
                     >
                       {activeTab === 'unassigned' && (
                         <td className={`py-2.5 px-3 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isChecked ? 'bg-blue-50' : 'bg-white'} ${
@@ -271,8 +290,13 @@ export const TaskAssignmentPage: React.FC = () => {
                         isScrolledHorizontally ? 'sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''
                       }`}>{p ? p.name : t.projectCode}</td>
                       <td className="py-2.5 px-4 font-medium text-slate-800 text-xs border-l border-slate-200 flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span>{t.name}</span>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="group-hover:text-blue-600 transition-colors">{t.name}</span>
+                          {activeTab === 'assigned' && (
+                            <span className="material-symbols-outlined text-[15px] text-slate-300 group-hover:text-blue-600 transition-colors shrink-0" title="Đi đến công việc">
+                              arrow_forward
+                            </span>
+                          )}
                         </div>
                         {t.sectionName && t.sectionName !== t.name && (
                           <span className="text-[10px] text-slate-500 mt-1">{t.sectionName}</span>
@@ -282,15 +306,28 @@ export const TaskAssignmentPage: React.FC = () => {
                         {t.assignedEngineerName ? t.assignedEngineerName.split('|')[0] : <span className="text-slate-400 font-normal italic">Chưa có</span>}
                       </td>
                       <td className="py-2.5 px-4 border-l border-slate-200">
-                        <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
-                          t.status === 'Chờ nhận việc' ? 'bg-amber-100 text-amber-700' :
-                          t.status === 'Đang làm' ? 'bg-blue-100 text-blue-700' :
-                          t.status === 'Chờ nghiệm thu' ? 'bg-emerald-100 text-emerald-700' :
-                          t.status === 'Hoàn thành' ? 'bg-emerald-100 text-emerald-700' :
-                          'bg-slate-100 text-slate-500'
-                        }`}>
-                          {t.status || 'Chưa làm'}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
+                            t.status === 'Chờ nhận việc' ? 'bg-amber-100 text-amber-700' :
+                            t.status === 'Đang làm' ? 'bg-blue-100 text-blue-700' :
+                            t.status === 'Chờ nghiệm thu' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' :
+                            t.status === 'Hoàn thành' ? 'bg-emerald-100 text-emerald-700' :
+                            'bg-slate-100 text-slate-500'
+                          }`}>
+                            {t.status || 'Chưa làm'}
+                          </span>
+                          {t.status === 'Chờ nghiệm thu' && hasPermission(user, 'APPROVE_TASKS') && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleQuickApprove(e, t.id, t.name)}
+                              className="px-2 py-0.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold text-[10px] rounded shadow-xs flex items-center gap-1 transition-all"
+                              title="Nghiệm thu hoàn thành ngay lập tức"
+                            >
+                              <span className="material-symbols-outlined text-[13px]">verified</span>
+                              Nghiệm thu
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2.5 px-4 text-center text-slate-600 font-medium text-xs border-l border-slate-200">{t.volume}</td>
                       <td className="py-2.5 px-4 text-center text-slate-600 font-medium text-xs border-l border-slate-200">{t.unit}</td>
