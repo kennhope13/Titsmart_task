@@ -118,7 +118,19 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   }
 
   // 5. Attendance notifications (e.g. 'Chấm công vào ca', 'Chấm công ra ca'): ONLY for Admin/Managers, do not send to regular staff
-  if (title.includes('Chấm công') || message.includes('check-in') || message.includes('check-out') || typeStr.startsWith('attendance')) {
+  const tLow = title.toLowerCase();
+  const mLow = message.toLowerCase();
+  if (
+    tLow.includes('chấm công') || 
+    tLow.includes('vào ca') || 
+    tLow.includes('ra ca') || 
+    tLow.includes('điểm danh') || 
+    mLow.includes('check-in') || 
+    mLow.includes('check-out') || 
+    mLow.includes('vào ca') || 
+    mLow.includes('ra ca') || 
+    typeStr.startsWith('attendance')
+  ) {
     // Non-admin users should NEVER receive attendance notifications
     return false;
   }
@@ -345,11 +357,21 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       const params = new URLSearchParams();
       if (taskName) params.set('highlight', taskName);
       else if (itemName) params.set('highlight', itemName);
-      navigate(`/my-tasks${params.toString() ? `?${params.toString()}` : ''}`);
+    } else if (
+      titleLower.includes('chấm công') || 
+      titleLower.includes('vào ca') || 
+      titleLower.includes('ra ca') || 
+      titleLower.includes('điểm danh') || 
+      msgLower.includes('chấm công') || 
+      msgLower.includes('vào ca') || 
+      msgLower.includes('ra ca') || 
+      msgLower.includes('check-in') || 
+      msgLower.includes('check-out') || 
+      (notification.type && notification.type.startsWith('attendance'))
+    ) {
+      navigate('/attendance?tab=attendance&view=all');
     } else if (titleLower.includes('nghỉ phép') || msgLower.includes('nghỉ phép')) {
       navigate('/attendance?tab=leaves');
-    } else if (titleLower.includes('điểm danh') || msgLower.includes('điểm danh')) {
-      navigate('/attendance');
     } else if (pCode && pCode !== 'Hệ thống' && pCode !== 'COMPANY') {
       navigate(`/projects/${encodeURIComponent(pCode)}`);
     } else {

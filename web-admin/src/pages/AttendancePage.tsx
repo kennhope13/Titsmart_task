@@ -88,6 +88,7 @@ export const AttendancePage: React.FC = () => {
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
+    const viewParam = searchParams.get('view') || searchParams.get('type') || searchParams.get('scope');
     const leaveIdParam = searchParams.get('leaveId') || searchParams.get('id');
     const highlightParam = searchParams.get('highlight');
     if (tabParam === 'leave' || tabParam === 'leaves' || leaveIdParam || highlightParam) {
@@ -98,6 +99,12 @@ export const AttendancePage: React.FC = () => {
       }
     } else if (tabParam === 'attendance') {
       setMainTab('attendance');
+    }
+
+    if (viewParam === 'all' || viewParam === 'tat-ca') {
+      setTab('all');
+    } else if (viewParam === 'my' || viewParam === 'cua-toi') {
+      setTab('my');
     }
   }, [searchParams]);
 
@@ -336,11 +343,12 @@ export const AttendancePage: React.FC = () => {
       setSelectedProject('');
       setShowCheckInModal(false);
 
-      // Gửi thông báo realtime đến admin
+      // Gửi thông báo realtime chỉ đến admin
       await addNotification({
         title: 'Chấm công vào ca',
         message: `${user.name} đã check-in${proj ? ` tại dự án ${proj.name}` : ''} lúc ${formatTime(result.checkInTime)}`,
-        type: 'system',
+        link: '/attendance?tab=attendance&view=all',
+        type: 'attendance:::admin',
         icon: 'login',
       });
     } catch (e: any) {
@@ -364,11 +372,12 @@ export const AttendancePage: React.FC = () => {
       setCheckOutNotes('');
       setShowCheckOutModal(false);
 
-      // Gửi thông báo realtime đến admin
+      // Gửi thông báo realtime chỉ đến admin
       await addNotification({
         title: 'Chấm công ra ca',
         message: `${user.name} đã check-out lúc ${formatTime(result.checkOutTime)}. Thời gian làm việc: ${getDuration(result.checkInTime, result.checkOutTime)}`,
-        type: 'system',
+        link: '/attendance?tab=attendance&view=all',
+        type: 'attendance:::admin',
         icon: 'logout',
       });
     } catch (e: any) {
