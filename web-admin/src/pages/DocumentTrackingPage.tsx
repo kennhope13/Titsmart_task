@@ -205,7 +205,7 @@ export const DocumentTrackingPage: React.FC = () => {
     fetchAccounting();
     const interval = setInterval(() => {
       fetchAccounting();
-    }, 3000);
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
 

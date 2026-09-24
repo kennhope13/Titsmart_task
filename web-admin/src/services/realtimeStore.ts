@@ -961,19 +961,25 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           });
 
           const merged = [...mergedFetched, ...pendingOptimisticDocs];
-          nextState.documentTracks = filterByProject(merged, 'projectCode');
+          const filteredDocs = filterByProject(merged, 'projectCode');
           
-          // Auto generate due / overdue notifications for document tracks
-          const freshNotifs = generateDocumentDueNotifications(merged, get().notifications || []);
-          if (freshNotifs.length > 0) {
-            nextState.notifications = [...freshNotifs, ...(get().notifications || [])];
+          // Check if document tracks actually changed before updating state to avoid re-renders
+          const currentDocs = get().documentTracks || [];
+          const isDocEqual = currentDocs.length === filteredDocs.length && 
+            currentDocs.every((doc, i) => doc.id === filteredDocs[i]?.id && doc.updatedAt === filteredDocs[i]?.updatedAt && doc.docStatus === filteredDocs[i]?.docStatus && doc.paymentStatus === filteredDocs[i]?.paymentStatus);
+
+          if (!isDocEqual) {
+            nextState.documentTracks = filteredDocs;
           }
         }
       } catch (e) { console.error('[Accounting] Failed document_tracks', e); }
 
       if (Object.keys(nextState).length > 0) {
         set(nextState);
-        persistAndNotify(nextState);
+        // Only persist if data actually changed
+        if (nextState.documentTracks) {
+          persistAndNotify(nextState);
+        }
       }
     },
 
@@ -1579,7 +1585,14 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     fetchNotifications: async () => {
       try {
         const notifs = await api.notifications.getAll();
-        set({ notifications: notifs });
+        if (Array.isArray(notifs)) {
+          const current = get().notifications || [];
+          const isEqual = current.length === notifs.length &&
+            current.every((n, i) => n.id === notifs[i]?.id && n.read === notifs[i]?.read && n.timestamp === notifs[i]?.timestamp);
+          if (!isEqual) {
+            set({ notifications: notifs });
+          }
+        }
       } catch (e) {
         console.error('Failed to fetch notifications', e);
       }
