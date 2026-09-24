@@ -39,7 +39,6 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   const userId = String(user.id || '').toLowerCase();
 
   const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || username === 'admin';
-  if (isAdmin) return true; // Admins and managers can see all notifications
 
   // Find engineer object corresponding to current user if any
   const myEng = engineers.find(e => 
@@ -49,6 +48,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     (e.phone && user.phone && String(e.phone) === String(user.phone))
   );
   const myNames = [name, username, myEng?.name?.toLowerCase()].filter(Boolean) as string[];
+  const myIds = [userId, myEng?.id?.toLowerCase()].filter(Boolean) as string[];
 
   // User's assigned project codes
   const userProjectCodes = new Set<string>([
@@ -58,7 +58,71 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     user.projectCode || ''
   ].map(p => String(p || '').trim().toUpperCase()).filter(Boolean));
 
-  // 1. Check explicit recipient properties if available
+  const title = String(notification.title || '');
+  const message = String(notification.message || '');
+  const typeStr = String(notification.type || '');
+  const tLow = title.toLowerCase();
+  const mLow = message.toLowerCase();
+
+  // 1. Task assignment notifications ("Giao việc: ..."): ONLY for the assigned engineers, NEVER for the assigner / admin who assigned it
+  if (title.startsWith('Giao việc:') || title.includes('được giao') || typeStr.startsWith('task_assigned')) {
+    if (typeStr.startsWith('task_assigned:::')) {
+      const parts = typeStr.split(':::');
+      const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase());
+      const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase());
+      
+      const isMeId = targetIds.some(tId => myIds.includes(tId));
+      const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
+      if (isMeId || isMeName) return true;
+      return false; // Not assigned to current user -> hide it
+    }
+    if (title.startsWith('Giao việc:')) {
+      const assignedNames = title.replace('Giao việc:', '').split(',').map(s => s.trim().toLowerCase());
+      const isMe = assignedNames.some(aName => myNames.some(n => aName.includes(n) || n.includes(aName)));
+      if (isMe) return true;
+      return false; // Not assigned to current user -> hide it
+    }
+    const match = message.match(/cho\s+([^.]+)\.?$/i);
+    if (match) {
+      const assignedNames = match[1].split(',').map(s => s.trim().toLowerCase());
+      const isMe = assignedNames.some(aName => aName === 'bạn' || myNames.some(n => aName.includes(n) || n.includes(aName)));
+      if (isMe) return true;
+      return false;
+    }
+    return false;
+  }
+
+  // 2. Attendance notifications (e.g. 'Chấm công vào ca', 'Chấm công ra ca'): ONLY for Admin/Managers
+  if (
+    tLow.includes('chấm công') || 
+    tLow.includes('vào ca') || 
+    tLow.includes('ra ca') || 
+    tLow.includes('điểm danh') || 
+    mLow.includes('check-in') || 
+    mLow.includes('check-out') || 
+    typeStr.startsWith('attendance')
+  ) {
+    return isAdmin;
+  }
+
+  // 3. Task acceptance & completion notifications: Only for Admin / PM / Assigner
+  if (title.includes('đã nhận việc') || title.includes('hoàn thành công việc') || typeStr.startsWith('task_accepted') || typeStr.startsWith('task_completed')) {
+    if (!isAdmin) return false;
+    return true;
+  }
+
+  // 4. Leave requests: Only for Admin/Managers (unless it's an approval/rejection notification for the specific user)
+  if (title.includes('nghỉ phép') || message.includes('nghỉ phép') || typeStr.startsWith('leave')) {
+    if (title.includes('đã được duyệt') || title.includes('từ chối')) {
+      if (myNames.some(n => message.toLowerCase().includes(n))) return true;
+    }
+    return isAdmin;
+  }
+
+  // 5. Admins and managers can see all other project/general notifications
+  if (isAdmin) return true;
+
+  // 6. Check explicit recipient properties if available
   if (notification.recipientId) {
     if (String(notification.recipientId).toLowerCase() === userId || (myEng && String(notification.recipientId).toLowerCase() === String(myEng.id).toLowerCase())) {
       return true;
@@ -71,79 +135,26 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     }
   }
 
-  // 2. Check metadata in type (e.g. 'document_update:::PJ_CODE', 'field_log:::PJ_CODE', 'task_assigned:::RECIPIENT_ID:::RECIPIENT_NAME')
-  const typeStr = String(notification.type || '');
+  // 7. Check metadata in type (e.g. 'document_update:::PJ_CODE', 'field_log:::PJ_CODE')
   if (typeStr.includes(':::')) {
     const parts = typeStr.split(':::');
     const prefix = parts[0];
     const targetProject = parts[1]?.toUpperCase();
 
-    // Check project-level notifications
     if (['project', 'document_update', 'field_log', 'material_update', 'issue_alert', 'document_due'].includes(prefix)) {
       if (!targetProject || targetProject === 'COMPANY' || targetProject === 'ALL' || targetProject === 'ALL_PROJECTS') return true;
       if (userProjectCodes.has(targetProject)) return true;
       return false;
     }
 
-    // Check user-targeted notifications
     const targetId = parts[1]?.toLowerCase();
     const targetName = parts[2]?.toLowerCase();
     if (targetId && (targetId === userId || (myEng && targetId === String(myEng.id).toLowerCase()))) return true;
     if (targetName && myNames.some(n => targetName.includes(n) || n.includes(targetName))) return true;
-    return false; // Type specified a target recipient that didn't match this non-admin user
-  }
-
-  // 3. Check title / message for task assignment & task acceptance (e.g. 'Giao việc: Phan Ngọc Huy', 'Nhân sự đã nhận việc', 'Báo cáo hoàn thành công việc')
-  const title = String(notification.title || '');
-  const message = String(notification.message || '');
-  
-  if (title.startsWith('Giao việc:') || title.includes('được giao') || typeStr.startsWith('task_assigned')) {
-    if (title.startsWith('Giao việc:')) {
-      const assignedTo = title.replace('Giao việc:', '').trim().toLowerCase();
-      if (myNames.some(n => assignedTo.includes(n) || n.includes(assignedTo))) return true;
-      return false; // Targeted to someone else
-    }
-    const match = message.match(/cho\s+([^.]+)\.?$/i);
-    if (match) {
-      const assignedTo = match[1].trim().toLowerCase();
-      if (assignedTo === 'bạn' || myNames.some(n => assignedTo.includes(n) || n.includes(assignedTo))) return true;
-      return false; // Targeted to someone else
-    }
-  }
-
-  // 4. Task acceptance and task completion notifications: Only for assigner or admin
-  if (title.includes('đã nhận việc') || title.includes('hoàn thành công việc') || typeStr.startsWith('task_accepted') || typeStr.startsWith('task_completed')) {
-    // If user is neither admin nor the creator/assigner specified in metadata, hide it
     return false;
   }
 
-  // 5. Attendance notifications (e.g. 'Chấm công vào ca', 'Chấm công ra ca'): ONLY for Admin/Managers, do not send to regular staff
-  const tLow = title.toLowerCase();
-  const mLow = message.toLowerCase();
-  if (
-    tLow.includes('chấm công') || 
-    tLow.includes('vào ca') || 
-    tLow.includes('ra ca') || 
-    tLow.includes('điểm danh') || 
-    mLow.includes('check-in') || 
-    mLow.includes('check-out') || 
-    mLow.includes('vào ca') || 
-    mLow.includes('ra ca') || 
-    typeStr.startsWith('attendance')
-  ) {
-    // Non-admin users should NEVER receive attendance notifications
-    return false;
-  }
-
-  // 6. Leave requests: Only for Admin/Managers (unless it's an approval notification for the specific user)
-  if (title.includes('nghỉ phép') || message.includes('nghỉ phép') || typeStr.startsWith('leave')) {
-    if (title.includes('đã được duyệt') || title.includes('từ chối')) {
-      if (myNames.some(n => message.toLowerCase().includes(n))) return true;
-    }
-    return false;
-  }
-
-  // 7. Match project code in message tag like [PROJECT_CODE]
+  // 8. Match project code in message tag like [PROJECT_CODE]
   const pMatch = message.match(/\[([A-Za-z0-9_-]+)\]/);
   if (pMatch) {
     const code = pMatch[1].toUpperCase();
