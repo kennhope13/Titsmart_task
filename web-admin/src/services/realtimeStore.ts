@@ -2009,10 +2009,11 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     
     updateFieldLog: async (id, input) => {
       try {
-        const updated = await api.fieldLogs.update(id, input);
+        const audit = getAuditFields();
+        const updated = await api.fieldLogs.update(id, { ...input, ...audit });
         set((state) => {
-          const nextLogs = state.fieldLogs.map(l => l.id === id ? updated : l);
-          get().logActivity('Cập nhật nhật ký hiện trường: ' + (updated.projectCode), 'COMPANY');
+          const nextLogs = state.fieldLogs.map(l => l.id === id ? { ...l, ...updated, ...audit } : l);
+          get().logActivity('Cập nhật nhật ký hiện trường: ' + (updated.projectCode || ''), 'COMPANY');
           persistAndNotify({ fieldLogs: nextLogs });
           return { fieldLogs: nextLogs };
         });

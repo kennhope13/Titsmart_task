@@ -1143,8 +1143,29 @@ export const api = {
            }
         }
       }
+      const audit = getCurrentAuditPayload();
+      payload.updated_by = data.updatedBy || audit.updated_by;
+      payload.updated_at = new Date().toISOString();
       const { data: result, error } = await supabase.from('field_logs').update(payload).eq('id', id).select().single();
-      if (error) throw error;
+      if (error) {
+        // Fallback without updated_by column if not migrated
+        delete payload.updated_by;
+        delete payload.updated_at;
+        const { data: fbResult, error: fbError } = await supabase.from('field_logs').update(payload).eq('id', id).select().single();
+        if (fbError) throw fbError;
+        return {
+          id: fbResult.id,
+          projectCode: fbResult.project_code,
+          note: fbResult.notes,
+          images: fbResult.photos || [],
+          timestamp: fbResult.created_at,
+          taskId: fbResult.task_id,
+          createdById: fbResult.created_by_id || data.createdById || '',
+          createdByName: fbResult.created_by_name || data.createdByName || '',
+          updatedBy: data.updatedBy || audit.updated_by,
+          updatedAt: new Date().toISOString(),
+        };
+      }
       return {
         id: result.id,
         projectCode: result.project_code,
@@ -1152,6 +1173,10 @@ export const api = {
         images: result.photos || [],
         timestamp: result.created_at,
         taskId: result.task_id,
+        createdById: result.created_by_id || data.createdById || '',
+        createdByName: result.created_by_name || data.createdByName || '',
+        updatedBy: result.updated_by || data.updatedBy || audit.updated_by,
+        updatedAt: result.updated_at || new Date().toISOString(),
       };
     },
   },
