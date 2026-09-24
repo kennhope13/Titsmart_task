@@ -50,6 +50,14 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   );
   const myNames = [name, username, myEng?.name?.toLowerCase()].filter(Boolean) as string[];
 
+  // User's assigned project codes
+  const userProjectCodes = new Set<string>([
+    ...(Array.isArray(user.projectCodes) ? user.projectCodes : []),
+    ...(Array.isArray(myEng?.projects) ? myEng.projects : []),
+    ...(Array.isArray(myEng?.projectCodes) ? myEng.projectCodes : []),
+    user.projectCode || ''
+  ].map(p => String(p || '').trim().toUpperCase()).filter(Boolean));
+
   // 1. Check explicit recipient properties if available
   if (notification.recipientId) {
     if (String(notification.recipientId).toLowerCase() === userId || (myEng && String(notification.recipientId).toLowerCase() === String(myEng.id).toLowerCase())) {
@@ -63,10 +71,21 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     }
   }
 
-  // 2. Check metadata in type (e.g. 'task_assigned:::RECIPIENT_ID:::RECIPIENT_NAME')
+  // 2. Check metadata in type (e.g. 'document_update:::PJ_CODE', 'field_log:::PJ_CODE', 'task_assigned:::RECIPIENT_ID:::RECIPIENT_NAME')
   const typeStr = String(notification.type || '');
   if (typeStr.includes(':::')) {
     const parts = typeStr.split(':::');
+    const prefix = parts[0];
+    const targetProject = parts[1]?.toUpperCase();
+
+    // Check project-level notifications
+    if (['project', 'document_update', 'field_log', 'material_update', 'issue_alert', 'document_due'].includes(prefix)) {
+      if (!targetProject || targetProject === 'COMPANY' || targetProject === 'ALL' || targetProject === 'ALL_PROJECTS') return true;
+      if (userProjectCodes.has(targetProject)) return true;
+      return false;
+    }
+
+    // Check user-targeted notifications
     const targetId = parts[1]?.toLowerCase();
     const targetName = parts[2]?.toLowerCase();
     if (targetId && (targetId === userId || (myEng && targetId === String(myEng.id).toLowerCase()))) return true;
@@ -109,6 +128,15 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     if (title.includes('đã được duyệt') || title.includes('từ chối')) {
       if (myNames.some(n => message.toLowerCase().includes(n))) return true;
     }
+    return false;
+  }
+
+  // 7. Match project code in message tag like [PROJECT_CODE]
+  const pMatch = message.match(/\[([A-Za-z0-9_-]+)\]/);
+  if (pMatch) {
+    const code = pMatch[1].toUpperCase();
+    if (code === 'COMPANY' || code === 'ALL') return true;
+    if (userProjectCodes.has(code)) return true;
     return false;
   }
 

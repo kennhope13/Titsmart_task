@@ -1983,6 +1983,17 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ documentTracks: nextTracks, notifications: nextNotifs });
           return { documentTracks: nextTracks, notifications: nextNotifs };
         });
+
+        // Broadcast realtime notification to project members & admin
+        const pCode = trackData.projectCode || 'COMPANY';
+        const docName = trackData.contractName || trackData.contractNo || 'hồ sơ';
+        get().addNotification({
+          title: `Hồ sơ mới: ${docName}`,
+          message: `[${pCode}] ${audit.updatedBy || 'Thành viên'} đã thêm hồ sơ: ${docName}`,
+          type: `document_update:::${pCode}`,
+          icon: 'description',
+          link: '/document-tracking'
+        }).catch(() => {});
       } catch (e) {
         console.warn('Failed to persist document track to DB, retaining local state', e);
         get().logActivity('Thêm mới hồ sơ gửi đi: ' + (trackData.contractName || ''), 'COMPANY');
@@ -2015,6 +2026,18 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { documentTracks: nextTracks };
         });
         get().logActivity('Cập nhật hồ sơ gửi đi: ' + (updated?.contractName || id), 'COMPANY');
+
+        // Broadcast realtime notification to project members & admin
+        const currentDoc = get().documentTracks.find(d => d.id === id);
+        const pCode = fields.projectCode || currentDoc?.projectCode || 'COMPANY';
+        const docName = fields.contractName || currentDoc?.contractName || fields.contractNo || currentDoc?.contractNo || 'hồ sơ';
+        get().addNotification({
+          title: `Cập nhật hồ sơ: ${docName}`,
+          message: `[${pCode}] ${audit.updatedBy || 'Thành viên'} đã cập nhật hồ sơ: ${docName}`,
+          type: `document_update:::${pCode}`,
+          icon: 'description',
+          link: '/document-tracking'
+        }).catch(() => {});
       } catch (e) {
         console.warn('Failed to update document track, updated locally', e);
       }
@@ -2044,6 +2067,16 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ fieldLogs: nextLogs });
           return { fieldLogs: nextLogs };
         });
+
+        const currentLog = get().fieldLogs.find(l => l.id === id);
+        const pCode = updated?.projectCode || (input as any)?.projectCode || currentLog?.projectCode || 'COMPANY';
+        get().addNotification({
+          title: `Cập nhật nhật ký hiện trường: ${pCode}`,
+          message: `[${pCode}] ${audit.updatedBy || 'Kỹ sư'} đã cập nhật nhật ký hiện trường`,
+          type: `field_log:::${pCode}`,
+          icon: 'history_edu',
+          link: '/field-logs'
+        }).catch(() => {});
       } catch (e) {
         console.error('Failed to update field log', e);
         throw e;
@@ -2059,6 +2092,15 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify({ fieldLogs: nextLogs });
           return { fieldLogs: nextLogs };
         });
+
+        const pCode = created.projectCode || input.projectCode || 'COMPANY';
+        get().addNotification({
+          title: `Nhật ký công trình mới: ${pCode}`,
+          message: `[${pCode}] ${audit.updatedBy || 'Kỹ sư'} đã thêm nhật ký hiện trường`,
+          type: `field_log:::${pCode}`,
+          icon: 'history_edu',
+          link: '/field-logs'
+        }).catch(() => {});
       } catch (e) {
         console.error('Failed to add field log', e);
         throw e;
@@ -2163,12 +2205,26 @@ export function setupRealtimeSync() {
       changedTables.add(payload.table);
     }
 
-    // Đối với tin nhắn chat real-time, thông báo mới, nhận việc/giao việc (tasks), phân quyền nhân sự/dự án -> fetch tức thì
-    if (payload && (payload.table === 'direct_messages' || payload.table === 'notifications' || payload.table === 'tasks' || payload.table === 'engineers' || payload.table === 'projects')) {
+    // Đối với tin nhắn chat real-time, thông báo mới, nhận việc/giao việc (tasks), hồ sơ (document_tracks), nhật ký (field_logs), phân quyền nhân sự/dự án -> fetch tức thì
+    if (payload && (
+      payload.table === 'direct_messages' ||
+      payload.table === 'notifications' ||
+      payload.table === 'tasks' ||
+      payload.table === 'document_tracks' ||
+      payload.table === 'field_logs' ||
+      payload.table === 'materials' ||
+      payload.table === 'issues' ||
+      payload.table === 'engineers' ||
+      payload.table === 'projects'
+    )) {
       const store = useRealtimeStore.getState();
       if (payload.table === 'direct_messages') store.fetchDirectMessages();
       if (payload.table === 'notifications') store.fetchNotifications();
       if (payload.table === 'tasks') store.fetchTasks(undefined);
+      if (payload.table === 'document_tracks') store.fetchAccounting();
+      if (payload.table === 'field_logs') store.fetchFieldLogs();
+      if (payload.table === 'materials') store.fetchMaterials(undefined);
+      if (payload.table === 'issues') store.fetchIssues(undefined);
       if (payload.table === 'engineers') {
         store.fetchEngineers().then(() => {
           store.fetchProjects();
