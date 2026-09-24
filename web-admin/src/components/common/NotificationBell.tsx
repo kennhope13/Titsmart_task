@@ -157,13 +157,14 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = false, isExpanded = false }) => {
   const navigate = useNavigate();
-  const { notifications, engineers, markNotificationRead, clearNotifications } = useRealtimeStore();
+  const { notifications, engineers, markNotificationRead, markAllNotificationsRead, deleteNotification, clearNotifications } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
   const showNotificationBell = useUIStore(state => state.showNotificationBell);
   const autoShowNotificationPopup = useUIStore(state => state.autoShowNotificationPopup);
   
   const [showPopover, setShowPopover] = useState(false);
   const [showCenterModal, setShowCenterModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'unread' | 'all'>('unread');
   const [incomingPopupNotif, setIncomingPopupNotif] = useState<any | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const knownNotifIdsRef = useRef<Set<string> | null>(null);
@@ -258,15 +259,27 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     }
   }, [userStorageKey]);
 
-  const handleClearAll = (e: React.MouseEvent) => {
+  const handleMarkAllAsRead = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    // CHỈ xóa các thông báo ĐÃ ĐỌC cho riêng tài khoản hiện tại (giữ lại các thông báo chưa đọc)
+    try {
+      await markAllNotificationsRead();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleClearRead = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // CHỈ xóa các thông báo ĐÃ ĐỌC cho riêng tài khoản hiện tại
     const readIds = displayNotifications.filter(n => n.read).map(n => n.id);
     if (readIds.length === 0) return;
 
     setDismissedNotifIds(prev => {
       const next = new Set(prev);
-      readIds.forEach(id => next.add(id));
+      readIds.forEach(id => {
+        next.add(id);
+        deleteNotification(id).catch(() => {});
+      });
       try {
         localStorage.setItem(userStorageKey, JSON.stringify(Array.from(next)));
       } catch (err) {
@@ -274,6 +287,21 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       }
       return next;
     });
+  };
+
+  const handleDismissNotification = (e: React.MouseEvent, notifId: string) => {
+    e.stopPropagation();
+    setDismissedNotifIds(prev => {
+      const next = new Set(prev);
+      next.add(notifId);
+      try {
+        localStorage.setItem(userStorageKey, JSON.stringify(Array.from(next)));
+      } catch (err) {
+        console.error(err);
+      }
+      return next;
+    });
+    deleteNotification(notifId).catch(() => {});
   };
 
   const handleNotificationClick = (notification: any) => {
@@ -456,7 +484,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     sessionStorage.setItem('has_shown_center_notif_modal', 'true');
   };
 
-  const unreadCount = displayNotifications.filter(item => !item.read).length;
+  const unreadNotifications = useMemo(() => displayNotifications.filter(item => !item.read), [displayNotifications]);
+  const unreadCount = unreadNotifications.length;
+  const activeNotifications = activeTab === 'unread' ? unreadNotifications : displayNotifications;
 
   useEffect(() => {
     // Initial fetch
@@ -543,31 +573,82 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
         </button>
 
         {showPopover && (
-          <div className="fixed left-[60px] md:left-[175px] bottom-6 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-slate-200 overflow-hidden z-[9999] w-[340px] animate-in fade-in slide-in-from-left-2 duration-150">
-            <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/70">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-lg">notifications</span>
-                <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
+          <div className="fixed left-[60px] md:left-[175px] bottom-6 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-slate-200 overflow-hidden z-[9999] w-[350px] animate-in fade-in slide-in-from-left-2 duration-150 flex flex-col">
+            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80">
+              <div className="flex justify-between items-center mb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-lg">notifications</span>
+                  <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
+                  {unreadCount > 0 && (
+                    <span className="px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full text-[10px] font-bold">
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
+                {activeTab === 'unread' ? (
+                  unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleMarkAllAsRead}
+                      className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+                      title="Đánh dấu tất cả là đã đọc"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">done_all</span>
+                      Đã đọc tất cả
+                    </button>
+                  )
+                ) : (
+                  displayNotifications.some(n => n.read) && (
+                    <button
+                      type="button"
+                      onClick={handleClearRead}
+                      className="text-[11px] text-rose-600 font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+                      title="Dọn dẹp các thông báo đã đọc"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
+                      Xóa đã đọc
+                    </button>
+                  )
+                )}
               </div>
-              {displayNotifications.some(n => n.read) && (
+              <div className="flex rounded-lg bg-slate-200/70 p-0.5 text-xs font-semibold">
                 <button
                   type="button"
-                  onClick={handleClearAll}
-                  className="text-[11px] text-primary font-bold hover:underline cursor-pointer"
-                  title="Xóa tất cả các thông báo đã đọc"
+                  onClick={() => setActiveTab('unread')}
+                  className={`flex-1 py-1 rounded-md text-center transition-all ${
+                    activeTab === 'unread'
+                      ? 'bg-white text-primary shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
-                  Xóa tất cả
+                  Chưa đọc ({unreadNotifications.length})
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('all')}
+                  className={`flex-1 py-1 rounded-md text-center transition-all ${
+                    activeTab === 'all'
+                      ? 'bg-white text-primary shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Tất cả ({displayNotifications.length})
+                </button>
+              </div>
             </div>
+
             <div className="max-h-[60vh] overflow-y-auto custom-scrollbar divide-y divide-slate-100">
-              {displayNotifications.length === 0 ? (
+              {activeNotifications.length === 0 ? (
                 <div className="p-8 text-center flex flex-col items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-slate-200 text-4xl">notifications_off</span>
-                  <span className="text-slate-500 text-xs">Không có thông báo nào</span>
+                  <span className="material-symbols-outlined text-slate-300 text-3xl">
+                    {activeTab === 'unread' ? 'task_alt' : 'notifications_off'}
+                  </span>
+                  <span className="text-slate-500 text-xs font-medium">
+                    {activeTab === 'unread' ? 'Tất cả thông báo đã được đọc' : 'Không có thông báo nào'}
+                  </span>
                 </div>
               ) : (
-                displayNotifications.map(notification => {
+                activeNotifications.map(notification => {
                   let dateStr = notification.timestamp;
                   try {
                     const d = new Date(notification.timestamp || '');
@@ -584,23 +665,33 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
                     <div
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
-                      className={`p-3 text-xs hover:bg-blue-50/50 cursor-pointer flex gap-3 transition-colors ${!notification.read ? 'bg-blue-50/30 font-medium' : 'opacity-75'}`}
+                      className={`group relative p-3 text-xs hover:bg-blue-50/50 cursor-pointer flex gap-2.5 transition-colors ${!notification.read ? 'bg-blue-50/35 font-medium' : 'opacity-80'}`}
                     >
-                      <span className={`material-symbols-outlined text-lg flex-shrink-0 ${iconColorClass}`}>
+                      <span className={`material-symbols-outlined text-lg flex-shrink-0 mt-0.5 ${iconColorClass}`}>
                         {iconName}
                       </span>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 pr-2">
                         <div className="flex justify-between items-start gap-2 mb-1">
-                          <span className={`font-bold truncate ${!notification.read ? 'text-slate-800' : 'text-slate-600'}`}>
+                          <span className={`font-bold truncate ${!notification.read ? 'text-slate-900' : 'text-slate-700'}`}>
                             {notification.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim()}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">{dateStr}</span>
                         </div>
-                        <p className={`leading-tight ${!notification.read ? 'text-slate-600' : 'text-slate-500'}`}>{notification.message}</p>
+                        <p className={`leading-tight text-[11.5px] ${!notification.read ? 'text-slate-700' : 'text-slate-500'}`}>{notification.message}</p>
                       </div>
-                      {!notification.read && (
-                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
-                      )}
+                      <div className="flex flex-col items-center justify-between flex-shrink-0">
+                        {!notification.read ? (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-1"></div>
+                        ) : <div className="w-2 h-2"></div>}
+                        <button
+                          type="button"
+                          onClick={(e) => handleDismissNotification(e, notification.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all cursor-pointer"
+                          title="Xóa thông báo này"
+                        >
+                          <span className="material-symbols-outlined text-[15px] block">close</span>
+                        </button>
+                      </div>
                     </div>
                   );
                 })
@@ -695,28 +786,82 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       </button>
 
       {showPopover && (
-        <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-50 w-[320px]">
-          <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
-            {displayNotifications.some(n => n.read) && (
+        <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-slate-200 overflow-hidden z-50 w-[350px] flex flex-col">
+          <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80">
+            <div className="flex justify-between items-center mb-2.5">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-lg">notifications</span>
+                <h3 className="font-bold text-sm text-slate-800">Thông báo</h3>
+                {unreadCount > 0 && (
+                  <span className="px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full text-[10px] font-bold">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              {activeTab === 'unread' ? (
+                unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllAsRead}
+                    className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+                    title="Đánh dấu tất cả là đã đọc"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">done_all</span>
+                    Đã đọc tất cả
+                  </button>
+                )
+              ) : (
+                displayNotifications.some(n => n.read) && (
+                  <button
+                    type="button"
+                    onClick={handleClearRead}
+                    className="text-[11px] text-rose-600 font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+                    title="Dọn dẹp các thông báo đã đọc"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
+                    Xóa đã đọc
+                  </button>
+                )
+              )}
+            </div>
+            <div className="flex rounded-lg bg-slate-200/70 p-0.5 text-xs font-semibold">
               <button
                 type="button"
-                onClick={handleClearAll}
-                className="text-[11px] text-primary font-bold hover:underline cursor-pointer transition-colors"
-                title="Xóa tất cả các thông báo đã đọc"
+                onClick={() => setActiveTab('unread')}
+                className={`flex-1 py-1 rounded-md text-center transition-all ${
+                  activeTab === 'unread'
+                    ? 'bg-white text-primary shadow-xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
               >
-                Xóa đã đọc
+                Chưa đọc ({unreadNotifications.length})
               </button>
-            )}
+              <button
+                type="button"
+                onClick={() => setActiveTab('all')}
+                className={`flex-1 py-1 rounded-md text-center transition-all ${
+                  activeTab === 'all'
+                    ? 'bg-white text-primary shadow-xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Tất cả ({displayNotifications.length})
+              </button>
+            </div>
           </div>
+
           <div className="max-h-[60vh] overflow-y-auto custom-scrollbar divide-y divide-slate-100">
-            {displayNotifications.length === 0 ? (
+            {activeNotifications.length === 0 ? (
               <div className="p-8 text-center flex flex-col items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-slate-200 text-4xl">notifications_off</span>
-                <span className="text-slate-500 text-xs">Không có thông báo nào</span>
+                <span className="material-symbols-outlined text-slate-300 text-3xl">
+                  {activeTab === 'unread' ? 'task_alt' : 'notifications_off'}
+                </span>
+                <span className="text-slate-500 text-xs font-medium">
+                  {activeTab === 'unread' ? 'Tất cả thông báo đã được đọc' : 'Không có thông báo nào'}
+                </span>
               </div>
             ) : (
-              displayNotifications.map(notification => {
+              activeNotifications.map(notification => {
                 let dateStr = notification.timestamp;
                 try {
                   const d = new Date(notification.timestamp || '');
@@ -733,23 +878,33 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
                   <div
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`p-3 text-xs hover:bg-blue-50/50 cursor-pointer flex gap-3 transition-colors ${!notification.read ? 'bg-blue-50/30' : 'opacity-75'}`}
+                    className={`group relative p-3 text-xs hover:bg-blue-50/50 cursor-pointer flex gap-2.5 transition-colors ${!notification.read ? 'bg-blue-50/35 font-medium' : 'opacity-80'}`}
                   >
-                    <span className={`material-symbols-outlined text-lg flex-shrink-0 ${iconColorClass}`}>
+                    <span className={`material-symbols-outlined text-lg flex-shrink-0 mt-0.5 ${iconColorClass}`}>
                       {iconName}
                     </span>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-2">
                       <div className="flex justify-between items-start gap-2 mb-1">
-                        <span className={`font-bold truncate ${!notification.read ? 'text-slate-800' : 'text-slate-600'}`}>
+                        <span className={`font-bold truncate ${!notification.read ? 'text-slate-900' : 'text-slate-700'}`}>
                           {notification.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim()}
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">{dateStr}</span>
                       </div>
-                      <p className={`leading-tight ${!notification.read ? 'text-slate-600' : 'text-slate-500'}`}>{notification.message}</p>
+                      <p className={`leading-tight text-[11.5px] ${!notification.read ? 'text-slate-700' : 'text-slate-500'}`}>{notification.message}</p>
                     </div>
-                    {!notification.read && (
-                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
-                    )}
+                    <div className="flex flex-col items-center justify-between flex-shrink-0">
+                      {!notification.read ? (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-1"></div>
+                      ) : <div className="w-2 h-2"></div>}
+                      <button
+                        type="button"
+                        onClick={(e) => handleDismissNotification(e, notification.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all cursor-pointer"
+                        title="Xóa thông báo này"
+                      >
+                        <span className="material-symbols-outlined text-[15px] block">close</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })

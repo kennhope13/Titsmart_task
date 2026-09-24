@@ -1292,6 +1292,18 @@ export const api = {
         await supabase.from('notifications').delete().gt('id', 0);
       }
       return { success: true };
+    },
+    cleanupOld: async (days: number = 30) => {
+      try {
+        const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+        const { error } = await supabase.from('notifications').delete().lt('timestamp', cutoffDate);
+        if (error) {
+          console.warn('[Notifications] Cleanup old notifications warning:', error);
+        }
+      } catch (err) {
+        console.warn('[Notifications] Cleanup old notifications error:', err);
+      }
+      return { success: true };
     }
   },
   attendance: {

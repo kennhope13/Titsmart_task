@@ -1622,13 +1622,35 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     fetchNotifications: async () => {
       try {
+        // Trigger DB auto-cleanup for notifications older than 30 days (throttled)
+        const lastCleanupKey = 'titsmart_last_notif_cleanup';
+        const lastCleanup = Number(localStorage.getItem(lastCleanupKey) || '0');
+        if (Date.now() - lastCleanup > 4 * 60 * 60 * 1000) {
+          localStorage.setItem(lastCleanupKey, String(Date.now()));
+          if ((api.notifications as any).cleanupOld) {
+            (api.notifications as any).cleanupOld(30).catch(() => {});
+          }
+        }
+
         const notifs = await api.notifications.getAll();
         if (Array.isArray(notifs)) {
+          // Filter out notifications older than 30 days locally
+          const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+          const freshNotifs = notifs.filter(n => {
+            try {
+              const t = new Date(n.timestamp).getTime();
+              return isNaN(t) || t >= cutoff;
+            } catch {
+              return true;
+            }
+          });
+
           const current = get().notifications || [];
-          const isEqual = current.length === notifs.length &&
-            current.every((n, i) => n.id === notifs[i]?.id && n.read === notifs[i]?.read && n.timestamp === notifs[i]?.timestamp);
+          const isEqual = current.length === freshNotifs.length &&
+            current.every((n, i) => n.id === freshNotifs[i]?.id && n.read === freshNotifs[i]?.read && n.timestamp === freshNotifs[i]?.timestamp);
           if (!isEqual) {
-            set({ notifications: notifs });
+            set({ notifications: freshNotifs });
+            persistAndNotify({ notifications: freshNotifs });
           }
         }
       } catch (e) {
