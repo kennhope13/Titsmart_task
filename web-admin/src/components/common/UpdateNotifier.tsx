@@ -247,9 +247,6 @@ export const UpdateNotifier: React.FC = () => {
           style={{ WebkitAppRegion: 'no-drag' } as any}
         >
           <div className="bg-white border border-slate-200/90 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
-            {/* Top Brand Accent Line */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#00236F] via-blue-600 to-indigo-500" />
-
             {/* Icon */}
             <div className="w-16 h-16 rounded-2xl bg-[#00236F]/10 border border-[#00236F]/20 flex items-center justify-center mb-4 text-[#00236F] shadow-sm relative z-10">
               {state.status === 'downloaded' ? (
@@ -279,7 +276,7 @@ export const UpdateNotifier: React.FC = () => {
 
             {/* Progress bar */}
             {state.status === 'downloading' && (
-              <div className="w-full mb-4 relative z-10">
+              <div className="w-full mb-2 relative z-10">
                 <div className="flex justify-between items-center text-xs font-semibold text-slate-600 mb-1.5">
                   <span>
                     {state.transferred && state.total 
@@ -298,21 +295,11 @@ export const UpdateNotifier: React.FC = () => {
               </div>
             )}
 
-            {/* Notice / Warning box */}
-            <div className="w-full bg-amber-50/80 border border-amber-200/80 rounded-xl p-3.5 text-left mb-4 flex items-start gap-2.5 relative z-10">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-[11px] sm:text-xs text-amber-900 leading-relaxed font-medium">
-                {state.status === 'downloaded' || isInstalling
-                  ? 'Hệ thống đang chuẩn bị cài đặt và sẽ tự động khởi động lại ứng dụng trong giây lát.'
-                  : 'Hệ thống đang tạm khóa thao tác để bảo toàn dữ liệu trong quá trình cập nhật. Vui lòng không đóng ứng dụng.'}
-              </p>
-            </div>
-
             {/* Actions for downloaded state */}
             {state.status === 'downloaded' && !isInstalling && (
               <button
                 onClick={handleInstallAndRestart}
-                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#00236F] hover:bg-[#001a56] transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-98 relative z-10"
+                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#00236F] hover:bg-[#001a56] transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-98 relative z-10 mt-2"
               >
                 <RotateCcw className="w-4 h-4" />
                 Cài đặt & Khởi động lại ngay
@@ -320,7 +307,7 @@ export const UpdateNotifier: React.FC = () => {
             )}
 
             {isInstalling && (
-              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden relative z-10">
+              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden relative z-10 mt-2">
                 <div className="bg-[#00236F] h-full w-full animate-pulse"></div>
               </div>
             )}
