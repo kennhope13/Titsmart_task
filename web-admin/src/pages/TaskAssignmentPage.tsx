@@ -42,14 +42,14 @@ export const TaskAssignmentPage: React.FC = () => {
   const [selectedEngineerId, setSelectedEngineerId] = useState('');
   
   const [filterProjectCode, setFilterProjectCode] = useState('all');
-  const urlTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'my-tasks' | null;
+  const urlTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'completed' | 'my-tasks' | null;
   const highlightedTaskId = searchParams.get('taskId');
   const highlightKeyword = searchParams.get('highlight')?.toLowerCase().trim() || null;
   const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned' | 'my-tasks'>(() => urlTab || (location.state as any)?.tab || 'unassigned');
+  const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned' | 'completed' | 'my-tasks'>(() => urlTab || (location.state as any)?.tab || 'unassigned');
 
   useEffect(() => {
-    const qTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'my-tasks' | null;
+    const qTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'completed' | 'my-tasks' | null;
     if (qTab) {
       setActiveTab(qTab);
     } else if ((location.state as any)?.tab) {
@@ -73,8 +73,11 @@ export const TaskAssignmentPage: React.FC = () => {
     let filtered = tasks.filter(t => !t.isSectionHeader);
     if (activeTab === 'unassigned') {
       filtered = filtered.filter(t => !t.assignedEngineerId || t.status === 'Chưa làm' || t.status === 'Chờ nhận việc');
+    } else if (activeTab === 'completed') {
+      filtered = filtered.filter(t => t.status === 'Hoàn thành');
     } else {
-      filtered = filtered.filter(t => t.assignedEngineerId && t.status !== 'Chưa làm' && t.status !== 'Chờ nhận việc');
+      // 'assigned' = Đang thực hiện (đã giao việc, đang làm hoặc chờ nghiệm thu)
+      filtered = filtered.filter(t => t.assignedEngineerId && t.status !== 'Chưa làm' && t.status !== 'Chờ nhận việc' && t.status !== 'Hoàn thành');
     }
     
     if (filterProjectCode !== 'all') {
@@ -272,7 +275,7 @@ export const TaskAssignmentPage: React.FC = () => {
                             : 'bg-white hover:bg-blue-50/50'
                       }`} 
                       onClick={() => handleRowClick(t, p?.code || t.projectCode)}
-                      title={activeTab === 'assigned' ? "Nhấn vào dòng này để đi đến nghiệm thu công việc trong dự án" : undefined}
+                      title={activeTab !== 'unassigned' ? "Nhấn vào dòng này để xem chi tiết công việc trong dự án" : undefined}
                     >
                       {activeTab === 'unassigned' && (
                         <td className={`py-2.5 px-3 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isChecked ? 'bg-blue-50' : 'bg-white'} ${
@@ -292,7 +295,7 @@ export const TaskAssignmentPage: React.FC = () => {
                       <td className="py-2.5 px-4 font-medium text-slate-800 text-xs border-l border-slate-200 flex flex-col">
                         <div className="flex items-center justify-between gap-2">
                           <span className="group-hover:text-blue-600 transition-colors">{t.name}</span>
-                          {activeTab === 'assigned' && (
+                          {activeTab !== 'unassigned' && (
                             <span className="material-symbols-outlined text-[15px] text-slate-300 group-hover:text-blue-600 transition-colors shrink-0" title="Đi đến công việc">
                               arrow_forward
                             </span>

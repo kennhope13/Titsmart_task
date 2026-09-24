@@ -310,9 +310,19 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       if (pCode && pCode !== 'Hệ thống') params.set('project', pCode);
       navigate(`/field-logs${params.toString() ? `?${params.toString()}` : ''}`);
     } else if (
+      titleLower.includes('đã hoàn thành') || 
+      titleLower.includes('nghiệm thu') ||
+      (notification.type && notification.type.startsWith('task_completed'))
+    ) {
+      const params = new URLSearchParams();
+      params.set('tab', 'completed');
+      if (taskName) params.set('highlight', taskName);
+      else if (itemName) params.set('highlight', itemName);
+      navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'completed' } });
+    } else if (
       titleLower.includes('đã nhận việc') || 
-      titleLower.includes('hoàn thành') || 
-      (notification.type && (notification.type.startsWith('task_accepted') || notification.type.startsWith('task_completed')))
+      titleLower.includes('báo cáo xong') ||
+      (notification.type && notification.type.startsWith('task_accepted'))
     ) {
       const params = new URLSearchParams();
       params.set('tab', 'assigned');
