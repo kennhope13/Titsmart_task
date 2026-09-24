@@ -1966,7 +1966,16 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       try {
         const created = await api.accounting.createDocumentTrack({ ...trackData, ...audit });
         set((state) => {
-          const finalDoc = { ...optimisticDoc, ...created, id: (created && created.id) ? created.id : tempId };
+          const finalDoc: DocumentTrack = {
+            ...optimisticDoc,
+            ...(created || {}),
+            id: (created && created.id) ? created.id : tempId,
+            notes: ((created && created.notes) || trackData.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
+            createdById: (created && created.createdById) || optimisticDoc.createdById || '',
+            createdByName: (created && created.createdByName) || optimisticDoc.createdByName || '',
+            updatedBy: (created && created.updatedBy) || optimisticDoc.updatedBy || '',
+            updatedAt: (created && created.updatedAt) || optimisticDoc.updatedAt || new Date().toISOString()
+          };
           const nextTracks = state.documentTracks.map(d => d.id === tempId ? finalDoc : d);
           const freshNotifs = generateDocumentDueNotifications(nextTracks, state.notifications);
           const nextNotifs = freshNotifs.length > 0 ? [...freshNotifs, ...state.notifications] : state.notifications;
@@ -1983,7 +1992,12 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     updateDocumentTrack: async (id, fields) => {
       const audit = getAuditFields();
       set((state) => {
-        const nextTracks = state.documentTracks.map((d) => (d.id === id ? { ...d, ...fields, ...audit } : d));
+        const nextTracks = state.documentTracks.map((d) => (d.id === id ? {
+          ...d,
+          ...fields,
+          ...audit,
+          notes: (fields.notes !== undefined ? fields.notes : d.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()
+        } : d));
         const freshNotifs = generateDocumentDueNotifications(nextTracks, state.notifications);
         const nextNotifs = freshNotifs.length > 0 ? [...freshNotifs, ...state.notifications] : state.notifications;
         persistAndNotify({ documentTracks: nextTracks, notifications: nextNotifs });
@@ -1991,6 +2005,15 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       });
       try {
         const updated = await api.accounting.updateDocumentTrack(id, { ...fields, ...audit });
+        set((state) => {
+          const nextTracks = state.documentTracks.map((d) => (d.id === id ? {
+            ...d,
+            ...(updated || {}),
+            notes: ((updated && updated.notes) || fields.notes || d.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()
+          } : d));
+          persistAndNotify({ documentTracks: nextTracks });
+          return { documentTracks: nextTracks };
+        });
         get().logActivity('Cập nhật hồ sơ gửi đi: ' + (updated?.contractName || id), 'COMPANY');
       } catch (e) {
         console.warn('Failed to update document track, updated locally', e);

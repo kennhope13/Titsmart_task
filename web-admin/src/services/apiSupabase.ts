@@ -929,7 +929,7 @@ export const api = {
         prepay_amount: data.prepayAmount || 0,
         payment_status: data.paymentStatus || 'Chưa thanh toán',
         is_completed: !!data.isCompleted,
-        notes: data.notes || '',
+        notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
         due_date: cleanDate(data.dueDate),
         remind_days: data.remindDays || 3,
         file_urls: Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []),
@@ -942,7 +942,15 @@ export const api = {
       try {
         const { data: result, error } = await supabase.from('document_tracks').insert(fullPayload).select().single();
         if (!error && result) {
-          return toCamelCase(result);
+          return {
+            ...data,
+            ...toCamelCase(result),
+            notes: (result.notes || data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
+            createdById: data.createdById || '',
+            createdByName: data.createdByName || '',
+            updatedBy: data.updatedBy || data.createdByName || '',
+            updatedAt: data.updatedAt || new Date().toISOString()
+          };
         }
       } catch {}
 
@@ -980,13 +988,41 @@ export const api = {
           if (ultraError) {
             const barePayload: any = { notes: combinedNotes };
             const { data: bareResult } = await supabase.from('document_tracks').insert(barePayload).select().single();
-            return { ...data, ...toCamelCase(bareResult), id: bareResult?.id || `doc-${Date.now()}` };
+            return {
+              ...data,
+              id: bareResult?.id || data.id || `doc-${Date.now()}`,
+              notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
+              createdById: data.createdById || '',
+              createdByName: data.createdByName || '',
+              updatedBy: data.updatedBy || data.createdByName || '',
+              updatedAt: data.updatedAt || new Date().toISOString()
+            };
           }
-          return { ...data, ...toCamelCase(ultraResult), id: ultraResult.id };
+          return {
+            ...data,
+            id: ultraResult.id || data.id || `doc-${Date.now()}`,
+            notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
+            createdById: data.createdById || '',
+            createdByName: data.createdByName || '',
+            updatedBy: data.updatedBy || data.createdByName || '',
+            updatedAt: data.updatedAt || new Date().toISOString()
+          };
         }
-        return { ...data, ...toCamelCase(retryResult), id: retryResult.id };
+        return {
+          ...data,
+          id: retryResult.id || data.id || `doc-${Date.now()}`,
+          notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
+          createdById: data.createdById || '',
+          createdByName: data.createdByName || '',
+          updatedBy: data.updatedBy || data.createdByName || '',
+          updatedAt: data.updatedAt || new Date().toISOString()
+        };
       } catch {
-        return { id: data.id || `doc-${Date.now()}`, ...data };
+        return {
+          ...data,
+          id: data.id || `doc-${Date.now()}`,
+          notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()
+        };
       }
     },
     updateDocumentTrack: async (id: string, data: any) => {
@@ -1026,7 +1062,7 @@ export const api = {
       if (data.prepayAmount !== undefined) fullPayload.prepay_amount = data.prepayAmount;
       if (data.paymentStatus !== undefined) fullPayload.payment_status = data.paymentStatus;
       if (data.isCompleted !== undefined) fullPayload.is_completed = !!data.isCompleted;
-      if (data.notes !== undefined) fullPayload.notes = data.notes;
+      if (data.notes !== undefined) fullPayload.notes = (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim();
       if (data.dueDate !== undefined) {
         fullPayload.due_date = cleanDate(data.dueDate);
         fullPayload.expected_approval_date = cleanDate(data.dueDate);
@@ -1071,13 +1107,31 @@ export const api = {
               await supabase.from('document_tracks').update({ notes: combinedNotes }).eq('id', id);
             }
           }
+          return {
+            ...data,
+            id,
+            notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
+            updatedBy: data.updatedBy || '',
+            updatedAt: data.updatedAt || new Date().toISOString()
+          };
         } else if (res) {
-          return { id, ...data, ...toCamelCase(res) };
+          return {
+            ...data,
+            ...toCamelCase(res),
+            id,
+            notes: (res.notes || data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
+            updatedBy: data.updatedBy || '',
+            updatedAt: data.updatedAt || new Date().toISOString()
+          };
         }
       } catch (err) {
         console.warn('Failed to update document track in DB:', err);
       }
-      return { id, ...data };
+      return {
+        ...data,
+        id,
+        notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()
+      };
     },
     deleteDocumentTrack: async (id: string) => {
       try {

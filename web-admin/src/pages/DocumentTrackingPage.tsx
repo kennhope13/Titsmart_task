@@ -826,7 +826,7 @@ export const DocumentTrackingPage: React.FC = () => {
                </thead>
                <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 leading-tight">
                 {filteredTracks.map((track) => (
-                  <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc(track)}>
+                  <tr key={track.id} className="hover:bg-blue-50/20 transition-colors align-top cursor-pointer" onClick={() => setEditingDoc({ ...track, notes: (track.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim() })}>
                     <td className="px-1 py-1 text-center">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         track.side === 'Bên nhận' ? 'bg-emerald-50 text-emerald-600' :
@@ -1020,15 +1020,15 @@ export const DocumentTrackingPage: React.FC = () => {
                 ))}
               </CustomSelect>
             </div>
-            <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={newDoc.contractName} onChange={(e) => setNewDoc({...newDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+            <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={newDoc.contractName || ''} onChange={(e) => setNewDoc({...newDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
           </div>
           <div className="grid grid-cols-2 gapx-1 py-1">
-            <div><label className="block font-bold mb-1">Mã/Số Hợp đồng</label><input type="text" value={newDoc.contractNo} onChange={(e) => setNewDoc({...newDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">Công ty / Đối tác nhận *</label><input type="text" required value={newDoc.company} onChange={(e) => setNewDoc({...newDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Mã/Số Hợp đồng</label><input type="text" value={newDoc.contractNo || ''} onChange={(e) => setNewDoc({...newDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Công ty / Đối tác nhận *</label><input type="text" required value={newDoc.company || ''} onChange={(e) => setNewDoc({...newDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           </div>
           <div className="grid grid-cols-3 gapx-1 py-1">
-            <div><label className="block font-bold mb-1">Người nhận trực tiếp</label><input type="text" value={newDoc.receiverName} onChange={(e) => setNewDoc({...newDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1">SĐT người nhận</label><input type="text" value={newDoc.phone} onChange={(e) => setNewDoc({...newDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">Người nhận trực tiếp</label><input type="text" value={newDoc.receiverName || ''} onChange={(e) => setNewDoc({...newDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1">SĐT người nhận</label><input type="text" value={newDoc.phone || ''} onChange={(e) => setNewDoc({...newDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
               <label className="block font-bold mb-1">Bên</label>
               <CustomSelect value={newDoc.side || ''} onChange={(e) => setNewDoc({...newDoc, side: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
@@ -1039,18 +1039,18 @@ export const DocumentTrackingPage: React.FC = () => {
               </CustomSelect>
             </div>
           </div>
-          <div><label className="block font-bold mb-1">Địa chỉ nhận hồ sơ</label><input type="text" value={newDoc.address} onChange={(e) => setNewDoc({...newDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+          <div><label className="block font-bold mb-1">Địa chỉ nhận hồ sơ</label><input type="text" value={newDoc.address || ''} onChange={(e) => setNewDoc({...newDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           <div className="grid grid-cols-3 gapx-1 py-1 bg-amber-50/50 p-2 rounded-lg border border-amber-200">
-            <div><label className="block font-bold mb-1 text-slate-800">Ngày gửi đi</label><input type="date" value={newDoc.sendDate} onChange={(e) => setNewDoc({...newDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div><label className="block font-bold mb-1 text-slate-800">Ngày nhận thực tế</label><input type="date" value={newDoc.receiveDate} onChange={(e) => setNewDoc({...newDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1 text-slate-800">Ngày gửi đi</label><input type="date" value={newDoc.sendDate || ''} onChange={(e) => setNewDoc({...newDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+            <div><label className="block font-bold mb-1 text-slate-800">Ngày nhận thực tế</label><input type="date" value={newDoc.receiveDate || ''} onChange={(e) => setNewDoc({...newDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div><label className="block font-bold mb-1 text-amber-900">Hạn nộp / Hẹn trả 🔔</label><input type="date" value={newDoc.dueDate || ''} onChange={(e) => setNewDoc({...newDoc, dueDate: e.target.value})} className="w-full border border-amber-300 rounded-lg p-2 bg-white font-bold text-amber-900" /></div>
           </div>
           <div className="grid grid-cols-3 gapx-1 py-1 bg-slate-50 p-2 rounded-lg border">
-            <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={newDoc.contractValue === 0 ? '' : newDoc.contractValue} placeholder="0" onChange={(e) => setNewDoc({...newDoc, contractValue: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
+            <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={newDoc.contractValue === 0 ? '' : (newDoc.contractValue ?? '')} placeholder="0" onChange={(e) => setNewDoc({...newDoc, contractValue: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
             <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={!newDoc.prepayPercent ? '' : (newDoc.prepayPercent * 100)} placeholder="0" onChange={(e) => setNewDoc({...newDoc, prepayPercent: e.target.value === '' ? 0 : Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
               <label className="block font-bold mb-1">Thanh toán</label>
-              <CustomSelect value={newDoc.paymentStatus} onChange={(e) => setNewDoc({...newDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
+              <CustomSelect value={newDoc.paymentStatus || 'Chưa thanh toán'} onChange={(e) => setNewDoc({...newDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
                 <option value="Chưa thanh toán">Chưa thanh toán</option>
                 <option value="Đã thanh toán">Đã thanh toán</option>
               </CustomSelect>
@@ -1059,16 +1059,16 @@ export const DocumentTrackingPage: React.FC = () => {
           <div className="grid grid-cols-2 gapx-1 py-1">
             <div>
               <label className="block font-bold mb-1">Trạng thái hồ sơ</label>
-              <CustomSelect value={newDoc.docStatus} onChange={(e) => setNewDoc({...newDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+              <CustomSelect value={newDoc.docStatus || 'Chưa ký'} onChange={(e) => setNewDoc({...newDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                 <option value="Chưa nhận">Chưa nhận</option>
                 <option value="Đã nhận đủ">Đã nhận đủ</option>
                 <option value="Đã ký">Đã ký</option>
                 <option value="Đã đổi gửi lại">Đã đổi gửi lại</option>
               </CustomSelect>
             </div>
-            <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={newDoc.isCompleted} onChange={(e) => setNewDoc({...newDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
+            <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={Boolean(newDoc.isCompleted)} onChange={(e) => setNewDoc({...newDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
           </div>
-          <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newDoc.notes} onChange={(e) => setNewDoc({...newDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+          <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newDoc.notes || ''} onChange={(e) => setNewDoc({...newDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           <FileUpload multiple label="File đính kèm" value={newDoc.fileUrls} onChange={(urls) => setNewDoc({...newDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} />
           <div className="pt-3 border-t flex justify-end gap-2">
             <button disabled={isSubmitting} type="button" onClick={() => setIsNewDocOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100 disabled:opacity-50">Hủy</button>
@@ -1100,6 +1100,7 @@ export const DocumentTrackingPage: React.FC = () => {
 
               await updateDocumentTrack(editingDoc.id, {
                 ...editingDoc,
+                notes: (editingDoc.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
                 prepayAmount: prepayAmt
               });
               triggerToast(`Đã cập nhật hồ sơ \"${editingDoc.contractNo || editingDoc.contractName || 'hồ sơ'}\" thành công!`, 'success');
@@ -1133,15 +1134,15 @@ export const DocumentTrackingPage: React.FC = () => {
                     ))}
                   </CustomSelect>
                 </div>
-                <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={editingDoc.contractName} onChange={(e) => setEditingDoc({...editingDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
+                <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={editingDoc.contractName || ''} onChange={(e) => setEditingDoc({...editingDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
               </div>
               <div className="grid grid-cols-2 gapx-1 py-1">
-                <div><label className="block font-bold mb-1">Số HĐ</label><input type="text" value={editingDoc.contractNo} onChange={(e) => setEditingDoc({...editingDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">Công ty nhận *</label><input type="text" required value={editingDoc.company} onChange={(e) => setEditingDoc({...editingDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Số HĐ</label><input type="text" value={editingDoc.contractNo || ''} onChange={(e) => setEditingDoc({...editingDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Công ty nhận *</label><input type="text" required value={editingDoc.company || ''} onChange={(e) => setEditingDoc({...editingDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               </div>
               <div className="grid grid-cols-3 gapx-1 py-1">
-                <div><label className="block font-bold mb-1">Người nhận</label><input type="text" value={editingDoc.receiverName} onChange={(e) => setEditingDoc({...editingDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-                <div><label className="block font-bold mb-1">SĐT nhận</label><input type="text" value={editingDoc.phone} onChange={(e) => setEditingDoc({...editingDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Người nhận</label><input type="text" value={editingDoc.receiverName || ''} onChange={(e) => setEditingDoc({...editingDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">SĐT nhận</label><input type="text" value={editingDoc.phone || ''} onChange={(e) => setEditingDoc({...editingDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
                 <div>
                   <label className="block font-bold mb-1">Bên</label>
                   <CustomSelect value={editingDoc.side || ''} onChange={(e) => setEditingDoc({...editingDoc, side: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
@@ -1152,18 +1153,18 @@ export const DocumentTrackingPage: React.FC = () => {
                   </CustomSelect>
                 </div>
               </div>
-              <div><label className="block font-bold mb-1">Địa chỉ</label><input type="text" value={editingDoc.address} onChange={(e) => setEditingDoc({...editingDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Địa chỉ</label><input type="text" value={editingDoc.address || ''} onChange={(e) => setEditingDoc({...editingDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div className="grid grid-cols-3 gapx-1 py-1 bg-amber-50/50 p-2 rounded-lg border border-amber-200">
-                <div><label className="block font-bold mb-1 text-slate-800">Ngày gửi đi</label><input type="date" value={editingDoc.sendDate} onChange={(e) => setEditingDoc({...editingDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1 text-slate-800">Ngày gửi đi</label><input type="date" value={editingDoc.sendDate || ''} onChange={(e) => setEditingDoc({...editingDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
                 <div><label className="block font-bold mb-1 text-slate-800">Ngày nhận thực tế</label><input type="date" value={editingDoc.receiveDate || ''} onChange={(e) => setEditingDoc({...editingDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
                 <div><label className="block font-bold mb-1 text-amber-900">Hạn nộp / Hẹn trả 🔔</label><input type="date" value={editingDoc.dueDate || ''} onChange={(e) => setEditingDoc({...editingDoc, dueDate: e.target.value})} className="w-full border border-amber-300 rounded-lg p-2 bg-white font-bold text-amber-900" /></div>
               </div>
               <div className="grid grid-cols-3 gapx-1 py-1 bg-slate-50 p-2 rounded-lg border">
-                <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={editingDoc.contractValue === 0 ? '' : editingDoc.contractValue} placeholder="0" onChange={(e) => setEditingDoc({...editingDoc, contractValue: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
-                <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={editingDoc.prepayPercent === 0 ? '' : (editingDoc.prepayPercent * 100)} placeholder="0" onChange={(e) => setEditingDoc({...editingDoc, prepayPercent: e.target.value === '' ? 0 : Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={editingDoc.contractValue === 0 ? '' : (editingDoc.contractValue ?? '')} placeholder="0" onChange={(e) => setEditingDoc({...editingDoc, contractValue: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
+                <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={!editingDoc.prepayPercent ? '' : (editingDoc.prepayPercent * 100)} placeholder="0" onChange={(e) => setEditingDoc({...editingDoc, prepayPercent: e.target.value === '' ? 0 : Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
                 <div>
                   <label className="block font-bold mb-1">Thanh toán</label>
-                  <CustomSelect value={editingDoc.paymentStatus} onChange={(e) => setEditingDoc({...editingDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
+                  <CustomSelect value={editingDoc.paymentStatus || 'Chưa thanh toán'} onChange={(e) => setEditingDoc({...editingDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
                     <option value="Chưa thanh toán">Chưa thanh toán</option>
                     <option value="Đã thanh toán">Đã thanh toán</option>
                   </CustomSelect>
@@ -1172,16 +1173,16 @@ export const DocumentTrackingPage: React.FC = () => {
               <div className="grid grid-cols-2 gapx-1 py-1">
                 <div>
                   <label className="block font-bold mb-1">Trạng thái hồ sơ</label>
-                  <CustomSelect value={editingDoc.docStatus} onChange={(e) => setEditingDoc({...editingDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                  <CustomSelect value={editingDoc.docStatus || 'Chưa ký'} onChange={(e) => setEditingDoc({...editingDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
                     <option value="Chưa nhận">Chưa nhận</option>
                     <option value="Đã nhận đủ">Đã nhận đủ</option>
                     <option value="Đã ký">Đã ký</option>
                     <option value="Đã đổi gửi lại">Đã đổi gửi lại</option>
                   </CustomSelect>
                 </div>
-                <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={editingDoc.isCompleted} onChange={(e) => setEditingDoc({...editingDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
+                <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={Boolean(editingDoc.isCompleted)} onChange={(e) => setEditingDoc({...editingDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
               </div>
-              <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingDoc.notes} onChange={(e) => setEditingDoc({...editingDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={(editingDoc.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()} onChange={(e) => setEditingDoc({...editingDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <FileUpload multiple label="File đính kèm" value={editingDoc.fileUrls} onChange={(urls) => setEditingDoc({...editingDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} />
             </fieldset>
             <div className="pt-3 border-t flex justify-end gap-2">
