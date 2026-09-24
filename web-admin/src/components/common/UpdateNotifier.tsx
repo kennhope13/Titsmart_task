@@ -243,27 +243,26 @@ export const UpdateNotifier: React.FC = () => {
       {/* ─── FULLSCREEN BLOCKING OVERLAY KHI ĐANG TẢI & CÀI ĐẶT BẢN CẬP NHẬT ─── */}
       {isUpdating && (
         <div 
-          className="fixed inset-0 z-[999999] bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 text-white select-none cursor-wait animate-fadeIn pointer-events-auto"
+          className="fixed inset-0 z-[999999] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-6 select-none cursor-wait animate-fadeIn pointer-events-auto"
           style={{ WebkitAppRegion: 'no-drag' } as any}
         >
-          <div className="bg-slate-900/95 border border-slate-700/80 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
-            {/* Background Glow */}
-            <div className="absolute -top-16 -left-16 w-36 h-36 bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-16 -right-16 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="bg-white border border-slate-200/90 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
+            {/* Top Brand Accent Line */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#00236F] via-blue-600 to-indigo-500" />
 
             {/* Icon */}
-            <div className="w-16 h-16 rounded-2xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center mb-4 text-sky-400 shadow-inner relative z-10">
+            <div className="w-16 h-16 rounded-2xl bg-[#00236F]/10 border border-[#00236F]/20 flex items-center justify-center mb-4 text-[#00236F] shadow-sm relative z-10">
               {state.status === 'downloaded' ? (
-                <CheckCircle2 className="w-8 h-8 text-emerald-400 animate-pulse" />
+                <CheckCircle2 className="w-8 h-8 text-emerald-600 animate-pulse" />
               ) : isInstalling ? (
-                <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+                <Loader2 className="w-8 h-8 text-[#00236F] animate-spin" />
               ) : (
-                <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
+                <Loader2 className="w-8 h-8 text-[#00236F] animate-spin" />
               )}
             </div>
 
             {/* Title */}
-            <h2 className="text-lg sm:text-xl font-bold text-white mb-1.5 relative z-10">
+            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 mb-1.5 relative z-10">
               {isInstalling 
                 ? 'Đang cài đặt bản cập nhật...'
                 : state.status === 'downloaded'
@@ -272,27 +271,27 @@ export const UpdateNotifier: React.FC = () => {
             </h2>
 
             {/* Version info */}
-            <p className="text-xs text-slate-300 font-medium mb-4 relative z-10">
-              Phiên bản hiện tại: <span className="font-bold text-slate-200">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</span>
+            <p className="text-xs text-slate-500 font-medium mb-4 relative z-10">
+              Phiên bản hiện tại: <span className="font-bold text-slate-700">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</span>
               {' → '}
-              Phiên bản mới: <span className="font-bold text-emerald-400">v{state.version || 'mới'}</span>
+              Phiên bản mới: <span className="font-bold text-[#00236F]">v{state.version || 'mới'}</span>
             </p>
 
             {/* Progress bar */}
             {state.status === 'downloading' && (
               <div className="w-full mb-4 relative z-10">
-                <div className="flex justify-between items-center text-xs font-semibold text-slate-300 mb-1.5">
+                <div className="flex justify-between items-center text-xs font-semibold text-slate-600 mb-1.5">
                   <span>
                     {state.transferred && state.total 
                       ? `${(state.transferred / (1024 * 1024)).toFixed(1)} MB / ${(state.total / (1024 * 1024)).toFixed(1)} MB`
                       : 'Tiến độ tải dữ liệu'}
                     {state.bytesPerSecond ? ` • ${(state.bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s` : ''}
                   </span>
-                  <span className="text-sky-400 font-bold text-sm">{state.percent ?? 0}%</span>
+                  <span className="text-[#00236F] font-black text-sm">{state.percent ?? 0}%</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700/60 p-0.5">
+                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200/80 p-0.5">
                   <div 
-                    className="bg-gradient-to-r from-sky-500 via-indigo-500 to-emerald-400 h-full transition-all duration-300 rounded-full shadow-sm"
+                    className="bg-gradient-to-r from-[#00236F] to-blue-600 h-full transition-all duration-300 rounded-full shadow-xs"
                     style={{ width: `${Math.max(state.percent ?? 0, 4)}%` }}
                   />
                 </div>
@@ -300,9 +299,9 @@ export const UpdateNotifier: React.FC = () => {
             )}
 
             {/* Notice / Warning box */}
-            <div className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-left mb-4 flex items-start gap-2.5 relative z-10">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-[11px] sm:text-xs text-amber-200/90 leading-relaxed font-medium">
+            <div className="w-full bg-amber-50/80 border border-amber-200/80 rounded-xl p-3.5 text-left mb-4 flex items-start gap-2.5 relative z-10">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-[11px] sm:text-xs text-amber-900 leading-relaxed font-medium">
                 {state.status === 'downloaded' || isInstalling
                   ? 'Hệ thống đang chuẩn bị cài đặt và sẽ tự động khởi động lại ứng dụng trong giây lát.'
                   : 'Hệ thống đang tạm khóa thao tác để bảo toàn dữ liệu trong quá trình cập nhật. Vui lòng không đóng ứng dụng.'}
@@ -313,7 +312,7 @@ export const UpdateNotifier: React.FC = () => {
             {state.status === 'downloaded' && !isInstalling && (
               <button
                 onClick={handleInstallAndRestart}
-                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-98 relative z-10"
+                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#00236F] hover:bg-[#001a56] transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-98 relative z-10"
               >
                 <RotateCcw className="w-4 h-4" />
                 Cài đặt & Khởi động lại ngay
@@ -321,8 +320,8 @@ export const UpdateNotifier: React.FC = () => {
             )}
 
             {isInstalling && (
-              <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden relative z-10">
-                <div className="bg-emerald-500 h-full w-full animate-pulse"></div>
+              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden relative z-10">
+                <div className="bg-[#00236F] h-full w-full animate-pulse"></div>
               </div>
             )}
           </div>
