@@ -891,7 +891,7 @@ export const DocumentTrackingPage: React.FC = () => {
                </thead>
                 <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 leading-tight">
                 {filteredTracks.map((track) => {
-                  const isMatch = Boolean(
+                  const isMatch = isHighlightActive && Boolean(
                     (highlightId && track.id === highlightId) ||
                     (highlightKeyword && (
                       (track.contractName || '').toLowerCase().includes(highlightKeyword) ||
