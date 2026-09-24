@@ -243,74 +243,92 @@ export const UpdateNotifier: React.FC = () => {
       {/* ─── FULLSCREEN BLOCKING OVERLAY KHI ĐANG TẢI & CÀI ĐẶT BẢN CẬP NHẬT ─── */}
       {isUpdating && (
         <div 
-          className="fixed inset-0 z-[999999] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-6 select-none cursor-wait animate-fadeIn pointer-events-auto"
+          className="fixed inset-0 z-[999999] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 select-none cursor-wait animate-fadeIn pointer-events-auto"
           style={{ WebkitAppRegion: 'no-drag' } as any}
         >
-          <div className="bg-white border border-slate-200/90 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
-            {/* Icon */}
-            <div className="w-16 h-16 rounded-2xl bg-[#00236F]/10 border border-[#00236F]/20 flex items-center justify-center mb-4 text-[#00236F] shadow-sm relative z-10">
-              {state.status === 'downloaded' ? (
-                <CheckCircle2 className="w-8 h-8 text-emerald-600 animate-pulse" />
-              ) : isInstalling ? (
-                <Loader2 className="w-8 h-8 text-[#00236F] animate-spin" />
-              ) : (
-                <Loader2 className="w-8 h-8 text-[#00236F] animate-spin" />
-              )}
+          <div className="bg-white rounded-2xl shadow-2xl border border-outline-variant max-w-md w-full overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="px-4 py-2.5 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
+              <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 truncate">
+                <span className="material-symbols-outlined text-[18px]">system_update</span>
+                <span className="truncate">Cập nhật hệ thống TITSMART</span>
+              </h3>
+              <span className="text-[11px] font-bold text-primary px-2 py-0.5 bg-blue-50 border border-blue-100 rounded-md">
+                v{state.version || 'mới'}
+              </span>
             </div>
 
-            {/* Title */}
-            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 mb-1.5 relative z-10">
-              {isInstalling 
-                ? 'Đang cài đặt bản cập nhật...'
-                : state.status === 'downloaded'
-                  ? 'Đã tải xong bản cập nhật!'
-                  : 'Đang tải bản cập nhật mới...'}
-            </h2>
-
-            {/* Version info */}
-            <p className="text-xs text-slate-500 font-medium mb-4 relative z-10">
-              Phiên bản hiện tại: <span className="font-bold text-slate-700">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</span>
-              {' → '}
-              Phiên bản mới: <span className="font-bold text-[#00236F]">v{state.version || 'mới'}</span>
-            </p>
-
-            {/* Progress bar */}
-            {state.status === 'downloading' && (
-              <div className="w-full mb-2 relative z-10">
-                <div className="flex justify-between items-center text-xs font-semibold text-slate-600 mb-1.5">
-                  <span>
-                    {state.transferred && state.total 
-                      ? `${(state.transferred / (1024 * 1024)).toFixed(1)} MB / ${(state.total / (1024 * 1024)).toFixed(1)} MB`
-                      : 'Tiến độ tải dữ liệu'}
-                    {state.bytesPerSecond ? ` • ${(state.bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s` : ''}
-                  </span>
-                  <span className="text-[#00236F] font-black text-sm">{state.percent ?? 0}%</span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200/80 p-0.5">
-                  <div 
-                    className="bg-gradient-to-r from-[#00236F] to-blue-600 h-full transition-all duration-300 rounded-full shadow-xs"
-                    style={{ width: `${Math.max(state.percent ?? 0, 4)}%` }}
-                  />
-                </div>
+            {/* Modal Content */}
+            <div className="p-6 flex flex-col items-center text-center">
+              {/* Status Icon */}
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-3 text-primary shadow-xs">
+                {state.status === 'downloaded' ? (
+                  <span className="material-symbols-outlined text-3xl text-emerald-600 animate-bounce">check_circle</span>
+                ) : (
+                  <span className="material-symbols-outlined text-3xl text-primary animate-spin">sync</span>
+                )}
               </div>
-            )}
 
-            {/* Actions for downloaded state */}
-            {state.status === 'downloaded' && !isInstalling && (
-              <button
-                onClick={handleInstallAndRestart}
-                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#00236F] hover:bg-[#001a56] transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-98 relative z-10 mt-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Cài đặt & Khởi động lại ngay
-              </button>
-            )}
+              {/* Title */}
+              <h4 className="text-base font-bold text-slate-800 mb-1">
+                {isInstalling 
+                  ? 'Đang cài đặt bản cập nhật...'
+                  : state.status === 'downloaded'
+                    ? 'Đã tải xong bản cập nhật!'
+                    : 'Đang tải bản cập nhật mới...'}
+              </h4>
 
-            {isInstalling && (
-              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden relative z-10 mt-2">
-                <div className="bg-[#00236F] h-full w-full animate-pulse"></div>
+              {/* Version Comparison Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs mb-4">
+                <span className="text-slate-500 font-medium">
+                  Hiện tại: <strong className="text-slate-700 font-mono font-bold">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</strong>
+                </span>
+                <span className="material-symbols-outlined text-[13px] text-slate-400">arrow_forward</span>
+                <span className="text-primary font-bold font-mono">
+                  Mới: v{state.version || 'mới'}
+                </span>
               </div>
-            )}
+
+              {/* TITSMART Standard Progress Bar */}
+              {state.status === 'downloading' && (
+                <div className="w-full space-y-1.5 mb-2">
+                  <div className="flex justify-between items-center text-xs text-slate-500 font-medium">
+                    <span>
+                      {state.transferred && state.total 
+                        ? `${(state.transferred / (1024 * 1024)).toFixed(1)} MB / ${(state.total / (1024 * 1024)).toFixed(1)} MB`
+                        : 'Tiến độ tải dữ liệu'}
+                      {state.bytesPerSecond ? ` • ${(state.bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s` : ''}
+                    </span>
+                    <span className="text-primary font-bold text-xs font-mono">{state.percent ?? 0}%</span>
+                  </div>
+                  
+                  {/* Clean flat progress bar matching TITSMART app style */}
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/60">
+                    <div 
+                      className="bg-primary h-full transition-all duration-300 rounded-full"
+                      style={{ width: `${Math.max(state.percent ?? 0, 2)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Actions for downloaded state */}
+              {state.status === 'downloaded' && !isInstalling && (
+                <button
+                  onClick={handleInstallAndRestart}
+                  className="w-full mt-3 py-2 px-4 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary/90 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+                  Cài đặt & Khởi động lại ngay
+                </button>
+              )}
+
+              {isInstalling && (
+                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mt-3">
+                  <div className="bg-primary h-full w-full animate-pulse"></div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -318,115 +336,120 @@ export const UpdateNotifier: React.FC = () => {
       {/* ─── TOAST / BANNER THÔNG BÁO KHI CÓ BẢN MỚI HOẶC LỖI (CHƯA TẢI) ─── */}
       {state.visible && !isUpdating && (
       <div className="fixed bottom-24 md:bottom-5 right-3 md:right-5 z-[9999] w-[380px] max-w-[calc(100vw-1.5rem)] pb-[env(safe-area-inset-bottom,0px)]">
-        <div className="rounded-xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
-          <div className="flex items-start justify-between gap-3 px-4 pt-3 pb-1">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                {state.source === 'web' ? (
-                  <Sparkles className="w-4 h-4 text-primary" />
-                ) : (
-                  <Download className="w-4 h-4 text-primary" />
-                )}
-              </div>
-              <div>
-                <p className="text-xs md:text-sm font-extrabold text-slate-800">
-                  {state.status === 'error' ? 'Lỗi cập nhật' : 'Có bản cập nhật mới'}
-                </p>
-                <p className="text-[11px] text-slate-500 font-medium">
-                  Phiên bản thiết bị: <span className="font-bold text-slate-700">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</span> → Mới: <span className="font-bold text-primary">v{state.version || 'mới'}</span>
-                </p>
-              </div>
+        <div className="rounded-2xl bg-white border border-outline-variant shadow-2xl overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="px-4 py-2.5 bg-surface-container-low border-b border-outline-variant flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[18px]">
+                {state.source === 'web' ? 'auto_awesome' : 'download'}
+              </span>
+              <h3 className="text-xs font-bold text-primary">
+                {state.status === 'error' ? 'Lỗi cập nhật' : 'Có bản cập nhật mới'}
+              </h3>
             </div>
-            <button onClick={dismiss} className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer" title="Để sau">
-              <X className="w-4 h-4" />
+            <button 
+              onClick={dismiss} 
+              className="p-1 text-slate-400 hover:text-slate-600 rounded-md transition-colors cursor-pointer" 
+              title="Để sau"
+            >
+              <span className="material-symbols-outlined text-[18px] block">close</span>
             </button>
           </div>
 
-          {/* Web / Mobile: hiển thị danh sách notes dạng list gọn gàng */}
-          {state.source === 'web' && state.notes && state.notes.length > 0 && (
-            <div className="px-4 pt-1.5 pb-1">
-              <p className="text-[11px] font-bold text-slate-600 mb-1">Nội dung cập nhật:</p>
-              <ul className="space-y-1 max-h-24 overflow-y-auto">
-                {state.notes.map((note, i) => (
-                  <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-600 leading-tight">
-                    <span className="text-emerald-500 font-bold shrink-0">✓</span>
-                    <span>{note}</span>
-                  </li>
-                ))}
-              </ul>
+          <div className="p-4 space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500">Phiên bản hiện tại: <strong className="text-slate-700 font-mono">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</strong></span>
+              <span className="text-primary font-bold font-mono px-2 py-0.5 bg-blue-50 border border-blue-100 rounded-md">
+                Mới: v{state.version || 'mới'}
+              </span>
             </div>
-          )}
 
-          {/* Electron: hiển thị releaseNotes HTML */}
-          {state.source === 'electron' && state.status === 'available' && state.releaseNotes && (
-            <div className="px-4 pt-2 pb-1">
+            {/* Web / Mobile: hiển thị danh sách notes dạng list gọn gàng */}
+            {state.source === 'web' && state.notes && state.notes.length > 0 && (
+              <div className="pt-1">
+                <p className="text-[11px] font-bold text-slate-700 mb-1">Nội dung cập nhật:</p>
+                <ul className="space-y-1 max-h-28 overflow-y-auto custom-scrollbar">
+                  {state.notes.map((note, i) => (
+                    <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-600 leading-tight">
+                      <span className="text-emerald-500 font-bold shrink-0">✓</span>
+                      <span>{note}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Electron: hiển thị releaseNotes */}
+            {state.source === 'electron' && state.status === 'available' && state.releaseNotes && (
               <div 
-                className="text-xs text-slate-500 max-h-32 overflow-y-auto prose prose-sm prose-slate"
+                className="text-xs text-slate-600 max-h-32 overflow-y-auto custom-scrollbar prose prose-sm prose-slate bg-slate-50 p-2.5 rounded-lg border border-slate-100"
                 dangerouslySetInnerHTML={{ __html: state.releaseNotes }}
               />
-            </div>
-          )}
+            )}
 
-          {state.status === 'error' && (
-            <div className="px-4 pt-2 pb-1">
-              <p className="text-xs text-red-500 whitespace-pre-line max-h-24 overflow-y-auto">{state.message}</p>
-              {state.source === 'electron' && (
-                <div className="mt-2 p-2 bg-slate-50 border border-slate-100 rounded-lg">
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Lỗi kết nối mạng khi tải bản cập nhật tự động. Vui lòng tải file cài đặt thủ công:
-                  </p>
-                  <a 
-                    href="https://github.com/kennhope13/Titsmart_task/releases/latest" 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="inline-flex items-center gap-1 mt-1.5 text-xs font-bold text-primary hover:underline"
+            {state.status === 'error' && (
+              <div>
+                <p className="text-xs text-red-500 whitespace-pre-line max-h-24 overflow-y-auto">{state.message}</p>
+                {state.source === 'electron' && (
+                  <div className="mt-2 p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Lỗi kết nối mạng khi tải bản cập nhật tự động. Vui lòng tải file cài đặt thủ công:
+                    </p>
+                    <a 
+                      href="https://github.com/kennhope13/Titsmart_task/releases/latest" 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="inline-flex items-center gap-1 mt-1.5 text-xs font-bold text-primary hover:underline"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">download</span>
+                      Tải Setup.exe mới nhất
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              {state.status === 'available' && (
+                <>
+                  <button
+                    onClick={dismiss}
+                    className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    Tải Setup.exe mới nhất
-                  </a>
-                </div>
+                    Để sau
+                  </button>
+                  {state.source === 'web' ? (
+                    <button
+                      onClick={handleWebUpdate}
+                      className="px-3.5 py-1.5 text-xs font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">sync</span>
+                      Cập nhật ngay
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setState(s => ({ ...s, status: 'downloading', percent: 0 }));
+                        window.electronAPI?.downloadUpdate();
+                      }}
+                      className="px-3.5 py-1.5 text-xs font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">download</span>
+                      Cập nhật ngay
+                    </button>
+                  )}
+                </>
               )}
-            </div>
-          )}
-
-          <div className="flex items-center justify-end gap-2 px-4 pb-3.5 pt-2">
-            {state.status === 'available' && (
-              <>
+              {state.status === 'error' && (
                 <button
                   onClick={dismiss}
-                  className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                 >
-                  Để sau
+                  Đóng
                 </button>
-                {state.source === 'web' ? (
-                  <button
-                    onClick={handleWebUpdate}
-                    className="px-3 py-1.5 text-sm font-semibold text-white bg-[#00236F] hover:bg-[#001a56] rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer active:scale-95"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Cập nhật ngay
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setState(s => ({ ...s, status: 'downloading', percent: 0 }));
-                      window.electronAPI?.downloadUpdate();
-                    }}
-                    className="px-3 py-1.5 text-sm font-semibold text-white bg-[#00236F] hover:bg-[#001a56] rounded-lg transition-colors cursor-pointer active:scale-95"
-                  >
-                    Cập nhật ngay
-                  </button>
-                )}
-              </>
-            )}
-            {state.status === 'error' && (
-              <button
-                onClick={dismiss}
-                className="px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-              >
-                Đóng
-              </button>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
