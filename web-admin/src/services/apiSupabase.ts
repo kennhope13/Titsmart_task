@@ -887,8 +887,8 @@ export const api = {
             fileUrls: (row.file_urls && row.file_urls.length > 0) ? row.file_urls : (row.soft_copy_link ? [row.soft_copy_link] : []),
             createdById: row.created_by_id || row.created_by || '',
             createdByName: row.created_by_name || row.created_by || row.updated_by || '',
-            updatedBy: row.updated_by || '',
-            updatedAt: row.updated_at || '',
+            updatedBy: row.updated_by || row.created_by_name || row.created_by || '',
+            updatedAt: row.updated_at || row.created_at || '',
           };
         });
       } catch {
@@ -1175,6 +1175,7 @@ export const api = {
       return mapArray(data || []);
     },
     markRead: async (id: string) => {
+      if (!id || !UUID_RE.test(id)) return { success: true };
       const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id);
       if (error) throw error;
       return { success: true };
@@ -1185,6 +1186,7 @@ export const api = {
       return { success: true };
     },
     delete: async (id: string) => {
+      if (!id || !UUID_RE.test(id)) return { success: true };
       const { error } = await supabase.from('notifications').delete().eq('id', id);
       if (error) throw error;
       return { success: true };

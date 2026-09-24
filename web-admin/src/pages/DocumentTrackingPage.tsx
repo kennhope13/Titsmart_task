@@ -918,7 +918,7 @@ export const DocumentTrackingPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-1 py-1">
-                      <AuditInfoCell updatedBy={track.updatedBy} updatedAt={track.updatedAt} />
+                      <AuditInfoCell updatedBy={track.updatedBy || track.createdByName} updatedAt={track.updatedAt} />
                     </td>
                     
                     <td className="px-1 py-1 text-center" onClick={(e) => e.stopPropagation()}>

@@ -31,7 +31,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
   const { activityLogs = [], engineers = [] } = useRealtimeStore();
 
   const formattedTime = formatAuditDateTime(updatedAt);
-  const isSystemOrEmpty = !updatedBy || updatedBy === 'Hệ thống';
+  const isSystemOrEmpty = !updatedBy || updatedBy.trim() === '';
 
   const userList = React.useMemo(() => {
     if (!showModal) return [];
@@ -75,7 +75,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
     // Aggregate log counts and track latest timestamp per user
     filteredLogs.forEach(log => {
       const rawUser = String(log.user || '').trim();
-      if (!rawUser || rawUser === 'Hệ thống' || rawUser === 'Excel Sync' || rawUser.toLowerCase().includes('excel')) return;
+      if (!rawUser || rawUser === 'Excel Sync' || rawUser.toLowerCase().includes('excel')) return;
       const u = normalizeUser(rawUser);
       const logTimeMs = parseTime(log.timestamp);
       const displayTime = formatAuditDateTime(log.timestamp);
@@ -95,7 +95,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
 
     // Make sure the current updatedBy user is in the list with updatedAt
     const currentMs = parseTime(updatedAt);
-    if (updatedBy && updatedBy !== 'Hệ thống' && updatedBy !== 'Excel Sync' && !updatedBy.toLowerCase().includes('excel')) {
+    if (updatedBy && updatedBy !== 'Excel Sync' && !updatedBy.toLowerCase().includes('excel')) {
       const u = normalizeUser(updatedBy);
       if (!map.has(u)) {
         const eng = (engineers || []).find(e => e?.name?.toLowerCase() === u.toLowerCase());
