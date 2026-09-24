@@ -941,6 +941,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
               side: fetched.side ?? local.side ?? 'Bên trả',
               fileUrls: (fetched.fileUrls && fetched.fileUrls.length > 0) ? fetched.fileUrls : (local.fileUrls || []),
               notes: fetched.notes ?? local.notes ?? '',
+              createdById: fetched.createdById || local.createdById || '',
+              createdByName: fetched.createdByName || local.createdByName || '',
+              updatedBy: fetched.updatedBy || local.updatedBy || '',
+              updatedAt: fetched.updatedAt || local.updatedAt || '',
             };
           });
 

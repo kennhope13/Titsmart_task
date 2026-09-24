@@ -849,17 +849,26 @@ export const api = {
           let parsedDocStatus = row.doc_status || row.status || 'Chưa ký';
           let parsedPaymentStatus = row.payment_status || 'Chưa thanh toán';
           let parsedIsCompleted = !!row.is_completed;
+          let parsedCreatorId = row.created_by_id || row.created_by || '';
+          let parsedCreatorName = row.created_by_name || row.created_by || '';
+          let parsedUpdatedBy = row.updated_by || '';
           let cleanNotes = notesText;
 
           if (notesText.includes('[STATUS:')) {
-            const match = notesText.match(/\[STATUS:([^|]+)\|PAY:([^|]+)\|COMP:([^\]]+)\]/);
+            const match = notesText.match(/\[STATUS:([^|]+)\|PAY:([^|]+)\|COMP:([^|\]]+)(?:\|CREATOR:([^|]*))?(?:\|CID:([^|]*))?(?:\|UPD:([^\]]*))?\]/);
             if (match) {
               parsedDocStatus = match[1];
               parsedPaymentStatus = match[2];
               parsedIsCompleted = match[3] === '1';
+              if (match[4]) parsedCreatorName = match[4];
+              if (match[5]) parsedCreatorId = match[5];
+              if (match[6]) parsedUpdatedBy = match[6];
               cleanNotes = notesText.replace(match[0], '').trim();
             }
           }
+
+          const finalCreatorName = parsedCreatorName || parsedUpdatedBy || row.updated_by || '';
+          const finalUpdatedBy = parsedUpdatedBy || row.updated_by || finalCreatorName || '';
 
           return {
             id: row.id,
@@ -885,9 +894,9 @@ export const api = {
             dueDate: row.due_date || row.expected_approval_date || '',
             remindDays: row.remind_days || 3,
             fileUrls: (row.file_urls && row.file_urls.length > 0) ? row.file_urls : (row.soft_copy_link ? [row.soft_copy_link] : []),
-            createdById: row.created_by_id || row.created_by || '',
-            createdByName: row.created_by_name || row.created_by || row.updated_by || '',
-            updatedBy: row.updated_by || row.created_by_name || row.created_by || '',
+            createdById: parsedCreatorId,
+            createdByName: finalCreatorName,
+            updatedBy: finalUpdatedBy,
             updatedAt: row.updated_at || row.created_at || '',
           };
         });
@@ -942,12 +951,16 @@ export const api = {
         ? (data.contractName ? `[${data.contractNo}] ${data.contractName}` : data.contractNo)
         : (data.contractName || '');
 
+      const statusTag = `[STATUS:${data.docStatus || 'Chưa ký'}|PAY:${data.paymentStatus || 'Chưa thanh toán'}|COMP:${data.isCompleted ? '1' : '0'}|CREATOR:${data.createdByName || ''}|CID:${data.createdById || ''}|UPD:${data.updatedBy || data.createdByName || ''}]`;
+      const baseNotes = data.notes ? data.notes.replace(/\[STATUS:[^\]]+\]/g, '').trim() : formattedContractName;
+      const combinedNotes = `${statusTag} ${baseNotes}`.trim();
+
       const minPayload: any = {
         document_type: data.docType || 'Giao',
         submission_date: cleanDate(data.sendDate),
         recipient: data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || ''),
         status: data.docStatus || 'Chưa ký',
-        notes: data.notes || formattedContractName,
+        notes: combinedNotes,
         soft_copy_link: (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '')
       };
       if (data.projectCode) minPayload.project_code = data.projectCode;
@@ -957,7 +970,7 @@ export const api = {
         const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(minPayload).select().single();
         if (retryError) {
           const ultraMinPayload: any = {
-            notes: data.notes || formattedContractName || 'Hồ sơ'
+            notes: combinedNotes
           };
           if (cleanDate(data.sendDate)) ultraMinPayload.submission_date = cleanDate(data.sendDate);
           if (data.company || data.receiverName) ultraMinPayload.recipient = data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || '');
@@ -965,7 +978,7 @@ export const api = {
 
           const { data: ultraResult, error: ultraError } = await supabase.from('document_tracks').insert(ultraMinPayload).select().single();
           if (ultraError) {
-            const barePayload: any = { notes: data.notes || formattedContractName || 'Hồ sơ' };
+            const barePayload: any = { notes: combinedNotes };
             const { data: bareResult } = await supabase.from('document_tracks').insert(barePayload).select().single();
             return { ...data, ...toCamelCase(bareResult), id: bareResult?.id || `doc-${Date.now()}` };
           }
@@ -1022,6 +1035,8 @@ export const api = {
       if (data.fileUrls !== undefined) {
         fullPayload.file_urls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []);
       }
+      if (data.createdById !== undefined) fullPayload.created_by_id = data.createdById;
+      if (data.createdByName !== undefined) fullPayload.created_by_name = data.createdByName;
       if (data.updatedBy !== undefined) fullPayload.updated_by = data.updatedBy;
       fullPayload.updated_at = new Date().toISOString();
 
@@ -1029,7 +1044,7 @@ export const api = {
         const { data: res, error } = await supabase.from('document_tracks').update(fullPayload).eq('id', id).select().single();
         if (error) {
           console.warn('[DocumentTrack] update error with fullPayload, trying fallback:', error.message);
-          const statusTag = `[STATUS:${data.docStatus || 'Chưa ký'}|PAY:${data.paymentStatus || 'Chưa thanh toán'}|COMP:${data.isCompleted ? '1' : '0'}]`;
+          const statusTag = `[STATUS:${data.docStatus || 'Chưa ký'}|PAY:${data.paymentStatus || 'Chưa thanh toán'}|COMP:${data.isCompleted ? '1' : '0'}|CREATOR:${data.createdByName || ''}|CID:${data.createdById || ''}|UPD:${data.updatedBy || ''}]`;
           const baseNotes = data.notes ? data.notes.replace(/\[STATUS:[^\]]+\]/g, '').trim() : (data.contractName ? `[${data.contractNo || ''}] ${data.contractName}` : '');
           const combinedNotes = `${statusTag} ${baseNotes}`.trim();
 
