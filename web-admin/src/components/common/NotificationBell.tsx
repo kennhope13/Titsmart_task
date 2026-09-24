@@ -602,7 +602,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
                     <button
                       type="button"
                       onClick={handleClearRead}
-                      className="text-[11px] text-rose-600 font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+                      className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
                       title="Dọn dẹp các thông báo đã đọc"
                     >
                       <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
@@ -815,7 +815,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
                   <button
                     type="button"
                     onClick={handleClearRead}
-                    className="text-[11px] text-rose-600 font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+                    className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
                     title="Dọn dẹp các thông báo đã đọc"
                   >
                     <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
