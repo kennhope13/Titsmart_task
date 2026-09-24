@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore, canManageItem } from '../services/authStore';
 import { FieldLog, Task } from '../types';
 import { compareTaskStt } from '../utils/taskTreeUtils';
 import { AuditInfoCell } from './common/AuditInfoCell';
@@ -17,8 +18,9 @@ const CustomLightbox: React.FC<{ images: string[]; index: number; onClose: () =>
 );
 
 const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => void; onEditLogClick: (log: FieldLog) => void; onDeleteLogClick?: (log: FieldLog) => void }> = ({
-  task, logs, onClose, onEditLogClick
+  task, logs, onClose, onEditLogClick, onDeleteLogClick
 }) => {
+  const { user } = useAuthStore();
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
 
   return (
@@ -41,17 +43,31 @@ const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => voi
             <p className="text-slate-400 text-center py-12 text-sm italic">Chưa có nhật ký nào.</p>
           ) : (
             <div className="flex flex-col gap-3.5">
-              {logs.map((log) => (
-                <div key={log.id} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-2xs flex flex-col">
-                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between">
-                    <div className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-sm text-blue-600">schedule</span>
-                      {new Date(log.timestamp).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
+              {logs.map((log) => {
+                const canManage = canManageItem(user, log);
+                return (
+                  <div key={log.id} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-2xs flex flex-col">
+                    <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between">
+                      <div className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-sm text-blue-600">schedule</span>
+                        {new Date(log.timestamp).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        {log.createdByName && (
+                          <span className="ml-2 text-[11px] font-normal text-slate-500">
+                            (Đăng bởi: <strong className="font-semibold text-slate-700">{log.createdByName}</strong>)
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => onEditLogClick(log)} className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100 hover:bg-blue-100 transition-colors cursor-pointer">
+                          <span className="material-symbols-outlined text-sm">{canManage ? 'edit' : 'visibility'}</span> {canManage ? 'Chỉnh sửa' : 'Xem chi tiết'}
+                        </button>
+                        {canManage && onDeleteLogClick && (
+                          <button onClick={() => onDeleteLogClick(log)} className="text-xs font-semibold text-rose-600 hover:text-rose-800 flex items-center gap-1 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-100 hover:bg-rose-100 transition-colors cursor-pointer">
+                            <span className="material-symbols-outlined text-sm">delete</span> Xóa
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <button onClick={() => onEditLogClick(log)} className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100 hover:bg-blue-100 transition-colors">
-                      <span className="material-symbols-outlined text-sm">edit</span> Chỉnh sửa
-                    </button>
-                  </div>
                   {log.note && (
                     <div className="p-4 text-xs leading-relaxed text-slate-800 whitespace-pre-wrap break-words font-normal font-sans">
                       {log.note}
@@ -70,7 +86,8 @@ const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => voi
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -496,6 +513,10 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
             setViewAllLogsTask(null);
             onEditLogClick(log);
           }}
+          onDeleteLogClick={onDeleteLogClick ? (log) => {
+            setViewAllLogsTask(null);
+            onDeleteLogClick(log);
+          } : undefined}
         />
       )}
     </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore, canManageItem } from '../services/authStore';
 import { useParams, useOutletContext, Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { FieldLog } from '../types';
@@ -96,6 +97,9 @@ const UploadModal: React.FC<{
   onUpdate?: (id: string, input: { note: string; images: string[]; existingImages: string[]; taskId?: string; timestamp?: string }) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
 }> = ({ defaultProjectCode, defaultTaskId, projects, editLog, onClose, onUpload, onUpdate, onDelete }) => {
+  const { user } = useAuthStore();
+  const isAllowedToManage = !editLog || canManageItem(user, editLog);
+
   const [projectCode, setProjectCode] = useState(editLog?.projectCode || defaultProjectCode || '');
   const [note, setNote] = useState(editLog?.note || '');
   const [taskId, setTaskId] = useState(editLog?.taskId || defaultTaskId || '');
@@ -128,6 +132,7 @@ const UploadModal: React.FC<{
   };
 
   const removeFile = (idx: number) => {
+    if (!isAllowedToManage) return;
     const isExisting = idx < existingImages.length;
     if (isExisting) {
       setExistingImages(prev => prev.filter((_, i) => i !== idx));
@@ -139,6 +144,7 @@ const UploadModal: React.FC<{
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAllowedToManage) return;
     if (!projectCode) { setError('Vui lòng chọn dự án'); return; }
     if (files.length === 0 && existingImages.length === 0 && !editLog) { setError('Vui lòng chọn ít nhất 1 ảnh'); return; }
     setIsUploading(true);
@@ -169,96 +175,114 @@ const UploadModal: React.FC<{
   };
 
   return (
-    <Modal isOpen={true} onClose={onClose} title={editLog ? 'Sửa ảnh hiện trường' : 'Upload ảnh hiện trường'} icon="add_a_photo" size="md">
+    <Modal isOpen={true} onClose={onClose} title={editLog ? (isAllowedToManage ? 'Sửa ảnh hiện trường' : 'Chi tiết ảnh hiện trường (Chỉ xem)') : 'Upload ảnh hiện trường'} icon="add_a_photo" size="md">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-2">
-        {/* Dự án */}
-        <div>
-          <label className="block font-bold text-slate-700 mb-1">Dự án</label>
-          <div className="w-full px-3 py-2 border border-slate-200 bg-slate-100 rounded-lg text-slate-500 cursor-not-allowed">
-            {projects.find(p => p.code === projectCode)?.name || projectCode}
+        {!isAllowedToManage && (
+          <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+            <span className="material-symbols-outlined text-base text-amber-600">lock</span>
+            <span>Bạn đang xem ở chế độ chỉ đọc. Chỉ người tạo ({editLog?.createdByName || editLog?.updatedBy || 'Chính chủ'}) hoặc Quản trị viên mới có quyền chỉnh sửa/xóa nhật ký này.</span>
           </div>
-        </div>
+        )}
 
-        {/* Ảnh */}
-        <div>
-          <label className="block font-bold text-slate-700 mb-1">Ảnh hiện trường *</label>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {previews.map((url, i) => (
-              <div key={i} className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                <img src={url} alt="preview" className="h-full w-full object-cover" />
-                <button type="button" onClick={() => removeFile(i)}
-                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow hover:bg-red-600">
-                  <span className="material-symbols-outlined text-[12px]">close</span>
+        <fieldset disabled={!isAllowedToManage} className="flex flex-col gap-4">
+          {/* Dự án */}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Dự án</label>
+            <div className="w-full px-3 py-2 border border-slate-200 bg-slate-100 rounded-lg text-slate-500 cursor-not-allowed">
+              {projects.find(p => p.code === projectCode)?.name || projectCode}
+            </div>
+          </div>
+
+          {/* Ảnh */}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Ảnh hiện trường *</label>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {previews.map((url, i) => (
+                <div key={i} className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                  <img src={url} alt="preview" className="h-full w-full object-cover" />
+                  {isAllowedToManage && (
+                    <button type="button" onClick={() => removeFile(i)}
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow hover:bg-red-600 cursor-pointer">
+                      <span className="material-symbols-outlined text-[12px]">close</span>
+                    </button>
+                  )}
+                </div>
+              ))}
+              {isAllowedToManage && (
+                <button type="button" onClick={() => fileInputRef.current?.click()}
+                  className="flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:bg-slate-50 hover:text-primary transition cursor-pointer">
+                  <span className="material-symbols-outlined mb-0.5 text-lg">add_photo_alternate</span>
+                  <span className="text-[10px] font-bold">Thêm ảnh</span>
                 </button>
-              </div>
-            ))}
-            <button type="button" onClick={() => fileInputRef.current?.click()}
-              className="flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:bg-slate-50 hover:text-primary transition">
-              <span className="material-symbols-outlined mb-0.5 text-lg">add_photo_alternate</span>
-              <span className="text-[10px] font-bold">Thêm ảnh</span>
-            </button>
+              )}
+            </div>
+            {isAllowedToManage && (
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
+            )}
+            {files.length > 0 && (
+              <p className="mt-2 text-[11px] font-semibold text-slate-500">{files.length} ảnh đã chọn</p>
+            )}
           </div>
-          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
-          {files.length > 0 && (
-            <p className="mt-2 text-[11px] font-semibold text-slate-500">{files.length} ảnh đã chọn</p>
-          )}
-        </div>
 
-        <div>
-          <label className="block font-bold text-slate-700 mb-1">Đầu mục công việc</label>
-          <CustomSelect
-            value={taskId}
-            onChange={(e) => setTaskId(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
-          >
-            <option value="">-- Không liên kết --</option>
-            {tasks.filter(t => t.projectCode === projectCode).map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </CustomSelect>
-        </div>
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Đầu mục công việc</label>
+            <CustomSelect
+              disabled={!isAllowedToManage}
+              value={taskId}
+              onChange={(e) => setTaskId(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+            >
+              <option value="">-- Không liên kết --</option>
+              {tasks.filter(t => t.projectCode === projectCode).map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </CustomSelect>
+          </div>
 
-        {/* Thời gian thi công */}
-        <div>
-          <label className="block font-bold text-slate-700 mb-1">Thời gian thi công / Ngày báo cáo *</label>
-          <input
-            type="date"
-            value={logDate}
-            onChange={(e) => setLogDate(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white text-slate-800 font-semibold"
-          />
-          <p className="mt-1 text-[11px] text-slate-400">Tùy chọn ngày thực tế thi công (ví dụ: báo cáo bổ sung cho các ngày trước)</p>
-        </div>
+          {/* Thời gian thi công */}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Thời gian thi công / Ngày báo cáo *</label>
+            <input
+              type="date"
+              value={logDate}
+              onChange={(e) => setLogDate(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white text-slate-800 font-semibold"
+            />
+            <p className="mt-1 text-[11px] text-slate-400">Tùy chọn ngày thực tế thi công (ví dụ: báo cáo bổ sung cho các ngày trước)</p>
+          </div>
 
-        {/* Ghi chú */}
-        <div>
-          <label className="block font-bold text-slate-700 mb-1">Ghi chú</label>
-          <textarea rows={2} value={note} onChange={e => setNote(e.target.value)}
-            placeholder="Mô tả nội dung hiện trường (tùy chọn)..."
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none" />
-        </div>
+          {/* Ghi chú */}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Ghi chú</label>
+            <textarea rows={2} value={note} onChange={e => setNote(e.target.value)}
+              placeholder="Mô tả nội dung hiện trường (tùy chọn)..."
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none" />
+          </div>
+        </fieldset>
 
         {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-[13px] font-bold text-rose-600">{error}</p>}
 
         <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-200">
           <button type="button" onClick={onClose}
-            className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors">
-            Hủy
+            className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors cursor-pointer">
+            {!isAllowedToManage ? 'Đóng' : 'Hủy'}
           </button>
-          <button type="submit" disabled={isUploading}
-            className="px-4 py-2 bg-primary text-white font-bold rounded-lg hover:bg-blue-800 disabled:opacity-50 transition-colors flex items-center gap-2">
-            {isUploading ? (
-              <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                Đang lưu...
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-[18px]">upload</span>
-                {editLog ? 'Cập nhật' : 'Upload'}
-              </>
-            )}
-          </button>
+          {isAllowedToManage && (
+            <button type="submit" disabled={isUploading}
+              className="px-4 py-2 bg-primary text-white font-bold rounded-lg hover:bg-blue-800 disabled:opacity-50 transition-colors flex items-center gap-2 cursor-pointer">
+              {isUploading ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  Đang lưu...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[18px]">upload</span>
+                  {editLog ? 'Cập nhật' : 'Upload'}
+                </>
+              )}
+            </button>
+          )}
         </div>
       </form>
     </Modal>
@@ -268,6 +292,7 @@ const UploadModal: React.FC<{
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export const FieldLogsPage: React.FC = () => {
+  const { user } = useAuthStore();
   const { projectId } = useParams();
   const { fieldLogs, projects, tasks, addFieldLog, deleteFieldLog, updateFieldLog, fetchFieldLogs } = useRealtimeStore();
 
@@ -321,7 +346,11 @@ export const FieldLogsPage: React.FC = () => {
   const projectName = (code: string) => projects.find(p => p.code === code)?.name || code;
   const totalImages = visibleLogs.reduce((sum, l) => sum + l.images.length, 0);
 
-    const handleDeleteLog = async (log: FieldLog) => {
+  const handleDeleteLog = async (log: FieldLog) => {
+    if (!canManageItem(user, log)) {
+      alert("Bạn không có quyền xóa nhật ký này (Chỉ người tạo hoặc Quản trị viên mới có quyền xóa)!");
+      return;
+    }
     if (window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) {
       try {
         await deleteFieldLog(log.id);
@@ -332,7 +361,11 @@ export const FieldLogsPage: React.FC = () => {
   };
 
   const handleUpload = async (input: { projectCode: string; note: string; images: string[]; taskId?: string }) => {
-    await addFieldLog(input);
+    await addFieldLog({
+      ...input,
+      createdById: user?.id,
+      createdByName: user?.name || user?.username,
+    });
     await fetchFieldLogs();
   };
 

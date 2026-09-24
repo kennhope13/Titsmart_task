@@ -35,6 +35,8 @@ const getAuditFields = () => {
   return {
     updatedBy: user?.name || user?.username || 'Hệ thống',
     updatedAt: new Date().toISOString(),
+    createdById: user?.id,
+    createdByName: user?.name || user?.username || 'Hệ thống',
   };
 };
 
@@ -361,9 +363,9 @@ interface RealtimeStoreState {
   updateDocumentTrack: (id: string, fields: Partial<DocumentTrack>) => void;
   deleteDocumentTrack: (id: string) => void;
   
-  addFieldLog: (input: { projectCode: string; note?: string; images: string[] }) => Promise<void>;
+  addFieldLog: (input: { projectCode: string; note?: string; images: string[]; taskId?: string; timestamp?: string; createdById?: string; createdByName?: string }) => Promise<void>;
   deleteFieldLog: (id: string) => Promise<void>;
-  updateFieldLog: (id: string, input: { note?: string; images?: string[]; existingImages?: string[] }) => Promise<void>;
+  updateFieldLog: (id: string, input: { note?: string; images?: string[]; existingImages?: string[]; taskId?: string; timestamp?: string; updatedBy?: string; updatedAt?: string }) => Promise<void>;
   logActivity: (action: string, project: string, user?: string) => void;
 }
 
@@ -2021,9 +2023,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
     addFieldLog: async (input) => {
       try {
-        const created = await api.fieldLogs.create(input);
+        const audit = getAuditFields();
+        const created = await api.fieldLogs.create({ ...input, ...audit });
         set((state) => {
-          const nextLogs = [created, ...state.fieldLogs];
+          const nextLogs = [{ ...created, ...audit }, ...state.fieldLogs];
           get().logActivity('Thêm mới nhật ký hiện trường: ' + (created.projectCode), 'COMPANY');
           persistAndNotify({ fieldLogs: nextLogs });
           return { fieldLogs: nextLogs };

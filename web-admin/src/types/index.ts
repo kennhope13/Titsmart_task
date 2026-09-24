@@ -363,6 +363,8 @@ export interface DocumentTrack {
   dueDate?: string; // Ngày hẹn trả / hạn nộp hồ sơ
   remindDays?: number; // Số ngày nhắc trước hạn (VD: 3, 5, 7)
   fileUrls?: string[];
+  createdById?: string;
+  createdByName?: string;
   updatedBy?: string;
   updatedAt?: string;
 }
@@ -374,6 +376,8 @@ export interface FieldLog {
   images: string[]; // URL ảnh (đường dẫn /uploads/...)
   timestamp: string; // Thời điểm tạo báo cáo
   taskId?: string;
+  createdById?: string;
+  createdByName?: string;
   updatedBy?: string;
   updatedAt?: string;
 }

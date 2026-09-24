@@ -885,6 +885,8 @@ export const api = {
             dueDate: row.due_date || row.expected_approval_date || '',
             remindDays: row.remind_days || 3,
             fileUrls: (row.file_urls && row.file_urls.length > 0) ? row.file_urls : (row.soft_copy_link ? [row.soft_copy_link] : []),
+            createdById: row.created_by_id || row.created_by || '',
+            createdByName: row.created_by_name || row.created_by || row.updated_by || '',
             updatedBy: row.updated_by || '',
             updatedAt: row.updated_at || '',
           };
@@ -922,6 +924,8 @@ export const api = {
         due_date: cleanDate(data.dueDate),
         remind_days: data.remindDays || 3,
         file_urls: Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []),
+        created_by_id: data.createdById || '',
+        created_by_name: data.createdByName || '',
         updated_by: data.updatedBy || '',
         updated_at: data.updatedAt || new Date().toISOString()
       };
@@ -1080,6 +1084,10 @@ export const api = {
         images: d.photos || [],
         timestamp: d.created_at,
         taskId: d.task_id,
+        createdById: d.created_by_id || d.created_by || '',
+        createdByName: d.created_by_name || d.created_by || d.updated_by || '',
+        updatedBy: d.updated_by || '',
+        updatedAt: d.updated_at || '',
       }));
     },
     create: async (data: any) => {
@@ -1088,6 +1096,8 @@ export const api = {
         notes: data.note,
         photos: data.images,
         task_id: data.taskId || null,
+        created_by_id: data.createdById || null,
+        created_by_name: data.createdByName || null,
       };
       if (data.timestamp) {
         payload.created_at = data.timestamp;
@@ -1101,6 +1111,10 @@ export const api = {
         images: result.photos || [],
         timestamp: result.created_at,
         taskId: result.task_id,
+        createdById: result.created_by_id || data.createdById || '',
+        createdByName: result.created_by_name || data.createdByName || '',
+        updatedBy: result.updated_by || '',
+        updatedAt: result.updated_at || '',
       };
     },
     delete: async (id: string) => {

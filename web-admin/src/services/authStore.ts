@@ -50,6 +50,44 @@ export const hasPermission = (user: AuthUser | null | undefined, perm: Permissio
   return user.permissions?.includes(perm) || false;
 };
 
+/**
+ * Kiểm tra quyền quản lý (Sửa/Xóa):
+ * - Admin / Quản trị viên / PM: Toàn quyền với tất cả file/hồ sơ/dữ liệu
+ * - Nhân sự khác: Chỉ có quyền với file/hồ sơ DO CHÍNH MÌNH TẠO HOẶC TẢI LÊN
+ */
+export const canManageItem = (user: AuthUser | null | undefined, item: any): boolean => {
+  if (!user) return false;
+  
+  const role = String(user.role || '').toLowerCase();
+  const username = String(user.username || '').toLowerCase();
+  const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || username === 'admin';
+  if (isAdmin) return true;
+
+  if (!item) return false;
+
+  const currentUserId = String(user.id || '').trim().toLowerCase();
+  const currentUserName = String(user.name || '').trim().toLowerCase();
+  const currentUsername = String(user.username || '').trim().toLowerCase();
+
+  const itemCreatorId = String(item.createdById || item.created_by_id || item.uploaderId || item.uploader_id || item.userId || item.user_id || '').trim().toLowerCase();
+  const itemCreatorName = String(item.createdByName || item.created_by_name || item.createdBy || item.created_by || item.uploaderName || item.user || '').trim().toLowerCase();
+  const itemUpdatedBy = String(item.updatedBy || item.updated_by || '').trim().toLowerCase();
+
+  // 1. Khớp ID người tạo
+  if (currentUserId && itemCreatorId && currentUserId === itemCreatorId) return true;
+
+  // 2. Khớp Tên người tạo
+  if (currentUserName && itemCreatorName && (itemCreatorName.includes(currentUserName) || currentUserName.includes(itemCreatorName))) return true;
+
+  // 3. Khớp Username người tạo
+  if (currentUsername && itemCreatorName && itemCreatorName === currentUsername) return true;
+
+  // 4. Fallback: Nếu không có creator field nhưng updatedBy khớp chính chủ
+  if (itemUpdatedBy && (itemUpdatedBy === currentUserName || itemUpdatedBy === currentUsername)) return true;
+
+  return false;
+};
+
 
 export interface AuthUser {
   id: string;

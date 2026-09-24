@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { useParams, useOutletContext } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
-import { useAuthStore, hasPermission } from '../services/authStore';
+import { useAuthStore, hasPermission, canManageItem } from '../services/authStore';
 import { Modal } from '../components/common/Modal';
 import { FileViewerItem } from '../components/common/FileViewerItem';
 import { Toast } from '../components/common/Toast';
@@ -923,19 +923,23 @@ export const DocumentTrackingPage: React.FC = () => {
                     
                     <td className="px-1 py-1 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1.5">
-                        <button onClick={() => {
-                          setConfirmConfig({
-                            isOpen: true,
-                            title: 'Xóa thông tin theo dõi hồ sơ',
-                            message: `Bạn chắc chắn muốn xóa hồ sơ hợp đồng "${track.contractNo || track.contractName || 'này'}"?`,
-                            onConfirm: () => {
-deleteDocumentTrack(track.id);
-                              setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-                            },
-                            isDestructive: true,
-                            confirmText: 'Xóa'
-                          });
-                        }} title="Xóa hồ sơ" className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg"><span className="material-symbols-outlined text-base">delete</span></button>
+                        {canManageItem(user, track) ? (
+                          <button onClick={() => {
+                            setConfirmConfig({
+                              isOpen: true,
+                              title: 'Xóa thông tin theo dõi hồ sơ',
+                              message: `Bạn chắc chắn muốn xóa hồ sơ hợp đồng "${track.contractNo || track.contractName || 'này'}"?`,
+                              onConfirm: () => {
+                                deleteDocumentTrack(track.id);
+                                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                              },
+                              isDestructive: true,
+                              confirmText: 'Xóa'
+                            });
+                          }} title="Xóa hồ sơ" className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"><span className="material-symbols-outlined text-base">delete</span></button>
+                        ) : (
+                          <span title="Chỉ người tạo hoặc Quản trị viên mới có quyền xóa" className="p-1 text-slate-300 cursor-not-allowed"><span className="material-symbols-outlined text-base">lock</span></span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -982,7 +986,9 @@ deleteDocumentTrack(track.id);
               isCompleted: !!newDoc.isCompleted,
               notes: newDoc.notes || '',
               fileUrls: newDoc.fileUrls || [],
-              docType: newDoc.docType || 'Giao'
+              docType: newDoc.docType || 'Giao',
+              createdById: user?.id,
+              createdByName: user?.name || user?.username
             });
             triggerToast(`Đã thêm hồ sơ \"${newDoc.contractNo || newDoc.contractName || 'hồ sơ mới'}\" thành công!`, 'success');
             setIsNewDocOpen(false);
@@ -1080,10 +1086,11 @@ deleteDocumentTrack(track.id);
       </Modal>
 
       {/* Edit Doc Modal */}
-      <Modal isOpen={!!editingDoc} onClose={() => setEditingDoc(null)} title="Cập nhật Theo dõi Hồ sơ Gửi Đi">
+      <Modal isOpen={!!editingDoc} onClose={() => setEditingDoc(null)} title={editingDoc && !canManageItem(user, editingDoc) ? "Chi tiết Theo dõi Hồ sơ (Chỉ xem)" : "Cập nhật Theo dõi Hồ sơ Gửi Đi"}>
         {editingDoc && (
           <form onSubmit={async (e) => {
             e.preventDefault();
+            if (!canManageItem(user, editingDoc)) return;
             if (isSubmitting) return;
             setIsSubmitting(true);
             try {
@@ -1103,83 +1110,95 @@ deleteDocumentTrack(track.id);
               setIsSubmitting(false);
             }
           }} className="space-y-3 text-xs">
-            <div className="grid grid-cols-2 gapx-1 py-1">
-              <div className="min-w-0">
-                <label className="block font-bold mb-1 truncate">Dự án (Không bắt buộc)</label>
-                <CustomSelect 
-                  disabled={Boolean(resolvedProjectCode)} 
-                  value={editingDoc.projectCode || projects.find(p => p.id === (editingDoc as any).projectId)?.code || resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '')} 
-                  onChange={(e) => setEditingDoc({...editingDoc, projectCode: e.target.value})} 
-                  className="w-full border rounded-lg p-2 bg-white font-bold truncate"
-                >
-                  <option value="">-- Không thuộc dự án --</option>
-                  <option value="COMPANY">Chung nội bộ / Hồ sơ Công ty</option>
-                  {projects.map(p => (
-                    <option key={p.code} value={p.code}>{p.name}</option>
-                  ))}
-                </CustomSelect>
+            {!canManageItem(user, editingDoc) && (
+              <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2 mb-2">
+                <span className="material-symbols-outlined text-base text-amber-600">lock</span>
+                <span>Bạn đang xem hồ sơ ở chế độ chỉ đọc. Chỉ người tạo ({editingDoc.createdByName || editingDoc.updatedBy || 'Chính chủ'}) hoặc Quản trị viên mới có quyền chỉnh sửa/xóa hồ sơ này.</span>
               </div>
-              <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={editingDoc.contractName} onChange={(e) => setEditingDoc({...editingDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
-            </div>
-            <div className="grid grid-cols-2 gapx-1 py-1">
-              <div><label className="block font-bold mb-1">Số HĐ</label><input type="text" value={editingDoc.contractNo} onChange={(e) => setEditingDoc({...editingDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">Công ty nhận *</label><input type="text" required value={editingDoc.company} onChange={(e) => setEditingDoc({...editingDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            </div>
-            <div className="grid grid-cols-3 gapx-1 py-1">
-              <div><label className="block font-bold mb-1">Người nhận</label><input type="text" value={editingDoc.receiverName} onChange={(e) => setEditingDoc({...editingDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1">SĐT nhận</label><input type="text" value={editingDoc.phone} onChange={(e) => setEditingDoc({...editingDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div>
-                <label className="block font-bold mb-1">Bên</label>
-                <CustomSelect value={editingDoc.side || ''} onChange={(e) => setEditingDoc({...editingDoc, side: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                  <option value="">-- Chọn bên --</option>
-                  <option value="Bên nhận">Bên nhận</option>
-                  <option value="Bên gửi">Bên gửi</option>
-                  <option value="Bên trả">Bên trả</option>
-                </CustomSelect>
+            )}
+            <fieldset disabled={!canManageItem(user, editingDoc)} className="space-y-3">
+              <div className="grid grid-cols-2 gapx-1 py-1">
+                <div className="min-w-0">
+                  <label className="block font-bold mb-1 truncate">Dự án (Không bắt buộc)</label>
+                  <CustomSelect 
+                    disabled={Boolean(resolvedProjectCode)} 
+                    value={editingDoc.projectCode || projects.find(p => p.id === (editingDoc as any).projectId)?.code || resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '')} 
+                    onChange={(e) => setEditingDoc({...editingDoc, projectCode: e.target.value})} 
+                    className="w-full border rounded-lg p-2 bg-white font-bold truncate"
+                  >
+                    <option value="">-- Không thuộc dự án --</option>
+                    <option value="COMPANY">Chung nội bộ / Hồ sơ Công ty</option>
+                    {projects.map(p => (
+                      <option key={p.code} value={p.code}>{p.name}</option>
+                    ))}
+                  </CustomSelect>
+                </div>
+                <div><label className="block font-bold mb-1">Tên Hợp đồng / Hồ sơ *</label><input type="text" required value={editingDoc.contractName} onChange={(e) => setEditingDoc({...editingDoc, contractName: e.target.value})} className="w-full border rounded-lg p-2 font-bold bg-white" /></div>
               </div>
-            </div>
-            <div><label className="block font-bold mb-1">Địa chỉ</label><input type="text" value={editingDoc.address} onChange={(e) => setEditingDoc({...editingDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <div className="grid grid-cols-3 gapx-1 py-1 bg-amber-50/50 p-2 rounded-lg border border-amber-200">
-              <div><label className="block font-bold mb-1 text-slate-800">Ngày gửi đi</label><input type="date" value={editingDoc.sendDate} onChange={(e) => setEditingDoc({...editingDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1 text-slate-800">Ngày nhận thực tế</label><input type="date" value={editingDoc.receiveDate || ''} onChange={(e) => setEditingDoc({...editingDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div><label className="block font-bold mb-1 text-amber-900">Hạn nộp / Hẹn trả 🔔</label><input type="date" value={editingDoc.dueDate || ''} onChange={(e) => setEditingDoc({...editingDoc, dueDate: e.target.value})} className="w-full border border-amber-300 rounded-lg p-2 bg-white font-bold text-amber-900" /></div>
-            </div>
-            <div className="grid grid-cols-3 gapx-1 py-1 bg-slate-50 p-2 rounded-lg border">
-              <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={editingDoc.contractValue === 0 ? '' : editingDoc.contractValue} placeholder="0" onChange={(e) => setEditingDoc({...editingDoc, contractValue: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
-              <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={editingDoc.prepayPercent === 0 ? '' : (editingDoc.prepayPercent * 100)} placeholder="0" onChange={(e) => setEditingDoc({...editingDoc, prepayPercent: e.target.value === '' ? 0 : Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <div>
-                <label className="block font-bold mb-1">Thanh toán</label>
-                <CustomSelect value={editingDoc.paymentStatus} onChange={(e) => setEditingDoc({...editingDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
-                  <option value="Chưa thanh toán">Chưa thanh toán</option>
-                  <option value="Đã thanh toán">Đã thanh toán</option>
-                </CustomSelect>
+              <div className="grid grid-cols-2 gapx-1 py-1">
+                <div><label className="block font-bold mb-1">Số HĐ</label><input type="text" value={editingDoc.contractNo} onChange={(e) => setEditingDoc({...editingDoc, contractNo: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">Công ty nhận *</label><input type="text" required value={editingDoc.company} onChange={(e) => setEditingDoc({...editingDoc, company: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gapx-1 py-1">
-              <div>
-                <label className="block font-bold mb-1">Trạng thái hồ sơ</label>
-                <CustomSelect value={editingDoc.docStatus} onChange={(e) => setEditingDoc({...editingDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                  <option value="Chưa nhận">Chưa nhận</option>
-                  <option value="Đã nhận đủ">Đã nhận đủ</option>
-                  <option value="Đã ký">Đã ký</option>
-                  <option value="Đã đổi gửi lại">Đã đổi gửi lại</option>
-                </CustomSelect>
+              <div className="grid grid-cols-3 gapx-1 py-1">
+                <div><label className="block font-bold mb-1">Người nhận</label><input type="text" value={editingDoc.receiverName} onChange={(e) => setEditingDoc({...editingDoc, receiverName: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1">SĐT nhận</label><input type="text" value={editingDoc.phone} onChange={(e) => setEditingDoc({...editingDoc, phone: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div>
+                  <label className="block font-bold mb-1">Bên</label>
+                  <CustomSelect value={editingDoc.side || ''} onChange={(e) => setEditingDoc({...editingDoc, side: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="">-- Chọn bên --</option>
+                    <option value="Bên nhận">Bên nhận</option>
+                    <option value="Bên gửi">Bên gửi</option>
+                    <option value="Bên trả">Bên trả</option>
+                  </CustomSelect>
+                </div>
               </div>
-              <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={editingDoc.isCompleted} onChange={(e) => setEditingDoc({...editingDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
-            </div>
-            <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingDoc.notes} onChange={(e) => setEditingDoc({...editingDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-            <FileUpload multiple label="File đính kèm" value={editingDoc.fileUrls} onChange={(urls) => setEditingDoc({...editingDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} />
+              <div><label className="block font-bold mb-1">Địa chỉ</label><input type="text" value={editingDoc.address} onChange={(e) => setEditingDoc({...editingDoc, address: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div className="grid grid-cols-3 gapx-1 py-1 bg-amber-50/50 p-2 rounded-lg border border-amber-200">
+                <div><label className="block font-bold mb-1 text-slate-800">Ngày gửi đi</label><input type="date" value={editingDoc.sendDate} onChange={(e) => setEditingDoc({...editingDoc, sendDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1 text-slate-800">Ngày nhận thực tế</label><input type="date" value={editingDoc.receiveDate || ''} onChange={(e) => setEditingDoc({...editingDoc, receiveDate: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div><label className="block font-bold mb-1 text-amber-900">Hạn nộp / Hẹn trả 🔔</label><input type="date" value={editingDoc.dueDate || ''} onChange={(e) => setEditingDoc({...editingDoc, dueDate: e.target.value})} className="w-full border border-amber-300 rounded-lg p-2 bg-white font-bold text-amber-900" /></div>
+              </div>
+              <div className="grid grid-cols-3 gapx-1 py-1 bg-slate-50 p-2 rounded-lg border">
+                <div><label className="block font-bold mb-1">Giá trị HĐ (đ)</label><input type="number" step="any" value={editingDoc.contractValue === 0 ? '' : editingDoc.contractValue} placeholder="0" onChange={(e) => setEditingDoc({...editingDoc, contractValue: e.target.value === '' ? 0 : Number(e.target.value)})} className="w-full border rounded-lg p-2 bg-white font-bold" /></div>
+                <div><label className="block font-bold mb-1">Tạm ứng (%)</label><input type="number" step="0.1" min="0" max="100" value={editingDoc.prepayPercent === 0 ? '' : (editingDoc.prepayPercent * 100)} placeholder="0" onChange={(e) => setEditingDoc({...editingDoc, prepayPercent: e.target.value === '' ? 0 : Number(e.target.value) / 100})} className="w-full border rounded-lg p-2 bg-white" /></div>
+                <div>
+                  <label className="block font-bold mb-1">Thanh toán</label>
+                  <CustomSelect value={editingDoc.paymentStatus} onChange={(e) => setEditingDoc({...editingDoc, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white font-bold">
+                    <option value="Chưa thanh toán">Chưa thanh toán</option>
+                    <option value="Đã thanh toán">Đã thanh toán</option>
+                  </CustomSelect>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gapx-1 py-1">
+                <div>
+                  <label className="block font-bold mb-1">Trạng thái hồ sơ</label>
+                  <CustomSelect value={editingDoc.docStatus} onChange={(e) => setEditingDoc({...editingDoc, docStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                    <option value="Chưa nhận">Chưa nhận</option>
+                    <option value="Đã nhận đủ">Đã nhận đủ</option>
+                    <option value="Đã ký">Đã ký</option>
+                    <option value="Đã đổi gửi lại">Đã đổi gửi lại</option>
+                  </CustomSelect>
+                </div>
+                <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={editingDoc.isCompleted} onChange={(e) => setEditingDoc({...editingDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
+              </div>
+              <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingDoc.notes} onChange={(e) => setEditingDoc({...editingDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <FileUpload multiple label="File đính kèm" value={editingDoc.fileUrls} onChange={(urls) => setEditingDoc({...editingDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} />
+            </fieldset>
             <div className="pt-3 border-t flex justify-end gap-2">
-              <button disabled={isSubmitting} type="button" onClick={() => setEditingDoc(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100 disabled:opacity-50">Hủy</button>
-              <button disabled={isSubmitting} type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50">
-                {isSubmitting && (
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              )}
-                {isSubmitting ? 'Đang lưu...' : 'Cập nhật'}
+              <button disabled={isSubmitting} type="button" onClick={() => setEditingDoc(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100 disabled:opacity-50">
+                {!canManageItem(user, editingDoc) ? 'Đóng' : 'Hủy'}
               </button>
+              {canManageItem(user, editingDoc) && (
+                <button disabled={isSubmitting} type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 cursor-pointer">
+                  {isSubmitting && (
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                  {isSubmitting ? 'Đang lưu...' : 'Cập nhật'}
+                </button>
+              )}
             </div>
           </form>
         )}
