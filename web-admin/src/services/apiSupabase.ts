@@ -911,119 +911,174 @@ export const api = {
         return /^\d{4}-\d{2}-\d{2}/.test(trimmed) ? trimmed.split('T')[0] : null;
       };
 
+      const fallbackDate = new Date().toISOString().split('T')[0];
+      const sendDateVal = cleanDate(data.sendDate) || fallbackDate;
+      const contractNoVal = data.contractNo || `HD-${Date.now().toString().slice(-6)}`;
+      const contractNameVal = data.contractName || 'Hồ sơ mới';
+      const statusTag = `[STATUS:${data.docStatus || 'Chưa ký'}|PAY:${data.paymentStatus || 'Chưa thanh toán'}|COMP:${data.isCompleted ? '1' : '0'}|CREATOR:${data.createdByName || ''}|CID:${data.createdById || ''}|UPD:${data.updatedBy || data.createdByName || ''}]`;
+      const baseNotes = (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim();
+      const combinedNotes = `${statusTag} ${baseNotes}`.trim();
+
+      // Ensure 'COMPANY' or 'OFFICE' project row exists if referenced
+      const ensureCompanyProject = async (code: string) => {
+        if (code === 'COMPANY' || code === 'OFFICE') {
+          try {
+            await supabase.from('projects').insert({
+              name: code === 'COMPANY' ? 'Hồ sơ Công ty / Chung' : 'Văn phòng',
+              code: code,
+              status: 'active',
+              location: 'Văn phòng Công ty',
+              client: 'Nội bộ'
+            });
+          } catch {
+            // Ignore if already exists
+          }
+        }
+      };
+
+      if (data.projectCode) {
+        await ensureCompanyProject(data.projectCode);
+      }
+
+      // 1. Full Modern Payload
       const fullPayload: any = {
-        contract_no: data.contractNo || '',
-        contract_name: data.contractName || '',
-        project_code: data.projectCode || null,
+        contract_no: contractNoVal,
+        contract_name: contractNameVal,
         company: data.company || '',
         receiver_name: data.receiverName || '',
         phone: data.phone || '',
         address: data.address || '',
-        send_date: cleanDate(data.sendDate),
+        send_date: sendDateVal,
         receive_date: cleanDate(data.receiveDate),
         doc_status: data.docStatus || 'Chưa ký',
         doc_type: data.docType || 'Giao',
         side: data.side || 'Bên trả',
-        contract_value: data.contractValue || 0,
-        prepay_percent: data.prepayPercent || 0,
-        prepay_amount: data.prepayAmount || 0,
+        contract_value: Number(data.contractValue) || 0,
+        prepay_percent: Number(data.prepayPercent) || 0,
+        prepay_amount: Number(data.prepayAmount) || 0,
         payment_status: data.paymentStatus || 'Chưa thanh toán',
         is_completed: !!data.isCompleted,
-        notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
+        notes: baseNotes,
         due_date: cleanDate(data.dueDate),
         remind_days: data.remindDays || 3,
         file_urls: Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []),
         created_by_id: data.createdById || '',
         created_by_name: data.createdByName || '',
-        updated_by: data.updatedBy || '',
+        updated_by: data.updatedBy || data.createdByName || '',
         updated_at: data.updatedAt || new Date().toISOString()
       };
 
-      try {
-        const { data: result, error } = await supabase.from('document_tracks').insert(fullPayload).select().single();
-        if (!error && result) {
-          return {
-            ...data,
-            ...toCamelCase(result),
-            notes: (result.notes || data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
-            createdById: data.createdById || '',
-            createdByName: data.createdByName || '',
-            updatedBy: data.updatedBy || data.createdByName || '',
-            updatedAt: data.updatedAt || new Date().toISOString()
-          };
-        }
-      } catch {}
-
-      // Fallback for minimal standard schema (local/cloud before ALTER TABLE)
-      const formattedContractName = data.contractNo
-        ? (data.contractName ? `[${data.contractNo}] ${data.contractName}` : data.contractNo)
-        : (data.contractName || '');
-
-      const statusTag = `[STATUS:${data.docStatus || 'Chưa ký'}|PAY:${data.paymentStatus || 'Chưa thanh toán'}|COMP:${data.isCompleted ? '1' : '0'}|CREATOR:${data.createdByName || ''}|CID:${data.createdById || ''}|UPD:${data.updatedBy || data.createdByName || ''}]`;
-      const baseNotes = data.notes ? data.notes.replace(/\[STATUS:[^\]]+\]/g, '').trim() : formattedContractName;
-      const combinedNotes = `${statusTag} ${baseNotes}`.trim();
-
-      const minPayload: any = {
-        document_type: data.docType || 'Giao',
-        submission_date: cleanDate(data.sendDate),
-        recipient: data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || ''),
-        status: data.docStatus || 'Chưa ký',
-        notes: combinedNotes,
-        soft_copy_link: (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '')
-      };
-      if (data.projectCode) minPayload.project_code = data.projectCode;
-      if (cleanDate(data.dueDate)) minPayload.expected_approval_date = cleanDate(data.dueDate);
-
-      try {
-        const { data: retryResult, error: retryError } = await supabase.from('document_tracks').insert(minPayload).select().single();
-        if (retryError) {
-          const ultraMinPayload: any = {
-            notes: combinedNotes
-          };
-          if (cleanDate(data.sendDate)) ultraMinPayload.submission_date = cleanDate(data.sendDate);
-          if (data.company || data.receiverName) ultraMinPayload.recipient = data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || '');
-          if (data.docStatus) ultraMinPayload.status = data.docStatus;
-
-          const { data: ultraResult, error: ultraError } = await supabase.from('document_tracks').insert(ultraMinPayload).select().single();
-          if (ultraError) {
-            const barePayload: any = { notes: combinedNotes };
-            const { data: bareResult } = await supabase.from('document_tracks').insert(barePayload).select().single();
-            return {
-              ...data,
-              id: bareResult?.id || data.id || `doc-${Date.now()}`,
-              notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
-              createdById: data.createdById || '',
-              createdByName: data.createdByName || '',
-              updatedBy: data.updatedBy || data.createdByName || '',
-              updatedAt: data.updatedAt || new Date().toISOString()
-            };
-          }
-          return {
-            ...data,
-            id: ultraResult.id || data.id || `doc-${Date.now()}`,
-            notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
-            createdById: data.createdById || '',
-            createdByName: data.createdByName || '',
-            updatedBy: data.updatedBy || data.createdByName || '',
-            updatedAt: data.updatedAt || new Date().toISOString()
-          };
-        }
-        return {
-          ...data,
-          id: retryResult.id || data.id || `doc-${Date.now()}`,
-          notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
-          createdById: data.createdById || '',
-          createdByName: data.createdByName || '',
-          updatedBy: data.updatedBy || data.createdByName || '',
-          updatedAt: data.updatedAt || new Date().toISOString()
-        };
-      } catch {
-        return {
-          ...data,
-          id: data.id || `doc-${Date.now()}`,
-          notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()
-        };
+      if (data.projectCode && data.projectCode.trim()) {
+        fullPayload.project_code = data.projectCode.trim();
       }
+      if (data.projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.projectId)) {
+        fullPayload.project_id = data.projectId;
+      }
+
+      const tryInsert = async (payload: any) => {
+        const { data: res, error } = await supabase.from('document_tracks').insert(payload).select().single();
+        return { data: res, error };
+      };
+
+      // Attempt 1: Full modern payload
+      let result = await tryInsert(fullPayload);
+
+      // Handle Foreign Key Error 23503
+      if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
+        if (fullPayload.project_code) {
+          await ensureCompanyProject(fullPayload.project_code);
+          result = await tryInsert(fullPayload);
+        }
+        if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
+          delete fullPayload.project_code;
+          delete fullPayload.project_id;
+          result = await tryInsert(fullPayload);
+        }
+      }
+
+      // Attempt 2: If column missing (PGRST204 or column error) -> Prisma standard columns
+      if (result.error && (result.error.code === 'PGRST204' || String(result.error.message).includes('column') || String(result.error.message).includes('schema cache'))) {
+        const prismaPayload: any = {
+          contract_no: contractNoVal,
+          contract_name: contractNameVal,
+          company: data.company || '',
+          receiver_name: data.receiverName || '',
+          phone: data.phone || '',
+          address: data.address || '',
+          send_date: sendDateVal,
+          receive_date: cleanDate(data.receiveDate),
+          doc_status: data.docStatus || 'Chưa ký',
+          side: data.side || 'Bên trả',
+          contract_value: Number(data.contractValue) || 0,
+          prepay_percent: Number(data.prepayPercent) || 0,
+          prepay_amount: Number(data.prepayAmount) || 0,
+          payment_status: data.paymentStatus || 'Chưa thanh toán',
+          is_completed: !!data.isCompleted,
+          notes: combinedNotes
+        };
+        if (data.projectCode && data.projectCode !== 'COMPANY') {
+          prismaPayload.project_code = data.projectCode;
+        }
+        if (data.projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.projectId)) {
+          prismaPayload.project_id = data.projectId;
+        }
+
+        result = await tryInsert(prismaPayload);
+
+        if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
+          delete prismaPayload.project_code;
+          delete prismaPayload.project_id;
+          result = await tryInsert(prismaPayload);
+        }
+      }
+
+      // Attempt 3: If still error -> Legacy Schema
+      if (result.error) {
+        const legacyPayload: any = {
+          document_type: data.docType || 'Giao',
+          submission_date: sendDateVal,
+          recipient: data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || ''),
+          status: data.docStatus || 'Chưa ký',
+          notes: combinedNotes,
+          soft_copy_link: (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '')
+        };
+        if (cleanDate(data.dueDate)) legacyPayload.expected_approval_date = cleanDate(data.dueDate);
+        if (data.projectCode && data.projectCode !== 'COMPANY') legacyPayload.project_code = data.projectCode;
+
+        result = await tryInsert(legacyPayload);
+
+        if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
+          delete legacyPayload.project_code;
+          result = await tryInsert(legacyPayload);
+        }
+      }
+
+      if (result.error) {
+        console.error('[DocumentTrack] All insert attempts failed in Supabase:', result.error);
+        throw new Error(result.error.message || 'Không thể lưu hồ sơ vào cơ sở dữ liệu');
+      }
+
+      const finalRow = result.data;
+      return {
+        ...data,
+        ...toCamelCase(finalRow),
+        id: finalRow.id,
+        contractNo: finalRow.contract_no || data.contractNo || contractNoVal,
+        contractName: finalRow.contract_name || data.contractName || contractNameVal,
+        projectCode: finalRow.project_code || data.projectCode || '',
+        company: finalRow.company || data.company || '',
+        receiverName: finalRow.receiver_name || data.receiverName || '',
+        sendDate: finalRow.send_date || finalRow.submission_date || sendDateVal,
+        receiveDate: finalRow.receive_date || data.receiveDate || '',
+        docStatus: finalRow.doc_status || finalRow.status || data.docStatus || 'Chưa ký',
+        paymentStatus: finalRow.payment_status || data.paymentStatus || 'Chưa thanh toán',
+        isCompleted: finalRow.is_completed !== undefined ? !!finalRow.is_completed : !!data.isCompleted,
+        notes: (finalRow.notes || data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
+        createdById: data.createdById || '',
+        createdByName: data.createdByName || '',
+        updatedBy: data.updatedBy || data.createdByName || '',
+        updatedAt: finalRow.updated_at || finalRow.created_at || new Date().toISOString()
+      };
     },
     updateDocumentTrack: async (id: string, data: any) => {
       const cleanDate = (d: any) => {
@@ -1032,10 +1087,16 @@ export const api = {
         return /^\d{4}-\d{2}-\d{2}/.test(trimmed) ? trimmed.split('T')[0] : null;
       };
 
+      const statusTag = `[STATUS:${data.docStatus || 'Chưa ký'}|PAY:${data.paymentStatus || 'Chưa thanh toán'}|COMP:${data.isCompleted ? '1' : '0'}|CREATOR:${data.createdByName || ''}|CID:${data.createdById || ''}|UPD:${data.updatedBy || ''}]`;
+      const baseNotes = (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim();
+      const combinedNotes = `${statusTag} ${baseNotes}`.trim();
+
       const fullPayload: any = {};
       if (data.contractNo !== undefined) fullPayload.contract_no = data.contractNo;
       if (data.contractName !== undefined) fullPayload.contract_name = data.contractName;
-      if (data.projectCode !== undefined) fullPayload.project_code = data.projectCode;
+      if (data.projectCode !== undefined) {
+        fullPayload.project_code = data.projectCode === 'COMPANY' || !data.projectCode ? null : data.projectCode;
+      }
       if (data.company !== undefined) fullPayload.company = data.company;
       if (data.receiverName !== undefined) {
         fullPayload.receiver_name = data.receiverName;
@@ -1057,12 +1118,12 @@ export const api = {
         fullPayload.document_type = data.docType;
       }
       if (data.side !== undefined) fullPayload.side = data.side;
-      if (data.contractValue !== undefined) fullPayload.contract_value = data.contractValue;
-      if (data.prepayPercent !== undefined) fullPayload.prepay_percent = data.prepayPercent;
-      if (data.prepayAmount !== undefined) fullPayload.prepay_amount = data.prepayAmount;
+      if (data.contractValue !== undefined) fullPayload.contract_value = Number(data.contractValue) || 0;
+      if (data.prepayPercent !== undefined) fullPayload.prepay_percent = Number(data.prepayPercent) || 0;
+      if (data.prepayAmount !== undefined) fullPayload.prepay_amount = Number(data.prepayAmount) || 0;
       if (data.paymentStatus !== undefined) fullPayload.payment_status = data.paymentStatus;
       if (data.isCompleted !== undefined) fullPayload.is_completed = !!data.isCompleted;
-      if (data.notes !== undefined) fullPayload.notes = (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim();
+      if (data.notes !== undefined) fullPayload.notes = baseNotes;
       if (data.dueDate !== undefined) {
         fullPayload.due_date = cleanDate(data.dueDate);
         fullPayload.expected_approval_date = cleanDate(data.dueDate);
@@ -1070,67 +1131,81 @@ export const api = {
       if (data.remindDays !== undefined) fullPayload.remind_days = data.remindDays;
       if (data.fileUrls !== undefined) {
         fullPayload.file_urls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []);
+        fullPayload.soft_copy_link = (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '');
       }
       if (data.createdById !== undefined) fullPayload.created_by_id = data.createdById;
       if (data.createdByName !== undefined) fullPayload.created_by_name = data.createdByName;
       if (data.updatedBy !== undefined) fullPayload.updated_by = data.updatedBy;
       fullPayload.updated_at = new Date().toISOString();
 
-      try {
-        const { data: res, error } = await supabase.from('document_tracks').update(fullPayload).eq('id', id).select().single();
-        if (error) {
-          console.warn('[DocumentTrack] update error with fullPayload, trying fallback:', error.message);
-          const statusTag = `[STATUS:${data.docStatus || 'Chưa ký'}|PAY:${data.paymentStatus || 'Chưa thanh toán'}|COMP:${data.isCompleted ? '1' : '0'}|CREATOR:${data.createdByName || ''}|CID:${data.createdById || ''}|UPD:${data.updatedBy || ''}]`;
-          const baseNotes = data.notes ? data.notes.replace(/\[STATUS:[^\]]+\]/g, '').trim() : (data.contractName ? `[${data.contractNo || ''}] ${data.contractName}` : '');
-          const combinedNotes = `${statusTag} ${baseNotes}`.trim();
+      const tryUpdate = async (payload: any) => {
+        const { data: res, error } = await supabase.from('document_tracks').update(payload).eq('id', id).select().single();
+        return { data: res, error };
+      };
 
-          const minPayload: any = {
-            status: data.docStatus || 'Chưa ký',
-            notes: combinedNotes
-          };
-          if (data.docType !== undefined) minPayload.document_type = data.docType;
-          if (cleanDate(data.sendDate)) minPayload.submission_date = cleanDate(data.sendDate);
-          if (data.receiverName || data.company) minPayload.recipient = data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || '');
-          if (cleanDate(data.dueDate)) minPayload.expected_approval_date = cleanDate(data.dueDate);
-          if (data.projectCode) minPayload.project_code = data.projectCode;
-          if (data.fileUrls !== undefined) {
-            minPayload.soft_copy_link = (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '');
-          }
-          const { error: minErr } = await supabase.from('document_tracks').update(minPayload).eq('id', id);
-          if (minErr) {
-            const ultraMinPayload: any = {
-              status: data.docStatus || 'Chưa ký',
-              notes: combinedNotes
-            };
-            const { error: ultraErr } = await supabase.from('document_tracks').update(ultraMinPayload).eq('id', id);
-            if (ultraErr) {
-              await supabase.from('document_tracks').update({ notes: combinedNotes }).eq('id', id);
-            }
-          }
-          return {
-            ...data,
-            id,
-            notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
-            updatedBy: data.updatedBy || '',
-            updatedAt: data.updatedAt || new Date().toISOString()
-          };
-        } else if (res) {
-          return {
-            ...data,
-            ...toCamelCase(res),
-            id,
-            notes: (res.notes || data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
-            updatedBy: data.updatedBy || '',
-            updatedAt: data.updatedAt || new Date().toISOString()
-          };
-        }
-      } catch (err) {
-        console.warn('Failed to update document track in DB:', err);
+      // Attempt 1: Full payload
+      let result = await tryUpdate(fullPayload);
+
+      // Foreign Key Handling
+      if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
+        delete fullPayload.project_code;
+        delete fullPayload.project_id;
+        result = await tryUpdate(fullPayload);
       }
+
+      // Attempt 2: Column missing -> Standard core columns
+      if (result.error && (result.error.code === 'PGRST204' || String(result.error.message).includes('column') || String(result.error.message).includes('schema cache'))) {
+        const corePayload: any = {};
+        if (data.contractNo !== undefined) corePayload.contract_no = data.contractNo;
+        if (data.contractName !== undefined) corePayload.contract_name = data.contractName;
+        if (data.company !== undefined) corePayload.company = data.company;
+        if (data.receiverName !== undefined) corePayload.receiver_name = data.receiverName;
+        if (data.phone !== undefined) corePayload.phone = data.phone;
+        if (data.address !== undefined) corePayload.address = data.address;
+        if (data.sendDate !== undefined) corePayload.send_date = cleanDate(data.sendDate);
+        if (data.receiveDate !== undefined) corePayload.receive_date = cleanDate(data.receiveDate);
+        if (data.docStatus !== undefined) corePayload.doc_status = data.docStatus;
+        if (data.side !== undefined) corePayload.side = data.side;
+        if (data.contractValue !== undefined) corePayload.contract_value = Number(data.contractValue) || 0;
+        if (data.prepayPercent !== undefined) corePayload.prepay_percent = Number(data.prepayPercent) || 0;
+        if (data.prepayAmount !== undefined) corePayload.prepay_amount = Number(data.prepayAmount) || 0;
+        if (data.paymentStatus !== undefined) corePayload.payment_status = data.paymentStatus;
+        if (data.isCompleted !== undefined) corePayload.is_completed = !!data.isCompleted;
+        corePayload.notes = combinedNotes;
+
+        result = await tryUpdate(corePayload);
+      }
+
+      // Attempt 3: Legacy Schema columns
+      if (result.error) {
+        const legacyPayload: any = {
+          notes: combinedNotes
+        };
+        if (data.docStatus !== undefined) legacyPayload.status = data.docStatus;
+        if (data.docType !== undefined) legacyPayload.document_type = data.docType;
+        if (data.sendDate !== undefined && cleanDate(data.sendDate)) legacyPayload.submission_date = cleanDate(data.sendDate);
+        if (data.receiverName || data.company) legacyPayload.recipient = data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || '');
+        if (data.dueDate !== undefined && cleanDate(data.dueDate)) legacyPayload.expected_approval_date = cleanDate(data.dueDate);
+        if (data.fileUrls !== undefined) {
+          legacyPayload.soft_copy_link = (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '');
+        }
+
+        result = await tryUpdate(legacyPayload);
+      }
+
+      if (result.error) {
+        console.error('[DocumentTrack] update failed in Supabase:', result.error);
+        throw new Error(result.error.message || 'Không thể cập nhật hồ sơ vào cơ sở dữ liệu');
+      }
+
+      const res = result.data;
       return {
         ...data,
+        ...(res ? toCamelCase(res) : {}),
         id,
-        notes: (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()
+        notes: (res?.notes || data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
+        updatedBy: data.updatedBy || '',
+        updatedAt: res?.updated_at || new Date().toISOString()
       };
     },
     deleteDocumentTrack: async (id: string) => {

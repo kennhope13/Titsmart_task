@@ -2100,8 +2100,13 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           link: `/document-tracking?project=${encodeURIComponent(pCode)}&highlight=${encodeURIComponent(docName)}`
         }).catch(() => {});
       } catch (e) {
-        console.warn('Failed to persist document track to DB, retaining local state', e);
-        get().logActivity('Thêm mới hồ sơ gửi đi: ' + (trackData.contractName || ''), 'COMPANY');
+        console.error('Failed to persist document track to DB:', e);
+        set((state) => {
+          const nextTracks = state.documentTracks.filter(d => d.id !== tempId);
+          persistAndNotify({ documentTracks: nextTracks });
+          return { documentTracks: nextTracks };
+        });
+        throw e;
       }
     },
 
@@ -2148,7 +2153,8 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           link: `/document-tracking?project=${encodeURIComponent(pCode)}&highlight=${encodeURIComponent(docName)}`
         }).catch(() => {});
       } catch (e) {
-        console.warn('Failed to update document track, updated locally', e);
+        console.error('Failed to update document track in DB:', e);
+        throw e;
       }
     },
 
