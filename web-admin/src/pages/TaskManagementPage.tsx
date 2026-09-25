@@ -173,15 +173,19 @@ export const TaskManagementPage: React.FC = () => {
     // Log activity to inform Admin
     const store = useRealtimeStore.getState();
     const userName = authStore.user?.name || authStore.user?.username || 'Một nhân sự';
+    const userId = authStore.user?.id || '';
     store.logActivity(`Nhân sự ${userName} đã XÁC NHẬN NHẬN VIỆC hạng mục: "${task.name}"`, task.projectName || task.projectCode);
     
-    // Also add explicit notification to Admin (assigner) if possible
+    // Also add explicit notification to assigner
     if (store.addNotification) {
       await store.addNotification({
         title: 'Nhân sự đã nhận việc',
         message: `${userName} đã xác nhận nhận công việc "${task.name}" thuộc dự án ${task.projectCode}.`,
+        link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
         type: `task_accepted:::${task.assignerId || 'admin'}:::${task.assignerName || 'Quản lý'}`,
-        icon: 'check_circle'
+        icon: 'check_circle',
+        senderId: userId,
+        senderName: userName
       });
     }
   };
@@ -192,6 +196,7 @@ export const TaskManagementPage: React.FC = () => {
 
     const store = useRealtimeStore.getState();
     const userName = authStore.user?.name || authStore.user?.username || 'Một nhân sự';
+    const userId = authStore.user?.id || '';
     store.logActivity(`Nhân sự ${userName} đã BÁO CÁO HOÀN THÀNH hạng mục: "${task.name}"`, task.projectName || task.projectCode);
 
     if (store.addNotification) {
@@ -200,28 +205,73 @@ export const TaskManagementPage: React.FC = () => {
         message: `${userName} đã báo cáo hoàn thành công việc "${task.name}" thuộc dự án ${task.projectCode}.`,
         link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
         type: `task_completed:::${task.assignerId || 'admin'}:::${task.assignerName || 'Quản lý'}`,
-        icon: 'done_all'
+        icon: 'done_all',
+        senderId: userId,
+        senderName: userName
       });
     }
   };
 
+  const canApproveTask = (currentUser: any, task: any): boolean => {
+    if (!currentUser || !task) return false;
+    if (task.status !== 'Chờ nghiệm thu') return false;
+
+    const userId = String(currentUser.id || '').toLowerCase();
+    const userName = String(currentUser.name || '').toLowerCase();
+    const userUsername = String(currentUser.username || '').toLowerCase();
+
+    const myEng = Array.isArray(engineers) ? engineers.find(e => 
+      (e.id && String(e.id).toLowerCase() === userId) ||
+      (e.name && String(e.name).toLowerCase() === userName) ||
+      (e.username && String(e.username).toLowerCase() === userUsername)
+    ) : null;
+
+    const myIds = [userId, myEng?.id?.toLowerCase()].filter(Boolean) as string[];
+    const myNames = [userName, userUsername, myEng?.name?.toLowerCase()].filter(Boolean) as string[];
+
+    const taskAssignerId = String(task.assignerId || '').trim().toLowerCase();
+    const taskAssignerName = String(task.assignerName || '').trim().toLowerCase();
+
+    // 1. Nếu công việc có assignerId cụ thể
+    if (taskAssignerId && taskAssignerId !== 'admin') {
+      return myIds.includes(taskAssignerId);
+    }
+
+    // 2. Nếu công việc có assignerName cụ thể
+    if (taskAssignerName && taskAssignerName !== 'quản trị viên' && taskAssignerName !== 'quản lý') {
+      return myNames.some(n => taskAssignerName.includes(n) || n.includes(taskAssignerName));
+    }
+
+    // 3. Nếu người giao là admin hoặc không có người giao cụ thể -> chỉ admin/quản trị viên mới được nghiệm thu
+    const role = String(currentUser.role || '').toLowerCase();
+    const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || currentUser.username === 'admin';
+    return isAdmin;
+  };
+
   const handleApproveTask = async (task: Task) => {
+    if (!canApproveTask(authStore.user, task)) {
+      triggerToast('Chỉ người giao việc mới có quyền nghiệm thu!', 'warning');
+      return;
+    }
     handleUpdateTaskSync(task.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' });
     triggerToast(`Đã nghiệm thu hoàn thành: "${task.name}"!`, 'success');
 
     const store = useRealtimeStore.getState();
     const adminName = authStore.user?.name || authStore.user?.username || 'Quản lý';
-    store.logActivity(`Quản lý ${adminName} đã NGHIỆM THU HOÀN THÀNH công việc: "${task.name}"`, task.projectName || task.projectCode);
+    const adminId = authStore.user?.id || '';
+    store.logActivity(`Người giao việc ${adminName} đã NGHIỆM THU HOÀN THÀNH công việc: "${task.name}"`, task.projectName || task.projectCode);
 
     if (store.addNotification && (task.assignedEngineerId || task.assignedEngineerName)) {
       const engId = task.assignedEngineerId || '';
       const engName = task.assignedEngineerName?.split('|')[0] || '';
       await store.addNotification({
         title: 'Công việc đã được nghiệm thu',
-        message: `Quản lý ${adminName} đã nghiệm thu hoàn thành công việc "${task.name}" [${task.projectCode}].`,
+        message: `${adminName} đã nghiệm thu hoàn thành công việc "${task.name}" [${task.projectCode}].`,
         link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
         type: `task_approved:::${engId}:::${engName}`,
-        icon: 'verified'
+        icon: 'verified',
+        senderId: adminId,
+        senderName: adminName
       });
     }
   };
@@ -548,6 +598,12 @@ const hasSyncedRef = useRef(false);
       notes: editNotes,
       assignedEngineerId: editEngineerId,
       assignedEngineerName: editEngineerId ? (eng?.name || '') : '',
+      assignerId: (editEngineerId && editEngineerId !== (editingTask.assignedEngineerId || '')) 
+        ? (authStore.user?.id || editingTask.assignerId) 
+        : editingTask.assignerId,
+      assignerName: (editEngineerId && editEngineerId !== (editingTask.assignedEngineerId || '')) 
+        ? (authStore.user?.name || authStore.user?.username || editingTask.assignerName) 
+        : editingTask.assignerName,
       parentId: editParentId || undefined,
     });
 
@@ -555,6 +611,7 @@ const hasSyncedRef = useRef(false);
     if (editEngineerId && editEngineerId !== (editingTask.assignedEngineerId || '')) {
       const store = useRealtimeStore.getState();
       const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
+      const assignerId = authStore.user?.id || '';
       const targetName = eng?.name || 'nhân sự';
       store.logActivity(`Quản lý ${assignerName} đã GIAO CÔNG VIỆC: "${editName}" cho ${targetName}`, editingTask.projectName || editingTask.projectCode || 'Dự án');
       if (store.addNotification) {
@@ -562,7 +619,9 @@ const hasSyncedRef = useRef(false);
           title: `Giao việc: ${targetName}`,
           message: `${assignerName} đã giao công việc "${editName}" thuộc dự án ${editingTask.projectName || editingTask.projectCode} cho ${targetName}.`,
           type: `task_assigned:::${editEngineerId}:::${targetName}`,
-          icon: 'assignment_ind'
+          icon: 'assignment_ind',
+          senderId: assignerId,
+          senderName: assignerName
         });
       }
     }
@@ -2167,7 +2226,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                             {(t.assignedEngineerName?.includes('|' + (authStore.user?.id || '')) || t.assignedEngineerId === authStore.user?.id) && (t.status === 'Đang làm' || t.status === 'Chưa làm') && (
                               <button onClick={(e) => { e.stopPropagation(); handleReportDone(t); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Báo cáo hoàn thành</button>
                             )}
-                            {hasPermission(authStore.user, 'APPROVE_TASKS') && t.status === 'Chờ nghiệm thu' && (
+                            {canApproveTask(authStore.user, t) && (
                               <button onClick={(e) => { e.stopPropagation(); handleApproveTask(t); }} className="text-[9px] bg-purple-500 pointer-events-auto hover:bg-purple-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nghiệm thu</button>
                             )}
                             
@@ -2239,16 +2298,18 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                 const names = selectedEngs.map(e => e.name).join(', ');
                 const ids = selectedEngs.map(e => e.id).join(',');
                 const firstId = selectedEngs.length > 0 ? selectedEngs[0].id : '';
+                const assignerId = authStore.user?.id || '';
+                const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
                 handleUpdateTaskSync(assigningTask.id, {
                   assignedEngineerId: firstId,
                   assignedEngineerName: names + (ids ? '|' + ids : ''),
-                  assignerId: authStore.user?.id,
+                  assignerId: assignerId,
+                  assignerName: assignerName,
                   status: ids ? 'Chờ nhận việc' : assigningTask.status
                 });
 
                 // Gửi thông báo realtime & nhật ký hoạt động
                 const store = useRealtimeStore.getState();
-                const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
                 if (ids && selectedEngs.length > 0) {
                   store.logActivity(`Quản lý ${assignerName} đã GIAO CÔNG VIỆC: "${assigningTask.name}" cho ${names}`, assigningTask.projectName || assigningTask.projectCode || 'Dự án');
                   if (store.addNotification) {
@@ -2256,7 +2317,9 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                       title: `Giao việc: ${names}`,
                       message: `${assignerName} đã giao công việc "${assigningTask.name}" thuộc dự án ${assigningTask.projectName || assigningTask.projectCode} cho ${names}.`,
                       type: `task_assigned:::${ids}:::${names}`,
-                      icon: 'assignment_ind'
+                      icon: 'assignment_ind',
+                      senderId: assignerId,
+                      senderName: assignerName
                     });
                   }
                 }

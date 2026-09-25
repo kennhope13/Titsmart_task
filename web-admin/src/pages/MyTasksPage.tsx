@@ -95,15 +95,18 @@ export const MyTasksPage: React.FC = () => {
     
     const store = useRealtimeStore.getState();
     const userName = user?.name || user?.username || 'Một nhân sự';
+    const userId = user?.id || '';
     store.logActivity(`Nhân sự ${userName} đã XÁC NHẬN NHẬN VIỆC hạng mục: "${task.name}"`, task.projectName || task.projectCode);
     
     if (store.addNotification) {
       await store.addNotification({
         title: 'Nhân sự đã nhận việc',
         message: `${userName} đã xác nhận nhận công việc "${task.name}" thuộc dự án ${task.projectCode}.`,
-        link: `/task-assignment?tab=assigned&taskId=${task.id}`,
+        link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
         type: `task_accepted:::${task.assignerId || 'admin'}:::${task.assignerName || 'Quản lý'}`,
-        icon: 'check_circle'
+        icon: 'check_circle',
+        senderId: userId,
+        senderName: userName
       });
     }
   };
@@ -114,6 +117,7 @@ export const MyTasksPage: React.FC = () => {
     
     const store = useRealtimeStore.getState();
     const userName = user?.name || user?.username || 'Một nhân sự';
+    const userId = user?.id || '';
     store.logActivity(`Nhân sự ${userName} đã BÁO CÁO HOÀN THÀNH hạng mục: "${task.name}"`, task.projectName || task.projectCode);
     
     if (store.addNotification) {
@@ -122,7 +126,9 @@ export const MyTasksPage: React.FC = () => {
         message: `${userName} đã báo cáo hoàn thành công việc "${task.name}" thuộc dự án ${task.projectCode}.`,
         link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
         type: `task_completed:::${task.assignerId || 'admin'}:::${task.assignerName || 'Quản lý'}`,
-        icon: 'done_all'
+        icon: 'done_all',
+        senderId: userId,
+        senderName: userName
       });
     }
   };
@@ -187,27 +193,45 @@ export const MyTasksPage: React.FC = () => {
                       <div className="p-4 flex-1 flex flex-col">
                         <h3 className="font-bold text-slate-800 text-sm mb-1">{t.name}</h3>
                         {t.sectionName && t.sectionName !== t.name && (
-                          <p className="text-xs text-slate-500 mb-3">{t.sectionName}</p>
+                          <p className="text-xs text-slate-500 mb-2">{t.sectionName}</p>
                         )}
-                        <div className="mt-auto pt-4 flex items-center justify-between text-xs font-medium text-slate-600">
-                          <span className="bg-slate-100 px-2 py-1 rounded">KL: {t.volume} {t.unit}</span>
+
+                        <div className="my-2 space-y-1.5 text-xs text-slate-600 bg-slate-50/90 p-2.5 rounded-lg border border-slate-100">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-[15px] text-amber-600">person_add</span>
+                              Người giao việc:
+                            </span>
+                            <span className="font-bold text-slate-800">{t.assignerName || 'Quản lý'}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-[15px] text-blue-600">engineering</span>
+                              Người nhận việc:
+                            </span>
+                            <span className="font-bold text-blue-700">{t.assignedEngineerName?.split('|')[0] || 'Chưa nhận'}</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-auto pt-3 flex items-center justify-between text-xs font-medium text-slate-600 border-t border-slate-100">
+                          <span className="bg-slate-100 px-2.5 py-1 rounded-md font-semibold text-slate-700 border border-slate-200/60">KL: {t.volume} {t.unit}</span>
                           
                           {isWaiting && (
-                            <button onClick={() => handleAcceptTask(t)} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg shadow-sm transition-colors">
-                              <span className="material-symbols-outlined text-[14px]">check</span>
+                            <button onClick={() => handleAcceptTask(t)} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-lg shadow-sm transition-all">
+                              <span className="material-symbols-outlined text-[15px]">check</span>
                               Nhận việc
                             </button>
                           )}
                           {isDoing && (
-                            <button onClick={() => handleReportDone(t)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-sm transition-colors">
-                              <span className="material-symbols-outlined text-[14px]">done_all</span>
+                            <button onClick={() => handleReportDone(t)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold rounded-lg shadow-sm transition-all">
+                              <span className="material-symbols-outlined text-[15px]">done_all</span>
                               Báo cáo hoàn thành
                             </button>
                           )}
                           {isDone && (
-                            <span className="text-emerald-600 flex items-center gap-1">
+                            <span className="text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
                               <span className="material-symbols-outlined text-[16px]">verified</span>
-                              Đã xử lý
+                              {t.status === 'Chờ nghiệm thu' ? 'Chờ nghiệm thu' : 'Đã nghiệm thu'}
                             </span>
                           )}
                         </div>

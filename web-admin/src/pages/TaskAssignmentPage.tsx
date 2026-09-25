@@ -20,24 +20,67 @@ export const TaskAssignmentPage: React.FC = () => {
     setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
   };
 
+  const canApproveTask = (currentUser: any, task: any): boolean => {
+    if (!currentUser || !task) return false;
+    if (task.status !== 'Chờ nghiệm thu') return false;
+
+    const userId = String(currentUser.id || '').toLowerCase();
+    const userName = String(currentUser.name || '').toLowerCase();
+    const userUsername = String(currentUser.username || '').toLowerCase();
+
+    const myEng = Array.isArray(engineers) ? engineers.find(e => 
+      (e.id && String(e.id).toLowerCase() === userId) ||
+      (e.name && String(e.name).toLowerCase() === userName) ||
+      (e.username && String(e.username).toLowerCase() === userUsername)
+    ) : null;
+
+    const myIds = [userId, myEng?.id?.toLowerCase()].filter(Boolean) as string[];
+    const myNames = [userName, userUsername, myEng?.name?.toLowerCase()].filter(Boolean) as string[];
+
+    const taskAssignerId = String(task.assignerId || '').trim().toLowerCase();
+    const taskAssignerName = String(task.assignerName || '').trim().toLowerCase();
+
+    // 1. Nếu công việc có assignerId cụ thể
+    if (taskAssignerId && taskAssignerId !== 'admin') {
+      return myIds.includes(taskAssignerId);
+    }
+
+    // 2. Nếu công việc có assignerName cụ thể
+    if (taskAssignerName && taskAssignerName !== 'quản trị viên' && taskAssignerName !== 'quản lý') {
+      return myNames.some(n => taskAssignerName.includes(n) || n.includes(taskAssignerName));
+    }
+
+    // 3. Nếu người giao là admin hoặc không có người giao cụ thể -> chỉ admin/quản trị viên mới được nghiệm thu
+    const role = String(currentUser.role || '').toLowerCase();
+    const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || currentUser.username === 'admin';
+    return isAdmin;
+  };
+
   const handleQuickApprove = async (e: React.MouseEvent, task: any) => {
     e.stopPropagation();
+    if (!canApproveTask(user, task)) {
+      triggerToast('Chỉ người giao việc mới có quyền nghiệm thu!', 'warning');
+      return;
+    }
     updateTask(task.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' });
     triggerToast(`Đã nghiệm thu hoàn thành: "${task.name}"!`, 'success');
 
     const store = useRealtimeStore.getState();
     const adminName = user?.name || user?.username || 'Quản lý';
-    store.logActivity(`Quản lý ${adminName} đã NGHIỆM THU HOÀN THÀNH công việc: "${task.name}"`, task.projectCode);
+    const adminId = user?.id || '';
+    store.logActivity(`Người giao việc ${adminName} đã NGHIỆM THU HOÀN THÀNH công việc: "${task.name}"`, task.projectCode);
 
     if (store.addNotification && (task.assignedEngineerId || task.assignedEngineerName)) {
       const engId = task.assignedEngineerId || '';
       const engName = task.assignedEngineerName?.split('|')[0] || '';
       await store.addNotification({
         title: `Công việc đã nghiệm thu`,
-        message: `Quản lý ${adminName} đã nghiệm thu hoàn thành công việc "${task.name}" [${task.projectCode}].`,
+        message: `${adminName} đã nghiệm thu hoàn thành công việc "${task.name}" [${task.projectCode}].`,
         link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
         type: `task_approved:::${engId}:::${engName}`,
-        icon: 'verified'
+        icon: 'verified',
+        senderId: adminId,
+        senderName: adminName
       });
     }
   };
@@ -154,18 +197,20 @@ export const TaskAssignmentPage: React.FC = () => {
 
     const eng = engineers.find(e => e.id === selectedEngineerId);
     const engName = eng ? eng.name : '';
+    const assignerId = user?.id || '';
+    const assignerName = user?.name || user?.username || 'Quản lý';
 
     selectedTaskIds.forEach(id => {
       updateTask(id, {
         assignedEngineerId: selectedEngineerId,
         assignedEngineerName: engName,
-        assignerId: user?.id,
+        assignerId: assignerId,
+        assignerName: assignerName,
         status: 'Chờ nhận việc'
       });
     });
 
     const store = useRealtimeStore.getState();
-    const assignerName = user?.name || user?.username || 'Quản lý';
     store.logActivity(`Quản lý ${assignerName} đã GIAO ${selectedTaskIds.length} CÔNG VIỆC cho ${engName}`, 'Hệ thống');
 
     if (store.addNotification) {
@@ -173,7 +218,9 @@ export const TaskAssignmentPage: React.FC = () => {
         title: `Giao việc: ${engName}`,
         message: `${assignerName} đã giao ${selectedTaskIds.length} công việc mới cho ${engName}.`,
         type: `task_assigned:::${selectedEngineerId}:::${engName}`,
-        icon: 'assignment_ind'
+        icon: 'assignment_ind',
+        senderId: assignerId,
+        senderName: assignerName
       });
     }
 
@@ -337,7 +384,7 @@ export const TaskAssignmentPage: React.FC = () => {
                           }`}>
                             {t.status || 'Chưa làm'}
                           </span>
-                          {t.status === 'Chờ nghiệm thu' && hasPermission(user, 'APPROVE_TASKS') && (
+                          {canApproveTask(user, t) && (
                             <button
                               type="button"
                               onClick={(e) => handleQuickApprove(e, t)}

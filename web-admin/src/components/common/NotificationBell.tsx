@@ -134,10 +134,66 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     return isAdmin;
   }
 
-  // 3. Task acceptance & completion notifications: Only for Admin / PM / Assigner
-  if (title.includes('đã nhận việc') || title.includes('hoàn thành công việc') || typeStr.startsWith('task_accepted') || typeStr.startsWith('task_completed')) {
-    if (!isAdmin) return false;
-    return true;
+  // 3. Task acceptance & completion notifications: ONLY for the assigner (người giao việc)
+  if (
+    title.includes('đã nhận việc') || 
+    title.includes('hoàn thành công việc') || 
+    title.includes('báo cáo hoàn thành') ||
+    title.includes('báo cáo xong') ||
+    typeStr.startsWith('task_accepted') || 
+    typeStr.startsWith('task_completed')
+  ) {
+    if (typeStr.includes(':::')) {
+      const parts = typeStr.split(':::');
+      const targetId = (parts[1] || '').trim().toLowerCase();
+      const targetName = (parts[2] || '').trim().toLowerCase();
+
+      const isMeId = targetId && (myIds.includes(targetId) || (myEng && targetId === String(myEng.id).toLowerCase()));
+      const isMeName = targetName && myNames.some(n => targetName.includes(n) || n.includes(targetName));
+
+      if (isMeId || isMeName) return true;
+
+      // Nếu người giao việc là một tài khoản cụ thể (không phải tôi) thì KHÔNG hiển thị cho tôi (kể cả admin)
+      if (targetId && targetId !== 'admin' && targetName && targetName !== 'quản lý' && targetName !== 'quản trị viên') {
+        return false;
+      }
+
+      // Nếu người giao là admin/quản lý chung chung thì tài khoản admin/manager sẽ thấy
+      if (targetId === 'admin' || targetName === 'quản lý' || targetName === 'quản trị viên') {
+        return isAdmin;
+      }
+    }
+
+    // Nếu không có type metadata, kiểm tra assigner của task trong store
+    const quoteMatch = message.match(/"([^"]+)"/);
+    const taskName = quoteMatch ? quoteMatch[1] : '';
+    if (taskName) {
+      const store = useRealtimeStore.getState();
+      const t = store.tasks?.find(tk => tk.name?.trim().toLowerCase() === taskName.trim().toLowerCase());
+      if (t?.assignerId || t?.assignerName) {
+        const aId = String(t.assignerId || '').toLowerCase();
+        const aName = String(t.assignerName || '').toLowerCase();
+        const isMeId = aId && myIds.includes(aId);
+        const isMeName = aName && myNames.some(n => aName.includes(n) || n.includes(aName));
+        if (isMeId || isMeName) return true;
+        if (aId && aId !== 'admin') return false;
+      }
+    }
+
+    return isAdmin;
+  }
+
+  // 3b. Task approval notifications: ONLY for the assigned engineer (người thực hiện công việc)
+  if (title.includes('nghiệm thu') || typeStr.startsWith('task_approved')) {
+    if (typeStr.startsWith('task_approved:::')) {
+      const parts = typeStr.split(':::');
+      const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase());
+      const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase());
+      const isMeId = targetIds.some(tId => myIds.includes(tId) || (myEng && tId === String(myEng.id).toLowerCase()));
+      const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
+      if (isMeId || isMeName) return true;
+      return false;
+    }
   }
 
   // 4. Leave requests: Only for Admin/Managers (unless it's an approval/rejection notification for the specific user)
@@ -365,9 +421,17 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     const titleLower = title.toLowerCase();
     const msgLower = message.toLowerCase();
 
-    // Trích xuất mã dự án nếu có dạng [PROJECT_CODE]
+    // Trích xuất mã dự án nếu có dạng [PROJECT_CODE] hoặc "dự án X"
+    let pCode = '';
     const pCodeMatch = message.match(/\[([A-Za-z0-9_-]+)\]/);
-    const pCode = pCodeMatch ? pCodeMatch[1] : '';
+    if (pCodeMatch) {
+      pCode = pCodeMatch[1];
+    } else {
+      const pProjectMatch = message.match(/thuộc dự án\s+([A-Za-z0-9_-]+)/i) || message.match(/dự án\s+([A-Za-z0-9_-]+)/i);
+      if (pProjectMatch) {
+        pCode = pProjectMatch[1].replace(/[.,:;]$/, '').trim();
+      }
+    }
 
     // Trích xuất tên hạng mục/hồ sơ sau dấu hai chấm nếu có
     let itemName = '';
@@ -379,7 +443,23 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
     // Trích xuất tên công việc trong ngoặc kép nếu có
     const quoteMatch = message.match(/"([^"]+)"/);
-    const taskName = quoteMatch ? quoteMatch[1] : '';
+    const taskName = quoteMatch ? quoteMatch[1] : (itemName || '');
+
+    // Tìm kiếm task trong realtime store để có đầy đủ projectCode và taskId
+    const store = useRealtimeStore.getState();
+    const allTasks = store.tasks || [];
+    const allProjects = store.projects || [];
+    const targetTask = taskName 
+      ? allTasks.find(t => t.name?.trim().toLowerCase() === taskName.trim().toLowerCase()) 
+      : null;
+
+    let finalProjectCode = pCode || targetTask?.projectCode || '';
+    if (finalProjectCode) {
+      const matchedProj = allProjects.find(p => p.code?.toLowerCase() === finalProjectCode.toLowerCase() || p.name?.toLowerCase() === finalProjectCode.toLowerCase() || p.id === finalProjectCode);
+      if (matchedProj) {
+        finalProjectCode = matchedProj.code;
+      }
+    }
 
     if (titleLower.includes('hồ sơ') || msgLower.includes('hồ sơ') || (notification.type && notification.type.includes('document'))) {
       const params = new URLSearchParams();
@@ -390,31 +470,47 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       if (pCode && pCode !== 'Hệ thống') params.set('project', pCode);
       navigate(`/field-logs${params.toString() ? `?${params.toString()}` : ''}`);
     } else if (
-      titleLower.includes('đã hoàn thành') || 
-      titleLower.includes('nghiệm thu') ||
-      (notification.type && (notification.type.startsWith('task_completed') || notification.type.startsWith('task_approved')))
+      titleLower.includes('báo cáo hoàn thành') ||
+      titleLower.includes('báo cáo xong') ||
+      (notification.type && notification.type.startsWith('task_completed'))
     ) {
-      const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
-      const params = new URLSearchParams();
-      if (taskName) params.set('highlight', taskName);
-      else if (itemName) params.set('highlight', itemName);
-
-      if (isAdmin) {
-        params.set('tab', 'completed');
-        navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'completed' } });
+      // Khi nhân viên báo cáo hoàn thành -> Admin / Quản lý nhấn vào thông báo đi đến tab Tiến độ công việc của dự án để nghiệm thu
+      if (finalProjectCode) {
+        const taskIdParam = targetTask?.id ? `taskId=${encodeURIComponent(targetTask.id)}&` : '';
+        navigate(`/projects/${encodeURIComponent(finalProjectCode)}/tasks?${taskIdParam}highlight=${encodeURIComponent(taskName || '')}`);
       } else {
+        const params = new URLSearchParams();
+        params.set('tab', 'assigned');
+        if (taskName) params.set('highlight', taskName);
+        navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'assigned' } });
+      }
+    } else if (
+      titleLower.includes('nghiệm thu') ||
+      (notification.type && notification.type.startsWith('task_approved'))
+    ) {
+      const role = String(user?.role || '').toLowerCase();
+      const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || user?.username === 'admin';
+      if (isAdmin && finalProjectCode) {
+        const taskIdParam = targetTask?.id ? `taskId=${encodeURIComponent(targetTask.id)}&` : '';
+        navigate(`/projects/${encodeURIComponent(finalProjectCode)}/tasks?${taskIdParam}highlight=${encodeURIComponent(taskName || '')}`);
+      } else {
+        const params = new URLSearchParams();
+        if (taskName) params.set('highlight', taskName);
         navigate(`/my-tasks?${params.toString()}`);
       }
     } else if (
       titleLower.includes('đã nhận việc') || 
-      titleLower.includes('báo cáo xong') ||
       (notification.type && notification.type.startsWith('task_accepted'))
     ) {
-      const params = new URLSearchParams();
-      params.set('tab', 'assigned');
-      if (taskName) params.set('highlight', taskName);
-      else if (itemName) params.set('highlight', itemName);
-      navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'assigned' } });
+      if (finalProjectCode) {
+        const taskIdParam = targetTask?.id ? `taskId=${encodeURIComponent(targetTask.id)}&` : '';
+        navigate(`/projects/${encodeURIComponent(finalProjectCode)}/tasks?${taskIdParam}highlight=${encodeURIComponent(taskName || '')}`);
+      } else {
+        const params = new URLSearchParams();
+        params.set('tab', 'assigned');
+        if (taskName) params.set('highlight', taskName);
+        navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'assigned' } });
+      }
     } else if (
       titleLower.includes('giao việc') || 
       titleLower.includes('công việc') || 
@@ -423,17 +519,22 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       msgLower.includes('công việc') ||
       (notification.type && notification.type.startsWith('task_assigned'))
     ) {
-      const params = new URLSearchParams();
-      if (taskName) params.set('highlight', taskName);
-      else if (itemName) params.set('highlight', itemName);
-
       const role = String(user?.role || '').toLowerCase();
       const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || user?.username === 'admin';
 
       if (isAdmin) {
-        params.set('tab', 'assigned');
-        navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'assigned' } });
+        if (finalProjectCode) {
+          const taskIdParam = targetTask?.id ? `taskId=${encodeURIComponent(targetTask.id)}&` : '';
+          navigate(`/projects/${encodeURIComponent(finalProjectCode)}/tasks?${taskIdParam}highlight=${encodeURIComponent(taskName || '')}`);
+        } else {
+          const params = new URLSearchParams();
+          params.set('tab', 'assigned');
+          if (taskName) params.set('highlight', taskName);
+          navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'assigned' } });
+        }
       } else {
+        const params = new URLSearchParams();
+        if (taskName) params.set('highlight', taskName);
         navigate(`/my-tasks?${params.toString()}`);
       }
     } else if (
