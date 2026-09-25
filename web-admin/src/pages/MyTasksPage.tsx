@@ -153,7 +153,7 @@ export const MyTasksPage: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col border-t border-slate-200">
-        <div className="w-full h-full overflow-auto custom-scrollbar bg-white p-4 lg:p-6">
+        <div className="w-full h-full overflow-auto custom-scrollbar bg-white p-4 pb-16 lg:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {myTasks.length === 0 ? (
                 <div className="col-span-full py-12 text-center text-slate-500 font-medium italic bg-slate-50 rounded-xl border border-dashed border-slate-300">

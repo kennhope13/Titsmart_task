@@ -1711,7 +1711,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   const [historyExpense, setHistoryExpense] = useState<any | null>(null);
 
   return (
-    <div className="flex flex-col flex-1 overflow-y-auto">
+    <div className="flex flex-col flex-1 overflow-y-auto pb-16 md:pb-0">
       {debugText && (
         <div className="bg-red-50 border-b-2 border-red-500 p-4 text-xs font-mono text-red-950 whitespace-pre-wrap select-all z-[9999] relative">
           <div className="font-bold text-sm mb-2">DEBUG IMPORT REPORT (VUI LÒNG CHỤP HÌNH GỬI TÔI):</div>
@@ -1864,7 +1864,7 @@ export const ProjectCostPlanPage: React.FC = () => {
 
         {/* EXPENSE TAB */}
         {activeTab === 'EXPENSE' && (
-          <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-white flex flex-col" id="expense-unified-view">
+          <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-white flex flex-col pb-16 md:pb-0" id="expense-unified-view">
 
             {/* 1. BẢNG TỔNG QUAN */}
             <div className="shrink-0 w-full overflow-x-auto">

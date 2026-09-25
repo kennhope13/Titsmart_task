@@ -1423,99 +1423,6 @@ export const MaterialTrackingPage: React.FC = () => {
               </button>
             ))}
           </div>
-
-          {/* Mobile Search & Action Bar */}
-          <div className="md:hidden flex items-center gap-1.5 px-3 py-2 border-t border-slate-100 bg-slate-50/50">
-            <div className="relative flex-1 min-w-0">
-              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
-              <input
-                type="text"
-                placeholder="Tìm vật tư..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary transition-all h-8"
-              />
-            </div>
-
-            {/* Mobile '+' Nhập kho Icon Button */}
-            <button 
-              onClick={() => handleOpenTransaction('IMPORT')} 
-              title="Nhập Kho"
-              className="flex items-center justify-center bg-emerald-600 text-white h-8 w-8 rounded-lg hover:bg-emerald-700 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-base">arrow_downward</span>
-            </button>
-
-            {/* Mobile '↑' Xuất kho Icon Button */}
-            <button 
-              onClick={() => handleOpenTransaction('EXPORT')} 
-              title="Xuất Kho"
-              className="flex items-center justify-center bg-amber-500 text-white h-8 w-8 rounded-lg hover:bg-amber-600 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-base">arrow_upward</span>
-            </button>
-
-            {/* Mobile Export File Dropdown Menu */}
-            <div className="relative shrink-0">
-              <button
-                onClick={() => setShowMobileExportMenu(!showMobileExportMenu)}
-                className="flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors shadow-xs cursor-pointer"
-                title="Xuất file"
-              >
-                <span className="material-symbols-outlined text-base">file_download</span>
-              </button>
-              {showMobileExportMenu && (
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setShowMobileExportMenu(false)}
-                />
-              )}
-              {showMobileExportMenu && (
-                <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
-                  <button
-                    onClick={() => {
-                      setShowMobileExportMenu(false);
-                      handleExportExcel();
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
-                    Excel (.xlsx)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMobileExportMenu(false);
-                      handleExportExcel();
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-base text-teal-600">csv</span>
-                    CSV (.csv)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMobileExportMenu(false);
-                      window.print();
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
-                    PDF (.pdf)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMobileExportMenu(false);
-                      handleExportExcel();
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
-                  >
-                    <span className="material-symbols-outlined text-base text-blue-600">description</span>
-                    Word (.docx)
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
           
           {/* Lọc chi tiết - ẩn trên mobile để tối ưu giao diện */}
           <div className="hidden md:flex h-[40px] px-5 bg-slate-50/80 border-t border-slate-100 items-center gap-3 overflow-x-auto custom-scrollbar justify-between">
@@ -1568,7 +1475,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
         {activeTab === 'OVERVIEW' && (
           <>
-            <div className="overflow-auto custom-scrollbar flex-1">
+            <div className="overflow-auto custom-scrollbar flex-1 pb-16 md:pb-0">
               <table className="w-full text-left border-collapse">
                  <thead 
                    style={{ top: 0 }}
@@ -1652,7 +1559,7 @@ export const MaterialTrackingPage: React.FC = () => {
         )}
 
         {activeTab === 'IMPORT' && (
-          <div className="w-full overflow-auto custom-scrollbar flex-1">
+          <div className="w-full overflow-auto custom-scrollbar flex-1 pb-16 md:pb-0">
             <table className="w-full text-left border-collapse">
               <thead 
                 style={{ top: 0 }}
@@ -1693,7 +1600,7 @@ export const MaterialTrackingPage: React.FC = () => {
         )}
 
         {activeTab === 'EXPORT' && (
-          <div className="w-full overflow-auto custom-scrollbar flex-1">
+          <div className="w-full overflow-auto custom-scrollbar flex-1 pb-16 md:pb-0">
             <table className="w-full text-left border-collapse">
               <thead 
                 style={{ top: 0 }}

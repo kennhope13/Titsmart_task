@@ -140,14 +140,14 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
   return (
     <div className="w-full">
       <div className="w-full overflow-x-auto custom-scrollbar">
-        <div className="flex gap-1 md:gap-3 w-full items-start justify-center p-1 md:p-0">
+        <div className="flex gap-1 md:gap-3 w-full items-stretch justify-center p-1 md:p-0">
           
           {/* QUỸ */}
-          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white h-full">
             <thead>
               <tr>
-                <th className="border border-slate-300 bg-blue-100 text-blue-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">
-                  <div className="flex items-center justify-center gap-1">
+                <th className="border border-slate-300 bg-blue-100 text-blue-900 h-[26px] md:h-[30px] p-0 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">
+                  <div className="h-full flex items-center justify-center gap-1 px-1">
                     <span>QUỸ</span>
                     {onAllocateFund && (
                       <button
@@ -161,7 +161,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
                         className="inline-flex items-center justify-center p-0.5 rounded text-blue-600 hover:text-blue-800 hover:bg-blue-100 transition-colors cursor-pointer"
                         title="Thêm / Nạp Quỹ"
                       >
-                        <span className="material-symbols-outlined text-[16px] leading-none">add_circle</span>
+                        <span className="material-symbols-outlined text-[15px] leading-none">add_circle</span>
                       </button>
                     )}
                     {onTransferFund && (
@@ -174,7 +174,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
                         className="inline-flex items-center justify-center p-0.5 rounded text-amber-600 hover:text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
                         title="Chuyển Quỹ Dự Án"
                       >
-                        <span className="material-symbols-outlined text-[16px] leading-none">swap_horiz</span>
+                        <span className="material-symbols-outlined text-[15px] leading-none">swap_horiz</span>
                       </button>
                     )}
                   </div>
@@ -183,7 +183,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
             </thead>
             <tbody>
               <tr>
-                <td className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800">
+                <td className="border border-slate-300 text-center h-[28px] md:h-[32px] px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800 align-middle">
                   <span>{money(summary.totalProjectFund)}</span>
                 </td>
               </tr>
@@ -191,15 +191,17 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
           </table>
 
           {/* TỔNG CHI */}
-          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white h-full">
             <thead>
               <tr>
-                <th className="border border-slate-300 bg-blue-100 text-blue-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">TỔNG CHI</th>
+                <th className="border border-slate-300 bg-blue-100 text-blue-900 h-[26px] md:h-[30px] p-0 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">
+                  <div className="h-full flex items-center justify-center px-1">TỔNG CHI</div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800">
+                <td className="border border-slate-300 text-center h-[28px] md:h-[32px] px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800 align-middle">
                   {money(summary.totalChi)}
                 </td>
               </tr>
@@ -207,15 +209,17 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
           </table>
 
           {/* TỒN CUỐI KỲ */}
-          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white h-full">
             <thead>
               <tr>
-                <th className="border border-slate-300 bg-blue-100 text-blue-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">TỒN CUỐI KỲ</th>
+                <th className="border border-slate-300 bg-blue-100 text-blue-900 h-[26px] md:h-[30px] p-0 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">
+                  <div className="h-full flex items-center justify-center px-1">TỒN CUỐI KỲ</div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800">
+                <td className="border border-slate-300 text-center h-[28px] md:h-[32px] px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800 align-middle">
                   {money(summary.tonCuoiKy)}
                 </td>
               </tr>
@@ -223,15 +227,17 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
           </table>
 
           {/* TRÌNH */}
-          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[70px] md:min-w-[140px] bg-white h-full">
             <thead>
               <tr>
-                <th className="border border-slate-300 bg-orange-200 text-orange-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">TRÌNH</th>
+                <th className="border border-slate-300 bg-orange-200 text-orange-900 h-[26px] md:h-[30px] p-0 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">
+                  <div className="h-full flex items-center justify-center px-1">TRÌNH</div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800 relative">
+                <td className="border border-slate-300 text-center h-[28px] md:h-[32px] px-1 md:px-2 text-xs md:text-sm font-bold text-slate-800 align-middle">
                   {money(summary.totalProjectExpense)}
                 </td>
               </tr>
@@ -239,16 +245,18 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
           </table>
 
           {/* CHI TIẾT CÁ NHÂN (Button to open Modal) */}
-          <table className="border-collapse text-xs md:text-sm w-28 md:w-44 shrink-0 bg-white cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowPersonalModal(true)}>
+          <table className="border-collapse text-xs md:text-sm w-28 md:w-44 shrink-0 bg-white cursor-pointer hover:shadow-md transition-shadow h-full" onClick={() => setShowPersonalModal(true)}>
             <thead>
               <tr>
-                <th className="border border-slate-300 bg-emerald-100 text-emerald-900 py-0.5 md:py-1 px-1 md:px-2 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">CHI TIẾT CÁ NHÂN</th>
+                <th className="border border-slate-300 bg-emerald-100 text-emerald-900 h-[26px] md:h-[30px] p-0 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">
+                  <div className="h-full flex items-center justify-center px-1">CHI TIẾT CÁ NHÂN</div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border border-slate-300 text-center py-0.5 md:py-1.5 px-1 md:px-2 text-xs md:text-sm font-bold text-emerald-700 bg-emerald-50">
-                  <div className="flex items-center justify-center gap-1">
+                <td className="border border-slate-300 text-center h-[28px] md:h-[32px] px-1 md:px-2 text-xs md:text-sm font-bold text-emerald-700 bg-emerald-50 align-middle">
+                  <div className="h-full flex items-center justify-center gap-1">
                     <span className="material-symbols-outlined text-[14px] md:text-[18px]">group</span>
                     <span className="hidden sm:inline">Xem chi tiết</span>
                     <span className="sm:hidden text-[11px]">Xem</span>

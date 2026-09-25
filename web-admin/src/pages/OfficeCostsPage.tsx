@@ -372,7 +372,7 @@ export const OfficeCostsPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex-1 overflow-auto custom-scrollbar relative">
+          <div className="flex-1 overflow-auto custom-scrollbar relative pb-16 md:pb-0">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-tight">
                 <tr>

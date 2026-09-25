@@ -642,7 +642,7 @@ export const AttendancePage: React.FC = () => {
               <h3 className="text-xs font-bold text-slate-700 uppercase">Lịch sử chấm công</h3>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
               {loading ? (
                 <div className="p-8 text-center text-slate-400 text-sm">Đang tải lịch sử chấm công...</div>
               ) : filteredLogs.length === 0 ? (
@@ -804,7 +804,7 @@ export const AttendancePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-white">
+          <div className="flex-1 overflow-y-auto bg-white pb-16 md:pb-0">
             {leaves.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-sm">Chưa có đơn xin nghỉ phép nào.</div>
             ) : (

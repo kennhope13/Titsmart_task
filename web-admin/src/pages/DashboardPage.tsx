@@ -241,7 +241,7 @@ export const DashboardPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4">
+      <div className="flex-1 overflow-y-auto p-2 pb-16 md:p-3 lg:p-4">
         
         {displayEnhancedProjects.length === 0 ? (
            <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl">

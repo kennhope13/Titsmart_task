@@ -806,17 +806,16 @@ export const ProjectManagementPage: React.FC = () => {
               type="button"
               onClick={() => setIsNewProjectModalOpen(true)}
               title={TEXT.createProject}
-              className="flex items-center justify-center gap-1 bg-primary text-white px-3 h-[34px] rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
+              className="flex items-center justify-center gap-1 bg-primary text-white px-2.5 sm:px-3 h-[34px] rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[16px]">add</span>
               <span className="hidden sm:inline">Tạo dự án mới</span>
-              <span className="sm:hidden">Tạo mới</span>
             </button>
           )}
         </div>
       </section>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+      <div className="flex-1 overflow-y-auto p-4 pb-16 md:p-6">
         {isFetchingProjects && projects.length === 0 ? (
           <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center">
               <svg className="animate-spin h-12 w-12 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

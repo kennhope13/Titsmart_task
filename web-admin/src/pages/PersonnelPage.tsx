@@ -485,7 +485,7 @@ export const PersonnelPage: React.FC = () => {
       <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col pb-4">
       <section className="flex-1 grid grid-cols-1 gap-0 overflow-hidden">
         <div className="bg-white border-b border-r border-slate-200 shadow-xs overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative">
+          <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative pb-16 md:pb-0">
             <table className="w-full text-[11px] sm:text-xs text-left border-collapse">
               <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[10px] sm:text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-2 sm:p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Họ tên</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Mã NV</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Vai trò / Chức danh</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Dự án</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">SĐT</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th>{hasPermission(user, 'MANAGE_USERS') && <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Chức năng</th>}</tr></thead>
               <tbody className="divide-y divide-slate-100">
