@@ -16,6 +16,7 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
 
   useEffect(() => {
     setMounted(true);
+    useAuthStore.getState().setIsLoggingOut(false);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {

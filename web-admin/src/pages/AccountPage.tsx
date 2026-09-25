@@ -7,14 +7,12 @@ import LoadingSpinner from '../components/LoadingSpinner';
 export const AccountPage: React.FC = () => {
   const engineer = useRealtimeStore((state) => state.engineers[0]);
   const user = useAuthStore((state) => state.user);
+  const isLoggingOut = useAuthStore((state) => state.isLoggingOut);
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
 
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const handleLogout = async () => {
     if (isLoggingOut) return;
-    setIsLoggingOut(true);
     try {
       await logout();
     } finally {

@@ -27,6 +27,7 @@ import { AttendancePage } from './pages/AttendancePage';
 import { UpdateNotifier } from './components/common/UpdateNotifier';
 import { GlobalNotificationToast } from './components/common/GlobalNotificationToast';
 import { ChatWidget } from './components/common/ChatWidget';
+import { LogoutBlockingModal } from './components/common/LogoutBlockingModal';
 
 
 const ProtectedLayout: React.FC = () => {
@@ -146,6 +147,7 @@ export const App: React.FC = () => {
     <>
       <UpdateNotifier />
       <GlobalNotificationToast />
+      <LogoutBlockingModal />
       {/* ChatWidget rendered at root level to avoid z-index stacking context issues from Layout */}
       <ChatWidget />
 

@@ -174,6 +174,8 @@ const loadSession = (): AuthUser | null => {
 
 interface AuthStoreState {
   user: AuthUser | null;
+  isLoggingOut: boolean;
+  setIsLoggingOut: (val: boolean) => void;
   updateUser: (user: AuthUser) => void;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -182,6 +184,8 @@ interface AuthStoreState {
 
 export const useAuthStore = create<AuthStoreState>((set, get) => ({
   user: loadSession(),
+  isLoggingOut: false,
+  setIsLoggingOut: (val) => set({ isLoggingOut: val }),
   updateUser: (user) => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     set({ user });
@@ -333,8 +337,14 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     return { ok: false, error: 'Lỗi không xác định' };
   },
   logout: async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem(SESSION_KEY);
-    set({ user: null });
+    set({ isLoggingOut: true });
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('Logout signOut warning:', err);
+    } finally {
+      localStorage.removeItem(SESSION_KEY);
+      set({ user: null });
+    }
   },
 }));
