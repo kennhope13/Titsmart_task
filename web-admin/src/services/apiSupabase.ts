@@ -776,9 +776,24 @@ export const api = {
     },
 
     getExpenses: async () => {
-      const { data, error } = await supabase.from('expenses').select('*');
-      if (error) throw error;
-      return data.map(toCamelCase);
+      try {
+        const { data, error } = await supabase.from('expenses').select('*');
+        if (error) {
+          if (error.code === '57014' || String(error.message).includes('timeout')) {
+            console.warn('[Supabase] Expenses query timed out, retrying with optimized select...');
+            const { data: retryData, error: retryErr } = await supabase
+              .from('expenses')
+              .select('id, project_code, date, content, amount, category, payment_method, requester, status, notes, created_at, updated_at, updated_by')
+              .order('created_at', { ascending: false });
+            if (!retryErr && retryData) return retryData.map(toCamelCase);
+          }
+          throw error;
+        }
+        return (data || []).map(toCamelCase);
+      } catch (e: any) {
+        console.warn('[Accounting] Error fetching expenses:', e?.message || e);
+        return [];
+      }
     },
     createExpense: async (data: any) => {
       const payload = toSnakeCase(data);
