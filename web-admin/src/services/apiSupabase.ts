@@ -125,6 +125,8 @@ const toCamelCase = (obj: any) => {
 
 const mapArray = (arr: any[]) => arr.map(toCamelCase);
 
+let cachedDocTracksSchemaType: 'modern' | 'prisma' | 'legacy' | null = null;
+
 export const api = {
   projects: {
     getAll: async () => {
@@ -569,19 +571,57 @@ export const api = {
   },
   activityLogs: {
     getAll: async () => {
-      const { data, error } = await supabase.from('activity_logs').select('*').order('timestamp', { ascending: false });
-      if (error) throw error;
+      const { data, error } = await supabase.from('activity_logs').select('*').order('created_at', { ascending: false });
+      if (error) {
+        const { data: retryData, error: retryErr } = await supabase.from('activity_logs').select('*').order('timestamp', { ascending: false });
+        if (retryErr) throw retryErr;
+        return mapArray(retryData || []);
+      }
       return mapArray(data || []);
     },
     create: async (data: any) => {
       try {
-        const payload = toSnakeCase(data);
+        const userName = data.userName || data.user_name || data.user || 'Thành viên';
+        const projName = data.projectName || data.project_name || data.project || 'COMPANY';
+        const nowIso = new Date().toISOString();
+
+        // Check if user has ID
+        const payload: any = {
+          user_name: userName,
+          action: data.action || '',
+          project_name: projName,
+          icon: data.icon || 'history',
+          badge_bg: data.badgeBg || data.badge_bg || 'bg-slate-50',
+          icon_color: data.iconColor || data.icon_color || 'text-slate-500',
+          created_at: nowIso
+        };
+        if (data.userId) payload.user_id = data.userId;
+        if (data.projectId) payload.project_id = data.projectId;
+
+        // Try standard modern schema (001_init_postgresql.sql)
         const { data: result, error } = await supabase.from('activity_logs').insert(payload).select().single();
         if (error) {
-          delete payload.updated_at;
-          delete payload.updated_by;
-          const { data: retryResult } = await supabase.from('activity_logs').insert(payload).select().single();
-          if (retryResult) return toCamelCase(retryResult);
+          // Try legacy schema (schema.sql: "user", action, project, timestamp, icon, badge_bg, icon_color)
+          const legacyPayload: any = {
+            "user": userName,
+            action: data.action || '',
+            project: projName,
+            timestamp: nowIso,
+            icon: data.icon || 'history',
+            badge_bg: data.badgeBg || data.badge_bg || 'bg-slate-50',
+            icon_color: data.iconColor || data.icon_color || 'text-slate-500'
+          };
+          const { data: legacyRes, error: legacyErr } = await supabase.from('activity_logs').insert(legacyPayload).select().single();
+          if (!legacyErr && legacyRes) {
+            return toCamelCase(legacyRes);
+          }
+          // Ultra minimal fallback
+          const minPayload: any = {
+            user_name: userName,
+            action: data.action || ''
+          };
+          const { data: minRes } = await supabase.from('activity_logs').insert(minPayload).select().single();
+          if (minRes) return toCamelCase(minRes);
         }
         return toCamelCase(result || data);
       } catch {
@@ -844,6 +884,16 @@ export const api = {
       try {
         const { data, error } = await supabase.from('document_tracks').select('*');
         if (error) return [];
+        
+        if (data && data.length > 0) {
+          const sample = data[0];
+          if (sample.contract_no !== undefined || sample.contract_name !== undefined) {
+            cachedDocTracksSchemaType = (sample.file_urls !== undefined || sample.created_by_id !== undefined) ? 'modern' : 'prisma';
+          } else if (sample.document_type !== undefined) {
+            cachedDocTracksSchemaType = 'legacy';
+          }
+        }
+
         return (data || []).map((row: any) => {
           const notesText = row.notes || '';
           let parsedDocStatus = row.doc_status || row.status || 'Chưa ký';
@@ -923,15 +973,18 @@ export const api = {
       const ensureCompanyProject = async (code: string) => {
         if (code === 'COMPANY' || code === 'OFFICE') {
           try {
-            await supabase.from('projects').insert({
-              name: code === 'COMPANY' ? 'Hồ sơ Công ty / Chung' : 'Văn phòng',
-              code: code,
-              status: 'active',
-              location: 'Văn phòng Công ty',
-              client: 'Nội bộ'
-            });
+            const { data: existing } = await supabase.from('projects').select('code').eq('code', code).maybeSingle();
+            if (!existing) {
+              await supabase.from('projects').insert({
+                name: code === 'COMPANY' ? 'Hồ sơ Công ty / Chung' : 'Văn phòng',
+                code: code,
+                status: 'active',
+                location: 'Văn phòng Công ty',
+                client: 'Nội bộ'
+              });
+            }
           } catch {
-            // Ignore if already exists
+            // Ignore if error
           }
         }
       };
@@ -940,100 +993,15 @@ export const api = {
         await ensureCompanyProject(data.projectCode);
       }
 
-      // 1. Full Modern Payload
-      const fullPayload: any = {
-        contract_no: contractNoVal,
-        contract_name: contractNameVal,
-        company: data.company || '',
-        receiver_name: data.receiverName || '',
-        phone: data.phone || '',
-        address: data.address || '',
-        send_date: sendDateVal,
-        receive_date: cleanDate(data.receiveDate),
-        doc_status: data.docStatus || 'Chưa ký',
-        doc_type: data.docType || 'Giao',
-        side: data.side || 'Bên trả',
-        contract_value: Number(data.contractValue) || 0,
-        prepay_percent: Number(data.prepayPercent) || 0,
-        prepay_amount: Number(data.prepayAmount) || 0,
-        payment_status: data.paymentStatus || 'Chưa thanh toán',
-        is_completed: !!data.isCompleted,
-        notes: baseNotes,
-        due_date: cleanDate(data.dueDate),
-        remind_days: data.remindDays || 3,
-        file_urls: Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []),
-        created_by_id: data.createdById || '',
-        created_by_name: data.createdByName || '',
-        updated_by: data.updatedBy || data.createdByName || '',
-        updated_at: data.updatedAt || new Date().toISOString()
-      };
-
-      if (data.projectCode && data.projectCode.trim()) {
-        fullPayload.project_code = data.projectCode.trim();
-      }
-      if (data.projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.projectId)) {
-        fullPayload.project_id = data.projectId;
-      }
-
       const tryInsert = async (payload: any) => {
         const { data: res, error } = await supabase.from('document_tracks').insert(payload).select().single();
         return { data: res, error };
       };
 
-      // Attempt 1: Full modern payload
-      let result = await tryInsert(fullPayload);
+      let result: any = { data: null, error: null };
 
-      // Handle Foreign Key Error 23503
-      if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
-        if (fullPayload.project_code) {
-          await ensureCompanyProject(fullPayload.project_code);
-          result = await tryInsert(fullPayload);
-        }
-        if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
-          delete fullPayload.project_code;
-          delete fullPayload.project_id;
-          result = await tryInsert(fullPayload);
-        }
-      }
-
-      // Attempt 2: If column missing (PGRST204 or column error) -> Prisma standard columns
-      if (result.error && (result.error.code === 'PGRST204' || String(result.error.message).includes('column') || String(result.error.message).includes('schema cache'))) {
-        const prismaPayload: any = {
-          contract_no: contractNoVal,
-          contract_name: contractNameVal,
-          company: data.company || '',
-          receiver_name: data.receiverName || '',
-          phone: data.phone || '',
-          address: data.address || '',
-          send_date: sendDateVal,
-          receive_date: cleanDate(data.receiveDate),
-          doc_status: data.docStatus || 'Chưa ký',
-          side: data.side || 'Bên trả',
-          contract_value: Number(data.contractValue) || 0,
-          prepay_percent: Number(data.prepayPercent) || 0,
-          prepay_amount: Number(data.prepayAmount) || 0,
-          payment_status: data.paymentStatus || 'Chưa thanh toán',
-          is_completed: !!data.isCompleted,
-          notes: combinedNotes
-        };
-        if (data.projectCode && data.projectCode !== 'COMPANY') {
-          prismaPayload.project_code = data.projectCode;
-        }
-        if (data.projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.projectId)) {
-          prismaPayload.project_id = data.projectId;
-        }
-
-        result = await tryInsert(prismaPayload);
-
-        if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
-          delete prismaPayload.project_code;
-          delete prismaPayload.project_id;
-          result = await tryInsert(prismaPayload);
-        }
-      }
-
-      // Attempt 3: If still error -> Legacy Schema
-      if (result.error) {
+      // Fast-path: If we already detected legacy schema, insert legacy payload directly
+      if (cachedDocTracksSchemaType === 'legacy') {
         const legacyPayload: any = {
           document_type: data.docType || 'Giao',
           submission_date: sendDateVal,
@@ -1046,10 +1014,117 @@ export const api = {
         if (data.projectCode && data.projectCode !== 'COMPANY') legacyPayload.project_code = data.projectCode;
 
         result = await tryInsert(legacyPayload);
-
         if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
           delete legacyPayload.project_code;
           result = await tryInsert(legacyPayload);
+        }
+      } else {
+        // Attempt 1: Full modern payload
+        const fullPayload: any = {
+          contract_no: contractNoVal,
+          contract_name: contractNameVal,
+          company: data.company || '',
+          receiver_name: data.receiverName || '',
+          phone: data.phone || '',
+          address: data.address || '',
+          send_date: sendDateVal,
+          receive_date: cleanDate(data.receiveDate),
+          doc_status: data.docStatus || 'Chưa ký',
+          doc_type: data.docType || 'Giao',
+          side: data.side || 'Bên trả',
+          contract_value: Number(data.contractValue) || 0,
+          prepay_percent: Number(data.prepayPercent) || 0,
+          prepay_amount: Number(data.prepayAmount) || 0,
+          payment_status: data.paymentStatus || 'Chưa thanh toán',
+          is_completed: !!data.isCompleted,
+          notes: baseNotes,
+          due_date: cleanDate(data.dueDate),
+          remind_days: data.remindDays || 3,
+          file_urls: Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []),
+          created_by_id: data.createdById || '',
+          created_by_name: data.createdByName || '',
+          updated_by: data.updatedBy || data.createdByName || '',
+          updated_at: data.updatedAt || new Date().toISOString()
+        };
+
+        if (data.projectCode && data.projectCode.trim()) {
+          fullPayload.project_code = data.projectCode.trim();
+        }
+        if (data.projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.projectId)) {
+          fullPayload.project_id = data.projectId;
+        }
+
+        result = await tryInsert(fullPayload);
+
+        // Handle Foreign Key Error 23503
+        if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
+          if (fullPayload.project_code) {
+            await ensureCompanyProject(fullPayload.project_code);
+            result = await tryInsert(fullPayload);
+          }
+          if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
+            delete fullPayload.project_code;
+            delete fullPayload.project_id;
+            result = await tryInsert(fullPayload);
+          }
+        }
+
+        // Attempt 2: If column missing (PGRST204 or column error) -> Prisma standard columns
+        if (result.error && (result.error.code === 'PGRST204' || String(result.error.message).includes('column') || String(result.error.message).includes('schema cache'))) {
+          const prismaPayload: any = {
+            contract_no: contractNoVal,
+            contract_name: contractNameVal,
+            company: data.company || '',
+            receiver_name: data.receiverName || '',
+            phone: data.phone || '',
+            address: data.address || '',
+            send_date: sendDateVal,
+            receive_date: cleanDate(data.receiveDate),
+            doc_status: data.docStatus || 'Chưa ký',
+            side: data.side || 'Bên trả',
+            contract_value: Number(data.contractValue) || 0,
+            prepay_percent: Number(data.prepayPercent) || 0,
+            prepay_amount: Number(data.prepayAmount) || 0,
+            payment_status: data.paymentStatus || 'Chưa thanh toán',
+            is_completed: !!data.isCompleted,
+            notes: combinedNotes
+          };
+          if (data.projectCode && data.projectCode !== 'COMPANY') {
+            prismaPayload.project_code = data.projectCode;
+          }
+          if (data.projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.projectId)) {
+            prismaPayload.project_id = data.projectId;
+          }
+
+          result = await tryInsert(prismaPayload);
+
+          if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
+            delete prismaPayload.project_code;
+            delete prismaPayload.project_id;
+            result = await tryInsert(prismaPayload);
+          }
+        }
+
+        // Attempt 3: If still error -> Legacy Schema
+        if (result.error) {
+          cachedDocTracksSchemaType = 'legacy';
+          const legacyPayload: any = {
+            document_type: data.docType || 'Giao',
+            submission_date: sendDateVal,
+            recipient: data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || ''),
+            status: data.docStatus || 'Chưa ký',
+            notes: combinedNotes,
+            soft_copy_link: (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '')
+          };
+          if (cleanDate(data.dueDate)) legacyPayload.expected_approval_date = cleanDate(data.dueDate);
+          if (data.projectCode && data.projectCode !== 'COMPANY') legacyPayload.project_code = data.projectCode;
+
+          result = await tryInsert(legacyPayload);
+
+          if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
+            delete legacyPayload.project_code;
+            result = await tryInsert(legacyPayload);
+          }
         }
       }
 
