@@ -7,6 +7,7 @@ import { decodeModels, encodeModels, ModelEntry } from './DocumentCertificateTab
 import { FastDocModal } from './FastDocModal';
 import { DocumentCertificateTab } from './DocumentCertificateTab';
 import { AuditInfoCell } from '../../components/common/AuditInfoCell';
+import { stripDiscussionThread } from '../../utils/taskDiscussion';
 
 interface MaterialAndPurchasingTabProps {
   activeSubTab?: 'TECH' | 'ORDER' | 'DOCS' | 'FINANCE';
@@ -56,19 +57,21 @@ const isRootSectionRow = (plan: ProjectMaterialPlan) => {
 };
 
 const cleanNotes = (value?: string) => {
-  return String(value || '')
+  return stripDiscussionThread(String(value || ''))
     .replace(/\[order:[\d.]+\]/g, '')
     .replace(/\[section\]/gi, '')
     .replace(/\[contractor\]/gi, '')
     .replace(/\[tech-status:[^\]]+\]/gi, '')
+    .replace(/\[STATUS:[^\]]+\]/gi, '')
     .replace(/\[owner\]/gi, '').replace(/\[doc-track\]/gi, '').replace(/\[doc-track\s*]/gi, '')
     .replace(/Nhà thầu cung cấp/gi, '')
     .replace(/Chủ đầu tư cung cấp/gi, '')
     .replace(/Import từ phụ lục dự án/gi, '')
     .replace(/Đồng bộ từ phụ lục khi tạo dự án/gi, '')
+    .split('[DOC-NOTE]')[0]
     .split('|')
     .map(s => s.trim())
-    .filter(Boolean)
+    .filter(s => Boolean(s) && !s.startsWith('{') && !s.includes('"senderId"') && s !== ']')
     .join(' | ');
 };
 
@@ -97,9 +100,9 @@ const getIssueContentData = (val?: string) => {
   }
 };
 
-const getTechNote = (val?: string) => String(val || '').split('[DOC-NOTE]')[0];
+const getTechNote = (val?: string) => stripDiscussionThread(String(val || '')).split('[DOC-NOTE]')[0];
 const getDocNoteFull = (val?: string) => {
-  const parts = String(val || '').split('[DOC-NOTE]');
+  const parts = stripDiscussionThread(String(val || '')).split('[DOC-NOTE]');
   return parts.length > 1 ? parts[1] : '';
 };
 const getDocNote = (val?: string) => getDocNoteFull(val).split('[DOC-FILENAME]')[0].trim();
@@ -108,7 +111,7 @@ const getDocFileName = (val?: string) => {
   return parts.length > 1 ? parts[1].trim() : '';
 };
 const cleanTechNotes = (val?: string) => cleanNotes(getTechNote(val));
-const cleanDocNotes = (val?: string) => getDocNote(val);
+const cleanDocNotes = (val?: string) => cleanNotes(getDocNote(val));
 
 
 const showNumber = (value?: number) => {
@@ -836,8 +839,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       if (field === 'notes') {
         const existingTags = finalNotes.match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
         const techStatusTag = finalNotes.match(/\[tech-status:[^\]]+\]/gi)?.[0] || '';
+        const threadIdx = finalNotes.indexOf('[THREAD:');
+        const threadTag = threadIdx !== -1 ? finalNotes.slice(threadIdx).trim() : '';
+
         let updatedNote = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
         if (techStatusTag) updatedNote = `${updatedNote} ${techStatusTag}`.trim();
+        if (threadTag) updatedNote = `${updatedNote} ${threadTag}`.trim();
         
         if (subTab === 'DOCS') {
            finalValue = `${currentTech} [DOC-NOTE] ${updatedNote} [DOC-FILENAME] ${currentFile}`;

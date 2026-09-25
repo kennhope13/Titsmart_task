@@ -13,7 +13,7 @@ import { CustomSelect } from '@/components/common/CustomSelect';
 import { compareTaskStt } from '../utils/taskTreeUtils';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
 import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
-import { appendTaskDiscussion, getLatestDiscussion } from '../utils/taskDiscussion';
+import { appendTaskDiscussion, getLatestDiscussion, stripDiscussionThread } from '../utils/taskDiscussion';
 import { getEngineersForProject } from '../utils/projectMemberUtils';
 
 // Convert integer to Roman numeral
@@ -108,11 +108,12 @@ const cleanIssue = (value?: string) => {
 };
 
 const cleanNotes = (value?: string) => {
-  return String(value || '')
-    .replace(/\[THREAD:[\s\S]*?\]/g, '')
+  return stripDiscussionThread(String(value || ''))
     .replace(/\[order:[\d.]+\]/g, '')
     .replace(/\[section\]/gi, '')
     .replace(/\[contractor\]/gi, '')
+    .replace(/\[tech-status:[^\]]+\]/gi, '')
+    .replace(/\[STATUS:[^\]]+\]/gi, '')
     .replace(/\[owner\]/gi, '').replace(/\[doc-track\]/gi, '').replace(/\[doc-track\s*]/gi, '')
     .replace(/Nhà thầu cung cấp/gi, '')
     .replace(/Chủ đầu tư cung cấp/gi, '')
@@ -122,7 +123,7 @@ const cleanNotes = (value?: string) => {
     .replace(/[\[\]]/g, '') // loại bỏ các dấu ngoặc vuông đơn lẻ bị sót
     .split('|')
     .map(s => s.trim())
-    .filter(s => Boolean(s) && !s.startsWith('{') && !s.includes('"senderId"'))
+    .filter(s => Boolean(s) && !s.startsWith('{') && !s.includes('"senderId"') && s !== ']')
     .join(' | ');
 };
 

@@ -4,6 +4,7 @@ import { CustomSelect } from '@/components/common/CustomSelect';
 import { AuditInfoCell } from '../../components/common/AuditInfoCell';
 
 import { compareTaskStt } from '../../utils/taskTreeUtils';
+import { stripDiscussionThread } from '../../utils/taskDiscussion';
 
 interface PurchasingTabProps {
   data: ProjectPurchasing[];
@@ -30,10 +31,12 @@ const percentText = (value: unknown) => {
 };
 const isSectionRow = (pur: ProjectPurchasing) => String(pur.notes || '').toLowerCase().includes('[section]') || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(String(pur.stt || '').trim());
 const cleanNotes = (value?: string) => {
-  return String(value || '')
+  return stripDiscussionThread(String(value || ''))
     .replace(/\[order:[\d.]+\]/g, '')
     .replace(/\[section\]/gi, '')
     .replace(/\[contractor\]/gi, '')
+    .replace(/\[tech-status:[^\]]+\]/gi, '')
+    .replace(/\[STATUS:[^\]]+\]/gi, '')
     .replace(/\[owner\]/gi, '').replace(/\[doc-track\]/gi, '').replace(/\[doc-track\s*]/gi, '')
     .replace(/Nhà thầu cung cấp/gi, '')
     .replace(/Chủ đầu tư cung cấp/gi, '')
@@ -41,7 +44,7 @@ const cleanNotes = (value?: string) => {
     .replace(/Đồng bộ từ phụ lục khi tạo dự án/gi, '')
     .split('[DOC-NOTE]')[0].split('|')
     .map(s => s.trim())
-    .filter(Boolean)
+    .filter(s => Boolean(s) && !s.startsWith('{') && !s.includes('"senderId"') && s !== ']')
     .join(' | ');
 };
 const computedVat = (pur: ProjectPurchasing) => Number(pur.vatAmount || 0) || (Number(pur.volumeOrder || 0) * Number(pur.unitPrice || 0) * Number(pur.vatRate || 0)) / 100;
@@ -290,7 +293,11 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
     let finalValue = tempValue;
     if (field === 'notes') {
       const existingTags = String(pur.notes || '').match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
-      finalValue = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+      const threadIdx = String(pur.notes || '').indexOf('[THREAD:');
+      const threadTag = threadIdx !== -1 ? String(pur.notes || '').slice(threadIdx).trim() : '';
+      let updatedNote = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+      if (threadTag) updatedNote = `${updatedNote} ${threadTag}`.trim();
+      finalValue = updatedNote;
     } else if (
       field === 'volumeContract' ||
       field === 'volumeOrder' ||

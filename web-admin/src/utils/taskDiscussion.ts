@@ -148,6 +148,53 @@ export const appendTaskDiscussion = (
 };
 
 /**
+ * Strip all [THREAD:...] discussion data from a raw notes string
+ */
+export const stripDiscussionThread = (notes?: string | null): string => {
+  if (!notes || typeof notes !== 'string') return '';
+  const idx = notes.indexOf('[THREAD:');
+  if (idx === -1) return notes;
+  
+  const before = notes.slice(0, idx).trim();
+  const threadStr = notes.slice(idx);
+  
+  let depth = 0;
+  let inString = false;
+  let escapeNext = false;
+  let endIdx = -1;
+  
+  for (let i = 0; i < threadStr.length; i++) {
+    const char = threadStr[i];
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+    if (char === '\\') {
+      escapeNext = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (!inString) {
+      if (char === '[') depth++;
+      else if (char === ']') {
+        depth--;
+        if (depth === 0) {
+          endIdx = i;
+          break;
+        }
+      }
+    }
+  }
+  
+  const after = endIdx !== -1 ? threadStr.slice(endIdx + 1).trim() : '';
+  const result = [before, after].filter(Boolean).join(' ').trim();
+  return result.replace(/\[THREAD:[\s\S]*$/gi, '').trim();
+};
+
+/**
  * Get latest message in discussion thread
  */
 export const getLatestDiscussion = (notes?: string, issue?: string): TaskDiscussionItem | null => {

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ProjectMaterialPlan, getStatusColorStyle, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS } from '../../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { compareTaskStt } from '../../utils/taskTreeUtils';
+import { stripDiscussionThread } from '../../utils/taskDiscussion';
 
 interface MaterialPlanTabProps {
   data: ProjectMaterialPlan[];
@@ -38,10 +39,12 @@ const isParentRow = (plan: any) => {
 };
 
 const cleanNotes = (value?: string) => {
-  return String(value || '')
+  return stripDiscussionThread(String(value || ''))
     .replace(/\[order:[\d.]+\]/g, '')
     .replace(/\[section\]/gi, '')
     .replace(/\[contractor\]/gi, '')
+    .replace(/\[tech-status:[^\]]+\]/gi, '')
+    .replace(/\[STATUS:[^\]]+\]/gi, '')
     .replace(/\[owner\]/gi, '').replace(/\[doc-track\]/gi, '').replace(/\[doc-track\s*]/gi, '')
     .replace(/Nhà thầu cung cấp/gi, '')
     .replace(/Chủ đầu tư cung cấp/gi, '')
@@ -49,7 +52,7 @@ const cleanNotes = (value?: string) => {
     .replace(/Đồng bộ từ phụ lục khi tạo dự án/gi, '')
     .split('[DOC-NOTE]')[0].split('|')
     .map(s => s.trim())
-    .filter(Boolean)
+    .filter(s => Boolean(s) && !s.startsWith('{') && !s.includes('"senderId"') && s !== ']')
     .join(' | ');
 };
 
@@ -297,7 +300,11 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
     let finalValue = tempValue;
     if (field === 'notes') {
       const existingTags = String(plan.notes || '').match(/(\[order:[\d.]+\]|\[section\]|\[contractor\]|\[owner\])/gi) || [];
-      finalValue = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+      const threadIdx = String(plan.notes || '').indexOf('[THREAD:');
+      const threadTag = threadIdx !== -1 ? String(plan.notes || '').slice(threadIdx).trim() : '';
+      let updatedNote = [...existingTags, typeof tempValue === 'string' ? tempValue.trim() : tempValue].filter(Boolean).join(' | ');
+      if (threadTag) updatedNote = `${updatedNote} ${threadTag}`.trim();
+      finalValue = updatedNote;
     } else if (
       field === 'contractVolume' || field === 'orderedVolume') {
       finalValue = Number(tempValue || 0);

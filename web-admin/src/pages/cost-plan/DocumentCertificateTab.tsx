@@ -58,13 +58,15 @@ const EMPTY_FORM: FormState = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+import { stripDiscussionThread } from '../../utils/taskDiscussion';
+
 export const DOC_TRACK_TAG = '[doc-track]';
 
 const isDocTrack = (item: ProjectMaterialPlan) =>
   String(item.notes || '').includes(DOC_TRACK_TAG);
 
 export const cleanNotes = (value?: string) =>
-  String(value || '').replace(/\s*\[doc-track\]\s*/gi, '').trim();
+  stripDiscussionThread(String(value || '')).replace(/\s*\[doc-track\]\s*/gi, '').trim();
 
 export const encodeModels = (models: ModelEntry[]): string => {
   const nonEmpty = models.filter(m =>
