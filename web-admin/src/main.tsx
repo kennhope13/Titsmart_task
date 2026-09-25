@@ -5,6 +5,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import './index.css';
 
+// Tắt toàn bộ console logs trên môi trường Production để bảo mật và giữ sạch console
+if (!import.meta.env.DEV) {
+  console.log = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+  console.trace = () => {};
+  console.warn = () => {};
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
