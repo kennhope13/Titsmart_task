@@ -12,6 +12,9 @@ import { Task, getStatusColorStyle , calculateAutoProgressRatio, calculateAutoPr
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { compareTaskStt } from '../utils/taskTreeUtils';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
+import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
+import { appendTaskDiscussion, getLatestDiscussion } from '../utils/taskDiscussion';
+import { getEngineersForProject } from '../utils/projectMemberUtils';
 
 // Convert integer to Roman numeral
 const toRoman = (num: number): string => {
@@ -106,6 +109,7 @@ const cleanIssue = (value?: string) => {
 
 const cleanNotes = (value?: string) => {
   return String(value || '')
+    .replace(/\[THREAD:[\s\S]*?\]/g, '')
     .replace(/\[order:[\d.]+\]/g, '')
     .replace(/\[section\]/gi, '')
     .replace(/\[contractor\]/gi, '')
@@ -114,9 +118,11 @@ const cleanNotes = (value?: string) => {
     .replace(/Chủ đầu tư cung cấp/gi, '')
     .replace(/Import từ phụ lục dự án/gi, '')
     .replace(/Đồng bộ từ phụ lục khi tạo dự án/gi, '')
-    .split('[DOC-NOTE]')[0].split('|')
+    .split('[DOC-NOTE]')[0]
+    .replace(/[\[\]]/g, '') // loại bỏ các dấu ngoặc vuông đơn lẻ bị sót
+    .split('|')
     .map(s => s.trim())
-    .filter(Boolean)
+    .filter(s => Boolean(s) && !s.startsWith('{') && !s.includes('"senderId"'))
     .join(' | ');
 };
 
@@ -136,7 +142,12 @@ export const TaskManagementPage: React.FC = () => {
 
   const resolvedProjectCode = React.useMemo(() => {
     if (!projectId) return '';
-    const proj = projects.find(p => p.id === projectId || p.code === projectId);
+    const decodedId = decodeURIComponent(projectId).trim().toLowerCase();
+    const proj = projects.find(p => 
+      p.id?.toLowerCase() === decodedId || 
+      p.code?.toLowerCase() === decodedId ||
+      p.name?.toLowerCase() === decodedId
+    );
     return proj ? proj.code : '';
   }, [projectId, projects]);
 
@@ -145,6 +156,49 @@ export const TaskManagementPage: React.FC = () => {
   const highlightTaskId = searchParams.get('taskId');
   const highlightKeyword = searchParams.get('highlight') || searchParams.get('search');
   const [isHighlightActive, setIsHighlightActive] = useState(false);
+  const [discussionTask, setDiscussionTask] = useState<Task | null>(null);
+
+  // Background polling to ensure multi-user realtime sync across browsers
+  useEffect(() => {
+    useRealtimeStore.getState().fetchTasks(undefined);
+    const interval = setInterval(() => {
+      useRealtimeStore.getState().fetchTasks(undefined);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Keep discussionTask synced with updated tasks from realtime store
+  useEffect(() => {
+    if (discussionTask) {
+      const updated = tasks.find(t => t.id === discussionTask.id);
+      if (updated && (updated.notes !== discussionTask.notes || updated.status !== discussionTask.status || updated.issue !== discussionTask.issue)) {
+        setDiscussionTask(updated);
+      }
+    }
+  }, [tasks, discussionTask]);
+
+  const openedHighlightTaskRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (highlightTaskId && openedHighlightTaskRef.current !== highlightTaskId) {
+      const found = tasks.find(t => t.id === highlightTaskId);
+      const shouldOpenDiscussion = searchParams.get('discuss') === 'true' || found?.status === 'Có thắc mắc';
+      if (found && shouldOpenDiscussion) {
+        openedHighlightTaskRef.current = highlightTaskId;
+        setDiscussionTask(found);
+      }
+    }
+  }, [highlightTaskId, tasks, searchParams]);
+
+  const handleCloseDiscussion = () => {
+    setDiscussionTask(null);
+    if (searchParams.get('taskId') || searchParams.get('discuss')) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('taskId');
+      nextParams.delete('discuss');
+      navigate({ search: nextParams.toString() }, { replace: true });
+    }
+  };
 
   useEffect(() => {
     if (highlightTaskId || highlightKeyword) {
@@ -191,13 +245,18 @@ export const TaskManagementPage: React.FC = () => {
   };
 
   const handleReportDone = async (task: Task) => {
-    handleUpdateTaskSync(task.id, { status: 'Chờ nghiệm thu', progress: 1, constrStatus: 'Đã hoàn thành' });
-    triggerToast('Đã báo cáo hoàn thành!', 'success');
+    handleUpdateTaskSync(task.id, { 
+      status: 'Chờ nghiệm thu', 
+      progress: 0.95, 
+      constrStatus: 'Chờ nghiệm thu',
+      isDone: false
+    });
+    triggerToast('Đã báo cáo hoàn thành! Đang chờ người giao việc nghiệm thu.', 'success');
 
     const store = useRealtimeStore.getState();
     const userName = authStore.user?.name || authStore.user?.username || 'Một nhân sự';
     const userId = authStore.user?.id || '';
-    store.logActivity(`Nhân sự ${userName} đã BÁO CÁO HOÀN THÀNH hạng mục: "${task.name}"`, task.projectName || task.projectCode);
+    store.logActivity(`Nhân sự ${userName} đã BÁO CÁO HOÀN THÀNH hạng mục: "${task.name}" (Chờ nghiệm thu)`, task.projectName || task.projectCode);
 
     if (store.addNotification) {
       await store.addNotification({
@@ -253,7 +312,7 @@ export const TaskManagementPage: React.FC = () => {
       triggerToast('Chỉ người giao việc mới có quyền nghiệm thu!', 'warning');
       return;
     }
-    handleUpdateTaskSync(task.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' });
+    handleUpdateTaskSync(task.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành', isDone: true });
     triggerToast(`Đã nghiệm thu hoàn thành: "${task.name}"!`, 'success');
 
     const store = useRealtimeStore.getState();
@@ -272,6 +331,90 @@ export const TaskManagementPage: React.FC = () => {
         icon: 'verified',
         senderId: adminId,
         senderName: adminName
+      });
+    }
+  };
+
+  const handleSendQuestion = async (task: Task, questionText: string) => {
+    const userName = authStore.user?.name || authStore.user?.username || 'Nhân sự';
+    const userId = authStore.user?.id || '';
+    const isCurrentlyDoing = task.status === 'Đang làm';
+    const nextStatus = isCurrentlyDoing ? 'Đang làm' : 'Có thắc mắc';
+
+    const updatedNotes = appendTaskDiscussion(task.notes || '', {
+      senderId: userId,
+      senderName: userName,
+      senderRole: 'Người nhận việc',
+      type: isCurrentlyDoing ? 'note' : 'question',
+      content: questionText
+    });
+
+    handleUpdateTaskSync(task.id, {
+      status: nextStatus,
+      notes: updatedNotes
+    });
+
+    triggerToast(isCurrentlyDoing ? 'Đã gửi tin nhắn trao đổi!' : 'Đã gửi thắc mắc đến người giao việc và các nhân sự đảm nhiệm!', 'success');
+    const store = useRealtimeStore.getState();
+    store.logActivity(`Nhân sự ${userName} đã ${isCurrentlyDoing ? 'GỬI TRAO ĐỔI' : 'GỬI THẮC MẮC'} về hạng mục: "${task.name}"`, task.projectName || task.projectCode);
+
+    if (store.addNotification) {
+      const parts = String(task.assignedEngineerName || '').split('|');
+      const assignedIds = (parts.length > 1 ? parts[1] : (task.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
+      const assignedNames = (parts[0] || (task.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
+
+      const targetIdList = Array.from(new Set([task.assignerId || 'admin', ...assignedIds])).filter(Boolean);
+      const targetNameList = Array.from(new Set([task.assignerName || 'Quản lý', ...assignedNames])).filter(Boolean);
+
+      await store.addNotification({
+        title: isCurrentlyDoing ? 'Trao đổi công việc' : 'Thắc mắc công việc mới',
+        message: `${userName} có ${isCurrentlyDoing ? 'trao đổi' : 'thắc mắc'} về công việc "${task.name}" [${task.projectCode}]: "${questionText}".`,
+        link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
+        type: `task_question:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
+        icon: isCurrentlyDoing ? 'chat' : 'help_center',
+        senderId: userId,
+        senderName: userName
+      });
+    }
+  };
+
+  const handleSendReply = async (task: Task, replyText: string) => {
+    const userName = authStore.user?.name || authStore.user?.username || 'Người giao việc';
+    const userId = authStore.user?.id || '';
+    const updatedNotes = appendTaskDiscussion(task.notes || '', {
+      senderId: userId,
+      senderName: userName,
+      senderRole: 'Người giao việc',
+      type: 'reply',
+      content: replyText
+    });
+
+    const nextStatus = (task.status === 'Đang làm' || task.status === 'Chờ nghiệm thu' || task.status === 'Hoàn thành')
+      ? task.status
+      : 'Chờ nhận việc';
+
+    handleUpdateTaskSync(task.id, {
+      status: nextStatus,
+      notes: updatedNotes
+    });
+
+    triggerToast('Đã gửi phản hồi hướng dẫn!', 'success');
+    const store = useRealtimeStore.getState();
+    store.logActivity(`Người giao việc ${userName} đã PHẢN HỒI THẮC MẮC về hạng mục: "${task.name}"`, task.projectName || task.projectCode);
+
+    if (store.addNotification && (task.assignedEngineerId || task.assignedEngineerName)) {
+      const parts = String(task.assignedEngineerName || '').split('|');
+      const engIds = (parts.length > 1 ? parts[1] : (task.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
+      const engNames = (parts[0] || (task.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
+
+      await store.addNotification({
+        title: 'Phản hồi hướng dẫn công việc',
+        message: `${userName} đã phản hồi thắc mắc về công việc "${task.name}" [${task.projectCode}]: "${replyText}".`,
+        link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
+        type: `task_reply:::${engIds.join(',')}:::${engNames.join(',')}`,
+        icon: 'chat',
+        senderId: userId,
+        senderName: userName
       });
     }
   };
@@ -403,6 +546,7 @@ const hasSyncedRef = useRef(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
   const [assigningUserIds, setAssigningUserIds] = useState<string[]>([]);
+  const [assignNote, setAssignNote] = useState('');
 
   const [editingCell, setEditingCell] = useState<{ id: string; field: keyof Task } | null>(null);
   const [tempValue, setTempValue] = useState<any>('');
@@ -486,7 +630,10 @@ const hasSyncedRef = useRef(false);
   }, [selectedProjectFromUrl]);
 
   const effectiveProjectCode = (projectCode && projectCode !== 'all') ? projectCode : selectedProjectCode;
-  const activeTasksForProj = tasks.filter((t) => effectiveProjectCode === 'all' || t.projectCode === effectiveProjectCode);
+  const activeTasksForProj = tasks.filter((t) => 
+    effectiveProjectCode === 'all' || 
+    t.projectCode?.toLowerCase() === effectiveProjectCode.toLowerCase()
+  );
   
   const rawSectionsList = tasks
     .filter((t) => effectiveProjectCode === 'all' || t.projectCode === effectiveProjectCode)
@@ -494,7 +641,25 @@ const hasSyncedRef = useRef(false);
     .filter((secName): secName is string => !!secName && secName.trim().length > 0);
 
   const uniqueSectionsForProj = Array.from(new Set(rawSectionsList));
-  const currentProject = projects.find((project) => project.code === projectCode);
+  const currentProject = projects.find((project) => project.code === projectCode || project.id === projectCode);
+  
+  // Danh sách nhân viên / kỹ sư thuộc dự án hiện tại (chỉ cho phép giao việc cho thành viên dự án)
+  const projectEngineers = React.useMemo(() => {
+    return getEngineersForProject(effectiveProjectCode, engineers, projects);
+  }, [effectiveProjectCode, engineers, projects]);
+
+  // Danh sách nhân viên / kỹ sư cho task đang mở modal giao việc
+  const assigningTaskEngineers = React.useMemo(() => {
+    const taskProjCode = assigningTask?.projectCode || assigningTask?.projectName || effectiveProjectCode;
+    return getEngineersForProject(taskProjCode, engineers, projects);
+  }, [assigningTask, effectiveProjectCode, engineers, projects]);
+
+  // Danh sách nhân viên / kỹ sư cho task đang mở modal chỉnh sửa
+  const editingTaskEngineers = React.useMemo(() => {
+    const taskProjCode = editingTask?.projectCode || editingTask?.projectName || effectiveProjectCode;
+    return getEngineersForProject(taskProjCode, engineers, projects);
+  }, [editingTask, effectiveProjectCode, engineers, projects]);
+
   const activeSectionName = sectionSelect === '__CUSTOM__'
     ? customSectionInput
     : sectionSelect !== 'default'
@@ -2053,8 +2218,6 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
                 <th className="py-2 px-1 w-[145px] min-w-[145px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
                 <th className="py-2 px-1 w-[145px] min-w-[145px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
-                <th className="py-2 px-1 w-[115px] text-red-600 font-bold border-b border-slate-200 whitespace-nowrap">VƯỚNG MẮC</th>
-                <th className="py-2 px-1 w-[140px] border-b border-slate-200 whitespace-nowrap">XỬ LÝ</th>
                 {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
                     <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">GIAO VIỆC</th>
                   )}
@@ -2063,7 +2226,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
-              {groupedTasks.length === 0 ? (<tr><td colSpan={10} className="p-8 text-center text-slate-400 whitespace-nowrap">Không có hạng mục nào phù hợp với bộ lọc đã chọn</td></tr>) : (
+              {groupedTasks.length === 0 ? (<tr><td colSpan={8} className="p-8 text-center text-slate-400 whitespace-nowrap">Không có hạng mục nào phù hợp với bộ lọc đã chọn</td></tr>) : (
                 groupedTasks.filter((t) => {
                   if (t.isSectionHeader) return true;
                   return !collapsedSections.has(t._sectionKey || '');
@@ -2073,7 +2236,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                     return (
                       <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
                         <td onClick={() => handleOpenEditModal(t)} className={`sticky left-0 z-10 md:static py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>{(t as any).computedStt || t.stt}</td>
-                        <td colSpan={isScrolledHorizontally ? 1 : (hasPermission(authStore.user, 'ASSIGN_TASKS') ? 9 : 8)} className={`sticky z-10 md:static py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)", width: isScrolledHorizontally ? "220px" : "auto", minWidth: isScrolledHorizontally ? "220px" : "auto", maxWidth: isScrolledHorizontally ? "220px" : "auto" }}>
+                        <td colSpan={isScrolledHorizontally ? 1 : (hasPermission(authStore.user, 'ASSIGN_TASKS') ? 7 : 6)} className={`sticky z-10 md:static py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)", width: isScrolledHorizontally ? "220px" : "auto", minWidth: isScrolledHorizontally ? "220px" : "auto", maxWidth: isScrolledHorizontally ? "220px" : "auto" }}>
                           <div className="flex items-center gap-1.5 min-w-0 w-full overflow-hidden">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}
@@ -2151,11 +2314,31 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                         {editingCell?.id === t.id && editingCell?.field === 'name' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 focus:outline-primary text-[13px] font-medium" />
                         ) : (
-                          <div style={{ paddingLeft }} className="flex items-center gap-2">
-                            {depth > 1 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}
-                            <span onClick={() => startEditing(t.id, 'name', t.name)} className="flex-1 cursor-pointer hover:underline hover:text-blue-600 block">{t.name}</span>
-                            <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button>
-                            <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button>
+                          <div style={{ paddingLeft }} className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                              {depth > 1 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}
+                              <span onClick={() => startEditing(t.id, 'name', t.name)} className="flex-1 cursor-pointer hover:underline hover:text-blue-600 block">{t.name}</span>
+                              <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button>
+                              <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button>
+                            </div>
+                            {t.status === 'Có thắc mắc' && (() => {
+                              const latestDisc = getLatestDiscussion(t.notes, t.issue);
+                              return (
+                                <div 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDiscussionTask(t);
+                                  }}
+                                  className="mt-0.5 p-1 bg-amber-50 hover:bg-amber-100/80 border border-amber-300 rounded text-[11px] text-amber-950 font-normal flex items-center gap-1 cursor-pointer shadow-2xs transition-colors"
+                                  title="Nhấn để xem chi tiết thắc mắc và phản hồi"
+                                >
+                                  <span className="material-symbols-outlined text-[13px] text-amber-600 shrink-0">help_center</span>
+                                  <span className="truncate">
+                                    <strong className="text-amber-800">Thắc mắc:</strong> {latestDisc?.content || t.issue || 'Cần làm rõ yêu cầu công việc'}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </div>
                         )}
                       </td>
@@ -2181,24 +2364,33 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                           {t.purchaseStatus || "Chưa đặt hàng"}
                         </span>
                       </td>
-                      <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200"><CustomSelect value={t.constrStatus || 'Chưa thi công'} onChange={(e) => { const nextConstrStatus = e.target.value; const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); handleUpdateTaskSync(t.id, { constrStatus: nextConstrStatus, progress: nextProgress, isDone: nextProgress >= 1, status: nextProgress >= 1 ? 'Hoàn thành' : nextProgress > 0 ? 'Đang làm' : 'Chưa làm' }); }} className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}>{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>))}</CustomSelect></td>
-                      <td className="py-1.5 px-1 font-semibold text-red-600 whitespace-normal break-words leading-tight border-r border-slate-200" title={cleanIssue(t.issue) || ''}>
-                        {editingCell?.id === t.id && editingCell?.field === 'issue' ? (
-                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-0.5 py-0.5 bg-white text-red-600 font-bold focus:outline-primary text-[10px]" />
-                        ) : (
-                          <span onClick={() => startEditing(t.id, 'issue', cleanIssue(t.issue))} className="cursor-pointer hover:underline hover:bg-slate-100 block w-full px-1">
-                            {cleanIssue(t.issue) ? (<span className="inline-flex items-start gap-2 whitespace-normal break-words leading-tight"><span className="material-symbols-outlined text-red-500 text-xs flex-shrink-0 mt-0.5">warning</span><span>{cleanIssue(t.issue)}</span></span>) : (<span className="text-slate-300">-</span>)}
-                          </span>
-                        )}
-                      </td>
                       <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200">
                         <CustomSelect 
-                          value={t.issueStatus || "Không có"} 
-                          onChange={(e) => handleUpdateTaskSync(t.id, { issueStatus: e.target.value })} 
-                          className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getIssueStatusColorStyle(t.issueStatus || "Không có")}`}
+                          value={t.constrStatus || 'Chưa thi công'} 
+                          onChange={(e) => { 
+                            const nextConstrStatus = e.target.value; 
+                            const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); 
+                            let nextStatus = t.status;
+                            if (nextConstrStatus === 'Chờ nghiệm thu') {
+                              nextStatus = 'Chờ nghiệm thu';
+                            } else if (nextConstrStatus === 'Đã hoàn thành') {
+                              nextStatus = 'Hoàn thành';
+                            } else if (nextProgress > 0) {
+                              nextStatus = (t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc') ? t.status : 'Đang làm';
+                            } else {
+                              nextStatus = 'Chưa làm';
+                            }
+                            handleUpdateTaskSync(t.id, { 
+                              constrStatus: nextConstrStatus, 
+                              progress: nextProgress, 
+                              isDone: nextStatus === 'Hoàn thành', 
+                              status: nextStatus 
+                            }); 
+                          }} 
+                          className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}
                         >
-                          {ISSUE_STATUS_OPTIONS.map((option) => (
-                            <option key={option} value={option} className={getIssueStatusColorStyle(option)}>{option}</option>
+                          {CONSTRUCTION_STATUS_OPTIONS.map((option) => (
+                            <option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>
                           ))}
                         </CustomSelect>
                       </td>
@@ -2209,6 +2401,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                             if (hasPermission(authStore.user, 'ASSIGN_TASKS')) {
                               e.stopPropagation();
                               setAssigningTask(t);
+                              setAssignNote('');
                               const parts = t.assignedEngineerName?.split('|') || [];
                               const idsString = parts.length > 1 ? parts[1] : t.assignedEngineerId;
                               setAssigningUserIds(idsString ? idsString.split(',') : []);
@@ -2219,18 +2412,30 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                             {t.assignedEngineerId && (t.assignedEngineerName?.split('|')[0] || '').split(',').filter((n: string) => n.trim()).map((name: string, i: number) => (
                               <span key={i} className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1 rounded truncate w-full max-w-[100px]" title={name.trim()}>{name.trim()}</span>
                             ))}
+
+                            {t.status === 'Có thắc mắc' && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setDiscussionTask(t); }} 
+                                className="text-[9px] bg-amber-500 pointer-events-auto hover:bg-amber-600 text-white px-2 py-0.5 rounded shadow-sm w-full flex items-center justify-center gap-0.5 font-bold animate-pulse"
+                                title="Xem thắc mắc của nhân sự và phản hồi"
+                              >
+                                <span className="material-symbols-outlined text-[11px]">question_answer</span>
+                                Xem thắc mắc
+                              </button>
+                            )}
                             
                             {(t.assignedEngineerName?.includes('|' + (authStore.user?.id || '')) || t.assignedEngineerId === authStore.user?.id) && t.status === 'Chờ nhận việc' && (
-                              <button onClick={(e) => { e.stopPropagation(); handleAcceptTask(t); }} className="text-[9px] bg-emerald-500 pointer-events-auto hover:bg-emerald-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nhận việc</button>
+                              <div className="flex items-center gap-1 w-full pointer-events-auto">
+                                <button onClick={(e) => { e.stopPropagation(); handleAcceptTask(t); }} className="text-[9px] bg-emerald-500 hover:bg-emerald-600 text-white px-1.5 py-0.5 rounded shadow-sm flex-1 font-bold">Nhận việc</button>
+                                <button onClick={(e) => { e.stopPropagation(); setDiscussionTask(t); }} className="text-[9px] bg-amber-500 hover:bg-amber-600 text-white px-1.5 py-0.5 rounded shadow-sm flex-1 font-bold">Thắc mắc</button>
+                              </div>
                             )}
                             {(t.assignedEngineerName?.includes('|' + (authStore.user?.id || '')) || t.assignedEngineerId === authStore.user?.id) && (t.status === 'Đang làm' || t.status === 'Chưa làm') && (
-                              <button onClick={(e) => { e.stopPropagation(); handleReportDone(t); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Báo cáo hoàn thành</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleReportDone(t); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full font-bold">Báo cáo hoàn thành</button>
                             )}
                             {canApproveTask(authStore.user, t) && (
-                              <button onClick={(e) => { e.stopPropagation(); handleApproveTask(t); }} className="text-[9px] bg-purple-500 pointer-events-auto hover:bg-purple-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nghiệm thu</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleApproveTask(t); }} className="text-[9px] bg-purple-500 pointer-events-auto hover:bg-purple-600 text-white px-2 py-0.5 rounded shadow-sm w-full font-bold">Nghiệm thu</button>
                             )}
-                            
-                            
                           </div>
                         </td>
                       )}
@@ -2262,35 +2467,56 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
       {/* ASSIGN TASK MODAL */}
       <Modal
         isOpen={!!assigningTask}
-        onClose={() => { setAssigningTask(null); setAssigningUserIds([]); }}
+        onClose={() => { setAssigningTask(null); setAssigningUserIds([]); setAssignNote(''); }}
         title="Giao việc cho nhân viên"
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600 font-medium">Chọn một hoặc nhiều nhân viên cho hạng mục: <strong className="text-primary">{assigningTask?.name}</strong></p>
           <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1 bg-slate-50">
-            {engineers.map(eng => {
-              const isChecked = assigningUserIds.includes(eng.id);
-              return (
-                <label key={eng.id} className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded cursor-pointer transition-colors">
-                  <input 
-                    type="checkbox" 
-                    checked={isChecked}
-                    onChange={(e) => {
-                      if (e.target.checked) setAssigningUserIds(prev => [...prev, eng.id]);
-                      else setAssigningUserIds(prev => prev.filter(id => id !== eng.id));
-                    }}
-                    className="rounded border-slate-300 text-primary focus:ring-primary"
-                  />
-                  <div>
-                    <div className="text-sm font-bold text-slate-700">{eng.name}</div>
-                    <div className="text-xs text-slate-500">{eng.title || 'Nhân viên'}</div>
-                  </div>
-                </label>
-              );
-            })}
+            {assigningTaskEngineers.length === 0 ? (
+              <div className="p-4 text-center text-xs text-slate-500 font-medium">
+                Dự án này chưa có thành viên nào được phân công. Vui lòng vào trang Quản lý dự án để thêm thành viên.
+              </div>
+            ) : (
+              assigningTaskEngineers.map(eng => {
+                const isChecked = assigningUserIds.includes(eng.id);
+                return (
+                  <label key={eng.id} className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded cursor-pointer transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={isChecked}
+                      onChange={(e) => {
+                        if (e.target.checked) setAssigningUserIds(prev => [...prev, eng.id]);
+                        else setAssigningUserIds(prev => prev.filter(id => id !== eng.id));
+                      }}
+                      className="rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    <div>
+                      <div className="text-sm font-bold text-slate-700">{eng.name}</div>
+                      <div className="text-xs text-slate-500">{eng.title || 'Nhân viên'}</div>
+                    </div>
+                  </label>
+                );
+              })
+            )}
           </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+              <span className="material-symbols-outlined text-primary text-[15px]">edit_note</span>
+              Ghi chú / Hướng dẫn công việc (Tùy chọn)
+            </label>
+            <textarea
+              value={assignNote}
+              onChange={(e) => setAssignNote(e.target.value)}
+              rows={3}
+              placeholder="Nhập yêu cầu, lưu ý hoặc tiêu chuẩn kỹ thuật gửi cho nhân viên..."
+              className="w-full p-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white resize-none"
+            />
+          </div>
+
           <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-100">
-            <button onClick={() => { setAssigningTask(null); setAssigningUserIds([]); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
+            <button onClick={() => { setAssigningTask(null); setAssigningUserIds([]); setAssignNote(''); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
             <button 
               onClick={async () => {
                 if (!assigningTask) return;
@@ -2300,12 +2526,25 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                 const firstId = selectedEngs.length > 0 ? selectedEngs[0].id : '';
                 const assignerId = authStore.user?.id || '';
                 const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
+
+                let updatedNotes = assigningTask.notes || '';
+                if (assignNote.trim()) {
+                  updatedNotes = appendTaskDiscussion(updatedNotes, {
+                    senderId: assignerId,
+                    senderName: assignerName,
+                    senderRole: 'Người giao việc',
+                    type: 'note',
+                    content: assignNote.trim()
+                  });
+                }
+
                 handleUpdateTaskSync(assigningTask.id, {
                   assignedEngineerId: firstId,
                   assignedEngineerName: names + (ids ? '|' + ids : ''),
                   assignerId: assignerId,
                   assignerName: assignerName,
-                  status: ids ? 'Chờ nhận việc' : assigningTask.status
+                  status: ids ? 'Chờ nhận việc' : assigningTask.status,
+                  notes: updatedNotes
                 });
 
                 // Gửi thông báo realtime & nhật ký hoạt động
@@ -2326,6 +2565,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
 
                 setAssigningTask(null);
                 setAssigningUserIds([]);
+                setAssignNote('');
                 triggerToast('Đã giao việc thành công!', 'success');
               }}
               className="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg shadow-sm transition-all"
@@ -2373,8 +2613,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
           {editingTask && !editingTask.isSectionHeader && (<>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Khối lượng</label><input type="number" step="any" value={editVolume} onChange={(e) => setEditVolume(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị tính (ĐVT)</label><input type="text" value={editUnit} onChange={(e) => setEditUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">TT Đặt hàng</label><CustomSelect disabled title="Được đồng bộ tự động từ tab Vật tư" value={editPurchaseStatus} onChange={(e) => setEditPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div><div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><CustomSelect value={editConstrStatus} onChange={(e) => setEditConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div></div>
-            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-red-600 mb-1">Vướng mắc / Tồn đọng</label><input type="text" placeholder="VD: Thiếu vật tư cáp..." value={editIssue} onChange={(e) => setEditIssue(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none bg-red-50/30 text-red-700 font-medium" /></div><div><label className="block font-bold text-slate-700 mb-1">Trạng thái xử lý</label><input type="text" placeholder="VD: Yêu cầu cấp bổ sung..." value={editIssueStatus} onChange={(e) => setEditIssueStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div></div>
-            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Ghi chú thêm cho dòng công việc" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Kỹ sư phụ trách</label><CustomSelect value={editEngineerId} onChange={(e) => setEditEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"><option value="">-- Chưa giao --</option>{engineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}</CustomSelect></div></div>
+            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Ghi chú thêm cho dòng công việc" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Kỹ sư phụ trách</label><CustomSelect value={editEngineerId} onChange={(e) => setEditEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"><option value="">-- Chưa giao --</option>{editingTaskEngineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}</CustomSelect></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tiến độ tự tính (%)</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">{calculateAutoProgressPercent(editPurchaseStatus, editConstrStatus)}%</div></div><div><label className="block font-bold text-slate-700 mb-1">Hoàn thành</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-bold text-slate-800">{calculateAutoProgressRatio(editPurchaseStatus, editConstrStatus) >= 1 ? 'Đã hoàn thành' : 'Chưa hoàn thành'}</div></div></div>
           </>)}
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setIsEditTaskModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90 disabled:opacity-50">Lưu Thay Đổi</button></div>
@@ -2500,7 +2739,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                   <label className="block font-bold text-slate-700 mb-1">{'K\u1ef9 s\u01b0 Ph\u1ee5 tr\u00e1ch'}</label>
                   <CustomSelect value={engineerId} onChange={(e) => setEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
                     <option value="">-- Chưa giao --</option>
-                    {engineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}
+                    {projectEngineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}
                   </CustomSelect>
                 </div>
                 <div>
@@ -2639,6 +2878,17 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
           </div>
         </div>
       </Modal>
+
+      <TaskDiscussionModal
+        isOpen={!!discussionTask}
+        onClose={handleCloseDiscussion}
+        task={tasks.find(tk => tk.id === discussionTask?.id) || discussionTask}
+        onSendQuestion={handleSendQuestion}
+        onSendReply={handleSendReply}
+        onAccept={handleAcceptTask}
+        onApprove={handleApproveTask}
+      />
+
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
     </div>
   );

@@ -6,6 +6,10 @@ import { CustomSelect } from '../components/common/CustomSelect';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../services/authStore';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
+import { Task } from '../types';
+import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
+import { appendTaskDiscussion, parseTaskDiscussions, getLatestDiscussion } from '../utils/taskDiscussion';
+import { getEngineersForProject } from '../utils/projectMemberUtils';
 
 export const TaskAssignmentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +23,12 @@ export const TaskAssignmentPage: React.FC = () => {
     setToastState({ show: true, message, type });
     setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
   };
+
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEngineerId, setSelectedEngineerId] = useState('');
+  const [assignNote, setAssignNote] = useState('');
+  const [discussionTask, setDiscussionTask] = useState<Task | null>(null);
 
   const canApproveTask = (currentUser: any, task: any): boolean => {
     if (!currentUser || !task) return false;
@@ -62,7 +72,7 @@ export const TaskAssignmentPage: React.FC = () => {
       triggerToast('Chỉ người giao việc mới có quyền nghiệm thu!', 'warning');
       return;
     }
-    updateTask(task.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' });
+    updateTask(task.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành', isDone: true });
     triggerToast(`Đã nghiệm thu hoàn thành: "${task.name}"!`, 'success');
 
     const store = useRealtimeStore.getState();
@@ -85,6 +95,45 @@ export const TaskAssignmentPage: React.FC = () => {
     }
   };
 
+  const handleSendReply = async (task: Task, replyText: string) => {
+    const store = useRealtimeStore.getState();
+    const userName = user?.name || user?.username || 'Người giao việc';
+    const userId = user?.id || '';
+    const updatedNotes = appendTaskDiscussion(task.notes || '', {
+      senderId: userId,
+      senderName: userName,
+      senderRole: 'Người giao việc',
+      type: 'reply',
+      content: replyText
+    });
+
+    const nextStatus = task.status === 'Đang làm' ? 'Đang làm' : 'Chờ nhận việc';
+
+    updateTask(task.id, {
+      status: nextStatus,
+      notes: updatedNotes
+    });
+
+    triggerToast('Đã gửi phản hồi hướng dẫn!', 'success');
+    store.logActivity(`Người giao việc ${userName} đã PHẢN HỒI THẮC MẮC về hạng mục: "${task.name}"`, task.projectCode);
+
+    if (store.addNotification && (task.assignedEngineerId || task.assignedEngineerName)) {
+      const parts = String(task.assignedEngineerName || '').split('|');
+      const engIds = (parts.length > 1 ? parts[1] : (task.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
+      const engNames = (parts[0] || (task.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
+
+      await store.addNotification({
+        title: 'Phản hồi hướng dẫn công việc',
+        message: `${userName} đã phản hồi thắc mắc về công việc "${task.name}" [${task.projectCode}]: "${replyText}".`,
+        link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
+        type: `task_reply:::${engIds.join(',')}:::${engNames.join(',')}`,
+        icon: 'chat',
+        senderId: userId,
+        senderName: userName
+      });
+    }
+  };
+
   const handleRowClick = (task: any, pCode?: string) => {
     if (activeTab === 'unassigned') {
       handleToggleTask(task.id);
@@ -95,10 +144,6 @@ export const TaskAssignmentPage: React.FC = () => {
       }
     }
   };
-
-  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEngineerId, setSelectedEngineerId] = useState('');
   
   const [filterProjectCode, setFilterProjectCode] = useState('all');
   const urlTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'completed' | 'my-tasks' | null;
@@ -106,6 +151,16 @@ export const TaskAssignmentPage: React.FC = () => {
   const highlightKeyword = searchParams.get('highlight')?.toLowerCase().trim() || null;
   const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned' | 'completed' | 'my-tasks'>(() => urlTab || (location.state as any)?.tab || 'assigned');
+
+  useEffect(() => {
+    if (highlightedTaskId) {
+      const found = tasks.find(t => t.id === highlightedTaskId);
+      const shouldOpenDiscussion = searchParams.get('discuss') === 'true' || found?.status === 'Có thắc mắc';
+      if (found && shouldOpenDiscussion) {
+        setDiscussionTask(found);
+      }
+    }
+  }, [highlightedTaskId, tasks, searchParams]);
 
   useEffect(() => {
     const qTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'completed' | 'my-tasks' | null;
@@ -155,6 +210,53 @@ export const TaskAssignmentPage: React.FC = () => {
     });
   }, [tasks, filterProjectCode, activeTab, highlightedTaskId]);
 
+  // Lọc danh sách kỹ sư / nhân viên thuộc các dự án của những task đang được chọn giao việc
+  const assignableEngineers = useMemo(() => {
+    if (selectedTaskIds.length === 0) {
+      if (filterProjectCode && filterProjectCode !== 'all') {
+        return getEngineersForProject(filterProjectCode, engineers, projects);
+      }
+      return engineers;
+    }
+
+    const selectedTasks = tasks.filter(t => selectedTaskIds.includes(t.id));
+    const projectCodes = Array.from(new Set(selectedTasks.map(t => t.projectCode || t.projectName).filter(Boolean)));
+
+    if (projectCodes.length === 0) {
+      return engineers;
+    }
+
+    // Nếu tất cả các task thuộc 1 dự án (phổ biến nhất)
+    if (projectCodes.length === 1) {
+      return getEngineersForProject(projectCodes[0], engineers, projects);
+    }
+
+    // Nếu chọn nhiều task thuộc nhiều dự án khác nhau: nhân sự phải thuộc TẤT CẢ các dự án đó (intersection) hoặc nếu không có ai thì lấy union
+    const candidateSets = projectCodes.map(pCode => getEngineersForProject(pCode, engineers, projects));
+    const commonEngineers = candidateSets.reduce((acc, currentList) => {
+      const currentIds = new Set(currentList.map(e => e.id));
+      return acc.filter(e => currentIds.has(e.id));
+    });
+
+    if (commonEngineers.length > 0) {
+      return commonEngineers;
+    }
+
+    // Fallback: union of engineers in those projects
+    const allProjEngIds = new Set<string>();
+    const unionEngs: typeof engineers = [];
+    candidateSets.forEach(list => {
+      list.forEach(eng => {
+        if (!allProjEngIds.has(eng.id)) {
+          allProjEngIds.add(eng.id);
+          unionEngs.push(eng);
+        }
+      });
+    });
+
+    return unionEngs;
+  }, [selectedTaskIds, tasks, filterProjectCode, engineers, projects]);
+
   useEffect(() => {
     if (isHighlightActive && (highlightedTaskId || highlightKeyword)) {
       const timer = setTimeout(() => {
@@ -201,12 +303,24 @@ export const TaskAssignmentPage: React.FC = () => {
     const assignerName = user?.name || user?.username || 'Quản lý';
 
     selectedTaskIds.forEach(id => {
+      const existingTask = tasks.find(t => t.id === id);
+      let updatedNotes = existingTask?.notes || '';
+      if (assignNote.trim()) {
+        updatedNotes = appendTaskDiscussion(updatedNotes, {
+          senderId: assignerId,
+          senderName: assignerName,
+          senderRole: 'Người giao việc',
+          type: 'assign_note',
+          content: assignNote.trim()
+        });
+      }
       updateTask(id, {
         assignedEngineerId: selectedEngineerId,
         assignedEngineerName: engName,
         assignerId: assignerId,
         assignerName: assignerName,
-        status: 'Chờ nhận việc'
+        status: 'Chờ nhận việc',
+        notes: updatedNotes
       });
     });
 
@@ -216,7 +330,7 @@ export const TaskAssignmentPage: React.FC = () => {
     if (store.addNotification) {
       store.addNotification({
         title: `Giao việc: ${engName}`,
-        message: `${assignerName} đã giao ${selectedTaskIds.length} công việc mới cho ${engName}.`,
+        message: `${assignerName} đã giao ${selectedTaskIds.length} công việc mới cho ${engName}${assignNote.trim() ? `: "${assignNote.trim()}"` : '.'}`,
         type: `task_assigned:::${selectedEngineerId}:::${engName}`,
         icon: 'assignment_ind',
         senderId: assignerId,
@@ -228,6 +342,7 @@ export const TaskAssignmentPage: React.FC = () => {
     setSelectedTaskIds([]);
     setIsModalOpen(false);
     setSelectedEngineerId('');
+    setAssignNote('');
   };
 
   const [isScrolledHorizontally, setIsScrolledHorizontally] = useState(false);
@@ -369,13 +484,33 @@ export const TaskAssignmentPage: React.FC = () => {
                         {t.sectionName && t.sectionName !== t.name && (
                           <span className="text-[10px] text-slate-500 mt-1">{t.sectionName}</span>
                         )}
+                        {t.status === 'Có thắc mắc' && (() => {
+                          const latestDisc = getLatestDiscussion(t.notes, t.issue);
+                          return (
+                            <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDiscussionTask(t);
+                              }}
+                              className="mt-1.5 p-1.5 bg-amber-50 hover:bg-amber-100/80 border border-amber-300 rounded text-[11px] text-amber-950 font-medium flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                              title="Nhấn để xem chi tiết thắc mắc và phản hồi"
+                            >
+                              <span className="material-symbols-outlined text-[14px] text-amber-600 shrink-0">help_center</span>
+                              <span className="truncate">
+                                <strong>Thắc mắc:</strong> {latestDisc?.content || t.issue || 'Cần làm rõ yêu cầu công việc'}
+                              </span>
+                              <span className="text-[10px] text-amber-700 font-bold underline shrink-0 ml-auto">Xem</span>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="py-2.5 px-4 text-xs font-bold text-slate-700 border-l border-slate-200">
                         {t.assignedEngineerName ? t.assignedEngineerName.split('|')[0] : <span className="text-slate-400 font-normal italic">Chưa có</span>}
                       </td>
                       <td className="py-2.5 px-4 border-l border-slate-200">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
+                          <span className={`inline-block px-2.5 py-1 rounded text-[11px] font-bold ${
+                            t.status === 'Có thắc mắc' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
                             t.status === 'Chờ nhận việc' ? 'bg-amber-100 text-amber-700' :
                             t.status === 'Đang làm' ? 'bg-blue-100 text-blue-700' :
                             t.status === 'Chờ nghiệm thu' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' :
@@ -431,17 +566,36 @@ export const TaskAssignmentPage: React.FC = () => {
               </div>
               
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-slate-700">Chọn người phụ trách</label>
+                <label className="text-sm font-bold text-slate-700">Chọn người phụ trách <span className="text-red-500">*</span></label>
                 <select 
                   value={selectedEngineerId} 
                   onChange={(e) => setSelectedEngineerId(e.target.value)}
                   className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-full font-medium"
                 >
                   <option value="">-- Chọn nhân viên / kỹ sư --</option>
-                  {engineers.map(e => (
-                    <option key={e.id} value={e.id}>{e.name}</option>
+                  {assignableEngineers.map(e => (
+                    <option key={e.id} value={e.id}>{e.name} {e.title ? `(${e.title})` : ''}</option>
                   ))}
                 </select>
+                {assignableEngineers.length === 0 && (
+                  <p className="text-xs text-amber-600 font-medium">
+                    * Dự án này chưa có nhân sự thành viên nào. Vui lòng thêm thành viên trong Quản lý dự án trước khi giao việc.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-bold text-slate-700 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-primary text-[16px]">edit_note</span>
+                  Ghi chú / Hướng dẫn công việc (Tùy chọn)
+                </label>
+                <textarea 
+                  value={assignNote} 
+                  onChange={(e) => setAssignNote(e.target.value)}
+                  rows={3}
+                  placeholder="Nhập yêu cầu, lưu ý hoặc tiêu chuẩn kỹ thuật gửi cho nhân viên..."
+                  className="border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-full resize-none"
+                />
               </div>
             </div>
 
@@ -451,12 +605,19 @@ export const TaskAssignmentPage: React.FC = () => {
               </button>
               <button onClick={handleAssign} className="px-6 py-2 rounded-lg text-sm font-bold text-white bg-primary hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">
                 <span className="material-symbols-outlined text-base">check_circle</span>
-                Xác nhận
+                Xác nhận giao việc
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <TaskDiscussionModal
+        isOpen={!!discussionTask}
+        onClose={() => setDiscussionTask(null)}
+        task={tasks.find(tk => tk.id === discussionTask?.id) || discussionTask}
+        onSendReply={handleSendReply}
+      />
 
       {toastState.show && (
         <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-5">

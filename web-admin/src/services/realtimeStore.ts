@@ -200,46 +200,77 @@ const recalculateProjectsFromTasks = (projects: Project[], tasks: Task[], projec
   });
 };
 
+const parseFlexibleDate = (dateStr?: string | null): Date | null => {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+  const trimmed = dateStr.trim();
+  if (!trimmed) return null;
+
+  // DD/MM/YYYY or DD-MM-YYYY
+  const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // YYYY-MM-DD or YYYY/MM/DD
+  const ymdMatch = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (ymdMatch) {
+    const year = parseInt(ymdMatch[1], 10);
+    const month = parseInt(ymdMatch[2], 10) - 1;
+    const day = parseInt(ymdMatch[3], 10);
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  const d = new Date(trimmed);
+  return isNaN(d.getTime()) ? null : d;
+};
+
 const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotifications: NotificationItem[]) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const newNotifs: NotificationItem[] = [];
 
   tracks.forEach(track => {
-    // Nếu hồ sơ đã hoàn thành, hoặc đã ký/nhận đủ, hoặc đã thanh toán (nếu có theo dõi), hoặc status đã xong -> không tạo thông báo
+    // Nếu hồ sơ đã hoàn thành, hoặc đã ký/nhận đủ, hoặc đã thanh toán (nếu có theo dõi) -> không tạo thông báo
     const isSigned = track.docStatus === 'Đã ký' || track.docStatus === 'Đã nhận đủ';
     const isPaid = track.paymentStatus?.includes('Đã');
-    if (track.isCompleted || isSigned || (isSigned && isPaid)) return;
+    if (track.isCompleted || (isSigned && isPaid)) return;
 
-    // Ngày hạn chót: Nếu có dueDate thì dùng dueDate. Nếu không có dueDate nhưng đã có receiveDate (ngày nhận) thì tức là đã nhận xong -> không nhắc.
-    // Nếu chưa có receiveDate và chưa có dueDate thì dùng sendDate + remindDays hoặc sendDate
     const effectiveDueDate = track.dueDate || track.receiveDate || track.sendDate;
     if (!effectiveDueDate) return;
 
-    // Nếu đã có ngày nhận (receiveDate) và không cài hạn chót dueDate riêng -> tức là hồ sơ đã nhận xong rồi -> skip
     if (!track.dueDate && track.receiveDate) return;
 
-    const due = new Date(effectiveDueDate);
+    const due = parseFlexibleDate(effectiveDueDate);
+    if (!due) return;
     due.setHours(0, 0, 0, 0);
+
     const diffTime = due.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     const remind = track.remindDays || 3;
 
     const docName = track.contractNo || track.contractName || 'Hồ sơ';
-    const notifKey = `due-doc-${track.id}-${effectiveDueDate}`;
     const pCode = track.projectCode || 'COMPANY';
 
-    if (diffDays < 0 && Math.abs(diffDays) <= 2) {
+    if (diffDays < 0) {
+      const absDays = Math.abs(diffDays);
+      const notifKey = `overdue-doc-${track.id}-${absDays}-${effectiveDueDate}`;
       newNotifs.push({
         id: notifKey,
         title: 'Hồ sơ quá hạn nộp',
-        message: `[${pCode}] Hồ sơ "${docName}" đã quá hạn ${Math.abs(diffDays)} ngày (Hạn: ${effectiveDueDate}).`,
+        message: `[${pCode}] Hồ sơ "${docName}" đã quá hạn ${absDays} ngày (Hạn: ${effectiveDueDate}).`,
         timestamp: new Date().toISOString(),
         read: false,
         type: `document_due:::${pCode}`,
-        icon: 'warning'
+        icon: 'warning',
+        link: `/document-tracking?project=${encodeURIComponent(pCode)}&highlight=${encodeURIComponent(docName)}`
       });
-    } else if (diffDays >= 0 && diffDays <= remind) {
+    } else if (diffDays <= remind) {
+      const notifKey = `due-doc-${track.id}-${diffDays}-${effectiveDueDate}`;
       newNotifs.push({
         id: notifKey,
         title: 'Nhắc hạn nộp hồ sơ',
@@ -249,12 +280,71 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
         timestamp: new Date().toISOString(),
         read: false,
         type: `document_due:::${pCode}`,
-        icon: 'notifications'
+        icon: 'notifications',
+        link: `/document-tracking?project=${encodeURIComponent(pCode)}&highlight=${encodeURIComponent(docName)}`
       });
     }
   });
 
-  // Filter out any notification that has the same id OR same title+message content
+  const existingKeys = new Set(existingNotifications.map(n => `${n.id}:::${n.title}:::${n.message}`));
+  const existingIds = new Set(existingNotifications.map(n => n.id));
+  return newNotifs.filter(n => !existingIds.has(n.id) && !existingKeys.has(`${n.id}:::${n.title}:::${n.message}`));
+};
+
+const generateTaskDueNotifications = (tasksList: Task[], existingNotifications: NotificationItem[]) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const newNotifs: NotificationItem[] = [];
+
+  tasksList.forEach(task => {
+    if (task.isSectionHeader || task.status === 'Hoàn thành' || task.status === 'Chờ nghiệm thu' || task.isDone) return;
+    if (!task.dueDate) return;
+
+    const due = parseFlexibleDate(task.dueDate);
+    if (!due) return;
+    due.setHours(0, 0, 0, 0);
+
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const pCode = task.projectCode || 'PROJECT';
+    const taskName = task.name || 'Công việc';
+
+    const parts = String(task.assignedEngineerName || '').split('|');
+    const assignedIds = (parts.length > 1 ? parts[1] : (task.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
+    const assignedNames = (parts[0] || (task.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
+    const targetIdList = Array.from(new Set([task.assignerId || 'admin', ...assignedIds])).filter(Boolean);
+    const targetNameList = Array.from(new Set([task.assignerName || 'Quản lý', ...assignedNames])).filter(Boolean);
+
+    if (diffDays < 0) {
+      const absDays = Math.abs(diffDays);
+      const notifKey = `overdue-task-${task.id}-${absDays}-${task.dueDate}`;
+      newNotifs.push({
+        id: notifKey,
+        title: 'Công việc quá hạn hoàn thành',
+        message: `[${pCode}] Công việc "${taskName}" đã quá hạn ${absDays} ngày (Hạn: ${task.dueDate}).`,
+        timestamp: new Date().toISOString(),
+        read: false,
+        type: `task_due:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
+        icon: 'warning',
+        link: `/projects/${encodeURIComponent(pCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(taskName)}`
+      });
+    } else if (diffDays <= 2) {
+      const notifKey = `due-task-${task.id}-${diffDays}-${task.dueDate}`;
+      newNotifs.push({
+        id: notifKey,
+        title: 'Nhắc hạn công việc',
+        message: diffDays === 0
+          ? `[${pCode}] Công việc "${taskName}" đến hạn hoàn thành hôm nay!`
+          : `[${pCode}] Công việc "${taskName}" sắp đến hạn hoàn thành (Còn ${diffDays} ngày).`,
+        timestamp: new Date().toISOString(),
+        read: false,
+        type: `task_due:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
+        icon: 'notifications',
+        link: `/projects/${encodeURIComponent(pCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(taskName)}`
+      });
+    }
+  });
+
   const existingKeys = new Set(existingNotifications.map(n => `${n.id}:::${n.title}:::${n.message}`));
   const existingIds = new Set(existingNotifications.map(n => n.id));
   return newNotifs.filter(n => !existingIds.has(n.id) && !existingKeys.has(`${n.id}:::${n.title}:::${n.message}`));
@@ -786,7 +876,15 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         if (mutationGuard > fetchStartTime) {
           console.log('[Realtime] Skipping tasks overwrite because local mutation occurred recently');
         } else {
-          set({ tasks: mergedTasks });
+          const currentNotifs = get().notifications || [];
+          const taskDueNotifs = generateTaskDueNotifications(mergedTasks, currentNotifs);
+          if (taskDueNotifs.length > 0) {
+            const nextNotifs = [...taskDueNotifs, ...currentNotifs];
+            set({ tasks: mergedTasks, notifications: nextNotifs });
+            persistAndNotify({ tasks: mergedTasks, notifications: nextNotifs });
+          } else {
+            set({ tasks: mergedTasks });
+          }
         }
       } catch (e) {
         console.error('Failed to fetch tasks', e);
@@ -1009,13 +1107,18 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           if (!isDocEqual) {
             nextState.documentTracks = filteredDocs;
           }
+          const currentNotifs = get().notifications || [];
+          const docDueNotifs = generateDocumentDueNotifications(filteredDocs, currentNotifs);
+          if (docDueNotifs.length > 0) {
+            nextState.notifications = [...docDueNotifs, ...currentNotifs];
+          }
         }
       } catch (e) { console.error('[Accounting] Failed document_tracks', e); }
 
       if (Object.keys(nextState).length > 0) {
         set(nextState);
         // Only persist if data actually changed
-        if (nextState.documentTracks) {
+        if (nextState.documentTracks || nextState.notifications) {
           persistAndNotify(nextState);
         }
       }
@@ -1663,12 +1766,16 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
             }
           });
 
+          const docDueNotifs = generateDocumentDueNotifications(get().documentTracks || [], freshNotifs);
+          const taskDueNotifs = generateTaskDueNotifications(get().tasks || [], [...docDueNotifs, ...freshNotifs]);
+          const mergedNotifs = [...docDueNotifs, ...taskDueNotifs, ...freshNotifs];
+
           const current = get().notifications || [];
-          const isEqual = current.length === freshNotifs.length &&
-            current.every((n, i) => n.id === freshNotifs[i]?.id && n.read === freshNotifs[i]?.read && n.timestamp === freshNotifs[i]?.timestamp);
+          const isEqual = current.length === mergedNotifs.length &&
+            current.every((n, i) => n.id === mergedNotifs[i]?.id && n.read === mergedNotifs[i]?.read && n.timestamp === mergedNotifs[i]?.timestamp);
           if (!isEqual) {
-            set({ notifications: freshNotifs });
-            persistAndNotify({ notifications: freshNotifs });
+            set({ notifications: mergedNotifs });
+            persistAndNotify({ notifications: mergedNotifs });
           }
         }
       } catch (e) {

@@ -308,9 +308,9 @@ input[type="number"] {
 }
 
 .highlighted-task-card {
-  background-color: #fef3c7 !important;
-  border: 2px solid #f59e0b !important;
-  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3) !important;
+  outline: 3px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25) !important;
   transition: all 0.3s ease-in-out !important;
 }
 

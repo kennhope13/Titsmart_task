@@ -7,7 +7,7 @@ export type Permission = 'VIEW_PROJECT_DIAGRAM'
   | 'VIEW_USERS' | 'MANAGE_USERS' | 'MANAGE_PERMISSIONS' | 'MANAGE_PAYROLL'
   | 'EXPORT_DATA' | 'MANAGE_INVENTORY' | 'VIEW_FIELD_LOGS' | 'MANAGE_FIELD_LOGS' | 'VIEW_ACTIVITY_LOG';
 
-export type TaskStatus = 'Chưa làm' | 'Đang làm' | 'Chờ vật tư' | 'Chờ khách hàng' | 'Chờ nghiệm thu' | 'Hoàn thành' | 'Tạm dừng' | 'Chờ nhận việc';
+export type TaskStatus = 'Chưa làm' | 'Đang làm' | 'Chờ vật tư' | 'Chờ khách hàng' | 'Chờ nghiệm thu' | 'Hoàn thành' | 'Tạm dừng' | 'Chờ nhận việc' | 'Có thắc mắc';
 export type TaskPriority = 'Low' | 'Medium' | 'High';
 
 export const PURCHASE_STATUS_OPTIONS = [
@@ -23,6 +23,7 @@ export const PURCHASE_STATUS_OPTIONS = [
 export const CONSTRUCTION_STATUS_OPTIONS = [
   'Chưa thi công',
   'Đang thi công',
+  'Chờ nghiệm thu',
   'Đã hoàn thành',
 ];
 
@@ -398,6 +399,7 @@ export const getTextColorStyle = (status?: string) => {
 export const getStatusColorStyle = (status?: string) => {
   if (!status) return "border-slate-200 bg-slate-50 text-slate-600";
   const s = status.toLowerCase();
+  if (s.includes("chờ nghiệm thu")) return "border-purple-300 bg-purple-50 text-purple-700 font-bold";
   if (s.includes("nhân công")) return "border-indigo-200 bg-indigo-50 text-indigo-700";
   if (s.includes("ko có") || s.includes("không có") || s.includes("vướng mắc") || s.includes("hủy") || s.includes("chưa đáp ứng") || s.includes("chưa ký") || s.includes("chưa xuất") || s.includes("không cần")) return "border-red-200 bg-red-50 text-red-700";
   if (s.includes("đã có hàng") || s.includes("đã nhận") || s.includes("đã thi công") || s.includes("hoàn thành") || s.includes("đã ký") || s.includes("đã xuất") || (s.includes("đáp ứng") && !s.includes("chưa"))) return "border-emerald-200 bg-emerald-50 text-emerald-700";
@@ -435,6 +437,7 @@ export const constructionProgressScore = (status?: string) => {
   if (clean === "da lap tb + keo day") return 0.3;
   if (clean === "dang ete") return 0.4;
   if (clean === "dang thi cong") return 0.5;
+  if (clean === "cho nghiem thu") return 0.95;
   if (clean === "da thi cong" || clean === "da hoan thanh") return 1;
   return 0;
 };

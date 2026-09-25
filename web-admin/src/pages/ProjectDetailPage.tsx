@@ -20,8 +20,14 @@ export const ProjectDetailPage: React.FC = () => {
   };
 
   const project = useMemo(() => {
-    // Find project by ID or Code
-    return projects.find(p => p.id === projectId || p.code === projectId);
+    // Find project by ID or Code (case-insensitive & URL decoded)
+    if (!projectId) return null;
+    const decodedId = decodeURIComponent(projectId).trim().toLowerCase();
+    return projects.find(p => 
+      p.id?.toLowerCase() === decodedId || 
+      p.code?.toLowerCase() === decodedId ||
+      p.name?.toLowerCase() === decodedId
+    );
   }, [projects, projectId]);
 
   if (!project) {
@@ -39,13 +45,13 @@ export const ProjectDetailPage: React.FC = () => {
 
   // Tabs for the project detail view
   const baseTabs = [
-      { label: 'Tổng quan', path: `/projects/${project.id}/overview`, icon: 'dashboard' },
-      { label: 'Tiến độ Công việc', path: `/projects/${project.id}/tasks`, icon: 'fact_check' },
-      { label: 'Vật tư & Chi phí', path: `/projects/${project.id}/cost-plan`, icon: 'account_balance_wallet' },
-      { label: 'Hồ sơ', path: `/projects/${project.id}/documents`, icon: 'file_present', requireAdmin: true },
-      { label: 'Sơ đồ dự án', path: `/projects/${project.id}/diagram`, icon: 'account_tree', reqPerm: 'VIEW_PROJECT_DIAGRAM' },
-      { label: 'Kho Dự án', path: `/projects/${project.id}/inventory`, icon: 'inventory_2' },
-      { label: 'Nhật ký Hiện trường', path: `/projects/${project.id}/field-logs`, icon: 'add_a_photo' }
+      { label: 'Tổng quan', path: `/projects/${projectId}/overview`, icon: 'dashboard' },
+      { label: 'Tiến độ Công việc', path: `/projects/${projectId}/tasks`, icon: 'fact_check' },
+      { label: 'Vật tư & Chi phí', path: `/projects/${projectId}/cost-plan`, icon: 'account_balance_wallet' },
+      { label: 'Hồ sơ', path: `/projects/${projectId}/documents`, icon: 'file_present', requireAdmin: true },
+      { label: 'Sơ đồ dự án', path: `/projects/${projectId}/diagram`, icon: 'account_tree', reqPerm: 'VIEW_PROJECT_DIAGRAM' },
+      { label: 'Kho Dự án', path: `/projects/${projectId}/inventory`, icon: 'inventory_2' },
+      { label: 'Nhật ký Hiện trường', path: `/projects/${projectId}/field-logs`, icon: 'add_a_photo' }
     ];
 
     const tabs = baseTabs.filter(tab => {
@@ -55,12 +61,18 @@ export const ProjectDetailPage: React.FC = () => {
     });
 
   // Redirect to first tab if we are exactly on /projects/:projectId
-  const activeTab = tabs.find(t => location.pathname.includes(t.path));
+  const isExactBaseRoute = location.pathname.replace(/\/$/, '') === `/projects/${projectId}` ||
+    location.pathname.replace(/\/$/, '') === `/projects/${project.id}` ||
+    location.pathname.replace(/\/$/, '') === `/projects/${project.code}`;
 
-  const isExactBaseRoute = location.pathname.replace(/\/$/, '') === `/projects/${projectId}`;
   if (isExactBaseRoute) {
-    return <Navigate to={`/projects/${project.id}/overview`} replace />;
+    return <Navigate to={`/projects/${project.code || project.id}/overview`} replace />;
   }
+
+  const activeTab = tabs.find(t => 
+    location.pathname.includes(t.path) || 
+    (project.code && location.pathname.includes(`/projects/${project.code}/${t.path.split('/').pop()}`))
+  );
 
   return (
     <div className="flex-col h-full bg-slate-50 flex overflow-hidden">

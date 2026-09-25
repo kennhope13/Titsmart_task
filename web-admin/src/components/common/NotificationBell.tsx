@@ -71,8 +71,11 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   if (notification.createdById && myIds.includes(String(notification.createdById).toLowerCase())) {
     return false;
   }
-  if (notification.senderName && myNames.some(n => String(notification.senderName).toLowerCase() === n)) {
-    return false;
+  if (notification.senderName) {
+    const sNameLow = String(notification.senderName).trim().toLowerCase();
+    if (myNames.some(n => sNameLow === n || sNameLow.includes(n) || n.includes(sNameLow))) {
+      return false;
+    }
   }
 
   // Nhận diện người thực hiện hành động qua nội dung message / title
@@ -80,11 +83,15 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     if (
       mLow.startsWith(myName + ' đã ') ||
       mLow.startsWith(myName + ' vừa ') ||
+      mLow.startsWith(myName + ' có ') ||
       mLow.startsWith('quản lý ' + myName + ' đã ') ||
       mLow.startsWith('kỹ sư ' + myName + ' đã ') ||
       mLow.startsWith('nhân sự ' + myName + ' đã ') ||
+      mLow.startsWith('nhân sự ' + myName + ' vừa ') ||
       tLow.startsWith(myName + ' đã ') ||
-      tLow.startsWith(myName + ' vừa ')
+      tLow.startsWith(myName + ' vừa ') ||
+      mLow.includes(myName + ' đã gửi thắc mắc') ||
+      mLow.includes(myName + ' có thắc mắc')
     ) {
       return false; // Chính tài khoản hiện tại vừa tạo hành động này
     }
@@ -183,17 +190,78 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     return isAdmin;
   }
 
-  // 3b. Task approval notifications: ONLY for the assigned engineer (người thực hiện công việc)
-  if (title.includes('nghiệm thu') || typeStr.startsWith('task_approved')) {
-    if (typeStr.startsWith('task_approved:::')) {
+  // 3a. Task question notifications: Gửi đến NGƯỜI GIAO VIỆC và TẤT CẢ NHỮNG NGƯỜI ĐẢM NHIỆM công việc đó
+  if (title.includes('thắc mắc') || typeStr.startsWith('task_question')) {
+    if (typeStr.includes(':::')) {
       const parts = typeStr.split(':::');
-      const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase());
-      const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase());
+      const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+      const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+      const isMeId = targetIds.some(tId => myIds.includes(tId) || (myEng && tId === String(myEng.id).toLowerCase()));
+      const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
+
+      if (isMeId || isMeName) return true;
+
+      // Nếu trong danh sách có admin/quản lý chung chung thì admin/manager sẽ thấy
+      if (targetIds.includes('admin') || targetNames.includes('quản lý') || targetNames.includes('quản trị viên')) {
+        return isAdmin;
+      }
+    }
+
+    // Fallback nếu không có metadata
+    const quoteMatch = message.match(/"([^"]+)"/);
+    const taskName = quoteMatch ? quoteMatch[1] : '';
+    if (taskName) {
+      const store = useRealtimeStore.getState();
+      const t = store.tasks?.find(tk => tk.name?.trim().toLowerCase() === taskName.trim().toLowerCase());
+      if (t) {
+        const aId = String(t.assignerId || '').toLowerCase();
+        const aName = String(t.assignerName || '').toLowerCase();
+        if (aId && myIds.includes(aId)) return true;
+        if (aName && myNames.some(n => aName.includes(n) || n.includes(aName))) return true;
+
+        const parts = String(t.assignedEngineerName || '').split('|');
+        const engIds = (parts.length > 1 ? parts[1] : (t.assignedEngineerId || '')).split(',').map(s => s.trim().toLowerCase());
+        const engNames = parts[0].split(',').map(s => s.trim().toLowerCase());
+        if (engIds.some(id => myIds.includes(id) || (myEng && id === String(myEng.id).toLowerCase()))) return true;
+        if (engNames.some(name => myNames.some(n => name.includes(n) || n.includes(name)))) return true;
+      }
+    }
+
+    return isAdmin;
+  }
+
+  // 3b. Task approval & reply notifications: ONLY for the assigned engineers (những người đảm nhiệm công việc)
+  if (title.includes('nghiệm thu') || title.includes('phản hồi') || typeStr.startsWith('task_approved') || typeStr.startsWith('task_reply')) {
+    if (typeStr.startsWith('task_approved:::') || typeStr.startsWith('task_reply:::')) {
+      const parts = typeStr.split(':::');
+      const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+      const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
       const isMeId = targetIds.some(tId => myIds.includes(tId) || (myEng && tId === String(myEng.id).toLowerCase()));
       const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
       if (isMeId || isMeName) return true;
       return false;
     }
+  }
+
+  // 3c. Task due & overdue notifications: Gửi đến NGƯỜI GIAO VIỆC và TẤT CẢ NHỮNG NGƯỜI ĐẢM NHIỆM
+  if (title.includes('quá hạn hoàn thành') || title.includes('Nhắc hạn công việc') || typeStr.startsWith('task_due')) {
+    if (typeStr.includes(':::')) {
+      const parts = typeStr.split(':::');
+      const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+      const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+      const isMeId = targetIds.some(tId => myIds.includes(tId) || (myEng && tId === String(myEng.id).toLowerCase()));
+      const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
+
+      if (isMeId || isMeName) return true;
+
+      // Nếu trong danh sách có admin/quản lý chung chung thì admin/manager sẽ thấy
+      if (targetIds.includes('admin') || targetNames.includes('quản lý') || targetNames.includes('quản trị viên')) {
+        return isAdmin;
+      }
+    }
+    return isAdmin;
   }
 
   // 4. Leave requests: Only for Admin/Managers (unless it's an approval/rejection notification for the specific user)
@@ -498,6 +566,27 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
         if (taskName) params.set('highlight', taskName);
         navigate(`/my-tasks?${params.toString()}`);
       }
+    } else if (
+      titleLower.includes('thắc mắc') ||
+      (notification.type && notification.type.startsWith('task_question'))
+    ) {
+      if (finalProjectCode) {
+        const taskIdParam = targetTask?.id ? `taskId=${encodeURIComponent(targetTask.id)}&` : '';
+        navigate(`/projects/${encodeURIComponent(finalProjectCode)}/tasks?${taskIdParam}highlight=${encodeURIComponent(taskName || '')}`);
+      } else {
+        const params = new URLSearchParams();
+        params.set('tab', 'assigned');
+        if (taskName) params.set('highlight', taskName);
+        navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'assigned' } });
+      }
+    } else if (
+      titleLower.includes('phản hồi') ||
+      (notification.type && notification.type.startsWith('task_reply'))
+    ) {
+      const params = new URLSearchParams();
+      if (targetTask?.id) params.set('taskId', targetTask.id);
+      if (taskName) params.set('highlight', taskName);
+      navigate(`/my-tasks?${params.toString()}`);
     } else if (
       titleLower.includes('đã nhận việc') || 
       (notification.type && notification.type.startsWith('task_accepted'))
