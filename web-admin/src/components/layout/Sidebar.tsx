@@ -31,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
   const navigate = useNavigate();
   const unreadCount = notifications.filter((item) => !item.read).length;
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
+  const defaultTaskPath = isAdmin ? '/task-assignment?tab=assigned' : '/my-tasks';
   const sidebarRef = useRef<HTMLElement>(null);
 
   const handleLogout = async () => {
@@ -84,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
     const mainItems = [
       { label: 'Tổng quan', path: '/dashboard', icon: 'analytics', req: 'VIEW_PROJECTS' },
       { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower', req: 'VIEW_PROJECTS' },
-      { label: 'Công việc', path: '/my-tasks', icon: 'checklist', req: 'VIEW_TASKS' },
+      { label: 'Công việc', path: defaultTaskPath, icon: 'checklist', req: 'VIEW_TASKS' },
       { label: 'Chi phí văn phòng', path: '/office-costs', icon: 'account_balance_wallet', req: 'VIEW_OFFICE_COSTS' },
       { label: 'Quản lý hồ sơ', path: '/document-tracking', icon: 'folder_managed', req: 'VIEW_DOCUMENTS' },
       { label: 'Tổng kho', path: '/materials', icon: 'warehouse', req: 'VIEW_MATERIALS' },
@@ -156,25 +157,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
               )}
 
               <div className={`space-y-1 overflow-hidden transition-all duration-200 ${group.collapsible !== false && collapsedGroups[group.title] ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'}`}>
-                {group.items.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    end={item.path === '/'}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-lg text-xs transition-all overflow-hidden whitespace-nowrap h-10
-                      ${isExpanded ? 'w-full px-3' : 'w-10'}
-                      ${
-                        isActive
-                          ? 'text-primary bg-blue-100 font-bold shadow-sm'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-semibold'
-                      }`
-                    }
-                  >
-                    <span className={`material-symbols-outlined text-lg flex flex-shrink-0 items-center ${isExpanded ? 'w-auto justify-start' : 'w-10 justify-center'}`}>{item.icon}</span>
-                    <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>{item.label}</span>
-                  </NavLink>
-                ))}
+                {group.items.map((item) => {
+                  const isTask = (item.label === 'Công việc' || item.path.includes('task')) &&
+                    (location.pathname === '/task-assignment' || location.pathname === '/my-tasks');
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      end={item.path === '/'}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 rounded-lg text-xs transition-all overflow-hidden whitespace-nowrap h-10
+                        ${isExpanded ? 'w-full px-3' : 'w-10'}
+                        ${
+                          isActive || isTask
+                            ? 'text-primary bg-blue-100 font-bold shadow-sm'
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-semibold'
+                        }`
+                      }
+                    >
+                      <span className={`material-symbols-outlined text-lg flex flex-shrink-0 items-center ${isExpanded ? 'w-auto justify-start' : 'w-10 justify-center'}`}>{item.icon}</span>
+                      <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>{item.label}</span>
+                    </NavLink>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -266,6 +271,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                     '/dashboard',
                     '/projects',
                     '/my-tasks',
+                    '/task-assignment',
+                    '/task-assignment?tab=assigned',
+                    defaultTaskPath,
                     '/office-costs',
                   ])
                 );
@@ -351,23 +359,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         ] : [
           { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
           { label: 'Dự án', path: '/projects', icon: 'cell_tower' },
-          { label: 'Công việc', path: '/my-tasks', icon: 'checklist' },
+          { label: 'Công việc', path: defaultTaskPath, icon: 'checklist' },
           { label: 'Chi phí VP', path: '/office-costs', icon: 'account_balance_wallet' },
-        ]).map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === '/'}
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center py-0.5 px-2 rounded-lg transition-colors min-w-[48px] ${
-                isActive ? 'text-primary font-bold' : 'text-slate-500 font-medium hover:text-slate-800'
-              }`
-            }
-          >
-            <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-            <span className="text-[10px] leading-tight truncate max-w-[56px]">{item.label}</span>
-          </NavLink>
-        ))}
+        ]).map((item) => {
+          const isTask = (item.label === 'Công việc' || item.path.includes('task')) &&
+            (location.pathname === '/task-assignment' || location.pathname === '/my-tasks');
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === '/'}
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center py-0.5 px-2 rounded-lg transition-colors min-w-[48px] ${
+                  isActive || isTask ? 'text-primary font-bold' : 'text-slate-500 font-medium hover:text-slate-800'
+                }`
+              }
+            >
+              <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+              <span className="text-[10px] leading-tight truncate max-w-[56px]">{item.label}</span>
+            </NavLink>
+          );
+        })}
 
         {/* 5th Tab: Nút "Khác..." mở Bottom Sheet tất cả tính năng */}
         <button

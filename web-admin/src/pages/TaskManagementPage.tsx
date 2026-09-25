@@ -186,6 +186,25 @@ export const TaskManagementPage: React.FC = () => {
     }
   };
 
+  const handleReportDone = async (task: Task) => {
+    handleUpdateTaskSync(task.id, { status: 'Chờ nghiệm thu', progress: 1, constrStatus: 'Đã hoàn thành' });
+    triggerToast('Đã báo cáo hoàn thành!', 'success');
+
+    const store = useRealtimeStore.getState();
+    const userName = authStore.user?.name || authStore.user?.username || 'Một nhân sự';
+    store.logActivity(`Nhân sự ${userName} đã BÁO CÁO HOÀN THÀNH hạng mục: "${task.name}"`, task.projectName || task.projectCode);
+
+    if (store.addNotification) {
+      await store.addNotification({
+        title: 'Báo cáo hoàn thành công việc',
+        message: `${userName} đã báo cáo hoàn thành công việc "${task.name}" thuộc dự án ${task.projectCode}.`,
+        link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
+        type: `task_completed:::${task.assignerId || 'admin'}:::${task.assignerName || 'Quản lý'}`,
+        icon: 'done_all'
+      });
+    }
+  };
+
   const handleApproveTask = async (task: Task) => {
     handleUpdateTaskSync(task.id, { status: 'Hoàn thành', progress: 1, constrStatus: 'Đã hoàn thành' });
     triggerToast(`Đã nghiệm thu hoàn thành: "${task.name}"!`, 'success');
@@ -200,6 +219,7 @@ export const TaskManagementPage: React.FC = () => {
       await store.addNotification({
         title: 'Công việc đã được nghiệm thu',
         message: `Quản lý ${adminName} đã nghiệm thu hoàn thành công việc "${task.name}" [${task.projectCode}].`,
+        link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
         type: `task_approved:::${engId}:::${engName}`,
         icon: 'verified'
       });
@@ -2145,7 +2165,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                               <button onClick={(e) => { e.stopPropagation(); handleAcceptTask(t); }} className="text-[9px] bg-emerald-500 pointer-events-auto hover:bg-emerald-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nhận việc</button>
                             )}
                             {(t.assignedEngineerName?.includes('|' + (authStore.user?.id || '')) || t.assignedEngineerId === authStore.user?.id) && (t.status === 'Đang làm' || t.status === 'Chưa làm') && (
-                              <button onClick={(e) => { e.stopPropagation(); handleUpdateTaskSync(t.id, { status: 'Chờ nghiệm thu', progress: 1, constrStatus: 'Đã hoàn thành' }); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Báo cáo xong</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleReportDone(t); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Báo cáo hoàn thành</button>
                             )}
                             {hasPermission(authStore.user, 'APPROVE_TASKS') && t.status === 'Chờ nghiệm thu' && (
                               <button onClick={(e) => { e.stopPropagation(); handleApproveTask(t); }} className="text-[9px] bg-purple-500 pointer-events-auto hover:bg-purple-600 text-white px-2 py-0.5 rounded shadow-sm w-full">Nghiệm thu</button>

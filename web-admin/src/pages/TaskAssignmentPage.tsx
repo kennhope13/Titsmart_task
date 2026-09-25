@@ -35,6 +35,7 @@ export const TaskAssignmentPage: React.FC = () => {
       await store.addNotification({
         title: `Công việc đã nghiệm thu`,
         message: `Quản lý ${adminName} đã nghiệm thu hoàn thành công việc "${task.name}" [${task.projectCode}].`,
+        link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
         type: `task_approved:::${engId}:::${engName}`,
         icon: 'verified'
       });
@@ -61,7 +62,7 @@ export const TaskAssignmentPage: React.FC = () => {
   const highlightedTaskId = searchParams.get('taskId');
   const highlightKeyword = searchParams.get('highlight')?.toLowerCase().trim() || null;
   const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned' | 'completed' | 'my-tasks'>(() => urlTab || (location.state as any)?.tab || 'unassigned');
+  const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned' | 'completed' | 'my-tasks'>(() => urlTab || (location.state as any)?.tab || 'assigned');
 
   useEffect(() => {
     const qTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'completed' | 'my-tasks' | null;

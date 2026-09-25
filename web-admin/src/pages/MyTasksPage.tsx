@@ -114,13 +114,13 @@ export const MyTasksPage: React.FC = () => {
     
     const store = useRealtimeStore.getState();
     const userName = user?.name || user?.username || 'Một nhân sự';
-    store.logActivity(`Nhân sự ${userName} đã BÁO CÁO XONG hạng mục: "${task.name}"`, task.projectName || task.projectCode);
+    store.logActivity(`Nhân sự ${userName} đã BÁO CÁO HOÀN THÀNH hạng mục: "${task.name}"`, task.projectName || task.projectCode);
     
     if (store.addNotification) {
       await store.addNotification({
         title: 'Báo cáo hoàn thành công việc',
-        message: `${userName} đã báo cáo xong công việc "${task.name}" thuộc dự án ${task.projectCode}.`,
-        link: `/task-assignment?tab=assigned&taskId=${task.id}`,
+        message: `${userName} đã báo cáo hoàn thành công việc "${task.name}" thuộc dự án ${task.projectCode}.`,
+        link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
         type: `task_completed:::${task.assignerId || 'admin'}:::${task.assignerName || 'Quản lý'}`,
         icon: 'done_all'
       });
@@ -201,7 +201,7 @@ export const MyTasksPage: React.FC = () => {
                           {isDoing && (
                             <button onClick={() => handleReportDone(t)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-sm transition-colors">
                               <span className="material-symbols-outlined text-[14px]">done_all</span>
-                              Báo cáo xong
+                              Báo cáo hoàn thành
                             </button>
                           )}
                           {isDone && (
