@@ -179,43 +179,88 @@ export const ChatWidget: React.FC = () => {
   const currentMessages = directMessages.filter(msg => {
     if (!selectedTarget || !currentUser) return false;
     if (selectedTarget.type === 'project') {
-      return msg.projectCode === selectedTarget.id;
+      return String(msg.projectCode || '').trim().toUpperCase() === String(selectedTarget.id || '').trim().toUpperCase();
     } else {
-      const myIds = [currentUser.id, currentUser.username, currentUser.name].filter(Boolean);
+      const myIds = [currentUser.id, currentUser.username, currentUser.name].filter(Boolean).map(s => String(s).trim().toLowerCase());
       const targetObj = selectedTarget as any;
-      const targetIds = [selectedTarget.id, targetObj.username, targetObj.name].filter(Boolean);
+      const targetIds = [selectedTarget.id, targetObj.username, targetObj.name].filter(Boolean).map(s => String(s).trim().toLowerCase());
 
-      const isSenderMe = myIds.includes(msg.senderId);
-      const isReceiverMe = myIds.includes(msg.receiverId || '');
-      const isSenderTarget = targetIds.includes(msg.senderId);
-      const isReceiverTarget = targetIds.includes(msg.receiverId || '');
+      const sId = String(msg.senderId || '').trim().toLowerCase();
+      const rId = String(msg.receiverId || '').trim().toLowerCase();
+
+      const isSenderMe = myIds.includes(sId);
+      const isReceiverMe = myIds.includes(rId);
+      const isSenderTarget = targetIds.includes(sId);
+      const isReceiverTarget = targetIds.includes(rId);
 
       return (isSenderMe && isReceiverTarget) || (isSenderTarget && isReceiverMe);
     }
   });
 
-  // Count unread messages
-  const unreadCount = currentUser ? directMessages.filter(msg => {
-    const isForMe = msg.receiverId === currentUser.id || msg.receiverId === currentUser.username ||
-      (msg.projectCode && currentUser.projectCodes?.includes(msg.projectCode));
-    const isNotMine = msg.senderId !== currentUser.id && msg.senderId !== currentUser.username;
-    const readArray = Array.isArray(msg.readBy) ? msg.readBy : [];
-    const isUnread = !readArray.includes(currentUser.id) && (!currentUser.username || !readArray.includes(currentUser.username));
-    return isForMe && isNotMine && isUnread;
-  }).length : 0;
+  // Other users excluding self
+  const otherUsers = React.useMemo(() => {
+    if (!currentUser) return [];
+    const myIds = [currentUser.id, currentUser.username, currentUser.name].filter(Boolean).map(s => String(s).trim().toLowerCase());
+    return engineers.filter(e => {
+      const eIds = [e.id, e.username, e.name].filter(Boolean).map(s => String(s).trim().toLowerCase());
+      return !myIds.some(myId => eIds.includes(myId));
+    });
+  }, [engineers, currentUser]);
+
+  // Unread count per conversation (for badge in contact list)
+  const getUnreadForTarget = React.useCallback((type: 'user' | 'project', id: string, username?: string, targetName?: string) => {
+    if (!currentUser) return 0;
+    const myIds = [currentUser.id, currentUser.username, currentUser.name].filter(Boolean).map(s => String(s).trim().toLowerCase());
+
+    return directMessages.filter(msg => {
+      const sId = String(msg.senderId || '').trim().toLowerCase();
+      const rId = String(msg.receiverId || '').trim().toLowerCase();
+      const isNotMine = !myIds.includes(sId);
+
+      const readArray = (Array.isArray(msg.readBy) ? msg.readBy : []).map(s => String(s).trim().toLowerCase());
+      const isUnread = !myIds.some(myId => readArray.includes(myId));
+
+      if (!isNotMine || !isUnread) return false;
+
+      if (type === 'project') {
+        return String(msg.projectCode || '').trim().toUpperCase() === String(id || '').trim().toUpperCase();
+      }
+
+      const targetIds = [id, username, targetName].filter(Boolean).map(s => String(s).trim().toLowerCase());
+      const isFromTarget = targetIds.includes(sId);
+      const isToMe = myIds.includes(rId);
+      return isFromTarget && isToMe;
+    }).length;
+  }, [directMessages, currentUser]);
+
+  // Total unread count strictly matches the sum of unread across openable project groups and colleagues
+  const unreadCount = React.useMemo(() => {
+    if (!currentUser) return 0;
+    let total = 0;
+    projects.forEach(p => {
+      total += getUnreadForTarget('project', p.code);
+    });
+    otherUsers.forEach(u => {
+      total += getUnreadForTarget('user', u.id, u.username, u.name);
+    });
+    return total;
+  }, [projects, otherUsers, getUnreadForTarget, currentUser]);
 
   // Mark as read when viewing
   useEffect(() => {
     if (!currentUser || !isOpen || !selectedTarget || currentMessages.length === 0) return;
-    const myId = currentUser.username || currentUser.id;
+    const myIds = [currentUser.id, currentUser.username, currentUser.name].filter(Boolean);
+    const myIdToMark = currentUser.username || currentUser.id;
+
     currentMessages.forEach(msg => {
-      const isNotMine = msg.senderId !== currentUser.id && msg.senderId !== currentUser.username;
-      const isUnread = !Array.isArray(msg.readBy) || (!msg.readBy.includes(currentUser.id) && !msg.readBy.includes(currentUser.username));
+      const isNotMine = !myIds.includes(msg.senderId);
+      const readArray = Array.isArray(msg.readBy) ? msg.readBy : [];
+      const isUnread = !myIds.some(myId => readArray.includes(myId));
       if (isNotMine && isUnread) {
-        markDirectMessageRead(msg.id, myId);
+        markDirectMessageRead(msg.id, myIdToMark);
       }
     });
-  }, [isOpen, selectedTarget, currentMessages.length, currentUser]);
+  }, [isOpen, selectedTarget, currentMessages.length, currentUser, markDirectMessageRead]);
 
   if (!currentUser) return null;
 
@@ -280,27 +325,6 @@ export const ChatWidget: React.FC = () => {
     setMobileView('contacts');
   };
 
-  // Other users excluding self
-  const otherUsers = engineers.filter(e => e.id !== currentUser.id && e.username !== currentUser.username);
-
-  // Unread count per conversation (for badge in contact list)
-  const getUnreadForTarget = (type: 'user' | 'project', id: string, username?: string) => {
-    return directMessages.filter(msg => {
-      const myIds = [currentUser.id, currentUser.username, currentUser.name].filter(Boolean);
-      const isNotMine = !myIds.includes(msg.senderId);
-      
-      const readArray = Array.isArray(msg.readBy) ? msg.readBy : [];
-      const isUnread = !myIds.some(myId => readArray.includes(myId));
-      
-      if (type === 'project') return msg.projectCode === id && isNotMine && isUnread;
-      
-      const targetIds = [id, username].filter(Boolean);
-      const isFromTarget = targetIds.includes(msg.senderId);
-      const isToMe = myIds.includes(msg.receiverId || '');
-      return isFromTarget && isToMe && isNotMine && isUnread;
-    }).length;
-  };
-
   const renderContactList = () => (
     <div className="flex-1 overflow-y-auto overscroll-contain">
       <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 border-b border-slate-100">
@@ -335,7 +359,7 @@ export const ChatWidget: React.FC = () => {
       )}
       {otherUsers.map(u => {
         const isSelected = selectedTarget?.type === 'user' && (selectedTarget.id === u.id || (selectedTarget as any).username === u.username);
-        const unread = getUnreadForTarget('user', u.id, u.username);
+        const unread = getUnreadForTarget('user', u.id, u.username, u.name);
         const isOnline = Boolean(
           (u.id && onlineUserIds.includes(u.id)) ||
           (u.username && onlineUserIds.includes(u.username)) ||
@@ -526,7 +550,7 @@ export const ChatWidget: React.FC = () => {
                 <div className="px-2 py-2 mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Đồng Nghiệp</div>
                 {otherUsers.map(u => {
                   const isSelected = selectedTarget?.type === 'user' && (selectedTarget.id === u.id || (selectedTarget as any).username === u.username);
-                  const unread = getUnreadForTarget('user', u.id, u.username);
+                  const unread = getUnreadForTarget('user', u.id, u.username, u.name);
                   const isOnline = Boolean(
                     (u.id && onlineUserIds.includes(u.id)) ||
                     (u.username && onlineUserIds.includes(u.username)) ||
