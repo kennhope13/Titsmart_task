@@ -22,8 +22,11 @@ export const ChatWidget: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   // Dragging functionality state & refs (transient per session, resets to default on reload)
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
@@ -572,7 +575,7 @@ export const ChatWidget: React.FC = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <form onSubmit={handleSend} className="p-2 border-t border-slate-100 bg-white flex flex-col gap-1 shrink-0">
+                <form onSubmit={handleSend} className="p-2 border-t border-slate-100 bg-white flex flex-col gap-1 shrink-0 relative">
                   {selectedFile && (
                     <div className="flex items-center justify-between bg-blue-50 px-2.5 py-1.5 rounded-lg text-[11px] text-blue-900 border border-blue-100">
                       <div className="flex items-center gap-1.5 min-w-0">
@@ -584,13 +587,61 @@ export const ChatWidget: React.FC = () => {
                       <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
                     </div>
                   )}
+
+                  {/* Attachment Choice Menu (Camera / Gallery / Files) */}
+                  {showAttachMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowAttachMenu(false)} />
+                      <div className="absolute bottom-14 left-2 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-2 flex flex-col gap-1 min-w-[180px] animate-in fade-in slide-in-from-bottom-2 duration-150">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAttachMenu(false);
+                            cameraInputRef.current?.click();
+                          }}
+                          className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left"
+                        >
+                          <span className="material-symbols-outlined text-emerald-600 text-[20px]">photo_camera</span>
+                          <span>Chụp ảnh mới</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAttachMenu(false);
+                            imageInputRef.current?.click();
+                          }}
+                          className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left"
+                        >
+                          <span className="material-symbols-outlined text-blue-600 text-[20px]">image</span>
+                          <span>Thư viện ảnh</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAttachMenu(false);
+                            fileInputRef.current?.click();
+                          }}
+                          className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left"
+                        >
+                          <span className="material-symbols-outlined text-amber-500 text-[20px]">folder_open</span>
+                          <span>Tệp tài liệu</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+
                   <div className="flex items-center gap-1.5">
+                    {/* Native Inputs */}
+                    <input type="file" ref={cameraInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" capture="environment" />
+                    <input type="file" ref={imageInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
                     <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="*/*" />
+
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={() => setShowAttachMenu(!showAttachMenu)}
                       disabled={isUploading}
-                      className="p-1.5 text-slate-400 hover:text-blue-900 hover:bg-slate-100 rounded transition-colors"
+                      className={`p-1.5 rounded transition-colors ${showAttachMenu ? 'text-blue-900 bg-blue-100' : 'text-slate-400 hover:text-blue-900 hover:bg-slate-100'}`}
+                      title="Đính kèm ảnh / máy ảnh / tài liệu"
                     >
                       <span className="material-symbols-outlined text-[20px]">attach_file</span>
                     </button>
@@ -815,7 +866,7 @@ export const ChatWidget: React.FC = () => {
                       <div ref={messagesEndRef} />
                     </div>
 
-                    <form onSubmit={handleSend} className="p-2 border-t border-slate-100 bg-white flex flex-col gap-1 shrink-0">
+                    <form onSubmit={handleSend} className="p-2 border-t border-slate-100 bg-white flex flex-col gap-1 shrink-0 relative">
                       {selectedFile && (
                         <div className="flex items-center justify-between bg-blue-50 px-2.5 py-1.5 rounded-lg text-[11px] text-blue-900 border border-blue-100">
                           <div className="flex items-center gap-1.5 min-w-0">
@@ -827,13 +878,61 @@ export const ChatWidget: React.FC = () => {
                           <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
                         </div>
                       )}
+
+                      {/* Attachment Choice Menu (Camera / Gallery / Files) */}
+                      {showAttachMenu && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setShowAttachMenu(false)} />
+                          <div className="absolute bottom-14 left-2 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-2 flex flex-col gap-1 min-w-[180px] animate-in fade-in slide-in-from-bottom-2 duration-150">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowAttachMenu(false);
+                                cameraInputRef.current?.click();
+                              }}
+                              className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left"
+                            >
+                              <span className="material-symbols-outlined text-emerald-600 text-[20px]">photo_camera</span>
+                              <span>Chụp ảnh mới</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowAttachMenu(false);
+                                imageInputRef.current?.click();
+                              }}
+                              className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left"
+                            >
+                              <span className="material-symbols-outlined text-blue-600 text-[20px]">image</span>
+                              <span>Thư viện ảnh</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowAttachMenu(false);
+                                fileInputRef.current?.click();
+                              }}
+                              className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left"
+                            >
+                              <span className="material-symbols-outlined text-amber-500 text-[20px]">folder_open</span>
+                              <span>Tệp tài liệu</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+
                       <div className="flex items-center gap-1.5">
+                        {/* Native Inputs */}
+                        <input type="file" ref={cameraInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" capture="environment" />
+                        <input type="file" ref={imageInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
                         <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="*/*" />
+
                         <button
                           type="button"
-                          onClick={() => fileInputRef.current?.click()}
+                          onClick={() => setShowAttachMenu(!showAttachMenu)}
                           disabled={isUploading}
-                          className="p-1.5 text-slate-400 hover:text-blue-900 hover:bg-slate-100 rounded transition-colors"
+                          className={`p-1.5 rounded transition-colors ${showAttachMenu ? 'text-blue-900 bg-blue-100' : 'text-slate-400 hover:text-blue-900 hover:bg-slate-100'}`}
+                          title="Đính kèm ảnh / máy ảnh / tài liệu"
                         >
                           <span className="material-symbols-outlined text-[20px]">attach_file</span>
                         </button>
