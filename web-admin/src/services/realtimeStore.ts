@@ -232,6 +232,7 @@ const parseFlexibleDate = (dateStr?: string | null): Date | null => {
 const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotifications: NotificationItem[]) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayIso = today.toISOString();
   const newNotifs: NotificationItem[] = [];
 
   tracks.forEach(track => {
@@ -263,7 +264,7 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
         id: notifKey,
         title: 'Hồ sơ quá hạn nộp',
         message: `[${pCode}] Hồ sơ "${docName}" đã quá hạn ${absDays} ngày (Hạn: ${effectiveDueDate}).`,
-        timestamp: new Date().toISOString(),
+        timestamp: todayIso,
         read: false,
         type: `document_due:::${pCode}`,
         icon: 'warning',
@@ -277,7 +278,7 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
         message: diffDays === 0 
           ? `[${pCode}] Hồ sơ "${docName}" đến hạn nộp hôm nay!` 
           : `[${pCode}] Hồ sơ "${docName}" sắp đến hạn nộp (Còn ${diffDays} ngày).`,
-        timestamp: new Date().toISOString(),
+        timestamp: todayIso,
         read: false,
         type: `document_due:::${pCode}`,
         icon: 'notifications',
@@ -294,6 +295,7 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
 const generateTaskDueNotifications = (tasksList: Task[], existingNotifications: NotificationItem[]) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayIso = today.toISOString();
   const newNotifs: NotificationItem[] = [];
 
   tasksList.forEach(task => {
@@ -322,7 +324,7 @@ const generateTaskDueNotifications = (tasksList: Task[], existingNotifications: 
         id: notifKey,
         title: 'Công việc quá hạn hoàn thành',
         message: `[${pCode}] Công việc "${taskName}" đã quá hạn ${absDays} ngày (Hạn: ${task.dueDate}).`,
-        timestamp: new Date().toISOString(),
+        timestamp: todayIso,
         read: false,
         type: `task_due:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
         icon: 'warning',
@@ -336,7 +338,7 @@ const generateTaskDueNotifications = (tasksList: Task[], existingNotifications: 
         message: diffDays === 0
           ? `[${pCode}] Công việc "${taskName}" đến hạn hoàn thành hôm nay!`
           : `[${pCode}] Công việc "${taskName}" sắp đến hạn hoàn thành (Còn ${diffDays} ngày).`,
-        timestamp: new Date().toISOString(),
+        timestamp: todayIso,
         read: false,
         type: `task_due:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
         icon: 'notifications',
@@ -876,13 +878,24 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         if (mutationGuard > fetchStartTime) {
           console.log('[Realtime] Skipping tasks overwrite because local mutation occurred recently');
         } else {
+          const currentTasks = get().tasks || [];
+          const isTasksEqual = currentTasks.length === mergedTasks.length &&
+            currentTasks.every((t, i) => 
+              t.id === mergedTasks[i]?.id && 
+              t.status === mergedTasks[i]?.status && 
+              t.progress === mergedTasks[i]?.progress && 
+              t.notes === mergedTasks[i]?.notes &&
+              t.issue === mergedTasks[i]?.issue &&
+              t.updatedAt === mergedTasks[i]?.updatedAt
+            );
+
           const currentNotifs = get().notifications || [];
           const taskDueNotifs = generateTaskDueNotifications(mergedTasks, currentNotifs);
           if (taskDueNotifs.length > 0) {
             const nextNotifs = [...taskDueNotifs, ...currentNotifs];
             set({ tasks: mergedTasks, notifications: nextNotifs });
             persistAndNotify({ tasks: mergedTasks, notifications: nextNotifs });
-          } else {
+          } else if (!isTasksEqual) {
             set({ tasks: mergedTasks });
           }
         }

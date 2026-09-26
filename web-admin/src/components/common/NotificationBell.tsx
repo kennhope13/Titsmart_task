@@ -733,10 +733,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     // Initial fetch
     useRealtimeStore.getState().fetchNotifications();
 
-    // 3s Polling fallback for instant notifications update across all devices
+    // 5s Polling fallback for notifications update across all devices
     const interval = setInterval(() => {
       useRealtimeStore.getState().fetchNotifications();
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, []);
