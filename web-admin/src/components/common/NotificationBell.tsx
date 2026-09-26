@@ -814,7 +814,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
         </button>
 
         {showPopover && (
-          <div className="fixed left-[60px] md:left-[175px] bottom-6 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-slate-200 overflow-hidden z-[9999] w-[350px] animate-in fade-in slide-in-from-left-2 duration-150 flex flex-col">
+          <div className="fixed left-[12px] sm:left-[60px] md:left-[175px] bottom-4 sm:bottom-6 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-slate-200 overflow-hidden z-[9999] w-[calc(100vw-24px)] sm:w-[350px] max-w-[350px] animate-in fade-in slide-in-from-left-2 duration-150 flex flex-col">
             <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80">
               <div className="flex justify-between items-center mb-2.5">
                 <div className="flex items-center gap-2">
@@ -943,8 +943,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
         {/* MODAL POPUP GIỮA MÀN HÌNH */}
         {showCenterModal && centerModalNotifications.length > 0 && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
-            <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border border-outline-variant flex flex-col max-h-[80vh]">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-lg overflow-hidden border border-outline-variant flex flex-col max-h-[85vh] sm:max-h-[80vh]">
               <div className="px-3 py-1.5 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
                 <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 truncate">
                   <span className="material-symbols-outlined text-[17px]">notifications</span>
@@ -1027,7 +1027,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       </button>
 
       {showPopover && (
-        <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-slate-200 overflow-hidden z-50 w-[350px] flex flex-col">
+        <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-slate-200 overflow-hidden z-50 w-[calc(100vw-24px)] sm:w-[350px] max-w-[350px] flex flex-col">
           <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80">
             <div className="flex justify-between items-center mb-2.5">
               <div className="flex items-center gap-2">
@@ -1156,8 +1156,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
       {/* MODAL POPUP GIỮA MÀN HÌNH - NHẮC HẠN & QUÁ HẠN 1-2 NGÀY */}
       {showCenterModal && centerModalNotifications.length > 0 && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border border-outline-variant flex flex-col max-h-[80vh]">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-lg overflow-hidden border border-outline-variant flex flex-col max-h-[85vh] sm:max-h-[80vh]">
             <div className="px-3 py-1.5 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
               <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 truncate">
                 <span className="material-symbols-outlined text-[17px]">notifications</span>
@@ -1167,7 +1167,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
                 <button
                   onClick={closeCenterModal}
                   title="Đóng"
-                  className="p-1 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                  className="p-1 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[20px] block">close</span>
                 </button>
@@ -1200,7 +1200,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
             <div className="p-3 bg-white border-t border-slate-200 flex justify-end">
               <button
                 onClick={closeCenterModal}
-                className="px-5 py-1.5 bg-primary hover:opacity-90 active:scale-95 text-white font-bold text-xs rounded-lg transition-all shadow-xs"
+                className="px-5 py-1.5 bg-primary hover:opacity-90 active:scale-95 text-white font-bold text-xs rounded-lg transition-all shadow-xs cursor-pointer"
               >
                 Đã hiểu
               </button>
@@ -1213,35 +1213,46 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       {incomingPopupNotif && (
         <div
           onClick={() => handleNotificationClick(incomingPopupNotif)}
-          className="fixed top-5 right-5 z-[99999] max-w-sm w-full animate-bounce-in shadow-2xl rounded-xl border border-primary/30 bg-white/95 backdrop-blur-md overflow-hidden transition-all cursor-pointer hover:shadow-primary/25 hover:border-primary/60 hover:scale-[1.01] active:scale-[0.99] group select-none"
+          className="fixed top-3 sm:top-5 right-3 sm:right-5 z-[99999] w-[calc(100vw-24px)] sm:w-[380px] max-w-[380px] animate-bounce-in shadow-2xl rounded-xl border border-primary/30 bg-white/95 backdrop-blur-md overflow-hidden transition-all cursor-pointer hover:shadow-primary/25 hover:border-primary/60 hover:scale-[1.01] active:scale-[0.99] group select-none box-border"
         >
-          <div className="bg-primary px-3.5 py-2 flex items-center justify-between text-white">
-            <div className="flex items-center gap-2 font-bold text-xs">
-              <span className="material-symbols-outlined text-[18px]">notifications_active</span>
-              <span>Thông báo mới</span>
+          <div className="bg-primary px-3.5 py-2 flex items-center justify-between text-white gap-2">
+            <div className="flex items-center gap-2 font-bold text-xs min-w-0">
+              <span className="material-symbols-outlined text-[18px] shrink-0">notifications_active</span>
+              <span className="truncate">Thông báo mới</span>
             </div>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setIncomingPopupNotif(null);
               }}
-              className="p-1 hover:bg-white/20 rounded-md transition-colors"
+              className="p-1 hover:bg-white/20 rounded-md transition-colors shrink-0 cursor-pointer"
               title="Đóng"
             >
               <span className="material-symbols-outlined text-[16px] block">close</span>
             </button>
           </div>
           <div className="p-3.5 flex items-start gap-3">
-            <div className="p-2.5 rounded-xl bg-blue-50 text-primary shrink-0 mt-0.5 group-hover:bg-primary group-hover:text-white transition-colors">
+            <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 transition-colors ${
+              incomingPopupNotif.title?.includes('quá hạn') 
+                ? 'bg-amber-50 text-amber-700 group-hover:bg-amber-600 group-hover:text-white' 
+                : 'bg-blue-50 text-primary group-hover:bg-primary group-hover:text-white'
+            }`}>
               <span className="material-symbols-outlined text-xl">
-                {incomingPopupNotif.icon || 'assignment_ind'}
+                {incomingPopupNotif.icon || (incomingPopupNotif.title?.includes('quá hạn') ? 'warning' : 'notifications')}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-xs font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors">{incomingPopupNotif.title}</h4>
-              <p className="text-[11px] text-slate-600 mt-1 line-clamp-3 leading-relaxed">{incomingPopupNotif.message}</p>
+              <h4 className="text-xs font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors break-words">
+                {incomingPopupNotif.title}
+              </h4>
+              <p className="text-[11.5px] text-slate-600 mt-1 leading-relaxed break-words whitespace-normal">
+                {incomingPopupNotif.message}
+              </p>
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-[10px] text-slate-400 font-medium">Vừa xong</span>
+                <span className="text-[10.5px] text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                  Xem chi tiết <span className="material-symbols-outlined text-[12px]">arrow_forward</span>
+                </span>
               </div>
             </div>
           </div>
