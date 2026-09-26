@@ -251,6 +251,26 @@ export const MyTasksPage: React.FC = () => {
     });
 
     triggerToast('Đã gửi tin nhắn trao đổi!', 'success');
+    store.logActivity(`Người dùng ${userName} đã PHẢN HỒI TRAO ĐỔI về hạng mục: "${task.name}"`, task.projectName || task.projectCode);
+
+    if (store.addNotification && (task.assignedEngineerId || task.assignedEngineerName)) {
+      const parts = String(task.assignedEngineerName || '').split('|');
+      const assignedIds = (parts.length > 1 ? parts[1] : (task.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
+      const assignedNames = (parts[0] || (task.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
+
+      const targetIdList = Array.from(new Set([task.assignerId || 'admin', ...assignedIds])).filter(Boolean);
+      const targetNameList = Array.from(new Set([task.assignerName || 'Quản lý', ...assignedNames])).filter(Boolean);
+
+      await store.addNotification({
+        title: 'Phản hồi trao đổi công việc',
+        message: `${userName} đã phản hồi về công việc "${task.name}" [${task.projectCode}]: "${replyText}".`,
+        link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
+        type: `task_reply:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
+        icon: 'chat',
+        senderId: userId,
+        senderName: userName
+      });
+    }
   };
 
   const handleReportDone = async (task: any) => {

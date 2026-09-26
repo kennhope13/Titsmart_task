@@ -100,31 +100,120 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     return false; // Admin vừa thao tác hành động này
   }
 
-  // 1. Task assignment notifications ("Giao việc: ..."): ONLY for the assigned engineers, NEVER for the assigner / admin who assigned it
-  if (title.startsWith('Giao việc:') || title.includes('được giao') || typeStr.startsWith('task_assigned')) {
-    if (typeStr.startsWith('task_assigned:::')) {
-      const parts = typeStr.split(':::');
-      const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase());
-      const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase());
-      
-      const isMeId = targetIds.some(tId => myIds.includes(tId));
-      const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
-      if (isMeId || isMeName) return true;
-      return false; // Not assigned to current user -> hide it
-    }
-    if (title.startsWith('Giao việc:')) {
-      const assignedNames = title.replace('Giao việc:', '').split(',').map(s => s.trim().toLowerCase());
-      const isMe = assignedNames.some(aName => myNames.some(n => aName.includes(n) || n.includes(aName)));
-      if (isMe) return true;
-      return false; // Not assigned to current user -> hide it
-    }
-    const match = message.match(/cho\s+([^.]+)\.?$/i);
-    if (match) {
-      const assignedNames = match[1].split(',').map(s => s.trim().toLowerCase());
-      const isMe = assignedNames.some(aName => aName === 'bạn' || myNames.some(n => aName.includes(n) || n.includes(aName)));
-      if (isMe) return true;
+  // ─── 1. TASK-RELATED NOTIFICATIONS: STRICT RECIPIENT FILTERING ───
+  // Bất kỳ thông báo nào liên quan đến CÔNG VIỆC (Giao việc, Nhận việc, Nghiệm thu, Thắc mắc, Trao đổi, Hướng dẫn, Phản hồi, Hoàn thành, Nhắc hạn, Quá hạn):
+  // CHỈ gửi đến đúng những người được giao việc và người giao việc.
+  // TUYỆT ĐỐI KHÔNG gửi đến tất cả thành viên trong dự án.
+  const isTaskNotification = 
+    typeStr.startsWith('task_') ||
+    tLow.startsWith('giao việc') ||
+    tLow.includes('giao việc') ||
+    tLow.includes('được giao') ||
+    tLow.includes('nhận việc') ||
+    tLow.includes('nghiệm thu') ||
+    tLow.includes('thắc mắc') ||
+    tLow.includes('trao đổi') ||
+    tLow.includes('hướng dẫn') ||
+    tLow.includes('phản hồi') ||
+    tLow.includes('hoàn thành công việc') ||
+    tLow.includes('báo cáo hoàn thành') ||
+    tLow.includes('nhắc hạn công việc') ||
+    tLow.includes('quá hạn hoàn thành');
+
+  if (isTaskNotification) {
+    // 1A. Giao việc / Nghiệm thu / Phản hồi hướng dẫn -> CHỈ người được giao việc (nhân sự thực hiện) mới nhận
+    if (
+      tLow.startsWith('giao việc') || 
+      tLow.includes('được giao') || 
+      tLow.includes('nghiệm thu') || 
+      tLow.includes('phản hồi') || 
+      tLow.includes('hướng dẫn') ||
+      typeStr.startsWith('task_assigned') || 
+      typeStr.startsWith('task_approved') || 
+      typeStr.startsWith('task_reply')
+    ) {
+      if (typeStr.includes(':::')) {
+        const parts = typeStr.split(':::');
+        const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+        const isMeId = targetIds.some(tId => myIds.includes(tId) || (myEng && tId === String(myEng.id).toLowerCase()));
+        const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
+        return Boolean(isMeId || isMeName);
+      }
+
+      // Fallback nếu không có metadata type:::
+      if (tLow.startsWith('giao việc:')) {
+        const assignedNames = title.replace(/^giao việc:\s*/i, '').split(',').map(s => s.trim().toLowerCase());
+        return assignedNames.some(aName => myNames.some(n => aName.includes(n) || n.includes(aName)));
+      }
+
+      const match = message.match(/cho\s+([^.]+)\.?$/i);
+      if (match) {
+        const assignedNames = match[1].split(',').map(s => s.trim().toLowerCase());
+        return assignedNames.some(aName => aName === 'bạn' || myNames.some(n => aName.includes(n) || n.includes(aName)));
+      }
+
       return false;
     }
+
+    // 1B. Nhận việc / Báo cáo hoàn thành -> CHỈ người giao việc mới nhận
+    if (
+      tLow.includes('đã nhận việc') || 
+      tLow.includes('hoàn thành công việc') || 
+      tLow.includes('báo cáo hoàn thành') ||
+      tLow.includes('báo cáo xong') ||
+      typeStr.startsWith('task_accepted') || 
+      typeStr.startsWith('task_completed')
+    ) {
+      if (typeStr.includes(':::')) {
+        const parts = typeStr.split(':::');
+        const targetId = (parts[1] || '').trim().toLowerCase();
+        const targetName = (parts[2] || '').trim().toLowerCase();
+
+        const isMeId = targetId && (myIds.includes(targetId) || (myEng && targetId === String(myEng.id).toLowerCase()));
+        const isMeName = targetName && myNames.some(n => targetName.includes(n) || n.includes(targetName));
+
+        if (isMeId || isMeName) return true;
+
+        if (targetId === 'admin' || targetName === 'quản lý' || targetName === 'quản trị viên') {
+          return isAdmin;
+        }
+        return false;
+      }
+
+      return isAdmin;
+    }
+
+    // 1C. Thắc mắc / Trao đổi / Nhắc hạn / Quá hạn -> Người giao việc VÀ những người được giao việc
+    if (
+      tLow.includes('thắc mắc') || 
+      tLow.includes('trao đổi') || 
+      tLow.includes('quá hạn hoàn thành') || 
+      tLow.includes('nhắc hạn công việc') || 
+      typeStr.startsWith('task_question') || 
+      typeStr.startsWith('task_due')
+    ) {
+      if (typeStr.includes(':::')) {
+        const parts = typeStr.split(':::');
+        const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+        const isMeId = targetIds.some(tId => myIds.includes(tId) || (myEng && tId === String(myEng.id).toLowerCase()));
+        const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
+
+        if (isMeId || isMeName) return true;
+
+        if (targetIds.includes('admin') || targetNames.includes('quản lý') || targetNames.includes('quản trị viên')) {
+          return isAdmin;
+        }
+        return false;
+      }
+
+      return false;
+    }
+
+    // Nếu là thông báo công việc khác mà không khớp đối tượng nào -> TUYỆT ĐỐI KHÔNG gửi broadcast
     return false;
   }
 
@@ -141,133 +230,10 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     return isAdmin;
   }
 
-  // 3. Task acceptance & completion notifications: ONLY for the assigner (người giao việc)
-  if (
-    title.includes('đã nhận việc') || 
-    title.includes('hoàn thành công việc') || 
-    title.includes('báo cáo hoàn thành') ||
-    title.includes('báo cáo xong') ||
-    typeStr.startsWith('task_accepted') || 
-    typeStr.startsWith('task_completed')
-  ) {
-    if (typeStr.includes(':::')) {
-      const parts = typeStr.split(':::');
-      const targetId = (parts[1] || '').trim().toLowerCase();
-      const targetName = (parts[2] || '').trim().toLowerCase();
-
-      const isMeId = targetId && (myIds.includes(targetId) || (myEng && targetId === String(myEng.id).toLowerCase()));
-      const isMeName = targetName && myNames.some(n => targetName.includes(n) || n.includes(targetName));
-
-      if (isMeId || isMeName) return true;
-
-      // Nếu người giao việc là một tài khoản cụ thể (không phải tôi) thì KHÔNG hiển thị cho tôi (kể cả admin)
-      if (targetId && targetId !== 'admin' && targetName && targetName !== 'quản lý' && targetName !== 'quản trị viên') {
-        return false;
-      }
-
-      // Nếu người giao là admin/quản lý chung chung thì tài khoản admin/manager sẽ thấy
-      if (targetId === 'admin' || targetName === 'quản lý' || targetName === 'quản trị viên') {
-        return isAdmin;
-      }
-    }
-
-    // Nếu không có type metadata, kiểm tra assigner của task trong store
-    const quoteMatch = message.match(/"([^"]+)"/);
-    const taskName = quoteMatch ? quoteMatch[1] : '';
-    if (taskName) {
-      const store = useRealtimeStore.getState();
-      const t = store.tasks?.find(tk => tk.name?.trim().toLowerCase() === taskName.trim().toLowerCase());
-      if (t?.assignerId || t?.assignerName) {
-        const aId = String(t.assignerId || '').toLowerCase();
-        const aName = String(t.assignerName || '').toLowerCase();
-        const isMeId = aId && myIds.includes(aId);
-        const isMeName = aName && myNames.some(n => aName.includes(n) || n.includes(aName));
-        if (isMeId || isMeName) return true;
-        if (aId && aId !== 'admin') return false;
-      }
-    }
-
-    return isAdmin;
-  }
-
-  // 3a. Task question notifications: Gửi đến NGƯỜI GIAO VIỆC và TẤT CẢ NHỮNG NGƯỜI ĐẢM NHIỆM công việc đó
-  if (title.includes('thắc mắc') || typeStr.startsWith('task_question')) {
-    if (typeStr.includes(':::')) {
-      const parts = typeStr.split(':::');
-      const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-      const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-
-      const isMeId = targetIds.some(tId => myIds.includes(tId) || (myEng && tId === String(myEng.id).toLowerCase()));
-      const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
-
-      if (isMeId || isMeName) return true;
-
-      // Nếu trong danh sách có admin/quản lý chung chung thì admin/manager sẽ thấy
-      if (targetIds.includes('admin') || targetNames.includes('quản lý') || targetNames.includes('quản trị viên')) {
-        return isAdmin;
-      }
-    }
-
-    // Fallback nếu không có metadata
-    const quoteMatch = message.match(/"([^"]+)"/);
-    const taskName = quoteMatch ? quoteMatch[1] : '';
-    if (taskName) {
-      const store = useRealtimeStore.getState();
-      const t = store.tasks?.find(tk => tk.name?.trim().toLowerCase() === taskName.trim().toLowerCase());
-      if (t) {
-        const aId = String(t.assignerId || '').toLowerCase();
-        const aName = String(t.assignerName || '').toLowerCase();
-        if (aId && myIds.includes(aId)) return true;
-        if (aName && myNames.some(n => aName.includes(n) || n.includes(aName))) return true;
-
-        const parts = String(t.assignedEngineerName || '').split('|');
-        const engIds = (parts.length > 1 ? parts[1] : (t.assignedEngineerId || '')).split(',').map(s => s.trim().toLowerCase());
-        const engNames = parts[0].split(',').map(s => s.trim().toLowerCase());
-        if (engIds.some(id => myIds.includes(id) || (myEng && id === String(myEng.id).toLowerCase()))) return true;
-        if (engNames.some(name => myNames.some(n => name.includes(n) || n.includes(name)))) return true;
-      }
-    }
-
-    return isAdmin;
-  }
-
-  // 3b. Task approval & reply notifications: ONLY for the assigned engineers (những người đảm nhiệm công việc)
-  if (title.includes('nghiệm thu') || title.includes('phản hồi') || typeStr.startsWith('task_approved') || typeStr.startsWith('task_reply')) {
-    if (typeStr.startsWith('task_approved:::') || typeStr.startsWith('task_reply:::')) {
-      const parts = typeStr.split(':::');
-      const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-      const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-      const isMeId = targetIds.some(tId => myIds.includes(tId) || (myEng && tId === String(myEng.id).toLowerCase()));
-      const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
-      if (isMeId || isMeName) return true;
-      return false;
-    }
-  }
-
-  // 3c. Task due & overdue notifications: Gửi đến NGƯỜI GIAO VIỆC và TẤT CẢ NHỮNG NGƯỜI ĐẢM NHIỆM
-  if (title.includes('quá hạn hoàn thành') || title.includes('Nhắc hạn công việc') || typeStr.startsWith('task_due')) {
-    if (typeStr.includes(':::')) {
-      const parts = typeStr.split(':::');
-      const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-      const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-
-      const isMeId = targetIds.some(tId => myIds.includes(tId) || (myEng && tId === String(myEng.id).toLowerCase()));
-      const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
-
-      if (isMeId || isMeName) return true;
-
-      // Nếu trong danh sách có admin/quản lý chung chung thì admin/manager sẽ thấy
-      if (targetIds.includes('admin') || targetNames.includes('quản lý') || targetNames.includes('quản trị viên')) {
-        return isAdmin;
-      }
-    }
-    return isAdmin;
-  }
-
-  // 4. Leave requests: Only for Admin/Managers (unless it's an approval/rejection notification for the specific user)
-  if (title.includes('nghỉ phép') || message.includes('nghỉ phép') || typeStr.startsWith('leave')) {
-    if (title.includes('đã được duyệt') || title.includes('từ chối')) {
-      if (myNames.some(n => message.toLowerCase().includes(n))) return true;
+  // 3. Leave requests: Only for Admin/Managers (unless it's an approval/rejection notification for the specific user)
+  if (tLow.includes('nghỉ phép') || mLow.includes('nghỉ phép') || typeStr.startsWith('leave')) {
+    if (tLow.includes('đã được duyệt') || tLow.includes('từ chối')) {
+      if (myNames.some(n => mLow.includes(n))) return true;
     }
     return isAdmin;
   }
