@@ -113,6 +113,8 @@ const UploadModal: React.FC<{
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
 
   useEffect(() => {
     if (!projectCode && defaultProjectCode) setProjectCode(defaultProjectCode);
@@ -209,15 +211,51 @@ const UploadModal: React.FC<{
                 </div>
               ))}
               {isAllowedToManage && (
-                <button type="button" onClick={() => fileInputRef.current?.click()}
-                  className="flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:bg-slate-50 hover:text-primary transition cursor-pointer">
-                  <span className="material-symbols-outlined mb-0.5 text-lg">add_photo_alternate</span>
-                  <span className="text-[10px] font-bold">Thêm ảnh</span>
-                </button>
+                <div className="relative aspect-square">
+                  <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)}
+                    className={`h-full w-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed transition cursor-pointer ${showAttachMenu ? 'border-primary bg-blue-50 text-primary' : 'border-slate-300 text-slate-400 hover:bg-slate-50 hover:text-primary'}`}>
+                    <span className="material-symbols-outlined mb-0.5 text-xl">add_a_photo</span>
+                    <span className="text-[10px] font-bold">Thêm ảnh</span>
+                  </button>
+
+                  {/* Popover / Menu for Camera or Gallery/Files */}
+                  {showAttachMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowAttachMenu(false)} />
+                      <div className="absolute left-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 flex flex-col gap-1 min-w-[170px] animate-in fade-in zoom-in-95 duration-150">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAttachMenu(false);
+                            cameraInputRef.current?.click();
+                          }}
+                          className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-emerald-600 text-[18px]">photo_camera</span>
+                          <span>Chụp ảnh mới</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAttachMenu(false);
+                            fileInputRef.current?.click();
+                          }}
+                          className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-blue-600 text-[18px]">image</span>
+                          <span>Chọn từ thư viện / File</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
             {isAllowedToManage && (
-              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
+              <>
+                <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
+                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
+              </>
             )}
             {files.length > 0 && (
               <p className="mt-2 text-[11px] font-semibold text-slate-500">{files.length} ảnh đã chọn</p>
