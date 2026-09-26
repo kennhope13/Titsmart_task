@@ -57,6 +57,7 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
   const [selectedFile, setSelectedFile] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -84,8 +85,6 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
   const isDoing = task.status === 'Đang làm';
   const isWaitingApproval = task.status === 'Chờ nghiệm thu';
   const isCompleted = task.status === 'Hoàn thành';
-
-  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
