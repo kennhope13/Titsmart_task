@@ -384,6 +384,7 @@ interface RealtimeStoreState {
     content: string;
     fileUrl?: string;
     fileType?: 'image' | 'file';
+    fileName?: string;
   }) => Promise<void>;
   markDirectMessageRead: (messageId: string, userId: string) => Promise<void>;
 

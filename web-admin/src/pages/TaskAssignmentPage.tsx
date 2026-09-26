@@ -10,6 +10,7 @@ import { Task } from '../types';
 import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
 import { appendTaskDiscussion, parseTaskDiscussions, getLatestDiscussion } from '../utils/taskDiscussion';
 import { getEngineersForProject } from '../utils/projectMemberUtils';
+import { uploadAttachment } from '../utils/fileUploadHelper';
 
 export const TaskAssignmentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -30,43 +31,46 @@ export const TaskAssignmentPage: React.FC = () => {
   const [assignNote, setAssignNote] = useState('');
   const [selectedFile, setSelectedFile] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [discussionTask, setDiscussionTask] = useState<Task | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const isImg = file.type.startsWith('image/');
-    const reader = new FileReader();
-    reader.onload = () => {
-      setSelectedFile({
-        url: reader.result as string,
-        type: isImg ? 'image' : 'file',
-        name: file.name
-      });
-    };
-    reader.readAsDataURL(file);
+
+    setIsUploading(true);
+    try {
+      const result = await uploadAttachment(file, 'task_assignments');
+      setSelectedFile(result);
+    } catch (err) {
+      console.error('Lỗi tải file:', err);
+      triggerToast('Không thể tải file lên. Vui lòng thử lại.', 'warning');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         const file = items[i].getAsFile();
         if (file) {
-          const reader = new FileReader();
-          reader.onload = () => {
-            setSelectedFile({
-              url: reader.result as string,
-              type: 'image',
-              name: `anh_clipboard_${Date.now()}.png`
-            });
-          };
-          reader.readAsDataURL(file);
+          setIsUploading(true);
+          try {
+            const result = await uploadAttachment(file, 'task_assignments');
+            setSelectedFile(result);
+          } catch (err) {
+            console.error('Lỗi tải ảnh:', err);
+          } finally {
+            setIsUploading(false);
+          }
           break;
         }
       }

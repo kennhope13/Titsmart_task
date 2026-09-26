@@ -1671,6 +1671,7 @@ export const api = {
       content: string;
       fileUrl?: string;
       fileType?: 'image' | 'file';
+      fileName?: string;
     }) => {
       // Explicit payload matching exact table column schema
       const payload: any = {
@@ -1682,14 +1683,28 @@ export const api = {
         content: messageData.content,
         file_url: messageData.fileUrl || null,
         file_type: messageData.fileType || null,
+        file_name: messageData.fileName || null,
       };
 
       try {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('direct_messages')
           .insert(payload)
           .select()
           .single();
+
+        // If file_name column doesn't exist on older table schema, retry without it
+        if (error && (error.message?.includes('file_name') || error.code === 'PGRST204')) {
+          delete payload.file_name;
+          const retryRes = await supabase
+            .from('direct_messages')
+            .insert(payload)
+            .select()
+            .single();
+          data = retryRes.data;
+          error = retryRes.error;
+        }
+
         if (error) {
           console.warn('[DirectMessages] Supabase insert failed, using local message fallback:', error);
           return {

@@ -4,6 +4,7 @@ import { useRealtimeStore } from '../../services/realtimeStore';
 import { useUIStore } from '../../services/uiStore';
 import { DirectMessage, Engineer, Project } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { uploadAttachment } from '../../utils/fileUploadHelper';
 
 export const ChatWidget: React.FC = () => {
   const currentUser = useAuthStore(state => state.user);
@@ -307,39 +308,33 @@ export const ChatWidget: React.FC = () => {
 
     setIsUploading(true);
     try {
-      const isImg = file.type.startsWith('image/');
-      const reader = new FileReader();
-      reader.onload = () => {
-        setSelectedFile({
-          url: reader.result as string,
-          type: isImg ? 'image' : 'file',
-          name: file.name
-        });
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
+      const result = await uploadAttachment(file, 'chat');
+      setSelectedFile(result);
     } catch (err) {
-      console.error(err);
+      console.error('Lỗi tải file:', err);
+      alert('Không thể tải file lên. Vui lòng kiểm tra lại kết nối mạng.');
+    } finally {
       setIsUploading(false);
+      e.target.value = '';
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         const file = items[i].getAsFile();
         if (file) {
-          const reader = new FileReader();
-          reader.onload = () => {
-            setSelectedFile({
-              url: reader.result as string,
-              type: 'image',
-              name: `anh_clipboard_${Date.now()}.png`
-            });
-          };
-          reader.readAsDataURL(file);
+          setIsUploading(true);
+          try {
+            const result = await uploadAttachment(file, 'chat');
+            setSelectedFile(result);
+          } catch (err) {
+            console.error('Lỗi tải ảnh từ clipboard:', err);
+          } finally {
+            setIsUploading(false);
+          }
           break;
         }
       }

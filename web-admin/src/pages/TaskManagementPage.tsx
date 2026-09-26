@@ -15,6 +15,7 @@ import { AuditInfoCell } from '../components/common/AuditInfoCell';
 import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
 import { appendTaskDiscussion, getLatestDiscussion, stripDiscussionThread } from '../utils/taskDiscussion';
 import { getEngineersForProject } from '../utils/projectMemberUtils';
+import { uploadAttachment } from '../utils/fileUploadHelper';
 
 // Convert integer to Roman numeral
 const toRoman = (num: number): string => {
@@ -560,38 +561,41 @@ const hasSyncedRef = useRef(false);
   const assignCameraInputRef = useRef<HTMLInputElement>(null);
   const assignImageInputRef = useRef<HTMLInputElement>(null);
 
-  const handleAssignFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isAssignUploading, setIsAssignUploading] = useState(false);
+
+  const handleAssignFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const isImg = file.type.startsWith('image/');
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setAssignSelectedFile({
-        url: ev.target?.result as string,
-        type: isImg ? 'image' : 'file',
-        name: file.name
-      });
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
+
+    setIsAssignUploading(true);
+    try {
+      const result = await uploadAttachment(file, 'task_assignments');
+      setAssignSelectedFile(result);
+    } catch (err) {
+      console.error('Lỗi tải file:', err);
+      triggerToast('Không thể tải file lên. Vui lòng thử lại.', 'warning');
+    } finally {
+      setIsAssignUploading(false);
+      e.target.value = '';
+    }
   };
 
-  const handleAssignPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  const handleAssignPaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData?.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         const blob = items[i].getAsFile();
         if (blob) {
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            setAssignSelectedFile({
-              url: ev.target?.result as string,
-              type: 'image',
-              name: `Pasted_Image_${new Date().toLocaleTimeString('vi-VN').replace(/:/g, '-')}.png`
-            });
-          };
-          reader.readAsDataURL(blob);
+          setIsAssignUploading(true);
+          try {
+            const result = await uploadAttachment(blob, 'task_assignments');
+            setAssignSelectedFile(result);
+          } catch (err) {
+            console.error('Lỗi tải ảnh:', err);
+          } finally {
+            setIsAssignUploading(false);
+          }
           break;
         }
       }

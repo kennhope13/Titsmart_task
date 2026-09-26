@@ -3,6 +3,7 @@ import { Task } from '../../types';
 import { TaskDiscussionItem, parseTaskDiscussions } from '../../utils/taskDiscussion';
 import { useAuthStore } from '../../services/authStore';
 import { Modal } from '../common/Modal';
+import { uploadAttachment } from '../../utils/fileUploadHelper';
 
 export interface TaskDiscussionModalProps {
   isOpen: boolean;
@@ -84,37 +85,41 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
   const isWaitingApproval = task.status === 'Chờ nghiệm thu';
   const isCompleted = task.status === 'Hoàn thành';
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const isImg = file.type.startsWith('image/');
-    const reader = new FileReader();
-    reader.onload = () => {
-      setSelectedFile({
-        url: reader.result as string,
-        type: isImg ? 'image' : 'file',
-        name: file.name
-      });
-    };
-    reader.readAsDataURL(file);
+
+    setIsUploading(true);
+    try {
+      const result = await uploadAttachment(file, 'task_discussions');
+      setSelectedFile(result);
+    } catch (err) {
+      console.error('Lỗi tải file:', err);
+      alert('Không thể tải file lên. Vui lòng kiểm tra lại kết nối mạng.');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         const file = items[i].getAsFile();
         if (file) {
-          const reader = new FileReader();
-          reader.onload = () => {
-            setSelectedFile({
-              url: reader.result as string,
-              type: 'image',
-              name: `anh_clipboard_${Date.now()}.png`
-            });
-          };
-          reader.readAsDataURL(file);
+          setIsUploading(true);
+          try {
+            const result = await uploadAttachment(file, 'task_discussions');
+            setSelectedFile(result);
+          } catch (err) {
+            console.error('Lỗi tải ảnh từ clipboard:', err);
+          } finally {
+            setIsUploading(false);
+          }
           break;
         }
       }
