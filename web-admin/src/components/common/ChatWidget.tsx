@@ -24,7 +24,8 @@ export const ChatWidget: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // ─── Dragging functionality state & refs (transient per session, resets to default on reload) ───
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  // Dragging functionality state & refs (transient per session, resets to default on reload)
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
 
   const isDraggingRef = useRef(false);
@@ -273,7 +274,7 @@ export const ChatWidget: React.FC = () => {
     if (e) e.preventDefault();
     if ((!inputText.trim() && !selectedFile) || !selectedTarget) return;
 
-    const content = inputText.trim() || (selectedFile?.type === 'image' ? 'Đã gửi một hình ảnh' : 'Đã gửi tệp đính kèm');
+    const content = inputText.trim() || (selectedFile?.type === 'file' ? `Đã gửi tệp: ${selectedFile?.name || 'đính kèm'}` : '');
     const msgData = {
       senderId: currentUser.username || currentUser.id,
       senderName: currentUser.name || currentUser.username,
@@ -283,6 +284,7 @@ export const ChatWidget: React.FC = () => {
       content,
       fileUrl: selectedFile?.url,
       fileType: selectedFile?.type,
+      fileName: selectedFile?.name,
     };
 
     setInputText('');
@@ -316,6 +318,28 @@ export const ChatWidget: React.FC = () => {
     } catch (err) {
       console.error(err);
       setIsUploading(false);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            setSelectedFile({
+              url: reader.result as string,
+              type: 'image',
+              name: `anh_clipboard_${Date.now()}.png`
+            });
+          };
+          reader.readAsDataURL(file);
+          break;
+        }
+      }
     }
   };
 
@@ -497,8 +521,49 @@ export const ChatWidget: React.FC = () => {
                             {!isMe && <span className="font-semibold text-slate-600">{msg.senderName}</span>}
                             <span>{new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
-                          <div className={`max-w-[85%] px-3 py-2 rounded-md text-[13px] leading-relaxed shadow-sm ${isMe ? 'bg-blue-900 text-white' : 'bg-white text-slate-800 border border-slate-200'}`}>
-                            {msg.content}
+                          <div className={`max-w-[85%] rounded-xl text-[13px] leading-relaxed shadow-xs transition-all ${
+                            msg.fileUrl && msg.fileType === 'image' && !msg.content
+                              ? 'p-1 bg-transparent border-0'
+                              : isMe
+                                ? 'px-3 py-2 bg-blue-900 text-white'
+                                : 'px-3 py-2 bg-white text-slate-800 border border-slate-200'
+                          }`}>
+                            {msg.content && <p>{msg.content}</p>}
+                            {msg.fileUrl && (
+                              <div className={msg.content ? "mt-1.5" : ""}>
+                                {msg.fileType === 'image' ? (
+                                  <img
+                                    src={msg.fileUrl}
+                                    alt={msg.fileName || 'Ảnh đính kèm'}
+                                    onClick={() => setPreviewImage(msg.fileUrl || null)}
+                                    className="max-w-full max-h-[220px] rounded-lg object-contain border border-slate-200/80 bg-slate-50 cursor-pointer hover:opacity-95 transition-opacity shadow-xs"
+                                  />
+                                ) : (
+                                  <a
+                                    href={msg.fileUrl}
+                                    download={msg.fileName || 'file_dinh_kem'}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${isMe ? 'bg-blue-800/80 hover:bg-blue-800 border-blue-700 text-white' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'}`}
+                                  >
+                                    <span className="material-symbols-outlined text-[24px] text-amber-400 shrink-0">
+                                      {msg.fileName?.endsWith('.pdf') ? 'picture_as_pdf' :
+                                       msg.fileName?.match(/\.(xlsx|xls|csv)$/i) ? 'table_view' :
+                                       msg.fileName?.match(/\.(docx|doc)$/i) ? 'description' :
+                                       msg.fileName?.match(/\.(zip|rar|7z)$/i) ? 'folder_zip' :
+                                       msg.fileName?.match(/\.(dwg|dxf)$/i) ? 'architecture' : 'insert_drive_file'}
+                                    </span>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-semibold text-[12px] truncate leading-tight">
+                                        {msg.fileName || 'Tệp đính kèm'}
+                                      </p>
+                                      <span className={`text-[10px] ${isMe ? 'text-blue-200' : 'text-slate-400'}`}>Nhấn để tải về / xem</span>
+                                    </div>
+                                    <span className="material-symbols-outlined text-[18px] opacity-75 shrink-0">download</span>
+                                  </a>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -509,13 +574,18 @@ export const ChatWidget: React.FC = () => {
 
                 <form onSubmit={handleSend} className="p-2 border-t border-slate-100 bg-white flex flex-col gap-1 shrink-0">
                   {selectedFile && (
-                    <div className="flex items-center justify-between bg-blue-50 px-2 py-1 rounded text-[11px] text-blue-900">
-                      <span className="truncate max-w-[200px]">📎 {selectedFile.name}</span>
-                      <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 font-bold ml-2">✕</button>
+                    <div className="flex items-center justify-between bg-blue-50 px-2.5 py-1.5 rounded-lg text-[11px] text-blue-900 border border-blue-100">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="material-symbols-outlined text-[16px] text-blue-700 shrink-0">
+                          {selectedFile.type === 'image' ? 'image' : 'attach_file'}
+                        </span>
+                        <span className="truncate font-medium max-w-[220px]">{selectedFile.name}</span>
+                      </div>
+                      <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
                     </div>
                   )}
                   <div className="flex items-center gap-1.5">
-                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*,.pdf,.doc,.docx" />
+                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="*/*" />
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
@@ -528,6 +598,7 @@ export const ChatWidget: React.FC = () => {
                       type="text"
                       value={inputText}
                       onChange={e => setInputText(e.target.value)}
+                      onPaste={handlePaste}
                       placeholder="Nhập tin nhắn..."
                       className="flex-1 px-3 py-1.5 text-[13px] bg-slate-100 border border-slate-200 rounded focus:bg-white focus:border-blue-900 outline-none transition-all"
                     />
@@ -693,15 +764,45 @@ export const ChatWidget: React.FC = () => {
                                 {!isMe && <span className="font-semibold text-slate-600">{msg.senderName}</span>}
                                 <span>{new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
                               </div>
-                              <div className={`max-w-[85%] px-3 py-2 rounded-md text-[13px] leading-relaxed shadow-sm ${isMe ? 'bg-blue-900 text-white' : 'bg-white text-slate-800 border border-slate-200'}`}>
-                                {msg.content}
+                              <div className={`max-w-[85%] rounded-xl text-[13px] leading-relaxed shadow-xs transition-all ${
+                                msg.fileUrl && msg.fileType === 'image' && !msg.content
+                                  ? 'p-1 bg-transparent border-0'
+                                  : isMe
+                                    ? 'px-3 py-2 bg-blue-900 text-white'
+                                    : 'px-3 py-2 bg-white text-slate-800 border border-slate-200'
+                              }`}>
+                                {msg.content && <p>{msg.content}</p>}
                                 {msg.fileUrl && (
-                                  <div className="mt-1.5">
+                                  <div className={msg.content ? "mt-1.5" : ""}>
                                     {msg.fileType === 'image' ? (
-                                      <img src={msg.fileUrl} alt="attachment" className="max-w-full max-h-[160px] rounded object-cover border" />
+                                      <img
+                                        src={msg.fileUrl}
+                                        alt={msg.fileName || 'Ảnh đính kèm'}
+                                        onClick={() => setPreviewImage(msg.fileUrl || null)}
+                                        className="max-w-full max-h-[220px] rounded-lg object-contain border border-slate-200/80 bg-slate-50 cursor-pointer hover:opacity-95 transition-opacity shadow-xs"
+                                      />
                                     ) : (
-                                      <a href={msg.fileUrl} target="_blank" rel="noreferrer" className="underline text-blue-300 text-[11px] block truncate">
-                                        📁 Tệp đính kèm
+                                      <a
+                                        href={msg.fileUrl}
+                                        download={msg.fileName || 'file_dinh_kem'}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${isMe ? 'bg-blue-800/80 hover:bg-blue-800 border-blue-700 text-white' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'}`}
+                                      >
+                                        <span className="material-symbols-outlined text-[24px] text-amber-400 shrink-0">
+                                          {msg.fileName?.endsWith('.pdf') ? 'picture_as_pdf' :
+                                           msg.fileName?.match(/\.(xlsx|xls|csv)$/i) ? 'table_view' :
+                                           msg.fileName?.match(/\.(docx|doc)$/i) ? 'description' :
+                                           msg.fileName?.match(/\.(zip|rar|7z)$/i) ? 'folder_zip' :
+                                           msg.fileName?.match(/\.(dwg|dxf)$/i) ? 'architecture' : 'insert_drive_file'}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-semibold text-[12px] truncate leading-tight">
+                                            {msg.fileName || 'Tệp đính kèm'}
+                                          </p>
+                                          <span className={`text-[10px] ${isMe ? 'text-blue-200' : 'text-slate-400'}`}>Nhấn để tải về / xem</span>
+                                        </div>
+                                        <span className="material-symbols-outlined text-[18px] opacity-75 shrink-0">download</span>
                                       </a>
                                     )}
                                   </div>
@@ -716,13 +817,18 @@ export const ChatWidget: React.FC = () => {
 
                     <form onSubmit={handleSend} className="p-2 border-t border-slate-100 bg-white flex flex-col gap-1 shrink-0">
                       {selectedFile && (
-                        <div className="flex items-center justify-between bg-blue-50 px-2 py-1 rounded text-[11px] text-blue-900">
-                          <span className="truncate max-w-[200px]">📎 {selectedFile.name}</span>
-                          <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 font-bold ml-2">✕</button>
+                        <div className="flex items-center justify-between bg-blue-50 px-2.5 py-1.5 rounded-lg text-[11px] text-blue-900 border border-blue-100">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="material-symbols-outlined text-[16px] text-blue-700 shrink-0">
+                              {selectedFile.type === 'image' ? 'image' : 'attach_file'}
+                            </span>
+                            <span className="truncate font-medium max-w-[220px]">{selectedFile.name}</span>
+                          </div>
+                          <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
                         </div>
                       )}
                       <div className="flex items-center gap-1.5">
-                        <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*,.pdf,.doc,.docx" />
+                        <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="*/*" />
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
@@ -735,6 +841,7 @@ export const ChatWidget: React.FC = () => {
                           type="text"
                           value={inputText}
                           onChange={e => setInputText(e.target.value)}
+                          onPaste={handlePaste}
                           placeholder="Nhập tin nhắn..."
                           className="flex-1 px-3 py-1.5 text-[13px] bg-slate-100 border border-slate-200 rounded focus:bg-white focus:border-blue-900 outline-none transition-all"
                         />
@@ -760,6 +867,29 @@ export const ChatWidget: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Image Lightbox Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center p-4 pointer-events-auto animate-fade-in"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-10 right-0 text-white bg-black/50 hover:bg-black/80 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
+            >
+              ✕
+            </button>
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-white/20"
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Draggable Floating Chat Button (Desktop & Mobile) */}
       {!isOpen && (

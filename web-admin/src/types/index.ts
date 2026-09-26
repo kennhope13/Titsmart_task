@@ -225,6 +225,7 @@ export interface DirectMessage {
   content: string;
   fileUrl?: string;
   fileType?: 'image' | 'file';
+  fileName?: string;
   readBy?: string[];
   createdAt: string;
 }
