@@ -17,6 +17,8 @@ export const ChatWidget: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
   // Mobile: show contact list panel or message panel
   const [mobileView, setMobileView] = useState<'contacts' | 'messages'>('contacts');
+  const [isProjectsCollapsed, setIsProjectsCollapsed] = useState(false);
+  const [isColleaguesCollapsed, setIsColleaguesCollapsed] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -233,18 +235,21 @@ export const ChatWidget: React.FC = () => {
     }).length;
   }, [directMessages, currentUser]);
 
+  // Section unread counts
+  const projectsUnreadCount = React.useMemo(() => {
+    if (!currentUser) return 0;
+    return projects.reduce((sum, p) => sum + getUnreadForTarget('project', p.code), 0);
+  }, [projects, getUnreadForTarget, currentUser]);
+
+  const colleaguesUnreadCount = React.useMemo(() => {
+    if (!currentUser) return 0;
+    return otherUsers.reduce((sum, u) => sum + getUnreadForTarget('user', u.id, u.username, u.name), 0);
+  }, [otherUsers, getUnreadForTarget, currentUser]);
+
   // Total unread count strictly matches the sum of unread across openable project groups and colleagues
   const unreadCount = React.useMemo(() => {
-    if (!currentUser) return 0;
-    let total = 0;
-    projects.forEach(p => {
-      total += getUnreadForTarget('project', p.code);
-    });
-    otherUsers.forEach(u => {
-      total += getUnreadForTarget('user', u.id, u.username, u.name);
-    });
-    return total;
-  }, [projects, otherUsers, getUnreadForTarget, currentUser]);
+    return projectsUnreadCount + colleaguesUnreadCount;
+  }, [projectsUnreadCount, colleaguesUnreadCount]);
 
   // Mark as read when viewing
   useEffect(() => {
@@ -326,11 +331,30 @@ export const ChatWidget: React.FC = () => {
   };
 
   const renderContactList = () => (
-    <div className="flex-1 overflow-y-auto overscroll-contain">
-      <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 border-b border-slate-100">
-        Nhóm Dự Án
-      </div>
-      {projects.map(p => {
+    <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar">
+      {/* NHÓM DỰ ÁN */}
+      <button
+        type="button"
+        onClick={() => setIsProjectsCollapsed(!isProjectsCollapsed)}
+        className="w-full px-3.5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-700 bg-slate-100 border-b border-slate-200 flex items-center justify-between hover:bg-slate-200/80 transition-colors cursor-pointer select-none sticky top-0 z-10"
+      >
+        <span className="flex items-center gap-1.5">
+          <span>Nhóm Dự Án</span>
+          <span className="text-[10px] text-slate-500 font-normal">({projects.length})</span>
+        </span>
+        <div className="flex items-center gap-1.5">
+          {isProjectsCollapsed && projectsUnreadCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none shadow-xs">
+              {projectsUnreadCount > 9 ? '9+' : projectsUnreadCount}
+            </span>
+          )}
+          <span className={`material-symbols-outlined text-blue-900 text-[18px] transition-transform duration-200 ${isProjectsCollapsed ? '-rotate-90' : 'rotate-0'}`}>
+            expand_more
+          </span>
+        </div>
+      </button>
+
+      {!isProjectsCollapsed && projects.map(p => {
         const isSelected = selectedTarget?.type === 'project' && selectedTarget.id === p.code;
         const unread = getUnreadForTarget('project', p.code);
         return (
@@ -351,46 +375,69 @@ export const ChatWidget: React.FC = () => {
         );
       })}
 
-      <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 border-b border-slate-100 border-t border-t-slate-200 mt-1">
-        Đồng Nghiệp
-      </div>
-      {otherUsers.length === 0 && (
-        <div className="px-4 py-4 text-[12px] text-slate-400 text-center">Chưa có đồng nghiệp nào.</div>
-      )}
-      {otherUsers.map(u => {
-        const isSelected = selectedTarget?.type === 'user' && (selectedTarget.id === u.id || (selectedTarget as any).username === u.username);
-        const unread = getUnreadForTarget('user', u.id, u.username, u.name);
-        const isOnline = Boolean(
-          (u.id && onlineUserIds.includes(u.id)) ||
-          (u.username && onlineUserIds.includes(u.username)) ||
-          (u.name && onlineUserIds.includes(u.name))
-        );
-        return (
-          <button
-            key={u.id}
-            onClick={() => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar })}
-            className={`w-full text-left px-4 py-3 text-[13px] flex items-center gap-3 border-b border-slate-50 transition-colors ${isSelected ? 'bg-blue-50 text-blue-900 font-bold' : 'text-slate-700 hover:bg-slate-50 active:bg-slate-100'}`}
-          >
-            <div className="relative shrink-0">
-              {u.avatar ? (
-                <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center text-[13px] font-bold">
-                  {u.name?.charAt(0)?.toUpperCase()}
+      {/* ĐỒNG NGHIỆP */}
+      <button
+        type="button"
+        onClick={() => setIsColleaguesCollapsed(!isColleaguesCollapsed)}
+        className="w-full px-3.5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-700 bg-slate-100 border-b border-slate-200 border-t border-t-slate-200 flex items-center justify-between hover:bg-slate-200/80 transition-colors cursor-pointer select-none sticky top-0 z-10"
+      >
+        <span className="flex items-center gap-1.5">
+          <span>Đồng Nghiệp</span>
+          <span className="text-[10px] text-slate-500 font-normal">({otherUsers.length})</span>
+        </span>
+        <div className="flex items-center gap-1.5">
+          {isColleaguesCollapsed && colleaguesUnreadCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none shadow-xs">
+              {colleaguesUnreadCount > 9 ? '9+' : colleaguesUnreadCount}
+            </span>
+          )}
+          <span className={`material-symbols-outlined text-blue-900 text-[18px] transition-transform duration-200 ${isColleaguesCollapsed ? '-rotate-90' : 'rotate-0'}`}>
+            expand_more
+          </span>
+        </div>
+      </button>
+
+      {!isColleaguesCollapsed && (
+        <>
+          {otherUsers.length === 0 && (
+            <div className="px-4 py-4 text-[12px] text-slate-400 text-center">Chưa có đồng nghiệp nào.</div>
+          )}
+          {otherUsers.map(u => {
+            const isSelected = selectedTarget?.type === 'user' && (selectedTarget.id === u.id || (selectedTarget as any).username === u.username);
+            const unread = getUnreadForTarget('user', u.id, u.username, u.name);
+            const isOnline = Boolean(
+              (u.id && onlineUserIds.includes(u.id)) ||
+              (u.username && onlineUserIds.includes(u.username)) ||
+              (u.name && onlineUserIds.includes(u.name))
+            );
+            return (
+              <button
+                key={u.id}
+                onClick={() => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar })}
+                className={`w-full text-left px-4 py-3 text-[13px] flex items-center gap-3 border-b border-slate-50 transition-colors ${isSelected ? 'bg-blue-50 text-blue-900 font-bold' : 'text-slate-700 hover:bg-slate-50 active:bg-slate-100'}`}
+              >
+                <div className="relative shrink-0">
+                  {u.avatar ? (
+                    <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center text-[13px] font-bold">
+                      {u.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                  )}
+                  <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                 </div>
-              )}
-              <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-            </div>
-            <span className="flex-1 truncate font-medium">{u.name}</span>
-            {unread > 0 && (
-              <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                {unread > 9 ? '9+' : unread}
-              </span>
-            )}
-            <span className="material-symbols-outlined text-slate-300 text-[16px] shrink-0">chevron_right</span>
-          </button>
-        );
-      })}
+                <span className="flex-1 truncate font-medium">{u.name}</span>
+                {unread > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                    {unread > 9 ? '9+' : unread}
+                  </span>
+                )}
+                <span className="material-symbols-outlined text-slate-300 text-[16px] shrink-0">chevron_right</span>
+              </button>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 
@@ -525,9 +572,30 @@ export const ChatWidget: React.FC = () => {
 
             <div className="flex-1 flex overflow-hidden">
               {/* Contact sidebar */}
-              <div className="w-[250px] border-r border-slate-100 bg-slate-50 flex flex-col overflow-y-auto shrink-0">
-                <div className="px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Nhóm Dự Án</div>
-                {projects.map(p => {
+              <div className="w-[250px] border-r border-slate-100 bg-slate-50 flex flex-col overflow-y-auto shrink-0 custom-scrollbar">
+                {/* NHÓM DỰ ÁN */}
+                <button
+                  type="button"
+                  onClick={() => setIsProjectsCollapsed(!isProjectsCollapsed)}
+                  className="w-full px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-700 bg-slate-100 border-b border-slate-200 flex items-center justify-between hover:bg-slate-200/80 transition-colors cursor-pointer select-none sticky top-0 z-10"
+                >
+                  <span className="flex items-center gap-1">
+                    <span>Nhóm Dự Án</span>
+                    <span className="text-[9px] text-slate-500 font-normal">({projects.length})</span>
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {isProjectsCollapsed && projectsUnreadCount > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                        {projectsUnreadCount > 9 ? '9+' : projectsUnreadCount}
+                      </span>
+                    )}
+                    <span className={`material-symbols-outlined text-blue-900 text-[16px] transition-transform duration-200 ${isProjectsCollapsed ? '-rotate-90' : 'rotate-0'}`}>
+                      expand_more
+                    </span>
+                  </div>
+                </button>
+
+                {!isProjectsCollapsed && projects.map(p => {
                   const isSelected = selectedTarget?.type === 'project' && selectedTarget.id === p.code;
                   const unread = getUnreadForTarget('project', p.code);
                   const displayName = p.name || p.code;
@@ -547,29 +615,57 @@ export const ChatWidget: React.FC = () => {
                   );
                 })}
 
-                <div className="px-2 py-2 mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Đồng Nghiệp</div>
-                {otherUsers.map(u => {
-                  const isSelected = selectedTarget?.type === 'user' && (selectedTarget.id === u.id || (selectedTarget as any).username === u.username);
-                  const unread = getUnreadForTarget('user', u.id, u.username, u.name);
-                  const isOnline = Boolean(
-                    (u.id && onlineUserIds.includes(u.id)) ||
-                    (u.username && onlineUserIds.includes(u.username)) ||
-                    (u.name && onlineUserIds.includes(u.name))
-                  );
-                  return (
-                    <button
-                      key={u.id}
-                      onClick={() => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar })}
-                      className={`w-full text-left px-3 py-2.5 text-[13px] truncate font-medium flex items-center gap-2 transition-colors ${isSelected ? 'bg-blue-100 text-blue-900 font-bold border-r-2 border-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}
-                    >
-                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                      <span className="flex-1 truncate">{u.name}</span>
-                      {unread > 0 && (
-                        <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0">{unread}</span>
-                      )}
-                    </button>
-                  );
-                })}
+                {/* ĐỒNG NGHIỆP */}
+                <button
+                  type="button"
+                  onClick={() => setIsColleaguesCollapsed(!isColleaguesCollapsed)}
+                  className="w-full px-2.5 py-2 mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-700 bg-slate-100 border-b border-slate-200 border-t border-t-slate-200 flex items-center justify-between hover:bg-slate-200/80 transition-colors cursor-pointer select-none sticky top-0 z-10"
+                >
+                  <span className="flex items-center gap-1">
+                    <span>Đồng Nghiệp</span>
+                    <span className="text-[9px] text-slate-500 font-normal">({otherUsers.length})</span>
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {isColleaguesCollapsed && colleaguesUnreadCount > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                        {colleaguesUnreadCount > 9 ? '9+' : colleaguesUnreadCount}
+                      </span>
+                    )}
+                    <span className={`material-symbols-outlined text-blue-900 text-[16px] transition-transform duration-200 ${isColleaguesCollapsed ? '-rotate-90' : 'rotate-0'}`}>
+                      expand_more
+                    </span>
+                  </div>
+                </button>
+
+                {!isColleaguesCollapsed && (
+                  <>
+                    {otherUsers.length === 0 && (
+                      <div className="px-3 py-3 text-[11px] text-slate-400 text-center">Chưa có đồng nghiệp.</div>
+                    )}
+                    {otherUsers.map(u => {
+                      const isSelected = selectedTarget?.type === 'user' && (selectedTarget.id === u.id || (selectedTarget as any).username === u.username);
+                      const unread = getUnreadForTarget('user', u.id, u.username, u.name);
+                      const isOnline = Boolean(
+                        (u.id && onlineUserIds.includes(u.id)) ||
+                        (u.username && onlineUserIds.includes(u.username)) ||
+                        (u.name && onlineUserIds.includes(u.name))
+                      );
+                      return (
+                        <button
+                          key={u.id}
+                          onClick={() => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar })}
+                          className={`w-full text-left px-3 py-2.5 text-[13px] truncate font-medium flex items-center gap-2 transition-colors ${isSelected ? 'bg-blue-100 text-blue-900 font-bold border-r-2 border-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}
+                        >
+                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                          <span className="flex-1 truncate">{u.name}</span>
+                          {unread > 0 && (
+                            <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0">{unread}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
               </div>
 
               {/* Message panel */}
