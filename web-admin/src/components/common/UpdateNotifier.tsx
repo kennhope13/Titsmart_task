@@ -129,87 +129,43 @@ export const UpdateNotifier: React.FC = () => {
   const dismiss = () => setState({ ...state, visible: false });
 
   const handleWebUpdate = async () => {
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isCapacitorNative = !!(window as any).Capacitor?.isNativePlatform?.();
-    const isAndroid = /android/i.test(navigator.userAgent);
 
-    // Xử lý riêng cho iPhone / iOS / PWA Web App:
-    // Làm mới cache bộ nhớ và tải lại phiên bản mới nhất ngay lập tức mà không cần tải file APK
-    if (isIOS) {
-      setIsInstalling(true);
-      try {
-        if ('caches' in window) {
-          const cacheKeys = await caches.keys();
-          await Promise.all(cacheKeys.map(k => caches.delete(k)));
-        }
-        if ('serviceWorker' in navigator) {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(registrations.map(r => r.unregister()));
-        }
-      } catch (err) {
-        console.warn('Lỗi dọn cache iOS:', err);
-      }
-      setTimeout(() => {
-        window.location.reload();
-      }, 1200);
-      return;
-    }
-
-    const downloadUrl = (state.message && state.message.startsWith('http')) 
-      ? state.message 
-      : `https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`;
-
-    // Ưu tiên tải trực tiếp file APK cho Android Native hoặc trình duyệt Android
-    if (isCapacitorNative || isAndroid) {
-      // Chuyển hướng trực tiếp URL tải APK để trình duyệt Android kích hoạt Download Manager hệ thống
+    // 1. Nếu là ứng dụng Android APK cài đặt gốc (Capacitor Native)
+    if (isCapacitorNative) {
+      const downloadUrl = (state.message && state.message.startsWith('http')) 
+        ? state.message 
+        : `https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`;
       window.location.href = downloadUrl;
       dismiss();
       return;
     }
 
-    setState((s) => ({ ...s, status: 'downloading', percent: 0 }));
+    // 2. Nếu đang chạy trên trình duyệt Web (Desktop PC/Laptop, iOS Safari, Android Chrome):
+    // Làm mới cache bộ nhớ, unregister Service Worker, và tải lại phiên bản mới nhất ngay lập tức
+    setIsInstalling(true);
+    setState((s) => ({ ...s, status: 'downloading', percent: 60 }));
 
     try {
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', downloadUrl, true);
-      xhr.responseType = 'blob';
-
-      xhr.onprogress = (event) => {
-        if (event.lengthComputable && event.total > 0) {
-          const percent = Math.round((event.loaded / event.total) * 100);
-          setState((s) => ({ ...s, status: 'downloading', percent }));
-        } else {
-          setState((s) => ({ ...s, status: 'downloading', percent: Math.min((s.percent || 0) + 15, 90) }));
-        }
-      };
-
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const blob = xhr.response;
-          const blobUrl = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = blobUrl;
-          link.download = `TITSMART-v${state.version || 'latest'}.apk`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          setState((s) => ({ ...s, status: 'downloaded', percent: 100 }));
-        } else {
-          window.open(downloadUrl, '_blank');
-          dismiss();
-        }
-      };
-
-      xhr.onerror = () => {
-        window.open(downloadUrl, '_blank');
-        dismiss();
-      };
-
-      xhr.send();
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(r => r.unregister()));
+      }
     } catch (err) {
-      window.open(downloadUrl, '_blank');
-      dismiss();
+      console.warn('Lỗi dọn cache web:', err);
     }
+
+    setState((s) => ({ ...s, status: 'downloaded', percent: 100 }));
+    setTimeout(() => {
+      // Tải lại trang với URL cache-busting để đảm bảo tải bản mới nhất từ Netlify
+      const url = new URL(window.location.href);
+      url.searchParams.set('_v', Date.now().toString());
+      window.location.href = url.toString();
+    }, 600);
   };
 
   const handleInstallAndRestart = () => {
@@ -376,6 +332,30 @@ export const UpdateNotifier: React.FC = () => {
                     </li>
                   ))}
                 </ul>
+                <div className="mt-2 pt-1 border-t border-slate-100/80 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">Tải file cài đặt:</span>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary hover:underline font-medium inline-flex items-center gap-0.5"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">android</span>
+                      APK
+                    </a>
+                    <span className="text-slate-300">•</span>
+                    <a
+                      href="https://github.com/kennhope13/Titsmart_task/releases/latest"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary hover:underline font-medium inline-flex items-center gap-0.5"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">desktop_windows</span>
+                      Windows
+                    </a>
+                  </div>
+                </div>
               </div>
             )}
 
