@@ -186,7 +186,7 @@ export const MyTasksPage: React.FC = () => {
     }
   };
 
-  const handleSendQuestion = async (task: Task, questionText: string) => {
+  const handleSendQuestion = async (task: Task, questionText: string, fileAttachment?: { url: string; type: 'image' | 'file'; name: string }) => {
     const store = useRealtimeStore.getState();
     const userName = user?.name || user?.username || 'Nhân sự';
     const userId = user?.id || '';
@@ -198,7 +198,10 @@ export const MyTasksPage: React.FC = () => {
       senderName: userName,
       senderRole: 'Nhân sự thực hiện',
       type: isCurrentlyDoing ? 'note' : 'question',
-      content: questionText
+      content: questionText,
+      fileUrl: fileAttachment?.url,
+      fileType: fileAttachment?.type,
+      fileName: fileAttachment?.name
     });
 
     updateTask(task.id, {
@@ -219,7 +222,7 @@ export const MyTasksPage: React.FC = () => {
 
       await store.addNotification({
         title: isCurrentlyDoing ? 'Trao đổi công việc' : 'Thắc mắc công việc',
-        message: `${userName} đã gửi ${isCurrentlyDoing ? 'trao đổi' : 'thắc mắc'} về công việc "${task.name}" thuộc dự án ${task.projectCode}: "${questionText}".`,
+        message: `${userName} đã gửi ${isCurrentlyDoing ? 'trao đổi' : 'thắc mắc'} về công việc "${task.name}" thuộc dự án ${task.projectCode}: "${questionText || (fileAttachment ? (fileAttachment.type === 'image' ? 'Đã gửi 1 hình ảnh' : `Đã đính kèm tệp: ${fileAttachment.name}`) : '')}".`,
         link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
         type: `task_question:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
         icon: isCurrentlyDoing ? 'chat' : 'help',
@@ -229,7 +232,7 @@ export const MyTasksPage: React.FC = () => {
     }
   };
 
-  const handleSendReply = async (task: Task, replyText: string) => {
+  const handleSendReply = async (task: Task, replyText: string, fileAttachment?: { url: string; type: 'image' | 'file'; name: string }) => {
     const store = useRealtimeStore.getState();
     const userName = user?.name || user?.username || 'Người dùng';
     const userId = user?.id || '';
@@ -238,7 +241,10 @@ export const MyTasksPage: React.FC = () => {
       senderName: userName,
       senderRole: 'Người dùng',
       type: 'reply',
-      content: replyText
+      content: replyText,
+      fileUrl: fileAttachment?.url,
+      fileType: fileAttachment?.type,
+      fileName: fileAttachment?.name
     });
 
     const nextStatus = (task.status === 'Đang làm' || task.status === 'Chờ nghiệm thu' || task.status === 'Hoàn thành')

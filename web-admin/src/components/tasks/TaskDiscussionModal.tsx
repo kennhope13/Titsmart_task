@@ -53,13 +53,22 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
 
   const [inputText, setInputText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const discussions: TaskDiscussionItem[] = task ? parseTaskDiscussions(task.notes, task.issue) : [];
 
   useEffect(() => {
     if (isOpen) {
       setInputText('');
+      setSelectedFile(null);
+      setShowAttachMenu(false);
       setIsSubmitting(false);
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -75,23 +84,62 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
   const isWaitingApproval = task.status === 'Chờ nghiệm thu';
   const isCompleted = task.status === 'Hoàn thành';
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isImg = file.type.startsWith('image/');
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedFile({
+        url: reader.result as string,
+        type: isImg ? 'image' : 'file',
+        name: file.name
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            setSelectedFile({
+              url: reader.result as string,
+              type: 'image',
+              name: `anh_clipboard_${Date.now()}.png`
+            });
+          };
+          reader.readAsDataURL(file);
+          break;
+        }
+      }
+    }
+  };
+
   const handleQuestionSubmit = async () => {
-    if (!inputText.trim() || !onSendQuestion) return;
+    if ((!inputText.trim() && !selectedFile) || !onSendQuestion) return;
     setIsSubmitting(true);
     try {
-      await onSendQuestion(task, inputText.trim());
+      await (onSendQuestion as any)(task, inputText.trim(), selectedFile || undefined);
       setInputText('');
+      setSelectedFile(null);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleReplySubmit = async () => {
-    if (!inputText.trim() || !onSendReply) return;
+    if ((!inputText.trim() && !selectedFile) || !onSendReply) return;
     setIsSubmitting(true);
     try {
-      await onSendReply(task, inputText.trim());
+      await (onSendReply as any)(task, inputText.trim(), selectedFile || undefined);
       setInputText('');
+      setSelectedFile(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -223,7 +271,42 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
                               ? 'bg-primary text-white font-medium'
                               : 'bg-white border border-slate-200 text-slate-800 font-medium'
                     }`}>
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
+                      {msg.fileUrl && (
+                        <div className={msg.content ? "mt-2" : ""}>
+                          {msg.fileType === 'image' ? (
+                            <img
+                              src={msg.fileUrl}
+                              alt={msg.fileName || 'Ảnh đính kèm'}
+                              onClick={() => setPreviewImage(msg.fileUrl || null)}
+                              className="max-w-full max-h-[180px] rounded-lg object-contain border border-slate-200/80 bg-white cursor-pointer hover:opacity-95 transition-opacity shadow-xs"
+                            />
+                          ) : (
+                            <a
+                              href={msg.fileUrl}
+                              download={msg.fileName || 'file_dinh_kem'}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${isMsgFromMe ? 'bg-blue-800/80 hover:bg-blue-800 border-blue-700 text-white' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'}`}
+                            >
+                              <span className="material-symbols-outlined text-[22px] text-amber-500 shrink-0">
+                                {msg.fileName?.endsWith('.pdf') ? 'picture_as_pdf' :
+                                 msg.fileName?.match(/\.(xlsx|xls|csv)$/i) ? 'table_view' :
+                                 msg.fileName?.match(/\.(docx|doc)$/i) ? 'description' :
+                                 msg.fileName?.match(/\.(zip|rar|7z)$/i) ? 'folder_zip' :
+                                 msg.fileName?.match(/\.(dwg|dxf)$/i) ? 'architecture' : 'insert_drive_file'}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-[11px] truncate leading-tight">
+                                  {msg.fileName || 'Tệp đính kèm'}
+                                </p>
+                                <span className={`text-[10px] ${isMsgFromMe ? 'text-blue-200' : 'text-slate-400'}`}>Nhấn để tải về / xem</span>
+                              </div>
+                              <span className="material-symbols-outlined text-[16px] opacity-75 shrink-0">download</span>
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -233,98 +316,135 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
           </div>
         )}
 
-        {/* KHUNG NHẬP THẮC MẮC (CHO NGƯỜI NHẬN VIỆC) */}
-        {isAssignee && (isWaitingAccept || hasQuestion) && (
-          <div className="space-y-1.5 animate-in fade-in duration-150 pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-orange-800 flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-base text-orange-600">help</span>
-                Nội dung thắc mắc / Cần làm rõ: <span className="text-red-500">*</span>
-              </label>
-              <span className="text-[10px] text-slate-400 font-medium italic">
-                Enter để gửi, Shift + Enter xuống dòng
-              </span>
-            </div>
-            <textarea 
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleQuestionSubmit();
-                }
-              }}
-              placeholder="Nhập chi tiết nội dung bạn chưa rõ, tài liệu cần bổ sung..."
-              rows={3}
-              className="w-full text-xs p-3 border border-orange-300 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white text-slate-800 resize-none font-medium"
-            />
-          </div>
-        )}
+        {/* THAO TÁC ĐÍNH KÈM & NHẬP LIỆU (Ẩn khi task hoàn thành) */}
+        {!isCompleted && (
+          <div className="space-y-2 pt-2 border-t border-slate-100 relative">
+            {/* Thẻ xem trước File đang đính kèm */}
+            {selectedFile && (
+              <div className="flex items-center justify-between bg-blue-50 px-2.5 py-1.5 rounded-lg text-[11px] text-blue-900 border border-blue-100">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="material-symbols-outlined text-[16px] text-blue-700 shrink-0">
+                    {selectedFile.type === 'image' ? 'image' : 'attach_file'}
+                  </span>
+                  <span className="truncate font-medium max-w-[280px]">{selectedFile.name}</span>
+                </div>
+                <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
+              </div>
+            )}
 
-        {/* KHUNG NHẬP PHẢN HỒI (CHO NGƯỜI GIAO VIỆC) */}
-        {isAssigner && (hasQuestion || isWaitingAccept) && (
-          <div className="space-y-1.5 pt-2 border-t border-slate-100">
+            {/* Menu đính kèm Camera / Gallery / Files */}
+            {showAttachMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowAttachMenu(false)} />
+                <div className="absolute bottom-16 left-2 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 flex flex-col gap-1 min-w-[170px] animate-in fade-in zoom-in-95 duration-150">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAttachMenu(false);
+                      cameraInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-emerald-600 text-[18px]">photo_camera</span>
+                    <span>Chụp ảnh mới</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAttachMenu(false);
+                      imageInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-blue-600 text-[18px]">image</span>
+                    <span>Thư viện ảnh</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAttachMenu(false);
+                      fileInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-amber-500 text-[18px]">folder_open</span>
+                    <span>Tệp tài liệu</span>
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Hidden Native File Inputs */}
+            <input type="file" ref={cameraInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" capture="environment" />
+            <input type="file" ref={imageInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="*/*" />
+
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-base text-primary">reply</span>
-                {hasQuestion ? 'Phản hồi giải đáp thắc mắc & Giao lại việc:' : 'Ghi chú / Hướng dẫn công việc:'}
+                <span className="material-symbols-outlined text-base text-primary">
+                  {isAssignee && (isWaitingAccept || hasQuestion) ? 'help' : 'chat'}
+                </span>
+                {isAssignee && (isWaitingAccept || hasQuestion)
+                  ? 'Nội dung thắc mắc / Cần làm rõ:'
+                  : isAssigner && (hasQuestion || isWaitingAccept)
+                    ? 'Phản hồi giải đáp thắc mắc & Giao lại việc:'
+                    : 'Ghi chú / Trao đổi thêm:'}
               </label>
               <span className="text-[10px] text-slate-400 font-medium italic">
                 Enter để gửi, Shift + Enter xuống dòng
               </span>
             </div>
-            <textarea 
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleReplySubmit();
-                }
-              }}
-              placeholder="Nhập nội dung giải đáp, tiêu chuẩn kỹ thuật hoặc yêu cầu chi tiết..."
-              rows={3}
-              className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white text-slate-800 resize-none font-medium"
-            />
-          </div>
-        )}
 
-        {/* KHUNG NHẬP TRAO ĐỔI CHUNG CHO CÁC TRẠNG THÁI KHÁC */}
-        {(!isAssignee || isDoing) && (!isAssigner || (!hasQuestion && !isWaitingAccept && !isWaitingApproval)) && !isCompleted && (
-          <div className="space-y-1.5 pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-700">Ghi chú / Trao đổi thêm:</label>
-              <span className="text-[10px] text-slate-400 font-medium italic">
-                Enter để gửi, Shift + Enter xuống dòng
-              </span>
-            </div>
-            <div className="flex gap-2">
+            <div className="flex items-start gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                className={`p-2 rounded-xl border transition-colors shrink-0 mt-0.5 cursor-pointer ${showAttachMenu ? 'bg-blue-100 border-blue-300 text-blue-900' : 'bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-600 hover:text-blue-900'}`}
+                title="Đính kèm ảnh / máy ảnh / tệp tin"
+              >
+                <span className="material-symbols-outlined text-[20px]">attach_file</span>
+              </button>
+
               <textarea 
                 value={inputText}
                 onChange={e => setInputText(e.target.value)}
-                placeholder="Nhập nội dung trao đổi..."
-                rows={2}
+                onPaste={handlePaste}
                 onKeyDown={e => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    if (isAssigner && onSendReply) handleReplySubmit();
+                    if (isAssignee && (isWaitingAccept || hasQuestion)) handleQuestionSubmit();
+                    else if (isAssigner && (hasQuestion || isWaitingAccept)) handleReplySubmit();
+                    else if (isAssigner && onSendReply) handleReplySubmit();
                     else if (onSendQuestion) handleQuestionSubmit();
                   }
                 }}
-                className="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium resize-none"
+                placeholder="Nhập nội dung trao đổi, đính kèm ảnh hoặc tệp tin..."
+                rows={2}
+                className="flex-1 text-xs p-2.5 border border-slate-300 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white text-slate-800 resize-none font-medium"
               />
+            </div>
+          </div>
+        )}
+
+        {/* Lightbox Modal */}
+        {previewImage && (
+          <div
+            className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center p-4 pointer-events-auto animate-fade-in"
+            onClick={() => setPreviewImage(null)}
+          >
+            <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
               <button
-                type="button"
-                onClick={() => {
-                  if (isAssigner && onSendReply) handleReplySubmit();
-                  else if (onSendQuestion) handleQuestionSubmit();
-                }}
-                disabled={isSubmitting || !inputText.trim()}
-                className="px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-xl shadow-xs transition-all flex items-center gap-1.5 self-end"
+                onClick={() => setPreviewImage(null)}
+                className="absolute -top-10 right-0 text-white bg-black/50 hover:bg-black/80 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
               >
-                <span className="material-symbols-outlined text-base">send</span>
-                Gửi
+                ✕
               </button>
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-white/20"
+                onClick={e => e.stopPropagation()}
+              />
             </div>
           </div>
         )}

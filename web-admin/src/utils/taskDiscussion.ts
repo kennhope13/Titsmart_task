@@ -5,6 +5,10 @@ export interface TaskDiscussionItem {
   senderRole?: string;
   type: 'note' | 'assign_note' | 'question' | 'reply' | 'system';
   content: string;
+  fileUrl?: string;
+  fileType?: 'image' | 'file';
+  fileName?: string;
+  images?: string[];
   createdAt: string;
 }
 
@@ -133,7 +137,11 @@ export const appendTaskDiscussion = (
     senderName: item.senderName || 'Người dùng',
     senderRole: item.senderRole || '',
     type: item.type,
-    content: item.content.trim(),
+    content: item.content ? item.content.trim() : '',
+    fileUrl: item.fileUrl,
+    fileType: item.fileType,
+    fileName: item.fileName,
+    images: item.images,
     createdAt: item.createdAt || new Date().toISOString(),
   };
 

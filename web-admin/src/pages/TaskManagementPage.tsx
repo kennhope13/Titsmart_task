@@ -336,7 +336,7 @@ export const TaskManagementPage: React.FC = () => {
     }
   };
 
-  const handleSendQuestion = async (task: Task, questionText: string) => {
+  const handleSendQuestion = async (task: Task, questionText: string, fileAttachment?: { url: string; type: 'image' | 'file'; name: string }) => {
     const userName = authStore.user?.name || authStore.user?.username || 'Nhân sự';
     const userId = authStore.user?.id || '';
     const isCurrentlyDoing = task.status === 'Đang làm';
@@ -347,7 +347,10 @@ export const TaskManagementPage: React.FC = () => {
       senderName: userName,
       senderRole: 'Người nhận việc',
       type: isCurrentlyDoing ? 'note' : 'question',
-      content: questionText
+      content: questionText,
+      fileUrl: fileAttachment?.url,
+      fileType: fileAttachment?.type,
+      fileName: fileAttachment?.name
     });
 
     handleUpdateTaskSync(task.id, {
@@ -369,7 +372,7 @@ export const TaskManagementPage: React.FC = () => {
 
       await store.addNotification({
         title: isCurrentlyDoing ? 'Trao đổi công việc' : 'Thắc mắc công việc mới',
-        message: `${userName} có ${isCurrentlyDoing ? 'trao đổi' : 'thắc mắc'} về công việc "${task.name}" [${task.projectCode}]: "${questionText}".`,
+        message: `${userName} có ${isCurrentlyDoing ? 'trao đổi' : 'thắc mắc'} về công việc "${task.name}" [${task.projectCode}]: "${questionText || (fileAttachment ? (fileAttachment.type === 'image' ? 'Đã gửi 1 hình ảnh' : `Đã đính kèm tệp: ${fileAttachment.name}`) : '')}".`,
         link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
         type: `task_question:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
         icon: isCurrentlyDoing ? 'chat' : 'help_center',
@@ -379,7 +382,7 @@ export const TaskManagementPage: React.FC = () => {
     }
   };
 
-  const handleSendReply = async (task: Task, replyText: string) => {
+  const handleSendReply = async (task: Task, replyText: string, fileAttachment?: { url: string; type: 'image' | 'file'; name: string }) => {
     const userName = authStore.user?.name || authStore.user?.username || 'Người giao việc';
     const userId = authStore.user?.id || '';
     const updatedNotes = appendTaskDiscussion(task.notes || '', {
@@ -387,7 +390,10 @@ export const TaskManagementPage: React.FC = () => {
       senderName: userName,
       senderRole: 'Người giao việc',
       type: 'reply',
-      content: replyText
+      content: replyText,
+      fileUrl: fileAttachment?.url,
+      fileType: fileAttachment?.type,
+      fileName: fileAttachment?.name
     });
 
     const nextStatus = (task.status === 'Đang làm' || task.status === 'Chờ nghiệm thu' || task.status === 'Hoàn thành')
@@ -548,6 +554,49 @@ const hasSyncedRef = useRef(false);
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
   const [assigningUserIds, setAssigningUserIds] = useState<string[]>([]);
   const [assignNote, setAssignNote] = useState('');
+  const [assignSelectedFile, setAssignSelectedFile] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
+  const [assignShowAttachMenu, setAssignShowAttachMenu] = useState(false);
+  const assignFileInputRef = useRef<HTMLInputElement>(null);
+  const assignCameraInputRef = useRef<HTMLInputElement>(null);
+  const assignImageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAssignFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isImg = file.type.startsWith('image/');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setAssignSelectedFile({
+        url: ev.target?.result as string,
+        type: isImg ? 'image' : 'file',
+        name: file.name
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleAssignPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const blob = items[i].getAsFile();
+        if (blob) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            setAssignSelectedFile({
+              url: ev.target?.result as string,
+              type: 'image',
+              name: `Pasted_Image_${new Date().toLocaleTimeString('vi-VN').replace(/:/g, '-')}.png`
+            });
+          };
+          reader.readAsDataURL(blob);
+          break;
+        }
+      }
+    }
+  };
 
   const [editingCell, setEditingCell] = useState<{ id: string; field: keyof Task } | null>(null);
   const [tempValue, setTempValue] = useState<any>('');
@@ -2502,14 +2551,87 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
             )}
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-              <span className="material-symbols-outlined text-primary text-[15px]">edit_note</span>
-              Ghi chú / Hướng dẫn công việc (Tùy chọn)
-            </label>
+          <div className="space-y-2 relative">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
+                <span className="material-symbols-outlined text-primary text-[15px]">edit_note</span>
+                Ghi chú / Hướng dẫn công việc (Tùy chọn)
+              </label>
+              
+              <button
+                type="button"
+                onClick={() => setAssignShowAttachMenu(prev => !prev)}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[15px]">attach_file</span>
+                <span>Đính kèm</span>
+              </button>
+            </div>
+
+            {/* Thẻ xem trước File đang đính kèm */}
+            {assignSelectedFile && (
+              <div className="flex items-center justify-between bg-blue-50 px-2.5 py-1.5 rounded-lg text-[11px] text-blue-900 border border-blue-100">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="material-symbols-outlined text-[16px] text-blue-700 shrink-0">
+                    {assignSelectedFile.type === 'image' ? 'image' : 'attach_file'}
+                  </span>
+                  <span className="truncate font-medium max-w-[240px]">{assignSelectedFile.name}</span>
+                </div>
+                <button type="button" onClick={() => setAssignSelectedFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2 cursor-pointer">✕</button>
+              </div>
+            )}
+
+            {/* Popover Menu: Camera / Thư viện / Tệp */}
+            {assignShowAttachMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setAssignShowAttachMenu(false)} />
+                <div className="absolute right-0 top-7 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 flex flex-col gap-1 min-w-[170px] animate-in fade-in zoom-in-95 duration-150">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssignShowAttachMenu(false);
+                      assignCameraInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-emerald-600 text-[18px]">photo_camera</span>
+                    <span>Chụp ảnh mới</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssignShowAttachMenu(false);
+                      assignImageInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-blue-600 text-[18px]">image</span>
+                    <span>Thư viện ảnh</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssignShowAttachMenu(false);
+                      assignFileInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-amber-500 text-[18px]">folder_open</span>
+                    <span>Tệp tài liệu</span>
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Hidden File Inputs */}
+            <input type="file" ref={assignCameraInputRef} onChange={handleAssignFileUpload} className="hidden" accept="image/*" capture="environment" />
+            <input type="file" ref={assignImageInputRef} onChange={handleAssignFileUpload} className="hidden" accept="image/*" />
+            <input type="file" ref={assignFileInputRef} onChange={handleAssignFileUpload} className="hidden" accept="*/*" />
+
             <textarea
               value={assignNote}
               onChange={(e) => setAssignNote(e.target.value)}
+              onPaste={handleAssignPaste}
               rows={3}
               placeholder="Nhập yêu cầu, lưu ý hoặc tiêu chuẩn kỹ thuật gửi cho nhân viên..."
               className="w-full p-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white resize-none"
@@ -2517,7 +2639,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
           </div>
 
           <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-100">
-            <button onClick={() => { setAssigningTask(null); setAssigningUserIds([]); setAssignNote(''); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
+            <button onClick={() => { setAssigningTask(null); setAssigningUserIds([]); setAssignNote(''); setAssignSelectedFile(null); setAssignShowAttachMenu(false); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
             <button 
               onClick={async () => {
                 if (!assigningTask) return;
@@ -2529,13 +2651,16 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                 const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
 
                 let updatedNotes = assigningTask.notes || '';
-                if (assignNote.trim()) {
+                if (assignNote.trim() || assignSelectedFile) {
                   updatedNotes = appendTaskDiscussion(updatedNotes, {
                     senderId: assignerId,
                     senderName: assignerName,
                     senderRole: 'Người giao việc',
                     type: 'note',
-                    content: assignNote.trim()
+                    content: assignNote.trim() || (assignSelectedFile ? `Đã đính kèm ${assignSelectedFile.type === 'image' ? 'hình ảnh' : 'tài liệu'}: ${assignSelectedFile.name}` : ''),
+                    fileUrl: assignSelectedFile?.url,
+                    fileType: assignSelectedFile?.type,
+                    fileName: assignSelectedFile?.name
                   });
                 }
 
@@ -2555,7 +2680,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                   if (store.addNotification) {
                     await store.addNotification({
                       title: `Giao việc: ${names}`,
-                      message: `${assignerName} đã giao công việc "${assigningTask.name}" thuộc dự án ${assigningTask.projectName || assigningTask.projectCode} cho ${names}.`,
+                      message: `${assignerName} đã giao công việc "${assigningTask.name}" thuộc dự án ${assigningTask.projectName || assigningTask.projectCode} cho ${names}.${assignSelectedFile ? ` [Có đính kèm ${assignSelectedFile.type === 'image' ? 'hình ảnh' : 'tệp'}]` : ''}`,
                       type: `task_assigned:::${ids}:::${names}`,
                       icon: 'assignment_ind',
                       senderId: assignerId,
@@ -2567,6 +2692,8 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                 setAssigningTask(null);
                 setAssigningUserIds([]);
                 setAssignNote('');
+                setAssignSelectedFile(null);
+                setAssignShowAttachMenu(false);
                 triggerToast('Đã giao việc thành công!', 'success');
               }}
               className="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg shadow-sm transition-all"

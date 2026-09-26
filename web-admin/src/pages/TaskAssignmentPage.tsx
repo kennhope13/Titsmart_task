@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
 import { CustomSelect } from '../components/common/CustomSelect';
@@ -28,7 +28,50 @@ export const TaskAssignmentPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEngineerId, setSelectedEngineerId] = useState('');
   const [assignNote, setAssignNote] = useState('');
+  const [selectedFile, setSelectedFile] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [discussionTask, setDiscussionTask] = useState<Task | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isImg = file.type.startsWith('image/');
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedFile({
+        url: reader.result as string,
+        type: isImg ? 'image' : 'file',
+        name: file.name
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            setSelectedFile({
+              url: reader.result as string,
+              type: 'image',
+              name: `anh_clipboard_${Date.now()}.png`
+            });
+          };
+          reader.readAsDataURL(file);
+          break;
+        }
+      }
+    }
+  };
 
   const canApproveTask = (currentUser: any, task: any): boolean => {
     if (!currentUser || !task) return false;
@@ -95,7 +138,7 @@ export const TaskAssignmentPage: React.FC = () => {
     }
   };
 
-  const handleSendReply = async (task: Task, replyText: string) => {
+  const handleSendReply = async (task: Task, replyText: string, fileAttachment?: { url: string; type: 'image' | 'file'; name: string }) => {
     const store = useRealtimeStore.getState();
     const userName = user?.name || user?.username || 'Người giao việc';
     const userId = user?.id || '';
@@ -104,7 +147,10 @@ export const TaskAssignmentPage: React.FC = () => {
       senderName: userName,
       senderRole: 'Người giao việc',
       type: 'reply',
-      content: replyText
+      content: replyText,
+      fileUrl: fileAttachment?.url,
+      fileType: fileAttachment?.type,
+      fileName: fileAttachment?.name
     });
 
     const nextStatus = task.status === 'Đang làm' ? 'Đang làm' : 'Chờ nhận việc';
@@ -305,13 +351,16 @@ export const TaskAssignmentPage: React.FC = () => {
     selectedTaskIds.forEach(id => {
       const existingTask = tasks.find(t => t.id === id);
       let updatedNotes = existingTask?.notes || '';
-      if (assignNote.trim()) {
+      if (assignNote.trim() || selectedFile) {
         updatedNotes = appendTaskDiscussion(updatedNotes, {
           senderId: assignerId,
           senderName: assignerName,
           senderRole: 'Người giao việc',
           type: 'assign_note',
-          content: assignNote.trim()
+          content: assignNote.trim(),
+          fileUrl: selectedFile?.url,
+          fileType: selectedFile?.type,
+          fileName: selectedFile?.name
         });
       }
       updateTask(id, {
@@ -330,7 +379,7 @@ export const TaskAssignmentPage: React.FC = () => {
     if (store.addNotification) {
       store.addNotification({
         title: `Giao việc: ${engName}`,
-        message: `${assignerName} đã giao ${selectedTaskIds.length} công việc mới cho ${engName}${assignNote.trim() ? `: "${assignNote.trim()}"` : '.'}`,
+        message: `${assignerName} đã giao ${selectedTaskIds.length} công việc mới cho ${engName}${assignNote.trim() ? `: "${assignNote.trim()}"` : ''}${selectedFile ? (selectedFile.type === 'image' ? ' [Kèm 1 hình ảnh]' : ` [Kèm tệp: ${selectedFile.name}]`) : '.'}`,
         type: `task_assigned:::${selectedEngineerId}:::${engName}`,
         icon: 'assignment_ind',
         senderId: assignerId,
@@ -343,6 +392,8 @@ export const TaskAssignmentPage: React.FC = () => {
     setIsModalOpen(false);
     setSelectedEngineerId('');
     setAssignNote('');
+    setSelectedFile(null);
+    setShowAttachMenu(false);
   };
 
   const [isScrolledHorizontally, setIsScrolledHorizontally] = useState(false);
@@ -584,14 +635,86 @@ export const TaskAssignmentPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-slate-700 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-primary text-[16px]">edit_note</span>
-                  Ghi chú / Hướng dẫn công việc (Tùy chọn)
-                </label>
+              <div className="flex flex-col gap-1.5 relative">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-bold text-slate-700 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-primary text-[16px]">edit_note</span>
+                    Ghi chú / Hướng dẫn công việc (Tùy chọn)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowAttachMenu(!showAttachMenu)}
+                    className={`text-xs px-2 py-1 rounded-md border flex items-center gap-1 font-semibold transition-colors cursor-pointer ${showAttachMenu ? 'bg-blue-100 border-blue-300 text-blue-900' : 'bg-slate-50 border-slate-200 text-slate-600 hover:text-blue-900'}`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">attach_file</span>
+                    <span>Đính kèm</span>
+                  </button>
+                </div>
+
+                {/* Thẻ xem trước File đang đính kèm */}
+                {selectedFile && (
+                  <div className="flex items-center justify-between bg-blue-50 px-2.5 py-1.5 rounded-lg text-[11px] text-blue-900 border border-blue-100">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="material-symbols-outlined text-[16px] text-blue-700 shrink-0">
+                        {selectedFile.type === 'image' ? 'image' : 'attach_file'}
+                      </span>
+                      <span className="truncate font-medium max-w-[240px]">{selectedFile.name}</span>
+                    </div>
+                    <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
+                  </div>
+                )}
+
+                {/* Popover Menu: Camera / Thư viện / Tệp */}
+                {showAttachMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowAttachMenu(false)} />
+                    <div className="absolute right-0 top-7 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 flex flex-col gap-1 min-w-[170px] animate-in fade-in zoom-in-95 duration-150">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAttachMenu(false);
+                          cameraInputRef.current?.click();
+                        }}
+                        className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-emerald-600 text-[18px]">photo_camera</span>
+                        <span>Chụp ảnh mới</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAttachMenu(false);
+                          imageInputRef.current?.click();
+                        }}
+                        className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-blue-600 text-[18px]">image</span>
+                        <span>Thư viện ảnh</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAttachMenu(false);
+                          fileInputRef.current?.click();
+                        }}
+                        className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-amber-500 text-[18px]">folder_open</span>
+                        <span>Tệp tài liệu</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Hidden File Inputs */}
+                <input type="file" ref={cameraInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" capture="environment" />
+                <input type="file" ref={imageInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="*/*" />
+
                 <textarea 
                   value={assignNote} 
                   onChange={(e) => setAssignNote(e.target.value)}
+                  onPaste={handlePaste}
                   rows={3}
                   placeholder="Nhập yêu cầu, lưu ý hoặc tiêu chuẩn kỹ thuật gửi cho nhân viên..."
                   className="border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-full resize-none"
