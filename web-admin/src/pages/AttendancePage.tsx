@@ -528,8 +528,8 @@ export const AttendancePage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-slate-100 overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white px-2 py-1.5 md:py-0 md:h-12 flex items-center justify-between gap-1.5 shrink-0">
-        <div className="flex items-center gap-2 shrink-0">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white px-2 py-1.5 md:py-0 md:h-12 flex items-center justify-between gap-1.5 shrink-0 pr-14 md:pr-4">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div className="border-l-4 border-primary pl-1.5 flex items-center">
             <h1 className="page-title text-xs sm:text-sm md:text-base font-extrabold text-slate-900 uppercase shrink-0">
               {mainTab === 'attendance' ? 'Chấm công' : 'Nghỉ phép'}
@@ -839,47 +839,40 @@ export const AttendancePage: React.FC = () => {
       ) : (
         /* Tab Xin nghỉ phép */
         <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col bg-slate-50">
-          <div className="bg-white border-b border-slate-200 shadow-xs px-3 py-2 sm:px-4 sm:py-2 flex items-center justify-between gap-2 md:hidden">
-            {isAdmin ? (
-              <div className="inline-flex md:hidden items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0">
-                <button
-                  onClick={() => setTab('my')}
-                  className={`px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-md text-[10px] sm:text-xs transition-all ${tab === 'my' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
-                >Của tôi</button>
-                <button
-                  onClick={() => setTab('all')}
-                  className={`px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-md text-[10px] sm:text-xs transition-all ${tab === 'all' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
-                >Tất cả</button>
+          {/* Unified Subheader Bar */}
+          <div className="px-3 py-2 sm:px-4 sm:py-2 border-b border-slate-200 bg-white flex items-center justify-between gap-2 shrink-0 shadow-xs relative z-10">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="material-symbols-outlined text-slate-500 text-[18px] shrink-0">event_busy</span>
+              <h3 className="text-xs font-bold text-slate-700 uppercase hidden sm:inline truncate">Danh sách đơn xin nghỉ phép</h3>
+              <h3 className="text-xs font-bold text-slate-700 uppercase sm:hidden truncate">Đơn nghỉ phép</h3>
+              <div className="px-2 py-0.5 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200 shrink-0">
+                {leaves.length}
               </div>
-            ) : <div />}
-            <button
-              onClick={() => setShowLeaveModal(true)}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-1.5 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
-              title="Tạo đơn xin nghỉ"
-            >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              <span className="hidden sm:inline">Tạo đơn xin nghỉ</span>
-            </button>
-          </div>
 
-          {/* Action & Export bar for Leave Requests */}
-          <div className="px-4 py-2 border-b border-slate-200 bg-white flex items-center justify-between shrink-0 shadow-xs relative z-10">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-slate-500 text-[18px]">event_busy</span>
-              <h3 className="text-xs font-bold text-slate-700 uppercase">Danh sách đơn xin nghỉ phép</h3>
+              {isAdmin && (
+                <div className="inline-flex md:hidden items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0 ml-1">
+                  <button
+                    onClick={() => setTab('my')}
+                    className={`px-2 py-0.5 rounded-md text-[10px] transition-all ${tab === 'my' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                  >Của tôi</button>
+                  <button
+                    onClick={() => setTab('all')}
+                    className={`px-2 py-0.5 rounded-md text-[10px] transition-all ${tab === 'all' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                  >Tất cả</button>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-3">
-              <div className="px-2.5 py-1 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200">
-                {leaves.length} đơn
-              </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {leaves.length > 0 && (
-                <div className="relative">
+                <div className="relative shrink-0">
                   <button
                     onClick={() => setShowLeaveExportMenu(!showLeaveExportMenu)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-sm cursor-pointer"
+                    className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-[11px] sm:text-xs rounded-lg border border-emerald-200 transition-colors shadow-xs cursor-pointer h-8"
+                    title="Xuất file"
                   >
-                    <span className="material-symbols-outlined text-[16px]">file_download</span>
-                    <span>Xuất file</span>
+                    <span className="material-symbols-outlined text-[15px]">file_download</span>
+                    <span className="hidden sm:inline">Xuất file</span>
                     <span className="material-symbols-outlined text-xs">expand_more</span>
                   </button>
                   {showLeaveExportMenu && (
@@ -919,16 +912,26 @@ export const AttendancePage: React.FC = () => {
                   )}
                 </div>
               )}
+
+              {/* Add Leave Button (mobile only '+' button, full text on desktop) */}
+              <button
+                onClick={() => setShowLeaveModal(true)}
+                className="flex items-center justify-center gap-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs rounded-lg shadow-xs transition-all h-8 w-8 sm:w-auto sm:px-3.5 shrink-0 active:scale-95 cursor-pointer"
+                title="Tạo đơn xin nghỉ"
+              >
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                <span className="hidden sm:inline">Tạo đơn</span>
+              </button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-white pb-16 md:pb-0">
+          <div className="flex-1 overflow-y-auto bg-slate-50 md:bg-white pb-16 md:pb-0">
             {leaves.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-sm">Chưa có đơn xin nghỉ phép nào.</div>
             ) : (
               <>
                 {/* Mobile View: Cards */}
-                <div className="block md:hidden divide-y divide-slate-100">
+                <div className="block md:hidden p-3 space-y-2.5">
                   {leaves.map((l, idx) => {
                     const isMatch = Boolean(highlightLeaveId && l.id === highlightLeaveId);
                     const canReviewStep1 = (
@@ -954,10 +957,10 @@ export const AttendancePage: React.FC = () => {
                       <div
                         key={l.id}
                         onClick={() => setIsHighlightActive(false)}
-                        className={`p-3 space-y-2.5 transition-colors ${
+                        className={`p-3.5 bg-white rounded-xl border transition-all shadow-2xs space-y-2.5 ${
                           isMatch
-                            ? 'bg-amber-100/60 border-l-4 border-l-amber-500 font-medium'
-                            : 'hover:bg-slate-50'
+                            ? 'bg-amber-100/60 border-amber-400 font-medium'
+                            : 'border-slate-200 hover:border-slate-300'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
