@@ -89,23 +89,24 @@ export const AttendancePage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const checkOutFileRef = useRef<HTMLInputElement>(null);
 
-  // Danh sách người duyệt Cấp 1 (Có quyền APPROVE_LEAVE_STEP1 hoặc là PM/Quản lý)
+  // Danh sách Người duyệt Cấp 2 (Chỉ những người được cấp quyền Cấp 2 / APPROVE_LEAVE_STEP1, không bao gồm Cấp 1 / Admin)
   const step1Reviewers = React.useMemo(() => {
     return engineers.filter(eng => {
       if (eng.id === user?.id) return false;
       const perms = eng.permissions || [];
+      const userStr = String((eng as any).username || '').toLowerCase();
+      // Loại trừ Admin và người có quyền duyệt Cấp 1
+      if (userStr === 'admin' || perms.includes('APPROVE_LEAVE_FINAL' as any)) return false;
       const roleStr = String(eng.role || eng.title || '').toLowerCase();
       return perms.includes('APPROVE_LEAVE_STEP1' as any) ||
         roleStr.includes('quản lý') ||
         roleStr.includes('trưởng') ||
         roleStr.includes('chỉ huy') ||
-        roleStr.includes('pm') ||
-        roleStr.includes('admin') ||
-        roleStr.includes('quản trị viên');
+        roleStr.includes('pm');
     });
   }, [engineers, user]);
 
-  // Danh sách người duyệt Cấp cao nhất (Có quyền APPROVE_LEAVE_FINAL hoặc là Ban Giám Đốc/Admin)
+  // Danh sách Người duyệt Cấp 1 (Những người có quyền Cấp 1 / APPROVE_LEAVE_FINAL hoặc Admin)
   const step2Reviewers = React.useMemo(() => {
     return engineers.filter(eng => {
       const perms = eng.permissions || [];
@@ -188,8 +189,8 @@ export const AttendancePage: React.FC = () => {
     if (!leaves.length) return;
     const exportData = leaves.map((leave, index) => {
       let statusStr = 'Chờ duyệt';
-      if (leave.status === 'PENDING_STEP1') statusStr = 'Chờ QL duyệt (Cấp 1)';
-      else if (leave.status === 'APPROVED_STEP1') statusStr = 'Đã qua Cấp 1 - Chờ BGD duyệt';
+      if (leave.status === 'PENDING_STEP1') statusStr = 'Chờ Quản lý duyệt';
+      else if (leave.status === 'APPROVED_STEP1') statusStr = 'Quản lý đã duyệt - Chờ BGD phê duyệt';
       else if (leave.status === 'APPROVED') statusStr = 'Đã duyệt hoàn tất';
       else if (leave.status === 'REJECTED') statusStr = 'Từ chối';
 
@@ -202,10 +203,10 @@ export const AttendancePage: React.FC = () => {
         'Số ngày': leave.totalDays,
         'Lý do': leave.reason,
         'Trạng thái': statusStr,
-        'Duyệt Cấp 1 (QL)': leave.step1ReviewerName ? `${leave.step1ReviewerName} (${leave.step1ReviewedAt ? 'Đã duyệt' : 'Chờ'})` : '—',
-        'Ý kiến Cấp 1': leave.step1ReviewNote || '',
-        'Duyệt Cấp 2 (BGD)': leave.step2ReviewerName || leave.reviewerName || 'Ban Giám Đốc',
-        'Ý kiến BGD': leave.step2ReviewNote || leave.reviewNote || ''
+        'Quản lý duyệt': leave.step1ReviewerName ? `${leave.step1ReviewerName} (${leave.step1ReviewedAt ? 'Đã duyệt' : 'Chờ'})` : '—',
+        'Ý kiến Quản lý': leave.step1ReviewNote || '',
+        'Ban Giám Đốc duyệt': leave.step2ReviewerName || leave.reviewerName || '—',
+        'Ý kiến Ban Giám Đốc': leave.step2ReviewNote || leave.reviewNote || ''
       };
     });
 
@@ -281,6 +282,12 @@ export const AttendancePage: React.FC = () => {
       const diffTime = Math.max(0, end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
+      if (!step1ReviewerId && !step2ReviewerId) {
+        alert('Vui lòng chọn ít nhất 1 người duyệt (Quản lý hoặc Ban Giám Đốc)!');
+        setIsSubmitting(false);
+        return;
+      }
+
       const step1Eng = engineers.find(e => e.id === step1ReviewerId);
       const step2Eng = engineers.find(e => e.id === step2ReviewerId);
 
@@ -304,13 +311,27 @@ export const AttendancePage: React.FC = () => {
       setStep1ReviewerId('');
       setStep2ReviewerId('');
 
-      // Gửi thông báo đến người duyệt cấp 1 hoặc admin
-      const targetReviewerMsg = step1Eng ? ` (chờ ${step1Eng.name} duyệt cấp 1)` : '';
+      // Xác định người nhận thông báo đầu tiên
+      let targetRecipientId = '';
+      let targetRecipientName = '';
+      let targetMsgNote = '';
+
+      if (step1Eng) {
+        targetRecipientId = step1Eng.id;
+        targetRecipientName = step1Eng.name;
+        targetMsgNote = ` (chờ ${step1Eng.name} duyệt)`;
+      } else if (step2Eng) {
+        targetRecipientId = step2Eng.id;
+        targetRecipientName = step2Eng.name;
+        targetMsgNote = ` (chờ ${step2Eng.name} phê duyệt)`;
+      }
+
       await addNotification({
         title: 'Đơn xin nghỉ phép mới',
-        message: `${user.name} vừa tạo đơn xin ${leaveType.toLowerCase()} (${diffDays} ngày: từ ${formatDate(leaveStartDate)} đến ${formatDate(leaveEndDate)})${targetReviewerMsg}`,
-        type: 'system',
+        message: `${user.name} vừa tạo đơn xin ${leaveType.toLowerCase()} (${diffDays} ngày: từ ${formatDate(leaveStartDate)} đến ${formatDate(leaveEndDate)})${targetMsgNote}`,
+        type: `leave_pending:::${targetRecipientId}:::${targetRecipientName}`,
         icon: 'event_busy',
+        link: '/attendance?tab=leave',
       });
     } catch (e: any) {
       alert('Lỗi tạo đơn xin nghỉ: ' + (e.message || JSON.stringify(e)));
@@ -326,8 +347,10 @@ export const AttendancePage: React.FC = () => {
       let finalStatus: 'APPROVED_STEP1' | 'APPROVED' | 'REJECTED' = status;
       if (status === 'APPROVED') {
         if (reviewStep === 1) {
+          // Quản lý duyệt bước 1 -> Luôn chuyển lên Quản trị / Ban Giám Đốc duyệt bước cuối
           finalStatus = 'APPROVED_STEP1';
         } else {
+          // Quản trị / Ban Giám Đốc phê duyệt -> Hoàn tất đơn
           finalStatus = 'APPROVED';
         }
       }
@@ -344,25 +367,38 @@ export const AttendancePage: React.FC = () => {
       setReviewLeave(null);
       setReviewNote('');
 
-      // Tiêu đề & nội dung thông báo
+      // Tiêu đề & nội dung & đối tượng nhận thông báo đích danh
       let notifTitle = '';
       let notifMsg = '';
+      let notifType = '';
+
       if (finalStatus === 'APPROVED_STEP1') {
-        notifTitle = 'Đơn nghỉ phép đã thông qua Cấp 1';
-        notifMsg = `Đơn của ${reviewLeave.userName} đã được ${user.name} duyệt cấp 1 → Đang chuyển lên Lãnh đạo cao nhất duyệt.`;
+        // Quản lý đã duyệt -> Gửi thông báo đến Quản trị (step2Reviewer hoặc tất cả Admin) và nhân viên
+        const step2Reviewer = engineers.find(e => e.id === reviewLeave.step2ReviewerId || e.name === reviewLeave.step2ReviewerName);
+        const targetId = step2Reviewer ? `${step2Reviewer.id},${reviewLeave.userId}` : `admin,${reviewLeave.userId}`;
+        const targetName = step2Reviewer ? `${step2Reviewer.name},${reviewLeave.userName}` : `Quản trị viên,${reviewLeave.userName}`;
+
+        notifTitle = 'Đơn nghỉ phép đã được Quản lý duyệt';
+        notifMsg = `Đơn của ${reviewLeave.userName} đã được ${user.name} duyệt → Chờ ${reviewLeave.step2ReviewerName || 'Quản trị hệ thống'} phê duyệt.`;
+        notifType = `leave_step1_approved:::${targetId}:::${targetName}`;
       } else if (finalStatus === 'APPROVED') {
-        notifTitle = 'Đơn nghỉ phép đã được PHÊ DUYỆT CHÍNH THỨC';
-        notifMsg = `Đơn của ${reviewLeave.userName} đã được phê duyệt chính thức hoàn tất bởi ${user.name}.`;
+        // Phê duyệt hoàn tất -> Gửi đích danh cho nhân viên làm đơn
+        notifTitle = 'Đơn nghỉ phép đã được PHÊ DUYỆT';
+        notifMsg = `Đơn xin ${reviewLeave.leaveType.toLowerCase()} của bạn đã được phê duyệt chính thức bởi ${user.name}.`;
+        notifType = `leave_approved:::${reviewLeave.userId}:::${reviewLeave.userName}`;
       } else {
+        // Từ chối -> Gửi đích danh cho nhân viên làm đơn
         notifTitle = 'Đơn nghỉ phép bị TỪ CHỐI';
-        notifMsg = `Đơn xin ${reviewLeave.leaveType} của ${reviewLeave.userName} đã bị từ chối bởi ${user.name}. Lý do: ${reviewNote.trim() || 'Không có lý do cụ thể'}`;
+        notifMsg = `Đơn xin ${reviewLeave.leaveType.toLowerCase()} của bạn đã bị từ chối bởi ${user.name}. Lý do: ${reviewNote.trim() || 'Không có lý do cụ thể'}`;
+        notifType = `leave_rejected:::${reviewLeave.userId}:::${reviewLeave.userName}`;
       }
 
       await addNotification({
         title: notifTitle,
         message: notifMsg,
-        type: 'system',
+        type: notifType,
         icon: finalStatus === 'REJECTED' ? 'cancel' : 'check_circle',
+        link: '/attendance?tab=leave',
       });
     } catch (e: any) {
       alert('Lỗi duyệt đơn: ' + (e.message || JSON.stringify(e)));
@@ -566,10 +602,11 @@ export const AttendancePage: React.FC = () => {
           ) : (
             <button
               onClick={() => setShowLeaveModal(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
+              className="flex items-center justify-center gap-1.5 px-2.5 py-1 sm:px-3.5 sm:py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
+              title="Tạo đơn xin nghỉ"
             >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              <span>Tạo đơn xin nghỉ</span>
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              <span className="hidden sm:inline">Tạo đơn xin nghỉ</span>
             </button>
           )}
         </div>
@@ -817,10 +854,11 @@ export const AttendancePage: React.FC = () => {
             ) : <div />}
             <button
               onClick={() => setShowLeaveModal(true)}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-1.5 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
+              title="Tạo đơn xin nghỉ"
             >
-              <span className="material-symbols-outlined text-[16px] sm:text-[18px]">add</span>
-              <span>Tạo đơn xin nghỉ</span>
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              <span className="hidden sm:inline">Tạo đơn xin nghỉ</span>
             </button>
           </div>
 
@@ -888,137 +926,151 @@ export const AttendancePage: React.FC = () => {
             {leaves.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-sm">Chưa có đơn xin nghỉ phép nào.</div>
             ) : (
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-bold uppercase sticky top-0 z-10">
-                    <th className="p-3 w-12 text-center">STT</th>
-                    <th className="p-3">Nhân viên</th>
-                    <th className="p-3">Loại nghỉ</th>
-                    <th className="p-3">Thời gian nghỉ</th>
-                    <th className="p-3 text-center">Số ngày</th>
-                    <th className="p-3">Lý do</th>
-                    <th className="p-3 text-center">Trạng thái</th>
-                    <th className="p-3">Duyệt Cấp 1 (QL)</th>
-                    <th className="p-3">Duyệt Cấp 2 (BGD)</th>
-                    <th className="p-3 text-center w-24">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+              <>
+                {/* Mobile View: Cards */}
+                <div className="block md:hidden divide-y divide-slate-100">
                   {leaves.map((l, idx) => {
                     const isMatch = Boolean(highlightLeaveId && l.id === highlightLeaveId);
-                    
-                    // Quyền duyệt Cấp 1
                     const canReviewStep1 = (
                       (l.status === 'PENDING_STEP1' || (l.status === 'PENDING' && l.step1ReviewerId)) &&
-                      (user?.id === l.step1ReviewerId || user?.name === l.step1ReviewerName || isAdmin || user?.permissions?.includes('APPROVE_LEAVE_STEP1' as any))
+                      (
+                        (l.step1ReviewerId && (user?.id === l.step1ReviewerId || user?.name === l.step1ReviewerName)) ||
+                        (!l.step1ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_STEP1' as any) || isAdmin))
+                      )
                     );
-
-                    // Quyền duyệt Cấp 2 (Ban Giám Đốc / Admin)
                     const canReviewStep2 = (
-                      (l.status === 'APPROVED_STEP1' || (l.status === 'PENDING' && !l.step1ReviewerId)) &&
-                      (user?.id === l.step2ReviewerId || user?.name === l.step2ReviewerName || isAdmin || user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any))
+                      (
+                        (l.status === 'APPROVED_STEP1') || 
+                        (l.status === 'PENDING' && !l.step1ReviewerId)
+                      ) &&
+                      (
+                        (l.step2ReviewerId && (user?.id === l.step2ReviewerId || user?.name === l.step2ReviewerName)) ||
+                        (!l.step2ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any) || isAdmin)) ||
+                        isAdmin
+                      )
                     );
 
                     return (
-                    <tr 
-                      key={l.id} 
-                      onClick={() => setIsHighlightActive(false)}
-                      className={`transition-colors ${
-                        isMatch
-                          ? 'highlighted-leave-row bg-amber-100/60 hover:bg-amber-100/80 border-l-4 border-l-amber-500 border-y border-amber-300/70 ring-1 ring-inset ring-amber-300/50 font-medium'
-                          : 'hover:bg-slate-50'
-                      }`}
-                    >
-                      <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
-                      <td className="p-3 font-bold text-slate-800">{l.userName}</td>
-                      <td className="p-3 font-semibold text-slate-700">{l.leaveType}</td>
-                      <td className="p-3 whitespace-nowrap text-slate-700">
-                        {formatDate(l.startDate)} → {formatDate(l.endDate)}
-                      </td>
-                      <td className="p-3 text-center font-bold text-slate-800">{l.totalDays} ngày</td>
-                      <td className="p-3 text-slate-600 max-w-[180px] truncate" title={l.reason}>{l.reason}</td>
-                      <td className="p-3 text-center whitespace-nowrap">
-                        {l.status === 'PENDING_STEP1' && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                            Chờ QL duyệt (Cấp 1)
-                          </span>
-                        )}
-                        {l.status === 'PENDING' && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                            {l.step1ReviewerId ? 'Chờ QL duyệt (Cấp 1)' : 'Chờ BGD duyệt'}
-                          </span>
-                        )}
-                        {l.status === 'APPROVED_STEP1' && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200 animate-pulse">
-                            Qua Cấp 1 • Chờ BGD duyệt
-                          </span>
-                        )}
-                        {l.status === 'APPROVED' && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            Đã duyệt hoàn tất
-                          </span>
-                        )}
-                        {l.status === 'REJECTED' && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-red-100 text-red-800 border border-red-200">
-                            Từ chối
-                          </span>
-                        )}
-                      </td>
-                      {/* Cột Cấp 1 */}
-                      <td className="p-3 text-slate-600">
-                        {l.step1ReviewerName ? (
-                          <div>
-                            <span className="font-bold text-slate-800">{l.step1ReviewerName}</span>
-                            {l.step1ReviewedAt ? (
-                              <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Đã duyệt</span>
-                            ) : l.status === 'REJECTED' ? (
-                              <span className="ml-1 text-[10px] font-bold text-red-600">✗ Từ chối</span>
-                            ) : (
-                              <span className="ml-1 text-[10px] font-medium text-amber-600">(Đang chờ)</span>
-                            )}
-                            {l.step1ReviewNote && <p className="text-[11px] text-slate-500 italic truncate max-w-[150px]" title={l.step1ReviewNote}>{l.step1ReviewNote}</p>}
+                      <div
+                        key={l.id}
+                        onClick={() => setIsHighlightActive(false)}
+                        className={`p-3 space-y-2.5 transition-colors ${
+                          isMatch
+                            ? 'bg-amber-100/60 border-l-4 border-l-amber-500 font-medium'
+                            : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 font-bold text-[10px] flex items-center justify-center shrink-0">
+                              {idx + 1}
+                            </span>
+                            <div>
+                              <h4 className="text-xs font-bold text-slate-800">{l.userName}</h4>
+                              <p className="text-[11px] text-slate-500 font-medium">
+                                {formatDate(l.startDate)} → {formatDate(l.endDate)} ({l.totalDays} ngày)
+                              </p>
+                            </div>
                           </div>
-                        ) : (
-                          <span className="text-slate-400 italic">Bỏ qua Cấp 1</span>
-                        )}
-                      </td>
-                      {/* Cột Cấp 2 */}
-                      <td className="p-3 text-slate-600">
-                        {l.step2ReviewerName || l.reviewerName ? (
                           <div>
-                            <span className="font-bold text-slate-800">{l.step2ReviewerName || l.reviewerName}</span>
-                            {l.status === 'APPROVED' ? (
-                              <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Phê duyệt</span>
-                            ) : l.status === 'REJECTED' && !l.step1ReviewedAt ? (
-                              <span className="ml-1 text-[10px] font-bold text-red-600">✗ Từ chối</span>
-                            ) : (
-                              <span className="ml-1 text-[10px] font-medium text-slate-400">(Chờ duyệt)</span>
+                            {l.status === 'PENDING_STEP1' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                Chờ Quản lý duyệt
+                              </span>
                             )}
-                            {(l.step2ReviewNote || l.reviewNote) && <p className="text-[11px] text-slate-500 italic truncate max-w-[150px]" title={l.step2ReviewNote || l.reviewNote}>{l.step2ReviewNote || l.reviewNote}</p>}
+                            {l.status === 'PENDING' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                {l.step1ReviewerId ? 'Chờ Quản lý duyệt' : 'Chờ Quản trị duyệt'}
+                              </span>
+                            )}
+                            {l.status === 'APPROVED_STEP1' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200 animate-pulse">
+                                Quản lý đã duyệt • Chờ Quản trị
+                              </span>
+                            )}
+                            {l.status === 'APPROVED' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                Đã duyệt hoàn tất
+                              </span>
+                            )}
+                            {l.status === 'REJECTED' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">
+                                Từ chối
+                              </span>
+                            )}
                           </div>
-                        ) : (
-                          <span className="text-slate-400 italic">Ban Giám Đốc</span>
-                        )}
-                      </td>
-                      {/* Thao tác */}
-                      <td className="p-3 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
+                        </div>
+
+                        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-xs space-y-1.5">
+                          <div className="flex items-center justify-between text-slate-600">
+                            <span className="font-semibold text-slate-500">Loại nghỉ:</span>
+                            <span className="font-bold text-slate-800">{l.leaveType}</span>
+                          </div>
+                          <div className="text-slate-600">
+                            <span className="font-semibold text-slate-500">Lý do: </span>
+                            <span>{l.reason}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-200/60 text-[11px]">
+                            <div>
+                              <span className="text-slate-400 font-semibold block">Quản lý duyệt:</span>
+                              {l.step1ReviewerName ? (
+                                <div>
+                                  <span className="font-bold text-slate-700">{l.step1ReviewerName}</span>
+                                  {l.step1ReviewedAt ? (
+                                    <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Đã duyệt</span>
+                                  ) : (
+                                    <span className="ml-1 text-[10px] text-amber-600">(Đang chờ)</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 italic">—</span>
+                              )}
+                            </div>
+                            <div>
+                              <span className="text-slate-400 font-semibold block">Quản trị duyệt:</span>
+                              {l.step2ReviewerName || (l.reviewerName && !l.step1ReviewerName) ? (
+                                <div>
+                                  <span className="font-bold text-slate-700">{l.step2ReviewerName || l.reviewerName}</span>
+                                  {l.status === 'APPROVED' ? (
+                                    <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Đã duyệt</span>
+                                  ) : (
+                                    <span className="ml-1 text-[10px] text-slate-400">(Chờ duyệt)</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <div>
+                                  <span className="font-semibold text-slate-700">Quản trị</span>
+                                  {l.status === 'APPROVED' ? (
+                                    <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Đã duyệt</span>
+                                  ) : l.status === 'APPROVED_STEP1' ? (
+                                    <span className="ml-1 text-[10px] font-bold text-amber-600">(Chờ duyệt)</span>
+                                  ) : (
+                                    <span className="ml-1 text-[10px] text-slate-400 italic">—</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Thao tác trên Mobile */}
+                        <div className="flex items-center justify-end gap-2 pt-1">
                           {canReviewStep1 && (
                             <button
                               onClick={() => { setReviewLeave(l); setReviewStep(1); setReviewNote(''); }}
-                              className="px-2.5 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded text-[11px] font-bold border border-purple-200 active:scale-95 transition-all shadow-2xs cursor-pointer"
-                              title="Duyệt đơn cấp 1"
+                              className="px-3 py-1.5 bg-blue-50 text-primary hover:bg-blue-100 rounded-lg text-xs font-bold border border-blue-200 active:scale-95 transition-all shadow-2xs cursor-pointer"
+                              title="Quản lý duyệt"
                             >
-                              Duyệt Cấp 1
+                              Duyệt
                             </button>
                           )}
                           {canReviewStep2 && (
                             <button
                               onClick={() => { setReviewLeave(l); setReviewStep(2); setReviewNote(''); }}
-                              className="px-2.5 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded text-[11px] font-bold border border-indigo-200 active:scale-95 transition-all shadow-2xs cursor-pointer"
-                              title="Phê duyệt chính thức"
+                              className="px-3 py-1.5 bg-primary text-white hover:bg-blue-800 rounded-lg text-xs font-bold shadow-2xs active:scale-95 transition-all cursor-pointer"
+                              title="Quản trị duyệt"
                             >
-                              Duyệt BGD
+                              Duyệt
                             </button>
                           )}
                           {(isAdmin || l.userId === user?.id || (user?.username && l.userName === user.name)) && (
@@ -1031,12 +1083,183 @@ export const AttendancePage: React.FC = () => {
                             </button>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
+                </div>
+
+                {/* Desktop View: Table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-bold uppercase sticky top-0 z-10">
+                        <th className="p-3 w-12 text-center">STT</th>
+                        <th className="p-3">Nhân viên</th>
+                        <th className="p-3">Loại nghỉ</th>
+                        <th className="p-3">Thời gian nghỉ</th>
+                        <th className="p-3 text-center">Số ngày</th>
+                        <th className="p-3">Lý do</th>
+                        <th className="p-3 text-center">Trạng thái</th>
+                        <th className="p-3">Quản lý duyệt</th>
+                        <th className="p-3">Quản trị duyệt</th>
+                        <th className="p-3 text-center w-24">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {leaves.map((l, idx) => {
+                        const isMatch = Boolean(highlightLeaveId && l.id === highlightLeaveId);
+                        
+                        // Quyền duyệt Quản lý (Trưởng nhóm / Quản lý duyệt bước đầu)
+                        const canReviewStep1 = (
+                          (l.status === 'PENDING_STEP1' || (l.status === 'PENDING' && l.step1ReviewerId)) &&
+                          (
+                            (l.step1ReviewerId && (user?.id === l.step1ReviewerId || user?.name === l.step1ReviewerName)) ||
+                            (!l.step1ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_STEP1' as any) || isAdmin))
+                          )
+                        );
+
+                        // Quyền duyệt Quản trị (Admin duyệt quyết định cuối)
+                        const canReviewStep2 = (
+                          (
+                            (l.status === 'APPROVED_STEP1') || 
+                            (l.status === 'PENDING' && !l.step1ReviewerId)
+                          ) &&
+                          (
+                            (l.step2ReviewerId && (user?.id === l.step2ReviewerId || user?.name === l.step2ReviewerName)) ||
+                            (!l.step2ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any) || isAdmin)) ||
+                            isAdmin
+                          )
+                        );
+
+                        return (
+                        <tr 
+                          key={l.id} 
+                          onClick={() => setIsHighlightActive(false)}
+                          className={`transition-colors ${
+                            isMatch
+                              ? 'highlighted-leave-row bg-amber-100/60 hover:bg-amber-100/80 border-l-4 border-l-amber-500 border-y border-amber-300/70 ring-1 ring-inset ring-amber-300/50 font-medium'
+                              : 'hover:bg-slate-50'
+                          }`}
+                        >
+                          <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
+                          <td className="p-3 font-bold text-slate-800">{l.userName}</td>
+                          <td className="p-3 font-semibold text-slate-700">{l.leaveType}</td>
+                          <td className="p-3 whitespace-nowrap text-slate-700">
+                            {formatDate(l.startDate)} → {formatDate(l.endDate)}
+                          </td>
+                          <td className="p-3 text-center font-bold text-slate-800">{l.totalDays} ngày</td>
+                          <td className="p-3 text-slate-600 max-w-[180px] truncate" title={l.reason}>{l.reason}</td>
+                          <td className="p-3 text-center whitespace-nowrap">
+                            {l.status === 'PENDING_STEP1' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                Chờ Quản lý duyệt
+                              </span>
+                            )}
+                            {l.status === 'PENDING' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                {l.step1ReviewerId ? 'Chờ Quản lý duyệt' : 'Chờ Quản trị duyệt'}
+                              </span>
+                            )}
+                            {l.status === 'APPROVED_STEP1' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200 animate-pulse">
+                                Quản lý đã duyệt • Chờ Quản trị
+                              </span>
+                            )}
+                            {l.status === 'APPROVED' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                Đã duyệt hoàn tất
+                              </span>
+                            )}
+                            {l.status === 'REJECTED' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-red-100 text-red-800 border border-red-200">
+                                Từ chối
+                              </span>
+                            )}
+                          </td>
+                          {/* Cột Quản lý */}
+                          <td className="p-3 text-slate-600">
+                            {l.step1ReviewerName ? (
+                              <div>
+                                <span className="font-bold text-slate-800">{l.step1ReviewerName}</span>
+                                {l.step1ReviewedAt ? (
+                                  <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Đã duyệt</span>
+                                ) : l.status === 'REJECTED' ? (
+                                  <span className="ml-1 text-[10px] font-bold text-red-600">✗ Từ chối</span>
+                                ) : (
+                                  <span className="ml-1 text-[10px] font-medium text-amber-600">(Đang chờ)</span>
+                                )}
+                                {l.step1ReviewNote && <p className="text-[11px] text-slate-500 italic truncate max-w-[150px]" title={l.step1ReviewNote}>{l.step1ReviewNote}</p>}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 italic">—</span>
+                            )}
+                          </td>
+                          {/* Cột Quản trị */}
+                          <td className="p-3 text-slate-600">
+                            {l.step2ReviewerName || (l.reviewerName && !l.step1ReviewerName) ? (
+                              <div>
+                                <span className="font-bold text-slate-800">{l.step2ReviewerName || l.reviewerName}</span>
+                                {l.status === 'APPROVED' ? (
+                                  <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Phê duyệt</span>
+                                ) : l.status === 'REJECTED' && !l.step1ReviewedAt ? (
+                                  <span className="ml-1 text-[10px] font-bold text-red-600">✗ Từ chối</span>
+                                ) : (
+                                  <span className="ml-1 text-[10px] font-medium text-slate-400">(Chờ duyệt)</span>
+                                )}
+                                {(l.step2ReviewNote || l.reviewNote) && <p className="text-[11px] text-slate-500 italic truncate max-w-[150px]" title={l.step2ReviewNote || l.reviewNote}>{l.step2ReviewNote || l.reviewNote}</p>}
+                              </div>
+                            ) : (
+                              <div>
+                                <span className="font-semibold text-slate-700">Quản trị</span>
+                                {l.status === 'APPROVED_STEP1' ? (
+                                  <span className="ml-1 text-[10px] font-bold text-amber-600 animate-pulse">(Chờ duyệt)</span>
+                                ) : l.status === 'APPROVED' ? (
+                                  <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Đã duyệt</span>
+                                ) : (
+                                  <span className="ml-1 text-[10px] text-slate-400 italic">—</span>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          {/* Thao tác */}
+                          <td className="p-3 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-1.5">
+                              {canReviewStep1 && (
+                                <button
+                                  onClick={() => { setReviewLeave(l); setReviewStep(1); setReviewNote(''); }}
+                                  className="px-2.5 py-1 bg-blue-50 text-primary hover:bg-blue-100 rounded text-[11px] font-bold border border-blue-200 active:scale-95 transition-all shadow-2xs cursor-pointer"
+                                  title="Quản lý duyệt"
+                                >
+                                  Duyệt
+                                </button>
+                              )}
+                              {canReviewStep2 && (
+                                <button
+                                  onClick={() => { setReviewLeave(l); setReviewStep(2); setReviewNote(''); }}
+                                  className="px-2.5 py-1 bg-primary text-white hover:bg-blue-800 rounded text-[11px] font-bold shadow-2xs active:scale-95 transition-all cursor-pointer"
+                                  title="Quản trị duyệt"
+                                >
+                                  Duyệt
+                                </button>
+                              )}
+                              {(isAdmin || l.userId === user?.id || (user?.username && l.userName === user.name)) && (
+                                <button
+                                  onClick={() => handleDeleteLeave(l.id)}
+                                  className="w-7 h-7 rounded-full inline-flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                                  title="Xóa đơn"
+                                >
+                                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -1082,43 +1305,43 @@ export const AttendancePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
             <div>
-              <label className="block text-xs font-bold text-purple-900 mb-1">
-                Người duyệt Cấp 1 (Trưởng nhóm / QL trực tiếp)
+              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                <span>Quản lý duyệt</span>
+                <span className="text-[11px] font-normal text-slate-400">(Tùy chọn)</span>
               </label>
               <CustomSelect
                 value={step1ReviewerId}
                 onChange={e => setStep1ReviewerId(e.target.value)}
                 searchable={true}
-                className="w-full px-3 py-2 border border-purple-200 rounded-lg text-xs bg-white font-medium"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
               >
-                <option value="">-- Bỏ qua Cấp 1 (Gửi thẳng BGD) --</option>
+                <option value="">-- Không chọn --</option>
                 {step1Reviewers.map(r => (
                   <option key={r.id} value={r.id}>
-                    {r.name} ({r.role || 'Quản lý'})
+                    {r.name}
                   </option>
                 ))}
               </CustomSelect>
-              <p className="text-[11px] text-slate-400 mt-0.5">Chọn người quản lý trực tiếp duyệt bước đầu tiên.</p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-indigo-900 mb-1">
-                Người duyệt Cấp cao nhất (Ban Giám Đốc)
+              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                <span>Ban Giám Đốc duyệt</span>
+                <span className="text-[11px] font-normal text-slate-400">(Tùy chọn)</span>
               </label>
               <CustomSelect
                 value={step2ReviewerId}
                 onChange={e => setStep2ReviewerId(e.target.value)}
                 searchable={true}
-                className="w-full px-3 py-2 border border-indigo-200 rounded-lg text-xs bg-white font-medium"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
               >
-                <option value="">-- Mặc định Ban Giám Đốc / Admin --</option>
+                <option value="">-- Không chọn --</option>
                 {step2Reviewers.map(r => (
                   <option key={r.id} value={r.id}>
-                    {r.name} ({r.role || 'Ban Giám Đốc'})
+                    {r.name}
                   </option>
                 ))}
               </CustomSelect>
-              <p className="text-[11px] text-slate-400 mt-0.5">Người phê duyệt quyết định cuối cùng.</p>
             </div>
           </div>
 
@@ -1154,7 +1377,7 @@ export const AttendancePage: React.FC = () => {
       <Modal
         isOpen={!!reviewLeave}
         onClose={() => setReviewLeave(null)}
-        title={reviewStep === 1 ? 'Xét duyệt Đơn Cấp 1 (Trưởng nhóm / QL)' : 'Phê duyệt Đơn Cấp cao nhất (BGD / Admin)'}
+        title={reviewStep === 1 ? 'Xét duyệt đơn xin nghỉ (Quản lý)' : 'Phê duyệt đơn xin nghỉ (Quản trị)'}
         icon="rate_review"
         size="md"
       >
@@ -1166,21 +1389,21 @@ export const AttendancePage: React.FC = () => {
               <p><span className="font-bold text-slate-700">Thời gian nghỉ:</span> {formatDate(reviewLeave.startDate)} → {formatDate(reviewLeave.endDate)} ({reviewLeave.totalDays} ngày)</p>
               <p><span className="font-bold text-slate-700">Lý do:</span> {reviewLeave.reason}</p>
               {reviewStep === 2 && reviewLeave.step1ReviewerName && (
-                <div className="pt-2 border-t border-slate-200/80 text-purple-900">
-                  <p><span className="font-bold">Đã duyệt Cấp 1 bởi:</span> {reviewLeave.step1ReviewerName} {reviewLeave.step1ReviewedAt && `(${formatDate(reviewLeave.step1ReviewedAt)})`}</p>
-                  {reviewLeave.step1ReviewNote && <p className="italic text-slate-600">Ý kiến cấp 1: "{reviewLeave.step1ReviewNote}"</p>}
+                <div className="pt-2 border-t border-slate-200/80 text-slate-800">
+                  <p><span className="font-bold text-primary">Quản lý đã duyệt:</span> {reviewLeave.step1ReviewerName} {reviewLeave.step1ReviewedAt && `(${formatDate(reviewLeave.step1ReviewedAt)})`}</p>
+                  {reviewLeave.step1ReviewNote && <p className="italic text-slate-600">Ý kiến Quản lý: "{reviewLeave.step1ReviewNote}"</p>}
                 </div>
               )}
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Ý kiến / Ghi chú duyệt {reviewStep === 1 ? 'Cấp 1' : 'Cấp BGD'} (tùy chọn)
+                Ý kiến / Ghi chú duyệt (tùy chọn)
               </label>
               <textarea
                 rows={2}
                 value={reviewNote}
                 onChange={e => setReviewNote(e.target.value)}
-                placeholder={reviewStep === 1 ? "Ghi chú ý kiến của quản lý trực tiếp..." : "Ghi chú phê duyệt của Ban Giám Đốc..."}
+                placeholder={reviewStep === 1 ? "Ghi chú ý kiến của quản lý trực tiếp..." : "Ghi chú phê duyệt của Quản trị..."}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none resize-none"
               />
             </div>
@@ -1197,11 +1420,9 @@ export const AttendancePage: React.FC = () => {
                 type="button"
                 onClick={() => handleReviewLeave('APPROVED')}
                 disabled={isSubmitting}
-                className={`px-5 py-2 text-white font-bold rounded-lg text-sm shadow-sm transition-all disabled:opacity-50 cursor-pointer ${
-                  reviewStep === 1 ? 'bg-purple-600 hover:bg-purple-700' : 'bg-primary hover:bg-primary/90'
-                }`}
+                className="px-5 py-2 bg-primary hover:bg-blue-800 text-white font-bold rounded-lg text-sm shadow-sm transition-all disabled:opacity-50 cursor-pointer"
               >
-                {reviewStep === 1 ? 'Thông qua Cấp 1 (Chuyển BGD)' : 'Chấp thuận duyệt chính thức'}
+                Duyệt
               </button>
             </div>
           </div>

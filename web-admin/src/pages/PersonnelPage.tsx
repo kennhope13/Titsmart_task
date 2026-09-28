@@ -43,6 +43,7 @@ export const PersonnelPage: React.FC = () => {
   const [selectedProjectCodes, setSelectedProjectCodes] = useState<string[]>([]);
   const [isAllProjects, setIsAllProjects] = useState(false);
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [selectedLevel, setSelectedLevel] = useState<'level1' | 'level2' | 'level3' | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
@@ -597,6 +598,110 @@ export const PersonnelPage: React.FC = () => {
                 <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={editingPersonId ? "••••••••" : "Nhập mật khẩu"} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
               </div>
             </div>
+
+            {/* CẤP ĐỘ PHÂN QUYỀN */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <label className="text-[13px] font-bold text-slate-700">
+                Phân quyền
+              </label>
+              
+              <div className="space-y-1.5 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                {/* Cấp 1: Cao nhất (Toàn quyền / Ban Giám Đốc / Duyệt C2) */}
+                <label className="flex items-center gap-2.5 text-sm p-1 hover:bg-slate-100/80 rounded cursor-pointer transition-colors select-none">
+                  <input
+                    type="checkbox"
+                    checked={
+                      selectedLevel === 'level1' ||
+                      (permissions.includes('APPROVE_LEAVE_FINAL') && permissions.includes('DELETE_PROJECTS'))
+                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedLevel('level1');
+                        setPermissions([...ALL_AVAILABLE_PERMISSIONS]);
+                      } else {
+                        setSelectedLevel(null);
+                        setPermissions([]);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer"
+                  />
+                  <span className="text-xs font-semibold text-slate-800">Cấp 1</span>
+                </label>
+
+                {/* Cấp 2: Quản lý / Trưởng nhóm (Duyệt C1) */}
+                <label className="flex items-center gap-2.5 text-sm p-1 hover:bg-slate-100/80 rounded cursor-pointer transition-colors select-none">
+                  <input
+                    type="checkbox"
+                    checked={
+                      selectedLevel === 'level2' ||
+                      (permissions.includes('APPROVE_LEAVE_STEP1') && !permissions.includes('APPROVE_LEAVE_FINAL'))
+                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedLevel('level2');
+                        setPermissions([
+                          'VIEW_PROJECTS', 'CREATE_PROJECTS', 'EDIT_PROJECTS',
+                          'VIEW_TASKS', 'IMPORT_TASKS', 'EDIT_TASKS', 'ASSIGN_TASKS', 'UPDATE_TASK_PROGRESS', 'APPROVE_TASKS', 'VIEW_FIELD_LOGS', 'MANAGE_FIELD_LOGS',
+                          'VIEW_MATERIALS', 'IMPORT_MATERIALS', 'EDIT_MATERIALS', 'UPDATE_MATERIAL_STATUS', 'MANAGE_INVENTORY',
+                          'VIEW_FINANCE', 'VIEW_PAYMENTS', 'VIEW_EXPENSES', 'EDIT_EXPENSES',
+                          'VIEW_USERS', 'MANAGE_PAYROLL', 'EXPORT_DATA', 'VIEW_ACTIVITY_LOG',
+                          'APPROVE_LEAVE_STEP1',
+                          'VIEW_PROJECT_DIAGRAM', 'VIEW_DOCUMENTS', 'MANAGE_DOCUMENTS'
+                        ]);
+                      } else {
+                        setSelectedLevel(null);
+                        setPermissions([]);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer"
+                  />
+                  <span className="text-xs font-semibold text-slate-800">Cấp 2</span>
+                </label>
+
+                {/* Cấp 3: Nhân viên / Kỹ sư hiện trường (Khớp chính xác ảnh mẫu) */}
+                <label className="flex items-center gap-2.5 text-sm p-1 hover:bg-slate-100/80 rounded cursor-pointer transition-colors select-none">
+                  <input
+                    type="checkbox"
+                    checked={
+                      selectedLevel === 'level3' ||
+                      (
+                        permissions.includes('VIEW_PROJECTS') &&
+                        permissions.includes('VIEW_TASKS') &&
+                        permissions.includes('UPDATE_TASK_PROGRESS') &&
+                        permissions.includes('VIEW_FIELD_LOGS') &&
+                        permissions.includes('MANAGE_FIELD_LOGS') &&
+                        permissions.includes('VIEW_MATERIALS') &&
+                        permissions.includes('UPDATE_MATERIAL_STATUS') &&
+                        permissions.includes('VIEW_USERS') &&
+                        permissions.includes('VIEW_PROJECT_DIAGRAM') &&
+                        permissions.includes('VIEW_DOCUMENTS') &&
+                        !permissions.includes('APPROVE_LEAVE_STEP1') &&
+                        !permissions.includes('APPROVE_LEAVE_FINAL') &&
+                        !permissions.includes('VIEW_FINANCE') &&
+                        !permissions.includes('CREATE_PROJECTS')
+                      )
+                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedLevel('level3');
+                        setPermissions([
+                          'VIEW_PROJECTS',
+                          'VIEW_TASKS', 'UPDATE_TASK_PROGRESS', 'VIEW_FIELD_LOGS', 'MANAGE_FIELD_LOGS',
+                          'VIEW_MATERIALS', 'UPDATE_MATERIAL_STATUS',
+                          'VIEW_USERS',
+                          'VIEW_PROJECT_DIAGRAM', 'VIEW_DOCUMENTS'
+                        ]);
+                      } else {
+                        setSelectedLevel(null);
+                        setPermissions([]);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer"
+                  />
+                  <span className="text-xs font-semibold text-slate-800">Cấp 3</span>
+                </label>
+              </div>
+            </div>
           
           
             
@@ -613,9 +718,32 @@ export const PersonnelPage: React.FC = () => {
 </div>
 <div className="lg:w-[60%] border-t lg:border-t-0 lg:border-l lg:pl-4 border-slate-100">
 <div className="mt-2">
-  <label className="block text-[13px] font-bold text-slate-700 mb-1.5">
-    Phân quyền Dự án <span className="text-red-500">*</span>
-  </label>
+  <div className="flex justify-between items-center mb-1.5">
+    <label className="block text-[13px] font-bold text-slate-700">
+      Phân quyền Dự án <span className="text-red-500">*</span>
+    </label>
+    {projects.length > 0 && (
+      <label className="flex items-center gap-1.5 text-xs font-bold text-primary hover:text-blue-700 cursor-pointer select-none bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded transition-colors border border-blue-200">
+        <input
+          type="checkbox"
+          checked={
+            selectedProjectCodes.includes('COMPANY') &&
+            projects.every(p => selectedProjectCodes.includes(p.code))
+          }
+          onChange={(e) => {
+            if (e.target.checked) {
+              const allCodes = ['COMPANY', ...projects.map(p => p.code)];
+              setSelectedProjectCodes(allCodes);
+            } else {
+              setSelectedProjectCodes([]);
+            }
+          }}
+          className="accent-primary w-3.5 h-3.5 cursor-pointer rounded"
+        />
+        <span>Chọn tất cả</span>
+      </label>
+    )}
+  </div>
   <div>
     <div className={`max-h-48 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 custom-scrollbar ${selectedProjectCodes.length === 0 ? 'border-red-300' : 'border-slate-200'}`}>
       <label key="COMPANY" className="flex items-center gap-2 text-sm p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors border-b border-slate-200/60 pb-2 mb-1">
@@ -703,8 +831,6 @@ export const PersonnelPage: React.FC = () => {
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_USERS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_USERS']) : setPermissions(p => p.filter(x => x !== 'MANAGE_USERS'))} className="accent-primary w-3.5 h-3.5"/>Quản lý nhân sự</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_PERMISSIONS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_PERMISSIONS']) : setPermissions(p => p.filter(x => x !== 'MANAGE_PERMISSIONS'))} className="accent-primary w-3.5 h-3.5"/>Cấp quyền hệ thống</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_PAYROLL')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_PAYROLL']) : setPermissions(p => p.filter(x => x !== 'MANAGE_PAYROLL'))} className="accent-primary w-3.5 h-3.5"/>Bảng chấm công</label>
-                  <label className="flex items-center gap-2 text-[13px] text-purple-700 font-bold bg-purple-50/70 px-1 py-0.5 rounded border border-purple-200/50"><input type="checkbox" checked={permissions.includes('APPROVE_LEAVE_STEP1')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'APPROVE_LEAVE_STEP1']) : setPermissions(p => p.filter(x => x !== 'APPROVE_LEAVE_STEP1'))} className="accent-purple-600 w-3.5 h-3.5"/>Duyệt nghỉ phép Cấp 1 (QL/Trưởng nhóm)</label>
-                  <label className="flex items-center gap-2 text-[13px] text-indigo-700 font-bold bg-indigo-50/70 px-1 py-0.5 rounded border border-indigo-200/50"><input type="checkbox" checked={permissions.includes('APPROVE_LEAVE_FINAL')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'APPROVE_LEAVE_FINAL']) : setPermissions(p => p.filter(x => x !== 'APPROVE_LEAVE_FINAL'))} className="accent-indigo-600 w-3.5 h-3.5"/>Duyệt nghỉ phép Cấp cao nhất (BGD/Admin)</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('EXPORT_DATA')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'EXPORT_DATA']) : setPermissions(p => p.filter(x => x !== 'EXPORT_DATA'))} className="accent-primary w-3.5 h-3.5"/>Xuất báo cáo (Excel/PDF)</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_ACTIVITY_LOG')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_ACTIVITY_LOG']) : setPermissions(p => p.filter(x => x !== 'VIEW_ACTIVITY_LOG'))} className="accent-primary w-3.5 h-3.5"/>Xem lịch sử hoạt động</label>
                 </div>

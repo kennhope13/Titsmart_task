@@ -230,9 +230,24 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     return isAdmin;
   }
 
-  // 3. Leave requests: Only for Admin/Managers (unless it's an approval/rejection notification for the specific user)
+  // 3. Leave requests: Targeted notifications based on metadata type (`leave_pending:::targetId:::targetName`)
   if (tLow.includes('nghỉ phép') || mLow.includes('nghỉ phép') || typeStr.startsWith('leave')) {
-    if (tLow.includes('đã được duyệt') || tLow.includes('từ chối')) {
+    if (typeStr.includes(':::')) {
+      const parts = typeStr.split(':::');
+      const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+      const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+      const isMeId = targetIds.some(tId => myIds.includes(tId) || (myEng && tId === String(myEng.id).toLowerCase()));
+      const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
+
+      if (isMeId || isMeName) return true;
+      if (targetIds.includes('admin') || targetNames.includes('quản trị') || targetNames.includes('quản trị viên')) {
+        return isAdmin;
+      }
+      return false; // Chỉ gửi đích danh người duyệt được chọn, không spam người khác
+    }
+
+    if (tLow.includes('đã được duyệt') || tLow.includes('từ chối') || tLow.includes('phê duyệt')) {
       if (myNames.some(n => mLow.includes(n))) return true;
     }
     return isAdmin;
