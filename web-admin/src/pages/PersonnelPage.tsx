@@ -20,7 +20,7 @@ const ALL_AVAILABLE_PERMISSIONS: Permission[] = [
   'VIEW_PROJECTS', 'CREATE_PROJECTS', 'EDIT_PROJECTS', 'DELETE_PROJECTS',
   'VIEW_TASKS', 'IMPORT_TASKS', 'EDIT_TASKS', 'ASSIGN_TASKS', 'UPDATE_TASK_PROGRESS', 'APPROVE_TASKS', 'VIEW_FIELD_LOGS', 'MANAGE_FIELD_LOGS',
   'VIEW_MATERIALS', 'IMPORT_MATERIALS', 'EDIT_MATERIALS', 'UPDATE_MATERIAL_STATUS', 'MANAGE_INVENTORY',
-  'VIEW_FINANCE', 'EDIT_PRICES', 'VIEW_PAYMENTS', 'EDIT_PAYMENTS', 'VIEW_EXPENSES', 'EDIT_EXPENSES', 'VIEW_OFFICE_COSTS',
+  'VIEW_FINANCE', 'EDIT_PRICES', 'VIEW_PAYMENTS', 'EDIT_PAYMENTS', 'VIEW_EXPENSES', 'EDIT_EXPENSES',
   'VIEW_USERS', 'MANAGE_USERS', 'MANAGE_PERMISSIONS', 'MANAGE_PAYROLL', 'EXPORT_DATA', 'VIEW_ACTIVITY_LOG',
   'VIEW_PROJECT_DIAGRAM', 'VIEW_DOCUMENTS', 'MANAGE_DOCUMENTS'
 ];
@@ -695,7 +695,6 @@ export const PersonnelPage: React.FC = () => {
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('EDIT_PAYMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'EDIT_PAYMENTS']) : setPermissions(p => p.filter(x => x !== 'EDIT_PAYMENTS'))} className="accent-primary w-3.5 h-3.5"/>Cập nhật thanh toán</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_EXPENSES')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_EXPENSES']) : setPermissions(p => p.filter(x => x !== 'VIEW_EXPENSES'))} className="accent-primary w-3.5 h-3.5"/>Xem chi phí công trình</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('EDIT_EXPENSES')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'EDIT_EXPENSES']) : setPermissions(p => p.filter(x => x !== 'EDIT_EXPENSES'))} className="accent-primary w-3.5 h-3.5"/>Quản lý chi phí công trình</label>
-                  <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_OFFICE_COSTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_OFFICE_COSTS']) : setPermissions(p => p.filter(x => x !== 'VIEW_OFFICE_COSTS'))} className="accent-primary w-3.5 h-3.5"/>Chi phí văn phòng</label>
                 </div>
                 {/* HỆ THỐNG */}
                 <div className="space-y-1">
