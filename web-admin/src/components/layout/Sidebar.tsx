@@ -86,7 +86,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       { label: 'Tổng quan', path: '/dashboard', icon: 'analytics', req: 'VIEW_PROJECTS' },
       { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower', req: 'VIEW_PROJECTS' },
       { label: 'Công việc', path: defaultTaskPath, icon: 'checklist', req: 'VIEW_TASKS' },
-      { label: 'Chi phí văn phòng', path: '/office-costs', icon: 'account_balance_wallet', req: 'VIEW_OFFICE_COSTS' },
       { label: 'Quản lý hồ sơ', path: '/document-tracking', icon: 'folder_managed', req: 'VIEW_DOCUMENTS' },
       { label: 'Tổng kho', path: '/materials', icon: 'warehouse', req: 'VIEW_MATERIALS' },
       { label: 'Công và nghỉ', path: '/attendance', icon: 'schedule', req: 'VIEW_TASKS' },
@@ -360,7 +359,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
           { label: 'Tổng quan', path: '/dashboard', icon: 'analytics' },
           { label: 'Dự án', path: '/projects', icon: 'cell_tower' },
           { label: 'Công việc', path: defaultTaskPath, icon: 'checklist' },
-          { label: 'Chi phí VP', path: '/office-costs', icon: 'account_balance_wallet' },
+          { label: 'Hồ sơ', path: '/document-tracking', icon: 'folder_managed' },
         ]).map((item) => {
           const isTask = (item.label === 'Công việc' || item.path.includes('task')) &&
             (location.pathname === '/task-assignment' || location.pathname === '/my-tasks');
