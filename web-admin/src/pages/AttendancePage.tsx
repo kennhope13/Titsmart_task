@@ -52,6 +52,39 @@ export const AttendancePage: React.FC = () => {
   const { projects, engineers, addNotification } = useRealtimeStore();
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
 
+  // Cho phép Quản lý (Cấp 2), Người duyệt (APPROVE_LEAVE_STEP1/FINAL) và Admin xem 'Tất cả' để duyệt
+  const canViewAll = React.useMemo(() => {
+    if (!user) return false;
+    const roleStr = String(user.role || '').toLowerCase();
+    const titleStr = String((user as any).title || '').toLowerCase();
+    const usernameStr = String(user.username || '').toLowerCase();
+    const perms = Array.isArray(user.permissions) ? user.permissions : [];
+
+    return (
+      isAdmin ||
+      usernameStr === 'admin' ||
+      roleStr.includes('admin') ||
+      roleStr.includes('quản trị') ||
+      roleStr.includes('quản lý') ||
+      roleStr.includes('manager') ||
+      roleStr.includes('pm') ||
+      roleStr.includes('trưởng') ||
+      roleStr.includes('chỉ huy') ||
+      roleStr.includes('giám đốc') ||
+      titleStr.includes('quản lý') ||
+      titleStr.includes('trưởng') ||
+      titleStr.includes('chỉ huy') ||
+      titleStr.includes('pm') ||
+      perms.includes('APPROVE_LEAVE_STEP1' as any) ||
+      perms.includes('APPROVE_LEAVE_FINAL' as any) ||
+      perms.includes('VIEW_ALL_ATTENDANCE' as any) ||
+      perms.includes('MANAGE_ATTENDANCE' as any) ||
+      perms.includes('MANAGE_USERS' as any) ||
+      perms.includes('ASSIGN_TASKS' as any) ||
+      perms.includes('VIEW_PROJECTS' as any)
+    );
+  }, [user, isAdmin]);
+
   const [mainTab, setMainTab] = useState<'attendance' | 'leave'>('attendance');
   const [highlightLeaveId, setHighlightLeaveId] = useState<string | null>(null);
   const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
@@ -562,7 +595,7 @@ export const AttendancePage: React.FC = () => {
 
         {/* Desktop-only Right controls (My/All switcher + Action Button) pushed to far right */}
         <div className="hidden md:flex items-center gap-3 shrink-0">
-          {isAdmin && (
+          {canViewAll && (
             <div className="inline-flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0">
               <button
                 onClick={() => setTab('my')}
@@ -617,7 +650,7 @@ export const AttendancePage: React.FC = () => {
           {/* Check-in / Check-out Bar (Mobile only) */}
           <div className="bg-white border-b border-slate-200 shadow-xs shrink-0 md:hidden">
             <div className="px-3 py-2 sm:px-4 sm:py-2 flex items-center justify-between gap-2">
-              {isAdmin ? (
+              {canViewAll ? (
                 <div className="inline-flex md:hidden items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0">
                   <button
                     onClick={() => setTab('my')}
@@ -681,7 +714,7 @@ export const AttendancePage: React.FC = () => {
                   <span className="text-[11px] text-slate-500 font-semibold italic">(Tất cả các ngày)</span>
                 )}
               </div>
-              {isAdmin && tab === 'all' && (
+              {canViewAll && tab === 'all' && (
                 <>
                   <div className="h-4 w-px bg-slate-200"></div>
                   <div className="flex items-center gap-2">
@@ -849,7 +882,7 @@ export const AttendancePage: React.FC = () => {
                 {leaves.length}
               </div>
 
-              {isAdmin && (
+              {canViewAll && (
                 <div className="inline-flex md:hidden items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0 ml-1">
                   <button
                     onClick={() => setTab('my')}
