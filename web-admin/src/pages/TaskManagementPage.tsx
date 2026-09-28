@@ -748,7 +748,10 @@ const hasSyncedRef = useRef(false);
     setParentIdSelect(parentTask.isSectionHeader ? 'default' : parentTask.id);
     setName('');
     
-    const siblingTasks = activeTasksForProj.filter(t => t.parentId === parentTask.id);
+    const siblingTasks = parentTask.isSectionHeader
+      ? activeTasksForProj.filter(t => !t.isSectionHeader && (t.parentId === parentTask.id || t.sectionName === parentTask.name || t.sectionName === parentTask.sectionName))
+      : activeTasksForProj.filter(t => t.parentId === parentTask.id);
+
     let nextStt = '1';
     if (siblingTasks.length > 0) {
       const lastStt = siblingTasks[siblingTasks.length - 1].stt?.trim() || '';
@@ -860,32 +863,58 @@ const hasSyncedRef = useRef(false);
   };
 
   const openNewSectionModal = () => {
-    if (selectedProjectCode !== 'all') {
-      setProjectCode(selectedProjectCode);
+    const activeCode = selectedProjectCode !== 'all' ? selectedProjectCode : (projects[0]?.code || '');
+    if (activeCode) {
+      setProjectCode(activeCode);
     }
     setIsSectionHeader(true);
     setSectionSelect('default');
     setCustomSectionInput('');
     setName('');
-    setStt('');
+    
+    // Auto calculate next Section STT (e.g. 1, 2, 3...)
+    const projTasks = tasks.filter(t => t.projectCode === activeCode);
+    const existingSectionHeaders = projTasks.filter(t => t.isSectionHeader);
+    const nextSecNum = existingSectionHeaders.length + 1;
+    setStt(String(nextSecNum));
+    
     setOcrIssueDraft('');
     setIsNewTaskModalOpen(true);
   };
 
   const openNewTaskModal = () => {
-    if (selectedProjectCode !== 'all') {
-      setProjectCode(selectedProjectCode);
+    const activeCode = selectedProjectCode !== 'all' ? selectedProjectCode : (projects[0]?.code || '');
+    if (activeCode) {
+      setProjectCode(activeCode);
     }
     setIsSectionHeader(false);
     setName('');
     
-    const siblingTasks = activeTasksForProj.filter(t => !t.parentId && t.sectionName === activeSectionName && !t.isSectionHeader);
+    // Auto select target section if available
+    const projSections = Array.from(new Set(
+      tasks.filter(t => t.projectCode === activeCode && t.sectionName && t.sectionName.trim().length > 0)
+        .map(t => t.sectionName as string)
+    ));
+
+    const targetSection = (filterSection !== 'all' && filterSection) 
+      ? filterSection 
+      : (projSections.length > 0 ? projSections[0] : 'default');
+    
+    setSectionSelect(targetSection);
+    
+    // Calculate intelligent next STT
+    const siblingTasks = tasks.filter(t => t.projectCode === activeCode && !t.parentId && (targetSection === 'default' || t.sectionName === targetSection) && !t.isSectionHeader);
     let nextStt = '1';
     if (siblingTasks.length > 0) {
       const lastStt = siblingTasks[siblingTasks.length - 1].stt?.trim() || '';
       const match = lastStt.match(/^(.*?)(\d+)$/);
       if (match) {
         nextStt = `${match[1]}${parseInt(match[2], 10) + 1}`;
+      }
+    } else if (targetSection !== 'default') {
+      const secHeader = tasks.find(t => t.projectCode === activeCode && t.isSectionHeader && (t.name === targetSection || t.sectionName === targetSection));
+      if (secHeader && secHeader.stt) {
+        nextStt = `${secHeader.stt.trim()}.1`;
       }
     }
     setStt(nextStt);
@@ -1950,14 +1979,14 @@ const hasSyncedRef = useRef(false);
   }, [displayTasks]);
 
   const maxSttWidth = React.useMemo(() => {
-    let maxLen = 1;
+    let maxLen = 3; // Minimum length 3 for "STT" header
     groupedTasks.forEach(t => {
       const val = String((t as any).computedStt || t.stt || '').trim();
       if (val.length > maxLen) maxLen = val.length;
     });
-    // Gọn gàng vừa khít chữ: 1-2 ký tự ~ 24-26px, 3.7.1 ~ 38px
-    const calculated = Math.max(24, Math.round(maxLen * 6.5 + 8));
-    return Math.min(80, calculated);
+    // Tự động co giãn theo độ dài thực tế của STT (1, 1.1, 1.1.1, 10.2.1...), đảm bảo không bao giờ bị cắt '...'
+    const calculated = Math.max(44, Math.round(maxLen * 10 + 16));
+    return Math.min(140, calculated);
   }, [groupedTasks]);
 
   const totalPureItems = groupedTasks.filter((t) => !t.isSectionHeader).length;
@@ -2070,7 +2099,7 @@ const hasSyncedRef = useRef(false);
 
           <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={openNewTaskModal}
+              onClick={openNewSectionModal}
               title="Thêm đầu mục"
               className="flex items-center justify-center gap-1 bg-primary text-white h-8 w-8 rounded-lg hover:opacity-90 active:scale-95 shadow-xs shrink-0"
             >
@@ -2214,7 +2243,7 @@ const hasSyncedRef = useRef(false);
 
           <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={openNewTaskModal}
+              onClick={openNewSectionModal}
               title="Thêm đầu mục"
               className="flex items-center justify-center gap-1 bg-primary text-white px-2.5 py-1 rounded-lg text-[11px] font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap h-7"
             >
@@ -2755,22 +2784,39 @@ const hasSyncedRef = useRef(false);
       </Modal>
 
       {/* SLEEK NEW TASK MODAL */}
-      <Modal isOpen={isNewTaskModalOpen} onClose={() => setIsNewTaskModalOpen(false)} title={isSectionHeader ? 'Th\u00eam \u0110\u1ea7u m\u1ee5c l\u1edbn' : 'Th\u00eam H\u1ea1ng m\u1ee5c nh\u1ecf'} size="xl">
+      <Modal isOpen={isNewTaskModalOpen} onClose={() => setIsNewTaskModalOpen(false)} title={isSectionHeader ? 'Thêm Đầu mục lớn (Phần / Nhóm)' : 'Thêm Công việc / Hạng mục'} size="xl">
         <form onSubmit={async (e) => { e.preventDefault(); if (loading || isSubmittingRef.current) return; isSubmittingRef.current = true; setLoading(true); try { await handleCreateTask(e); } finally { isSubmittingRef.current = false; setLoading(false); } }} className="space-y-3.5 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">{'Thu\u1ed9c D\u1ef1 \u00e1n'}</label>
+              <label className="block font-bold text-slate-700 mb-1">{'Thuộc Dự án'}</label>
               <div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-bold text-slate-700 truncate" title={currentProject?.name || projectCode}>
                 {currentProject?.name || projectCode}
               </div>
             </div>
             {!isSectionHeader && (
               <div>
-                <label className="block font-bold text-slate-700 mb-1">{'Thu\u1ed9c \u0110\u1ea7u m\u1ee5c cha'}</label>
+                <label className="block font-bold text-slate-700 mb-1">{'Thuộc Đầu mục cha'}</label>
                 <div className="flex items-center gap-2.5">
                   <CustomSelect
                     value={sectionSelect}
-                    onChange={(e) => setSectionSelect(e.target.value)}
+                    onChange={(e) => {
+                      const newSec = e.target.value;
+                      setSectionSelect(newSec);
+                      if (newSec !== 'default') {
+                        const activeCode = selectedProjectCode !== 'all' ? selectedProjectCode : projectCode;
+                        const siblingTasks = tasks.filter(t => t.projectCode === activeCode && !t.parentId && t.sectionName === newSec && !t.isSectionHeader);
+                        let nextVal = '1';
+                        if (siblingTasks.length > 0) {
+                          const lastStt = siblingTasks[siblingTasks.length - 1].stt?.trim() || '';
+                          const match = lastStt.match(/^(.*?)(\d+)$/);
+                          if (match) nextVal = `${match[1]}${parseInt(match[2], 10) + 1}`;
+                        } else {
+                          const secHeader = tasks.find(t => t.projectCode === activeCode && t.isSectionHeader && (t.name === newSec || t.sectionName === newSec));
+                          if (secHeader && secHeader.stt) nextVal = `${secHeader.stt.trim()}.1`;
+                        }
+                        setStt(nextVal);
+                      }
+                    }}
                     className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-blue-50/70 font-bold text-primary truncate"
                   >
                     <option value="default">-- Chọn Đầu mục cha --</option>
