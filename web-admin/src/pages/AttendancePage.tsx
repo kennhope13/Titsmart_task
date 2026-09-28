@@ -81,10 +81,44 @@ export const AttendancePage: React.FC = () => {
   const [leaveStartDate, setLeaveStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [leaveEndDate, setLeaveEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [leaveReason, setLeaveReason] = useState('');
+  const [step1ReviewerId, setStep1ReviewerId] = useState('');
+  const [step2ReviewerId, setStep2ReviewerId] = useState('');
   const [reviewLeave, setReviewLeave] = useState<LeaveRequest | null>(null);
+  const [reviewStep, setReviewStep] = useState<1 | 2>(1);
   const [reviewNote, setReviewNote] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const checkOutFileRef = useRef<HTMLInputElement>(null);
+
+  // Danh sách người duyệt Cấp 1 (Có quyền APPROVE_LEAVE_STEP1 hoặc là PM/Quản lý)
+  const step1Reviewers = React.useMemo(() => {
+    return engineers.filter(eng => {
+      if (eng.id === user?.id) return false;
+      const perms = eng.permissions || [];
+      const roleStr = String(eng.role || eng.title || '').toLowerCase();
+      return perms.includes('APPROVE_LEAVE_STEP1' as any) ||
+        roleStr.includes('quản lý') ||
+        roleStr.includes('trưởng') ||
+        roleStr.includes('chỉ huy') ||
+        roleStr.includes('pm') ||
+        roleStr.includes('admin') ||
+        roleStr.includes('quản trị viên');
+    });
+  }, [engineers, user]);
+
+  // Danh sách người duyệt Cấp cao nhất (Có quyền APPROVE_LEAVE_FINAL hoặc là Ban Giám Đốc/Admin)
+  const step2Reviewers = React.useMemo(() => {
+    return engineers.filter(eng => {
+      const perms = eng.permissions || [];
+      const roleStr = String(eng.role || eng.title || '').toLowerCase();
+      const userStr = String((eng as any).username || '').toLowerCase();
+      return perms.includes('APPROVE_LEAVE_FINAL' as any) ||
+        userStr === 'admin' ||
+        roleStr.includes('giám đốc') ||
+        roleStr.includes('admin') ||
+        roleStr.includes('quản trị viên') ||
+        roleStr.includes('chủ tịch');
+    });
+  }, [engineers]);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -152,18 +186,28 @@ export const AttendancePage: React.FC = () => {
 
   const handleExportLeavesExcel = (format: 'xlsx' | 'csv' | 'docx' = 'xlsx') => {
     if (!leaves.length) return;
-    const exportData = leaves.map((leave, index) => ({
-      'STT': index + 1,
-      'Nhân viên': leave.userName,
-      'Loại nghỉ': leave.leaveType,
-      'Từ ngày': formatDate(leave.startDate),
-      'Đến ngày': formatDate(leave.endDate),
-      'Số ngày': leave.totalDays,
-      'Lý do': leave.reason,
-      'Trạng thái': leave.status === 'APPROVED' ? 'Đã duyệt' : leave.status === 'REJECTED' ? 'Từ chối' : 'Chờ duyệt',
-      'Người duyệt': leave.reviewerName || '',
-      'Ghi chú duyệt': leave.reviewNote || ''
-    }));
+    const exportData = leaves.map((leave, index) => {
+      let statusStr = 'Chờ duyệt';
+      if (leave.status === 'PENDING_STEP1') statusStr = 'Chờ QL duyệt (Cấp 1)';
+      else if (leave.status === 'APPROVED_STEP1') statusStr = 'Đã qua Cấp 1 - Chờ BGD duyệt';
+      else if (leave.status === 'APPROVED') statusStr = 'Đã duyệt hoàn tất';
+      else if (leave.status === 'REJECTED') statusStr = 'Từ chối';
+
+      return {
+        'STT': index + 1,
+        'Nhân viên': leave.userName,
+        'Loại nghỉ': leave.leaveType,
+        'Từ ngày': formatDate(leave.startDate),
+        'Đến ngày': formatDate(leave.endDate),
+        'Số ngày': leave.totalDays,
+        'Lý do': leave.reason,
+        'Trạng thái': statusStr,
+        'Duyệt Cấp 1 (QL)': leave.step1ReviewerName ? `${leave.step1ReviewerName} (${leave.step1ReviewedAt ? 'Đã duyệt' : 'Chờ'})` : '—',
+        'Ý kiến Cấp 1': leave.step1ReviewNote || '',
+        'Duyệt Cấp 2 (BGD)': leave.step2ReviewerName || leave.reviewerName || 'Ban Giám Đốc',
+        'Ý kiến BGD': leave.step2ReviewNote || leave.reviewNote || ''
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
@@ -237,6 +281,9 @@ export const AttendancePage: React.FC = () => {
       const diffTime = Math.max(0, end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
+      const step1Eng = engineers.find(e => e.id === step1ReviewerId);
+      const step2Eng = engineers.find(e => e.id === step2ReviewerId);
+
       const newLeave = await api.leaves.create({
         userId: user.id,
         userName: user.name || user.username || 'Unknown',
@@ -245,15 +292,23 @@ export const AttendancePage: React.FC = () => {
         endDate: leaveEndDate,
         totalDays: diffDays,
         reason: leaveReason.trim(),
+        step1ReviewerId: step1ReviewerId || undefined,
+        step1ReviewerName: step1Eng?.name || undefined,
+        step2ReviewerId: step2ReviewerId || undefined,
+        step2ReviewerName: step2Eng?.name || undefined,
       });
 
       setLeaves(prev => [newLeave, ...prev]);
       setShowLeaveModal(false);
       setLeaveReason('');
+      setStep1ReviewerId('');
+      setStep2ReviewerId('');
 
+      // Gửi thông báo đến người duyệt cấp 1 hoặc admin
+      const targetReviewerMsg = step1Eng ? ` (chờ ${step1Eng.name} duyệt cấp 1)` : '';
       await addNotification({
         title: 'Đơn xin nghỉ phép mới',
-        message: `${user.name} vừa tạo đơn xin ${leaveType.toLowerCase()} (${diffDays} ngày: từ ${formatDate(leaveStartDate)} đến ${formatDate(leaveEndDate)})`,
+        message: `${user.name} vừa tạo đơn xin ${leaveType.toLowerCase()} (${diffDays} ngày: từ ${formatDate(leaveStartDate)} đến ${formatDate(leaveEndDate)})${targetReviewerMsg}`,
         type: 'system',
         icon: 'event_busy',
       });
@@ -267,22 +322,47 @@ export const AttendancePage: React.FC = () => {
     if (!reviewLeave || !user || isSubmitting) return;
     setIsSubmitting(true);
     try {
+      // Xác định trạng thái mới dựa trên reviewStep
+      let finalStatus: 'APPROVED_STEP1' | 'APPROVED' | 'REJECTED' = status;
+      if (status === 'APPROVED') {
+        if (reviewStep === 1) {
+          finalStatus = 'APPROVED_STEP1';
+        } else {
+          finalStatus = 'APPROVED';
+        }
+      }
+
       const updated = await api.leaves.review(reviewLeave.id, {
-        status,
+        status: finalStatus,
         reviewerId: user.id,
         reviewerName: user.name || user.username || 'Admin',
         reviewNote: reviewNote.trim() || undefined,
+        step: reviewStep,
       });
 
       setLeaves(prev => prev.map(l => l.id === reviewLeave.id ? updated : l));
       setReviewLeave(null);
       setReviewNote('');
 
+      // Tiêu đề & nội dung thông báo
+      let notifTitle = '';
+      let notifMsg = '';
+      if (finalStatus === 'APPROVED_STEP1') {
+        notifTitle = 'Đơn nghỉ phép đã thông qua Cấp 1';
+        notifMsg = `Đơn của ${reviewLeave.userName} đã được ${user.name} duyệt cấp 1 → Đang chuyển lên Lãnh đạo cao nhất duyệt.`;
+      } else if (finalStatus === 'APPROVED') {
+        notifTitle = 'Đơn nghỉ phép đã được PHÊ DUYỆT CHÍNH THỨC';
+        notifMsg = `Đơn của ${reviewLeave.userName} đã được phê duyệt chính thức hoàn tất bởi ${user.name}.`;
+      } else {
+        notifTitle = 'Đơn nghỉ phép bị TỪ CHỐI';
+        notifMsg = `Đơn xin ${reviewLeave.leaveType} của ${reviewLeave.userName} đã bị từ chối bởi ${user.name}. Lý do: ${reviewNote.trim() || 'Không có lý do cụ thể'}`;
+      }
+
       await addNotification({
-        title: status === 'APPROVED' ? 'Đơn nghỉ phép đã được duyệt' : 'Đơn nghỉ phép bị từ chối',
-        message: `Đơn xin ${reviewLeave.leaveType} của ${reviewLeave.userName} đã được ${status === 'APPROVED' ? 'Duyệt' : 'Từ chối'} bởi ${user.name}`,
+        title: notifTitle,
+        message: notifMsg,
         type: 'system',
-        icon: status === 'APPROVED' ? 'check_circle' : 'cancel',
+        icon: finalStatus === 'REJECTED' ? 'cancel' : 'check_circle',
       });
     } catch (e: any) {
       alert('Lỗi duyệt đơn: ' + (e.message || JSON.stringify(e)));
@@ -818,13 +898,27 @@ export const AttendancePage: React.FC = () => {
                     <th className="p-3 text-center">Số ngày</th>
                     <th className="p-3">Lý do</th>
                     <th className="p-3 text-center">Trạng thái</th>
-                    <th className="p-3">Người duyệt / Ghi chú</th>
-                    <th className="p-3 text-center w-16">TT</th>
+                    <th className="p-3">Duyệt Cấp 1 (QL)</th>
+                    <th className="p-3">Duyệt Cấp 2 (BGD)</th>
+                    <th className="p-3 text-center w-24">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {leaves.map((l, idx) => {
                     const isMatch = Boolean(highlightLeaveId && l.id === highlightLeaveId);
+                    
+                    // Quyền duyệt Cấp 1
+                    const canReviewStep1 = (
+                      (l.status === 'PENDING_STEP1' || (l.status === 'PENDING' && l.step1ReviewerId)) &&
+                      (user?.id === l.step1ReviewerId || user?.name === l.step1ReviewerName || isAdmin || user?.permissions?.includes('APPROVE_LEAVE_STEP1' as any))
+                    );
+
+                    // Quyền duyệt Cấp 2 (Ban Giám Đốc / Admin)
+                    const canReviewStep2 = (
+                      (l.status === 'APPROVED_STEP1' || (l.status === 'PENDING' && !l.step1ReviewerId)) &&
+                      (user?.id === l.step2ReviewerId || user?.name === l.step2ReviewerName || isAdmin || user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any))
+                    );
+
                     return (
                     <tr 
                       key={l.id} 
@@ -842,46 +936,96 @@ export const AttendancePage: React.FC = () => {
                         {formatDate(l.startDate)} → {formatDate(l.endDate)}
                       </td>
                       <td className="p-3 text-center font-bold text-slate-800">{l.totalDays} ngày</td>
-                      <td className="p-3 text-slate-600 max-w-[200px] truncate" title={l.reason}>{l.reason}</td>
+                      <td className="p-3 text-slate-600 max-w-[180px] truncate" title={l.reason}>{l.reason}</td>
                       <td className="p-3 text-center whitespace-nowrap">
+                        {l.status === 'PENDING_STEP1' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            Chờ QL duyệt (Cấp 1)
+                          </span>
+                        )}
                         {l.status === 'PENDING' && (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                            Chờ duyệt
+                          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            {l.step1ReviewerId ? 'Chờ QL duyệt (Cấp 1)' : 'Chờ BGD duyệt'}
+                          </span>
+                        )}
+                        {l.status === 'APPROVED_STEP1' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200 animate-pulse">
+                            Qua Cấp 1 • Chờ BGD duyệt
                           </span>
                         )}
                         {l.status === 'APPROVED' && (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            Đã duyệt
+                          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Đã duyệt hoàn tất
                           </span>
                         )}
                         {l.status === 'REJECTED' && (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800 border border-red-200">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-red-100 text-red-800 border border-red-200">
                             Từ chối
                           </span>
                         )}
                       </td>
+                      {/* Cột Cấp 1 */}
                       <td className="p-3 text-slate-600">
-                        {l.reviewerName ? (
+                        {l.step1ReviewerName ? (
                           <div>
-                            <span className="font-bold text-slate-700">{l.reviewerName}</span>
-                            {l.reviewNote && <p className="text-[11px] text-slate-500 italic">{l.reviewNote}</p>}
+                            <span className="font-bold text-slate-800">{l.step1ReviewerName}</span>
+                            {l.step1ReviewedAt ? (
+                              <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Đã duyệt</span>
+                            ) : l.status === 'REJECTED' ? (
+                              <span className="ml-1 text-[10px] font-bold text-red-600">✗ Từ chối</span>
+                            ) : (
+                              <span className="ml-1 text-[10px] font-medium text-amber-600">(Đang chờ)</span>
+                            )}
+                            {l.step1ReviewNote && <p className="text-[11px] text-slate-500 italic truncate max-w-[150px]" title={l.step1ReviewNote}>{l.step1ReviewNote}</p>}
                           </div>
-                        ) : '—'}
+                        ) : (
+                          <span className="text-slate-400 italic">Bỏ qua Cấp 1</span>
+                        )}
                       </td>
+                      {/* Cột Cấp 2 */}
+                      <td className="p-3 text-slate-600">
+                        {l.step2ReviewerName || l.reviewerName ? (
+                          <div>
+                            <span className="font-bold text-slate-800">{l.step2ReviewerName || l.reviewerName}</span>
+                            {l.status === 'APPROVED' ? (
+                              <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Phê duyệt</span>
+                            ) : l.status === 'REJECTED' && !l.step1ReviewedAt ? (
+                              <span className="ml-1 text-[10px] font-bold text-red-600">✗ Từ chối</span>
+                            ) : (
+                              <span className="ml-1 text-[10px] font-medium text-slate-400">(Chờ duyệt)</span>
+                            )}
+                            {(l.step2ReviewNote || l.reviewNote) && <p className="text-[11px] text-slate-500 italic truncate max-w-[150px]" title={l.step2ReviewNote || l.reviewNote}>{l.step2ReviewNote || l.reviewNote}</p>}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">Ban Giám Đốc</span>
+                        )}
+                      </td>
+                      {/* Thao tác */}
                       <td className="p-3 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1">
-                          {isAdmin && l.status === 'PENDING' && (
+                        <div className="flex items-center justify-center gap-1.5">
+                          {canReviewStep1 && (
                             <button
-                              onClick={() => { setReviewLeave(l); setReviewNote(''); }}
-                              className="px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-[11px] font-bold border border-blue-200"
+                              onClick={() => { setReviewLeave(l); setReviewStep(1); setReviewNote(''); }}
+                              className="px-2.5 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded text-[11px] font-bold border border-purple-200 active:scale-95 transition-all shadow-2xs cursor-pointer"
+                              title="Duyệt đơn cấp 1"
                             >
-                              Duyệt
+                              Duyệt Cấp 1
+                            </button>
+                          )}
+                          {canReviewStep2 && (
+                            <button
+                              onClick={() => { setReviewLeave(l); setReviewStep(2); setReviewNote(''); }}
+                              className="px-2.5 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded text-[11px] font-bold border border-indigo-200 active:scale-95 transition-all shadow-2xs cursor-pointer"
+                              title="Phê duyệt chính thức"
+                            >
+                              Duyệt BGD
                             </button>
                           )}
                           {(isAdmin || l.userId === user?.id || (user?.username && l.userName === user.name)) && (
                             <button
                               onClick={() => handleDeleteLeave(l.id)}
-                              className="w-7 h-7 rounded-full inline-flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              className="w-7 h-7 rounded-full inline-flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                              title="Xóa đơn"
                             >
                               <span className="material-symbols-outlined text-[16px]">delete</span>
                             </button>
@@ -899,7 +1043,7 @@ export const AttendancePage: React.FC = () => {
       )}
 
       {/* Modal tạo đơn xin nghỉ phép */}
-      <Modal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} title="Tạo đơn xin nghỉ phép" icon="event_busy" size="md">
+      <Modal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} title="Tạo đơn xin nghỉ phép" icon="event_busy" size="lg">
         <div className="space-y-4 py-2">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Loại nghỉ phép</label>
@@ -935,6 +1079,49 @@ export const AttendancePage: React.FC = () => {
               />
             </div>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+            <div>
+              <label className="block text-xs font-bold text-purple-900 mb-1">
+                Người duyệt Cấp 1 (Trưởng nhóm / QL trực tiếp)
+              </label>
+              <CustomSelect
+                value={step1ReviewerId}
+                onChange={e => setStep1ReviewerId(e.target.value)}
+                searchable={true}
+                className="w-full px-3 py-2 border border-purple-200 rounded-lg text-xs bg-white font-medium"
+              >
+                <option value="">-- Bỏ qua Cấp 1 (Gửi thẳng BGD) --</option>
+                {step1Reviewers.map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.role || 'Quản lý'})
+                  </option>
+                ))}
+              </CustomSelect>
+              <p className="text-[11px] text-slate-400 mt-0.5">Chọn người quản lý trực tiếp duyệt bước đầu tiên.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-indigo-900 mb-1">
+                Người duyệt Cấp cao nhất (Ban Giám Đốc)
+              </label>
+              <CustomSelect
+                value={step2ReviewerId}
+                onChange={e => setStep2ReviewerId(e.target.value)}
+                searchable={true}
+                className="w-full px-3 py-2 border border-indigo-200 rounded-lg text-xs bg-white font-medium"
+              >
+                <option value="">-- Mặc định Ban Giám Đốc / Admin --</option>
+                {step2Reviewers.map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.role || 'Ban Giám Đốc'})
+                  </option>
+                ))}
+              </CustomSelect>
+              <p className="text-[11px] text-slate-400 mt-0.5">Người phê duyệt quyết định cuối cùng.</p>
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Lý do xin nghỉ</label>
             <textarea
@@ -964,22 +1151,36 @@ export const AttendancePage: React.FC = () => {
       </Modal>
 
       {/* Modal Duyệt đơn xin nghỉ phép */}
-      <Modal isOpen={!!reviewLeave} onClose={() => setReviewLeave(null)} title="Xét duyệt đơn xin nghỉ" icon="rate_review" size="md">
+      <Modal
+        isOpen={!!reviewLeave}
+        onClose={() => setReviewLeave(null)}
+        title={reviewStep === 1 ? 'Xét duyệt Đơn Cấp 1 (Trưởng nhóm / QL)' : 'Phê duyệt Đơn Cấp cao nhất (BGD / Admin)'}
+        icon="rate_review"
+        size="md"
+      >
         {reviewLeave && (
           <div className="space-y-4 py-2">
-            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1">
-              <p><span className="font-bold text-slate-700">Nhân viên:</span> {reviewLeave.userName}</p>
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1.5">
+              <p><span className="font-bold text-slate-700">Nhân viên làm đơn:</span> <strong className="text-slate-900">{reviewLeave.userName}</strong></p>
               <p><span className="font-bold text-slate-700">Loại nghỉ:</span> {reviewLeave.leaveType}</p>
-              <p><span className="font-bold text-slate-700">Thời gian:</span> {formatDate(reviewLeave.startDate)} → {formatDate(reviewLeave.endDate)} ({reviewLeave.totalDays} ngày)</p>
+              <p><span className="font-bold text-slate-700">Thời gian nghỉ:</span> {formatDate(reviewLeave.startDate)} → {formatDate(reviewLeave.endDate)} ({reviewLeave.totalDays} ngày)</p>
               <p><span className="font-bold text-slate-700">Lý do:</span> {reviewLeave.reason}</p>
+              {reviewStep === 2 && reviewLeave.step1ReviewerName && (
+                <div className="pt-2 border-t border-slate-200/80 text-purple-900">
+                  <p><span className="font-bold">Đã duyệt Cấp 1 bởi:</span> {reviewLeave.step1ReviewerName} {reviewLeave.step1ReviewedAt && `(${formatDate(reviewLeave.step1ReviewedAt)})`}</p>
+                  {reviewLeave.step1ReviewNote && <p className="italic text-slate-600">Ý kiến cấp 1: "{reviewLeave.step1ReviewNote}"</p>}
+                </div>
+              )}
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Phản hồi / Phê duyệt ghi chú (tùy chọn)</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Ý kiến / Ghi chú duyệt {reviewStep === 1 ? 'Cấp 1' : 'Cấp BGD'} (tùy chọn)
+              </label>
               <textarea
                 rows={2}
                 value={reviewNote}
                 onChange={e => setReviewNote(e.target.value)}
-                placeholder="Ghi chú ý kiến của cấp quản lý..."
+                placeholder={reviewStep === 1 ? "Ghi chú ý kiến của quản lý trực tiếp..." : "Ghi chú phê duyệt của Ban Giám Đốc..."}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none resize-none"
               />
             </div>
@@ -988,7 +1189,7 @@ export const AttendancePage: React.FC = () => {
                 type="button"
                 onClick={() => handleReviewLeave('REJECTED')}
                 disabled={isSubmitting}
-                className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold rounded-lg text-sm transition-all disabled:opacity-50"
+                className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold rounded-lg text-sm transition-all disabled:opacity-50 cursor-pointer"
               >
                 Từ chối
               </button>
@@ -996,9 +1197,11 @@ export const AttendancePage: React.FC = () => {
                 type="button"
                 onClick={() => handleReviewLeave('APPROVED')}
                 disabled={isSubmitting}
-                className="px-5 py-2 bg-primary hover:bg-primary/90 text-white font-bold rounded-lg text-sm shadow-sm transition-all disabled:opacity-50"
+                className={`px-5 py-2 text-white font-bold rounded-lg text-sm shadow-sm transition-all disabled:opacity-50 cursor-pointer ${
+                  reviewStep === 1 ? 'bg-purple-600 hover:bg-purple-700' : 'bg-primary hover:bg-primary/90'
+                }`}
               >
-                Chấp thuận duyệt
+                {reviewStep === 1 ? 'Thông qua Cấp 1 (Chuyển BGD)' : 'Chấp thuận duyệt chính thức'}
               </button>
             </div>
           </div>

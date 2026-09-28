@@ -4,7 +4,7 @@ export type Permission = 'VIEW_PROJECT_DIAGRAM'
   | 'VIEW_MATERIALS' | 'IMPORT_MATERIALS' | 'EDIT_MATERIALS' | 'UPDATE_MATERIAL_STATUS'
   | 'VIEW_FINANCE' | 'EDIT_PRICES' | 'VIEW_PAYMENTS' | 'EDIT_PAYMENTS' | 'VIEW_EXPENSES' | 'EDIT_EXPENSES'
   | 'VIEW_DOCUMENTS' | 'MANAGE_DOCUMENTS'
-  | 'VIEW_USERS' | 'MANAGE_USERS' | 'MANAGE_PERMISSIONS' | 'MANAGE_PAYROLL'
+  | 'VIEW_USERS' | 'MANAGE_USERS' | 'MANAGE_PERMISSIONS' | 'MANAGE_PAYROLL' | 'APPROVE_LEAVE_STEP1' | 'APPROVE_LEAVE_FINAL'
   | 'EXPORT_DATA' | 'MANAGE_INVENTORY' | 'VIEW_FIELD_LOGS' | 'MANAGE_FIELD_LOGS' | 'VIEW_ACTIVITY_LOG';
 
 export type TaskStatus = 'Chưa làm' | 'Đang làm' | 'Chờ vật tư' | 'Chờ khách hàng' | 'Chờ nghiệm thu' | 'Hoàn thành' | 'Tạm dừng' | 'Chờ nhận việc' | 'Có thắc mắc';
@@ -195,7 +195,7 @@ export interface NotificationItem {
 }
 
 export type LeaveType = 'Nghỉ phép năm' | 'Nghỉ bệnh' | 'Nghỉ việc riêng' | 'Nghỉ không lương' | 'Khác';
-export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type LeaveStatus = 'PENDING_STEP1' | 'PENDING' | 'APPROVED_STEP1' | 'APPROVED' | 'REJECTED';
 
 export interface LeaveRequest {
   id: string;
@@ -207,6 +207,17 @@ export interface LeaveRequest {
   totalDays: number;
   reason: string;
   status: LeaveStatus;
+  // Cấp 1: Người duyệt được chỉ định (Quản lý trực tiếp / Chỉ huy trưởng)
+  step1ReviewerId?: string;
+  step1ReviewerName?: string;
+  step1ReviewNote?: string;
+  step1ReviewedAt?: string;
+  // Cấp 2: Người duyệt cấp cao nhất (Ban Giám Đốc / Admin)
+  step2ReviewerId?: string;
+  step2ReviewerName?: string;
+  step2ReviewNote?: string;
+  step2ReviewedAt?: string;
+  // Legacy compatibility fields
   reviewerId?: string;
   reviewerName?: string;
   reviewNote?: string;

@@ -1635,8 +1635,20 @@ export const api = {
         } catch { return null; }
       }).filter(Boolean);
     },
-    create: async (input: { userId: string; userName: string; leaveType: string; startDate: string; endDate: string; totalDays: number; reason: string }) => {
-      const payloadData = {
+    create: async (input: {
+      userId: string;
+      userName: string;
+      leaveType: string;
+      startDate: string;
+      endDate: string;
+      totalDays: number;
+      reason: string;
+      step1ReviewerId?: string;
+      step1ReviewerName?: string;
+      step2ReviewerId?: string;
+      step2ReviewerName?: string;
+    }) => {
+      const payloadData: any = {
         userId: input.userId,
         userName: input.userName,
         leaveType: input.leaveType,
@@ -1644,7 +1656,11 @@ export const api = {
         endDate: input.endDate,
         totalDays: input.totalDays,
         reason: input.reason,
-        status: 'PENDING',
+        status: input.step1ReviewerId ? 'PENDING_STEP1' : 'PENDING',
+        step1ReviewerId: input.step1ReviewerId || null,
+        step1ReviewerName: input.step1ReviewerName || null,
+        step2ReviewerId: input.step2ReviewerId || null,
+        step2ReviewerName: input.step2ReviewerName || null,
         createdAt: new Date().toISOString(),
       };
       const payload = {
@@ -1658,11 +1674,31 @@ export const api = {
       if (error) throw error;
       return { id: data.id, ...payloadData } as any;
     },
-    review: async (id: string, reviewData: { status: 'APPROVED' | 'REJECTED'; reviewerId: string; reviewerName: string; reviewNote?: string }) => {
+    review: async (id: string, reviewData: {
+      status: 'APPROVED_STEP1' | 'APPROVED' | 'REJECTED';
+      reviewerId: string;
+      reviewerName: string;
+      reviewNote?: string;
+      step?: 1 | 2;
+    }) => {
       const { data: row, error: fetchErr } = await supabase.from('activity_logs').select('action').eq('id', id).single();
       if (fetchErr) throw fetchErr;
       const payloadData = JSON.parse(row.action);
       payloadData.status = reviewData.status;
+
+      if (reviewData.step === 1) {
+        payloadData.step1ReviewerId = reviewData.reviewerId;
+        payloadData.step1ReviewerName = reviewData.reviewerName;
+        payloadData.step1ReviewNote = reviewData.reviewNote || '';
+        payloadData.step1ReviewedAt = new Date().toISOString();
+      } else {
+        payloadData.step2ReviewerId = reviewData.reviewerId;
+        payloadData.step2ReviewerName = reviewData.reviewerName;
+        payloadData.step2ReviewNote = reviewData.reviewNote || '';
+        payloadData.step2ReviewedAt = new Date().toISOString();
+      }
+
+      // Legacy fallback
       payloadData.reviewerId = reviewData.reviewerId;
       payloadData.reviewerName = reviewData.reviewerName;
       if (reviewData.reviewNote) payloadData.reviewNote = reviewData.reviewNote;
