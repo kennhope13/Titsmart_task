@@ -234,6 +234,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   if (tLow.includes('nghỉ phép') || mLow.includes('nghỉ phép') || typeStr.startsWith('leave')) {
     if (typeStr.includes(':::')) {
       const parts = typeStr.split(':::');
+      const actionType = parts[0];
       const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
       const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
@@ -241,9 +242,17 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
 
       if (isMeId || isMeName) return true;
-      if (targetIds.includes('admin') || targetNames.includes('quản trị') || targetNames.includes('quản trị viên')) {
-        return isAdmin;
+
+      // Khi Quản lý duyệt bước 1 -> Luôn gửi thông báo cho Quản trị viên / Ban Giám Đốc
+      if (actionType === 'leave_step1_approved' || tLow.includes('quản lý duyệt') || mLow.includes('chờ quản trị')) {
+        if (isAdmin || user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any)) return true;
       }
+
+      // Khi đơn gửi cho Admin / Quản trị viên
+      if (targetIds.includes('admin') || targetNames.some(tn => tn.includes('quản trị') || tn.includes('admin') || tn.includes('giám đốc'))) {
+        return isAdmin || user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any);
+      }
+
       return false; // Chỉ gửi đích danh người duyệt được chọn, không spam người khác
     }
 

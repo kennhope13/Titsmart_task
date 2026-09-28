@@ -408,8 +408,8 @@ export const AttendancePage: React.FC = () => {
       if (finalStatus === 'APPROVED_STEP1') {
         // Quản lý đã duyệt -> Gửi thông báo đến Quản trị (step2Reviewer hoặc tất cả Admin) và nhân viên
         const step2Reviewer = engineers.find(e => e.id === reviewLeave.step2ReviewerId || e.name === reviewLeave.step2ReviewerName);
-        const targetId = step2Reviewer ? `${step2Reviewer.id},${reviewLeave.userId}` : `admin,${reviewLeave.userId}`;
-        const targetName = step2Reviewer ? `${step2Reviewer.name},${reviewLeave.userName}` : `Quản trị viên,${reviewLeave.userName}`;
+        const targetId = step2Reviewer ? `${step2Reviewer.id},admin,${reviewLeave.userId}` : `admin,${reviewLeave.userId}`;
+        const targetName = step2Reviewer ? `${step2Reviewer.name},Quản trị viên,${reviewLeave.userName}` : `Quản trị viên,${reviewLeave.userName}`;
 
         notifTitle = 'Đơn nghỉ phép đã được Quản lý duyệt';
         notifMsg = `Đơn của ${reviewLeave.userName} đã được ${user.name} duyệt → Chờ ${reviewLeave.step2ReviewerName || 'Quản trị hệ thống'} phê duyệt.`;
