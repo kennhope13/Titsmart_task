@@ -197,7 +197,7 @@ export const ProjectManagementPage: React.FC = () => {
     const norm = (s?: string) => String(s || '').trim().toUpperCase();
     const derivedProjects = deriveProjectsFromTasks(tasks);
 
-    // Merge database projects and derived projects, completely excluding internal Office project card per request
+    // Merge database projects and derived projects
     const seenKeys = new Set<string>();
     const merged: Project[] = [];
 
@@ -205,12 +205,6 @@ export const ProjectManagementPage: React.FC = () => {
       const codeKey = norm(proj.code);
       const idKey = norm(proj.id);
       const nameKey = norm(proj.name);
-
-      // Exclude internal Office project card from main project cards list (it has its own dedicated Chi phí văn phòng tab)
-      const isOfficeProject = codeKey === 'OFFICE' || codeKey === 'VAN_PHONG' || (nameKey === 'VAN PHONG' && (codeKey === 'OFFICE' || codeKey === 'VAN_PHONG'));
-      if (isOfficeProject) {
-        return;
-      }
 
       if ((codeKey && seenKeys.has(codeKey)) || (idKey && seenKeys.has(idKey))) {
         return;
@@ -220,32 +214,7 @@ export const ProjectManagementPage: React.FC = () => {
       merged.push(proj);
     });
 
-    let finalMerged = merged;
-    // Filter projects based on user permissions if user is not admin/pm
-    const isAdminOrPm = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm' || user?.role === 'Quản lý dự án' || user?.username === 'admin';
-    if (!isAdminOrPm && user) {
-      const assignedCodes = (Array.isArray(user.projectCodes) ? user.projectCodes : [])
-        .map(c => String(c || '').trim().toUpperCase())
-        .filter(Boolean);
-      const userEngId = (user as any).id || '';
-      const userNameUpper = String(user.name || '').trim().toUpperCase();
-
-      finalMerged = finalMerged.filter(p => {
-        const pCode = String(p.code || '').trim().toUpperCase();
-        const pId = String(p.id || '').trim().toUpperCase();
-        const pName = String(p.name || '').trim().toUpperCase();
-
-        if (userEngId && Array.isArray(p.members) && p.members.includes(userEngId)) return true;
-        if (userEngId && Array.isArray(p.memberIds) && p.memberIds.includes(userEngId)) return true;
-        if (userNameUpper && p.managerName && String(p.managerName).toUpperCase().includes(userNameUpper)) return true;
-
-        if (assignedCodes.length === 0) return false;
-
-        return assignedCodes.some(assigned => 
-          assigned && (pCode === assigned || pId === assigned || pName === assigned || pCode.includes(assigned) || assigned.includes(pCode))
-        );
-      });
-    }
+    const finalMerged = merged;
     
     return finalMerged.map((project) => {
       const pCodeUpper = (project.code || '').trim().toUpperCase();

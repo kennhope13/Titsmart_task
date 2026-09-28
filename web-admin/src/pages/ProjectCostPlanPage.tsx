@@ -181,6 +181,7 @@ export const ProjectCostPlanPage: React.FC = () => {
     updatePurchasingPlan,
     deletePurchasingPlan,
     addExpense,
+    addExpensesBatch,
     updateExpense,
     deleteExpense,
     addLaborPayroll,
@@ -223,6 +224,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   } | null>(null);
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showExpenseExportMenu, setShowExpenseExportMenu] = useState(false);
 
   const handleUpdatePurchasingPlanSync = async (id: string, updates: Partial<ProjectPurchasing>) => {
     const existing = purchasingPlans.find(p => p.id === id);
@@ -452,8 +454,16 @@ export const ProjectCostPlanPage: React.FC = () => {
         // ------------------------------------------------------------------
         const normalizeSheetName = (n: string) => normalizeImportText(n);
 
-        // 1. Kiểm tra tên file hoặc nội dung có dấu hiệu là phụ lục hợp đồng
-        const isAppendixWorkbook =
+        // 1. Kiểm tra nếu file là File Chi Phí (Chi phí văn phòng, Chi phí công trình, Chi phí dự án)
+        const isExpenseWorkbook =
+          normalizeImportText(file.name).includes('chi phi') ||
+          wb.SheetNames.some(n => {
+            const norm = normalizeSheetName(n);
+            return norm.includes('chiphivanphong') || norm.includes('chi phi van phong') || norm.includes('chiphi') || (norm.includes('chi phi') && !norm.includes('nhan su'));
+          });
+
+        // 2. Kiểm tra tên file hoặc nội dung có dấu hiệu là phụ lục hợp đồng
+        const isAppendixWorkbook = !isExpenseWorkbook && (
           normalizedWorkbookPreview.includes('phu luc 01') ||
           normalizedWorkbookPreview.includes('phu luc hop dong') ||
           normalizedWorkbookPreview.includes('bang chi tiet gia tri hop dong') ||
@@ -471,16 +481,16 @@ export const ProjectCostPlanPage: React.FC = () => {
             normalizedWorkbookPreview.includes('cong viec') ||
             normalizedWorkbookPreview.includes('thiet bi') ||
             normalizedWorkbookPreview.includes('mo ta')
-          ));
+          )));
 
-        // 2. Sheet tên có từ khoá kế hoạch / chi phí
+        // 3. Sheet tên có từ khoá kế hoạch / chi phí
         const costKeywords = ['KẾ HOẠCH', 'KE HOACH', 'MUA SẮM', 'MUA SAM', 'CHI PHÍ', 'CHI PHI',
           'CÔNG NHẬT', 'CONG NHAT', 'LƯƠNG', 'LUONG', 'SHEET1', 'PL', 'PHU LUC'];
         const hasCostSheets = wb.SheetNames.some(name =>
           costKeywords.some(keyword => name.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(keyword))
         );
 
-        // 3. Từ khoá bị cấm (file nhân sự, kho)
+        // 4. Từ khoá bị cấm (file nhân sự, kho)
         const forbiddenKeywords = ['TỒN KHO', 'NHẬP KHO', 'XUẤT KHO', 'TON KHO', 'NHAP KHO', 'XUAT KHO', 'NHÂN SỰ', 'NHAN SU', 'HỒ SƠ GỬI'];
         const hasForbiddenSheets = wb.SheetNames.some(name =>
           forbiddenKeywords.some(keyword => name.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(
@@ -488,15 +498,15 @@ export const ProjectCostPlanPage: React.FC = () => {
           ))
         );
 
-        // 4. Chặn file cấm tuyệt đối
+        // 5. Chặn file cấm tuyệt đối
         if (hasForbiddenSheets) {
           triggerToast('File này chứa dữ liệu Nhân sự/Kho — không phù hợp để nhập vào Kế hoạch Chi phí!', 'warning');
           if (fileInputRef.current) fileInputRef.current.value = '';
           return;
         }
 
-        // 5. Nếu không nhận ra cấu trúc nào hết → từ chối
-        if (!isAppendixWorkbook && !hasCostSheets) {
+        // 6. Nếu không nhận ra cấu trúc nào hết → từ chối
+        if (!isAppendixWorkbook && !hasCostSheets && !isExpenseWorkbook) {
           triggerToast('Không nhận diện được cấu trúc file. Vui lòng dùng file Excel/CSV có cột STT, Nội dung, Khối lượng, Đơn giá!', 'warning');
           if (fileInputRef.current) fileInputRef.current.value = '';
           return;
@@ -504,19 +514,52 @@ export const ProjectCostPlanPage: React.FC = () => {
 
         const parseExcelDate = (dateVal: any) => {
           if (!dateVal) return '';
-          if (typeof dateVal === 'string') return dateVal;
-          try {
-            const date = new Date((dateVal - 25569) * 86400 * 1000);
-            return date.toISOString().split('T')[0];
-          } catch (e) {
-            return String(dateVal);
+          if (typeof dateVal === 'number') {
+            try {
+              const date = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
+              return date.toISOString().split('T')[0];
+            } catch (e) {
+              return String(dateVal);
+            }
           }
+          const str = String(dateVal).trim();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+          if (/^\d{2}-\d{2}-\d{2}$/.test(str)) {
+            const [p0, p1, p2] = str.split('-');
+            if (Number(p0) >= 20 && Number(p0) <= 50) return `20${p0}-${p1}-${p2}`;
+            return `20${p2}-${p1}-${p0}`;
+          }
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+            const [d, m, y] = str.split('/');
+            return `${y}-${m}-${d}`;
+          }
+          if (/^\d{2}\/\d{2}\/\d{2}$/.test(str)) {
+            const [p0, p1, p2] = str.split('/');
+            if (Number(p0) >= 20 && Number(p0) <= 50) return `20${p0}-${p1}-${p2}`;
+            return `20${p2}-${p1}-${p0}`;
+          }
+          try {
+            const dt = new Date(str);
+            if (!isNaN(dt.getTime())) return dt.toISOString().split('T')[0];
+          } catch {}
+          return str;
         };
 
         const numVal = (val: any) => {
           if (val === null || val === undefined) return 0;
           if (typeof val === 'number') return val;
-          const cleaned = String(val).replace(/[^0-9.-]/g, '');
+          const str = String(val).trim();
+          if (str === '-' || str === '' || str === '—') return 0;
+          if (/^-?\d{1,3}(\.\d{3})+$/.test(str)) {
+            return parseFloat(str.replace(/\./g, ''));
+          }
+          if (/^-?\d{1,3}(,\d{3})+$/.test(str)) {
+            return parseFloat(str.replace(/,/g, ''));
+          }
+          if (/^-?\d+(\.\d{3})*,\d+$/.test(str)) {
+            return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+          }
+          const cleaned = str.replace(/[^0-9.-]/g, '');
           const parsed = parseFloat(cleaned);
           return isNaN(parsed) ? 0 : parsed;
         };
@@ -844,10 +887,22 @@ export const ProjectCostPlanPage: React.FC = () => {
           return;
         }
 
-        const materialSheetName = wb.SheetNames.find(s => s.includes('KÉ HOẠCH') || s.includes('KẾ HOẠCH') || s.includes('KeHoach'));
-        const purchasingSheetName = wb.SheetNames.find(s => s.includes('MUA SẮM') || s.includes('MuaSam'));
-        const expenseSheetName = wb.SheetNames.find(s => s.includes('CHI PHÍ') || s.includes('ChiPhi'));
-        const laborSheetName = wb.SheetNames.find(s => s.includes('Trang tính6') || s.includes('CÔNG NHẬT') || s.includes('TT Công') || s.includes('Luong'));
+        const materialSheetName = wb.SheetNames.find(s => {
+          const norm = normalizeSheetName(s);
+          return norm.includes('ke hoach') || norm.includes('kehoach') || norm.includes('vat tu');
+        });
+        const purchasingSheetName = wb.SheetNames.find(s => {
+          const norm = normalizeSheetName(s);
+          return norm.includes('mua sam') || norm.includes('muasam') || norm.includes('hang hoa');
+        });
+        const expenseSheetName = wb.SheetNames.find(s => {
+          const norm = normalizeSheetName(s);
+          return norm.includes('chi phi') || norm.includes('chiphi') || norm.includes('chiphivanphong') || norm.includes('chiphicongtrinh') || norm.includes('thu chi') || norm.includes('dong tien') || norm.includes('cashflow') || norm.includes('quy');
+        }) || (wb.SheetNames.length === 1 && !materialSheetName && !purchasingSheetName ? wb.SheetNames[0] : undefined);
+        const laborSheetName = wb.SheetNames.find(s => {
+          const norm = normalizeSheetName(s);
+          return norm.includes('trang tinh6') || norm.includes('cong nhat') || norm.includes('tt cong') || norm.includes('luong');
+        });
 
         let matImportCount = 0;
         let purImportCount = 0;
@@ -857,11 +912,11 @@ export const ProjectCostPlanPage: React.FC = () => {
         const findStartRow = (sheetRows: any[][]) => {
           for (let i = 0; i < Math.min(sheetRows.length, 20); i++) {
             const r = sheetRows[i];
-            if (r && (r.includes('STT') || r.includes('stt') || r.includes('Stt') || r.some((cell: any) => String(cell).toLowerCase() === 'stt'))) {
+            if (r && (r.includes('STT') || r.includes('stt') || r.includes('Stt') || r.some((cell: any) => String(cell).toLowerCase() === 'stt' || String(cell).toLowerCase() === 'ngày' || String(cell).toLowerCase() === 'ngay'))) {
               return i + 1;
             }
           }
-          return -1;
+          return 1;
         };
 
         // 1. Parse Material Plan
@@ -1008,28 +1063,99 @@ export const ProjectCostPlanPage: React.FC = () => {
           const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
           const startRow = findStartRow(rows);
           if (startRow !== -1) {
-            rows.slice(startRow).forEach(row => {
-              const dateVal = row[1];
-              const content = row[2];
-              if (!dateVal || !content) return;
-              addExpense({
+            const headerRow = rows[startRow - 1] || [];
+            const findIdx = (keywords: string[], fallback: number = -1) => {
+              for (let col = 0; col < 30; col++) {
+                const cell = normalizeImportText(headerRow[col]);
+                if (!cell) continue;
+                if (keywords.some((k: string) => {
+                  const normK = normalizeImportText(k);
+                  return cell === normK || cell.includes(normK);
+                })) {
+                  return col;
+                }
+              }
+              return fallback;
+            };
+
+            const idxSTT = findIdx(['stt', 'tt'], -1);
+            const idxDate = findIdx(['ngay', 'date'], 1);
+            const idxSpender = findIdx(['nguoi chi', 'nguoi pt', 'nguoi phu trach', 'pt/ten', 'nguoi thuc hien', 'ten', 'spender'], -1);
+            const idxContent = findIdx(['noi dung', 'khoan muc', 'hang muc'], -1);
+            const idxDesc = findIdx(['dien giai', 'mo ta', 'chi tiet', 'noi dung / dien giai'], -1);
+            const idxUnit = findIdx(['dvt', 'don vi tinh', 'don vi'], -1);
+            const idxQty = findIdx(['so luong', 'sl', 'khoi luong'], -1);
+            const idxPrice = findIdx(['don gia', 'don gia (d)', 'don gia(d)'], -1);
+            const idxTax = findIdx(['thue vat', 'thue vat (%)', 'vat (%)', 'vat', 'thue'], -1);
+            const idxTotal = findIdx(['thanh tien', 'thanh tien (d)', 'thanh tien(d)', 'tien chi', 'tong chi', 'chi'], -1);
+            const idxIncome = findIdx(['thuc thu', 'thuc thu (d)', 'thuc thu(d)', 'thu', 'tam ung', 'cap quy', 'nap quy'], -1);
+            const idxBalance = findIdx(['ton quy', 'ton', 'quy'], -1);
+            const idxNotes = findIdx(['ghi chu', 'note'], -1);
+            const idxInvoice = findIdx(['hoa don', 'h.don', 'h. don', 'link hoa don', 'link anh', 'chung tu', 'invoice', 'invoiceurl', 'file'], -1);
+
+            const expensePayloads: any[] = [];
+            rows.slice(startRow).forEach((row, rIdx) => {
+              const dateVal = idxDate >= 0 ? row[idxDate] : undefined;
+              const rawContent = idxContent >= 0 ? row[idxContent] : undefined;
+              const rawDesc = idxDesc >= 0 ? row[idxDesc] : undefined;
+
+              if (!rawContent && !rawDesc && !dateVal) return;
+
+              let content = '';
+              let description = '';
+
+              if (idxContent >= 0 && idxDesc >= 0 && idxContent !== idxDesc) {
+                content = String(rawContent || '').trim();
+                description = String(rawDesc || '').trim();
+              } else {
+                const combinedText = String(rawContent || rawDesc || '').trim();
+                if (combinedText.includes('\n')) {
+                  const parts = combinedText.split('\n').map(s => s.trim()).filter(Boolean);
+                  content = parts[0] || 'Vật tư/ thiết bị';
+                  description = parts.slice(1).join(' ') || '';
+                } else {
+                  content = combinedText || 'Vật tư/ thiết bị';
+                  description = '';
+                }
+              }
+
+              if (content.toLowerCase() === 'nội dung' || content.toLowerCase() === 'tổng cộng') return;
+
+              const spender = idxSpender >= 0 && row[idxSpender] ? String(row[idxSpender]).trim() : '';
+              const unit = idxUnit >= 0 && row[idxUnit] ? String(row[idxUnit]).trim() : '';
+              const qty = idxQty >= 0 ? numVal(row[idxQty]) : 1;
+              const unitPrice = idxPrice >= 0 ? numVal(row[idxPrice]) : 0;
+              const tax = idxTax >= 0 ? numVal(row[idxTax]) : 0;
+              const totalAmount = idxTotal >= 0 ? numVal(row[idxTotal]) : (qty && unitPrice ? (qty * unitPrice + (tax ? qty * unitPrice * tax / 100 : 0)) : 0);
+              const incomeAmount = idxIncome >= 0 ? numVal(row[idxIncome]) : 0;
+              const balanceFund = idxBalance >= 0 ? numVal(row[idxBalance]) : 0;
+              const notes = idxNotes >= 0 && row[idxNotes] ? String(row[idxNotes]).trim() : '';
+              const invoiceUrl = idxInvoice >= 0 && row[idxInvoice] ? String(row[idxInvoice]).trim() : '';
+              const stt = idxSTT >= 0 && row[idxSTT] ? String(row[idxSTT]).trim() : String(rIdx + 1);
+
+              expensePayloads.push({
                 projectCode: selectedProject,
-                stt: String(row[0] || ''),
+                stt: stt,
                 date: parseExcelDate(dateVal),
-                content: String(content),
-                description: String(row[3] || ''),
-                unit: String(row[4] || ''),
-                quantity: numVal(row[5]),
-                unitPrice: numVal(row[6]),
-                taxAmount: numVal(row[7]),
-                totalAmount: numVal(row[8]),
-                incomeAmount: numVal(row[9]),
-                balanceFund: numVal(row[10]),
-                notes: String(row[11] || ''),
-                invoiceUrl: String(row[12] || '')
+                content: content,
+                description: description,
+                spenderName: spender,
+                unit: unit,
+                quantity: qty,
+                unitPrice: unitPrice,
+                taxAmount: tax,
+                totalAmount: totalAmount,
+                incomeAmount: incomeAmount,
+                balanceFund: balanceFund,
+                notes: notes,
+                invoiceUrl: invoiceUrl
               });
               expImportCount++;
             });
+
+            if (expensePayloads.length > 0) {
+              await addExpensesBatch(expensePayloads);
+            }
           }
         }
 
@@ -1641,19 +1767,22 @@ export const ProjectCostPlanPage: React.FC = () => {
         };
       });
       sheetName = "VatTuVaMuaHang";
-    }else if (activeTab === 'EXPENSE') {
-      data = currentProjExpenses.map(e => ({
-        'Ngày': e.date,
-        'Nội dung': e.content,
-        'Diễn giải': e.description,
-        'ĐVT': e.unit,
-        'Số lượng': e.quantity,
-        'Đơn giá': e.unitPrice,
-        'Thành tiền': e.totalAmount,
-        'Thu': e.incomeAmount || 0,
-        'Tồn quỹ': e.balanceFund || 0,
+    } else if (activeTab === 'EXPENSE') {
+      data = currentProjExpenses.map((e, index) => ({
+        'STT': e.stt || (index + 1),
+        'Ngày': e.date || '',
+        'Người chi': e.spenderName || '',
+        'Nội dung': e.content || '',
+        'Diễn giải': e.description || '',
+        'ĐVT': e.unit || '',
+        'Số lượng': e.quantity || 0,
+        'Đơn giá (đ)': e.unitPrice || 0,
+        'Thuế VAT (%)': e.taxAmount || 0,
+        'Thành tiền (đ)': e.totalAmount || 0,
+        'Thực thu (đ)': e.incomeAmount || 0,
+        'Tồn quỹ': e.autoBalance ?? e.balanceFund ?? 0,
         'Ghi chú': e.notes || '',
-        'Link Hóa đơn': e.invoiceUrl || ''
+        'Hóa đơn': e.invoiceUrl || ''
       }));
       sheetName = 'ChiPhiCongTrinh';
     } else if (activeTab === 'LABOR') {
@@ -2048,8 +2177,81 @@ export const ProjectCostPlanPage: React.FC = () => {
                   </div>
 
                   <button
+                    onClick={() => {
+                      if (fileInputRef.current) fileInputRef.current.click();
+                    }}
+                    className="flex items-center justify-center gap-1.5 border border-blue-200 bg-blue-50 text-primary px-2.5 md:px-3 h-8 rounded-lg text-xs font-bold hover:bg-blue-100 active:scale-95 transition-all shadow-xs whitespace-nowrap min-w-[32px] cursor-pointer"
+                    title="Nhập file (Excel, CSV, PDF, Word)"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">file_upload</span>
+                    <span className="hidden md:inline">Nhập file</span>
+                  </button>
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowExpenseExportMenu(!showExpenseExportMenu)}
+                      className="flex items-center justify-center gap-1 border border-emerald-200 bg-emerald-50 text-emerald-700 px-2.5 md:px-3 h-8 rounded-lg text-xs font-bold hover:bg-emerald-100 active:scale-95 transition-all shadow-xs whitespace-nowrap min-w-[32px] cursor-pointer"
+                      title="Xuất file (Excel, CSV, PDF, Word)"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">file_download</span>
+                      <span className="hidden md:inline">Xuất file</span>
+                      <span className="material-symbols-outlined text-xs hidden md:inline">expand_more</span>
+                    </button>
+                    {showExpenseExportMenu && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-[9998]" 
+                          onClick={() => setShowExpenseExportMenu(false)}
+                        />
+                        <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 z-[9999] animate-in fade-in zoom-in duration-100">
+                          <button
+                            onClick={() => {
+                              setShowExpenseExportMenu(false);
+                              handleExportExcel();
+                            }}
+                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                            Excel (.xlsx)
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowExpenseExportMenu(false);
+                              handleExportExcel();
+                            }}
+                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                            CSV (.csv)
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowExpenseExportMenu(false);
+                              window.print();
+                            }}
+                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                            PDF (.pdf)
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowExpenseExportMenu(false);
+                              handleExportExcel();
+                            }}
+                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                            Word (.docx)
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <button
                     onClick={() => setIsNewExpenseOpen(true)}
-                    className="flex items-center justify-center gap-1 bg-primary text-white px-2 md:px-3 h-8 rounded-lg text-xs font-bold hover:bg-primary-dark transition-colors shadow-sm ml-auto whitespace-nowrap min-w-[32px]"
+                    className="flex items-center justify-center gap-1 bg-primary text-white px-2 md:px-3 h-8 rounded-lg text-xs font-bold hover:bg-primary-dark transition-colors shadow-sm whitespace-nowrap min-w-[32px] cursor-pointer"
                     title="Thêm phiếu chi"
                   >
                     <span className="material-symbols-outlined text-[16px]">add</span>

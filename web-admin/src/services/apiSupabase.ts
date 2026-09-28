@@ -825,6 +825,43 @@ export const api = {
       }
       return toCamelCase(result);
     },
+    createExpensesBatch: async (dataArray: any[]) => {
+      if (!dataArray || dataArray.length === 0) return [];
+      const payloads = dataArray.map(toSnakeCase);
+      const { data: result, error } = await supabase.from('expenses').insert(payloads).select();
+      if (error) {
+        if (error.code === '23503' || String(error.message).includes('foreign key constraint') || String(error.message).includes('expenses_project_code_fkey')) {
+          const projectCodes = Array.from(new Set(payloads.map(p => p.project_code).filter(Boolean)));
+          for (const projCode of projectCodes) {
+            await supabase.from('projects').upsert({
+              name: projCode === 'OFFICE' ? 'Văn phòng' : projCode,
+              code: projCode,
+              status: 'active',
+              location: 'Văn phòng Công ty',
+              client: 'Nội bộ',
+              notes: 'Tự động tạo cho chi phí'
+            }, { onConflict: 'code' });
+          }
+          const { data: retryResult, error: retryError } = await supabase.from('expenses').insert(payloads).select();
+          if (!retryError) return (retryResult || []).map(toCamelCase);
+        }
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+          const allowedKeys = ['id', 'project_code', 'stt', 'date', 'content', 'description', 'spender_name', 'unit', 'quantity', 'unit_price', 'tax_amount', 'total_amount', 'income_amount', 'balance_fund', 'notes', 'invoice_url', 'created_by'];
+          const cleanedPayloads = payloads.map(p => {
+            const cleanObj: any = {};
+            for (const key of Object.keys(p)) {
+              if (allowedKeys.includes(key)) cleanObj[key] = p[key];
+            }
+            return cleanObj;
+          });
+          const { data: retryResult, error: retryError } = await supabase.from('expenses').insert(cleanedPayloads).select();
+          if (retryError) throw retryError;
+          return (retryResult || []).map(toCamelCase);
+        }
+        throw error;
+      }
+      return (result || []).map(toCamelCase);
+    },
     updateExpense: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
       delete payload.id;

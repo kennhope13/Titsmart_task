@@ -35,9 +35,16 @@ const formatDateForInput = (d?: string) => {
   return str;
 };
 
+const normalizeImportText = (value: any) => String(value || '')
+  .trim()
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/\u0111/g, 'd');
+
 export const OfficeCostsPage: React.FC = () => {
   const { user } = useAuthStore();
-  const { expenses, engineers, addExpense, updateExpense, deleteExpense } = useRealtimeStore();
+  const { expenses, projects, engineers, addExpense, addExpensesBatch, updateExpense, deleteExpense } = useRealtimeStore();
 
   const currentProjExpenses = useMemo(() => expenses.filter(e => e.projectCode === 'OFFICE' || e.projectCode === 'VAN_PHONG').sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()), [expenses]);
 
@@ -146,20 +153,30 @@ export const OfficeCostsPage: React.FC = () => {
     }
   }, [isHighlightActive, highlightExpenseId, highlightKeyword, filteredExpenses]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleExportExcel = () => {
-    const data = filteredExpenses.map((exp, index) => ({
+    const sortedForExport = [...filteredExpenses].sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      return dateA - dateB;
+    });
+
+    const data = sortedForExport.map((exp, index) => ({
       'STT': index + 1,
       'Ngày': exp.date || '',
       'Người chi': exp.spenderName || '',
       'Nội dung': exp.content || '',
       'Diễn giải': exp.description || '',
       'ĐVT': exp.unit || '',
-      'Số lượng': exp.quantity || 0,
-      'Đơn giá (đ)': exp.unitPrice || 0,
-      'Thuế VAT (%)': exp.taxAmount || 0,
-      'Thành tiền (đ)': exp.totalAmount || 0,
-      'Thực thu (đ)': exp.incomeAmount || 0,
-      'Ghi chú': exp.notes || ''
+      'Số lượng': Number(exp.quantity || 0),
+      'Đơn giá (đ)': Number(exp.unitPrice || 0),
+      'Thuế VAT (%)': Number(exp.taxAmount || 0),
+      'Thành tiền (đ)': Number(exp.totalAmount || 0),
+      'Thực thu (đ)': Number(exp.incomeAmount || 0),
+      'Tồn quỹ': Number(exp.balanceFund || 0),
+      'Ghi chú': exp.notes || '',
+      'Hóa đơn': exp.invoiceUrl || ''
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -167,14 +184,219 @@ export const OfficeCostsPage: React.FC = () => {
     XLSX.writeFile(wb, `Chi_Phi_Van_Phong_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+
+        const parseExcelDate = (dateVal: any) => {
+          if (!dateVal) return '';
+          if (typeof dateVal === 'number') {
+            try {
+              const date = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
+              return date.toISOString().split('T')[0];
+            } catch (e) {
+              return String(dateVal);
+            }
+          }
+          const str = String(dateVal).trim();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+          if (/^\d{2}-\d{2}-\d{2}$/.test(str)) {
+            const [p0, p1, p2] = str.split('-');
+            if (Number(p0) >= 20 && Number(p0) <= 50) return `20${p0}-${p1}-${p2}`;
+            return `20${p2}-${p1}-${p0}`;
+          }
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+            const [d, m, y] = str.split('/');
+            return `${y}-${m}-${d}`;
+          }
+          if (/^\d{2}\/\d{2}\/\d{2}$/.test(str)) {
+            const [p0, p1, p2] = str.split('/');
+            if (Number(p0) >= 20 && Number(p0) <= 50) return `20${p0}-${p1}-${p2}`;
+            return `20${p2}-${p1}-${p0}`;
+          }
+          try {
+            const dt = new Date(str);
+            if (!isNaN(dt.getTime())) return dt.toISOString().split('T')[0];
+          } catch {}
+          return str;
+        };
+
+        const numVal = (val: any) => {
+          if (val === null || val === undefined) return 0;
+          if (typeof val === 'number') return val;
+          const str = String(val).trim();
+          if (str === '-' || str === '' || str === '—') return 0;
+          if (/^-?\d{1,3}(\.\d{3})+$/.test(str)) {
+            return parseFloat(str.replace(/\./g, ''));
+          }
+          if (/^-?\d{1,3}(,\d{3})+$/.test(str)) {
+            return parseFloat(str.replace(/,/g, ''));
+          }
+          if (/^-?\d+(\.\d{3})*,\d+$/.test(str)) {
+            return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+          }
+          const cleaned = str.replace(/[^0-9.-]/g, '');
+          const parsed = parseFloat(cleaned);
+          return isNaN(parsed) ? 0 : parsed;
+        };
+
+        const findStartRow = (sheetRows: any[][]) => {
+          for (let i = 0; i < Math.min(sheetRows.length, 25); i++) {
+            const r = sheetRows[i];
+            if (r && Array.isArray(r)) {
+              const rowText = r.map(c => normalizeImportText(c)).join(' ');
+              if (
+                (rowText.includes('stt') || rowText.includes('ngay')) &&
+                (rowText.includes('noi dung') || rowText.includes('thanh tien') || rowText.includes('dien giai') || rowText.includes('nguoi chi') || rowText.includes('nguoi pt'))
+              ) {
+                return i + 1;
+              }
+            }
+          }
+          return 1;
+        };
+
+        const sheetName = wb.SheetNames[0];
+        const sheet = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+        const startRow = findStartRow(rows);
+        const headerRow = rows[startRow - 1] || [];
+
+        const findIdx = (keywords: string[], fallback: number = -1) => {
+          for (let col = 0; col < 30; col++) {
+            const cell = normalizeImportText(headerRow[col]);
+            if (!cell) continue;
+            if (keywords.some((k: string) => {
+              const normK = normalizeImportText(k);
+              return cell === normK || cell.includes(normK);
+            })) {
+              return col;
+            }
+          }
+          return fallback;
+        };
+
+        const idxSTT = findIdx(['stt', 'tt'], -1);
+        const idxDate = findIdx(['ngay', 'date'], 1);
+        const idxSpender = findIdx(['nguoi chi', 'nguoi pt', 'nguoi phu trach', 'pt/ten', 'nguoi thuc hien', 'ten', 'spender'], -1);
+        const idxContent = findIdx(['noi dung', 'khoan muc', 'hang muc'], -1);
+        const idxDesc = findIdx(['dien giai', 'mo ta', 'chi tiet', 'noi dung / dien giai'], -1);
+        const idxUnit = findIdx(['dvt', 'don vi tinh', 'don vi'], -1);
+        const idxQty = findIdx(['so luong', 'sl', 'khoi luong'], -1);
+        const idxPrice = findIdx(['don gia', 'don gia (d)', 'don gia(d)'], -1);
+        const idxTax = findIdx(['thue vat', 'thue vat (%)', 'vat (%)', 'vat', 'thue'], -1);
+        const idxTotal = findIdx(['thanh tien', 'thanh tien (d)', 'thanh tien(d)', 'tien chi', 'tong chi', 'chi'], -1);
+        const idxIncome = findIdx(['thuc thu', 'thuc thu (d)', 'thuc thu(d)', 'thu', 'tam ung', 'cap quy', 'nap quy'], -1);
+        const idxBalance = findIdx(['ton quy', 'ton', 'quy'], -1);
+        const idxNotes = findIdx(['ghi chu', 'note'], -1);
+        const idxInvoice = findIdx(['hoa don', 'h.don', 'h. don', 'link hoa don', 'link anh', 'chung tu', 'invoice', 'invoiceurl', 'file'], -1);
+
+        const payloads: any[] = [];
+        rows.slice(startRow).forEach((row, rIdx) => {
+          const dateVal = idxDate >= 0 ? row[idxDate] : undefined;
+          const rawContent = idxContent >= 0 ? row[idxContent] : undefined;
+          const rawDesc = idxDesc >= 0 ? row[idxDesc] : undefined;
+
+          if (!rawContent && !rawDesc && !dateVal) return;
+
+          let content = '';
+          let description = '';
+
+          if (idxContent >= 0 && idxDesc >= 0 && idxContent !== idxDesc) {
+            content = String(rawContent || '').trim();
+            description = String(rawDesc || '').trim();
+          } else {
+            const combinedText = String(rawContent || rawDesc || '').trim();
+            if (combinedText.includes('\n')) {
+              const parts = combinedText.split('\n').map(s => s.trim()).filter(Boolean);
+              content = parts[0] || 'Văn phòng phẩm';
+              description = parts.slice(1).join(' ') || '';
+            } else {
+              content = combinedText || 'Văn phòng phẩm';
+              description = '';
+            }
+          }
+
+          if (content.toLowerCase() === 'nội dung' || content.toLowerCase() === 'tổng cộng') return;
+
+          const spender = idxSpender >= 0 && row[idxSpender] ? String(row[idxSpender]).trim() : '';
+          const unit = idxUnit >= 0 && row[idxUnit] ? String(row[idxUnit]).trim() : '';
+          const qty = idxQty >= 0 ? numVal(row[idxQty]) : 1;
+          const unitPrice = idxPrice >= 0 ? numVal(row[idxPrice]) : 0;
+          const tax = idxTax >= 0 ? numVal(row[idxTax]) : 0;
+          const totalAmount = idxTotal >= 0 ? numVal(row[idxTotal]) : (qty && unitPrice ? (qty * unitPrice + (tax ? qty * unitPrice * tax / 100 : 0)) : 0);
+          const incomeAmount = idxIncome >= 0 ? numVal(row[idxIncome]) : 0;
+          const balanceFund = idxBalance >= 0 ? numVal(row[idxBalance]) : 0;
+          const notes = idxNotes >= 0 && row[idxNotes] ? String(row[idxNotes]).trim() : '';
+          const invoiceUrl = idxInvoice >= 0 && row[idxInvoice] ? String(row[idxInvoice]).trim() : '';
+          const stt = idxSTT >= 0 && row[idxSTT] ? String(row[idxSTT]).trim() : String(rIdx + 1);
+
+          payloads.push({
+            projectCode: 'OFFICE',
+            stt: stt,
+            date: parseExcelDate(dateVal),
+            content: content,
+            description: description,
+            spenderName: spender,
+            unit: unit,
+            quantity: qty,
+            unitPrice: unitPrice,
+            taxAmount: tax,
+            totalAmount: totalAmount,
+            incomeAmount: incomeAmount,
+            balanceFund: balanceFund,
+            notes: notes,
+            invoiceUrl: invoiceUrl
+          });
+        });
+
+        if (payloads.length > 0) {
+          await addExpensesBatch(payloads);
+          triggerToast(`Đã nhập thành công ${payloads.length} dòng chi phí văn phòng!`, 'success');
+        } else {
+          triggerToast('Không tìm thấy dòng dữ liệu chi phí hợp lệ trong file.', 'warning');
+        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      } catch (err: any) {
+        triggerToast('Lỗi đọc file: ' + err.message, 'warning');
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-slate-50 overflow-hidden relative">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImportExcel}
+        accept=".xlsx, .xls, .csv"
+        className="hidden"
+      />
       <section className="border-b border-slate-200 bg-white pl-3 pr-3 md:pr-20 py-3 md:py-0 md:h-12 flex items-center justify-between gap-4 z-50 shrink-0 shadow-sm relative">
         <div className="flex items-center gap-4">
           <div><h2 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">CHI PHÍ VĂN PHÒNG</h2></div>
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Nhập file button */}
+          <button
+            onClick={() => {
+              if (fileInputRef.current) fileInputRef.current.click();
+            }}
+            className="flex items-center gap-1.5 border border-blue-200 bg-blue-50 h-[34px] px-3.5 rounded-lg text-xs font-bold text-primary hover:bg-blue-100 active:scale-95 transition-all shadow-xs cursor-pointer"
+            title="Nhập file Excel / CSV"
+          >
+            <span className="material-symbols-outlined text-[16px]">file_upload</span>
+            <span className="hidden sm:inline">Nhập file</span>
+          </button>
+
           {/* Desktop Export File Dropdown */}
           <div className="relative hidden md:block">
             <button

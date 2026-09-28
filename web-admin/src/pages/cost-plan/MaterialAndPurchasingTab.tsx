@@ -869,12 +869,13 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   };
 
   const maxSttWidth = React.useMemo(() => {
-    let maxLen = 3;
+    let maxLen = 1;
     data.forEach(t => {
-      const len = String(t.stt || "").length;
+      const len = String((t as any).computedStt || t.stt || "").trim().length;
       if (len > maxLen) maxLen = len;
     });
-    return Math.max(50, maxLen * 7.5 + 16);
+    const calculated = Math.max(24, Math.round(maxLen * 6.5 + 8));
+    return Math.min(80, calculated);
   }, [data]);
 
   const totals = useMemo(() => {
@@ -1235,7 +1236,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         <table className="w-full table-fixed border-collapse text-left text-xs" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
           <thead className="sticky top-0 z-30 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
-              <th rowSpan={2} style={{ minWidth: 50, width: "var(--stt-width)", left: 0, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
+              <th rowSpan={2} style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", left: 0, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-0.5 py-1 text-center font-extrabold whitespace-nowrap">STT</th>
               <th rowSpan={2} style={{ left: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left w-[170px] min-w-[150px] sm:w-[320px] sm:min-w-[280px]">NỘI DUNG</th>
               {(subTab === 'TECH' || subTab === 'DOCS' || subTab === 'FINANCE') && (
                 <>
@@ -1452,7 +1453,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                         const isCollapsed = collapsedSections.has(plan._sectionKey || '');
                         return (
                           <tr key={plan.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                            <td style={{ left: 0 }} className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
+                            <td style={{ left: 0, width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap overflow-hidden text-ellipsis" title={String(plan.stt)}>
                               {plan.stt}
                             </td>
                             <td colSpan={colSpanCount + 1} style={{ left: 'var(--stt-width)', width: 'auto', minWidth: 'auto', maxWidth: 'auto' }} className="sticky left-[var(--stt-width)] z-10 md:static bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={plan.jobContent}>
@@ -1513,7 +1514,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           }
                         }} className={rowClass}>
                           {/* STT */}
-                          <td style={{ left: 0 }} className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-middle text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
+                          <td style={{ left: 0, width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-middle text-center font-mono whitespace-nowrap overflow-hidden text-ellipsis ${sttStyle}`}>
                             {editingCell?.id === plan.id && editingCell?.field === 'stt' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -1525,7 +1526,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 className="w-full text-center bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
                               />
                             ) : (
-                              <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0 rounded block w-full">{depth > 0 ? plan.computedStt : plan.stt}</span>
+                              <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0 rounded block w-full truncate" title={String(depth > 0 ? plan.computedStt : plan.stt)}>{depth > 0 ? plan.computedStt : plan.stt}</span>
                             )}
                           </td>
                           

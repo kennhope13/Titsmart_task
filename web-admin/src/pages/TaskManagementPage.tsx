@@ -1711,16 +1711,7 @@ const hasSyncedRef = useRef(false);
   const columnConstrStatuses = Array.from(new Set(tasksForColumnFilters.map((t) => t.constrStatus).filter((value): value is string => !!value && value.trim().length > 0))).sort((a, b) => a.localeCompare(b, 'vi'));
 
   // Filter Tasks by Project and visible table columns
-  const maxSttWidth = React.useMemo(() => {
-  let maxLen = 3;
-  tasks.forEach(t => {
-    const len = String((t as any).computedStt || t.stt || "").length;
-    if (len > maxLen) maxLen = len;
-  });
-  return Math.max(42, maxLen * 7.5 + 16);
-}, [tasks]);
-
-const displayTasks = React.useMemo(() => tasks.filter((t) => {
+  const displayTasks = React.useMemo(() => tasks.filter((t) => {
     const matchesProj = selectedProjectCode === 'all' || t.projectCode === selectedProjectCode;
 
     // Column Filters
@@ -1957,6 +1948,17 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
     flattenTree(roots, 0, '');
     return flattened;
   }, [displayTasks]);
+
+  const maxSttWidth = React.useMemo(() => {
+    let maxLen = 1;
+    groupedTasks.forEach(t => {
+      const val = String((t as any).computedStt || t.stt || '').trim();
+      if (val.length > maxLen) maxLen = val.length;
+    });
+    // Gọn gàng vừa khít chữ: 1-2 ký tự ~ 24-26px, 3.7.1 ~ 38px
+    const calculated = Math.max(24, Math.round(maxLen * 6.5 + 8));
+    return Math.min(80, calculated);
+  }, [groupedTasks]);
 
   const totalPureItems = groupedTasks.filter((t) => !t.isSectionHeader).length;
   const completedPureItems = groupedTasks.filter((t) => !t.isSectionHeader && (t.isDone || t.progress >= 1)).length;
@@ -2265,8 +2267,8 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
           <table className="min-w-[1350px] w-full text-left border-collapse text-[11px] table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
             <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
               <tr>
-                <th style={{ width: "var(--stt-width)", minWidth: 42 }} className={`sticky left-0 z-20 md:static py-2 px-1 bg-slate-50 text-center border-b border-r border-slate-200 whitespace-nowrap transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>STT</th>
-                <th className={`sticky z-20 md:static py-2 px-2 w-[220px] min-w-[220px] max-w-[220px] md:w-[280px] md:min-w-[280px] md:max-w-[280px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)" }}>NỘI DUNG</th>
+                <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`sticky left-0 z-20 md:static py-2 px-1 bg-slate-50 text-center border-b border-r border-slate-200 whitespace-nowrap transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>STT</th>
+                <th className={`sticky z-20 md:static py-2 px-2 min-w-[200px] md:min-w-[280px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)" }}>NỘI DUNG</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
@@ -2289,7 +2291,7 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
                     const isCollapsed = collapsedSections.has(t._sectionKey || '');
                     return (
                       <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                        <td onClick={() => handleOpenEditModal(t)} className={`sticky left-0 z-10 md:static py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>{(t as any).computedStt || t.stt}</td>
+                        <td onClick={() => handleOpenEditModal(t)} style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`sticky left-0 z-10 md:static py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap overflow-hidden text-ellipsis transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`} title={String((t as any).computedStt || t.stt)}>{(t as any).computedStt || t.stt}</td>
                         <td colSpan={isScrolledHorizontally ? 1 : (hasPermission(authStore.user, 'ASSIGN_TASKS') ? 7 : 6)} className={`sticky z-10 md:static py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)", width: isScrolledHorizontally ? "220px" : "auto", minWidth: isScrolledHorizontally ? "220px" : "auto", maxWidth: isScrolledHorizontally ? "220px" : "auto" }}>
                           <div className="flex items-center gap-1.5 min-w-0 w-full overflow-hidden">
                             <button
@@ -2357,11 +2359,11 @@ const displayTasks = React.useMemo(() => tasks.filter((t) => {
 
                   return (
                     <tr key={t.id} className={rowClass} onDoubleClick={() => handleOpenEditModal(t)}>
-                      <td className={`sticky left-0 z-10 md:static py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 font-mono text-center whitespace-nowrap ${sttStyle} transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>
+                      <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`sticky left-0 z-10 md:static py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 font-mono text-center whitespace-nowrap overflow-hidden text-ellipsis ${sttStyle} transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>
                         {editingCell?.id === t.id && editingCell?.field === 'stt' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10px]" />
                         ) : (
-                          <span onClick={() => startEditing(t.id, 'stt', (t as any).computedStt || t.stt)} className="cursor-pointer hover:bg-slate-200/50 block w-full px-1">{(t as any).computedStt || t.stt || idx + 1}</span>
+                          <span onClick={() => startEditing(t.id, 'stt', (t as any).computedStt || t.stt)} className="cursor-pointer hover:bg-slate-200/50 block w-full px-0.5 truncate" title={String((t as any).computedStt || t.stt || idx + 1)}>{(t as any).computedStt || t.stt || idx + 1}</span>
                         )}
                       </td>
                       <td className={`sticky z-10 md:static py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none border-r border-slate-200 transition-colors whitespace-normal break-words ${fontStyle} transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)" }} title={t.name}>

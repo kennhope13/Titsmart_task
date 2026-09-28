@@ -446,6 +446,7 @@ interface RealtimeStoreState {
   deletePurchasingPlan: (id: string) => void;
 
   addExpense: (expense: Omit<ProjectExpense, 'id'>) => void;
+  addExpensesBatch: (expenses: (Omit<ProjectExpense, 'id'> | ProjectExpense)[]) => Promise<ProjectExpense[]>;
   updateExpense: (id: string, fields: Partial<ProjectExpense>) => void;
   deleteExpense: (id: string) => void;
 
@@ -848,12 +849,11 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           set({ isFetchingProjects: true });
         }
         const projects = await api.projects.getAll();
-        // Lọc bỏ project nội bộ "Kho Công Ty" và "Văn phòng" khỏi danh sách thẻ dự án công trình
+        // Lọc bỏ project nội bộ "Kho Công Ty" nếu có
         let filtered = Array.isArray(projects)
-          ? projects.filter((p: any) => p.code !== 'COMPANY' && p.code !== 'OFFICE' && p.code !== 'VAN_PHONG')
+          ? projects.filter((p: any) => p.code !== 'COMPANY')
           : projects;
         
-        filtered = filterByProject(filtered, 'code');
         set({ projects: filtered, isFetchingProjects: false });
       } catch (e) {
         console.error('Failed to fetch projects', e);
@@ -2073,6 +2073,39 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       } catch (e) {
         console.error('Failed to add expense', e);
         throw e;
+      }
+    },
+
+    addExpensesBatch: async (expDataArray) => {
+      try {
+        const createdBatch = (await api.accounting.createExpensesBatch(expDataArray)).map(normalizeExpense);
+        set((state) => {
+          const nextExps = [...createdBatch, ...state.expenses];
+          get().logActivity(`Nhập ${createdBatch.length} chi phí mới`, 'COMPANY');
+          persistAndNotify({ expenses: nextExps });
+          return { expenses: nextExps };
+        });
+        return createdBatch;
+      } catch (e) {
+        console.error('Failed to add expenses batch', e);
+        // Fallback
+        const results: ProjectExpense[] = [];
+        for (const exp of expDataArray) {
+          try {
+            const created = normalizeExpense(await api.accounting.createExpense(exp));
+            results.push(created);
+          } catch (err) {
+            console.error('Failed fallback add expense', err);
+          }
+        }
+        if (results.length > 0) {
+          set((state) => {
+            const nextExps = [...results, ...state.expenses];
+            persistAndNotify({ expenses: nextExps });
+            return { expenses: nextExps };
+          });
+        }
+        return results;
       }
     },
 

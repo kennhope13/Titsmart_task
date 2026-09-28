@@ -318,13 +318,14 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
     setEditingCell(null);
   };
 
-    const maxSttWidth = React.useMemo(() => {
-    let maxLen = 3;
+  const maxSttWidth = React.useMemo(() => {
+    let maxLen = 1;
     data.forEach(t => {
-      const len = String(t.stt || "").length;
+      const len = String((t as any).computedStt || t.stt || "").trim().length;
       if (len > maxLen) maxLen = len;
     });
-    return Math.max(50, maxLen * 7.5 + 16);
+    const calculated = Math.max(24, Math.round(maxLen * 6.5 + 8));
+    return Math.min(80, calculated);
   }, [data]);
 
   return (
@@ -431,7 +432,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
         <table className="w-full table-fixed border-collapse text-left text-xs" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
           <thead className="sticky top-0 z-30 border-b border-slate-200 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
-              <th rowSpan={2} style={{ minWidth: 50, width: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'   }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-1 py-1.5 text-center font-extrabold whitespace-nowrap">STT</th>
+              <th rowSpan={2} style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-0.5 py-1 text-center font-extrabold whitespace-nowrap">STT</th>
               <th rowSpan={2} style={{ minWidth: 280, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8'  , left: "var(--stt-width)" }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left " >NỘI DUNG</th>
               <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
               <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL HĐ</th>
@@ -597,7 +598,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         const isCollapsed = collapsedSections.has(plan._sectionKey || '');
                     return (
                       <tr key={plan.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                        <td className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap">
+                        <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap overflow-hidden text-ellipsis" title={String(plan.stt)}>
                           {plan.stt}
                         </td>
                         <td colSpan={colSpanCount} className=" bg-blue-50/90  px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={plan.jobContent}>
@@ -653,7 +654,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
               return (
                 <tr key={plan.id} onDoubleClick={() => onEdit(plan)} className={rowClass}>
                   {/* STT */}
-                  <td className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-top text-center font-mono whitespace-nowrap overflow-hidden ${sttStyle}`}>
+                  <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-top text-center font-mono whitespace-nowrap overflow-hidden text-ellipsis ${sttStyle}`}>
                     {editingCell?.id === plan.id && editingCell?.field === 'stt' ? (
                       <input
                         type="text"
@@ -665,7 +666,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full text-center bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                       />
                     ) : (
-                      <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block w-full">{depth > 0 ? plan.computedStt : plan.stt}</span>
+                      <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0.5 rounded block w-full truncate" title={String(depth > 0 ? plan.computedStt : plan.stt)}>{depth > 0 ? plan.computedStt : plan.stt}</span>
                     )}
                   </td>
                   {/* NỘI DUNG */}
