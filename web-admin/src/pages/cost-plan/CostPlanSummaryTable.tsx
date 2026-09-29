@@ -143,7 +143,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
         <div className="flex gap-2 md:gap-3 w-full items-stretch justify-start md:justify-center min-w-max pb-1">
           
           {/* QUỸ */}
-          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[120px] md:min-w-[140px] bg-white shadow-xs rounded-lg overflow-hidden border border-slate-300">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[120px] md:min-w-[140px] max-w-[200px] bg-white shadow-xs rounded-lg overflow-hidden border border-slate-300">
             <thead>
               <tr>
                 <th className="border-b border-slate-300 bg-blue-100 text-blue-900 h-[26px] md:h-[30px] p-0 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">
@@ -191,7 +191,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
           </table>
 
           {/* TỔNG CHI */}
-          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[120px] md:min-w-[140px] bg-white shadow-xs rounded-lg overflow-hidden border border-slate-300">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[120px] md:min-w-[140px] max-w-[200px] bg-white shadow-xs rounded-lg overflow-hidden border border-slate-300">
             <thead>
               <tr>
                 <th className="border-b border-slate-300 bg-blue-100 text-blue-900 h-[26px] md:h-[30px] p-0 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">
@@ -209,7 +209,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
           </table>
 
           {/* TỒN CUỐI KỲ */}
-          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[120px] md:min-w-[140px] bg-white shadow-xs rounded-lg overflow-hidden border border-slate-300">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[120px] md:min-w-[140px] max-w-[200px] bg-white shadow-xs rounded-lg overflow-hidden border border-slate-300">
             <thead>
               <tr>
                 <th className="border-b border-slate-300 bg-blue-100 text-blue-900 h-[26px] md:h-[30px] p-0 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">
@@ -227,7 +227,7 @@ export const CostPlanSummaryTable: React.FC<CostPlanSummaryTableProps> = ({
           </table>
 
           {/* TRÌNH */}
-          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[120px] md:min-w-[140px] bg-white shadow-xs rounded-lg overflow-hidden border border-slate-300">
+          <table className="border-collapse text-xs md:text-sm flex-1 min-w-[120px] md:min-w-[140px] max-w-[200px] bg-white shadow-xs rounded-lg overflow-hidden border border-slate-300">
             <thead>
               <tr>
                 <th className="border-b border-slate-300 bg-orange-200 text-orange-900 h-[26px] md:h-[30px] p-0 text-[10px] md:text-[11px] font-bold text-center uppercase whitespace-nowrap">

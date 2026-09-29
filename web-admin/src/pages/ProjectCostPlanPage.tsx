@@ -1995,7 +1995,122 @@ export const ProjectCostPlanPage: React.FC = () => {
         {activeTab === 'EXPENSE' && (
           <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-white flex flex-col pb-16 md:pb-0" id="expense-unified-view">
 
-            {/* 1. BẢNG TỔNG QUAN */}
+            {/* 1. BỘ LỌC & CÔNG CỤ (TOOLBAR TRÊN CÙNG) */}
+            <div className="flex border-b border-slate-200 bg-slate-50 px-3 md:px-5 py-2 gap-2 md:gap-3 sticky top-0 z-20 items-center justify-between text-xs text-slate-600 overflow-x-auto custom-scrollbar shadow-xs">
+              <div className="hidden md:flex items-center gap-2 md:gap-3 flex-wrap sm:flex-nowrap">
+                <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
+                  <span className="material-symbols-outlined text-[16px]">filter_list</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 md:gap-2">
+                  <span className="text-slate-500 font-medium whitespace-nowrap text-xs">Ngày chi:</span>
+                  <div className="flex items-center gap-1 border border-slate-200 rounded px-1.5 py-0.5 bg-white shadow-xs">
+                    <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Từ</span>
+                    <input type="date" value={expenseFilterDateFrom} onChange={e => setExpenseFilterDateFrom(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[115px] text-slate-700 cursor-pointer" />
+                    <span className="text-slate-300">|</span>
+                    <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
+                    <input type="date" value={expenseFilterDateTo} onChange={e => setExpenseFilterDateTo(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[115px] text-slate-700 cursor-pointer" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end md:ml-auto">
+                <div className="relative flex-1 md:w-52 md:flex-initial">
+                  <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[14px]">search</span>
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1 bg-slate-100 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-primary focus:bg-white transition-all outline-none h-8"
+                  />
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (fileInputRef.current) fileInputRef.current.click();
+                  }}
+                  className="flex items-center justify-center gap-1.5 border border-blue-200 bg-blue-50 text-primary px-2.5 md:px-3 h-8 rounded-lg text-xs font-bold hover:bg-blue-100 active:scale-95 transition-all shadow-xs whitespace-nowrap cursor-pointer"
+                  title="Nhập file (Excel, CSV, PDF, Word)"
+                >
+                  <span className="material-symbols-outlined text-[16px]">file_upload</span>
+                  <span className="hidden sm:inline">Nhập file</span>
+                </button>
+
+                <div className="relative">
+                  <button
+                    onClick={() => setShowExpenseExportMenu(!showExpenseExportMenu)}
+                    className="flex items-center justify-center gap-1 border border-emerald-200 bg-emerald-50 text-emerald-700 px-2.5 md:px-3 h-8 rounded-lg text-xs font-bold hover:bg-emerald-100 active:scale-95 transition-all shadow-xs whitespace-nowrap cursor-pointer"
+                    title="Xuất file (Excel, CSV, PDF, Word)"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">file_download</span>
+                    <span className="hidden sm:inline">Xuất file</span>
+                    <span className="material-symbols-outlined text-xs hidden sm:inline">expand_more</span>
+                  </button>
+                  {showExpenseExportMenu && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-[9998]" 
+                        onClick={() => setShowExpenseExportMenu(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 z-[9999] animate-in fade-in zoom-in duration-100">
+                        <button
+                          onClick={() => {
+                            setShowExpenseExportMenu(false);
+                            handleExportExcel();
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                          Excel (.xlsx)
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowExpenseExportMenu(false);
+                            handleExportExcel();
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                          CSV (.csv)
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowExpenseExportMenu(false);
+                            window.print();
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                          PDF (.pdf)
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowExpenseExportMenu(false);
+                            handleExportExcel();
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                          Word (.docx)
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setIsNewExpenseOpen(true)}
+                  className="flex items-center justify-center gap-1 bg-primary text-white px-2.5 md:px-3 h-8 rounded-lg text-xs font-bold hover:bg-primary-dark transition-colors shadow-xs whitespace-nowrap cursor-pointer"
+                  title="Thêm phiếu chi"
+                >
+                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  <span className="hidden sm:inline">Thêm phiếu chi</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2. BẢNG TỔNG QUAN */}
             <div className="shrink-0 w-full overflow-x-auto">
               <CostPlanSummaryTable
                 expenses={currentProjExpenses}
@@ -2116,150 +2231,10 @@ export const ProjectCostPlanPage: React.FC = () => {
               />
             </div>
 
-            {/* CHI TIẾT PHIẾU CHI */}
-
+            {/* 3. CHI TIẾT PHIẾU CHI */}
             <div className="bg-white border-t border-slate-200 overflow-hidden flex-1 flex flex-col">
-              <div className="flex border-b border-slate-100 bg-slate-50 px-3 md:px-5 py-1.5 gap-2 md:gap-3 sticky top-0 z-20 items-center text-xs text-slate-600 flex-nowrap overflow-x-auto custom-scrollbar">
-                  <div className="hidden md:flex items-center gap-3">
-                    <div className="flex items-center gap-2.5 font-bold text-slate-500 whitespace-nowrap">
-                      <span className="material-symbols-outlined text-[16px]">filter_list</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500 font-medium whitespace-nowrap">Ngày chi:</span>
-                      <div className="flex items-center gap-1.5 border border-slate-200 rounded px-1 py-0.5 bg-white shadow-sm">
-                        <span className="text-slate-400 font-medium whitespace-nowrap text-[11px] ml-1">Từ</span>
-                        <input type="date" value={expenseFilterDateFrom} onChange={e => setExpenseFilterDateFrom(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer" />
-                        <span className="text-slate-300">|</span>
-                        <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
-                        <input type="date" value={expenseFilterDateTo} onChange={e => setExpenseFilterDateTo(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer" />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500 font-medium whitespace-nowrap">Nội dung:</span>
-                      <CustomSelect
-                        value={expenseFilterContent}
-                        onChange={e => setExpenseFilterContent(e.target.value)}
-                        className="min-w-[120px] max-w-[250px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
-                      >
-                        {expenseContentOptions.map(opt => {
-                          let label = opt;
-                          if (label && label.length > 30) label = label.slice(0, 30) + '...';
-                          return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
-                        })}
-                      </CustomSelect>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500 font-medium whitespace-nowrap">ĐVT:</span>
-                      <CustomSelect
-                        value={expenseFilterUnit}
-                        onChange={e => setExpenseFilterUnit(e.target.value)}
-                        className="min-w-[60px] max-w-[90px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
-                      >
-                        {expenseUnitOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : opt}</option>
-                        ))}
-                      </CustomSelect>
-                    </div>
-                  </div>
-
-                  <div className="relative flex-1 md:w-48 shrink-0">
-                    <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[14px]">search</span>
-                    <input
-                      type="text"
-                      placeholder="Tìm kiếm..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 bg-slate-100 border-none rounded text-xs focus:ring-1 focus:ring-primary focus:bg-white transition-all outline-none h-8"
-                    />
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      if (fileInputRef.current) fileInputRef.current.click();
-                    }}
-                    className="flex items-center justify-center gap-1.5 border border-blue-200 bg-blue-50 text-primary px-2.5 md:px-3 h-8 rounded-lg text-xs font-bold hover:bg-blue-100 active:scale-95 transition-all shadow-xs whitespace-nowrap min-w-[32px] cursor-pointer"
-                    title="Nhập file (Excel, CSV, PDF, Word)"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">file_upload</span>
-                    <span className="hidden md:inline">Nhập file</span>
-                  </button>
-
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowExpenseExportMenu(!showExpenseExportMenu)}
-                      className="flex items-center justify-center gap-1 border border-emerald-200 bg-emerald-50 text-emerald-700 px-2.5 md:px-3 h-8 rounded-lg text-xs font-bold hover:bg-emerald-100 active:scale-95 transition-all shadow-xs whitespace-nowrap min-w-[32px] cursor-pointer"
-                      title="Xuất file (Excel, CSV, PDF, Word)"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">file_download</span>
-                      <span className="hidden md:inline">Xuất file</span>
-                      <span className="material-symbols-outlined text-xs hidden md:inline">expand_more</span>
-                    </button>
-                    {showExpenseExportMenu && (
-                      <>
-                        <div 
-                          className="fixed inset-0 z-[9998]" 
-                          onClick={() => setShowExpenseExportMenu(false)}
-                        />
-                        <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 z-[9999] animate-in fade-in zoom-in duration-100">
-                          <button
-                            onClick={() => {
-                              setShowExpenseExportMenu(false);
-                              handleExportExcel();
-                            }}
-                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
-                            Excel (.xlsx)
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowExpenseExportMenu(false);
-                              handleExportExcel();
-                            }}
-                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-base text-teal-600">csv</span>
-                            CSV (.csv)
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowExpenseExportMenu(false);
-                              window.print();
-                            }}
-                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
-                            PDF (.pdf)
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowExpenseExportMenu(false);
-                              handleExportExcel();
-                            }}
-                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-base text-blue-600">description</span>
-                            Word (.docx)
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() => setIsNewExpenseOpen(true)}
-                    className="flex items-center justify-center gap-1 bg-primary text-white px-2 md:px-3 h-8 rounded-lg text-xs font-bold hover:bg-primary-dark transition-colors shadow-sm whitespace-nowrap min-w-[32px] cursor-pointer"
-                    title="Thêm phiếu chi"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">add</span>
-                    <span className="hidden md:inline">Thêm phiếu chi</span>
-                  </button>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+              <div className="overflow-x-auto custom-scrollbar flex-1">
+                <table className="w-full text-left border-collapse min-w-[1100px]">
                   <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-tight">
                   <tr>
 
