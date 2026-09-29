@@ -9,6 +9,7 @@ import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { WebOcrExtractedData } from '../services/webOcrService';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
+import { isUserMemberOfProject } from '../utils/projectMemberUtils';
 
 const todayStamp = () => new Date().toISOString().split('T')[0];
 
@@ -123,6 +124,8 @@ export const ProjectManagementPage: React.FC = () => {
     isFetchingProjects
   } = useRealtimeStore();
 
+  const currentUser = useAuthStore(state => state.user);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'on_hold'>('active');
 
@@ -214,7 +217,7 @@ export const ProjectManagementPage: React.FC = () => {
       merged.push(proj);
     });
 
-    const finalMerged = merged;
+    const finalMerged = merged.filter((proj) => isUserMemberOfProject(currentUser, proj, engineers));
     
     return finalMerged.map((project) => {
       const pCodeUpper = (project.code || '').trim().toUpperCase();

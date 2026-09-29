@@ -92,3 +92,89 @@ export const getEngineersForProject = (
 
   return filtered;
 };
+
+/**
+ * Check if a user is an authorized member/manager/viewer of a project.
+ * Returns true for Admin, PM, Project Managers, and explicit project members.
+ */
+export const isUserMemberOfProject = (
+  user: any,
+  project: Project,
+  engineers?: Engineer[]
+): boolean => {
+  if (!user || !project) return false;
+
+  const role = String(user.role || '').toLowerCase();
+  const username = String(user.username || '').toLowerCase();
+  // Admin & PM always have full access to all projects
+  if (
+    username === 'admin' ||
+    role === 'admin' ||
+    role === 'pm' ||
+    role === 'quản trị viên' ||
+    role === 'quản lý dự án'
+  ) {
+    return true;
+  }
+
+  const norm = (s?: string) => String(s || '').trim().toUpperCase();
+  const userId = norm(user.id);
+  const userUsername = norm(user.username);
+  const userName = norm(user.name);
+
+  const pCodeUpper = norm(project.code);
+  const pIdUpper = norm(project.id);
+  const pNameUpper = norm(project.name);
+
+  // 1. Check if user is manager of project
+  if (project.managerId && (norm(project.managerId) === userId || norm(project.managerId) === userUsername)) {
+    return true;
+  }
+  if (project.managerName && norm(project.managerName).includes(userName)) {
+    return true;
+  }
+
+  // 2. Check if user is in project.members or project.memberIds
+  if (Array.isArray(project.members) && project.members.some(m => norm(m) === userId || norm(m) === userUsername || norm(m) === userName)) {
+    return true;
+  }
+  if (Array.isArray(project.memberIds) && project.memberIds.some(m => norm(m) === userId || norm(m) === userUsername)) {
+    return true;
+  }
+
+  // 3. Check user.projectCodes
+  const userCodes = Array.isArray(user.projectCodes) ? user.projectCodes : [];
+  if (userCodes.some((c: string) => {
+    const u = norm(c);
+    return u && (u === pCodeUpper || u === pIdUpper || (pNameUpper && u === pNameUpper));
+  })) {
+    return true;
+  }
+
+  // 4. Also check corresponding engineer record in engineers store
+  if (engineers && Array.isArray(engineers)) {
+    const matchedEng = engineers.find(e => norm(e.id) === userId || norm(e.username) === userUsername || norm(e.name) === userName);
+    if (matchedEng) {
+      if (Array.isArray(matchedEng.projectCodes) && matchedEng.projectCodes.some((c: string) => {
+        const u = norm(c);
+        return u && (u === pCodeUpper || u === pIdUpper || (pNameUpper && u === pNameUpper));
+      })) {
+        return true;
+      }
+      if (Array.isArray(matchedEng.managedProjects) && matchedEng.managedProjects.some((p: any) => {
+        const u = norm(p.code || p.name);
+        return u && (u === pCodeUpper || u === pIdUpper || (pNameUpper && u === pNameUpper));
+      })) {
+        return true;
+      }
+      if (Array.isArray(matchedEng.memberProjects) && matchedEng.memberProjects.some((p: any) => {
+        const u = norm(p.code || p.name);
+        return u && (u === pCodeUpper || u === pIdUpper || (pNameUpper && u === pNameUpper));
+      })) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};

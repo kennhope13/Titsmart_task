@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore } from '../services/authStore';
+import { isUserMemberOfProject } from '../utils/projectMemberUtils';
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Cell, Tooltip, Legend, LabelList, PieChart, Pie } from 'recharts';
 
 
@@ -55,9 +57,12 @@ export const DashboardPage: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const currentUser = useAuthStore(state => state.user);
+
   // 1. CHUẨN BỊ DỮ LIỆU TỔNG HỢP CỦA TẤT CẢ DỰ ÁN
   const enhancedProjects = useMemo(() => {
-    return projects.map((project) => {
+    const visibleProjects = projects.filter(p => isUserMemberOfProject(currentUser, p, engineers));
+    return visibleProjects.map((project) => {
       const projectTasks = tasks.filter((task) => task.projectCode === project.code && !task.isSectionHeader);
       
       let progress = project.progressPercent || 0;
@@ -207,13 +212,13 @@ export const DashboardPage: React.FC = () => {
                 </div>
               </div>
               <div className="max-h-64 overflow-y-auto p-2">
-                {projects.length === 0 ? (
+                {enhancedProjects.length === 0 ? (
                   <div className="p-4 text-center text-slate-400 text-sm">Chưa có dự án nào</div>
                 ) : (
-                  projects.filter(p => p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()) || p.code.toLowerCase().includes(projectSearchQuery.toLowerCase())).length === 0 ? (
+                  enhancedProjects.filter(p => p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()) || p.code.toLowerCase().includes(projectSearchQuery.toLowerCase())).length === 0 ? (
                     <div className="p-4 text-center text-slate-400 text-sm">Không tìm thấy dự án</div>
                   ) : (
-                    projects.filter(p => p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()) || p.code.toLowerCase().includes(projectSearchQuery.toLowerCase())).map(proj => (
+                    enhancedProjects.filter(p => p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()) || p.code.toLowerCase().includes(projectSearchQuery.toLowerCase())).map(proj => (
                       <label key={proj.code} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded cursor-pointer group">
                         <input 
                         type="checkbox" 
