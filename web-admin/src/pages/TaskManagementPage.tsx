@@ -1733,7 +1733,15 @@ const hasSyncedRef = useRef(false);
     setNewManagerTitle('Chỉ huy trưởng cng trnh');
   };
 
-  const tasksForColumnFilters = tasks.filter((t) => selectedProjectCode === 'all' || t.projectCode === selectedProjectCode);
+  const isMatchingProject = React.useCallback((taskProj?: string, targetProj?: string) => {
+    if (!targetProj || targetProj === 'all') return true;
+    if (!taskProj) return false;
+    const tNorm = taskProj.trim().toLowerCase();
+    const targetNorm = targetProj.trim().toLowerCase();
+    return tNorm === targetNorm || tNorm.includes(targetNorm) || targetNorm.includes(tNorm);
+  }, []);
+
+  const tasksForColumnFilters = tasks.filter((t) => isMatchingProject(t.projectCode || t.projectName, selectedProjectCode));
   const columnSections = Array.from(new Set(tasksForColumnFilters.map((t) => t.sectionName).filter((value): value is string => !!value && value.trim().length > 0))).sort((a, b) => a.localeCompare(b, 'vi'));
   const columnUnits = Array.from(new Set(tasksForColumnFilters.map((t) => t.unit).filter((value): value is string => !!value && value.trim().length > 0))).sort((a, b) => a.localeCompare(b, 'vi'));
   const columnPurchaseStatuses = Array.from(new Set(tasksForColumnFilters.map((t) => t.purchaseStatus).filter((value): value is string => !!value && value.trim().length > 0))).sort((a, b) => a.localeCompare(b, 'vi'));
@@ -1741,7 +1749,7 @@ const hasSyncedRef = useRef(false);
 
   // Filter Tasks by Project and visible table columns
   const displayTasks = React.useMemo(() => tasks.filter((t) => {
-    const matchesProj = selectedProjectCode === 'all' || t.projectCode === selectedProjectCode;
+    const matchesProj = isMatchingProject(t.projectCode || t.projectName, selectedProjectCode);
 
     // Column Filters
     const pct = Math.round((t.progress || 0) * 100);

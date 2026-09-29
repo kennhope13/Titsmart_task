@@ -56,16 +56,28 @@ const filterByProject = (items: any[], codeField: string) => {
   }
 
   const assigned = Array.isArray(user.projectCodes) ? user.projectCodes : [];
-  // Nếu chưa gán dự án nào trong mảng (mảng rỗng) → không xem dự án nào trừ các mục chung
   const assignedUpper = assigned.map(a => String(a || '').trim().toUpperCase()).filter(Boolean);
+
+  // Nếu người dùng không bị giới hạn dự án cụ thể nào (mảng projectCodes rỗng) -> cho phép xem toàn bộ
+  if (assignedUpper.length === 0) {
+    return items;
+  }
+
   const userEngId = (user as any).id || '';
+  const userUsernameUpper = String(user.username || '').trim().toUpperCase();
   const userNameUpper = String(user.name || '').trim().toUpperCase();
 
   return items.filter(item => {
     // Check if user is explicit member/manager of this project item
     if (userEngId && Array.isArray(item.members) && item.members.includes(userEngId)) return true;
     if (userEngId && Array.isArray(item.memberIds) && item.memberIds.includes(userEngId)) return true;
-    if (userNameUpper && item.managerName && String(item.managerName).toUpperCase().includes(userNameUpper)) return true;
+    if (userEngId && (item.assignedEngineerId === userEngId || item.assignerId === userEngId || item.createdById === userEngId)) return true;
+    if (userUsernameUpper && (String(item.assignedEngineerId || '').toUpperCase() === userUsernameUpper || String(item.assignerId || '').toUpperCase() === userUsernameUpper)) return true;
+    if (userNameUpper && (
+      (item.assignedEngineerName && String(item.assignedEngineerName).toUpperCase().includes(userNameUpper)) ||
+      (item.managerName && String(item.managerName).toUpperCase().includes(userNameUpper)) ||
+      (item.assignerName && String(item.assignerName).toUpperCase().includes(userNameUpper))
+    )) return true;
 
     const val = String(item[codeField] || '').trim().toUpperCase();
     const itemId = String(item.id || '').trim().toUpperCase();
@@ -74,8 +86,6 @@ const filterByProject = (items: any[], codeField: string) => {
 
     // Cho phép hiển thị các hồ sơ/mục chung nội bộ không gán mã dự án cụ thể hoặc mã COMPANY
     if (codeField !== 'code' && (!val || val === 'COMPANY' || val === 'OFFICE' || val === 'KHÁC')) return true;
-
-    if (assignedUpper.length === 0) return false;
 
     return assignedUpper.some(assigned => {
       if (!assigned) return false;

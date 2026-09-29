@@ -47,8 +47,9 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
 
   filterByUserProjects: (data) => {
     const user = useAuthStore.getState().user;
-    if (!user || user.role === 'admin') return data;
+    if (!user || user.role === 'admin' || user.role === 'pm') return data;
     const codes = user.projectCodes || [];
+    if (codes.length === 0) return data;
     return data.filter(item => {
       const pCode = item.projectCode;
       if (!pCode) return true;
@@ -62,9 +63,11 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
       const data = await api.projects.getAll();
       const user = useAuthStore.getState().user;
       let filtered = data;
-      if (user && user.role !== 'admin') {
+      if (user && user.role !== 'admin' && user.role !== 'pm') {
         const codes = user.projectCodes || [];
-        filtered = data.filter((p: Project) => codes.includes(p.code));
+        if (codes.length > 0) {
+          filtered = data.filter((p: Project) => codes.includes(p.code));
+        }
       }
       set({ projects: filtered as Project[], isLoading: false });
     } catch (e) {

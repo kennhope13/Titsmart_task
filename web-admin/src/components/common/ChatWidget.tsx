@@ -77,7 +77,9 @@ export const ChatWidget: React.FC = () => {
   const [isProjectsCollapsed, setIsProjectsCollapsed] = useState(false);
   const [isColleaguesCollapsed, setIsColleaguesCollapsed] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mobileContainerRef = useRef<HTMLDivElement>(null);
+  const desktopContainerRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef<boolean>(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -221,15 +223,28 @@ export const ChatWidget: React.FC = () => {
     };
   }, [currentUser]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const handleMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    // Consider within 80px from bottom as being at bottom
+    isNearBottomRef.current = scrollHeight - scrollTop - clientHeight <= 80;
   };
 
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(scrollToBottom, 100);
+  const scrollToBottom = (force = false, behavior: ScrollBehavior = 'smooth') => {
+    if (!force && !isNearBottomRef.current) return;
+
+    if (mobileContainerRef.current) {
+      mobileContainerRef.current.scrollTo({
+        top: mobileContainerRef.current.scrollHeight,
+        behavior,
+      });
     }
-  }, [directMessages, isOpen, selectedTarget]);
+    if (desktopContainerRef.current) {
+      desktopContainerRef.current.scrollTo({
+        top: desktopContainerRef.current.scrollHeight,
+        behavior,
+      });
+    }
+  };
 
   // Auto-focus input on mobile when switching to messages view
   useEffect(() => {
@@ -328,6 +343,22 @@ export const ChatWidget: React.FC = () => {
     });
   }, [isOpen, selectedTarget, currentMessages.length, currentUser, markDirectMessageRead]);
 
+  // Scroll to bottom on conversation change or chat open
+  useEffect(() => {
+    if (isOpen && selectedTarget) {
+      isNearBottomRef.current = true;
+      const t = setTimeout(() => scrollToBottom(true, 'auto'), 80);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen, selectedTarget?.id, selectedTarget?.type]);
+
+  // Scroll to bottom on new messages ONLY IF user is already near bottom
+  useEffect(() => {
+    if (isOpen && selectedTarget && currentMessages.length > 0) {
+      scrollToBottom(false, 'smooth');
+    }
+  }, [currentMessages.length, isOpen, selectedTarget]);
+
   if (!currentUser) return null;
 
   const handleSend = async (e?: React.FormEvent) => {
@@ -352,7 +383,8 @@ export const ChatWidget: React.FC = () => {
 
     try {
       await sendDirectMessage(msgData);
-      scrollToBottom();
+      isNearBottomRef.current = true;
+      setTimeout(() => scrollToBottom(true, 'smooth'), 60);
     } catch (err) {
       console.error('Lỗi gửi tin nhắn:', err);
     }
@@ -400,6 +432,8 @@ export const ChatWidget: React.FC = () => {
   const handleSelectTarget = (target: { type: 'user' | 'project'; id: string; username?: string; name: string; avatar?: string }) => {
     setSelectedTarget(target);
     setMobileView('messages');
+    isNearBottomRef.current = true;
+    setTimeout(() => scrollToBottom(true, 'auto'), 80);
   };
 
   const handleClose = () => {
@@ -560,7 +594,7 @@ export const ChatWidget: React.FC = () => {
               renderContactList()
             ) : selectedTarget ? (
               <>
-                <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-slate-50/50">
+                <div ref={mobileContainerRef} onScroll={handleMessagesScroll} className="flex-1 p-3 overflow-y-auto space-y-3 bg-slate-50/50">
                   {currentMessages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-400 text-[12px]">
                       <span className="material-symbols-outlined text-[40px] mb-2 text-slate-300">chat_bubble_outline</span>
@@ -634,7 +668,6 @@ export const ChatWidget: React.FC = () => {
                     );
                     })
                   )}
-                  <div ref={messagesEndRef} />
                 </div>
 
                 <form onSubmit={handleSend} className="p-2 border-t border-slate-100 bg-white flex flex-col gap-1 shrink-0 relative">
@@ -862,7 +895,7 @@ export const ChatWidget: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-slate-50/50">
+                    <div ref={desktopContainerRef} onScroll={handleMessagesScroll} className="flex-1 p-3 overflow-y-auto space-y-3 bg-slate-50/50 custom-scrollbar">
                       {currentMessages.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-slate-400 text-[12px]">
                           <span className="material-symbols-outlined text-[32px] mb-1">chat_bubble_outline</span>
@@ -936,7 +969,6 @@ export const ChatWidget: React.FC = () => {
                           );
                         })
                       )}
-                      <div ref={messagesEndRef} />
                     </div>
 
                     <form onSubmit={handleSend} className="p-2 border-t border-slate-100 bg-white flex flex-col gap-1 shrink-0 relative">
