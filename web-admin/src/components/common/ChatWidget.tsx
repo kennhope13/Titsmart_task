@@ -6,6 +6,62 @@ import { DirectMessage, Engineer, Project } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { uploadAttachment } from '../../utils/fileUploadHelper';
 
+const isSameDay = (d1?: string, d2?: string) => {
+  if (!d1 || !d2) return false;
+  const date1 = new Date(d1);
+  const date2 = new Date(d2);
+  return date1.toDateString() === date2.toDateString();
+};
+
+const formatMessageTime = (dateStr?: string) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+  
+  const timePart = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  
+  if (isToday) {
+    return timePart;
+  }
+  if (isYesterday) {
+    return `Hôm qua ${timePart}`;
+  }
+  
+  const isThisYear = d.getFullYear() === now.getFullYear();
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  if (isThisYear) {
+    return `${day}/${month} ${timePart}`;
+  }
+  return `${day}/${month}/${d.getFullYear()} ${timePart}`;
+};
+
+const getMessageDateLabel = (dateStr?: string) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return 'Hôm nay';
+  }
+  
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) {
+    return 'Hôm qua';
+  }
+  
+  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
 export const ChatWidget: React.FC = () => {
   const currentUser = useAuthStore(state => state.user);
   const showChatWidget = useUIStore(state => state.showChatWidget);
@@ -511,14 +567,24 @@ export const ChatWidget: React.FC = () => {
                       <span className="font-semibold">Chưa có tin nhắn nào.</span>
                     </div>
                   ) : (
-                    currentMessages.map(msg => {
+                    currentMessages.map((msg, idx) => {
                       const isMe = msg.senderId === currentUser.id || msg.senderId === currentUser.username;
+                      const prevMsg = idx > 0 ? currentMessages[idx - 1] : null;
+                      const showDateDivider = !prevMsg || !isSameDay(prevMsg.createdAt, msg.createdAt);
                       return (
-                        <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                          <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5">
-                            {!isMe && <span className="font-semibold text-slate-600">{msg.senderName}</span>}
-                            <span>{new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
+                        <React.Fragment key={msg.id}>
+                          {showDateDivider && (
+                            <div className="flex justify-center my-2">
+                              <span className="px-2.5 py-0.5 text-[10px] font-bold text-slate-500 bg-slate-200/80 rounded-full shadow-2xs">
+                                {getMessageDateLabel(msg.createdAt)}
+                              </span>
+                            </div>
+                          )}
+                          <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-0.5">
+                              {!isMe && <span className="font-semibold text-slate-600">{msg.senderName}</span>}
+                              <span>{formatMessageTime(msg.createdAt)}</span>
+                            </div>
                           <div className={`max-w-[85%] rounded-xl text-[13px] leading-relaxed shadow-xs transition-all ${
                             msg.fileUrl && msg.fileType === 'image' && !msg.content
                               ? 'p-1 bg-transparent border-0'
@@ -564,7 +630,8 @@ export const ChatWidget: React.FC = () => {
                             )}
                           </div>
                         </div>
-                      );
+                      </React.Fragment>
+                    );
                     })
                   )}
                   <div ref={messagesEndRef} />
@@ -802,59 +869,70 @@ export const ChatWidget: React.FC = () => {
                           <span>Chưa có tin nhắn nào.</span>
                         </div>
                       ) : (
-                        currentMessages.map(msg => {
+                        currentMessages.map((msg, idx) => {
                           const isMe = msg.senderId === currentUser.id || msg.senderId === currentUser.username;
+                          const prevMsg = idx > 0 ? currentMessages[idx - 1] : null;
+                          const showDateDivider = !prevMsg || !isSameDay(prevMsg.createdAt, msg.createdAt);
                           return (
-                            <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                              <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5">
-                                {!isMe && <span className="font-semibold text-slate-600">{msg.senderName}</span>}
-                                <span>{new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                            <React.Fragment key={msg.id}>
+                              {showDateDivider && (
+                                <div className="flex justify-center my-2">
+                                  <span className="px-2.5 py-0.5 text-[10px] font-bold text-slate-500 bg-slate-200/80 rounded-full shadow-2xs">
+                                    {getMessageDateLabel(msg.createdAt)}
+                                  </span>
+                                </div>
+                              )}
+                              <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-0.5">
+                                  {!isMe && <span className="font-semibold text-slate-600">{msg.senderName}</span>}
+                                  <span>{formatMessageTime(msg.createdAt)}</span>
+                                </div>
+                                <div className={`max-w-[85%] rounded-xl text-[13px] leading-relaxed shadow-xs transition-all ${
+                                  msg.fileUrl && msg.fileType === 'image' && !msg.content
+                                    ? 'p-1 bg-transparent border-0'
+                                    : isMe
+                                      ? 'px-3 py-2 bg-blue-900 text-white'
+                                      : 'px-3 py-2 bg-white text-slate-800 border border-slate-200'
+                                }`}>
+                                  {msg.content && <p>{msg.content}</p>}
+                                  {msg.fileUrl && (
+                                    <div className={msg.content ? "mt-1.5" : ""}>
+                                      {msg.fileType === 'image' ? (
+                                        <img
+                                          src={msg.fileUrl}
+                                          alt={msg.fileName || 'Ảnh đính kèm'}
+                                          onClick={() => setPreviewImage(msg.fileUrl || null)}
+                                          className="max-w-full max-h-[220px] rounded-lg object-contain border border-slate-200/80 bg-slate-50 cursor-pointer hover:opacity-95 transition-opacity shadow-xs"
+                                        />
+                                      ) : (
+                                        <a
+                                          href={msg.fileUrl}
+                                          download={msg.fileName || 'file_dinh_kem'}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${isMe ? 'bg-blue-800/80 hover:bg-blue-800 border-blue-700 text-white' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'}`}
+                                        >
+                                          <span className="material-symbols-outlined text-[24px] text-amber-400 shrink-0">
+                                            {msg.fileName?.endsWith('.pdf') ? 'picture_as_pdf' :
+                                             msg.fileName?.match(/\.(xlsx|xls|csv)$/i) ? 'table_view' :
+                                             msg.fileName?.match(/\.(docx|doc)$/i) ? 'description' :
+                                             msg.fileName?.match(/\.(zip|rar|7z)$/i) ? 'folder_zip' :
+                                             msg.fileName?.match(/\.(dwg|dxf)$/i) ? 'architecture' : 'insert_drive_file'}
+                                          </span>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-[12px] truncate leading-tight">
+                                              {msg.fileName || 'Tệp đính kèm'}
+                                            </p>
+                                            <span className={`text-[10px] ${isMe ? 'text-blue-200' : 'text-slate-400'}`}>Nhấn để tải về / xem</span>
+                                          </div>
+                                          <span className="material-symbols-outlined text-[18px] opacity-75 shrink-0">download</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <div className={`max-w-[85%] rounded-xl text-[13px] leading-relaxed shadow-xs transition-all ${
-                                msg.fileUrl && msg.fileType === 'image' && !msg.content
-                                  ? 'p-1 bg-transparent border-0'
-                                  : isMe
-                                    ? 'px-3 py-2 bg-blue-900 text-white'
-                                    : 'px-3 py-2 bg-white text-slate-800 border border-slate-200'
-                              }`}>
-                                {msg.content && <p>{msg.content}</p>}
-                                {msg.fileUrl && (
-                                  <div className={msg.content ? "mt-1.5" : ""}>
-                                    {msg.fileType === 'image' ? (
-                                      <img
-                                        src={msg.fileUrl}
-                                        alt={msg.fileName || 'Ảnh đính kèm'}
-                                        onClick={() => setPreviewImage(msg.fileUrl || null)}
-                                        className="max-w-full max-h-[220px] rounded-lg object-contain border border-slate-200/80 bg-slate-50 cursor-pointer hover:opacity-95 transition-opacity shadow-xs"
-                                      />
-                                    ) : (
-                                      <a
-                                        href={msg.fileUrl}
-                                        download={msg.fileName || 'file_dinh_kem'}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${isMe ? 'bg-blue-800/80 hover:bg-blue-800 border-blue-700 text-white' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'}`}
-                                      >
-                                        <span className="material-symbols-outlined text-[24px] text-amber-400 shrink-0">
-                                          {msg.fileName?.endsWith('.pdf') ? 'picture_as_pdf' :
-                                           msg.fileName?.match(/\.(xlsx|xls|csv)$/i) ? 'table_view' :
-                                           msg.fileName?.match(/\.(docx|doc)$/i) ? 'description' :
-                                           msg.fileName?.match(/\.(zip|rar|7z)$/i) ? 'folder_zip' :
-                                           msg.fileName?.match(/\.(dwg|dxf)$/i) ? 'architecture' : 'insert_drive_file'}
-                                        </span>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="font-semibold text-[12px] truncate leading-tight">
-                                            {msg.fileName || 'Tệp đính kèm'}
-                                          </p>
-                                          <span className={`text-[10px] ${isMe ? 'text-blue-200' : 'text-slate-400'}`}>Nhấn để tải về / xem</span>
-                                        </div>
-                                        <span className="material-symbols-outlined text-[18px] opacity-75 shrink-0">download</span>
-                                      </a>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                            </React.Fragment>
                           );
                         })
                       )}
