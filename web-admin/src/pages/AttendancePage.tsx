@@ -331,6 +331,11 @@ export const AttendancePage: React.FC = () => {
       return;
     }
 
+    if (!step1ReviewerId && !step2ReviewerId) {
+      setModalError('Vui lòng chọn ít nhất 1 người phê duyệt (Quản lý duyệt hoặc Ban Giám Đốc duyệt)!');
+      return;
+    }
+
     setModalError(null);
     setIsSubmitting(true);
     try {
@@ -1411,45 +1416,61 @@ export const AttendancePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                <span>Quản lý duyệt</span>
-                <span className="text-[11px] font-normal text-slate-400">(Tùy chọn)</span>
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-primary">how_to_reg</span>
+                <span>Người phê duyệt <span className="text-rose-600">*</span></span>
               </label>
-              <CustomSelect
-                value={step1ReviewerId}
-                onChange={e => setStep1ReviewerId(e.target.value)}
-                searchable={true}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
-              >
-                <option value="">-- Không chọn --</option>
-                {step1Reviewers.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </CustomSelect>
+              <span className="text-[11px] font-medium text-slate-500">(Chọn ít nhất 1 người)</span>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                <span>Ban Giám Đốc duyệt</span>
-                <span className="text-[11px] font-normal text-slate-400">(Tùy chọn)</span>
-              </label>
-              <CustomSelect
-                value={step2ReviewerId}
-                onChange={e => setStep2ReviewerId(e.target.value)}
-                searchable={true}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
-              >
-                <option value="">-- Không chọn --</option>
-                {step2Reviewers.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </CustomSelect>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Quản lý duyệt</span>
+                  <span className="text-[10px] text-slate-400 font-normal">(Bước 1)</span>
+                </label>
+                <CustomSelect
+                  value={step1ReviewerId}
+                  onChange={e => {
+                    setStep1ReviewerId(e.target.value);
+                    if (modalError) setModalError(null);
+                  }}
+                  searchable={true}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
+                >
+                  <option value="">-- Không chọn --</option>
+                  {step1Reviewers.map(r => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </CustomSelect>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Ban Giám Đốc duyệt</span>
+                  <span className="text-[10px] text-slate-400 font-normal">(Bước 2 / Trực tiếp)</span>
+                </label>
+                <CustomSelect
+                  value={step2ReviewerId}
+                  onChange={e => {
+                    setStep2ReviewerId(e.target.value);
+                    if (modalError) setModalError(null);
+                  }}
+                  searchable={true}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
+                >
+                  <option value="">-- Không chọn --</option>
+                  {step2Reviewers.map(r => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </CustomSelect>
+              </div>
             </div>
           </div>
 
