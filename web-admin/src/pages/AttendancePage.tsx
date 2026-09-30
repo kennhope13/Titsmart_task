@@ -316,12 +316,6 @@ export const AttendancePage: React.FC = () => {
       const diffTime = Math.max(0, end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-      if (!step1ReviewerId && !step2ReviewerId) {
-        alert('Vui lòng chọn ít nhất 1 người duyệt (Quản lý hoặc Ban Giám Đốc)!');
-        setIsSubmitting(false);
-        return;
-      }
-
       const step1Eng = engineers.find(e => e.id === step1ReviewerId);
       const step2Eng = engineers.find(e => e.id === step2ReviewerId);
       const followerEngs = engineers.filter(e => followerIds.includes(e.id));
@@ -363,6 +357,10 @@ export const AttendancePage: React.FC = () => {
         targetRecipientId = step2Eng.id;
         targetRecipientName = step2Eng.name;
         targetMsgNote = ` (chờ ${step2Eng.name} phê duyệt)`;
+      } else {
+        targetRecipientId = 'admin';
+        targetRecipientName = 'Quản trị viên';
+        targetMsgNote = ' (chờ Ban Giám Đốc / Quản trị duyệt)';
       }
 
       await addNotification({
