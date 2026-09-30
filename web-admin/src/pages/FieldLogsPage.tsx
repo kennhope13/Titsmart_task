@@ -10,6 +10,7 @@ import { CustomSelect } from '@/components/common/CustomSelect';
 import { Modal } from '../components/common/Modal';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 import { supabase } from '../lib/supabase';
+import { PullToRefresh } from '../components/common/PullToRefresh';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -576,7 +577,12 @@ export const FieldLogsPage: React.FC = () => {
         </div>
       , portalNode)}
 
-        <div className={`flex flex-col flex-1 min-h-0 ${(logsByProject.length === 0 && !selectedProject) || selectedProject ? '' : 'p-6'}`}>
+        <PullToRefresh
+          onRefresh={async () => {
+            await fetchFieldLogs();
+          }}
+          className={`flex flex-col flex-1 min-h-0 ${(logsByProject.length === 0 && !selectedProject) || selectedProject ? '' : 'p-6'}`}
+        >
           {selectedProject ? (
               <div className="flex flex-col flex-1 overflow-hidden bg-white">
                   {/* Mobile Search & Export Bar */}
@@ -722,7 +728,7 @@ export const FieldLogsPage: React.FC = () => {
                 )})}
               </div>
             )}
-        </div>
+        </PullToRefresh>
 
       {/* Upload Modal */}
       {(isUploadOpen || editLog) && (

@@ -16,6 +16,7 @@ import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
 import { appendTaskDiscussion, getLatestDiscussion, stripDiscussionThread } from '../utils/taskDiscussion';
 import { getEngineersForProject } from '../utils/projectMemberUtils';
 import { uploadAttachment } from '../utils/fileUploadHelper';
+import { PullToRefresh } from '../components/common/PullToRefresh';
 
 // Convert integer to Roman numeral
 const toRoman = (num: number): string => {
@@ -140,7 +141,7 @@ export const TaskManagementPage: React.FC = () => {
   const authStore = useAuthStore();
   const { projectId } = useParams();
   const [searchParams] = useSearchParams();
-  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addMaterialPlansBatch, addPurchasingPlan, addPurchasingsBatch, materialPlans, purchasingPlans, deleteMaterialPlan, deletePurchasingPlan, updateMaterialPlan, updatePurchasingPlan } = useRealtimeStore();
+  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addMaterialPlansBatch, addPurchasingPlan, addPurchasingsBatch, materialPlans, purchasingPlans, deleteMaterialPlan, deletePurchasingPlan, updateMaterialPlan, updatePurchasingPlan, fetchTasks } = useRealtimeStore();
 
   const resolvedProjectCode = React.useMemo(() => {
     if (!projectId) return '';
@@ -2293,7 +2294,12 @@ const hasSyncedRef = useRef(false);
         </div>
       </div>
       {/* Main Data Table */}
-      <div className="border-t border-slate-200 flex flex-col flex-1 overflow-hidden">
+      <PullToRefresh
+        onRefresh={async () => {
+          await fetchTasks(projectId || selectedProjectCode || undefined);
+        }}
+        className="border-t border-slate-200 flex flex-col flex-1 overflow-hidden"
+      >
         <div 
           onScroll={(e) => {
             const scrollLeft = e.currentTarget.scrollLeft;
@@ -2551,7 +2557,7 @@ const hasSyncedRef = useRef(false);
         </div>
 
         {/* Clean Footer */}
-      </div>
+      </PullToRefresh>
 
 
       </section>

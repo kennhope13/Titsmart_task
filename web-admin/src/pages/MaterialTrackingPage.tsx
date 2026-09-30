@@ -10,6 +10,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { Material, InventoryTransaction } from '../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { MaterialHistoryModal } from './materials/MaterialHistoryModal';
+import { PullToRefresh } from '../components/common/PullToRefresh';
 
 const PURCHASE_STATUSES = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã có hàng', 'Hàng gia công'];
 const CONSTRUCTION_STATUSES = ['Chưa thi công', 'Đang thi công', 'Đã thi công', 'VƯỚNG MẮC'];
@@ -84,7 +85,7 @@ export const MaterialTrackingPage: React.FC = () => {
   useEffect(() => { setPortalNode(document.getElementById('project-header-actions')); }, []);
   const [showMobileExportMenu, setShowMobileExportMenu] = useState(false);
   const [showDesktopExportMenu, setShowDesktopExportMenu] = useState(false);
-  const { materials, projects, inventoryTransactions, addMaterial, addMaterialsBatch, updateMaterial, deleteMaterial, addInventoryTransaction, addInventoryTransactionsBatch, logActivity } = useRealtimeStore();
+  const { materials, projects, inventoryTransactions, addMaterial, addMaterialsBatch, updateMaterial, deleteMaterial, addInventoryTransaction, addInventoryTransactionsBatch, logActivity, fetchMaterials } = useRealtimeStore();
 
   const currentProject = projects.find(p => p.id === projectId || p.code === projectId);
   const projectCodeFilter = currentProject ? currentProject.code : (projectId || null);
@@ -1475,7 +1476,7 @@ export const MaterialTrackingPage: React.FC = () => {
 
         {activeTab === 'OVERVIEW' && (
           <>
-            <div className="overflow-auto custom-scrollbar flex-1 pb-16 md:pb-0">
+            <PullToRefresh onRefresh={async () => { await fetchMaterials(projectId); }} className="overflow-auto custom-scrollbar flex-1 pb-16 md:pb-0">
               <table className="w-full text-left border-collapse">
                  <thead 
                    style={{ top: 0 }}
@@ -1554,12 +1555,12 @@ export const MaterialTrackingPage: React.FC = () => {
                   {filteredMaterials.length === 0 && <tr><td colSpan={13} className="p-8 text-center text-slate-500">Không có vật tư nào.</td></tr>}
                 </tbody>
               </table>
-            </div>
+            </PullToRefresh>
           </>
         )}
 
         {activeTab === 'IMPORT' && (
-          <div className="w-full overflow-auto custom-scrollbar flex-1 pb-16 md:pb-0">
+          <PullToRefresh onRefresh={async () => { await fetchMaterials(projectId); }} className="w-full overflow-auto custom-scrollbar flex-1 pb-16 md:pb-0">
             <table className="w-full text-left border-collapse">
               <thead 
                 style={{ top: 0 }}
@@ -1596,11 +1597,11 @@ export const MaterialTrackingPage: React.FC = () => {
                 {imports.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-slate-500">Chưa có giao dịch nhập kho nào.</td></tr>}
               </tbody>
             </table>
-          </div>
+          </PullToRefresh>
         )}
 
         {activeTab === 'EXPORT' && (
-          <div className="w-full overflow-auto custom-scrollbar flex-1 pb-16 md:pb-0">
+          <PullToRefresh onRefresh={async () => { await fetchMaterials(projectId); }} className="w-full overflow-auto custom-scrollbar flex-1 pb-16 md:pb-0">
             <table className="w-full text-left border-collapse">
               <thead 
                 style={{ top: 0 }}
@@ -1637,7 +1638,7 @@ export const MaterialTrackingPage: React.FC = () => {
                 {exports.length === 0 && <tr><td colSpan={10} className="p-8 text-center text-slate-500">Chưa có giao dịch xuất kho nào.</td></tr>}
               </tbody>
             </table>
-          </div>
+          </PullToRefresh>
         )}
       </section>
       </div>

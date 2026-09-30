@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
+import { PullToRefresh } from '../components/common/PullToRefresh';
 
 const parseDateKey = (timestamp: string): string => {
   const value = (timestamp || '').trim();
@@ -308,7 +309,7 @@ export const ActivityLogPage: React.FC = () => {
       <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col pb-4">
         <section className="flex-1 grid grid-cols-1 gap-0 overflow-hidden">
           <div className="bg-white border-b border-r border-slate-200 shadow-xs overflow-hidden flex flex-col h-full">
-            <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative pb-16 md:pb-0">
+            <PullToRefresh onRefresh={fetchActivityLogs} className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative pb-16 md:pb-0">
               <table className="w-full text-xs text-left border-collapse">
                 <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200">
                   <tr>
@@ -390,7 +391,7 @@ export const ActivityLogPage: React.FC = () => {
                   )}
                 </tbody>
               </table>
-            </div>
+            </PullToRefresh>
           </div>
         </section>
       </div>

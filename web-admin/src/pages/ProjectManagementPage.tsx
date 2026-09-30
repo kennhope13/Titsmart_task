@@ -10,6 +10,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { WebOcrExtractedData } from '../services/webOcrService';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
 import { isUserMemberOfProject } from '../utils/projectMemberUtils';
+import { PullToRefresh } from '../components/common/PullToRefresh';
 
 const todayStamp = () => new Date().toISOString().split('T')[0];
 
@@ -121,6 +122,7 @@ export const ProjectManagementPage: React.FC = () => {
     expenses,
     laborPayrolls,
     updateProject,
+    fetchProjects,
     isFetchingProjects
   } = useRealtimeStore();
 
@@ -787,7 +789,12 @@ export const ProjectManagementPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-16 md:p-6">
+      <PullToRefresh
+        onRefresh={async () => {
+          await fetchProjects();
+        }}
+        className="flex-1 p-4 pb-16 md:p-6"
+      >
         {isFetchingProjects && projects.length === 0 ? (
           <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center">
               <svg className="animate-spin h-12 w-12 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -935,7 +942,7 @@ export const ProjectManagementPage: React.FC = () => {
             })}
           </div>
         )}
-      </div>
+      </PullToRefresh>
 
       <Modal isOpen={Boolean(projectToDelete)} onClose={() => setProjectToDelete(null)} title={TEXT.deleteProject}>
         <div className="space-y-4">

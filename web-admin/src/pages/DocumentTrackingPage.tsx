@@ -12,6 +12,7 @@ import { ConfirmModal } from '../components/common/ConfirmModal';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { FileUpload } from '../components/common/FileUpload';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
+import { PullToRefresh } from '../components/common/PullToRefresh';
 
 export const DocumentTrackingPage: React.FC = () => {
   const { documentTracks, projects, updateProject, addDocumentTrack, updateDocumentTrack, deleteDocumentTrack, fetchAccounting, logActivity } = useRealtimeStore();
@@ -772,7 +773,12 @@ export const DocumentTrackingPage: React.FC = () => {
             </div>
           </div>
 
-        <div className="overflow-auto custom-scrollbar flex-1 pb-16 md:pb-0">
+        <PullToRefresh
+          onRefresh={async () => {
+            await fetchAccounting();
+          }}
+          className="custom-scrollbar flex-1 pb-16 md:pb-0"
+        >
           <table className="doc-fit-table w-full text-left border-collapse ">
                <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10 leading-tight">
                  <tr>
@@ -949,7 +955,7 @@ export const DocumentTrackingPage: React.FC = () => {
               </tbody>
             </table>
 
-        </div>
+        </PullToRefresh>
 
       </section>
       </div>

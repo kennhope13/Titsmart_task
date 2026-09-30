@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase';
 
 import { DocumentCertificateTab } from './cost-plan/DocumentCertificateTab';
 import { CustomSelect } from '@/components/common/CustomSelect';
+import { PullToRefresh } from '../components/common/PullToRefresh';
 
 
 const romanToNumber = (value?: string) => {
@@ -1840,7 +1841,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   const [historyExpense, setHistoryExpense] = useState<any | null>(null);
 
   return (
-    <div className="flex flex-col flex-1 overflow-y-auto pb-16 md:pb-0">
+    <PullToRefresh onRefresh={fetchAccounting} className="flex flex-col flex-1 overflow-y-auto pb-16 md:pb-0">
       {debugText && (
         <div className="bg-red-50 border-b-2 border-red-500 p-4 text-xs font-mono text-red-950 whitespace-pre-wrap select-all z-[9999] relative">
           <div className="font-bold text-sm mb-2">DEBUG IMPORT REPORT (VUI LÒNG CHỤP HÌNH GỬI TÔI):</div>
@@ -4008,7 +4009,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           </div>
         </Modal>
       )}
-    </div>
+    </PullToRefresh>
   );
 };
 

@@ -11,6 +11,7 @@ import { Toast } from '../components/common/Toast';
 import * as XLSX from 'xlsx';
 
 import { LeaveRequest, LeaveType } from '../types';
+import { PullToRefresh } from '../components/common/PullToRefresh';
 
 interface AttendanceLog {
   id: string;
@@ -934,7 +935,12 @@ export const AttendancePage: React.FC = () => {
               <h3 className="text-xs font-bold text-slate-700 uppercase">Lịch sử chấm công</h3>
             </div>
 
-            <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
+            <PullToRefresh
+              onRefresh={async () => {
+                await Promise.all([fetchLogs(true), fetchLeaves(true)]);
+              }}
+              className="flex-1 pb-16 md:pb-0"
+            >
               {loading ? (
                 <div className="p-8 text-center text-slate-400 text-sm">Đang tải lịch sử chấm công...</div>
               ) : filteredLogs.length === 0 ? (
@@ -1008,7 +1014,7 @@ export const AttendancePage: React.FC = () => {
                   </tbody>
                 </table>
               )}
-            </div>
+            </PullToRefresh>
           </div>
         </div>
       ) : (
@@ -1079,18 +1085,6 @@ export const AttendancePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Nút Làm mới dữ liệu */}
-              <button
-                type="button"
-                onClick={() => { fetchLeaves(true); fetchLogs(true); }}
-                className="w-8 h-8 flex items-center justify-center bg-white hover:bg-slate-100 text-slate-600 rounded-lg border border-slate-200 transition-colors shadow-2xs cursor-pointer active:scale-95 shrink-0"
-                title="Tải lại dữ liệu"
-              >
-                <span className={`material-symbols-outlined text-[17px] ${leavesLoading ? 'animate-spin text-primary' : ''}`}>
-                  refresh
-                </span>
-              </button>
-
               {/* Add Leave Button (Mobile only) */}
               <button
                 onClick={() => { setShowLeaveModal(true); setModalError(null); }}
@@ -1103,7 +1097,12 @@ export const AttendancePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-slate-50 md:bg-white pb-16 md:pb-0">
+          <PullToRefresh
+            onRefresh={async () => {
+              await Promise.all([fetchLeaves(true), fetchLogs(true)]);
+            }}
+            className="flex-1 bg-slate-50 md:bg-white pb-16 md:pb-0"
+          >
             {leavesLoading ? (
               <div className="p-12 flex flex-col items-center justify-center gap-3 text-slate-400">
                 <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
@@ -1482,7 +1481,7 @@ export const AttendancePage: React.FC = () => {
                 </div>
               </>
             )}
-          </div>
+          </PullToRefresh>
         </div>
       )}
 
