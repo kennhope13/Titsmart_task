@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../services/authStore';
 
 export interface SharedTaskTabsProps {
-  activeTab: 'unassigned' | 'assigned' | 'completed' | 'my-tasks' | 'my-tasks-completed';
-  onTabChange?: (tab: 'unassigned' | 'assigned' | 'completed' | 'my-tasks') => void;
+  activeTab: 'unassigned' | 'assigned' | 'completed' | 'direct' | 'my-tasks' | 'my-tasks-completed';
+  onTabChange?: (tab: 'unassigned' | 'assigned' | 'completed' | 'direct' | 'my-tasks') => void;
   myTasksSubTab?: 'pending' | 'in_progress' | 'completed';
   onMyTasksSubTabChange?: (subTab: 'pending' | 'in_progress' | 'completed') => void;
 }
@@ -64,7 +64,7 @@ export const SharedTaskTabs: React.FC<SharedTaskTabsProps> = ({
 
   return (
     <div 
-      className="h-[34px] sm:h-[36px] w-full sm:w-auto grid grid-cols-4 sm:flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 gap-0.5 sm:gap-1" 
+      className="h-[34px] sm:h-[36px] w-full sm:w-auto flex flex-wrap sm:flex-nowrap items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 gap-0.5 sm:gap-1" 
       style={{ WebkitAppRegion: 'no-drag' } as any}
     >
       <button 
@@ -74,7 +74,7 @@ export const SharedTaskTabs: React.FC<SharedTaskTabsProps> = ({
           else navigate('/task-assignment', { state: { tab: 'unassigned' }});
         }}
         style={{ WebkitAppRegion: 'no-drag' } as any}
-        className={"h-[28px] sm:h-[30px] px-1 sm:px-3 flex items-center justify-center text-[11px] sm:text-xs font-semibold rounded-md transition-all whitespace-nowrap text-center cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag " + (activeTab === 'unassigned' ? 'bg-white shadow-xs text-primary font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50')}
+        className={"h-[28px] sm:h-[30px] px-2 sm:px-3 flex items-center justify-center text-[11px] sm:text-xs font-semibold rounded-md transition-all whitespace-nowrap text-center cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag " + (activeTab === 'unassigned' ? 'bg-white shadow-xs text-primary font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50')}
       >
         Cần phân công
       </button>
@@ -85,7 +85,7 @@ export const SharedTaskTabs: React.FC<SharedTaskTabsProps> = ({
           else navigate('/task-assignment', { state: { tab: 'assigned' }});
         }}
         style={{ WebkitAppRegion: 'no-drag' } as any}
-        className={"h-[28px] sm:h-[30px] px-1 sm:px-3 flex items-center justify-center text-[11px] sm:text-xs font-semibold rounded-md transition-all whitespace-nowrap text-center cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag " + (activeTab === 'assigned' ? 'bg-white shadow-xs text-amber-600 font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50')}
+        className={"h-[28px] sm:h-[30px] px-2 sm:px-3 flex items-center justify-center text-[11px] sm:text-xs font-semibold rounded-md transition-all whitespace-nowrap text-center cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag " + (activeTab === 'assigned' ? 'bg-white shadow-xs text-amber-600 font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50')}
       >
         Đang thực hiện
       </button>
@@ -96,9 +96,20 @@ export const SharedTaskTabs: React.FC<SharedTaskTabsProps> = ({
           else navigate('/task-assignment', { state: { tab: 'completed' }});
         }}
         style={{ WebkitAppRegion: 'no-drag' } as any}
-        className={"h-[28px] sm:h-[30px] px-1 sm:px-3 flex items-center justify-center text-[11px] sm:text-xs font-semibold rounded-md transition-all whitespace-nowrap text-center cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag " + (activeTab === 'completed' ? 'bg-white shadow-xs text-emerald-600 font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50')}
+        className={"h-[28px] sm:h-[30px] px-2 sm:px-3 flex items-center justify-center text-[11px] sm:text-xs font-semibold rounded-md transition-all whitespace-nowrap text-center cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag " + (activeTab === 'completed' ? 'bg-white shadow-xs text-emerald-600 font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50')}
       >
         Đã hoàn thành
+      </button>
+      <button 
+        type="button"
+        onClick={() => {
+          if (onTabChange) onTabChange('direct');
+          else navigate('/task-assignment', { state: { tab: 'direct' }});
+        }}
+        style={{ WebkitAppRegion: 'no-drag' } as any}
+        className={"h-[28px] sm:h-[30px] px-2 sm:px-3 flex items-center justify-center text-[11px] sm:text-xs font-semibold rounded-md transition-all whitespace-nowrap text-center cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag " + (activeTab === 'direct' ? 'bg-white shadow-xs text-primary font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50')}
+      >
+        Giao việc trực tiếp
       </button>
       <button
         type="button"
@@ -106,7 +117,7 @@ export const SharedTaskTabs: React.FC<SharedTaskTabsProps> = ({
            if (activeTab !== 'my-tasks') navigate('/my-tasks');
         }}
         style={{ WebkitAppRegion: 'no-drag' } as any}
-        className={"h-[28px] sm:h-[30px] px-1 sm:px-3 flex items-center justify-center text-[11px] sm:text-xs font-semibold rounded-md transition-all whitespace-nowrap text-center cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag " + (activeTab === 'my-tasks' ? 'bg-white shadow-xs text-primary font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50')}
+        className={"h-[28px] sm:h-[30px] px-2 sm:px-3 flex items-center justify-center text-[11px] sm:text-xs font-semibold rounded-md transition-all whitespace-nowrap text-center cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag " + (activeTab === 'my-tasks' ? 'bg-white shadow-xs text-primary font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50')}
       >
         <span className="hidden xs:inline">Công việc của tôi</span>
         <span className="xs:hidden">Việc của tôi</span>

@@ -26,8 +26,66 @@ const ALL_AVAILABLE_PERMISSIONS: Permission[] = [
   'VIEW_PROJECT_DIAGRAM', 'VIEW_DOCUMENTS', 'MANAGE_DOCUMENTS'
 ];
 
+const getPersonTasks = (person: any, allTasks: any[]) => {
+  if (!person || !Array.isArray(allTasks)) return [];
+  const personId = String(person.id || '').trim().toLowerCase();
+  const personUsername = String(person.username || '').trim().toLowerCase();
+  const personCode = String(person.code || '').trim().toLowerCase();
+  const personName = String(person.name || '').trim().toLowerCase();
+
+  return allTasks.filter(t => {
+    if (t.isSectionHeader) return false;
+    const assignedId = String(t.assignedEngineerId || '').trim().toLowerCase();
+    const assignedName = String(t.assignedEngineerName || '').trim().toLowerCase();
+
+    if (personId && assignedId === personId) return true;
+    if (personUsername && assignedId === personUsername) return true;
+    if (personCode && assignedId === personCode) return true;
+    if (personName && assignedName === personName) return true;
+    if (personName && assignedName && (assignedName.includes(personName) || personName.includes(assignedName))) return true;
+
+    return false;
+  });
+};
+
+const computePersonKpi = (person: any, allTasks: any[]) => {
+  const pTasks = getPersonTasks(person, allTasks);
+  const totalCount = pTasks.length;
+  
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const completedTasks = pTasks.filter(t => t.isDone || t.status === 'Hoàn thành' || (t.progress !== undefined && t.progress >= 1));
+  const completedCount = completedTasks.length;
+
+  const pendingTasks = pTasks.filter(t => !t.isDone && t.status !== 'Hoàn thành' && (t.progress === undefined || t.progress < 1));
+  const pendingCount = pendingTasks.length;
+
+  const overdueTasks = pendingTasks.filter(t => {
+    if (!t.dueDate) return false;
+    const due = String(t.dueDate).split('T')[0];
+    return due < todayStr;
+  });
+  const overdueCount = overdueTasks.length;
+
+  const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  
+  const avgProgress = totalCount > 0 
+    ? Math.round(pTasks.reduce((sum, t) => sum + (t.isDone || t.status === 'Hoàn thành' ? 100 : Math.round((t.progress || 0) * 100)), 0) / totalCount) 
+    : 0;
+
+  return {
+    tasks: pTasks,
+    totalCount,
+    completedCount,
+    pendingCount,
+    overdueCount,
+    percent,
+    avgProgress
+  };
+};
+
 export const PersonnelPage: React.FC = () => {
-  const { engineers, projects, createEngineer, updateEngineer, deleteEngineer, fetchProjects, fetchEngineers } = useRealtimeStore();
+  const { engineers, projects, tasks, createEngineer, updateEngineer, deleteEngineer, fetchProjects, fetchEngineers, fetchTasks, addTask } = useRealtimeStore();
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(false);
   const isSubmittingRef = useRef(false);
@@ -51,12 +109,31 @@ export const PersonnelPage: React.FC = () => {
   const [deletingPerson, setDeletingPerson] = useState<{ id: string; name: string } | null>(null);
   const [viewingProjectsPerson, setViewingProjectsPerson] = useState<any | null>(null);
   const [projectModalSearch, setProjectModalSearch] = useState('');
+  
+  // KPI Modal state
+  const [viewingKpiPerson, setViewingKpiPerson] = useState<any | null>(null);
+  const [kpiFilterTab, setKpiFilterTab] = useState<'all' | 'pending' | 'completed' | 'overdue'>('all');
+  const [kpiSearch, setKpiSearch] = useState('');
+
+  // Quick Task Assign State
+  const [isQuickAssignModalOpen, setIsQuickAssignModalOpen] = useState(false);
+  const [assigningToPerson, setAssigningToPerson] = useState<any | null>(null);
+  const [quickTaskName, setQuickTaskName] = useState('');
+  const [quickTaskProject, setQuickTaskProject] = useState('');
+  const [quickTaskDueDate, setQuickTaskDueDate] = useState('');
+  const [quickTaskPriority, setQuickTaskPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
+  const [quickTaskNotes, setQuickTaskNotes] = useState('');
+  const [savingQuickTask, setSavingQuickTask] = useState(false);
 
   const toggleProjectCode = (code: string) => {
     setSelectedProjectCodes(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
   };
 
-  useEffect(() => { fetchProjects(); }, []);
+  useEffect(() => { 
+    fetchProjects(); 
+    fetchEngineers();
+    fetchTasks();
+  }, []);
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -64,20 +141,93 @@ export const PersonnelPage: React.FC = () => {
     setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
   };
 
+  const handleSaveQuickTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTaskName.trim() || !assigningToPerson) {
+      triggerToast('Vui lòng nhập tên công việc!', 'warning');
+      return;
+    }
+    setSavingQuickTask(true);
+    try {
+      const projObj = projects.find(p => p.code === quickTaskProject || p.id === quickTaskProject);
+      const pCode = projObj ? projObj.code : (quickTaskProject || 'COMPANY');
+      const pName = projObj ? projObj.name : (quickTaskProject === 'COMPANY' ? 'Nội bộ Công ty' : quickTaskProject);
+
+      await addTask({
+        stt: String(tasks.filter(t => t.projectCode === pCode && !t.isSectionHeader).length + 1),
+        code: `TSK-${Date.now().toString().slice(-6)}`,
+        name: quickTaskName.trim(),
+        projectCode: pCode,
+        projectName: pName,
+        assignedEngineerId: assigningToPerson.id || assigningToPerson.code || '',
+        assignedEngineerName: assigningToPerson.name,
+        assignerId: user?.id || 'admin',
+        assignerName: user?.name || user?.username || 'Quản trị viên',
+        dueDate: quickTaskDueDate || undefined,
+        priority: quickTaskPriority,
+        notes: quickTaskNotes.trim() || undefined,
+        status: 'Chưa làm',
+        progress: 0,
+        volume: 1,
+        unit: 'việc',
+        purchaseStatus: 'Không có hàng',
+        constrStatus: 'Chưa thi công',
+        isDone: false
+      });
+
+      triggerToast(`Đã giao việc thành công cho ${assigningToPerson.name}!`, 'success');
+      setIsQuickAssignModalOpen(false);
+      setQuickTaskName('');
+      setQuickTaskNotes('');
+    } catch (err: any) {
+      triggerToast(`Lỗi giao việc: ${err.message || err}`, 'warning');
+    } finally {
+      setSavingQuickTask(false);
+    }
+  };
+
   const handleExportExcel = () => {
-    const data = people.map((p, index) => ({
-      'STT': index + 1,
-      'Mã nhân viên': p.code,
-      'Họ tên': p.name,
-      'Vai trò': p.role,
-      'Đội/Nhóm': p.team,
-      'Số điện thoại': p.phone || 'Chưa cập nhật',
-      'Trạng thái': p.locked ? 'Bị khóa' : 'Đang hoạt động'
-    }));
+    const data = people.map((p, index) => {
+      const kpi = computePersonKpi(p, tasks);
+      return {
+        'STT': index + 1,
+        'Mã nhân viên': p.code,
+        'Họ tên': p.name,
+        'Vai trò': p.role,
+        'Đội/Nhóm': p.team,
+        'Số điện thoại': p.phone || 'Chưa cập nhật',
+        'Tổng số công việc': kpi.totalCount,
+        'Đã hoàn thành': kpi.completedCount,
+        'Chưa hoàn thành': kpi.pendingCount,
+        'Quá hạn': kpi.overdueCount,
+        'Tỷ lệ hoàn thành (%)': `${kpi.percent}%`,
+        'Tiến độ TB (%)': `${kpi.avgProgress}%`,
+        'Trạng thái': p.locked ? 'Bị khóa' : 'Đang hoạt động'
+      };
+    });
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'NhanSu');
-    XLSX.writeFile(wb, `Danh_Sach_Nhan_Su_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, 'NhanSu_KPI');
+    XLSX.writeFile(wb, `Danh_Sach_Nhan_Su_KPI_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleExportIndividualKpi = (person: any, kpiData: any) => {
+    const data = kpiData.tasks.map((t: any, idx: number) => ({
+      'STT': idx + 1,
+      'Mã dự án': t.projectCode || '-',
+      'Tên dự án': t.projectName || '-',
+      'Tên công việc': t.name,
+      'Người giao việc': t.assignerName || '-',
+      'Hạn hoàn thành': t.dueDate || '-',
+      'Tiến độ (%)': t.isDone || t.status === 'Hoàn thành' ? '100%' : `${Math.round((t.progress || 0) * 100)}%`,
+      'Trạng thái': t.status || (t.isDone ? 'Hoàn thành' : 'Chưa làm'),
+      'Ghi chú': t.notes || ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'CongViec_KPI');
+    XLSX.writeFile(wb, `KPI_${person.name}_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const toggleLock = async (person: any) => {
@@ -489,53 +639,97 @@ export const PersonnelPage: React.FC = () => {
         <div className="bg-white border-b border-r border-slate-200 shadow-xs overflow-hidden flex flex-col">
           <PullToRefresh onRefresh={async () => { await Promise.all([fetchEngineers(), fetchProjects()]); }} className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative pb-16 md:pb-0">
             <table className="w-full text-[11px] sm:text-xs text-left border-collapse">
-              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[10px] sm:text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200"><tr><th className="text-center p-2 sm:p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Họ tên</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Mã NV</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Vai trò / Chức danh</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Dự án</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">SĐT</th><th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th>{hasPermission(user, 'MANAGE_USERS') && <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Chức năng</th>}</tr></thead>
+              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[10px] sm:text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200">
+                <tr>
+                  <th className="text-center p-2 sm:p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th>
+                  <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Họ tên</th>
+                  <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Mã NV</th>
+                  <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th>
+                  <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Vai trò / Chức danh</th>
+                  <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Dự án</th>
+                  <th className="text-center p-2 sm:p-3 bg-slate-50 whitespace-nowrap">KPI & Công việc</th>
+                  <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">SĐT</th>
+                  <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th>
+                  {hasPermission(user, 'MANAGE_USERS') && <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Chức năng</th>}
+                </tr>
+              </thead>
               <tbody className="divide-y divide-slate-100">
-                {people.map((person, index) => (
-                  <tr
-                    key={person.id}
-                    className="cursor-pointer hover:bg-slate-50"
-                    onClick={() => openEditModal(person)}
-                  >
-                    <td className="p-2 sm:p-3 text-center font-mono font-bold text-slate-400 whitespace-nowrap text-[10px] sm:text-xs">{index + 1}</td>
-                    <td className="p-2 sm:p-3 text-xs sm:text-sm font-semibold text-slate-900 tracking-tight min-w-[120px] whitespace-nowrap">
-                      <div>{person.name}</div>
-                    </td>
-                    <td className="p-2 sm:p-3 font-mono font-bold text-primary max-w-[140px] truncate whitespace-nowrap text-[10px] sm:text-xs" title={person.code}>{person.code}</td>
-                    <td className="p-2 sm:p-3 text-slate-700 font-semibold max-w-[110px] truncate whitespace-nowrap text-[10px] sm:text-xs" title={person.username || '-'}>{person.username || '-'}</td>
-                    <td className="p-2 sm:p-3 whitespace-nowrap">
-                      <span className={`text-[10px] sm:text-[11px] font-bold ${
-                        person.role === 'Quản trị viên' ? 'text-purple-700' :
-                        person.role === 'Quản lý dự án' ? 'text-blue-700' :
-                        person.role === 'Kỹ sư hiện trường' ? 'text-orange-700' :
-                        'text-slate-700'
-                      }`}>
-                        {person.role}
-                      </span>
-                    </td>
-                    <td className="p-2 sm:p-3 whitespace-nowrap">
-                      {person.assignedProjects.length === 0 ? (
-                        <span className="text-slate-400 text-[10px] sm:text-[11px] italic">Chưa phân công</span>
-                      ) : (
+                {people.map((person, index) => {
+                  const kpi = computePersonKpi(person, tasks);
+                  return (
+                    <tr
+                      key={person.id}
+                      className="cursor-pointer hover:bg-slate-50"
+                      onClick={() => openEditModal(person)}
+                    >
+                      <td className="p-2 sm:p-3 text-center font-mono font-bold text-slate-400 whitespace-nowrap text-[10px] sm:text-xs">{index + 1}</td>
+                      <td className="p-2 sm:p-3 text-xs sm:text-sm font-semibold text-slate-900 tracking-tight min-w-[120px] whitespace-nowrap">
+                        <div>{person.name}</div>
+                      </td>
+                      <td className="p-2 sm:p-3 font-mono font-bold text-primary max-w-[140px] truncate whitespace-nowrap text-[10px] sm:text-xs" title={person.code}>{person.code}</td>
+                      <td className="p-2 sm:p-3 text-slate-700 font-semibold max-w-[110px] truncate whitespace-nowrap text-[10px] sm:text-xs" title={person.username || '-'}>{person.username || '-'}</td>
+                      <td className="p-2 sm:p-3 whitespace-nowrap">
+                        <span className={`text-[10px] sm:text-[11px] font-bold ${
+                          person.role === 'Quản trị viên' ? 'text-purple-700' :
+                          person.role === 'Quản lý dự án' ? 'text-blue-700' :
+                          person.role === 'Kỹ sư hiện trường' ? 'text-orange-700' :
+                          'text-slate-700'
+                        }`}>
+                          {person.role}
+                        </span>
+                      </td>
+                      <td className="p-2 sm:p-3 whitespace-nowrap">
+                        {person.assignedProjects.length === 0 ? (
+                          <span className="text-slate-400 text-[10px] sm:text-[11px] italic">Chưa phân công</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setProjectModalSearch('');
+                              setViewingProjectsPerson(person);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-primary hover:bg-blue-100 border border-blue-200 text-[11px] sm:text-xs font-bold transition-all active:scale-95 shadow-2xs cursor-pointer group"
+                            title={`Xem ${person.assignedProjects.length} dự án tham gia`}
+                          >
+                            <span className="material-symbols-outlined text-[15px] group-hover:scale-110 transition-transform">folder_open</span>
+                            <span>Xem dự án</span>
+                            <span className="px-1.5 py-0.2 bg-primary text-white rounded-full text-[10px] font-bold">
+                              {person.assignedProjects.length}
+                            </span>
+                          </button>
+                        )}
+                      </td>
+                      <td className="p-2 sm:p-3 whitespace-nowrap text-center">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setProjectModalSearch('');
-                            setViewingProjectsPerson(person);
+                            setViewingKpiPerson(person);
+                            setKpiFilterTab('all');
+                            setKpiSearch('');
                           }}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-primary hover:bg-blue-100 border border-blue-200 text-[11px] sm:text-xs font-bold transition-all active:scale-95 shadow-2xs cursor-pointer group"
-                          title={`Xem ${person.assignedProjects.length} dự án tham gia`}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[11px] sm:text-xs font-bold transition-all active:scale-95 shadow-2xs group cursor-pointer"
+                          title={`Xem chi tiết KPI (${kpi.completedCount}/${kpi.totalCount} công việc hoàn thành)`}
                         >
-                          <span className="material-symbols-outlined text-[15px] group-hover:scale-110 transition-transform">folder_open</span>
-                          <span>Xem dự án</span>
-                          <span className="px-1.5 py-0.2 bg-primary text-white rounded-full text-[10px] font-bold">
-                            {person.assignedProjects.length}
+                          <span className="material-symbols-outlined text-[15px] text-primary group-hover:scale-110 transition-transform">analytics</span>
+                          <span className="text-slate-800 font-extrabold">{kpi.completedCount}/{kpi.totalCount} CV</span>
+                          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                            kpi.totalCount === 0 ? 'bg-slate-100 text-slate-500' :
+                            kpi.percent === 100 ? 'bg-emerald-100 text-emerald-700' :
+                            kpi.percent >= 50 ? 'bg-blue-100 text-blue-700' :
+                            'bg-amber-100 text-amber-700'
+                          }`}>
+                            {kpi.percent}%
                           </span>
+                          {kpi.overdueCount > 0 && (
+                            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 animate-pulse" title={`${kpi.overdueCount} việc quá hạn`}>
+                              !{kpi.overdueCount}
+                            </span>
+                          )}
                         </button>
-                      )}
-                    </td>
-                    <td className="p-2 sm:p-3 text-slate-600 whitespace-nowrap text-[10px] sm:text-xs">{person.phone || 'Chưa cập nhật'}</td>
+                      </td>
+                      <td className="p-2 sm:p-3 text-slate-600 whitespace-nowrap text-[10px] sm:text-xs">{person.phone || 'Chưa cập nhật'}</td>
                     <td className="p-2 sm:p-3 whitespace-nowrap"><span className={`text-[10px] sm:text-[11px] font-bold ${person.locked ? 'text-red-700' : 'text-emerald-700'}`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>
                     <td className="p-2 sm:p-3 min-w-[140px] whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
@@ -561,7 +755,8 @@ export const PersonnelPage: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </PullToRefresh>
@@ -949,6 +1144,417 @@ export const PersonnelPage: React.FC = () => {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Modal Xem KPI & Chi Tiết Công Việc của nhân sự */}
+      <Modal
+        size="xl"
+        isOpen={Boolean(viewingKpiPerson)}
+        onClose={() => setViewingKpiPerson(null)}
+        title={`Đánh giá KPI & Chi tiết công việc — ${viewingKpiPerson?.name || ''}`}
+      >
+        {viewingKpiPerson && (() => {
+          const kpi = computePersonKpi(viewingKpiPerson, tasks);
+          const filteredTasks = kpi.tasks.filter((t: any) => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const isCompleted = t.isDone || t.status === 'Hoàn thành' || (t.progress !== undefined && t.progress >= 1);
+            const isPending = !isCompleted;
+            const isOverdue = isPending && t.dueDate && String(t.dueDate).split('T')[0] < todayStr;
+
+            if (kpiFilterTab === 'completed' && !isCompleted) return false;
+            if (kpiFilterTab === 'pending' && !isPending) return false;
+            if (kpiFilterTab === 'overdue' && !isOverdue) return false;
+
+            if (kpiSearch.trim()) {
+              const q = kpiSearch.toLowerCase().trim();
+              const matchName = (t.name || '').toLowerCase().includes(q);
+              const matchProj = (t.projectCode || '').toLowerCase().includes(q) || (t.projectName || '').toLowerCase().includes(q);
+              const matchNotes = (t.notes || '').toLowerCase().includes(q);
+              const matchAssigner = (t.assignerName || '').toLowerCase().includes(q);
+              if (!matchName && !matchProj && !matchNotes && !matchAssigner) return false;
+            }
+            return true;
+          });
+
+          return (
+            <div className="space-y-4 text-slate-800 p-1">
+              {/* Info Header */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-blue-50/70 border border-blue-100 rounded-xl p-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-black flex items-center justify-center text-sm border border-primary/20 shrink-0">
+                    {viewingKpiPerson.name?.charAt(0)?.toUpperCase() || 'N'}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-900">{viewingKpiPerson.name}</h3>
+                    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
+                      <span className="font-mono text-primary font-bold">{viewingKpiPerson.code}</span>
+                      <span>•</span>
+                      <span>{viewingKpiPerson.role}</span>
+                      {viewingKpiPerson.phone && (
+                        <>
+                          <span>•</span>
+                          <span>{viewingKpiPerson.phone}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssigningToPerson(viewingKpiPerson);
+                      setQuickTaskName('');
+                      setQuickTaskProject(viewingKpiPerson.assignedProjects?.[0]?.code || (projects[0]?.code || 'COMPANY'));
+                      setQuickTaskDueDate(new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0]);
+                      setQuickTaskPriority('Medium');
+                      setQuickTaskNotes('');
+                      setIsQuickAssignModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer"
+                    title="Giao việc nhanh trực tiếp cho nhân sự này"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">add_task</span>
+                    <span>Giao việc nhanh</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleExportIndividualKpi(viewingKpiPerson, kpi)}
+                    className="px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-2xs cursor-pointer"
+                    title="Xuất file Excel báo cáo KPI"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">file_download</span>
+                    <span>Xuất KPI Excel</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI Stat Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div 
+                  onClick={() => setKpiFilterTab('all')}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                    kpiFilterTab === 'all' ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase">Tổng số việc</span>
+                    <span className="material-symbols-outlined text-primary text-[18px]">assignment</span>
+                  </div>
+                  <div className="text-xl font-black text-slate-900 mt-1">{kpi.totalCount}</div>
+                  <div className="text-[10px] text-slate-500 font-medium mt-0.5">Tiến độ TB: <span className="font-bold text-primary">{kpi.avgProgress}%</span></div>
+                </div>
+
+                <div 
+                  onClick={() => setKpiFilterTab('completed')}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                    kpiFilterTab === 'completed' ? 'border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/20' : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-emerald-600 uppercase">Đã hoàn thành</span>
+                    <span className="material-symbols-outlined text-emerald-600 text-[18px]">task_alt</span>
+                  </div>
+                  <div className="text-xl font-black text-emerald-600 mt-1">{kpi.completedCount}</div>
+                  <div className="text-[10px] text-emerald-700 font-medium mt-0.5">Tỷ lệ: <span className="font-bold">{kpi.percent}%</span></div>
+                </div>
+
+                <div 
+                  onClick={() => setKpiFilterTab('pending')}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                    kpiFilterTab === 'pending' ? 'border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/20' : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-amber-600 uppercase">Chưa hoàn thành</span>
+                    <span className="material-symbols-outlined text-amber-600 text-[18px]">pending_actions</span>
+                  </div>
+                  <div className="text-xl font-black text-amber-600 mt-1">{kpi.pendingCount}</div>
+                  <div className="text-[10px] text-amber-700 font-medium mt-0.5">Đang thực hiện</div>
+                </div>
+
+                <div 
+                  onClick={() => setKpiFilterTab('overdue')}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                    kpiFilterTab === 'overdue' ? 'border-rose-500 bg-rose-50/50 ring-2 ring-rose-500/20' : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-rose-600 uppercase">Quá hạn</span>
+                    <span className="material-symbols-outlined text-rose-600 text-[18px]">warning</span>
+                  </div>
+                  <div className="text-xl font-black text-rose-600 mt-1">{kpi.overdueCount}</div>
+                  <div className="text-[10px] text-rose-700 font-medium mt-0.5">Cần đôn đốc xử lý</div>
+                </div>
+              </div>
+
+              {/* Progress Bar Display */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                  <span className="text-slate-700">Mức độ hoàn thành công việc (KPI)</span>
+                  <span className="text-primary font-extrabold">{kpi.completedCount} / {kpi.totalCount} ({kpi.percent}%)</span>
+                </div>
+                <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden flex">
+                  <div 
+                    style={{ width: `${kpi.percent}%` }} 
+                    className="bg-emerald-500 h-full transition-all duration-500" 
+                    title={`Đã hoàn thành: ${kpi.percent}%`}
+                  />
+                </div>
+              </div>
+
+              {/* Search & Tabs Toolbar */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 overflow-x-auto custom-scrollbar">
+                  {[
+                    { id: 'all', label: `Tất cả (${kpi.totalCount})` },
+                    { id: 'pending', label: `Chưa xong (${kpi.pendingCount})` },
+                    { id: 'completed', label: `Đã xong (${kpi.completedCount})` },
+                    { id: 'overdue', label: `Quá hạn (${kpi.overdueCount})` },
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setKpiFilterTab(tab.id as any)}
+                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                        kpiFilterTab === tab.id
+                          ? 'bg-white text-primary shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="relative flex-1 sm:max-w-xs">
+                  <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">search</span>
+                  <input
+                    type="text"
+                    value={kpiSearch}
+                    onChange={(e) => setKpiSearch(e.target.value)}
+                    placeholder="Tìm tên CV, dự án, ghi chú..."
+                    className="w-full pl-8 pr-2.5 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:bg-white bg-slate-50 transition-all focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Task Table */}
+              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs max-h-[42vh] overflow-y-auto custom-scrollbar">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] sticky top-0 border-b border-slate-200 shadow-xs z-10">
+                    <tr>
+                      <th className="p-2.5 text-center w-10">STT</th>
+                      <th className="p-2.5">Dự án</th>
+                      <th className="p-2.5 min-w-[180px]">Tên công việc</th>
+                      <th className="p-2.5 text-center w-28">Tiến độ</th>
+                      <th className="p-2.5 whitespace-nowrap">Trạng thái</th>
+                      <th className="p-2.5 whitespace-nowrap">Hạn hoàn thành</th>
+                      <th className="p-2.5 whitespace-nowrap">Người giao việc</th>
+                      <th className="p-2.5 text-center w-20">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredTasks.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-slate-400 italic font-medium">
+                          Không có công việc nào theo bộ lọc.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredTasks.map((t: any, idx: number) => {
+                        const isDone = t.isDone || t.status === 'Hoàn thành' || (t.progress !== undefined && t.progress >= 1);
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        const isOverdue = !isDone && t.dueDate && String(t.dueDate).split('T')[0] < todayStr;
+                        const progVal = isDone ? 100 : Math.round((t.progress || 0) * 100);
+
+                        return (
+                          <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-2.5 text-center text-slate-400 font-mono font-bold">{idx + 1}</td>
+                            <td className="p-2.5">
+                              <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-700 inline-block max-w-[140px] truncate" title={t.projectName || t.projectCode}>
+                                {t.projectCode || t.projectName || '-'}
+                              </span>
+                            </td>
+                            <td className="p-2.5">
+                              <div className="font-bold text-slate-900 leading-snug">{t.name}</div>
+                              {t.notes && <div className="text-[10px] text-slate-400 truncate max-w-xs">{t.notes}</div>}
+                            </td>
+                            <td className="p-2.5 text-center">
+                              <div className="flex items-center gap-1.5 justify-center">
+                                <div className="w-14 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                  <div style={{ width: `${progVal}%` }} className={`h-full ${isDone ? 'bg-emerald-500' : progVal > 0 ? 'bg-blue-500' : 'bg-slate-300'}`} />
+                                </div>
+                                <span className="font-bold text-[11px] text-slate-700">{progVal}%</span>
+                              </div>
+                            </td>
+                            <td className="p-2.5 whitespace-nowrap">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                isDone ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                progVal > 0 ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                                'bg-slate-100 text-slate-600 border border-slate-200'
+                              }`}>
+                                {t.status || (isDone ? 'Hoàn thành' : 'Chưa làm')}
+                              </span>
+                            </td>
+                            <td className="p-2.5 whitespace-nowrap">
+                              {t.dueDate ? (
+                                <span className={`text-[11px] font-bold flex items-center gap-1 ${isOverdue ? 'text-rose-600' : 'text-slate-600'}`}>
+                                  {isOverdue && <span className="material-symbols-outlined text-[13px]">warning</span>}
+                                  {t.dueDate}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 text-[11px]">-</span>
+                              )}
+                            </td>
+                            <td className="p-2.5 whitespace-nowrap text-slate-600 text-xs font-medium">
+                              {t.assignerName || '-'}
+                            </td>
+                            <td className="p-2.5 text-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setViewingKpiPerson(null);
+                                  const targetProj = projects.find(p => p.code === t.projectCode || p.name === t.projectName);
+                                  const pId = targetProj ? targetProj.id : t.projectCode;
+                                  window.location.href = `#/projects/${encodeURIComponent(pId)}/tasks?taskId=${encodeURIComponent(t.id)}&highlight=${encodeURIComponent(t.name)}`;
+                                }}
+                                className="inline-flex items-center justify-center p-1 rounded-lg bg-blue-50 hover:bg-primary hover:text-white text-primary border border-blue-200 transition-all active:scale-95 shadow-2xs cursor-pointer"
+                                title="Mở chi tiết trên tab công việc"
+                              >
+                                <span className="material-symbols-outlined text-[15px]">open_in_new</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex justify-end pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setViewingKpiPerson(null)}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 active:scale-95 transition-all cursor-pointer"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
+
+      {/* Modal Giao Việc Nhanh Trực Tiếp */}
+      <Modal
+        size="md"
+        isOpen={isQuickAssignModalOpen}
+        onClose={() => setIsQuickAssignModalOpen(false)}
+        title={`Giao việc nhanh cho: ${assigningToPerson?.name || ''}`}
+      >
+        <form onSubmit={handleSaveQuickTask} className="space-y-3 p-1 text-xs">
+          <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-slate-800">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-500">Người nhận việc:</span>
+              <span className="font-extrabold text-primary text-sm">{assigningToPerson?.name}</span>
+              <span className="font-mono text-slate-500 font-semibold">({assigningToPerson?.code})</span>
+            </div>
+            <div className="text-[11px] text-slate-500 mt-1">
+              Người giao: <span className="font-bold text-slate-700">{user?.name || user?.username || 'Quản trị viên'}</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              Dự án / Nơi thực hiện <span className="text-rose-500">*</span>
+            </label>
+            <CustomSelect
+              value={quickTaskProject}
+              onChange={(e) => setQuickTaskProject(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-semibold"
+            >
+              <option value="COMPANY">Nội bộ Công ty / Văn phòng</option>
+              {projects.map(p => (
+                <option key={p.code || p.id} value={p.code || p.id}>
+                  {p.code} - {p.name}
+                </option>
+              ))}
+            </CustomSelect>
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              Tên công việc <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="VD: Kiểm tra bản vẽ thi công tầng 2, Lắp đặt tủ nguồn..."
+              value={quickTaskName}
+              onChange={(e) => setQuickTaskName(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white text-xs font-medium"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Hạn hoàn thành</label>
+              <input
+                type="date"
+                value={quickTaskDueDate}
+                onChange={(e) => setQuickTaskDueDate(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Mức độ ưu tiên</label>
+              <CustomSelect
+                value={quickTaskPriority}
+                onChange={(e) => setQuickTaskPriority(e.target.value as any)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white text-xs"
+              >
+                <option value="Low">Thấp</option>
+                <option value="Medium">Bình thường</option>
+                <option value="High">Ưu tiên cao / Gấp</option>
+              </CustomSelect>
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Ghi chú / Yêu cầu chi tiết</label>
+            <textarea
+              rows={3}
+              placeholder="Nhập nội dung mô tả chi tiết, hướng dẫn thực hiện..."
+              value={quickTaskNotes}
+              onChange={(e) => setQuickTaskNotes(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white text-xs"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsQuickAssignModalOpen(false)}
+              className="px-4 py-2 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={savingQuickTask}
+              className="px-5 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-bold flex items-center gap-1.5 shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px]">send</span>
+              <span>{savingQuickTask ? 'Đang giao việc...' : 'Xác nhận giao việc'}</span>
+            </button>
+          </div>
+        </form>
       </Modal>
 
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
