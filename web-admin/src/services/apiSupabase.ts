@@ -1717,16 +1717,24 @@ export const api = {
         followerNames: input.followerNames || [],
         createdAt: new Date().toISOString(),
       };
-      const payload = {
+      const payload: any = {
         user: input.userName,
         project: 'Tài khoản',
         icon: 'LEAVE_REQUEST',
         action: JSON.stringify(payloadData),
         timestamp: payloadData.createdAt,
-        created_at: payloadData.createdAt,
       };
-      const { data, error } = await supabase.from('activity_logs').insert(payload).select().single();
-      if (error) throw error;
+      let { data, error } = await supabase.from('activity_logs').insert(payload).select().single();
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.message).includes('created_at') || String(error.message).includes('timestamp')) {
+          delete payload.timestamp;
+          payload.created_at = payloadData.createdAt;
+          const retry = await supabase.from('activity_logs').insert(payload).select().single();
+          data = retry.data;
+          error = retry.error;
+        }
+        if (error) throw error;
+      }
       return { id: data.id, ...payloadData } as any;
     },
     review: async (id: string, reviewData: {
