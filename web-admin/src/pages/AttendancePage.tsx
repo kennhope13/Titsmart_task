@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { Modal } from '../components/common/Modal';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { Toast } from '../components/common/Toast';
 import * as XLSX from 'xlsx';
 
 import { LeaveRequest, LeaveType } from '../types';
@@ -117,6 +118,14 @@ export const AttendancePage: React.FC = () => {
   const [step1ReviewerId, setStep1ReviewerId] = useState('');
   const [step2ReviewerId, setStep2ReviewerId] = useState('');
   const [followerIds, setFollowerIds] = useState<string[]>([]);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'warning' | 'info' | 'error' }>({ show: false, message: '', type: 'info' });
+
+  const showToast = (message: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3500);
+  };
+
   const [reviewLeave, setReviewLeave] = useState<LeaveRequest | null>(null);
   const [reviewStep, setReviewStep] = useState<1 | 2>(1);
   const [reviewNote, setReviewNote] = useState('');
@@ -308,11 +317,23 @@ export const AttendancePage: React.FC = () => {
   }, [tab]);
 
   const handleCreateLeave = async () => {
-    if (!user || !leaveReason.trim() || isSubmitting) return;
+    if (!user || isSubmitting) return;
+
+    if (!leaveReason.trim()) {
+      setModalError('Vui lòng nhập lý do xin nghỉ cụ thể!');
+      return;
+    }
+
+    const start = new Date(leaveStartDate);
+    const end = new Date(leaveEndDate);
+    if (end < start) {
+      setModalError('Ngày kết thúc không thể trước ngày bắt đầu!');
+      return;
+    }
+
+    setModalError(null);
     setIsSubmitting(true);
     try {
-      const start = new Date(leaveStartDate);
-      const end = new Date(leaveEndDate);
       const diffTime = Math.max(0, end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
@@ -343,6 +364,8 @@ export const AttendancePage: React.FC = () => {
       setStep1ReviewerId('');
       setStep2ReviewerId('');
       setFollowerIds([]);
+      setModalError(null);
+      showToast('Gửi đơn xin nghỉ phép thành công!', 'success');
 
       // Xác định người nhận thông báo đầu tiên
       let targetRecipientId = '';
@@ -382,7 +405,7 @@ export const AttendancePage: React.FC = () => {
         });
       }
     } catch (e: any) {
-      alert('Lỗi tạo đơn xin nghỉ: ' + (e.message || JSON.stringify(e)));
+      showToast('Lỗi tạo đơn xin nghỉ: ' + (e.message || 'Không thể tạo đơn'), 'error');
     }
     setIsSubmitting(false);
   };
@@ -414,6 +437,7 @@ export const AttendancePage: React.FC = () => {
       setLeaves(prev => prev.map(l => l.id === reviewLeave.id ? updated : l));
       setReviewLeave(null);
       setReviewNote('');
+      showToast(finalStatus === 'REJECTED' ? 'Đã từ chối đơn xin nghỉ.' : 'Đã xét duyệt đơn xin nghỉ thành công.', 'success');
 
       // Tiêu đề & nội dung & đối tượng nhận thông báo đích danh
       let notifTitle = '';
@@ -460,7 +484,7 @@ export const AttendancePage: React.FC = () => {
         });
       }
     } catch (e: any) {
-      alert('Lỗi duyệt đơn: ' + (e.message || JSON.stringify(e)));
+      showToast('Lỗi duyệt đơn: ' + (e.message || 'Không thể duyệt đơn'), 'error');
     }
     setIsSubmitting(false);
   };
@@ -470,8 +494,9 @@ export const AttendancePage: React.FC = () => {
     try {
       await api.leaves.delete(id);
       setLeaves(prev => prev.filter(l => l.id !== id));
+      showToast('Đã xóa đơn nghỉ phép thành công.', 'info');
     } catch (e: any) {
-      alert('Lỗi xóa đơn: ' + (e.message || JSON.stringify(e)));
+      showToast('Lỗi xóa đơn: ' + (e.message || 'Không thể xóa đơn'), 'error');
     }
   };
 
@@ -493,7 +518,7 @@ export const AttendancePage: React.FC = () => {
       else setCheckOutImage(url);
     } catch (err: any) {
       console.error('Upload failed', err);
-      alert('Lỗi tải ảnh: ' + (err.message || JSON.stringify(err)));
+      showToast('Lỗi tải ảnh: ' + (err.message || 'Không thể tải ảnh'), 'error');
     }
     e.target.value = '';
   };
@@ -517,6 +542,7 @@ export const AttendancePage: React.FC = () => {
       setNotes('');
       setSelectedProject('');
       setShowCheckInModal(false);
+      showToast('Check-in thành công!', 'success');
 
       // Gửi thông báo realtime chỉ đến admin
       await addNotification({
@@ -528,7 +554,7 @@ export const AttendancePage: React.FC = () => {
       });
     } catch (e: any) {
       console.error('Check-in failed', e);
-      alert('Lỗi chấm công: ' + (e.message || JSON.stringify(e)));
+      showToast('Lỗi chấm công: ' + (e.message || 'Check-in thất bại'), 'error');
     }
     setIsSubmitting(false);
   };
@@ -546,6 +572,7 @@ export const AttendancePage: React.FC = () => {
       setCheckOutImage(null);
       setCheckOutNotes('');
       setShowCheckOutModal(false);
+      showToast('Check-out thành công!', 'success');
 
       // Gửi thông báo realtime chỉ đến admin
       await addNotification({
@@ -557,7 +584,7 @@ export const AttendancePage: React.FC = () => {
       });
     } catch (e: any) {
       console.error('Check-out failed', e);
-      alert('Lỗi check-out: ' + (e.message || JSON.stringify(e)));
+      showToast('Lỗi check-out: ' + (e.message || 'Check-out thất bại'), 'error');
     }
     setIsSubmitting(false);
   };
@@ -1343,6 +1370,12 @@ export const AttendancePage: React.FC = () => {
       {/* Modal tạo đơn xin nghỉ phép */}
       <Modal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} title="Tạo đơn xin nghỉ phép" icon="event_busy" size="lg">
         <div className="space-y-4 py-2">
+          {modalError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2 animate-in fade-in">
+              <span className="material-symbols-outlined text-[18px] text-rose-600 shrink-0">error</span>
+              <span className="font-semibold">{modalError}</span>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Loại nghỉ phép</label>
             <CustomSelect
@@ -1702,6 +1735,13 @@ export const AttendancePage: React.FC = () => {
         message="Bạn có chắc chắn muốn xóa bản ghi chấm công này?"
         confirmText="Xóa"
         icon="delete"
+      />
+
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast(prev => ({ ...prev, show: false }))}
       />
     </div>
   );
