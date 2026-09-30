@@ -47,6 +47,11 @@ const getDuration = (checkIn: string, checkOut?: string) => {
   return `${h}h ${m}m`;
 };
 
+// In-memory persistent cache across tab and route navigation
+let cachedLogs: AttendanceLog[] = [];
+let cachedLeaves: LeaveRequest[] = [];
+let hasFetchedAttendanceData = false;
+
 export const AttendancePage: React.FC = () => {
   const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
@@ -89,8 +94,8 @@ export const AttendancePage: React.FC = () => {
   const [mainTab, setMainTab] = useState<'attendance' | 'leave'>('attendance');
   const [highlightLeaveId, setHighlightLeaveId] = useState<string | null>(null);
   const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
-  const [logs, setLogs] = useState<AttendanceLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [logs, setLogs] = useState<AttendanceLog[]>(cachedLogs);
+  const [loading, setLoading] = useState(!hasFetchedAttendanceData && cachedLogs.length === 0);
   const [activeSession, setActiveSession] = useState<AttendanceLog | null>(null);
   const [selectedProject, setSelectedProject] = useState('');
   const [notes, setNotes] = useState('');
@@ -108,8 +113,9 @@ export const AttendancePage: React.FC = () => {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showLeaveExportMenu, setShowLeaveExportMenu] = useState(false);
 
-  // State cho Xin nghỉ phép
-  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+  // State cho Xin nghỉ phép (khởi tạo từ cache)
+  const [leaves, setLeaves] = useState<LeaveRequest[]>(cachedLeaves);
+  const [leavesLoading, setLeavesLoading] = useState(!hasFetchedAttendanceData && cachedLeaves.length === 0);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaveType, setLeaveType] = useState<LeaveType>('Nghỉ phép năm');
   const [leaveStartDate, setLeaveStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -229,8 +235,8 @@ export const AttendancePage: React.FC = () => {
   };
 
   const handleExportLeavesExcel = (format: 'xlsx' | 'csv' | 'docx' = 'xlsx') => {
-    if (!leaves.length) return;
-    const exportData = leaves.map((leave, index) => {
+    if (!displayedLeaves.length) return;
+    const exportData = displayedLeaves.map((leave, index) => {
       let statusStr = 'Chờ duyệt';
       if (leave.status === 'PENDING_STEP1') statusStr = 'Chờ Quản lý duyệt';
       else if (leave.status === 'APPROVED_STEP1') statusStr = 'Quản lý đã duyệt - Chờ BGD phê duyệt';
@@ -245,6 +251,7 @@ export const AttendancePage: React.FC = () => {
         'Đến ngày': formatDate(leave.endDate),
         'Số ngày': leave.totalDays,
         'Lý do': leave.reason,
+        'Người theo dõi': (leave.followerNames && leave.followerNames.length > 0) ? leave.followerNames.join(', ') : '—',
         'Trạng thái': statusStr,
         'Quản lý duyệt': leave.step1ReviewerName ? `${leave.step1ReviewerName} (${leave.step1ReviewedAt ? 'Đã duyệt' : 'Chờ'})` : '—',
         'Ý kiến Quản lý': leave.step1ReviewNote || '',
@@ -266,19 +273,37 @@ export const AttendancePage: React.FC = () => {
     }
   };
 
-  const fetchLogs = async () => {
-    setLoading(true);
+  // Lọc danh sách nghỉ phép ngay trong bộ nhớ (0ms latency, không reload, không spinner khi đổi tab)
+  const displayedLeaves = React.useMemo(() => {
+    if (tab === 'all') return leaves;
+    if (!user) return leaves;
+    return leaves.filter(l => {
+      const matchId = String(l.userId || '') === String(user.id || '');
+      const matchName = user.name && l.userName && l.userName.trim().toLowerCase() === user.name.trim().toLowerCase();
+      const matchUsername = user.username && l.userName && l.userName.trim().toLowerCase() === user.username.trim().toLowerCase();
+      const matchFollower = Array.isArray(l.followerIds) && (
+        l.followerIds.includes(user.id) || 
+        (user.name && l.followerNames?.includes(user.name)) ||
+        (user.username && l.followerNames?.includes(user.username))
+      );
+      return matchId || matchName || matchUsername || matchFollower;
+    });
+  }, [leaves, tab, user]);
+
+  const fetchLogs = async (forceShowSpinner = false) => {
+    if (forceShowSpinner || (!hasFetchedAttendanceData && cachedLogs.length === 0)) {
+      setLoading(true);
+    }
     try {
-      const data = tab === 'my' && user
-        ? await api.attendance.getByUser(user.id)
-        : await api.attendance.getAll();
+      const data = await api.attendance.getAll();
+      cachedLogs = data;
       setLogs(data);
       // Find active session for today
       if (user) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todaySession = data.find((l: AttendanceLog) =>
-          l.userId === user.id &&
+          (l.userId === user.id || l.userName === user.name) &&
           new Date(l.checkInTime) >= today &&
           !l.checkOutTime
         );
@@ -286,35 +311,44 @@ export const AttendancePage: React.FC = () => {
       }
     } catch (e) {
       console.error('Failed to fetch attendance logs', e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const fetchLeaves = async () => {
+  const fetchLeaves = async (forceShowSpinner = false) => {
+    if (forceShowSpinner || (!hasFetchedAttendanceData && cachedLeaves.length === 0)) {
+      setLeavesLoading(true);
+    }
     try {
-      const data = tab === 'my' && user
-        ? await api.leaves.getByUser(user.id)
-        : await api.leaves.getAll();
+      const data = await api.leaves.getAll();
+      cachedLeaves = data;
       setLeaves(data);
+      hasFetchedAttendanceData = true;
     } catch (e) {
       console.error('Failed to fetch leave requests', e);
+    } finally {
+      setLeavesLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLogs();
-    fetchLeaves();
+    // Chỉ nạp dữ liệu một lần duy nhất khi vào trang
+    fetchLogs(false);
+    fetchLeaves(false);
+
     const channel = supabase.channel('attendance_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, () => {
-        fetchLogs();
-        fetchLeaves();
+        // Cập nhật ngầm trong nền khi database thay đổi
+        fetchLogs(false);
+        fetchLeaves(false);
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tab]);
+  }, []);
 
   const handleCreateLeave = async () => {
     if (!user || isSubmitting) return;
@@ -331,19 +365,14 @@ export const AttendancePage: React.FC = () => {
       return;
     }
 
-    if (!step1ReviewerId && !step2ReviewerId) {
-      setModalError('Vui lòng chọn ít nhất 1 người phê duyệt (Quản lý duyệt hoặc Ban Giám Đốc duyệt)!');
-      return;
-    }
-
     setModalError(null);
     setIsSubmitting(true);
     try {
       const diffTime = Math.max(0, end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-      const step1Eng = engineers.find(e => e.id === step1ReviewerId);
-      const step2Eng = engineers.find(e => e.id === step2ReviewerId);
+      const step1Eng = step1ReviewerId ? engineers.find(e => e.id === step1ReviewerId) : undefined;
+      const step2Eng = step2ReviewerId ? engineers.find(e => e.id === step2ReviewerId) : undefined;
       const followerEngs = engineers.filter(e => followerIds.includes(e.id));
       const followerNames = followerEngs.map(e => e.name);
 
@@ -363,6 +392,7 @@ export const AttendancePage: React.FC = () => {
         followerNames: followerNames.length > 0 ? followerNames : undefined,
       });
 
+      cachedLeaves = [newLeave, ...cachedLeaves];
       setLeaves(prev => [newLeave, ...prev]);
       setShowLeaveModal(false);
       setLeaveReason('');
@@ -372,32 +402,25 @@ export const AttendancePage: React.FC = () => {
       setModalError(null);
       showToast('Gửi đơn xin nghỉ phép thành công!', 'success');
 
-      // Xác định người nhận thông báo đầu tiên
-      let targetRecipientId = '';
-      let targetRecipientName = '';
-      let targetMsgNote = '';
-
+      // Gửi thông báo: Nếu có chọn Quản lý thì gửi Quản lý duyệt trước, nếu không thì mặc định gửi Admin
       if (step1Eng) {
-        targetRecipientId = step1Eng.id;
-        targetRecipientName = step1Eng.name;
-        targetMsgNote = ` (chờ ${step1Eng.name} duyệt)`;
-      } else if (step2Eng) {
-        targetRecipientId = step2Eng.id;
-        targetRecipientName = step2Eng.name;
-        targetMsgNote = ` (chờ ${step2Eng.name} phê duyệt)`;
+        await addNotification({
+          title: 'Đơn xin nghỉ phép mới (Chờ duyệt)',
+          message: `${user.name} vừa tạo đơn xin ${leaveType.toLowerCase()} (${diffDays} ngày: từ ${formatDate(leaveStartDate)} đến ${formatDate(leaveEndDate)}) (chờ ${step1Eng.name} duyệt bước 1)`,
+          type: `leave_pending:::${step1Eng.id}:::${step1Eng.name}`,
+          icon: 'event_busy',
+          link: '/attendance?tab=leave',
+        });
       } else {
-        targetRecipientId = 'admin';
-        targetRecipientName = 'Quản trị viên';
-        targetMsgNote = ' (chờ Ban Giám Đốc / Quản trị duyệt)';
+        // Mặc định thông báo đến Ban Giám Đốc / Admin
+        await addNotification({
+          title: 'Đơn xin nghỉ phép mới',
+          message: `${user.name} vừa tạo đơn xin ${leaveType.toLowerCase()} (${diffDays} ngày: từ ${formatDate(leaveStartDate)} đến ${formatDate(leaveEndDate)}) (chờ Ban Giám Đốc / Quản trị duyệt)`,
+          type: 'leave_pending:::admin:::Quản trị viên',
+          icon: 'event_busy',
+          link: '/attendance?tab=leave',
+        });
       }
-
-      await addNotification({
-        title: 'Đơn xin nghỉ phép mới',
-        message: `${user.name} vừa tạo đơn xin ${leaveType.toLowerCase()} (${diffDays} ngày: từ ${formatDate(leaveStartDate)} đến ${formatDate(leaveEndDate)})${targetMsgNote}`,
-        type: `leave_pending:::${targetRecipientId}:::${targetRecipientName}`,
-        icon: 'event_busy',
-        link: '/attendance?tab=leave',
-      });
 
       // Gửi thông báo cho những người theo dõi (Followers)
       if (followerIds.length > 0) {
@@ -439,6 +462,7 @@ export const AttendancePage: React.FC = () => {
         step: reviewStep,
       });
 
+      cachedLeaves = cachedLeaves.map(l => l.id === reviewLeave.id ? updated : l);
       setLeaves(prev => prev.map(l => l.id === reviewLeave.id ? updated : l));
       setReviewLeave(null);
       setReviewNote('');
@@ -450,14 +474,10 @@ export const AttendancePage: React.FC = () => {
       let notifType = '';
 
       if (finalStatus === 'APPROVED_STEP1') {
-        // Quản lý đã duyệt -> Gửi thông báo đến Quản trị (step2Reviewer hoặc tất cả Admin) và nhân viên
-        const step2Reviewer = engineers.find(e => e.id === reviewLeave.step2ReviewerId || e.name === reviewLeave.step2ReviewerName);
-        const targetId = step2Reviewer ? `${step2Reviewer.id},admin,${reviewLeave.userId}` : `admin,${reviewLeave.userId}`;
-        const targetName = step2Reviewer ? `${step2Reviewer.name},Quản trị viên,${reviewLeave.userName}` : `Quản trị viên,${reviewLeave.userName}`;
-
+        // Quản lý đã duyệt bước 1 -> Mặc định gửi thông báo đến Admin duyệt bước cuối và nhân viên
         notifTitle = 'Đơn nghỉ phép đã được Quản lý duyệt';
-        notifMsg = `Đơn của ${reviewLeave.userName} đã được ${user.name} duyệt → Chờ ${reviewLeave.step2ReviewerName || 'Quản trị hệ thống'} phê duyệt.`;
-        notifType = `leave_step1_approved:::${targetId}:::${targetName}`;
+        notifMsg = `Đơn của ${reviewLeave.userName} đã được ${user.name} duyệt → Chờ Ban Giám Đốc / Quản trị phê duyệt cuối cùng.`;
+        notifType = `leave_step1_approved:::admin,${reviewLeave.userId}:::Quản trị viên,${reviewLeave.userName}`;
       } else if (finalStatus === 'APPROVED') {
         // Phê duyệt hoàn tất -> Gửi đích danh cho nhân viên làm đơn
         notifTitle = 'Đơn nghỉ phép đã được PHÊ DUYỆT';
@@ -498,6 +518,7 @@ export const AttendancePage: React.FC = () => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa đơn nghỉ phép này?')) return;
     try {
       await api.leaves.delete(id);
+      cachedLeaves = cachedLeaves.filter(l => l.id !== id);
       setLeaves(prev => prev.filter(l => l.id !== id));
       showToast('Đã xóa đơn nghỉ phép thành công.', 'info');
     } catch (e: any) {
@@ -542,6 +563,7 @@ export const AttendancePage: React.FC = () => {
         notes: notes || undefined,
       });
       setActiveSession(result);
+      cachedLogs = [result, ...cachedLogs];
       setLogs(prev => [result, ...prev]);
       setCheckInImage(null);
       setNotes('');
@@ -573,6 +595,7 @@ export const AttendancePage: React.FC = () => {
         notes: checkOutNotes || undefined,
       });
       setActiveSession(null);
+      cachedLogs = cachedLogs.map(l => l.id === result.id ? result : l);
       setLogs(prev => prev.map(l => l.id === result.id ? result : l));
       setCheckOutImage(null);
       setCheckOutNotes('');
@@ -598,21 +621,32 @@ export const AttendancePage: React.FC = () => {
     if (!deleteId) return;
     try {
       await api.attendance.delete(deleteId);
+      cachedLogs = cachedLogs.filter(l => l.id !== deleteId);
       setLogs(prev => prev.filter(l => l.id !== deleteId));
       if (activeSession?.id === deleteId) setActiveSession(null);
     } catch (e) { console.error(e); }
     setDeleteId(null);
   };
 
-  // Filter logs
-  const filteredLogs = logs.filter(l => {
-    if (filterDate) {
-      const logDate = new Date(l.checkInTime).toISOString().split('T')[0];
-      if (logDate !== filterDate && l.checkOutTime) return false;
+  // Filter logs (0ms latency, lọc ngay trong bộ nhớ khi chuyển tab 'Của tôi' / 'Tất cả')
+  const filteredLogs = React.useMemo(() => {
+    let list = logs;
+    if (tab === 'my' && user) {
+      list = list.filter(l => {
+        const matchId = String(l.userId || '') === String(user.id || '');
+        const matchName = user.name && l.userName && l.userName.trim().toLowerCase() === user.name.trim().toLowerCase();
+        return matchId || matchName;
+      });
     }
-    if (filterUser && l.userId !== filterUser) return false;
-    return true;
-  });
+    return list.filter(l => {
+      if (filterDate) {
+        const logDate = new Date(l.checkInTime).toISOString().split('T')[0];
+        if (logDate !== filterDate && l.checkOutTime) return false;
+      }
+      if (filterUser && l.userId !== filterUser) return false;
+      return true;
+    });
+  }, [logs, tab, user, filterDate, filterUser]);
 
   const todayStr = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -691,14 +725,64 @@ export const AttendancePage: React.FC = () => {
               </button>
             )
           ) : (
-            <button
-              onClick={() => setShowLeaveModal(true)}
-              className="flex items-center justify-center gap-1.5 px-2.5 py-1 sm:px-3.5 sm:py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
-              title="Tạo đơn xin nghỉ"
-            >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              <span className="hidden sm:inline">Tạo đơn xin nghỉ</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {leaves.length > 0 && (
+                <div className="relative shrink-0">
+                  <button
+                    onClick={() => setShowLeaveExportMenu(!showLeaveExportMenu)}
+                    className="flex items-center justify-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-xs cursor-pointer"
+                    title="Xuất file"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">file_download</span>
+                    <span>Xuất file</span>
+                    <span className="material-symbols-outlined text-xs">expand_more</span>
+                  </button>
+                  {showLeaveExportMenu && (
+                    <div className="fixed inset-0 z-40" onClick={() => setShowLeaveExportMenu(false)} />
+                  )}
+                  {showLeaveExportMenu && (
+                    <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                      <button
+                        onClick={() => { setShowLeaveExportMenu(false); handleExportLeavesExcel('xlsx'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                        Excel (.xlsx)
+                      </button>
+                      <button
+                        onClick={() => { setShowLeaveExportMenu(false); handleExportLeavesExcel('csv'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                        CSV (.csv)
+                      </button>
+                      <button
+                        onClick={() => { setShowLeaveExportMenu(false); window.print(); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                        PDF (.pdf)
+                      </button>
+                      <button
+                        onClick={() => { setShowLeaveExportMenu(false); handleExportLeavesExcel('docx'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                        Word (.docx)
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+              <button
+                onClick={() => { setShowLeaveModal(true); setModalError(null); }}
+                className="flex items-center justify-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0 cursor-pointer active:scale-95"
+                title="Tạo đơn xin nghỉ"
+              >
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                <span>Tạo đơn xin nghỉ</span>
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -930,40 +1014,31 @@ export const AttendancePage: React.FC = () => {
       ) : (
         /* Tab Xin nghỉ phép */
         <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col bg-slate-50">
-          {/* Unified Subheader Bar */}
-          <div className="px-3 py-2 sm:px-4 sm:py-2 border-b border-slate-200 bg-white flex items-center justify-between gap-2 shrink-0 shadow-xs relative z-10">
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="material-symbols-outlined text-slate-500 text-[18px] shrink-0">event_busy</span>
-              <h3 className="text-xs font-bold text-slate-700 uppercase hidden sm:inline truncate">Danh sách đơn xin nghỉ phép</h3>
-              <h3 className="text-xs font-bold text-slate-700 uppercase sm:hidden truncate">Đơn nghỉ phép</h3>
-              <div className="px-2 py-0.5 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200 shrink-0">
-                {leaves.length}
+          {/* Mobile-only Toolbar Bar (On Desktop, controls are neatly in the top header) */}
+          <div className="md:hidden px-3 py-2 border-b border-slate-200 bg-white flex items-center justify-between gap-2 shrink-0 shadow-xs relative z-10">
+            {canViewAll ? (
+              <div className="inline-flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0">
+                <button
+                  onClick={() => setTab('my')}
+                  className={`px-2.5 py-1 rounded-md text-xs transition-all ${tab === 'my' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                >Của tôi</button>
+                <button
+                  onClick={() => setTab('all')}
+                  className={`px-2.5 py-1 rounded-md text-xs transition-all ${tab === 'all' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                >Tất cả</button>
               </div>
+            ) : <div />}
 
-              {canViewAll && (
-                <div className="inline-flex md:hidden items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0 ml-1">
-                  <button
-                    onClick={() => setTab('my')}
-                    className={`px-2 py-0.5 rounded-md text-[10px] transition-all ${tab === 'my' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
-                  >Của tôi</button>
-                  <button
-                    onClick={() => setTab('all')}
-                    className={`px-2 py-0.5 rounded-md text-[10px] transition-all ${tab === 'all' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
-                  >Tất cả</button>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               {leaves.length > 0 && (
                 <div className="relative shrink-0">
                   <button
                     onClick={() => setShowLeaveExportMenu(!showLeaveExportMenu)}
-                    className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-[11px] sm:text-xs rounded-lg border border-emerald-200 transition-colors shadow-xs cursor-pointer h-8"
+                    className="flex items-center justify-center gap-1 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-xs cursor-pointer h-8"
                     title="Xuất file"
                   >
                     <span className="material-symbols-outlined text-[15px]">file_download</span>
-                    <span className="hidden sm:inline">Xuất file</span>
+                    <span>Xuất file</span>
                     <span className="material-symbols-outlined text-xs">expand_more</span>
                   </button>
                   {showLeaveExportMenu && (
@@ -1004,26 +1079,46 @@ export const AttendancePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Add Leave Button (mobile only '+' button, full text on desktop) */}
+              {/* Nút Làm mới dữ liệu */}
               <button
-                onClick={() => setShowLeaveModal(true)}
-                className="flex items-center justify-center gap-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs rounded-lg shadow-xs transition-all h-8 w-8 sm:w-auto sm:px-3.5 shrink-0 active:scale-95 cursor-pointer"
+                type="button"
+                onClick={() => { fetchLeaves(true); fetchLogs(true); }}
+                className="w-8 h-8 flex items-center justify-center bg-white hover:bg-slate-100 text-slate-600 rounded-lg border border-slate-200 transition-colors shadow-2xs cursor-pointer active:scale-95 shrink-0"
+                title="Tải lại dữ liệu"
+              >
+                <span className={`material-symbols-outlined text-[17px] ${leavesLoading ? 'animate-spin text-primary' : ''}`}>
+                  refresh
+                </span>
+              </button>
+
+              {/* Add Leave Button (Mobile only) */}
+              <button
+                onClick={() => { setShowLeaveModal(true); setModalError(null); }}
+                className="flex items-center justify-center gap-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs rounded-lg shadow-xs transition-all h-8 px-2.5 shrink-0 active:scale-95 cursor-pointer"
                 title="Tạo đơn xin nghỉ"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span>
-                <span className="hidden sm:inline">Tạo đơn</span>
+                <span>Tạo đơn</span>
               </button>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto bg-slate-50 md:bg-white pb-16 md:pb-0">
-            {leaves.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-sm">Chưa có đơn xin nghỉ phép nào.</div>
+            {leavesLoading ? (
+              <div className="p-12 flex flex-col items-center justify-center gap-3 text-slate-400">
+                <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
+                <span className="text-xs font-semibold text-slate-500">Đang tải danh sách nghỉ phép...</span>
+              </div>
+            ) : displayedLeaves.length === 0 ? (
+              <div className="p-12 text-center text-slate-400 text-xs sm:text-sm flex flex-col items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-4xl text-slate-300">event_busy</span>
+                <span>Chưa có đơn xin nghỉ phép nào.</span>
+              </div>
             ) : (
               <>
                 {/* Mobile View: Cards */}
                 <div className="block md:hidden p-3 space-y-2.5">
-                  {leaves.map((l, idx) => {
+                  {displayedLeaves.map((l, idx) => {
                     const isMatch = Boolean(highlightLeaveId && l.id === highlightLeaveId);
                     const canReviewStep1 = (
                       (l.status === 'PENDING_STEP1' || (l.status === 'PENDING' && l.step1ReviewerId)) &&
@@ -1104,12 +1199,6 @@ export const AttendancePage: React.FC = () => {
                             <span className="font-semibold text-slate-500">Lý do: </span>
                             <span>{l.reason}</span>
                           </div>
-                          {l.followerNames && l.followerNames.length > 0 && (
-                            <div className="text-slate-600 flex items-start gap-1">
-                              <span className="font-semibold text-slate-500 shrink-0">Theo dõi:</span>
-                              <span className="text-primary font-medium">{l.followerNames.join(', ')}</span>
-                            </div>
-                          )}
                           <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-200/60 text-[11px]">
                             <div>
                               <span className="text-slate-400 font-semibold block">Quản lý duyệt:</span>
@@ -1151,6 +1240,17 @@ export const AttendancePage: React.FC = () => {
                               )}
                             </div>
                           </div>
+                          {l.followerNames && l.followerNames.length > 0 && (
+                            <div className="pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                              <span className="text-slate-400 font-semibold flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px] text-primary">visibility</span>
+                                <span>Người theo dõi:</span>
+                              </span>
+                              <span className="font-bold text-primary truncate max-w-[200px]">
+                                {l.followerNames.join(', ')}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Thao tác trên Mobile */}
@@ -1199,6 +1299,7 @@ export const AttendancePage: React.FC = () => {
                         <th className="p-3">Thời gian nghỉ</th>
                         <th className="p-3 text-center">Số ngày</th>
                         <th className="p-3">Lý do</th>
+                        <th className="p-3">Người theo dõi</th>
                         <th className="p-3 text-center">Trạng thái</th>
                         <th className="p-3">Quản lý duyệt</th>
                         <th className="p-3">Quản trị duyệt</th>
@@ -1206,7 +1307,7 @@ export const AttendancePage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {leaves.map((l, idx) => {
+                      {displayedLeaves.map((l, idx) => {
                         const isMatch = Boolean(highlightLeaveId && l.id === highlightLeaveId);
                         
                         // Quyền duyệt Quản lý (Trưởng nhóm / Quản lý duyệt bước đầu)
@@ -1248,12 +1349,25 @@ export const AttendancePage: React.FC = () => {
                             {formatDate(l.startDate)} → {formatDate(l.endDate)}
                           </td>
                           <td className="p-3 text-center font-bold text-slate-800">{l.totalDays} ngày</td>
-                          <td className="p-3 text-slate-600 max-w-[200px]">
-                            <p className="truncate" title={l.reason}>{l.reason}</p>
-                            {l.followerNames && l.followerNames.length > 0 && (
-                              <p className="text-[10px] text-blue-600 font-medium truncate mt-0.5" title={`Người theo dõi: ${l.followerNames.join(', ')}`}>
-                                CC: {l.followerNames.join(', ')}
-                              </p>
+                          <td className="p-3 text-slate-600 max-w-[180px] truncate" title={l.reason}>
+                            {l.reason}
+                          </td>
+                          {/* Cột Người theo dõi */}
+                          <td className="p-3 text-slate-600 max-w-[160px]">
+                            {l.followerNames && l.followerNames.length > 0 ? (
+                              <div className="flex flex-wrap gap-1" title={l.followerNames.join(', ')}>
+                                {l.followerNames.map((fn, fIdx) => (
+                                  <span
+                                    key={fIdx}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-primary border border-blue-200/80 rounded-md text-[10px] font-medium"
+                                  >
+                                    <span className="material-symbols-outlined text-[12px]">person</span>
+                                    <span className="truncate max-w-[100px]">{fn}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 italic">—</span>
                             )}
                           </td>
                           <td className="p-3 text-center whitespace-nowrap">
@@ -1416,20 +1530,17 @@ export const AttendancePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[16px] text-primary">how_to_reg</span>
-                <span>Người phê duyệt <span className="text-rose-600">*</span></span>
-              </label>
-              <span className="text-[11px] font-medium text-slate-500">(Chọn ít nhất 1 người)</span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Gom Quản lý trực tiếp duyệt & Người theo dõi lên cùng 1 hàng */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Ô Quản lý trực tiếp duyệt (Bước 1 - Tùy chọn) */}
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2 flex flex-col justify-between">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                  <span>Quản lý duyệt</span>
-                  <span className="text-[10px] text-slate-400 font-normal">(Bước 1)</span>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-slate-800">
+                    <span className="material-symbols-outlined text-[16px] text-primary">person_check</span>
+                    <span>Quản lý trực tiếp duyệt</span>
+                  </span>
+                  <span className="text-[10px] font-normal text-slate-400">(Tùy chọn)</span>
                 </label>
                 <CustomSelect
                   value={step1ReviewerId}
@@ -1440,7 +1551,7 @@ export const AttendancePage: React.FC = () => {
                   searchable={true}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
                 >
-                  <option value="">-- Không chọn --</option>
+                  <option value="">-- Không qua quản lý (Admin duyệt) --</option>
                   {step1Reviewers.map(r => (
                     <option key={r.id} value={r.id}>
                       {r.name}
@@ -1448,89 +1559,67 @@ export const AttendancePage: React.FC = () => {
                   ))}
                 </CustomSelect>
               </div>
+              <p className="text-[10px] text-slate-400 italic mt-1">* Ban Giám Đốc / Admin mặc định duyệt cuối</p>
+            </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                  <span>Ban Giám Đốc duyệt</span>
-                  <span className="text-[10px] text-slate-400 font-normal">(Bước 2 / Trực tiếp)</span>
-                </label>
+            {/* Ô Người theo dõi (Follow / CC) */}
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2">
+              <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-slate-800">
+                  <span className="material-symbols-outlined text-[16px] text-primary">visibility</span>
+                  <span>Người theo dõi (Follow / CC)</span>
+                </span>
+                <span className="text-[10px] font-normal text-slate-400">(Tùy chọn)</span>
+              </label>
+
+              <div className="space-y-2">
                 <CustomSelect
-                  value={step2ReviewerId}
+                  value=""
                   onChange={e => {
-                    setStep2ReviewerId(e.target.value);
-                    if (modalError) setModalError(null);
+                    const val = e.target.value;
+                    if (val && !followerIds.includes(val)) {
+                      setFollowerIds(prev => [...prev, val]);
+                    }
                   }}
                   searchable={true}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
                 >
-                  <option value="">-- Không chọn --</option>
-                  {step2Reviewers.map(r => (
-                    <option key={r.id} value={r.id}>
-                      {r.name}
-                    </option>
-                  ))}
+                  <option value="">+ Chọn người theo dõi / thông báo...</option>
+                  {engineers
+                    .filter(eng => eng.id !== user?.id && !followerIds.includes(eng.id))
+                    .map(eng => (
+                      <option key={eng.id} value={eng.id}>
+                        {eng.name} ({eng.role || eng.title || 'Nhân viên'})
+                      </option>
+                    ))}
                 </CustomSelect>
-              </div>
-            </div>
-          </div>
 
-          {/* Ô Người theo dõi (Follow / CC) */}
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2">
-            <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-slate-800">
-                <span className="material-symbols-outlined text-[16px] text-primary">visibility</span>
-                <span>Người theo dõi (Follow / CC)</span>
-              </span>
-              <span className="text-[11px] font-normal text-slate-400">(Tùy chọn - Nhận thông báo lịch nghỉ)</span>
-            </label>
-
-            <div className="space-y-2">
-              <CustomSelect
-                value=""
-                onChange={e => {
-                  const val = e.target.value;
-                  if (val && !followerIds.includes(val)) {
-                    setFollowerIds(prev => [...prev, val]);
-                  }
-                }}
-                searchable={true}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
-              >
-                <option value="">+ Chọn người theo dõi / thông báo...</option>
-                {engineers
-                  .filter(eng => eng.id !== user?.id && !followerIds.includes(eng.id))
-                  .map(eng => (
-                    <option key={eng.id} value={eng.id}>
-                      {eng.name} ({eng.role || eng.title || 'Nhân viên'})
-                    </option>
-                  ))}
-              </CustomSelect>
-
-              {/* Danh sách người theo dõi đã chọn dạng chip */}
-              {followerIds.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {followerIds.map(fid => {
-                    const eng = engineers.find(e => e.id === fid);
-                    return (
-                      <span
-                        key={fid}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50/90 text-primary border border-blue-200/80 rounded-lg text-xs font-semibold animate-in fade-in"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">person</span>
-                        <span>{eng?.name || fid}</span>
-                        <button
-                          type="button"
-                          onClick={() => setFollowerIds(prev => prev.filter(id => id !== fid))}
-                          className="w-4 h-4 rounded-full bg-blue-200/70 hover:bg-red-100 hover:text-red-600 inline-flex items-center justify-center transition-colors text-slate-600 cursor-pointer"
-                          title="Bỏ chọn"
+                {/* Danh sách người theo dõi đã chọn dạng chip */}
+                {followerIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {followerIds.map(fid => {
+                      const eng = engineers.find(e => e.id === fid);
+                      return (
+                        <span
+                          key={fid}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50/90 text-primary border border-blue-200/80 rounded-lg text-xs font-semibold animate-in fade-in"
                         >
-                          <span className="material-symbols-outlined text-[11px]">close</span>
-                        </button>
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
+                          <span className="material-symbols-outlined text-[13px]">person</span>
+                          <span>{eng?.name || fid}</span>
+                          <button
+                            type="button"
+                            onClick={() => setFollowerIds(prev => prev.filter(id => id !== fid))}
+                            className="w-3.5 h-3.5 rounded-full bg-blue-200/70 hover:bg-red-100 hover:text-red-600 inline-flex items-center justify-center transition-colors text-slate-600 cursor-pointer"
+                            title="Bỏ chọn"
+                          >
+                            <span className="material-symbols-outlined text-[10px]">close</span>
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

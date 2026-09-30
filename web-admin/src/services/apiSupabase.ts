@@ -1530,38 +1530,65 @@ export const api = {
   },
   attendance: {
     getAll: async () => {
-      const { data, error } = await supabase.from('activity_logs').select('*').eq('icon', 'ATTENDANCE_SESSION').order('timestamp', { ascending: false });
-      if (error) throw error;
-      return (data || []).map(row => {
-        try {
-          const payload = JSON.parse(row.action);
-          return { id: row.id, ...payload };
-        } catch { return null; }
-      }).filter(Boolean);
+      try {
+        let { data, error } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .eq('icon', 'ATTENDANCE_SESSION')
+          .order('timestamp', { ascending: false });
+
+        if (error) {
+          const res = await supabase
+            .from('activity_logs')
+            .select('*')
+            .eq('icon', 'ATTENDANCE_SESSION')
+            .order('created_at', { ascending: false });
+          data = res.data;
+          error = res.error;
+        }
+
+        if (error) {
+          const res = await supabase
+            .from('activity_logs')
+            .select('*')
+            .eq('icon', 'ATTENDANCE_SESSION');
+          data = res.data;
+        }
+
+        return (data || []).map(row => {
+          try {
+            const payload = typeof row.action === 'string' ? JSON.parse(row.action) : row.action;
+            return { id: row.id, ...payload };
+          } catch { return null; }
+        }).filter(Boolean);
+      } catch (err) {
+        console.error('[Attendance] Failed to fetch all logs:', err);
+        return [];
+      }
     },
-    getByUser: async (userId: string) => {
-      const { data, error } = await supabase.from('activity_logs').select('*').eq('icon', 'ATTENDANCE_SESSION').order('timestamp', { ascending: false });
-      if (error) throw error;
-      return (data || []).map(row => {
-        try {
-          const payload = JSON.parse(row.action);
-          if (payload.userId !== userId) return null;
-          return { id: row.id, ...payload };
-        } catch { return null; }
-      }).filter(Boolean);
+    getByUser: async (userId: string, userName?: string) => {
+      try {
+        const allLogs = await api.attendance.getAll();
+        return allLogs.filter((l: any) => {
+          if (!l) return false;
+          const matchId = String(l.userId || '') === String(userId || '');
+          const matchName = userName && l.userName && l.userName.trim().toLowerCase() === userName.trim().toLowerCase();
+          return matchId || matchName;
+        });
+      } catch (err) {
+        console.error('[Attendance] Failed to fetch user logs:', err);
+        return [];
+      }
     },
-    getToday: async (userId: string) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const { data, error } = await supabase.from('activity_logs').select('*').eq('icon', 'ATTENDANCE_SESSION').gte('timestamp', today.toISOString()).order('timestamp', { ascending: false });
-      if (error) throw error;
-      return (data || []).map(row => {
-        try {
-          const payload = JSON.parse(row.action);
-          if (payload.userId !== userId) return null;
-          return { id: row.id, ...payload };
-        } catch { return null; }
-      }).filter(Boolean);
+    getToday: async (userId: string, userName?: string) => {
+      try {
+        const logs = await api.attendance.getByUser(userId, userName);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return logs.filter((l: any) => new Date(l.checkInTime) >= today);
+      } catch {
+        return [];
+      }
     },
     checkIn: async (input: { userId: string; userName: string; projectId?: string; projectName?: string; checkInImage?: string; notes?: string }) => {
       const payloadData = {
@@ -1589,7 +1616,7 @@ export const api = {
     checkOut: async (id: string, input: { checkOutImage?: string; notes?: string }) => {
       const { data: row, error: fetchErr } = await supabase.from('activity_logs').select('action').eq('id', id).single();
       if (fetchErr) throw fetchErr;
-      const payloadData = JSON.parse(row.action);
+      const payloadData = typeof row.action === 'string' ? JSON.parse(row.action) : row.action;
       payloadData.checkOutTime = new Date().toISOString();
       if (input.checkOutImage) payloadData.checkOutImage = input.checkOutImage;
       if (input.notes) payloadData.notes = payloadData.notes ? payloadData.notes + ' | ' + input.notes : input.notes;
@@ -1607,33 +1634,56 @@ export const api = {
 
   leaves: {
     getAll: async () => {
-      const { data, error } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .eq('icon', 'LEAVE_REQUEST')
-        .order('timestamp', { ascending: false });
-      if (error) throw error;
-      return (data || []).map(row => {
-        try {
-          const payload = JSON.parse(row.action);
-          return { id: row.id, ...payload };
-        } catch { return null; }
-      }).filter(Boolean);
+      try {
+        let { data, error } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .eq('icon', 'LEAVE_REQUEST')
+          .order('timestamp', { ascending: false });
+
+        if (error) {
+          const res = await supabase
+            .from('activity_logs')
+            .select('*')
+            .eq('icon', 'LEAVE_REQUEST')
+            .order('created_at', { ascending: false });
+          data = res.data;
+          error = res.error;
+        }
+
+        if (error) {
+          const res = await supabase
+            .from('activity_logs')
+            .select('*')
+            .eq('icon', 'LEAVE_REQUEST');
+          data = res.data;
+        }
+
+        return (data || []).map(row => {
+          try {
+            const payload = typeof row.action === 'string' ? JSON.parse(row.action) : row.action;
+            return { id: row.id, ...payload };
+          } catch { return null; }
+        }).filter(Boolean);
+      } catch (err) {
+        console.error('[Leaves] Failed to fetch all leaves:', err);
+        return [];
+      }
     },
-    getByUser: async (userId: string) => {
-      const { data, error } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .eq('icon', 'LEAVE_REQUEST')
-        .order('timestamp', { ascending: false });
-      if (error) throw error;
-      return (data || []).map(row => {
-        try {
-          const payload = JSON.parse(row.action);
-          if (payload.userId !== userId && !payload.followerIds?.includes(userId)) return null;
-          return { id: row.id, ...payload };
-        } catch { return null; }
-      }).filter(Boolean);
+    getByUser: async (userId: string, userName?: string) => {
+      try {
+        const allLeaves = await api.leaves.getAll();
+        return allLeaves.filter((l: any) => {
+          if (!l) return false;
+          const matchId = String(l.userId || '') === String(userId || '');
+          const matchName = userName && l.userName && l.userName.trim().toLowerCase() === userName.trim().toLowerCase();
+          const matchFollower = Array.isArray(l.followerIds) && (l.followerIds.includes(userId) || (userName && l.followerNames?.includes(userName)));
+          return matchId || matchName || matchFollower;
+        });
+      } catch (err) {
+        console.error('[Leaves] Failed to fetch user leaves:', err);
+        return [];
+      }
     },
     create: async (input: {
       userId: string;
@@ -1673,6 +1723,7 @@ export const api = {
         icon: 'LEAVE_REQUEST',
         action: JSON.stringify(payloadData),
         timestamp: payloadData.createdAt,
+        created_at: payloadData.createdAt,
       };
       const { data, error } = await supabase.from('activity_logs').insert(payload).select().single();
       if (error) throw error;
@@ -1687,7 +1738,7 @@ export const api = {
     }) => {
       const { data: row, error: fetchErr } = await supabase.from('activity_logs').select('action').eq('id', id).single();
       if (fetchErr) throw fetchErr;
-      const payloadData = JSON.parse(row.action);
+      const payloadData = typeof row.action === 'string' ? JSON.parse(row.action) : row.action;
       payloadData.status = reviewData.status;
 
       if (reviewData.step === 1) {

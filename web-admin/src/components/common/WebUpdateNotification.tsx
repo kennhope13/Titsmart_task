@@ -31,10 +31,40 @@ export const WebUpdateNotification: React.FC = () => {
   if (isUpdating) {
     return (
       <div className="fixed inset-0 z-[999999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 select-none cursor-wait animate-in fade-in duration-200">
-        <div className="bg-white rounded-2xl shadow-2xl px-10 py-8 flex flex-col items-center justify-center min-w-[220px] border border-slate-100 animate-in zoom-in-95 duration-200">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
-          <span className="text-sm font-bold text-slate-800 tracking-wide">
+        <div className="bg-white rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center justify-center min-w-[220px] max-w-[280px] border border-slate-100 animate-in zoom-in-95 duration-200">
+          <div className="relative w-12 h-12 flex items-center justify-center mb-3">
+            <svg className="w-12 h-12 animate-spin text-primary" viewBox="0 0 50 50">
+              <circle
+                className="text-slate-100"
+                strokeWidth="4"
+                stroke="currentColor"
+                fill="transparent"
+                r="20"
+                cx="25"
+                cy="25"
+              />
+              <circle
+                className="text-primary"
+                strokeWidth="4"
+                strokeDasharray="80, 150"
+                strokeDashoffset="0"
+                strokeLinecap="round"
+                stroke="currentColor"
+                fill="transparent"
+                r="20"
+                cx="25"
+                cy="25"
+              />
+            </svg>
+            <span className="material-symbols-outlined absolute text-primary text-[18px]">
+              sync
+            </span>
+          </div>
+          <span className="text-sm font-bold text-slate-800 tracking-wide text-center">
             Đang cập nhật...
+          </span>
+          <span className="text-[11px] text-slate-500 font-medium mt-1 text-center">
+            Vui lòng đợi trong giây lát
           </span>
         </div>
       </div>
