@@ -217,6 +217,9 @@ export interface LeaveRequest {
   step2ReviewerName?: string;
   step2ReviewNote?: string;
   step2ReviewedAt?: string;
+  // Người theo dõi (Followers / CC)
+  followerIds?: string[];
+  followerNames?: string[];
   // Legacy compatibility fields
   reviewerId?: string;
   reviewerName?: string;

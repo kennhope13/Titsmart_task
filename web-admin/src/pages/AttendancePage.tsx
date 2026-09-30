@@ -116,6 +116,7 @@ export const AttendancePage: React.FC = () => {
   const [leaveReason, setLeaveReason] = useState('');
   const [step1ReviewerId, setStep1ReviewerId] = useState('');
   const [step2ReviewerId, setStep2ReviewerId] = useState('');
+  const [followerIds, setFollowerIds] = useState<string[]>([]);
   const [reviewLeave, setReviewLeave] = useState<LeaveRequest | null>(null);
   const [reviewStep, setReviewStep] = useState<1 | 2>(1);
   const [reviewNote, setReviewNote] = useState('');
@@ -323,6 +324,8 @@ export const AttendancePage: React.FC = () => {
 
       const step1Eng = engineers.find(e => e.id === step1ReviewerId);
       const step2Eng = engineers.find(e => e.id === step2ReviewerId);
+      const followerEngs = engineers.filter(e => followerIds.includes(e.id));
+      const followerNames = followerEngs.map(e => e.name);
 
       const newLeave = await api.leaves.create({
         userId: user.id,
@@ -336,6 +339,8 @@ export const AttendancePage: React.FC = () => {
         step1ReviewerName: step1Eng?.name || undefined,
         step2ReviewerId: step2ReviewerId || undefined,
         step2ReviewerName: step2Eng?.name || undefined,
+        followerIds: followerIds.length > 0 ? followerIds : undefined,
+        followerNames: followerNames.length > 0 ? followerNames : undefined,
       });
 
       setLeaves(prev => [newLeave, ...prev]);
@@ -343,6 +348,7 @@ export const AttendancePage: React.FC = () => {
       setLeaveReason('');
       setStep1ReviewerId('');
       setStep2ReviewerId('');
+      setFollowerIds([]);
 
       // Xác định người nhận thông báo đầu tiên
       let targetRecipientId = '';
@@ -366,6 +372,17 @@ export const AttendancePage: React.FC = () => {
         icon: 'event_busy',
         link: '/attendance?tab=leave',
       });
+
+      // Gửi thông báo cho những người theo dõi (Followers)
+      if (followerIds.length > 0) {
+        await addNotification({
+          title: 'Thông báo nghỉ phép (Theo dõi)',
+          message: `${user.name} đã tạo đơn xin ${leaveType.toLowerCase()} (${diffDays} ngày: từ ${formatDate(leaveStartDate)} đến ${formatDate(leaveEndDate)}). Bạn nhận thông báo này vì được thêm vào theo dõi.`,
+          type: `leave_follower:::${followerIds.join(',')}:::${followerNames.join(',')}`,
+          icon: 'visibility',
+          link: '/attendance?tab=leave',
+        });
+      }
     } catch (e: any) {
       alert('Lỗi tạo đơn xin nghỉ: ' + (e.message || JSON.stringify(e)));
     }
@@ -433,6 +450,17 @@ export const AttendancePage: React.FC = () => {
         icon: finalStatus === 'REJECTED' ? 'cancel' : 'check_circle',
         link: '/attendance?tab=leave',
       });
+
+      // Nếu đơn được duyệt hoàn tất và có người theo dõi, gửi thông báo cập nhật cho người theo dõi
+      if (finalStatus === 'APPROVED' && reviewLeave.followerIds && reviewLeave.followerIds.length > 0) {
+        await addNotification({
+          title: 'Đơn nghỉ phép đã duyệt (Theo dõi)',
+          message: `Đơn xin ${reviewLeave.leaveType.toLowerCase()} của ${reviewLeave.userName} (${reviewLeave.totalDays} ngày: từ ${formatDate(reviewLeave.startDate)} đến ${formatDate(reviewLeave.endDate)}) đã được phê duyệt.`,
+          type: `leave_follower_approved:::${reviewLeave.followerIds.join(',')}:::${(reviewLeave.followerNames || []).join(',')}`,
+          icon: 'event_available',
+          link: '/attendance?tab=leave',
+        });
+      }
     } catch (e: any) {
       alert('Lỗi duyệt đơn: ' + (e.message || JSON.stringify(e)));
     }
@@ -1046,6 +1074,12 @@ export const AttendancePage: React.FC = () => {
                             <span className="font-semibold text-slate-500">Lý do: </span>
                             <span>{l.reason}</span>
                           </div>
+                          {l.followerNames && l.followerNames.length > 0 && (
+                            <div className="text-slate-600 flex items-start gap-1">
+                              <span className="font-semibold text-slate-500 shrink-0">Theo dõi:</span>
+                              <span className="text-primary font-medium">{l.followerNames.join(', ')}</span>
+                            </div>
+                          )}
                           <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-200/60 text-[11px]">
                             <div>
                               <span className="text-slate-400 font-semibold block">Quản lý duyệt:</span>
@@ -1184,7 +1218,14 @@ export const AttendancePage: React.FC = () => {
                             {formatDate(l.startDate)} → {formatDate(l.endDate)}
                           </td>
                           <td className="p-3 text-center font-bold text-slate-800">{l.totalDays} ngày</td>
-                          <td className="p-3 text-slate-600 max-w-[180px] truncate" title={l.reason}>{l.reason}</td>
+                          <td className="p-3 text-slate-600 max-w-[200px]">
+                            <p className="truncate" title={l.reason}>{l.reason}</p>
+                            {l.followerNames && l.followerNames.length > 0 && (
+                              <p className="text-[10px] text-blue-600 font-medium truncate mt-0.5" title={`Người theo dõi: ${l.followerNames.join(', ')}`}>
+                                CC: {l.followerNames.join(', ')}
+                              </p>
+                            )}
+                          </td>
                           <td className="p-3 text-center whitespace-nowrap">
                             {l.status === 'PENDING_STEP1' && (
                               <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
@@ -1378,6 +1419,66 @@ export const AttendancePage: React.FC = () => {
                   </option>
                 ))}
               </CustomSelect>
+            </div>
+          </div>
+
+          {/* Ô Người theo dõi (Follow / CC) */}
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2">
+            <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-800">
+                <span className="material-symbols-outlined text-[16px] text-primary">visibility</span>
+                <span>Người theo dõi (Follow / CC)</span>
+              </span>
+              <span className="text-[11px] font-normal text-slate-400">(Tùy chọn - Nhận thông báo lịch nghỉ)</span>
+            </label>
+
+            <div className="space-y-2">
+              <CustomSelect
+                value=""
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val && !followerIds.includes(val)) {
+                    setFollowerIds(prev => [...prev, val]);
+                  }
+                }}
+                searchable={true}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
+              >
+                <option value="">+ Chọn người theo dõi / thông báo...</option>
+                {engineers
+                  .filter(eng => eng.id !== user?.id && !followerIds.includes(eng.id))
+                  .map(eng => (
+                    <option key={eng.id} value={eng.id}>
+                      {eng.name} ({eng.role || eng.title || 'Nhân viên'})
+                    </option>
+                  ))}
+              </CustomSelect>
+
+              {/* Danh sách người theo dõi đã chọn dạng chip */}
+              {followerIds.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {followerIds.map(fid => {
+                    const eng = engineers.find(e => e.id === fid);
+                    return (
+                      <span
+                        key={fid}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50/90 text-primary border border-blue-200/80 rounded-lg text-xs font-semibold animate-in fade-in"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">person</span>
+                        <span>{eng?.name || fid}</span>
+                        <button
+                          type="button"
+                          onClick={() => setFollowerIds(prev => prev.filter(id => id !== fid))}
+                          className="w-4 h-4 rounded-full bg-blue-200/70 hover:bg-red-100 hover:text-red-600 inline-flex items-center justify-center transition-colors text-slate-600 cursor-pointer"
+                          title="Bỏ chọn"
+                        >
+                          <span className="material-symbols-outlined text-[11px]">close</span>
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 

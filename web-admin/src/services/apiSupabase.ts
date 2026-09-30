@@ -1630,7 +1630,7 @@ export const api = {
       return (data || []).map(row => {
         try {
           const payload = JSON.parse(row.action);
-          if (payload.userId !== userId) return null;
+          if (payload.userId !== userId && !payload.followerIds?.includes(userId)) return null;
           return { id: row.id, ...payload };
         } catch { return null; }
       }).filter(Boolean);
@@ -1647,6 +1647,8 @@ export const api = {
       step1ReviewerName?: string;
       step2ReviewerId?: string;
       step2ReviewerName?: string;
+      followerIds?: string[];
+      followerNames?: string[];
     }) => {
       const payloadData: any = {
         userId: input.userId,
@@ -1661,6 +1663,8 @@ export const api = {
         step1ReviewerName: input.step1ReviewerName || null,
         step2ReviewerId: input.step2ReviewerId || null,
         step2ReviewerName: input.step2ReviewerName || null,
+        followerIds: input.followerIds || [],
+        followerNames: input.followerNames || [],
         createdAt: new Date().toISOString(),
       };
       const payload = {
