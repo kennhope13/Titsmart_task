@@ -199,92 +199,14 @@ export const UpdateNotifier: React.FC = () => {
       {/* ─── FULLSCREEN BLOCKING OVERLAY KHI ĐANG TẢI & CÀI ĐẶT BẢN CẬP NHẬT ─── */}
       {isUpdating && (
         <div 
-          className="fixed inset-0 z-[999999] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 select-none cursor-wait animate-fadeIn pointer-events-auto"
+          className="fixed inset-0 z-[999999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 select-none cursor-wait animate-in fade-in duration-200 pointer-events-auto"
           style={{ WebkitAppRegion: 'no-drag' } as any}
         >
-          <div className="bg-white rounded-2xl shadow-2xl border border-outline-variant max-w-md w-full overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="px-4 py-2.5 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
-              <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 truncate">
-                <span className="material-symbols-outlined text-[18px]">system_update</span>
-                <span className="truncate">Cập nhật hệ thống TITSMART</span>
-              </h3>
-              <span className="text-[11px] font-bold text-primary px-2 py-0.5 bg-blue-50 border border-blue-100 rounded-md">
-                v{state.version || 'mới'}
-              </span>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 flex flex-col items-center text-center">
-              {/* Status Icon */}
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-3 text-primary shadow-xs">
-                {state.status === 'downloaded' ? (
-                  <span className="material-symbols-outlined text-3xl text-emerald-600 animate-bounce">check_circle</span>
-                ) : (
-                  <span className="material-symbols-outlined text-3xl text-primary animate-spin">sync</span>
-                )}
-              </div>
-
-              {/* Title */}
-              <h4 className="text-base font-bold text-slate-800 mb-1">
-                {isInstalling 
-                  ? 'Đang cài đặt bản cập nhật...'
-                  : state.status === 'downloaded'
-                    ? 'Đã tải xong bản cập nhật!'
-                    : 'Đang tải bản cập nhật mới...'}
-              </h4>
-
-              {/* Version Comparison Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs mb-4">
-                <span className="text-slate-500 font-medium">
-                  Hiện tại: <strong className="text-slate-700 font-mono font-bold">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</strong>
-                </span>
-                <span className="material-symbols-outlined text-[13px] text-slate-400">arrow_forward</span>
-                <span className="text-primary font-bold font-mono">
-                  Mới: v{state.version || 'mới'}
-                </span>
-              </div>
-
-              {/* TITSMART Standard Progress Bar */}
-              {state.status === 'downloading' && (
-                <div className="w-full space-y-1.5 mb-2">
-                  <div className="flex justify-between items-center text-xs text-slate-500 font-medium">
-                    <span>
-                      {state.transferred && state.total 
-                        ? `${(state.transferred / (1024 * 1024)).toFixed(1)} MB / ${(state.total / (1024 * 1024)).toFixed(1)} MB`
-                        : 'Tiến độ tải dữ liệu'}
-                      {state.bytesPerSecond ? ` • ${(state.bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s` : ''}
-                    </span>
-                    <span className="text-primary font-bold text-xs font-mono">{state.percent ?? 0}%</span>
-                  </div>
-                  
-                  {/* Clean flat progress bar matching TITSMART app style */}
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/60">
-                    <div 
-                      className="bg-primary h-full transition-all duration-300 rounded-full"
-                      style={{ width: `${Math.max(state.percent ?? 0, 2)}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Actions for downloaded state */}
-              {state.status === 'downloaded' && !isInstalling && (
-                <button
-                  onClick={handleInstallAndRestart}
-                  className="w-full mt-3 py-2 px-4 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary/90 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-[18px]">restart_alt</span>
-                  Cài đặt & Khởi động lại ngay
-                </button>
-              )}
-
-              {isInstalling && (
-                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mt-3">
-                  <div className="bg-primary h-full w-full animate-pulse"></div>
-                </div>
-              )}
-            </div>
+          <div className="bg-white rounded-2xl shadow-2xl px-10 py-8 flex flex-col items-center justify-center min-w-[220px] border border-slate-100 animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
+            <span className="text-sm font-bold text-slate-800 tracking-wide">
+              Đang cập nhật...
+            </span>
           </div>
         </div>
       )}
