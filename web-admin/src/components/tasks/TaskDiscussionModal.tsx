@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Task } from '../../types';
-import { TaskDiscussionItem, parseTaskDiscussions } from '../../utils/taskDiscussion';
+import { TaskDiscussionItem, parseTaskDiscussions, appendTaskDiscussion } from '../../utils/taskDiscussion';
 import { useAuthStore } from '../../services/authStore';
+import { useRealtimeStore } from '../../services/realtimeStore';
 import { Modal } from '../common/Modal';
 import { uploadAttachment } from '../../utils/fileUploadHelper';
 
@@ -16,8 +17,8 @@ export interface TaskDiscussionModalProps {
   isAssignee?: boolean;
   onAcceptTask?: (task: Task) => void;
   onAccept?: (task: Task) => void;
-  onSendQuestion?: (task: Task, question: string) => Promise<void> | void;
-  onSendReply?: (task: Task, reply: string) => Promise<void> | void;
+  onSendQuestion?: (task: Task, question: string, file?: { url: string; type: 'image' | 'file'; name: string }) => Promise<void> | void;
+  onSendReply?: (task: Task, reply: string, file?: { url: string; type: 'image' | 'file'; name: string }) => Promise<void> | void;
   onApproveTask?: (task: Task) => Promise<void> | void;
   onApprove?: (task: Task) => Promise<void> | void;
 }
@@ -48,6 +49,12 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
   const isAssignee = propIsAssignee !== undefined
     ? propIsAssignee
     : (task?.assignedEngineerId === activeUserId || (task?.assignedEngineerName?.includes('|' + activeUserId) ?? false));
+
+  const isFollower = Boolean(
+    (task?.followerIds && task.followerIds.includes(activeUserId)) ||
+    (task?.followerNames && task.followerNames.some(n => n.toLowerCase() === activeUserName.toLowerCase() || (authUser?.name && n.toLowerCase() === authUser.name.toLowerCase()))) ||
+    (!isAssigner && !isAssignee)
+  );
 
   const onAcceptTask = propOnAcceptTask || propOnAccept;
   const onApproveTask = propOnApproveTask || propOnApprove;
@@ -125,27 +132,69 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
     }
   };
 
-  const handleQuestionSubmit = async () => {
-    if ((!inputText.trim() && !selectedFile) || !onSendQuestion) return;
+  const handleGenericSubmit = async () => {
+    if (!inputText.trim() && !selectedFile) return;
     setIsSubmitting(true);
     try {
-      await (onSendQuestion as any)(task, inputText.trim(), selectedFile || undefined);
+      if (isAssignee && hasQuestion && onSendQuestion) {
+        await (onSendQuestion as any)(task, inputText.trim(), selectedFile || undefined);
+      } else if (onSendReply) {
+        await (onSendReply as any)(task, inputText.trim(), selectedFile || undefined);
+      } else if (onSendQuestion) {
+        await (onSendQuestion as any)(task, inputText.trim(), selectedFile || undefined);
+      } else {
+        const store = useRealtimeStore.getState();
+        const senderRole = isFollower ? 'Người theo dõi' : (isAssigner ? 'Người giao việc' : 'Người nhận việc');
+        const updatedNotes = appendTaskDiscussion(task.notes || '', {
+          senderId: activeUserId,
+          senderName: activeUserName,
+          senderRole: senderRole,
+          type: isFollower ? 'note' : (isAssigner ? 'reply' : 'question'),
+          content: inputText.trim(),
+          fileUrl: selectedFile?.url,
+          fileType: selectedFile?.type,
+          fileName: selectedFile?.name
+        });
+        await store.updateTask(task.id, { notes: updatedNotes });
+      }
       setInputText('');
       setSelectedFile(null);
+    } catch (err) {
+      console.error('Lỗi khi gửi trao đổi:', err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleQuestionSubmit = async () => {
+    if (!inputText.trim() && !selectedFile) return;
+    if (onSendQuestion) {
+      setIsSubmitting(true);
+      try {
+        await (onSendQuestion as any)(task, inputText.trim(), selectedFile || undefined);
+        setInputText('');
+        setSelectedFile(null);
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      await handleGenericSubmit();
+    }
+  };
+
   const handleReplySubmit = async () => {
-    if ((!inputText.trim() && !selectedFile) || !onSendReply) return;
-    setIsSubmitting(true);
-    try {
-      await (onSendReply as any)(task, inputText.trim(), selectedFile || undefined);
-      setInputText('');
-      setSelectedFile(null);
-    } finally {
-      setIsSubmitting(false);
+    if (!inputText.trim() && !selectedFile) return;
+    if (onSendReply) {
+      setIsSubmitting(true);
+      try {
+        await (onSendReply as any)(task, inputText.trim(), selectedFile || undefined);
+        setInputText('');
+        setSelectedFile(null);
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      await handleGenericSubmit();
     }
   };
 
@@ -246,20 +295,34 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
                       <span className="text-xs font-bold text-slate-800">
                         {msg.senderName}
                       </span>
-                      {isAssignNote && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
-                          Ghi chú giao việc
+                      {msg.senderRole ? (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                          msg.senderRole === 'Người theo dõi'
+                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            : msg.senderRole === 'Người giao việc'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}>
+                          {msg.senderRole}
                         </span>
-                      )}
-                      {isQuestion && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-100 text-orange-800 rounded">
-                          Thắc mắc
-                        </span>
-                      )}
-                      {isReply && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-purple-100 text-purple-800 rounded">
-                          Phản hồi hướng dẫn
-                        </span>
+                      ) : (
+                        <>
+                          {isAssignNote && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                              Ghi chú giao việc
+                            </span>
+                          )}
+                          {isQuestion && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-100 text-orange-800 rounded">
+                              Thắc mắc
+                            </span>
+                          )}
+                          {isReply && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 bg-purple-100 text-purple-800 rounded">
+                              Phản hồi hướng dẫn
+                            </span>
+                          )}
+                        </>
                       )}
                       <span className="text-[11px] text-slate-400 font-mono">{formattedTime}</span>
                     </div>
@@ -418,11 +481,12 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
                     e.preventDefault();
                     if (isAssignee && (isWaitingAccept || hasQuestion)) handleQuestionSubmit();
                     else if (isAssigner && (hasQuestion || isWaitingAccept)) handleReplySubmit();
-                    else if (isAssigner && onSendReply) handleReplySubmit();
+                    else if (onSendReply) handleReplySubmit();
                     else if (onSendQuestion) handleQuestionSubmit();
+                    else handleGenericSubmit();
                   }
                 }}
-                placeholder="Nhập nội dung trao đổi, đính kèm ảnh hoặc tệp tin..."
+                placeholder={isFollower ? "Người theo dõi trao đổi, góp ý hoặc đính kèm tài liệu/ảnh..." : "Nhập nội dung trao đổi, đính kèm ảnh hoặc tệp tin..."}
                 rows={2}
                 className="flex-1 text-xs p-2.5 border border-slate-300 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white text-slate-800 resize-none font-medium"
               />
@@ -460,15 +524,15 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
               <button 
                 type="button"
                 onClick={onClose} 
-                className="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-2xs"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
               >
                 Đóng
               </button>
               <button 
                 type="button"
                 onClick={handleQuestionSubmit}
-                disabled={isSubmitting || !inputText.trim()}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
+                disabled={isSubmitting || (!inputText.trim() && !selectedFile)}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-base">send</span>
                 {isSubmitting ? 'Đang gửi...' : 'Gửi thắc mắc'}
@@ -480,7 +544,7 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
                     onAcceptTask(task);
                     onClose();
                   }} 
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-base">check_circle</span>
                   Xác nhận nhận việc
@@ -488,23 +552,22 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
               )}
             </>
           ) : isAssigner && (hasQuestion || isWaitingAccept) ? (
-
             <>
               <button 
                 type="button"
                 onClick={onClose} 
-                className="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-2xs"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
               >
                 Đóng
               </button>
               <button 
                 type="button"
                 onClick={handleReplySubmit}
-                disabled={isSubmitting || !inputText.trim()}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
+                disabled={isSubmitting || (!inputText.trim() && !selectedFile)}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-base">send</span>
-                {hasQuestion ? 'Phản hồi & Giao lại việc' : 'Lưu ghi chú'}
+                {isSubmitting ? 'Đang gửi...' : (hasQuestion ? 'Phản hồi & Giao lại việc' : 'Lưu ghi chú')}
               </button>
             </>
           ) : isAssigner && isWaitingApproval && onApproveTask ? (
@@ -512,30 +575,52 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
               <button 
                 type="button"
                 onClick={onClose} 
-                className="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-2xs"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
               >
                 Đóng
               </button>
+              {(inputText.trim() || selectedFile) && (
+                <button 
+                  type="button"
+                  onClick={handleGenericSubmit}
+                  disabled={isSubmitting}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-base">send</span>
+                  {isSubmitting ? 'Đang gửi...' : 'Gửi trao đổi'}
+                </button>
+              )}
               <button 
                 type="button"
                 onClick={async () => {
                   await onApproveTask(task);
                   onClose();
                 }} 
-                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-base">verified</span>
                 Nghiệm thu hoàn thành
               </button>
             </>
           ) : (
-            <button 
-              type="button"
-              onClick={onClose} 
-              className="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-2xs"
-            >
-              Đóng
-            </button>
+            <>
+              <button 
+                type="button"
+                onClick={onClose} 
+                className="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+              >
+                Đóng
+              </button>
+              <button 
+                type="button"
+                onClick={handleGenericSubmit}
+                disabled={isSubmitting || (!inputText.trim() && !selectedFile)}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-base">send</span>
+                {isSubmitting ? 'Đang gửi...' : 'Gửi trao đổi'}
+              </button>
+            </>
           )}
         </div>
       </div>

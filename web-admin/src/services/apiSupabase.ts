@@ -209,7 +209,35 @@ export const api = {
       if (projectId) query = query.eq('project_code', projectId);
       const { data, error } = await query;
       if (error) throw error;
-      return mapArray(data || []);
+      return mapArray(data || []).map((t: any) => {
+        // Parse followers from notes tag [FOLLOWERS:id1,id2:::name1,name2] or sourceRow
+        if (t.notes && typeof t.notes === 'string') {
+          const match = t.notes.match(/\[FOLLOWERS:([^\]]+)\]/i);
+          if (match) {
+            const raw = match[1];
+            const parts = raw.split(/\|{1,3}|:{1,3}/);
+            const idPart = parts[0] || '';
+            const namePart = parts[1] || '';
+            const ids = idPart.split(',').map((s: string) => s.replace(/^[:|]+|[:|]+$/g, '').trim()).filter(Boolean);
+            const names = namePart.split(',').map((s: string) => s.replace(/^[:|]+|[:|]+$/g, '').trim()).filter(Boolean);
+            if (ids.length > 0 && (!t.followerIds || t.followerIds.length === 0)) {
+              t.followerIds = ids;
+            }
+            if (names.length > 0 && (!t.followerNames || t.followerNames.length === 0)) {
+              t.followerNames = names;
+            }
+          }
+        }
+        if (t.sourceRow && typeof t.sourceRow === 'object') {
+          if (t.sourceRow.followerIds && (!t.followerIds || t.followerIds.length === 0)) {
+            t.followerIds = t.sourceRow.followerIds;
+          }
+          if (t.sourceRow.followerNames && (!t.followerNames || t.followerNames.length === 0)) {
+            t.followerNames = t.sourceRow.followerNames;
+          }
+        }
+        return t;
+      });
     },
     create: async (data: any) => {
       const payload = toSnakeCase(data);
@@ -218,23 +246,50 @@ export const api = {
       if (payload.assigner_id === '') payload.assigner_id = null;
       if (payload.reviewer_id === '') payload.reviewer_id = null;
 
-      const { data: result, error } = await supabase.from('tasks').insert(payload).select().single();
-      if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
-          delete payload.is_section_header;
-          delete payload.section_name;
-          delete payload.project_name;
-          delete payload.assigned_engineer_name;
-          delete payload.assigner_name;
-          delete payload.updated_by;
-          delete payload.updated_at;
-          const { data: retryResult, error: retryError } = await supabase.from('tasks').insert(payload).select().single();
-          if (retryError) throw retryError;
-          return toCamelCase({ ...data, ...retryResult });
+      // Encode followers safely in notes
+      if (data.followerIds && Array.isArray(data.followerIds) && data.followerIds.length > 0) {
+        const followerTag = `[FOLLOWERS:${data.followerIds.join(',')}:::${(data.followerNames || []).join(',')}]`;
+        if (!payload.notes || !payload.notes.includes('[FOLLOWERS:')) {
+          payload.notes = (payload.notes ? payload.notes + '\n' : '') + followerTag;
         }
-        throw error;
       }
-      return toCamelCase(result);
+
+      // Remove non-standard or virtual columns
+      delete payload.source_row;
+      delete payload.follower_ids;
+      delete payload.follower_names;
+      delete payload.category;
+
+      let lastError: any = null;
+      for (let attempt = 0; attempt < 7; attempt++) {
+        const { data: result, error } = await supabase.from('tasks').insert(payload).select().single();
+        if (!error && result) {
+          return toCamelCase({ ...data, ...result });
+        }
+        lastError = error;
+        if (error) {
+          const missingColMatch = (error.message || '').match(/Could not find the '([^']+)' column/i);
+          if (missingColMatch) {
+            delete payload[missingColMatch[1]];
+            continue;
+          }
+          if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+            if (attempt === 0) {
+              delete payload.is_section_header;
+              delete payload.section_name;
+              delete payload.project_name;
+              delete payload.assigned_engineer_name;
+              delete payload.assigner_name;
+              delete payload.reviewer_name;
+              delete payload.updated_by;
+              delete payload.updated_at;
+              continue;
+            }
+          }
+          break;
+        }
+      }
+      throw lastError;
     },
     createBatch: async (dataArray: any[]) => {
       const payloads = dataArray.map(data => {
@@ -243,12 +298,22 @@ export const api = {
         if (payload.assigned_engineer_id === '') payload.assigned_engineer_id = null;
         if (payload.assigner_id === '') payload.assigner_id = null;
         if (payload.reviewer_id === '') payload.reviewer_id = null;
+        if (data.followerIds && Array.isArray(data.followerIds) && data.followerIds.length > 0) {
+          const followerTag = `[FOLLOWERS:${data.followerIds.join(',')}:::${(data.followerNames || []).join(',')}]`;
+          if (!payload.notes || !payload.notes.includes('[FOLLOWERS:')) {
+            payload.notes = (payload.notes ? payload.notes + '\n' : '') + followerTag;
+          }
+        }
+        delete payload.source_row;
+        delete payload.follower_ids;
+        delete payload.follower_names;
+        delete payload.category;
         return payload;
       });
 
       const { data: result, error } = await supabase.from('tasks').insert(payloads).select();
       if (error) {
-        console.warn('Fallback: saving tasks batch without new columns. Error was:', error);
+        console.warn('Fallback: saving tasks batch without optional columns. Error was:', error);
         payloads.forEach(p => {
            delete p.is_section_header;
            delete p.section_name;
@@ -261,8 +326,13 @@ export const api = {
            delete p.due_date;
            delete p.priority;
            delete p.created_at;
+           delete p.updated_by;
+           delete p.updated_at;
            delete p.issue;
            delete p.issue_status;
+           delete p.source_row;
+           delete p.follower_ids;
+           delete p.follower_names;
         });
         const { data: retryResult, error: retryError } = await supabase.from('tasks').insert(payloads).select();
         if (retryError) throw retryError;
@@ -280,28 +350,54 @@ export const api = {
       if (payload.assigner_id === '') payload.assigner_id = null;
       if (payload.reviewer_id === '') payload.reviewer_id = null;
 
-      const { data: result, error } = await supabase.from('tasks').update(payload).eq('id', id).select().single();
-      if (error) {
-        if (error.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
-          delete payload.is_section_header;
-          delete payload.section_name;
-          delete payload.project_name;
-          delete payload.assigned_engineer_name;
-          delete payload.assigner_name;
-          delete payload.updated_by;
-          delete payload.updated_at;
-          const { data: retryResult, error: retryError } = await supabase.from('tasks').update(payload).eq('id', id).select().single();
-          if (retryError) {
-             if (retryError.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
-             throw retryError;
-          }
-          const audit = getCurrentAuditPayload();
-          return toCamelCase({ updated_by: audit.updated_by, updated_at: audit.updated_at, ...data, ...retryResult });
+      if (data.followerIds && Array.isArray(data.followerIds)) {
+        const followerTag = `[FOLLOWERS:${data.followerIds.join(',')}:::${(data.followerNames || []).join(',')}]`;
+        let existingNotes = payload.notes || '';
+        existingNotes = existingNotes.replace(/\[FOLLOWERS:[^\]]*\]/g, '').trim();
+        if (data.followerIds.length > 0) {
+          payload.notes = (existingNotes ? existingNotes + '\n' : '') + followerTag;
+        } else {
+          payload.notes = existingNotes;
         }
-        throw error;
       }
-      return toCamelCase(result);
+
+      delete payload.source_row;
+      delete payload.follower_ids;
+      delete payload.follower_names;
+      delete payload.category;
+
+      let lastError: any = null;
+      for (let attempt = 0; attempt < 7; attempt++) {
+        const { data: result, error } = await supabase.from('tasks').update(payload).eq('id', id).select().single();
+        if (!error && result) {
+          const audit = getCurrentAuditPayload();
+          return toCamelCase({ updated_by: audit.updated_by, updated_at: audit.updated_at, ...data, ...result });
+        }
+        lastError = error;
+        if (error) {
+          if (error.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
+          const missingColMatch = (error.message || '').match(/Could not find the '([^']+)' column/i);
+          if (missingColMatch) {
+            delete payload[missingColMatch[1]];
+            continue;
+          }
+          if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
+            if (attempt === 0) {
+              delete payload.is_section_header;
+              delete payload.section_name;
+              delete payload.project_name;
+              delete payload.assigned_engineer_name;
+              delete payload.assigner_name;
+              delete payload.reviewer_name;
+              delete payload.updated_by;
+              delete payload.updated_at;
+              continue;
+            }
+          }
+          break;
+        }
+      }
+      throw lastError;
     },
     delete: async (id: string) => {
       const { error } = await supabase.from('tasks').delete().eq('id', id);
@@ -1486,9 +1582,17 @@ export const api = {
       }
     },
     getAll: async () => {
-      const { data, error } = await supabase.from('notifications').select('*').order('timestamp', { ascending: false }).limit(50);
-      if (error) throw error;
-      return mapArray(data || []);
+      try {
+        const { data, error } = await supabase.from('notifications').select('*').order('timestamp', { ascending: false }).limit(50);
+        if (!error && data) return mapArray(data);
+        if (error) {
+          const { data: fbData, error: fbError } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(50);
+          if (!fbError && fbData) return mapArray(fbData);
+        }
+      } catch (err) {
+        console.warn('Notification getAll fallback:', err);
+      }
+      return [];
     },
     markRead: async (id: string) => {
       if (!id || !UUID_RE.test(id)) return { success: true };

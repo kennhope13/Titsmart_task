@@ -55,6 +55,8 @@ export interface Task {
   reviewerName?: string;
   dueDate?: string;
   priority?: TaskPriority;
+  followerIds?: string[];
+  followerNames?: string[];
   createdAt?: string;
   updatedBy?: string;
   updatedAt?: string;

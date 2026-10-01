@@ -74,6 +74,7 @@ export const parseTaskDiscussions = (notes?: string, issue?: string): TaskDiscus
     // Nếu không có [THREAD:...], chỉ lấy clean baseNotes nếu thực sự có ghi chú người dùng nhập
     const baseNotes = (threadIdx !== -1 ? notes.slice(0, threadIdx) : notes)
       .replace(/\[THREAD:[\s\S]*$/gi, '')
+      .replace(/\[FOLLOWERS:[^\]]*\]/gi, '')
       .replace(/\[order:[\d.]+\]/gi, '')
       .replace(/\[section\]/gi, '')
       .replace(/\[contractor\]/gi, '')
@@ -86,12 +87,12 @@ export const parseTaskDiscussions = (notes?: string, issue?: string): TaskDiscus
       .replace(/Đồng bộ từ phụ lục khi tạo dự án/gi, '')
       .split('|')
       .map(s => s.trim())
-      .filter(s => Boolean(s) && !s.startsWith('{') && !s.includes('"senderId"'))
+      .filter(s => Boolean(s) && !s.startsWith('{') && !s.includes('"senderId"') && !s.includes('[FOLLOWERS:'))
       .join(' | ')
       .trim();
 
     // Chỉ thêm nếu có nội dung ghi chú người dùng thực sự
-    if (baseNotes && baseNotes !== ']') {
+    if (baseNotes && baseNotes !== ']' && !baseNotes.startsWith('[FOLLOWERS:')) {
       result.push({
         id: 'legacy_note',
         senderName: 'Người giao việc',
@@ -160,11 +161,12 @@ export const appendTaskDiscussion = (
  */
 export const stripDiscussionThread = (notes?: string | null): string => {
   if (!notes || typeof notes !== 'string') return '';
-  const idx = notes.indexOf('[THREAD:');
-  if (idx === -1) return notes;
+  let str = notes.replace(/\[FOLLOWERS:[^\]]*\]/gi, '');
+  const idx = str.indexOf('[THREAD:');
+  if (idx === -1) return str.replace(/\[FOLLOWERS:[^\]]*\]/gi, '').trim();
   
-  const before = notes.slice(0, idx).trim();
-  const threadStr = notes.slice(idx);
+  const before = str.slice(0, idx).trim();
+  const threadStr = str.slice(idx);
   
   let depth = 0;
   let inString = false;
@@ -199,13 +201,17 @@ export const stripDiscussionThread = (notes?: string | null): string => {
   
   const after = endIdx !== -1 ? threadStr.slice(endIdx + 1).trim() : '';
   const result = [before, after].filter(Boolean).join(' ').trim();
-  return result.replace(/\[THREAD:[\s\S]*$/gi, '').trim();
+  return result.replace(/\[THREAD:[\s\S]*$/gi, '').replace(/\[FOLLOWERS:[^\]]*\]/gi, '').trim();
 };
 
 /**
  * Get latest message in discussion thread
  */
 export const getLatestDiscussion = (notes?: string, issue?: string): TaskDiscussionItem | null => {
-  const list = parseTaskDiscussions(notes, issue);
+  const list = parseTaskDiscussions(notes, issue).filter(item => {
+    if (!item.content) return false;
+    if (item.content.includes('[FOLLOWERS:')) return false;
+    return true;
+  });
   return list.length > 0 ? list[list.length - 1] : null;
 };

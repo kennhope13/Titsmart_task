@@ -1,8 +1,10 @@
 {
-  "version": "2.9.1",
-  "date": "2026-09-10",
+  "version": "3.8.140",
+  "date": "2026-10-01",
   "notes": [
-    "Sửa lỗi tổng hợp Nhân sự hiển thị trên Thẻ Dự Án (khớp chính xác theo ID dự án, Mã dự án và danh sách thành viên gán trực tiếp).",
-    "Tách biệt hoàn toàn thông tin 'NGƯỜI CẬP NHẬT' theo từng tab/mục độc lập (Quản lý công việc, Vật tư, Mua sắm, Chi phí)."
+    "Cập nhật tính năng Trao đổi & Thảo luận công việc cho Người theo dõi (Follower).",
+    "Tối ưu thanh công cụ giao việc trên thiết bị di động (nằm trên 1 hàng duy nhất).",
+    "Bỏ cột STT trong bảng Giao việc & Công việc trực tiếp để tối ưu hiển thị.",
+    "Khắc phục hiển thị 00:00 và lọc triệt để thẻ người theo dõi trong ghi chú."
   ]
 }

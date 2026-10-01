@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
+import { useLocation, useSearchParams, useNavigate, Navigate } from 'react-router-dom';
 import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { useRealtimeStore } from '../services/realtimeStore';
@@ -8,7 +8,7 @@ import { useAuthStore, hasPermission } from '../services/authStore';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
 import { Task } from '../types';
 import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
-import { appendTaskDiscussion, parseTaskDiscussions, getLatestDiscussion } from '../utils/taskDiscussion';
+import { appendTaskDiscussion, parseTaskDiscussions, getLatestDiscussion, stripDiscussionThread } from '../utils/taskDiscussion';
 import { getEngineersForProject } from '../utils/projectMemberUtils';
 import { uploadAttachment } from '../utils/fileUploadHelper';
 
@@ -107,10 +107,49 @@ export const TaskAssignmentPage: React.FC = () => {
       return myNames.some(n => taskAssignerName.includes(n) || n.includes(taskAssignerName));
     }
 
-    // 3. Nếu người giao là admin hoặc không có người giao cụ thể -> chỉ admin/quản trị viên mới được nghiệm thu
     const role = String(currentUser.role || '').toLowerCase();
     const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || currentUser.username === 'admin';
     return isAdmin;
+  };
+
+  const canDeleteTask = (currentUser: any, task: any): boolean => {
+    if (!currentUser || !task) return false;
+    const uRole = String(currentUser.role || '').toLowerCase();
+    const uId = String(currentUser.id || '').toLowerCase();
+    const uName = String(currentUser.name || '').toLowerCase();
+    const uUsername = String(currentUser.username || '').toLowerCase();
+
+    // 1. Quản trị viên tối cao luôn có quyền xóa
+    if (uRole === 'admin' || uRole === 'quản trị viên' || uUsername === 'admin') {
+      return true;
+    }
+
+    // 2. Người theo dõi TUYỆT ĐỐI KHÔNG CÓ QUYỀN XÓA
+    const isFollower = (Array.isArray(task.followerIds) && task.followerIds.some((fid: string) => String(fid).toLowerCase() === uId)) ||
+      (Array.isArray(task.followerNames) && task.followerNames.some((fn: string) => {
+        const clean = String(fn).replace(/^[:|]+|[:|]+$/g, '').trim().toLowerCase();
+        return clean && (clean.includes(uName) || uName.includes(clean) || (uUsername && clean.includes(uUsername)));
+      }));
+    if (isFollower) return false;
+
+    // 3. Người được giao việc (nhận việc) cũng không có quyền xóa
+    const isAssignee = (task.assignedEngineerId && String(task.assignedEngineerId).toLowerCase() === uId) ||
+      (task.assignedEngineerName && (
+        task.assignedEngineerName.toLowerCase().includes(uId) ||
+        task.assignedEngineerName.toLowerCase().includes(uName) ||
+        (uUsername && task.assignedEngineerName.toLowerCase().includes(uUsername))
+      ));
+    if (isAssignee) return false;
+
+    // 4. Người giao việc chính chủ hoặc Quản lý có quyền
+    const taskAssignerId = String(task.assignerId || '').trim().toLowerCase();
+    const taskAssignerName = String(task.assignerName || '').trim().toLowerCase();
+    const isCreatorOrAssigner = (taskAssignerId && taskAssignerId === uId) ||
+      (taskAssignerName && (taskAssignerName.includes(uName) || uName.includes(taskAssignerName) || (uUsername && taskAssignerName === uUsername)));
+
+    const isManager = uRole === 'pm' || uRole === 'quản lý dự án' || uRole === 'manager' || uRole === 'quản lý' || hasPermission(currentUser, 'EDIT_TASKS');
+
+    return Boolean(isCreatorOrAssigner || isManager);
   };
 
   const handleQuickApprove = async (e: React.MouseEvent, task: any) => {
@@ -144,43 +183,69 @@ export const TaskAssignmentPage: React.FC = () => {
 
   const handleSendReply = async (task: Task, replyText: string, fileAttachment?: { url: string; type: 'image' | 'file'; name: string }) => {
     const store = useRealtimeStore.getState();
-    const userName = user?.name || user?.username || 'Người giao việc';
+    const userName = user?.name || user?.username || 'Thành viên';
     const userId = user?.id || '';
+
+    const isAssigner = task.assignerId === userId || user?.role === 'admin' || user?.username === 'admin';
+    const isAssignee = task.assignedEngineerId === userId || (task.assignedEngineerName?.includes('|' + userId) ?? false);
+    const isFollower = (task.followerIds && task.followerIds.includes(userId)) || (!isAssigner && !isAssignee);
+
+    const senderRole = isFollower ? 'Người theo dõi' : (isAssigner ? 'Người giao việc' : 'Người nhận việc');
+
     const updatedNotes = appendTaskDiscussion(task.notes || '', {
       senderId: userId,
       senderName: userName,
-      senderRole: 'Người giao việc',
-      type: 'reply',
+      senderRole: senderRole,
+      type: isFollower ? 'note' : (isAssigner ? 'reply' : 'note'),
       content: replyText,
       fileUrl: fileAttachment?.url,
       fileType: fileAttachment?.type,
       fileName: fileAttachment?.name
     });
 
-    const nextStatus = task.status === 'Đang làm' ? 'Đang làm' : 'Chờ nhận việc';
+    const nextStatus = (task.status === 'Đang làm' || task.status === 'Chờ nghiệm thu' || task.status === 'Hoàn thành')
+      ? task.status
+      : (isAssigner ? 'Chờ nhận việc' : task.status);
 
     updateTask(task.id, {
       status: nextStatus,
       notes: updatedNotes
     });
 
-    triggerToast('Đã gửi phản hồi hướng dẫn!', 'success');
-    store.logActivity(`Người giao việc ${userName} đã PHẢN HỒI THẮC MẮC về hạng mục: "${task.name}"`, task.projectCode);
+    triggerToast(isFollower ? 'Đã gửi trao đổi (Người theo dõi)!' : 'Đã gửi phản hồi trao đổi!', 'success');
+    store.logActivity(`${senderRole} ${userName} đã TRAO ĐỔI về hạng mục: "${task.name}"`, task.projectCode);
 
-    if (store.addNotification && (task.assignedEngineerId || task.assignedEngineerName)) {
+    if (store.addNotification) {
       const parts = String(task.assignedEngineerName || '').split('|');
       const engIds = (parts.length > 1 ? parts[1] : (task.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
       const engNames = (parts[0] || (task.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
 
-      await store.addNotification({
-        title: 'Phản hồi hướng dẫn công việc',
-        message: `${userName} đã phản hồi thắc mắc về công việc "${task.name}" [${task.projectCode}]: "${replyText}".`,
-        link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
-        type: `task_reply:::${engIds.join(',')}:::${engNames.join(',')}`,
-        icon: 'chat',
-        senderId: userId,
-        senderName: userName
-      });
+      const followerIds = task.followerIds || [];
+      const followerNames = task.followerNames || [];
+
+      const allRecipientIds = Array.from(new Set([
+        task.assignerId,
+        ...engIds,
+        ...followerIds
+      ])).filter(id => id && id !== userId);
+
+      const allRecipientNames = Array.from(new Set([
+        task.assignerName,
+        ...engNames,
+        ...followerNames
+      ])).filter(Boolean);
+
+      if (allRecipientIds.length > 0) {
+        await store.addNotification({
+          title: `Trao đổi công việc: ${task.name}`,
+          message: `${senderRole} ${userName} đã trao đổi về công việc "${task.name}" [${task.projectCode}]: "${replyText || (fileAttachment ? (fileAttachment.type === 'image' ? 'Đã gửi 1 hình ảnh' : `Đã đính kèm tệp: ${fileAttachment.name}`) : '')}".`,
+          link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
+          type: `task_reply:::${allRecipientIds.join(',')}:::${allRecipientNames.join(',')}`,
+          icon: 'forum',
+          senderId: userId,
+          senderName: userName
+        });
+      }
     }
   };
 
@@ -196,15 +261,29 @@ export const TaskAssignmentPage: React.FC = () => {
   };
   
   const [filterProjectCode, setFilterProjectCode] = useState('all');
-  const urlTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'completed' | 'direct' | 'my-tasks' | null;
+  const urlTab = searchParams.get('tab') as 'project_tasks' | 'unassigned' | 'assigned' | 'completed' | 'direct' | 'my-tasks' | null;
   const highlightedTaskId = searchParams.get('taskId');
   const highlightKeyword = searchParams.get('highlight')?.toLowerCase().trim() || null;
   const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'unassigned' | 'assigned' | 'completed' | 'direct' | 'my-tasks'>(() => urlTab || (location.state as any)?.tab || 'assigned');
+  const [activeTab, setActiveTab] = useState<'project_tasks' | 'unassigned' | 'assigned' | 'completed' | 'direct' | 'my-tasks'>(() => {
+    if (urlTab === 'direct') return 'direct';
+    return 'project_tasks';
+  });
+
+  // Project Task Filter State
+  const [projectFilterStatus, setProjectFilterStatus] = useState<'all' | 'unassigned' | 'pending' | 'in_progress' | 'review' | 'completed' | 'overdue'>(() => {
+    if (urlTab === 'unassigned') return 'unassigned';
+    if (urlTab === 'completed') return 'completed';
+    if (urlTab === 'assigned') return 'in_progress';
+    return 'all';
+  });
+  const [projectSearch, setProjectSearch] = useState('');
 
   // Direct Task Assignment State
   const [directTaskName, setDirectTaskName] = useState('');
   const [directEngineerId, setDirectEngineerId] = useState('');
+  const [directFollowerIds, setDirectFollowerIds] = useState<string[]>([]);
+  const [batchFollowerIds, setBatchFollowerIds] = useState<string[]>([]);
   const [directProjectCode, setDirectProjectCode] = useState('COMPANY');
   const [directDueDate, setDirectDueDate] = useState('');
   const [directPriority, setDirectPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
@@ -213,6 +292,7 @@ export const TaskAssignmentPage: React.FC = () => {
   const [directShowAttachMenu, setDirectShowAttachMenu] = useState(false);
   const [isDirectUploading, setIsDirectUploading] = useState(false);
   const [savingDirectTask, setSavingDirectTask] = useState(false);
+  const [isDirectModalOpen, setIsDirectModalOpen] = useState(false);
   const [directFilterStatus, setDirectFilterStatus] = useState<'all' | 'pending' | 'in_progress' | 'review' | 'completed' | 'overdue'>('all');
   const [directSearch, setDirectSearch] = useState('');
   const [directPersonFilter, setDirectPersonFilter] = useState('all');
@@ -286,6 +366,9 @@ export const TaskAssignmentPage: React.FC = () => {
       const finalProjectCode = isInternal ? 'COMPANY' : directProjectCode;
       const finalProjectName = isInternal ? 'Nội bộ Công ty / Văn phòng' : chosenProject.name;
 
+      const followerEngs = engineers.filter(e => directFollowerIds.includes(e.id));
+      const followerNames = followerEngs.map(e => e.name);
+
       let initialNotes = '';
       if (directNotes.trim() || directFile) {
         initialNotes = appendTaskDiscussion('', {
@@ -317,6 +400,8 @@ export const TaskAssignmentPage: React.FC = () => {
         sectionName: 'Giao việc trực tiếp',
         assignedEngineerId: assignedEng.id,
         assignedEngineerName: assignedEng.name,
+        followerIds: directFollowerIds.length > 0 ? directFollowerIds : undefined,
+        followerNames: followerNames.length > 0 ? followerNames : undefined,
         assignerId: assignerId,
         assignerName: assignerName,
         dueDate: directDueDate || undefined,
@@ -327,7 +412,7 @@ export const TaskAssignmentPage: React.FC = () => {
         updatedBy: assignerName
       };
 
-      await store.addTask(newTaskData);
+      const createdTaskId = await store.addTask(newTaskData);
 
       store.logActivity(
         `Quản lý ${assignerName} đã GIAO VIỆC TRỰC TIẾP "${newTaskData.name}" cho ${assignedEng.name}`,
@@ -335,14 +420,28 @@ export const TaskAssignmentPage: React.FC = () => {
       );
 
       if (store.addNotification) {
+        const taskIdParam = createdTaskId ? `taskId=${encodeURIComponent(createdTaskId)}&` : '';
         await store.addNotification({
-          title: `Giao việc trực tiếp: ${newTaskData.name}`,
+          title: `Giao việc: ${newTaskData.name}`,
           message: `${assignerName} đã giao công việc trực tiếp "${newTaskData.name}" [${finalProjectName}] cho bạn${directDueDate ? ` (Hạn: ${directDueDate})` : ''}.`,
+          link: `/my-tasks?${taskIdParam}highlight=${encodeURIComponent(newTaskData.name)}&category=direct`,
           type: `task_assigned:::${assignedEng.id}:::${assignedEng.name}`,
           icon: 'assignment_ind',
           senderId: assignerId,
           senderName: assignerName
         });
+
+        if (directFollowerIds.length > 0) {
+          await store.addNotification({
+            title: `Theo dõi công việc: ${newTaskData.name}`,
+            message: `${assignerName} đã thêm bạn vào danh sách THEO DÕI công việc "${newTaskData.name}" (phụ trách: ${assignedEng.name}) [${finalProjectName}].`,
+            link: `/my-tasks?${taskIdParam}highlight=${encodeURIComponent(newTaskData.name)}&category=direct`,
+            type: `task_follower:::${directFollowerIds.join(',')}:::${followerNames.join(',')}`,
+            icon: 'visibility',
+            senderId: assignerId,
+            senderName: assignerName
+          });
+        }
       }
 
       triggerToast(`Đã giao việc thành công cho ${assignedEng.name}!`, 'success');
@@ -350,7 +449,9 @@ export const TaskAssignmentPage: React.FC = () => {
       setDirectNotes('');
       setDirectDueDate('');
       setDirectFile(null);
+      setDirectFollowerIds([]);
       setDirectShowAttachMenu(false);
+      setIsDirectModalOpen(false);
     } catch (err) {
       console.error('Lỗi khi tạo công việc trực tiếp:', err);
       triggerToast('Lỗi khi giao việc. Vui lòng thử lại!', 'warning');
@@ -360,6 +461,11 @@ export const TaskAssignmentPage: React.FC = () => {
   };
 
   const handleDeleteDirectTask = (taskId: string, taskName: string) => {
+    const target = tasks.find(t => t.id === taskId);
+    if (target && !canDeleteTask(user, target)) {
+      triggerToast('Người theo dõi và người nhận việc không có quyền xóa công việc!', 'warning');
+      return;
+    }
     if (!window.confirm(`Bạn có chắc chắn muốn xóa công việc "${taskName}"?`)) return;
     const store = useRealtimeStore.getState();
     store.deleteTask(taskId);
@@ -377,11 +483,27 @@ export const TaskAssignmentPage: React.FC = () => {
   }, [highlightedTaskId, tasks, searchParams]);
 
   useEffect(() => {
-    const qTab = searchParams.get('tab') as 'unassigned' | 'assigned' | 'completed' | 'direct' | 'my-tasks' | null;
-    if (qTab) {
-      setActiveTab(qTab);
+    const qTab = searchParams.get('tab') as 'project_tasks' | 'unassigned' | 'assigned' | 'completed' | 'direct' | 'my-tasks' | null;
+    if (qTab === 'direct') {
+      setActiveTab('direct');
+    } else if (qTab === 'unassigned') {
+      setActiveTab('project_tasks');
+      setProjectFilterStatus('unassigned');
+    } else if (qTab === 'completed') {
+      setActiveTab('project_tasks');
+      setProjectFilterStatus('completed');
+    } else if (qTab === 'assigned') {
+      setActiveTab('project_tasks');
+      setProjectFilterStatus('in_progress');
+    } else if (qTab === 'project_tasks') {
+      setActiveTab('project_tasks');
     } else if ((location.state as any)?.tab) {
-      setActiveTab((location.state as any).tab);
+      const stTab = (location.state as any).tab;
+      if (stTab === 'direct') {
+        setActiveTab('direct');
+      } else {
+        setActiveTab('project_tasks');
+      }
     }
     if (highlightedTaskId || highlightKeyword) {
       setIsHighlightActive(true);
@@ -397,35 +519,83 @@ export const TaskAssignmentPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const displayedTasks = useMemo(() => {
-    let filtered = tasks.filter(t => !t.isSectionHeader);
-    if (activeTab === 'unassigned') {
-      filtered = filtered.filter(t => !t.assignedEngineerId || t.status === 'Chưa làm' || t.status === 'Chờ nhận việc');
-    } else if (activeTab === 'completed') {
-      filtered = filtered.filter(t => t.status === 'Hoàn thành');
-    } else if (activeTab === 'direct') {
-      // In direct tab, we filter direct tasks below in directDisplayedTasks
-      return [];
-    } else {
-      // 'assigned' = Đang thực hiện (đã giao việc, đang làm hoặc chờ nghiệm thu)
-      filtered = filtered.filter(t => t.assignedEngineerId && t.status !== 'Chưa làm' && t.status !== 'Chờ nhận việc' && t.status !== 'Hoàn thành');
-    }
-    
+  // Danh sách công việc dự án (không bao gồm việc nội bộ / trực tiếp)
+  const projectAllTasks = useMemo(() => {
+    return tasks.filter(t => !t.isSectionHeader && !(
+      t.sectionName === 'Giao việc trực tiếp' ||
+      t.projectCode === 'COMPANY' ||
+      (t.code && t.code.startsWith('TASK-DIRECT'))
+    ));
+  }, [tasks]);
+
+  const projectKpiStats = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    let list = projectAllTasks;
     if (filterProjectCode !== 'all') {
-      filtered = filtered.filter(t => t.projectCode === filterProjectCode);
+      list = list.filter(t => t.projectCode === filterProjectCode);
+    }
+    const total = list.length;
+    const unassigned = list.filter(t => !t.assignedEngineerId || t.status === 'Chưa làm').length;
+    const pending = list.filter(t => t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc').length;
+    const inProgress = list.filter(t => t.status === 'Đang làm').length;
+    const review = list.filter(t => t.status === 'Chờ nghiệm thu').length;
+    const completed = list.filter(t => t.status === 'Hoàn thành' || t.isDone).length;
+    const overdue = list.filter(t => {
+      if (t.status === 'Hoàn thành' || t.isDone) return false;
+      if (!t.dueDate) return false;
+      return String(t.dueDate).split('T')[0] < todayStr;
+    }).length;
+
+    return { total, unassigned, pending, inProgress, review, completed, overdue };
+  }, [projectAllTasks, filterProjectCode]);
+
+  const projectDisplayedTasks = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    let list = projectAllTasks;
+
+    if (filterProjectCode !== 'all') {
+      list = list.filter(t => t.projectCode === filterProjectCode);
     }
 
-    // Sắp xếp đưa những công việc VỪA MỚI CẬP NHẬT lên đầu bảng
-    return filtered.sort((a, b) => {
-      // Ưu tiên dòng đang được click từ thông báo
+    if (projectFilterStatus === 'unassigned') {
+      list = list.filter(t => !t.assignedEngineerId || t.status === 'Chưa làm');
+    } else if (projectFilterStatus === 'pending') {
+      list = list.filter(t => t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc');
+    } else if (projectFilterStatus === 'in_progress') {
+      list = list.filter(t => t.status === 'Đang làm');
+    } else if (projectFilterStatus === 'review') {
+      list = list.filter(t => t.status === 'Chờ nghiệm thu');
+    } else if (projectFilterStatus === 'completed') {
+      list = list.filter(t => t.status === 'Hoàn thành' || t.isDone);
+    } else if (projectFilterStatus === 'overdue') {
+      list = list.filter(t => {
+        if (t.status === 'Hoàn thành' || t.isDone) return false;
+        if (!t.dueDate) return false;
+        return String(t.dueDate).split('T')[0] < todayStr;
+      });
+    }
+
+    if (projectSearch.trim()) {
+      const q = projectSearch.toLowerCase().trim();
+      list = list.filter(t => 
+        t.name?.toLowerCase().includes(q) ||
+        t.sectionName?.toLowerCase().includes(q) ||
+        t.assignedEngineerName?.toLowerCase().includes(q) ||
+        t.projectName?.toLowerCase().includes(q) ||
+        t.projectCode?.toLowerCase().includes(q) ||
+        t.notes?.toLowerCase().includes(q)
+      );
+    }
+
+    return list.sort((a, b) => {
       if (highlightedTaskId && a.id === highlightedTaskId) return -1;
       if (highlightedTaskId && b.id === highlightedTaskId) return 1;
 
-      const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-      const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      const timeA = a.updatedAt || a.createdAt ? new Date(a.updatedAt || a.createdAt!).getTime() : 0;
+      const timeB = b.updatedAt || b.createdAt ? new Date(b.updatedAt || b.createdAt!).getTime() : 0;
       return timeB - timeA;
     });
-  }, [tasks, filterProjectCode, activeTab, highlightedTaskId]);
+  }, [projectAllTasks, filterProjectCode, projectFilterStatus, projectSearch, highlightedTaskId]);
 
   // Danh sách công việc giao trực tiếp
   const directAllTasks = useMemo(() => {
@@ -555,13 +725,13 @@ export const TaskAssignmentPage: React.FC = () => {
         clearTimeout(fadeTimer);
       };
     }
-  }, [isHighlightActive, highlightedTaskId, highlightKeyword, displayedTasks]);
+  }, [isHighlightActive, highlightedTaskId, highlightKeyword, projectDisplayedTasks, directDisplayedTasks]);
 
   const handleToggleSelectAll = () => {
-    if (selectedTaskIds.length === displayedTasks.length && displayedTasks.length > 0) {
+    if (selectedTaskIds.length === projectDisplayedTasks.length && projectDisplayedTasks.length > 0) {
       setSelectedTaskIds([]);
     } else {
-      setSelectedTaskIds(displayedTasks.map(t => t.id));
+      setSelectedTaskIds(projectDisplayedTasks.map(t => t.id));
     }
   };
 
@@ -586,6 +756,9 @@ export const TaskAssignmentPage: React.FC = () => {
     const assignerId = user?.id || '';
     const assignerName = user?.name || user?.username || 'Quản lý';
 
+    const followerEngs = engineers.filter(e => batchFollowerIds.includes(e.id));
+    const followerNames = followerEngs.map(e => e.name);
+
     selectedTaskIds.forEach(id => {
       const existingTask = tasks.find(t => t.id === id);
       let updatedNotes = existingTask?.notes || '';
@@ -604,6 +777,8 @@ export const TaskAssignmentPage: React.FC = () => {
       updateTask(id, {
         assignedEngineerId: selectedEngineerId,
         assignedEngineerName: engName,
+        followerIds: batchFollowerIds.length > 0 ? batchFollowerIds : undefined,
+        followerNames: followerNames.length > 0 ? followerNames : undefined,
         assignerId: assignerId,
         assignerName: assignerName,
         status: 'Chờ nhận việc',
@@ -618,17 +793,31 @@ export const TaskAssignmentPage: React.FC = () => {
       store.addNotification({
         title: `Giao việc: ${engName}`,
         message: `${assignerName} đã giao ${selectedTaskIds.length} công việc mới cho ${engName}${assignNote.trim() ? `: "${assignNote.trim()}"` : ''}${selectedFile ? (selectedFile.type === 'image' ? ' [Kèm 1 hình ảnh]' : ` [Kèm tệp: ${selectedFile.name}]`) : '.'}`,
+        link: '/my-tasks?tab=pending&category=project',
         type: `task_assigned:::${selectedEngineerId}:::${engName}`,
         icon: 'assignment_ind',
         senderId: assignerId,
         senderName: assignerName
       });
+
+      if (batchFollowerIds.length > 0) {
+        store.addNotification({
+          title: `Theo dõi ${selectedTaskIds.length} công việc mới`,
+          message: `${assignerName} đã thêm bạn vào danh sách THEO DÕI ${selectedTaskIds.length} công việc giao cho ${engName}.`,
+          link: '/my-tasks?category=project',
+          type: `task_follower:::${batchFollowerIds.join(',')}:::${followerNames.join(',')}`,
+          icon: 'visibility',
+          senderId: assignerId,
+          senderName: assignerName
+        });
+      }
     }
 
     triggerToast(`Đã giao ${selectedTaskIds.length} hạng mục cho ${engName}!`, 'success');
     setSelectedTaskIds([]);
     setIsModalOpen(false);
     setSelectedEngineerId('');
+    setBatchFollowerIds([]);
     setAssignNote('');
     setSelectedFile(null);
     setShowAttachMenu(false);
@@ -645,9 +834,7 @@ export const TaskAssignmentPage: React.FC = () => {
     }
   };
 
-  if (user?.role !== 'admin' && user?.role !== 'Quản trị viên') {
-    return <div className="p-8 text-center text-red-500 font-bold">Bạn không có quyền truy cập trang này.</div>;
-  }
+
 
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
@@ -658,233 +845,15 @@ export const TaskAssignmentPage: React.FC = () => {
               CÔNG VIỆC
             </h1>
           </div>
-          <SharedTaskTabs activeTab={activeTab as any} onTabChange={(t) => { setActiveTab(t); setSelectedTaskIds([]); }} />
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-between md:justify-start">
-          {activeTab !== 'direct' && (
-            <CustomSelect 
-              value={filterProjectCode} 
-              onChange={(e) => setFilterProjectCode(e.target.value)}
-              className="flex-1 md:w-[220px] h-[34px] text-xs font-bold text-slate-800"
-            >
-              <option value="all">-- Tất cả Dự án --</option>
-              {projects.map(p => (
-                <option key={p.id} value={p.code}>{p.name}</option>
-              ))}
-            </CustomSelect>
-          )}
-
-          {activeTab === 'unassigned' && (
-            <button 
-              disabled={selectedTaskIds.length === 0}
-              onClick={() => setIsModalOpen(true)}
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded text-xs sm:text-sm font-bold shadow-sm transition-all whitespace-nowrap shrink-0 ${
-                selectedTaskIds.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              }`}
-            >
-              <span className="material-symbols-outlined text-base">send</span>
-              Giao {selectedTaskIds.length > 0 ? selectedTaskIds.length : ''} việc
-            </button>
-          )}
-
-          {activeTab !== 'direct' && (
-            <button 
-              onClick={() => setActiveTab('direct')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs sm:text-sm font-bold shadow-xs transition-all whitespace-nowrap shrink-0 bg-primary hover:bg-primary/90 text-white"
-              title="Giao việc trực tiếp / ngoài dự án"
-            >
-              <span className="material-symbols-outlined text-[16px]">add_task</span>
-              <span>Giao việc nhanh</span>
-            </button>
-          )}
+          <SharedTaskTabs activeTab={activeTab as any} onTabChange={(t) => { setActiveTab(t as any); setSelectedTaskIds([]); }} />
         </div>
       </div>
 
       {activeTab === 'direct' ? (
-        /* GIAO DIỆN GIAO VIỆC TRỰC TIẾP / VIỆC RIÊNG NGOÀI DỰ ÁN (EDGE-TO-EDGE & TỐI ƯU MOBILE) */
+        /* GIAO DIỆN GIAO VIỆC TRỰC TIẾP / VIỆC PHÁT SINH (EDGE-TO-EDGE & TỐI ƯU MOBILE) */
         <div className="flex-1 overflow-hidden flex flex-col bg-white">
           
-          {/* Form Giao việc trực tiếp */}
-          <div className="border-b border-slate-200 bg-slate-50/60 p-3 sm:p-4 shrink-0">
-            <form onSubmit={handleCreateDirectTask} className="flex flex-col gap-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5 sm:gap-3">
-                
-                {/* Tên công việc */}
-                <div className="sm:col-span-2 md:col-span-6 flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-700">
-                    Nội dung công việc <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={directTaskName}
-                    onChange={(e) => setDirectTaskName(e.target.value)}
-                    placeholder="VD: Kiểm tra tình trạng vật tư kho, Soạn hợp đồng dịch vụ..."
-                    className="w-full px-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white font-medium"
-                  />
-                </div>
-
-                {/* Chọn nhân sự nhận việc */}
-                <div className="md:col-span-3 flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-700">
-                    Người nhận việc <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    required
-                    value={directEngineerId}
-                    onChange={(e) => setDirectEngineerId(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white font-medium"
-                  >
-                    <option value="">-- Chọn nhân sự --</option>
-                    {engineers.map(eng => (
-                      <option key={eng.id} value={eng.id}>
-                        {eng.name} {eng.title ? `(${eng.title})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Thuộc Dự án / Nội bộ */}
-                <div className="md:col-span-3 flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-700">
-                    Dự án / Phạm vi
-                  </label>
-                  <select
-                    value={directProjectCode}
-                    onChange={(e) => setDirectProjectCode(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white font-medium text-slate-800"
-                  >
-                    <option value="COMPANY">Nội bộ Công ty / Văn phòng</option>
-                    {projects.map(p => (
-                      <option key={p.id} value={p.code}>
-                        {p.name} ({p.code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Hạn hoàn thành (Deadline) */}
-                <div className="md:col-span-3 flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-700">
-                    Hạn hoàn thành
-                  </label>
-                  <input
-                    type="date"
-                    value={directDueDate}
-                    onChange={(e) => setDirectDueDate(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white font-medium"
-                  />
-                </div>
-
-                {/* Mức độ ưu tiên */}
-                <div className="md:col-span-3 flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-700">
-                    Mức độ ưu tiên
-                  </label>
-                  <select
-                    value={directPriority}
-                    onChange={(e) => setDirectPriority(e.target.value as any)}
-                    className="w-full px-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white font-medium"
-                  >
-                    <option value="Low">Thấp</option>
-                    <option value="Medium">Trung bình</option>
-                    <option value="High">Ưu tiên cao / Gấp</option>
-                  </select>
-                </div>
-
-                {/* Ghi chú & Đính kèm */}
-                <div className="sm:col-span-2 md:col-span-4 flex flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700">
-                      Ghi chú / Yêu cầu
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setDirectShowAttachMenu(!directShowAttachMenu)}
-                      className={`text-[11px] px-2 py-0.5 rounded border flex items-center gap-1 font-semibold transition-colors cursor-pointer ${
-                        directShowAttachMenu ? 'bg-blue-100 border-blue-300 text-primary' : 'bg-white border-slate-200 text-slate-600 hover:text-primary'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[13px]">attach_file</span>
-                      <span>{directFile ? 'Đã đính kèm' : 'Đính kèm'}</span>
-                    </button>
-                  </div>
-
-                  {directFile && (
-                    <div className="flex items-center justify-between bg-blue-50 px-2.5 py-1 rounded text-[11px] text-blue-900 border border-blue-200 mb-1">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="material-symbols-outlined text-[14px] text-primary shrink-0">
-                          {directFile.type === 'image' ? 'image' : 'attach_file'}
-                        </span>
-                        <span className="truncate font-medium">{directFile.name}</span>
-                      </div>
-                      <button type="button" onClick={() => setDirectFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
-                    </div>
-                  )}
-
-                  {directShowAttachMenu && (
-                    <div className="relative">
-                      <div className="fixed inset-0 z-40" onClick={() => setDirectShowAttachMenu(false)} />
-                      <div className="absolute right-0 top-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 flex flex-col gap-1 min-w-[170px] animate-in fade-in zoom-in-95 duration-150">
-                        <button
-                          type="button"
-                          onClick={() => { setDirectShowAttachMenu(false); directCameraInputRef.current?.click(); }}
-                          className="flex items-center gap-2 px-3 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-primary rounded-lg text-left"
-                        >
-                          <span className="material-symbols-outlined text-emerald-600 text-[16px]">photo_camera</span>
-                          <span>Chụp ảnh</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setDirectShowAttachMenu(false); directImageInputRef.current?.click(); }}
-                          className="flex items-center gap-2 px-3 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-primary rounded-lg text-left"
-                        >
-                          <span className="material-symbols-outlined text-blue-600 text-[16px]">image</span>
-                          <span>Thư viện ảnh</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setDirectShowAttachMenu(false); directFileInputRef.current?.click(); }}
-                          className="flex items-center gap-2 px-3 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-primary rounded-lg text-left"
-                        >
-                          <span className="material-symbols-outlined text-amber-500 text-[16px]">folder_open</span>
-                          <span>Tệp tài liệu</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <input type="file" ref={directCameraInputRef} onChange={handleDirectFileUpload} className="hidden" accept="image/*" capture="environment" />
-                  <input type="file" ref={directImageInputRef} onChange={handleDirectFileUpload} className="hidden" accept="image/*" />
-                  <input type="file" ref={directFileInputRef} onChange={handleDirectFileUpload} className="hidden" accept="*/*" />
-
-                  <input
-                    type="text"
-                    value={directNotes}
-                    onChange={(e) => setDirectNotes(e.target.value)}
-                    onPaste={handleDirectPaste}
-                    placeholder="Nhập hướng dẫn, lưu ý..."
-                    className="w-full px-3 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white"
-                  />
-                </div>
-
-                {/* Nút submit */}
-                <div className="sm:col-span-2 md:col-span-2 flex items-end">
-                  <button
-                    type="submit"
-                    disabled={savingDirectTask || isDirectUploading}
-                    className="w-full h-[32px] sm:h-[34px] px-4 bg-primary hover:bg-primary/90 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">send</span>
-                    <span>{savingDirectTask ? 'Đang gửi...' : 'Giao việc'}</span>
-                  </button>
-                </div>
-
-              </div>
-            </form>
-          </div>
-
-          {/* Thanh Filter & Search đồng bộ */}
+          {/* Thanh Filter & Search & Nút Giao việc */}
           <div className="border-b border-slate-200 bg-white px-3 sm:px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shrink-0">
             {/* Filter Status Chips */}
             <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
@@ -946,80 +915,70 @@ export const TaskAssignmentPage: React.FC = () => {
               )}
             </div>
 
-            {/* Bộ lọc Người nhận & Search */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <select
-                value={directPersonFilter}
-                onChange={(e) => setDirectPersonFilter(e.target.value)}
-                className="px-2.5 py-1 text-xs font-semibold border border-slate-300 rounded-lg bg-white focus:border-primary focus:ring-1 focus:ring-primary flex-1 sm:flex-initial"
-              >
-                <option value="all">-- Tất cả nhân sự --</option>
-                {engineers.map(eng => (
-                  <option key={eng.id} value={eng.id}>{eng.name}</option>
-                ))}
-              </select>
-
-              <div className="relative flex-1 sm:w-48">
+            {/* Actions: Search & Nút Giao việc */}
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 flex-nowrap">
+              <div className="relative flex-1 sm:w-60 md:w-72 lg:w-80 sm:flex-initial">
                 <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[15px]">search</span>
                 <input
                   type="text"
                   value={directSearch}
                   onChange={(e) => setDirectSearch(e.target.value)}
-                  placeholder="Tìm việc..."
-                  className="w-full pl-7 pr-2.5 py-1 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white"
+                  placeholder="Tìm nội dung, người nhận, ghi chú..."
+                  className="w-full pl-8 pr-7 py-1 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white h-[32px] font-medium"
                 />
+                {directSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setDirectSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                )}
               </div>
+
+              <button
+                type="button"
+                onClick={() => setIsDirectModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer bg-primary text-white hover:bg-primary/90 h-[32px]"
+                title="Giao việc"
+              >
+                <span className="material-symbols-outlined text-[16px]">add</span>
+                <span className="hidden sm:inline">Giao việc</span>
+              </button>
             </div>
           </div>
 
           {/* Bảng Danh sách Công việc Đã giao Trực tiếp tràn viền edge-to-edge */}
           <div className="flex-1 overflow-auto custom-scrollbar bg-white" onScroll={handleTableScroll}>
-            <table className="w-full text-left border-collapse text-xs min-w-[900px]">
+            <table className="w-full text-left border-collapse text-xs min-w-[950px]">
               <thead className="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase sticky top-0 z-10 shadow-[0_1px_0_0_#e2e8f0]">
                 <tr>
-                  <th className="py-2.5 px-3 w-12 text-center border-r border-slate-200">STT</th>
+                  <th className="py-2.5 px-3 w-36 border-r border-slate-200">Dự án</th>
                   <th className="py-2.5 px-4 border-r border-slate-200">Nội dung công việc</th>
-                  <th className="py-2.5 px-4 w-44 border-r border-slate-200">Người nhận việc</th>
-                  <th className="py-2.5 px-4 w-44 border-r border-slate-200">Dự án / Phạm vi</th>
-                  <th className="py-2.5 px-3 w-28 text-center border-r border-slate-200">Hạn chót</th>
-                  <th className="py-2.5 px-3 w-24 text-center border-r border-slate-200">Ưu tiên</th>
-                  <th className="py-2.5 px-3 w-32 text-center border-r border-slate-200">Trạng thái</th>
-                  <th className="py-2.5 px-3 w-28 text-center">Thao tác</th>
+                  <th className="py-2.5 px-3 w-36 border-r border-slate-200">Người nhận việc</th>
+                  <th className="py-2.5 px-3 w-36 border-r border-slate-200">Người theo dõi</th>
+                  <th className="py-2.5 px-3 w-24 text-center border-r border-slate-200">Hạn chót</th>
+                  <th className="py-2.5 px-3 w-20 text-center border-r border-slate-200">Ưu tiên</th>
+                  <th className="py-2.5 px-3 w-28 text-center border-r border-slate-200">Trạng thái</th>
+                  <th className="py-2.5 px-3 w-24 text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 font-medium">
                 {directDisplayedTasks.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-8 text-center text-slate-400 italic">
-                      Không có công việc trực tiếp nào phù hợp.
+                      Không có công việc phát sinh nào phù hợp.
                     </td>
                   </tr>
                 ) : (
-                  directDisplayedTasks.map((t, idx) => {
+                  directDisplayedTasks.map((t) => {
                     const todayStr = new Date().toISOString().split('T')[0];
                     const isOverdue = t.dueDate && String(t.dueDate).split('T')[0] < todayStr && t.status !== 'Hoàn thành' && !t.isDone;
 
                     return (
                       <tr key={t.id} className="hover:bg-blue-50/40 transition-colors">
-                        <td className="py-2.5 px-3 text-center text-slate-400 font-bold border-r border-slate-200">{idx + 1}</td>
-                        <td className="py-2.5 px-4 border-r border-slate-200">
-                          <div className="font-bold text-slate-900 text-xs">{t.name}</div>
-                          {t.notes && (
-                            <div className="text-[11px] text-slate-500 line-clamp-2 mt-0.5 flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[13px] text-slate-400 shrink-0">notes</span>
-                              <span>{t.notes.replace(/\[\d{4}-\d{2}-\d{2}[^\]]*\]/g, '').trim()}</span>
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-4 border-r border-slate-200">
-                          <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-blue-100 text-primary flex items-center justify-center text-[10px] font-black">
-                              {t.assignedEngineerName?.[0] || 'N'}
-                            </span>
-                            <span>{t.assignedEngineerName?.split('|')[0] || 'Chưa giao'}</span>
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-4 border-r border-slate-200">
+                        <td className="py-2.5 px-3 border-r border-slate-200">
                           {t.projectCode === 'COMPANY' || !t.projectCode ? (
                             <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px] border border-slate-200">
                               Nội bộ / Văn phòng
@@ -1028,6 +987,59 @@ export const TaskAssignmentPage: React.FC = () => {
                             <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-bold text-[10px] border border-blue-200">
                               {t.projectName || t.projectCode}
                             </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-4 border-r border-slate-200">
+                          <div className="font-bold text-slate-900 text-xs">{t.name}</div>
+                          {(() => {
+                            const latestDisc = getLatestDiscussion(t.notes, t.issue);
+                            const cleanNote = stripDiscussionThread(t.notes)
+                              .replace(/\[FOLLOWERS:[^\]]*\]/gi, '')
+                              .replace(/\[\d{4}-\d{2}-\d{2}[^\]]*\]/g, '')
+                              .trim();
+                            const discContent = latestDisc?.content?.replace(/\[FOLLOWERS:[^\]]*\]/gi, '').trim() || '';
+                            const displayNote = discContent || cleanNote;
+                            const hasFile = latestDisc?.fileUrl || latestDisc?.fileName;
+                            if (!displayNote && !hasFile) return null;
+                            return (
+                              <div className="text-[11px] text-slate-500 line-clamp-2 mt-0.5 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px] text-slate-400 shrink-0">
+                                  {hasFile ? 'attach_file' : 'notes'}
+                                </span>
+                                <span className="truncate">
+                                  {displayNote || (latestDisc?.fileName ? `Tệp đính kèm: ${latestDisc.fileName}` : 'Có ghi chú đính kèm')}
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </td>
+                        <td className="py-2.5 px-3 border-r border-slate-200">
+                          <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-blue-100 text-primary flex items-center justify-center text-[10px] font-black shrink-0">
+                              {t.assignedEngineerName?.[0] || 'N'}
+                            </span>
+                            <span className="truncate">{t.assignedEngineerName?.split('|')[0] || 'Chưa giao'}</span>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 border-r border-slate-200">
+                          {t.followerNames && t.followerNames.length > 0 ? (
+                            <div className="flex flex-wrap gap-1" title={t.followerNames.map(f => f.replace(/^[:|]+|[:|]+$/g, '').trim()).filter(Boolean).join(', ')}>
+                              {t.followerNames.map((fn: string, fIdx: number) => {
+                                const cleanName = String(fn).replace(/^[:|]+|[:|]+$/g, '').trim();
+                                if (!cleanName) return null;
+                                return (
+                                  <span
+                                    key={fIdx}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-semibold border border-slate-200"
+                                  >
+                                    <span className="material-symbols-outlined text-[11px] text-blue-600">visibility</span>
+                                    <span>{cleanName}</span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic font-normal text-[11px]">—</span>
                           )}
                         </td>
                         <td className="py-2.5 px-3 text-center border-r border-slate-200">
@@ -1081,14 +1093,16 @@ export const TaskAssignmentPage: React.FC = () => {
                             >
                               <span className="material-symbols-outlined text-[15px]">chat</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteDirectTask(t.id, t.name)}
-                              className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded transition-colors"
-                              title="Xóa công việc"
-                            >
-                              <span className="material-symbols-outlined text-[15px]">delete</span>
-                            </button>
+                            {canDeleteTask(user, t) && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteDirectTask(t.id, t.name)}
+                                className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded transition-colors"
+                                title="Xóa công việc"
+                              >
+                                <span className="material-symbols-outlined text-[15px]">delete</span>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1101,45 +1115,163 @@ export const TaskAssignmentPage: React.FC = () => {
 
         </div>
       ) : (
-        /* GIAO DIỆN BẢNG CÔNG VIỆC DỰ ÁN TRUYỀN THỐNG */
-        <div className="flex-1 overflow-hidden flex flex-col border-t border-slate-200">
-          <div 
-            className="w-full h-full overflow-auto custom-scrollbar bg-white"
-            onScroll={handleTableScroll}
-          >
-            <table className="w-full text-left border-collapse text-sm min-w-[1000px]">
+        /* GIAO DIỆN BẢNG CÔNG VIỆC DỰ ÁN (SUB-TABS & EDGE-TO-EDGE) */
+        <div className="flex-1 overflow-hidden flex flex-col bg-white">
+          
+          {/* Thanh Filter & Search & Action đồng bộ */}
+          <div className="border-b border-slate-200 bg-white px-3 sm:px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shrink-0">
+            {/* Filter Status Chips */}
+            <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
+              <button
+                type="button"
+                onClick={() => setProjectFilterStatus('all')}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                  projectFilterStatus === 'all' ? 'bg-primary text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Tất cả ({projectKpiStats.total})
+              </button>
+              <button
+                type="button"
+                onClick={() => setProjectFilterStatus('unassigned')}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                  projectFilterStatus === 'unassigned' ? 'bg-slate-700 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Cần phân công ({projectKpiStats.unassigned})
+              </button>
+              <button
+                type="button"
+                onClick={() => setProjectFilterStatus('pending')}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                  projectFilterStatus === 'pending' ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                }`}
+              >
+                Chờ nhận ({projectKpiStats.pending})
+              </button>
+              <button
+                type="button"
+                onClick={() => setProjectFilterStatus('in_progress')}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                  projectFilterStatus === 'in_progress' ? 'bg-blue-600 text-white shadow-xs' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                }`}
+              >
+                Đang làm ({projectKpiStats.inProgress})
+              </button>
+              <button
+                type="button"
+                onClick={() => setProjectFilterStatus('review')}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                  projectFilterStatus === 'review' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                }`}
+              >
+                Chờ nghiệm thu ({projectKpiStats.review})
+              </button>
+              <button
+                type="button"
+                onClick={() => setProjectFilterStatus('completed')}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                  projectFilterStatus === 'completed' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                }`}
+              >
+                Hoàn thành ({projectKpiStats.completed})
+              </button>
+              {projectKpiStats.overdue > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setProjectFilterStatus('overdue')}
+                  className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                    projectFilterStatus === 'overdue' ? 'bg-red-600 text-white shadow-xs' : 'bg-red-50 text-red-700 hover:bg-red-100'
+                  }`}
+                >
+                  Trễ hạn ({projectKpiStats.overdue})
+                </button>
+              )}
+            </div>
+
+            {/* Actions & Filters: Giao việc button (if unassigned), Project Dropdown, Search */}
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 flex-wrap sm:flex-nowrap">
+              {projectFilterStatus === 'unassigned' && (
+                <button 
+                  disabled={selectedTaskIds.length === 0}
+                  onClick={() => setIsModalOpen(true)}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold shadow-xs transition-all whitespace-nowrap shrink-0 ${
+                    selectedTaskIds.length > 0 ? 'bg-primary text-white hover:bg-primary/90 cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">send</span>
+                  Giao {selectedTaskIds.length > 0 ? selectedTaskIds.length : ''} việc
+                </button>
+              )}
+
+              <CustomSelect 
+                value={filterProjectCode} 
+                onChange={(e) => setFilterProjectCode(e.target.value)}
+                searchable={true}
+                className="w-full sm:w-[190px] md:w-[210px] h-[32px] text-xs font-semibold bg-white shrink-0"
+              >
+                <option value="all">-- Tất cả Dự án --</option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.code}>{p.name}</option>
+                ))}
+              </CustomSelect>
+
+              <div className="relative w-full sm:w-60 md:w-72 lg:w-80 shrink-0">
+                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[15px]">search</span>
+                <input
+                  type="text"
+                  value={projectSearch}
+                  onChange={(e) => setProjectSearch(e.target.value)}
+                  placeholder="Tìm việc dự án..."
+                  className="w-full pl-8 pr-7 py-1 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white h-[32px] font-medium"
+                />
+                {projectSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setProjectSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Bảng Danh sách Công việc Dự án tràn viền edge-to-edge */}
+          <div className="flex-1 overflow-auto custom-scrollbar bg-white" onScroll={handleTableScroll}>
+            <table className="w-full text-left border-collapse text-xs min-w-[1000px]">
               <thead className="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase sticky top-0 z-10 shadow-[0_1px_0_0_#e2e8f0]">
                 <tr>
-                  {activeTab === 'unassigned' && (
-                    <th className={`py-2.5 px-3 w-[50px] min-w-[50px] bg-slate-50 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${
-                      isScrolledHorizontally ? 'hidden sm:table-cell sticky left-0 z-20' : 'sticky left-0 z-20'
-                    }`}>
+                  {projectFilterStatus === 'unassigned' && (
+                    <th className="py-2.5 px-3 w-10 text-center border-r border-slate-200">
                       <input 
                         type="checkbox" 
                         className="w-4 h-4 cursor-pointer accent-primary"
-                        checked={displayedTasks.length > 0 && selectedTaskIds.length === displayedTasks.length}
+                        checked={projectDisplayedTasks.length > 0 && selectedTaskIds.length === projectDisplayedTasks.length}
                         onChange={handleToggleSelectAll}
                       />
                     </th>
                   )}
-                  <th className={`py-2.5 px-4 w-[250px] border-r border-slate-200 bg-slate-50 ${
-                    isScrolledHorizontally ? 'sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''
-                  }`}>Dự án</th>
+                  <th className="py-2.5 px-4 w-44 border-r border-slate-200">Dự án</th>
                   <th className="py-2.5 px-4 border-r border-slate-200">Nội dung công việc</th>
-                  <th className="py-2.5 px-4 w-40 border-r border-slate-200">Người phụ trách</th>
-                  <th className="py-2.5 px-4 w-32 border-r border-slate-200">Trạng thái</th>
-                  <th className="py-2.5 px-4 w-20 text-center border-r border-slate-200">KL</th>
-                  <th className="py-2.5 px-4 w-20 text-center border-r border-slate-200">ĐVT</th>
-                  <th className="py-2.5 px-4 w-40 border-r border-slate-200 text-center">NGƯỜI CẬP NHẬT</th>
+                  <th className="py-2.5 px-3 w-36 border-r border-slate-200">Người phụ trách</th>
+                  <th className="py-2.5 px-3 w-36 border-r border-slate-200">Người theo dõi</th>
+                  <th className="py-2.5 px-3 w-24 text-center border-r border-slate-200">Khối lượng</th>
+                  <th className="py-2.5 px-3 w-28 text-center border-r border-slate-200">Trạng thái</th>
+                  <th className="py-2.5 px-4 w-36 border-r border-slate-200 text-center">Người cập nhật</th>
+                  <th className="py-2.5 px-3 w-24 text-center">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
-                {displayedTasks.length === 0 ? (
+              <tbody className="divide-y divide-slate-200 font-medium">
+                {projectDisplayedTasks.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-500 font-medium italic">Không có công việc nào</td>
+                    <td colSpan={projectFilterStatus === 'unassigned' ? 9 : 8} className="py-8 text-center text-slate-400 italic">
+                      Không có công việc dự án nào phù hợp.
+                    </td>
                   </tr>
                 ) : (
-                  displayedTasks.map((t, idx) => {
+                  projectDisplayedTasks.map((t) => {
                     const p = projects.find(proj => proj.code === t.projectCode);
                     const isChecked = selectedTaskIds.includes(t.id);
                     const isTargetTask = isHighlightActive && (
@@ -1149,23 +1281,22 @@ export const TaskAssignmentPage: React.FC = () => {
                         t.sectionName?.toLowerCase().includes(highlightKeyword)
                       ))
                     );
+
                     return (
                       <tr 
                         key={t.id} 
-                        className={`transition-all cursor-pointer group ${
+                        className={`transition-colors cursor-pointer group ${
                           isTargetTask 
-                            ? 'highlighted-task-assignment-row bg-amber-100/60 hover:bg-amber-100/80 border-l-4 border-l-amber-500 border-y border-amber-300/70 ring-1 ring-inset ring-amber-300/50 font-medium' 
-                            : isChecked && activeTab === 'unassigned' 
-                              ? 'bg-blue-50/50' 
-                              : 'bg-white hover:bg-blue-50/50'
-                        }`} 
+                            ? 'highlighted-task-assignment-row bg-amber-100/60 hover:bg-amber-100/80 border-l-4 border-l-amber-500' 
+                            : isChecked && projectFilterStatus === 'unassigned' 
+                              ? 'bg-blue-50/70' 
+                              : 'hover:bg-blue-50/40'
+                        }`}
                         onClick={() => handleRowClick(t, p?.code || t.projectCode)}
-                        title={activeTab !== 'unassigned' ? "Nhấn vào dòng này để xem chi tiết công việc trong dự án" : undefined}
+                        title="Nhấn vào dòng này để xem chi tiết công việc trong dự án"
                       >
-                        {activeTab === 'unassigned' && (
-                          <td className={`py-2.5 px-3 text-center border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isChecked ? 'bg-blue-50' : 'bg-white'} ${
-                            isScrolledHorizontally ? 'hidden sm:table-cell sticky left-0 z-10' : 'sticky left-0 z-10'
-                          }`} onClick={e => e.stopPropagation()}>
+                        {projectFilterStatus === 'unassigned' && (
+                          <td className="py-2.5 px-3 text-center border-r border-slate-200" onClick={e => e.stopPropagation()}>
                             <input 
                               type="checkbox" 
                               className="w-4 h-4 cursor-pointer accent-primary"
@@ -1174,20 +1305,20 @@ export const TaskAssignmentPage: React.FC = () => {
                             />
                           </td>
                         )}
-                        <td className={`py-2.5 px-4 font-bold text-slate-700 text-[11px] uppercase border-r border-slate-200 ${isChecked ? 'bg-blue-50' : 'bg-white'} ${
-                          isScrolledHorizontally ? 'sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''
-                        }`}>{p ? p.name : t.projectCode}</td>
-                        <td className="py-2.5 px-4 font-medium text-slate-800 text-xs border-l border-slate-200 flex flex-col">
+                        <td className="py-2.5 px-4 font-bold text-slate-800 text-xs border-r border-slate-200">
+                          <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-bold text-[10px] border border-blue-200">
+                            {p ? p.name : t.projectCode}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-4 border-r border-slate-200">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="group-hover:text-blue-600 transition-colors">{t.name}</span>
-                            {activeTab !== 'unassigned' && (
-                              <span className="material-symbols-outlined text-[15px] text-slate-300 group-hover:text-blue-600 transition-colors shrink-0" title="Đi đến công việc">
-                                arrow_forward
-                              </span>
-                            )}
+                            <span className="font-bold text-slate-900 group-hover:text-primary transition-colors">{t.name}</span>
+                            <span className="material-symbols-outlined text-[15px] text-slate-300 group-hover:text-primary transition-colors shrink-0" title="Đi đến dự án">
+                              arrow_forward
+                            </span>
                           </div>
                           {t.sectionName && t.sectionName !== t.name && (
-                            <span className="text-[10px] text-slate-500 mt-1">{t.sectionName}</span>
+                            <div className="text-[10px] text-slate-400 mt-0.5 font-medium">{t.sectionName}</div>
                           )}
                           {t.status === 'Có thắc mắc' && (() => {
                             const latestDisc = getLatestDiscussion(t.notes, t.issue);
@@ -1209,38 +1340,78 @@ export const TaskAssignmentPage: React.FC = () => {
                             );
                           })()}
                         </td>
-                        <td className="py-2.5 px-4 text-xs font-bold text-slate-700 border-l border-slate-200">
-                          {t.assignedEngineerName ? t.assignedEngineerName.split('|')[0] : <span className="text-slate-400 font-normal italic">Chưa có</span>}
+                        <td className="py-2.5 px-3 border-r border-slate-200">
+                          {t.assignedEngineerName ? (
+                            <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                              <span className="w-5 h-5 rounded-full bg-blue-100 text-primary flex items-center justify-center text-[10px] font-black shrink-0">
+                                {t.assignedEngineerName[0]}
+                              </span>
+                              <span className="truncate">{t.assignedEngineerName.split('|')[0]}</span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 font-normal italic">Chưa phân công</span>
+                          )}
                         </td>
-                        <td className="py-2.5 px-4 border-l border-slate-200">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`inline-block px-2.5 py-1 rounded text-[11px] font-bold ${
-                              t.status === 'Có thắc mắc' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                              t.status === 'Chờ nhận việc' ? 'bg-amber-100 text-amber-700' :
-                              t.status === 'Đang làm' ? 'bg-blue-100 text-blue-700' :
-                              t.status === 'Chờ nghiệm thu' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' :
-                              t.status === 'Hoàn thành' ? 'bg-emerald-100 text-emerald-700' :
-                              'bg-slate-100 text-slate-500'
-                            }`}>
-                              {t.status || 'Chưa làm'}
-                            </span>
+                        <td className="py-2.5 px-3 border-r border-slate-200">
+                          {t.followerNames && t.followerNames.length > 0 ? (
+                            <div className="flex flex-wrap gap-1" title={t.followerNames.map(f => f.replace(/^[:|]+|[:|]+$/g, '').trim()).filter(Boolean).join(', ')}>
+                              {t.followerNames.map((fn: string, fIdx: number) => {
+                                const cleanName = String(fn).replace(/^[:|]+|[:|]+$/g, '').trim();
+                                if (!cleanName) return null;
+                                return (
+                                  <span
+                                    key={fIdx}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-semibold border border-slate-200"
+                                  >
+                                    <span className="material-symbols-outlined text-[11px] text-blue-600">visibility</span>
+                                    <span>{cleanName}</span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic font-normal text-[11px]">—</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 text-center border-r border-slate-200 text-slate-700 font-bold">
+                          {t.volume || '-'} {t.unit || ''}
+                        </td>
+                        <td className="py-2.5 px-3 text-center border-r border-slate-200">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-block ${
+                            t.status === 'Hoàn thành' || t.isDone ? 'bg-emerald-100 text-emerald-800' :
+                            t.status === 'Chờ nghiệm thu' ? 'bg-indigo-100 text-indigo-800 font-black ring-1 ring-indigo-300' :
+                            t.status === 'Đang làm' ? 'bg-blue-100 text-blue-800' :
+                            t.status === 'Có thắc mắc' ? 'bg-amber-100 text-amber-800' :
+                            t.status === 'Chờ nhận việc' ? 'bg-amber-50 text-amber-700' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {t.status || 'Chưa làm'}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-4 border-r border-slate-200 text-center">
+                          <AuditInfoCell updatedBy={t.updatedBy} updatedAt={t.updatedAt} />
+                        </td>
+                        <td className="py-2.5 px-3 text-center" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-1">
                             {canApproveTask(user, t) && (
                               <button
                                 type="button"
                                 onClick={(e) => handleQuickApprove(e, t)}
-                                className="px-2 py-0.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold text-[10px] rounded shadow-xs flex items-center gap-1 transition-all"
-                                title="Nghiệm thu hoàn thành ngay lập tức"
+                                className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs transition-colors"
+                                title="Nghiệm thu hoàn thành"
                               >
-                                <span className="material-symbols-outlined text-[13px]">verified</span>
-                                Nghiệm thu
+                                <span className="material-symbols-outlined text-[15px]">verified</span>
                               </button>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => setDiscussionTask(t)}
+                              className="p-1 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-primary rounded transition-colors"
+                              title="Trao đổi, hướng dẫn"
+                            >
+                              <span className="material-symbols-outlined text-[15px]">chat</span>
+                            </button>
                           </div>
-                        </td>
-                        <td className="py-2.5 px-4 text-center text-slate-600 font-medium text-xs border-l border-slate-200">{t.volume}</td>
-                        <td className="py-2.5 px-4 text-center text-slate-600 font-medium text-xs border-l border-slate-200">{t.unit}</td>
-                        <td className="py-2.5 px-4 border-l border-slate-200">
-                          <AuditInfoCell updatedBy={t.updatedBy} updatedAt={t.updatedAt} />
                         </td>
                       </tr>
                     );
@@ -1248,6 +1419,270 @@ export const TaskAssignmentPage: React.FC = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Giao việc trực tiếp / Phát sinh */}
+      {isDirectModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto">
+            {/* Modal Header */}
+            <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-[22px]">add_task</span>
+                Giao việc phát sinh
+              </h2>
+              <button 
+                type="button"
+                onClick={() => setIsDirectModalOpen(false)} 
+                className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Modal Body / Form */}
+            <form onSubmit={handleCreateDirectTask} className="flex flex-col">
+              <div className="p-5 sm:p-6 flex flex-col gap-4 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                
+                {/* Tên công việc */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs sm:text-sm font-bold text-slate-700">
+                    Nội dung công việc <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={directTaskName}
+                    onChange={(e) => setDirectTaskName(e.target.value)}
+                    placeholder="VD: Kiểm tra tình trạng vật tư kho, Soạn hợp đồng dịch vụ..."
+                    className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white font-medium h-[38px]"
+                  />
+                </div>
+
+                {/* Thuộc Dự án (Riêng 1 dòng) */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs sm:text-sm font-bold text-slate-700">
+                    Dự án
+                  </label>
+                  <CustomSelect
+                    value={directProjectCode}
+                    onChange={(e) => setDirectProjectCode(e.target.value)}
+                    searchable={true}
+                    className="w-full h-[38px] text-xs sm:text-sm font-medium text-slate-800 bg-white"
+                  >
+                    <option value="COMPANY">Nội bộ Công ty / Văn phòng</option>
+                    {projects.map(p => (
+                      <option key={p.id} value={p.code}>
+                        {p.name} ({p.code})
+                      </option>
+                    ))}
+                  </CustomSelect>
+                </div>
+
+                {/* Hàng 2 cột: Người nhận việc & Người theo dõi */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Chọn nhân sự nhận việc */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs sm:text-sm font-bold text-slate-700">
+                      Người nhận việc <span className="text-red-500">*</span>
+                    </label>
+                    <CustomSelect
+                      value={directEngineerId}
+                      onChange={(e) => setDirectEngineerId(e.target.value)}
+                      searchable={true}
+                      placeholder="-- Chọn nhân sự --"
+                      className="w-full h-[38px] text-xs sm:text-sm font-medium text-slate-800 bg-white"
+                    >
+                      <option value="">-- Chọn nhân sự --</option>
+                      {engineers.map(eng => (
+                        <option key={eng.id} value={eng.id}>
+                          {eng.name} {eng.title ? `(${eng.title})` : ''}
+                        </option>
+                      ))}
+                    </CustomSelect>
+                  </div>
+
+                  {/* Người theo dõi */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs sm:text-sm font-bold text-slate-700 flex items-center justify-between">
+                      <span>Người theo dõi</span>
+                      <span className="text-xs font-normal text-slate-400">(Tùy chọn)</span>
+                    </label>
+                    <CustomSelect
+                      value=""
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val && !directFollowerIds.includes(val)) {
+                          setDirectFollowerIds(prev => [...prev, val]);
+                        }
+                      }}
+                      searchable={true}
+                      placeholder="+ Thêm người theo dõi..."
+                      className="w-full h-[38px] text-xs sm:text-sm font-medium text-slate-800 bg-white"
+                    >
+                      <option value="">+ Thêm người theo dõi...</option>
+                      {engineers
+                        .filter(eng => eng.id !== directEngineerId && !directFollowerIds.includes(eng.id))
+                        .map(eng => (
+                          <option key={eng.id} value={eng.id}>
+                            {eng.name} {eng.title ? `(${eng.title})` : ''}
+                          </option>
+                        ))}
+                    </CustomSelect>
+                    {directFollowerIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {directFollowerIds.map(fid => {
+                          const eng = engineers.find(e => e.id === fid);
+                          return (
+                            <span
+                              key={fid}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg text-xs font-semibold"
+                            >
+                              <span>{eng?.name || fid}</span>
+                              <button
+                                type="button"
+                                onClick={() => setDirectFollowerIds(prev => prev.filter(id => id !== fid))}
+                                className="text-red-500 hover:text-red-700 font-bold ml-1 cursor-pointer"
+                              >✕</button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Hạn hoàn thành (Deadline) */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs sm:text-sm font-bold text-slate-700">
+                      Hạn hoàn thành (Deadline)
+                    </label>
+                    <input
+                      type="date"
+                      value={directDueDate}
+                      onChange={(e) => setDirectDueDate(e.target.value)}
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white font-medium h-[38px]"
+                    />
+                  </div>
+
+                  {/* Mức độ ưu tiên */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs sm:text-sm font-bold text-slate-700">
+                      Mức độ ưu tiên
+                    </label>
+                    <CustomSelect
+                      value={directPriority}
+                      onChange={(e) => setDirectPriority(e.target.value as any)}
+                      className="w-full h-[38px] text-xs sm:text-sm font-medium text-slate-800 bg-white"
+                    >
+                      <option value="Low">Thấp</option>
+                      <option value="Medium">Trung bình</option>
+                      <option value="High">Ưu tiên cao / Gấp</option>
+                    </CustomSelect>
+                  </div>
+                </div>
+
+                {/* Ghi chú & Đính kèm */}
+                <div className="flex flex-col gap-1.5 relative">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs sm:text-sm font-bold text-slate-700 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-primary text-[16px]">edit_note</span>
+                      Ghi chú / Hướng dẫn công việc (Tùy chọn)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setDirectShowAttachMenu(!directShowAttachMenu)}
+                      className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1 font-semibold transition-colors cursor-pointer ${
+                        directShowAttachMenu ? 'bg-blue-100 border-blue-300 text-primary' : 'bg-slate-50 border-slate-200 text-slate-600 hover:text-primary'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[15px]">attach_file</span>
+                      <span>{directFile ? 'Đã đính kèm' : 'Đính kèm'}</span>
+                    </button>
+                  </div>
+
+                  {directFile && (
+                    <div className="flex items-center justify-between bg-blue-50 px-3 py-1.5 rounded-lg text-xs text-blue-900 border border-blue-200">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="material-symbols-outlined text-[16px] text-primary shrink-0">
+                          {directFile.type === 'image' ? 'image' : 'attach_file'}
+                        </span>
+                        <span className="truncate font-medium">{directFile.name}</span>
+                      </div>
+                      <button type="button" onClick={() => setDirectFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2 cursor-pointer">✕</button>
+                    </div>
+                  )}
+
+                  {directShowAttachMenu && (
+                    <div className="relative">
+                      <div className="fixed inset-0 z-40" onClick={() => setDirectShowAttachMenu(false)} />
+                      <div className="absolute right-0 top-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 flex flex-col gap-1 min-w-[170px] animate-in fade-in zoom-in-95 duration-150">
+                        <button
+                          type="button"
+                          onClick={() => { setDirectShowAttachMenu(false); directCameraInputRef.current?.click(); }}
+                          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-primary rounded-lg text-left cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-emerald-600 text-[16px]">photo_camera</span>
+                          <span>Chụp ảnh mới</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setDirectShowAttachMenu(false); directImageInputRef.current?.click(); }}
+                          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-primary rounded-lg text-left cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-blue-600 text-[16px]">image</span>
+                          <span>Thư viện ảnh</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setDirectShowAttachMenu(false); directFileInputRef.current?.click(); }}
+                          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-primary rounded-lg text-left cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-amber-500 text-[16px]">folder_open</span>
+                          <span>Tệp tài liệu</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <input type="file" ref={directCameraInputRef} onChange={handleDirectFileUpload} className="hidden" accept="image/*" capture="environment" />
+                  <input type="file" ref={directImageInputRef} onChange={handleDirectFileUpload} className="hidden" accept="image/*" />
+                  <input type="file" ref={directFileInputRef} onChange={handleDirectFileUpload} className="hidden" accept="*/*" />
+
+                  <textarea
+                    rows={3}
+                    value={directNotes}
+                    onChange={(e) => setDirectNotes(e.target.value)}
+                    onPaste={handleDirectPaste}
+                    placeholder="Nhập hướng dẫn, yêu cầu hoặc lưu ý gửi cho nhân sự..."
+                    className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white resize-none"
+                  />
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsDirectModalOpen(false)} 
+                  className="px-4 py-2 rounded-lg text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors bg-white border border-slate-300 cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit"
+                  disabled={savingDirectTask || isDirectUploading}
+                  className="px-5 py-2 bg-primary hover:bg-primary/90 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-lg shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">send</span>
+                  <span>{savingDirectTask ? 'Đang gửi...' : 'Giao việc'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -1260,7 +1695,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 <span className="material-symbols-outlined text-primary">assignment_add</span>
                 Giao việc cho nhân viên
               </h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -1273,20 +1708,69 @@ export const TaskAssignmentPage: React.FC = () => {
               
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-bold text-slate-700">Chọn người phụ trách <span className="text-red-500">*</span></label>
-                <select 
+                <CustomSelect 
                   value={selectedEngineerId} 
                   onChange={(e) => setSelectedEngineerId(e.target.value)}
-                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-full font-medium"
+                  searchable={true}
+                  placeholder="-- Chọn nhân viên / kỹ sư --"
+                  className="w-full h-[38px] text-sm bg-white font-medium"
                 >
                   <option value="">-- Chọn nhân viên / kỹ sư --</option>
                   {assignableEngineers.map(e => (
                     <option key={e.id} value={e.id}>{e.name} {e.title ? `(${e.title})` : ''}</option>
                   ))}
-                </select>
+                </CustomSelect>
                 {assignableEngineers.length === 0 && (
                   <p className="text-xs text-amber-600 font-medium">
                     * Dự án này chưa có nhân sự thành viên nào. Vui lòng thêm thành viên trong Quản lý dự án trước khi giao việc.
                   </p>
+                )}
+              </div>
+
+              {/* Người theo dõi (Tùy chọn) */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-bold text-slate-700 flex items-center justify-between">
+                  <span>Người theo dõi</span>
+                  <span className="text-xs font-normal text-slate-400">(Tùy chọn)</span>
+                </label>
+                <CustomSelect
+                  value=""
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val && !batchFollowerIds.includes(val)) {
+                      setBatchFollowerIds(prev => [...prev, val]);
+                    }
+                  }}
+                  searchable={true}
+                  placeholder="+ Thêm người theo dõi..."
+                  className="w-full h-[38px] text-sm bg-white font-medium"
+                >
+                  <option value="">+ Thêm người theo dõi...</option>
+                  {engineers
+                    .filter(e => e.id !== selectedEngineerId && !batchFollowerIds.includes(e.id))
+                    .map(e => (
+                      <option key={e.id} value={e.id}>{e.name} {e.title ? `(${e.title})` : ''}</option>
+                    ))}
+                </CustomSelect>
+                {batchFollowerIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {batchFollowerIds.map(fid => {
+                      const eng = engineers.find(e => e.id === fid);
+                      return (
+                        <span
+                          key={fid}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg text-xs font-semibold"
+                        >
+                          <span>{eng?.name || fid}</span>
+                          <button
+                            type="button"
+                            onClick={() => setBatchFollowerIds(prev => prev.filter(id => id !== fid))}
+                            className="text-red-500 hover:text-red-700 font-bold ml-1 cursor-pointer"
+                          >✕</button>
+                        </span>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 
@@ -1315,7 +1799,7 @@ export const TaskAssignmentPage: React.FC = () => {
                       </span>
                       <span className="truncate font-medium max-w-[240px]">{selectedFile.name}</span>
                     </div>
-                    <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
+                    <button type="button" onClick={() => setSelectedFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2 cursor-pointer">✕</button>
                   </div>
                 )}
 
@@ -1378,10 +1862,10 @@ export const TaskAssignmentPage: React.FC = () => {
             </div>
 
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-              <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors bg-white border border-slate-300">
+              <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors bg-white border border-slate-300 cursor-pointer">
                 Hủy
               </button>
-              <button onClick={handleAssign} className="px-6 py-2 rounded-lg text-sm font-bold text-white bg-primary hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">
+              <button onClick={handleAssign} className="px-6 py-2 rounded-lg text-sm font-bold text-white bg-primary hover:bg-primary/90 shadow-md transition-all flex items-center gap-2 cursor-pointer">
                 <span className="material-symbols-outlined text-base">check_circle</span>
                 Xác nhận giao việc
               </button>

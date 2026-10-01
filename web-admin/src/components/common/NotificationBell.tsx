@@ -38,7 +38,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   const name = String(user.name || '').toLowerCase();
   const userId = String(user.id || '').toLowerCase();
 
-  const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || username === 'admin';
+  const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || role === 'quản lý' || role === 'giám sát' || username === 'admin' || user.permissions?.includes('ASSIGN_TASKS');
 
   // Find engineer object corresponding to current user if any
   const myEng = engineers.find(e => 
@@ -210,6 +210,23 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
         return false;
       }
 
+      return false;
+    }
+
+    // 1D. Theo dõi công việc -> CHỈ những người trong danh sách người theo dõi mới nhận
+    if (
+      tLow.includes('theo dõi') || 
+      typeStr.startsWith('task_follower')
+    ) {
+      if (typeStr.includes(':::')) {
+        const parts = typeStr.split(':::');
+        const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        const targetNames = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+        const isMeId = targetIds.some(tId => myIds.includes(tId) || (myEng && tId === String(myEng.id).toLowerCase()));
+        const isMeName = targetNames.some(tName => myNames.some(n => tName.includes(n) || n.includes(tName)));
+        return Boolean(isMeId || isMeName);
+      }
       return false;
     }
 
@@ -467,17 +484,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     setIncomingPopupNotif(null);
     sessionStorage.setItem('has_shown_center_notif_modal', 'true');
 
-    // Điều hướng theo loại thông báo
-    const link = notification.link || '';
-    if (link) {
-      navigate(link);
-      return;
-    }
+    const role = String(user?.role || '').toLowerCase();
+    const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || role === 'quản lý' || role === 'giám sát' || user?.username === 'admin' || user?.permissions?.includes('ASSIGN_TASKS');
 
     const title = (notification.title || '');
     const message = (notification.message || '');
     const titleLower = title.toLowerCase();
     const msgLower = message.toLowerCase();
+    let link = notification.link || '';
 
     // Trích xuất mã dự án nếu có dạng [PROJECT_CODE] hoặc "dự án X"
     let pCode = '';
@@ -509,7 +523,15 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     const allProjects = store.projects || [];
     const targetTask = taskName 
       ? allTasks.find(t => t.name?.trim().toLowerCase() === taskName.trim().toLowerCase()) 
-      : null;
+      : (link.includes('taskId=') ? allTasks.find(t => link.includes(encodeURIComponent(t.id)) || link.includes(t.id)) : null);
+
+    const isDirectTask = Boolean(
+      targetTask && (
+        targetTask.sectionName === 'Giao việc trực tiếp' ||
+        targetTask.projectCode === 'COMPANY' ||
+        targetTask.code?.startsWith('TASK-DIRECT')
+      )
+    ) || link.includes('/projects/COMPANY/') || msgLower.includes('[company]') || pCode === 'COMPANY';
 
     let finalProjectCode = pCode || targetTask?.projectCode || '';
     if (finalProjectCode) {
@@ -517,6 +539,54 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       if (matchedProj) {
         finalProjectCode = matchedProj.code;
       }
+    }
+
+    // Task-related notifications check
+    const isTaskNotification = 
+      notification.type?.startsWith('task_') ||
+      titleLower.includes('công việc') ||
+      titleLower.includes('giao việc') ||
+      titleLower.includes('nhận việc') ||
+      titleLower.includes('nghiệm thu') ||
+      titleLower.includes('thắc mắc') ||
+      titleLower.includes('trao đổi') ||
+      titleLower.includes('nhắc hạn công việc') ||
+      titleLower.includes('quá hạn hoàn thành') ||
+      titleLower.includes('báo cáo hoàn thành');
+
+    if (isTaskNotification) {
+      if (!isAdmin) {
+        // Regular employees always navigate to My Tasks with category and taskId/highlight
+        const params = new URLSearchParams();
+        if (targetTask?.id) params.set('taskId', targetTask.id);
+        if (taskName || targetTask?.name) params.set('highlight', taskName || targetTask?.name || '');
+        params.set('category', isDirectTask ? 'direct' : 'project');
+        navigate(`/my-tasks?${params.toString()}`);
+        return;
+      } else {
+        // Admin user
+        if (isDirectTask) {
+          const params = new URLSearchParams();
+          if (targetTask?.id) params.set('taskId', targetTask.id);
+          if (taskName || targetTask?.name) params.set('highlight', taskName || targetTask?.name || '');
+          navigate(`/task-assignment?tab=direct&${params.toString()}`, { state: { tab: 'direct' } });
+          return;
+        }
+      }
+    }
+
+    // Điều hướng theo link có sẵn nếu hợp lệ
+    if (link) {
+      if (link.includes('/projects/COMPANY/')) {
+        if (isAdmin) {
+          navigate('/task-assignment?tab=direct', { state: { tab: 'direct' } });
+        } else {
+          navigate('/my-tasks?category=direct');
+        }
+        return;
+      }
+      navigate(link);
+      return;
     }
 
     if (titleLower.includes('hồ sơ') || msgLower.includes('hồ sơ') || (notification.type && notification.type.includes('document'))) {
@@ -884,7 +954,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
                   try {
                     const d = new Date(notification.timestamp || '');
                     if (!isNaN(d.getTime())) {
-                      dateStr = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')} ${d.getDate()}/${d.getMonth()+1}`;
+                      const h = d.getHours();
+                      const m = d.getMinutes();
+                      if (h === 0 && m === 0) {
+                        dateStr = `${d.getDate()}/${d.getMonth()+1}`;
+                      } else {
+                        dateStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${d.getDate()}/${d.getMonth()+1}`;
+                      }
                     }
                   } catch(e) {}
                   

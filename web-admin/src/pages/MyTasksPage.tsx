@@ -20,8 +20,14 @@ export const MyTasksPage: React.FC = () => {
     setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
   };
 
+  const [category, setCategory] = useState<'project' | 'direct'>(() => {
+    const cat = searchParams.get('category');
+    return cat === 'direct' ? 'direct' : 'project';
+  });
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'review' | 'completed' | 'overdue'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterProjectCode, setFilterProjectCode] = useState('all');
-  const [taskTab, setTaskTab] = useState<'pending' | 'in_progress' | 'completed'>('pending');
+
   const [highlightTaskId, setHighlightTaskId] = useState<string | null>(null);
   const [highlightKeyword, setHighlightKeyword] = useState<string | null>(null);
   const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
@@ -29,10 +35,16 @@ export const MyTasksPage: React.FC = () => {
   const openedHighlightTaskRef = React.useRef<string | null>(null);
 
   useEffect(() => {
+    const catParam = searchParams.get('category');
+    if (catParam === 'direct' || catParam === 'project') {
+      setCategory(catParam);
+    }
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'completed') setTaskTab('completed');
-    else if (tabParam === 'in_progress') setTaskTab('in_progress');
-    else if (tabParam === 'pending') setTaskTab('pending');
+    if (tabParam === 'completed') setStatusFilter('completed');
+    else if (tabParam === 'in_progress') setStatusFilter('in_progress');
+    else if (tabParam === 'pending') setStatusFilter('pending');
+    else if (tabParam === 'review') setStatusFilter('review');
+    else if (tabParam === 'overdue') setStatusFilter('overdue');
   }, [searchParams]);
 
   useEffect(() => {
@@ -43,12 +55,19 @@ export const MyTasksPage: React.FC = () => {
       setIsHighlightActive(true);
       setFilterProjectCode('all');
       const found = tasks.find(t => t.id === tid);
-      if (found?.status === 'Hoàn thành') {
-        setTaskTab('completed');
-      } else if (found?.status === 'Chờ nhận việc' || found?.status === 'Có thắc mắc') {
-        setTaskTab('pending');
-      } else if (found) {
-        setTaskTab('in_progress');
+      if (found) {
+        const isDirect = found.sectionName === 'Giao việc trực tiếp' || found.projectCode === 'COMPANY' || found.code?.startsWith('TASK-DIRECT');
+        setCategory(isDirect ? 'direct' : 'project');
+
+        if (found.status === 'Hoàn thành') {
+          setStatusFilter('completed');
+        } else if (found.status === 'Chờ nhận việc' || found.status === 'Có thắc mắc') {
+          setStatusFilter('pending');
+        } else if (found.status === 'Chờ nghiệm thu') {
+          setStatusFilter('review');
+        } else {
+          setStatusFilter('in_progress');
+        }
       }
       if (openedHighlightTaskRef.current !== tid) {
         const shouldOpenDiscussion = searchParams.get('discuss') === 'true' || found?.status === 'Có thắc mắc';
@@ -96,52 +115,115 @@ export const MyTasksPage: React.FC = () => {
 
   const allMyTasks = useMemo(() => {
     if (!user) return [];
-    let filtered = tasks.filter(t => !t.isSectionHeader && 
-      (t.assignedEngineerId === user.id || t.assignedEngineerName?.includes('|' + user.id) || t.assignedEngineerName?.includes(user.name))
-    );
-    
+    const uId = String(user.id || '').toLowerCase();
+    const uName = String(user.name || '').toLowerCase();
+    const uUsername = String(user.username || '').toLowerCase();
+
+    return tasks.filter(t => !t.isSectionHeader && (
+      (t.assignedEngineerId && String(t.assignedEngineerId).toLowerCase() === uId) || 
+      (t.assignedEngineerName && (
+        t.assignedEngineerName.toLowerCase().includes(uId) ||
+        t.assignedEngineerName.toLowerCase().includes(uName) ||
+        (uUsername && t.assignedEngineerName.toLowerCase().includes(uUsername))
+      )) ||
+      (Array.isArray(t.followerIds) && t.followerIds.some(fid => String(fid).toLowerCase() === uId)) ||
+      (Array.isArray(t.followerNames) && t.followerNames.some(fn => {
+        const clean = String(fn).replace(/^[:|]+|[:|]+$/g, '').trim().toLowerCase();
+        return clean && (clean.includes(uName) || uName.includes(clean) || (uUsername && clean.includes(uUsername)));
+      }))
+    ));
+  }, [tasks, user]);
+
+  // Filter tasks strictly by category (Dự án vs Phát sinh)
+  const myCategoryTasks = useMemo(() => {
+    return allMyTasks.filter(t => {
+      const isDirect = t.sectionName === 'Giao việc trực tiếp' || t.projectCode === 'COMPANY' || t.code?.startsWith('TASK-DIRECT');
+      return category === 'direct' ? isDirect : !isDirect;
+    });
+  }, [allMyTasks, category]);
+
+  // Status counts for the current category
+  const stats = useMemo(() => {
+    let all = myCategoryTasks.length;
+    let pending = 0;
+    let inProgress = 0;
+    let review = 0;
+    let completed = 0;
+    let overdue = 0;
+
+    const now = new Date();
+    myCategoryTasks.forEach(t => {
+      if (t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc') {
+        pending++;
+      } else if (t.status === 'Chờ nghiệm thu') {
+        review++;
+      } else if (t.status === 'Hoàn thành') {
+        completed++;
+      } else {
+        inProgress++;
+      }
+
+      if (t.status !== 'Hoàn thành' && t.dueDate) {
+        const d = new Date(t.dueDate);
+        if (!isNaN(d.getTime()) && d < now) {
+          overdue++;
+        }
+      }
+    });
+
+    return { all, pending, inProgress, review, completed, overdue };
+  }, [myCategoryTasks]);
+
+  // Filtered tasks for display
+  const displayedTasks = useMemo(() => {
+    let list = myCategoryTasks;
+
+    // Project filter
     if (filterProjectCode !== 'all') {
-      filtered = filtered.filter(t => t.projectCode === filterProjectCode);
-    }
-    return filtered;
-  }, [tasks, filterProjectCode, user]);
-
-  const pendingCount = useMemo(() => {
-    return allMyTasks.filter(t => t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc').length;
-  }, [allMyTasks]);
-
-  const inProgressCount = useMemo(() => {
-    return allMyTasks.filter(t => t.status !== 'Hoàn thành' && t.status !== 'Chờ nhận việc' && t.status !== 'Có thắc mắc').length;
-  }, [allMyTasks]);
-
-  const completedCount = useMemo(() => {
-    return allMyTasks.filter(t => t.status === 'Hoàn thành').length;
-  }, [allMyTasks]);
-
-  const myTasks = useMemo(() => {
-    let filtered = allMyTasks;
-    if (taskTab === 'pending') {
-      filtered = filtered.filter(t => t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc');
-    } else if (taskTab === 'in_progress') {
-      filtered = filtered.filter(t => t.status !== 'Hoàn thành' && t.status !== 'Chờ nhận việc' && t.status !== 'Có thắc mắc');
-    } else if (taskTab === 'completed') {
-      filtered = filtered.filter(t => t.status === 'Hoàn thành');
+      list = list.filter(t => t.projectCode === filterProjectCode);
     }
 
-    // Sort by status: Có thắc mắc -> Chờ nhận việc -> Đang làm -> others
-    return filtered.sort((a, b) => {
+    // Search query filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(t => 
+        (t.name || '').toLowerCase().includes(q) ||
+        (t.sectionName || '').toLowerCase().includes(q) ||
+        (t.projectCode || '').toLowerCase().includes(q) ||
+        (t.assignerName || '').toLowerCase().includes(q) ||
+        (t.assignedEngineerName || '').toLowerCase().includes(q)
+      );
+    }
+
+    // Status filter
+    const now = new Date();
+    if (statusFilter === 'pending') {
+      list = list.filter(t => t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc');
+    } else if (statusFilter === 'in_progress') {
+      list = list.filter(t => t.status !== 'Hoàn thành' && t.status !== 'Chờ nhận việc' && t.status !== 'Có thắc mắc' && t.status !== 'Chờ nghiệm thu');
+    } else if (statusFilter === 'review') {
+      list = list.filter(t => t.status === 'Chờ nghiệm thu');
+    } else if (statusFilter === 'completed') {
+      list = list.filter(t => t.status === 'Hoàn thành');
+    } else if (statusFilter === 'overdue') {
+      list = list.filter(t => t.status !== 'Hoàn thành' && t.dueDate && new Date(t.dueDate) < now);
+    }
+
+    // Sort: highlight task first -> Có thắc mắc -> Chờ nhận việc -> Chờ nghiệm thu -> Đang làm -> Hoàn thành
+    return list.sort((a, b) => {
       if (highlightTaskId && a.id === highlightTaskId) return -1;
       if (highlightTaskId && b.id === highlightTaskId) return 1;
       const rank = (status: string) => {
         if (status === 'Có thắc mắc') return 0;
         if (status === 'Chờ nhận việc') return 1;
-        if (status === 'Đang làm' || status === 'Chưa làm') return 2;
-        if (status === 'Chờ nghiệm thu') return 3;
+        if (status === 'Chờ nghiệm thu') return 2;
+        if (status === 'Đang làm' || status === 'Chưa làm') return 3;
+        if (status === 'Hoàn thành') return 5;
         return 4;
       };
       return rank(a.status || '') - rank(b.status || '');
     });
-  }, [allMyTasks, taskTab, highlightTaskId]);
+  }, [myCategoryTasks, filterProjectCode, searchQuery, statusFilter, highlightTaskId]);
 
   useEffect(() => {
     if (isHighlightActive && (highlightTaskId || highlightKeyword)) {
@@ -157,12 +239,12 @@ export const MyTasksPage: React.FC = () => {
         clearTimeout(fadeTimer);
       };
     }
-  }, [isHighlightActive, highlightTaskId, highlightKeyword, myTasks]);
+  }, [isHighlightActive, highlightTaskId, highlightKeyword, displayedTasks]);
 
   const myProjects = useMemo(() => {
-    const projectCodes = new Set(allMyTasks.map(t => t.projectCode));
+    const projectCodes = new Set(myCategoryTasks.map(t => t.projectCode));
     return projects.filter(p => projectCodes.has(p.code));
-  }, [allMyTasks, projects]);
+  }, [myCategoryTasks, projects]);
 
   const handleAcceptTask = async (task: any) => {
     updateTask(task.id, { status: 'Đang làm', progress: 0.05, constrStatus: 'Đang thi công' });
@@ -234,13 +316,30 @@ export const MyTasksPage: React.FC = () => {
 
   const handleSendReply = async (task: Task, replyText: string, fileAttachment?: { url: string; type: 'image' | 'file'; name: string }) => {
     const store = useRealtimeStore.getState();
-    const userName = user?.name || user?.username || 'Người dùng';
+    const userName = user?.name || user?.username || 'Thành viên';
     const userId = user?.id || '';
+
+    const isAssigner = Boolean(
+      task.assignerId === userId || 
+      user?.role === 'admin' || 
+      user?.username === 'admin' ||
+      (task.assignerName && user?.name && task.assignerName.toLowerCase().includes(user.name.toLowerCase()))
+    );
+    const isAssignee = Boolean(
+      task.assignedEngineerId === userId || 
+      (task.assignedEngineerName && (
+        task.assignedEngineerName.includes('|' + userId) ||
+        (user?.name && task.assignedEngineerName.toLowerCase().includes(user.name.toLowerCase()))
+      ))
+    );
+    const isFollower = (task.followerIds && task.followerIds.includes(userId)) || (!isAssigner && !isAssignee);
+    const senderRole = isFollower ? 'Người theo dõi' : (isAssigner ? 'Người giao việc' : 'Người nhận việc');
+
     const updatedNotes = appendTaskDiscussion(task.notes || '', {
       senderId: userId,
       senderName: userName,
-      senderRole: 'Người dùng',
-      type: 'reply',
+      senderRole: senderRole,
+      type: isFollower ? 'note' : (isAssigner ? 'reply' : 'note'),
       content: replyText,
       fileUrl: fileAttachment?.url,
       fileType: fileAttachment?.type,
@@ -249,33 +348,47 @@ export const MyTasksPage: React.FC = () => {
 
     const nextStatus = (task.status === 'Đang làm' || task.status === 'Chờ nghiệm thu' || task.status === 'Hoàn thành')
       ? task.status
-      : 'Chờ nhận việc';
+      : (isAssigner ? 'Chờ nhận việc' : task.status);
 
     updateTask(task.id, {
       status: nextStatus,
       notes: updatedNotes
     });
 
-    triggerToast('Đã gửi tin nhắn trao đổi!', 'success');
-    store.logActivity(`Người dùng ${userName} đã PHẢN HỒI TRAO ĐỔI về hạng mục: "${task.name}"`, task.projectName || task.projectCode);
+    triggerToast(isFollower ? 'Đã gửi trao đổi (Người theo dõi)!' : 'Đã gửi phản hồi trao đổi!', 'success');
+    store.logActivity(`${senderRole} ${userName} đã TRAO ĐỔI về hạng mục: "${task.name}"`, task.projectName || task.projectCode);
 
-    if (store.addNotification && (task.assignedEngineerId || task.assignedEngineerName)) {
+    if (store.addNotification) {
       const parts = String(task.assignedEngineerName || '').split('|');
       const assignedIds = (parts.length > 1 ? parts[1] : (task.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
       const assignedNames = (parts[0] || (task.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
 
-      const targetIdList = Array.from(new Set([task.assignerId || 'admin', ...assignedIds])).filter(Boolean);
-      const targetNameList = Array.from(new Set([task.assignerName || 'Quản lý', ...assignedNames])).filter(Boolean);
+      const followerIds = task.followerIds || [];
+      const followerNames = task.followerNames || [];
 
-      await store.addNotification({
-        title: 'Phản hồi trao đổi công việc',
-        message: `${userName} đã phản hồi về công việc "${task.name}" [${task.projectCode}]: "${replyText}".`,
-        link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
-        type: `task_reply:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
-        icon: 'chat',
-        senderId: userId,
-        senderName: userName
-      });
+      const targetIdList = Array.from(new Set([
+        task.assignerId || 'admin', 
+        ...assignedIds, 
+        ...followerIds
+      ])).filter(id => id && id !== userId);
+
+      const targetNameList = Array.from(new Set([
+        task.assignerName || 'Quản lý', 
+        ...assignedNames, 
+        ...followerNames
+      ])).filter(Boolean);
+
+      if (targetIdList.length > 0) {
+        await store.addNotification({
+          title: `Trao đổi công việc: ${task.name}`,
+          message: `${senderRole} ${userName} đã trao đổi về công việc "${task.name}" [${task.projectCode}]: "${replyText || (fileAttachment ? (fileAttachment.type === 'image' ? 'Đã gửi 1 hình ảnh' : `Đã đính kèm tệp: ${fileAttachment.name}`) : '')}".`,
+          link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
+          type: `task_reply:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
+          icon: 'forum',
+          senderId: userId,
+          senderName: userName
+        });
+      }
     }
   };
 
@@ -306,11 +419,10 @@ export const MyTasksPage: React.FC = () => {
     }
   };
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
-
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
-      <div className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 md:pr-20 py-2.5 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 md:gap-2 relative z-50 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+      {/* Top Header Bar */}
+      <div className="border-b border-slate-200 bg-white shadow-xs px-3 md:px-6 md:pr-20 py-2.5 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 md:gap-2 relative z-50 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 w-full md:w-auto min-w-0">
           <div className="flex items-center justify-between gap-2 shrink-0 h-7 sm:h-8 md:h-auto pr-12 md:pr-0">
             <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">
@@ -318,253 +430,407 @@ export const MyTasksPage: React.FC = () => {
             </h1>
           </div>
           <SharedTaskTabs 
-            activeTab="my-tasks" 
-            myTasksSubTab={taskTab}
-            onMyTasksSubTabChange={setTaskTab}
+            activeTab="my-tasks"
+            category={category}
+            onCategoryChange={(newCat) => {
+              setCategory(newCat);
+              const nextParams = new URLSearchParams(searchParams);
+              nextParams.set('category', newCat);
+              navigate({ search: nextParams.toString() }, { replace: true });
+            }}
           />
         </div>
-        <div className="flex items-center gap-2 w-full md:w-auto flex-wrap sm:flex-nowrap">
-          {/* Sub-tabs: Chờ nhận việc / Đang thực hiện / Đã hoàn thành (cho Admin xem Việc của tôi) */}
-          {isAdmin && (
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0">
-              <button
-                type="button"
-                onClick={() => setTaskTab('pending')}
-                className={`h-[30px] px-2.5 sm:px-3 flex items-center gap-1.5 text-xs font-bold rounded-md transition-all cursor-pointer select-none ${
-                  taskTab === 'pending' 
-                    ? 'bg-white text-amber-600 shadow-xs ring-1 ring-slate-200/80' 
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                }`}
-              >
-                <span>Chờ nhận việc</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${taskTab === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-700'}`}>
-                  {pendingCount}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTaskTab('in_progress')}
-                className={`h-[30px] px-2.5 sm:px-3 flex items-center gap-1.5 text-xs font-bold rounded-md transition-all cursor-pointer select-none ${
-                  taskTab === 'in_progress' 
-                    ? 'bg-white text-primary shadow-xs ring-1 ring-slate-200/80' 
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                }`}
-              >
-                <span>Đang thực hiện</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${taskTab === 'in_progress' ? 'bg-blue-100 text-primary' : 'bg-slate-200 text-slate-700'}`}>
-                  {inProgressCount}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTaskTab('completed')}
-                className={`h-[30px] px-2.5 sm:px-3 flex items-center gap-1.5 text-xs font-bold rounded-md transition-all cursor-pointer select-none ${
-                  taskTab === 'completed' 
-                    ? 'bg-white text-emerald-600 shadow-xs ring-1 ring-slate-200/80' 
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                }`}
-              >
-                <span>Đã hoàn thành</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${taskTab === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'}`}>
-                  {completedCount}
-                </span>
-              </button>
-            </div>
-          )}
 
-          <CustomSelect 
-            value={filterProjectCode} 
-            onChange={(e) => setFilterProjectCode(e.target.value)}
-            className="flex-1 md:w-[220px] h-[34px] text-xs font-bold text-slate-800"
-          >
-            <option value="all">-- Tất cả Dự án của tôi --</option>
-            {myProjects.map(p => (
-              <option key={p.id} value={p.code}>{p.name}</option>
-            ))}
-          </CustomSelect>
+        <div className="flex items-center gap-2 w-full md:w-auto shrink-0 flex-wrap sm:flex-nowrap">
+          {/* Search box */}
+          <div className="relative w-full sm:w-60 md:w-72 lg:w-80 shrink-0">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+            <input
+              type="text"
+              placeholder="Tìm công việc, người giao..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-7 py-1.5 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium h-[34px]"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[14px]">close</span>
+              </button>
+            )}
+          </div>
+
+          {/* Project CustomSelect with Search */}
+          {category === 'project' && (
+            <CustomSelect 
+              value={filterProjectCode} 
+              onChange={(e) => setFilterProjectCode(e.target.value)}
+              searchable={true}
+              placeholder="-- Tất cả dự án --"
+              className="flex-1 md:w-[220px] h-[34px] text-xs font-bold text-slate-800"
+            >
+              <option value="all">-- Tất cả dự án --</option>
+              {myProjects.map(p => (
+                <option key={p.id} value={p.code}>{p.name}</option>
+              ))}
+            </CustomSelect>
+          )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden flex flex-col border-t border-slate-200">
-        <div className="w-full h-full overflow-auto custom-scrollbar bg-white p-4 pb-16 lg:p-6">
+      {/* Sub-tab Filter Chips */}
+      <div className="bg-slate-50 border-b border-slate-200 px-3 md:px-6 py-2 flex items-center gap-1.5 overflow-x-auto custom-scrollbar shrink-0">
+        <button
+          type="button"
+          onClick={() => setStatusFilter('all')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+            statusFilter === 'all'
+              ? 'bg-primary text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          <span>Tất cả</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
+            {stats.all}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('pending')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+            statusFilter === 'pending'
+              ? 'bg-amber-500 text-white shadow-xs'
+              : 'bg-white text-amber-700 hover:bg-amber-50/60 border border-slate-200'
+          }`}
+        >
+          <span>Chờ nhận</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'pending' ? 'bg-white/25 text-white' : 'bg-amber-100 text-amber-800'}`}>
+            {stats.pending}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('in_progress')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+            statusFilter === 'in_progress'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white text-blue-700 hover:bg-blue-50/60 border border-slate-200'
+          }`}
+        >
+          <span>Đang làm</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'in_progress' ? 'bg-white/25 text-white' : 'bg-blue-100 text-blue-800'}`}>
+            {stats.inProgress}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('review')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+            statusFilter === 'review'
+              ? 'bg-purple-600 text-white shadow-xs'
+              : 'bg-white text-purple-700 hover:bg-purple-50/60 border border-slate-200'
+          }`}
+        >
+          <span>Chờ nghiệm thu</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'review' ? 'bg-white/25 text-white' : 'bg-purple-100 text-purple-800'}`}>
+            {stats.review}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('completed')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+            statusFilter === 'completed'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'bg-white text-emerald-700 hover:bg-emerald-50/60 border border-slate-200'
+          }`}
+        >
+          <span>Hoàn thành</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'completed' ? 'bg-white/25 text-white' : 'bg-emerald-100 text-emerald-800'}`}>
+            {stats.completed}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('overdue')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+            statusFilter === 'overdue'
+              ? 'bg-rose-600 text-white shadow-xs'
+              : 'bg-white text-rose-700 hover:bg-rose-50/60 border border-slate-200'
+          }`}
+        >
+          <span>Trễ hạn</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'overdue' ? 'bg-white/25 text-white' : 'bg-rose-100 text-rose-800'}`}>
+            {stats.overdue}
+          </span>
+        </button>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="w-full h-full overflow-auto custom-scrollbar bg-slate-50/50 p-3 sm:p-4 lg:p-6 pb-20">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {myTasks.length === 0 ? (
-                <div className="col-span-full py-16 text-center text-slate-500 font-medium bg-slate-50/70 rounded-2xl border border-dashed border-slate-300 flex flex-col items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-4xl text-slate-400">
-                    {taskTab === 'completed' ? 'task_alt' : taskTab === 'pending' ? 'pending_actions' : 'assignment_late'}
-                  </span>
-                  <p className="text-sm font-bold text-slate-700">
-                    {taskTab === 'completed' 
-                      ? 'Chưa có công việc nào đã hoàn thành.' 
-                      : taskTab === 'pending'
-                      ? 'Chưa có công việc nào đang chờ nhận việc.'
-                      : 'Bạn không có công việc nào đang thực hiện.'}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {taskTab === 'completed'
-                      ? 'Các công việc sau khi được người giao việc nghiệm thu sẽ xuất hiện tại đây.'
-                      : taskTab === 'pending'
-                      ? 'Khi được giao việc mới, danh sách công việc sẽ hiển thị tại đây để bạn xác nhận nhận việc.'
-                      : 'Các công việc đang tiến hành sẽ hiển thị tại đây.'}
-                  </p>
-                </div>
-              ) : (
-                myTasks.map((t) => {
-                  const p = projects.find(proj => proj.code === t.projectCode);
-                  const isWaiting = t.status === 'Chờ nhận việc';
-                  const hasQuestion = t.status === 'Có thắc mắc';
-                  const isDoing = t.status === 'Đang làm' || t.status === 'Chưa làm';
-                  const isWaitingApproval = t.status === 'Chờ nghiệm thu';
-                  const isCompleted = t.status === 'Hoàn thành';
-                  const isMatch = Boolean(
-                    (highlightTaskId && t.id === highlightTaskId) ||
-                    (highlightKeyword && (t.name || '').toLowerCase().includes(highlightKeyword))
-                  );
-                  const latestDiscussion = getLatestDiscussion(t.notes, t.issue);
-                  
-                  return (
-                    <div 
-                      key={t.id} 
-                      onClick={() => setIsHighlightActive(false)}
-                      className={`flex flex-col bg-white border rounded-xl shadow-xs overflow-hidden transition-all hover:shadow-md ${
-                        isMatch
-                          ? 'highlighted-task-card ring-2 ring-blue-500 ring-offset-2'
-                          : hasQuestion ? 'border-orange-300 ring-1 ring-orange-200'
-                          : isWaiting ? 'border-amber-300'
-                          : isWaitingApproval ? 'border-purple-300'
-                          : isCompleted ? 'border-emerald-300'
-                          : 'border-slate-200'
-                      }`}
-                    >
-                      <div className={`px-4 py-2.5 border-b text-xs font-bold flex justify-between items-center ${
-                        hasQuestion ? 'bg-orange-50 text-orange-950 border-orange-200'
-                        : isWaiting ? 'bg-amber-50 text-amber-900 border-amber-200'
-                        : isWaitingApproval ? 'bg-purple-50 text-purple-900 border-purple-200'
-                        : isCompleted ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                        : 'bg-slate-50 text-slate-800 border-slate-200'
-                      }`}>
-                        <div className="flex items-center gap-1.5 truncate pr-2">
-                          <span className="truncate">{p ? p.name : t.projectCode}</span>
-                        </div>
-                        <span className={`shrink-0 px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
+            {displayedTasks.length === 0 ? (
+              <div className="col-span-full py-16 text-center text-slate-500 font-medium bg-white rounded-2xl border border-dashed border-slate-300 flex flex-col items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-4xl text-slate-400">
+                  {statusFilter === 'completed' ? 'task_alt' : statusFilter === 'pending' ? 'pending_actions' : 'assignment_late'}
+                </span>
+                <p className="text-sm font-bold text-slate-700">
+                  {statusFilter === 'completed' 
+                    ? 'Chưa có công việc nào đã hoàn thành.' 
+                    : statusFilter === 'pending'
+                    ? 'Chưa có công việc nào đang chờ nhận.'
+                    : statusFilter === 'review'
+                    ? 'Chưa có công việc nào đang chờ nghiệm thu.'
+                    : statusFilter === 'overdue'
+                    ? 'Không có công việc nào bị trễ hạn.'
+                    : 'Không tìm thấy công việc nào phù hợp.'}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {category === 'direct' 
+                    ? 'Các công việc phát sinh/giao trực tiếp được phân công sẽ hiển thị tại đây.'
+                    : 'Các công việc thuộc các dự án đảm nhiệm sẽ hiển thị tại đây.'}
+                </p>
+              </div>
+            ) : (
+              displayedTasks.map((t) => {
+                const p = projects.find(proj => proj.code === t.projectCode);
+                const isWaiting = t.status === 'Chờ nhận việc';
+                const hasQuestion = t.status === 'Có thắc mắc';
+                const isDoing = t.status === 'Đang làm' || t.status === 'Chưa làm';
+                const isWaitingApproval = t.status === 'Chờ nghiệm thu';
+                const isCompleted = t.status === 'Hoàn thành';
+                const isOverdue = t.status !== 'Hoàn thành' && t.dueDate && new Date(t.dueDate) < new Date();
+                const isMatch = Boolean(
+                  (highlightTaskId && t.id === highlightTaskId) ||
+                  (highlightKeyword && (t.name || '').toLowerCase().includes(highlightKeyword))
+                );
+                const latestDiscussion = getLatestDiscussion(t.notes, t.issue);
+                
+                const isAssignee = Boolean(
+                  user?.id && (
+                    t.assignedEngineerId === user.id || 
+                    t.assignedEngineerName?.includes('|' + user.id) || 
+                    (user.name && t.assignedEngineerName?.includes(user.name))
+                  )
+                );
+                const isFollowerOnly = !isAssignee && Boolean(
+                  user?.id && (
+                    (Array.isArray(t.followerIds) && t.followerIds.includes(user.id)) ||
+                    (user.name && Array.isArray(t.followerNames) && t.followerNames.includes(user.name))
+                  )
+                );
+
+                return (
+                  <div 
+                    key={t.id} 
+                    onClick={() => setIsHighlightActive(false)}
+                    className={`flex flex-col bg-white border rounded-xl shadow-xs overflow-hidden transition-all hover:shadow-md ${
+                      isMatch
+                        ? 'highlighted-task-card ring-2 ring-blue-500 ring-offset-2'
+                        : isOverdue ? 'border-rose-300 ring-1 ring-rose-200'
+                        : hasQuestion ? 'border-orange-300 ring-1 ring-orange-200'
+                        : isWaiting ? 'border-amber-300'
+                        : isWaitingApproval ? 'border-purple-300'
+                        : isCompleted ? 'border-emerald-300'
+                        : 'border-slate-200'
+                    }`}
+                  >
+                    {/* Card Header */}
+                    <div className={`px-4 py-2.5 border-b text-xs font-bold flex justify-between items-center ${
+                      hasQuestion ? 'bg-orange-50 text-orange-950 border-orange-200'
+                      : isWaiting ? 'bg-amber-50 text-amber-900 border-amber-200'
+                      : isWaitingApproval ? 'bg-purple-50 text-purple-900 border-purple-200'
+                      : isCompleted ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                      : isOverdue ? 'bg-rose-50 text-rose-900 border-rose-200'
+                      : 'bg-slate-50 text-slate-800 border-slate-200'
+                    }`}>
+                      <div className="flex items-center gap-1.5 truncate pr-2">
+                        <span className="material-symbols-outlined text-[15px] text-slate-500">
+                          {category === 'direct' ? 'flash_on' : 'folder'}
+                        </span>
+                        <span className="truncate">
+                          {category === 'direct' ? (p?.name || t.projectCode || 'Nội bộ Công ty') : (p?.name || t.projectCode)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isFollowerOnly && (
+                          <span className="px-2 py-0.5 rounded-full font-bold text-[10px] bg-teal-100 text-teal-800 border border-teal-300 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">visibility</span>
+                            Theo dõi
+                          </span>
+                        )}
+                        <span className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
                           hasQuestion ? 'bg-orange-500 text-white shadow-xs animate-pulse' :
                           isWaiting ? 'bg-white text-amber-800 border border-amber-300 shadow-2xs' :
                           isWaitingApproval ? 'bg-white text-purple-800 border border-purple-300 shadow-2xs' :
                           isCompleted ? 'bg-white text-emerald-800 border border-emerald-300 shadow-2xs' :
+                          isOverdue ? 'bg-rose-500 text-white shadow-xs' :
                           'bg-white text-blue-800 border border-blue-200 shadow-2xs'
                         }`}>
-                          {t.status || 'Chưa làm'}
+                          {isOverdue && !isCompleted ? 'Trễ hạn' : (t.status || 'Chưa làm')}
                         </span>
                       </div>
-                      <div className="p-4 flex-1 flex flex-col">
-                        <h3 className="font-bold text-slate-800 text-sm mb-1">{t.name}</h3>
-                        {t.sectionName && t.sectionName !== t.name && (
-                          <p className="text-xs text-slate-500 mb-2">{t.sectionName}</p>
-                        )}
+                    </div>
 
-                        <div className="my-2 space-y-1.5 text-xs text-slate-600 bg-slate-50/90 p-2.5 rounded-lg border border-slate-100">
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[15px] text-amber-600">person_add</span>
-                              Người giao việc:
-                            </span>
-                            <span className="font-bold text-slate-800">{t.assignerName || 'Quản lý'}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[15px] text-blue-600">engineering</span>
-                              Người nhận việc:
-                            </span>
-                            <span className="font-bold text-blue-700">{t.assignedEngineerName?.split('|')[0] || 'Chưa nhận'}</span>
-                          </div>
+                    {/* Card Body */}
+                    <div className="p-4 flex-1 flex flex-col">
+                      <h3 className="font-bold text-slate-800 text-sm mb-1">{t.name}</h3>
+                      {t.sectionName && t.sectionName !== t.name && t.sectionName !== 'Giao việc trực tiếp' && (
+                        <p className="text-xs text-slate-500 mb-2">{t.sectionName}</p>
+                      )}
+
+                      {/* Information block */}
+                      <div className="my-2 space-y-1.5 text-xs text-slate-600 bg-slate-50/90 p-2.5 rounded-lg border border-slate-100">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[15px] text-amber-600">person_add</span>
+                            Người giao việc:
+                          </span>
+                          <span className="font-bold text-slate-800">{t.assignerName || 'Quản lý'}</span>
                         </div>
-
-                        {/* Snippet ghi chú / trao đổi mới nhất */}
-                        {latestDiscussion && (
-                          <div 
-                            onClick={() => setDiscussionTask(t)}
-                            className={`mb-2 p-2 rounded-lg cursor-pointer transition-colors border ${
-                              latestDiscussion.type === 'question'
-                                ? 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-950'
-                                : 'bg-blue-50/70 hover:bg-blue-100/70 border-blue-200/60 text-blue-900'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between text-[11px] font-bold mb-0.5">
-                              <span className="flex items-center gap-1">
-                                <span className={`material-symbols-outlined text-[13px] ${latestDiscussion.type === 'question' ? 'text-orange-600' : 'text-blue-600'}`}>
-                                  {latestDiscussion.type === 'question' ? 'help_center' : latestDiscussion.type === 'assign_note' ? 'assignment' : 'chat'}
-                                </span>
-                                {latestDiscussion.type === 'assign_note' ? 'Ghi chú giao việc' : latestDiscussion.type === 'question' ? 'Thắc mắc' : 'Phản hồi người giao'}
-                              </span>
-                              <span className="text-[10px] text-blue-600 font-semibold underline">Xem trao đổi</span>
-                            </div>
-                            <p className="text-xs font-medium line-clamp-2 italic">
-                              "{latestDiscussion.content}"
-                            </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[15px] text-blue-600">engineering</span>
+                            Người nhận việc:
+                          </span>
+                          <span className="font-bold text-blue-700">{t.assignedEngineerName?.split('|')[0] || 'Chưa nhận'}</span>
+                        </div>
+                        {Array.isArray(t.followerNames) && t.followerNames.length > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-[15px] text-teal-600">visibility</span>
+                              Người theo dõi:
+                            </span>
+                            <span className="font-bold text-teal-700 truncate max-w-[180px]" title={t.followerNames.join(', ')}>
+                              {t.followerNames.join(', ')}
+                            </span>
                           </div>
                         )}
-
-                        <div className="mt-auto pt-3 flex items-center justify-between text-xs font-medium text-slate-600 border-t border-slate-100 gap-2 flex-wrap">
-                          <span className="bg-slate-100 px-2 py-1 rounded-md font-semibold text-slate-700 border border-slate-200/60 shrink-0">KL: {t.volume} {t.unit}</span>
-                          
-                          <div className="flex items-center gap-2 shrink-0">
-                            {(isWaiting || hasQuestion) && (
-                              <>
-                                <button 
-                                  onClick={() => setDiscussionTask(t)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-300 text-orange-700 font-bold rounded-lg shadow-2xs transition-all active:scale-95"
-                                  title="Gửi thắc mắc hoặc yêu cầu làm rõ cho người giao việc"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">help</span>
-                                  Thắc mắc
-                                </button>
-                                <button 
-                                  onClick={() => handleAcceptTask(t)} 
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-lg shadow-sm transition-all"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">check</span>
-                                  Nhận việc
-                                </button>
-                              </>
-                            )}
-                            {isDoing && (
-                              <>
-                                <button 
-                                  onClick={() => setDiscussionTask(t)}
-                                  className="flex items-center gap-1 px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg shadow-2xs transition-all text-[11px]"
-                                  title="Xem trao đổi / ghi chú"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">chat</span>
-                                  Trao đổi
-                                </button>
-                                <button 
-                                  onClick={() => handleReportDone(t)} 
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold rounded-lg shadow-sm transition-all"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">done_all</span>
-                                  Báo cáo hoàn thành
-                                </button>
-                              </>
-                            )}
-                            {isWaitingApproval && (
-                              <span className="text-purple-700 font-bold flex items-center gap-1 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-200">
-                                <span className="material-symbols-outlined text-[16px] animate-pulse">hourglass_top</span>
-                                Chờ nghiệm thu
-                              </span>
-                            )}
-                            {isCompleted && (
-                              <span className="text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-                                <span className="material-symbols-outlined text-[16px]">verified</span>
-                                Đã nghiệm thu
-                              </span>
-                            )}
+                        {t.dueDate && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-[15px] text-rose-500">event</span>
+                              Hạn chót:
+                            </span>
+                            <span className={`font-bold ${isOverdue ? 'text-rose-600' : 'text-slate-700'}`}>
+                              {new Date(t.dueDate).toLocaleDateString('vi-VN')}
+                            </span>
                           </div>
+                        )}
+                      </div>
+
+                      {/* Latest discussion snippet */}
+                      {latestDiscussion && (
+                        <div 
+                          onClick={() => setDiscussionTask(t)}
+                          className={`mb-2 p-2 rounded-lg cursor-pointer transition-colors border ${
+                            latestDiscussion.type === 'question'
+                              ? 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-950'
+                              : 'bg-blue-50/70 hover:bg-blue-100/70 border-blue-200/60 text-blue-900'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[11px] font-bold mb-0.5">
+                            <span className="flex items-center gap-1">
+                              <span className={`material-symbols-outlined text-[13px] ${latestDiscussion.type === 'question' ? 'text-orange-600' : 'text-blue-600'}`}>
+                                {latestDiscussion.type === 'question' ? 'help_center' : latestDiscussion.type === 'assign_note' ? 'assignment' : 'chat'}
+                              </span>
+                              {latestDiscussion.type === 'assign_note' ? 'Ghi chú giao việc' : latestDiscussion.type === 'question' ? 'Thắc mắc' : 'Phản hồi người giao'}
+                            </span>
+                            <span className="text-[10px] text-blue-600 font-semibold underline">Xem trao đổi</span>
+                          </div>
+                          <p className="text-xs font-medium line-clamp-2 italic">
+                            "{latestDiscussion.content}"
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Card Footer Actions */}
+                      <div className="mt-auto pt-3 flex items-center justify-between text-xs font-medium text-slate-600 border-t border-slate-100 gap-2 flex-wrap">
+                        {t.volume ? (
+                          <span className="bg-slate-100 px-2 py-1 rounded-md font-semibold text-slate-700 border border-slate-200/60 shrink-0">
+                            KL: {t.volume} {t.unit}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[11px] italic">Việc trực tiếp</span>
+                        )}
+                        
+                        <div className="flex items-center gap-2 shrink-0">
+                          {(isWaiting || hasQuestion) && isAssignee && (
+                            <>
+                              <button 
+                                onClick={() => setDiscussionTask(t)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-300 text-orange-700 font-bold rounded-lg shadow-2xs transition-all active:scale-95"
+                                title="Gửi thắc mắc hoặc yêu cầu làm rõ cho người giao việc"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">help</span>
+                                Thắc mắc
+                              </button>
+                              <button 
+                                onClick={() => handleAcceptTask(t)} 
+                                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-lg shadow-xs transition-all"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">check</span>
+                                Nhận việc
+                              </button>
+                            </>
+                          )}
+                          {isDoing && isAssignee && (
+                            <>
+                              <button 
+                                onClick={() => setDiscussionTask(t)}
+                                className="flex items-center gap-1 px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg shadow-2xs transition-all text-[11px]"
+                                title="Xem trao đổi / ghi chú"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">chat</span>
+                                Trao đổi
+                              </button>
+                              <button 
+                                onClick={() => handleReportDone(t)} 
+                                className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold rounded-lg shadow-xs transition-all"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">done_all</span>
+                                Báo cáo hoàn thành
+                              </button>
+                            </>
+                          )}
+                          {isWaitingApproval && (
+                            <span className="text-purple-700 font-bold flex items-center gap-1 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-200">
+                              <span className="material-symbols-outlined text-[16px] animate-pulse">hourglass_top</span>
+                              Chờ nghiệm thu
+                            </span>
+                          )}
+                          {isCompleted && (
+                            <span className="text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                              <span className="material-symbols-outlined text-[16px]">verified</span>
+                              Đã nghiệm thu
+                            </span>
+                          )}
+                          {isFollowerOnly && !isWaitingApproval && !isCompleted && (
+                            <button 
+                              onClick={() => setDiscussionTask(t)}
+                              className="flex items-center gap-1 px-2.5 py-1.5 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-800 font-bold rounded-lg shadow-2xs transition-all text-[11px]"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">chat</span>
+                              Theo dõi & Trao đổi
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
-                  );
-                })
-              )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -611,4 +877,3 @@ export const MyTasksPage: React.FC = () => {
     </div>
   );
 };
-

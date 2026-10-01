@@ -267,6 +267,8 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
     const docName = track.contractNo || track.contractName || 'Hồ sơ';
     const pCode = track.projectCode || 'COMPANY';
 
+    const nowIso = new Date().toISOString();
+
     if (diffDays < 0) {
       const absDays = Math.abs(diffDays);
       const notifKey = `overdue-doc-${track.id}-${absDays}-${effectiveDueDate}`;
@@ -274,7 +276,7 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
         id: notifKey,
         title: 'Hồ sơ quá hạn nộp',
         message: `[${pCode}] Hồ sơ "${docName}" đã quá hạn ${absDays} ngày (Hạn: ${effectiveDueDate}).`,
-        timestamp: todayIso,
+        timestamp: nowIso,
         read: false,
         type: `document_due:::${pCode}`,
         icon: 'warning',
@@ -288,7 +290,7 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
         message: diffDays === 0 
           ? `[${pCode}] Hồ sơ "${docName}" đến hạn nộp hôm nay!` 
           : `[${pCode}] Hồ sơ "${docName}" sắp đến hạn nộp (Còn ${diffDays} ngày).`,
-        timestamp: todayIso,
+        timestamp: nowIso,
         read: false,
         type: `document_due:::${pCode}`,
         icon: 'notifications',
@@ -305,7 +307,7 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
 const generateTaskDueNotifications = (tasksList: Task[], existingNotifications: NotificationItem[]) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayIso = today.toISOString();
+  const nowIso = new Date().toISOString();
   const newNotifs: NotificationItem[] = [];
 
   tasksList.forEach(task => {
@@ -321,11 +323,16 @@ const generateTaskDueNotifications = (tasksList: Task[], existingNotifications: 
     const pCode = task.projectCode || 'PROJECT';
     const taskName = task.name || 'Công việc';
 
+    const isDirect = task.sectionName === 'Giao việc trực tiếp' || task.projectCode === 'COMPANY' || task.code?.startsWith('TASK-DIRECT');
+    const taskLink = isDirect
+      ? `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(taskName)}&category=direct`
+      : `/projects/${encodeURIComponent(pCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(taskName)}&category=project`;
+
     const parts = String(task.assignedEngineerName || '').split('|');
     const assignedIds = (parts.length > 1 ? parts[1] : (task.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
     const assignedNames = (parts[0] || (task.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
-    const targetIdList = Array.from(new Set([task.assignerId || 'admin', ...assignedIds])).filter(Boolean);
-    const targetNameList = Array.from(new Set([task.assignerName || 'Quản lý', ...assignedNames])).filter(Boolean);
+    const targetIdList = Array.from(new Set([task.assignerId || 'admin', ...assignedIds, ...(task.followerIds || [])])).filter(Boolean);
+    const targetNameList = Array.from(new Set([task.assignerName || 'Quản lý', ...assignedNames, ...(task.followerNames || [])])).filter(Boolean);
 
     if (diffDays < 0) {
       const absDays = Math.abs(diffDays);
@@ -334,11 +341,11 @@ const generateTaskDueNotifications = (tasksList: Task[], existingNotifications: 
         id: notifKey,
         title: 'Công việc quá hạn hoàn thành',
         message: `[${pCode}] Công việc "${taskName}" đã quá hạn ${absDays} ngày (Hạn: ${task.dueDate}).`,
-        timestamp: todayIso,
+        timestamp: nowIso,
         read: false,
         type: `task_due:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
         icon: 'warning',
-        link: `/projects/${encodeURIComponent(pCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(taskName)}`
+        link: taskLink
       });
     } else if (diffDays <= 2) {
       const notifKey = `due-task-${task.id}-${diffDays}-${task.dueDate}`;
@@ -348,11 +355,11 @@ const generateTaskDueNotifications = (tasksList: Task[], existingNotifications: 
         message: diffDays === 0
           ? `[${pCode}] Công việc "${taskName}" đến hạn hoàn thành hôm nay!`
           : `[${pCode}] Công việc "${taskName}" sắp đến hạn hoàn thành (Còn ${diffDays} ngày).`,
-        timestamp: todayIso,
+        timestamp: nowIso,
         read: false,
         type: `task_due:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
         icon: 'notifications',
-        link: `/projects/${encodeURIComponent(pCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(taskName)}`
+        link: taskLink
       });
     }
   });
