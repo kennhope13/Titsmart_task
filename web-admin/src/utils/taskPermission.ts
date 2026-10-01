@@ -164,3 +164,76 @@ export const isUserTaskFollower = (
 
   return false;
 };
+
+/**
+ * Resolves full follower display names from followerNames, followerIds, or raw tags
+ */
+export const getTaskFollowerNames = (task: Task | null | undefined, engineers?: Engineer[]): string[] => {
+  if (!task) return [];
+
+  // 1. Direct followerNames
+  if (Array.isArray(task.followerNames) && task.followerNames.length > 0) {
+    const cleanNames = task.followerNames
+      .map(f => String(f).replace(/^[:|]+|[:|]+$/g, '').trim())
+      .filter(Boolean);
+    if (cleanNames.length > 0) return cleanNames;
+  }
+
+  // 2. Resolve from followerIds using engineers list
+  if (Array.isArray(task.followerIds) && task.followerIds.length > 0) {
+    const resolved = task.followerIds.map(fid => {
+      const sId = String(fid).trim().toLowerCase();
+      const found = engineers?.find(e => 
+        String(e.id).trim().toLowerCase() === sId || 
+        String(e.username || '').trim().toLowerCase() === sId ||
+        String(e.code || '').trim().toLowerCase() === sId
+      );
+      return found ? found.name : fid;
+    }).filter(Boolean);
+    if (resolved.length > 0) return resolved;
+  }
+
+  // 3. Fallback: Parse directly from notes if tag exists
+  if (task.notes && typeof task.notes === 'string' && task.notes.includes('[FOLLOWERS:')) {
+    const match = task.notes.match(/\[FOLLOWERS:([^\]]+)\]/i);
+    if (match) {
+      const raw = match[1];
+      let idPart = '';
+      let namePart = '';
+      if (raw.includes(':::')) {
+        const parts = raw.split(':::');
+        idPart = parts[0] || '';
+        namePart = parts[1] || '';
+      } else if (raw.includes('|||')) {
+        const parts = raw.split('|||');
+        idPart = parts[0] || '';
+        namePart = parts[1] || '';
+      } else if (raw.includes('|')) {
+        const parts = raw.split('|');
+        idPart = parts[0] || '';
+        namePart = parts[1] || '';
+      } else {
+        idPart = raw;
+      }
+
+      if (namePart) {
+        const names = namePart.split(',').map(s => s.replace(/^[:|]+|[:|]+$/g, '').trim()).filter(Boolean);
+        if (names.length > 0) return names;
+      }
+      if (idPart && engineers && engineers.length > 0) {
+        const ids = idPart.split(',').map(s => s.replace(/^[:|]+|[:|]+$/g, '').trim()).filter(Boolean);
+        const resolved = ids.map(fid => {
+          const sId = String(fid).trim().toLowerCase();
+          const found = engineers.find(e => 
+            String(e.id).trim().toLowerCase() === sId || 
+            String(e.username || '').trim().toLowerCase() === sId
+          );
+          return found ? found.name : fid;
+        }).filter(Boolean);
+        if (resolved.length > 0) return resolved;
+      }
+    }
+  }
+
+  return [];
+};

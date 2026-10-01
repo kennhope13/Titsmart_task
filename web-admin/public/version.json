@@ -1,9 +1,9 @@
 {
-  "version": "3.8.141",
+  "version": "3.8.142",
   "date": "2026-10-01",
   "notes": [
-    "Sửa lỗi hiển thị nút Nhận việc / Xác nhận nhận việc và Thắc mắc cho nhân sự được giao việc (Assignee).",
-    "Chuẩn hóa và đồng bộ thuật toán nhận diện người nhận việc (Assignee), người giao việc (Assigner) và người theo dõi (Follower) trên toàn bộ hệ thống.",
-    "Bổ sung nút thao tác Nhận việc trực tiếp trong modal Trao đổi & Hướng dẫn trên tất cả các trang."
+    "Sửa lỗi hiển thị người theo dõi (Followers) trên bảng phân công công việc trực tiếp và công việc dự án.",
+    "Bổ sung hàm tự động phân giải tên người theo dõi (getTaskFollowerNames) từ danh sách nhân sự khi tải từ DB.",
+    "Bảo toàn thông tin người theo dõi trong các thao tác cập nhật công việc và lưu trữ trên cơ sở dữ liệu."
   ]
 }

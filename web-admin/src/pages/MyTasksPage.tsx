@@ -7,7 +7,7 @@ import { useAuthStore } from '../services/authStore';
 import { Task } from '../types';
 import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
 import { appendTaskDiscussion, getLatestDiscussion } from '../utils/taskDiscussion';
-import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower } from '../utils/taskPermission';
+import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower, getTaskFollowerNames } from '../utils/taskPermission';
 
 export const MyTasksPage: React.FC = () => {
   const navigate = useNavigate();
@@ -682,17 +682,20 @@ export const MyTasksPage: React.FC = () => {
                           </span>
                           <span className="font-bold text-blue-700">{t.assignedEngineerName?.split('|')[0] || 'Chưa nhận'}</span>
                         </div>
-                        {Array.isArray(t.followerNames) && t.followerNames.length > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[15px] text-teal-600">visibility</span>
-                              Người theo dõi:
-                            </span>
-                            <span className="font-bold text-teal-700 truncate max-w-[180px]" title={t.followerNames.join(', ')}>
-                              {t.followerNames.join(', ')}
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const followers = getTaskFollowerNames(t, engineers);
+                          return followers.length > 0 ? (
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[15px] text-teal-600">visibility</span>
+                                Người theo dõi:
+                              </span>
+                              <span className="font-bold text-teal-700 truncate max-w-[180px]" title={followers.join(', ')}>
+                                {followers.join(', ')}
+                              </span>
+                            </div>
+                          ) : null;
+                        })()}
                         {t.dueDate && (
                           <div className="flex items-center justify-between">
                             <span className="text-slate-500 font-medium flex items-center gap-1.5">

@@ -11,7 +11,7 @@ import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
 import { appendTaskDiscussion, parseTaskDiscussions, getLatestDiscussion, stripDiscussionThread } from '../utils/taskDiscussion';
 import { getEngineersForProject } from '../utils/projectMemberUtils';
 import { uploadAttachment } from '../utils/fileUploadHelper';
-import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower } from '../utils/taskPermission';
+import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower, getTaskFollowerNames } from '../utils/taskPermission';
 
 export const TaskAssignmentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -1046,25 +1046,24 @@ export const TaskAssignmentPage: React.FC = () => {
                           </div>
                         </td>
                         <td className="py-2.5 px-3 border-r border-slate-200">
-                          {t.followerNames && t.followerNames.length > 0 ? (
-                            <div className="flex flex-wrap gap-1" title={t.followerNames.map(f => f.replace(/^[:|]+|[:|]+$/g, '').trim()).filter(Boolean).join(', ')}>
-                              {t.followerNames.map((fn: string, fIdx: number) => {
-                                const cleanName = String(fn).replace(/^[:|]+|[:|]+$/g, '').trim();
-                                if (!cleanName) return null;
-                                return (
+                          {(() => {
+                            const followers = getTaskFollowerNames(t, engineers);
+                            return followers.length > 0 ? (
+                              <div className="flex flex-wrap gap-1" title={followers.join(', ')}>
+                                {followers.map((fn: string, fIdx: number) => (
                                   <span
                                     key={fIdx}
                                     className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-semibold border border-slate-200"
                                   >
                                     <span className="material-symbols-outlined text-[11px] text-blue-600">visibility</span>
-                                    <span>{cleanName}</span>
+                                    <span>{fn}</span>
                                   </span>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <span className="text-slate-400 italic font-normal text-[11px]">—</span>
-                          )}
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 italic font-normal text-[11px]">—</span>
+                            );
+                          })()}
                         </td>
                         <td className="py-2.5 px-3 text-center border-r border-slate-200">
                           {t.dueDate ? (
@@ -1377,25 +1376,24 @@ export const TaskAssignmentPage: React.FC = () => {
                           )}
                         </td>
                         <td className="py-2.5 px-3 border-r border-slate-200">
-                          {t.followerNames && t.followerNames.length > 0 ? (
-                            <div className="flex flex-wrap gap-1" title={t.followerNames.map(f => f.replace(/^[:|]+|[:|]+$/g, '').trim()).filter(Boolean).join(', ')}>
-                              {t.followerNames.map((fn: string, fIdx: number) => {
-                                const cleanName = String(fn).replace(/^[:|]+|[:|]+$/g, '').trim();
-                                if (!cleanName) return null;
-                                return (
+                          {(() => {
+                            const followers = getTaskFollowerNames(t, engineers);
+                            return followers.length > 0 ? (
+                              <div className="flex flex-wrap gap-1" title={followers.join(', ')}>
+                                {followers.map((fn: string, fIdx: number) => (
                                   <span
                                     key={fIdx}
                                     className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-semibold border border-slate-200"
                                   >
                                     <span className="material-symbols-outlined text-[11px] text-blue-600">visibility</span>
-                                    <span>{cleanName}</span>
+                                    <span>{fn}</span>
                                   </span>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <span className="text-slate-400 italic font-normal text-[11px]">—</span>
-                          )}
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 italic font-normal text-[11px]">—</span>
+                            );
+                          })()}
                         </td>
                         <td className="py-2.5 px-3 text-center border-r border-slate-200 text-slate-700 font-bold">
                           {t.volume || '-'} {t.unit || ''}

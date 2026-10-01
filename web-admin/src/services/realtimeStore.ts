@@ -1193,10 +1193,13 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateTask: async (id, updatedFields) => {
       get().markMutation();
+      const existingTask = get().tasks.find(t => t.id === id);
       const audit = getAuditFields();
       const fieldsWithAudit = {
         updatedBy: audit.updatedBy,
         updatedAt: audit.updatedAt,
+        followerIds: updatedFields.followerIds !== undefined ? updatedFields.followerIds : existingTask?.followerIds,
+        followerNames: updatedFields.followerNames !== undefined ? updatedFields.followerNames : existingTask?.followerNames,
         ...updatedFields,
       };
 

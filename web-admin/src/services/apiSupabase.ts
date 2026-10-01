@@ -215,9 +215,23 @@ export const api = {
           const match = t.notes.match(/\[FOLLOWERS:([^\]]+)\]/i);
           if (match) {
             const raw = match[1];
-            const parts = raw.split(/\|{1,3}|:{1,3}/);
-            const idPart = parts[0] || '';
-            const namePart = parts[1] || '';
+            let idPart = '';
+            let namePart = '';
+            if (raw.includes(':::')) {
+              const parts = raw.split(':::');
+              idPart = parts[0] || '';
+              namePart = parts[1] || '';
+            } else if (raw.includes('|||')) {
+              const parts = raw.split('|||');
+              idPart = parts[0] || '';
+              namePart = parts[1] || '';
+            } else if (raw.includes('|')) {
+              const parts = raw.split('|');
+              idPart = parts[0] || '';
+              namePart = parts[1] || '';
+            } else {
+              idPart = raw;
+            }
             const ids = idPart.split(',').map((s: string) => s.replace(/^[:|]+|[:|]+$/g, '').trim()).filter(Boolean);
             const names = namePart.split(',').map((s: string) => s.replace(/^[:|]+|[:|]+$/g, '').trim()).filter(Boolean);
             if (ids.length > 0 && (!t.followerIds || t.followerIds.length === 0)) {
@@ -264,7 +278,14 @@ export const api = {
       for (let attempt = 0; attempt < 7; attempt++) {
         const { data: result, error } = await supabase.from('tasks').insert(payload).select().single();
         if (!error && result) {
-          return toCamelCase({ ...data, ...result });
+          const resCamel = toCamelCase({ ...data, ...result });
+          if (data.followerIds && (!resCamel.followerIds || resCamel.followerIds.length === 0)) {
+            resCamel.followerIds = data.followerIds;
+          }
+          if (data.followerNames && (!resCamel.followerNames || resCamel.followerNames.length === 0)) {
+            resCamel.followerNames = data.followerNames;
+          }
+          return resCamel;
         }
         lastError = error;
         if (error) {
@@ -371,7 +392,14 @@ export const api = {
         const { data: result, error } = await supabase.from('tasks').update(payload).eq('id', id).select().single();
         if (!error && result) {
           const audit = getCurrentAuditPayload();
-          return toCamelCase({ updated_by: audit.updated_by, updated_at: audit.updated_at, ...data, ...result });
+          const resCamel = toCamelCase({ updated_by: audit.updated_by, updated_at: audit.updated_at, ...data, ...result });
+          if (data.followerIds && (!resCamel.followerIds || resCamel.followerIds.length === 0)) {
+            resCamel.followerIds = data.followerIds;
+          }
+          if (data.followerNames && (!resCamel.followerNames || resCamel.followerNames.length === 0)) {
+            resCamel.followerNames = data.followerNames;
+          }
+          return resCamel;
         }
         lastError = error;
         if (error) {
