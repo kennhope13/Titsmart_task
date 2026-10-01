@@ -1233,11 +1233,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         className={`w-full max-w-full min-h-0 flex-1 overflow-x-auto custom-scrollbar select-none ${isMouseDown ? 'cursor-grabbing' : 'cursor-grab'}`} 
         onScroll={(e) => setIsScrolledHorizontally(e.currentTarget.scrollLeft > 10)}
       >
-        <table className="w-full table-fixed border-collapse text-left text-xs" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+        <table className={`w-full table-fixed border-collapse text-left text-xs ${subTab === 'FINANCE' ? 'min-w-[1600px]' : subTab === 'DOCS' ? 'min-w-[800px]' : 'min-w-[1100px]'}`} style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
           <thead className="sticky top-0 z-30 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
-              <th rowSpan={2} style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", left: 0, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-50 bg-clip-padding px-0.5 py-1 text-center font-extrabold whitespace-nowrap">STT</th>
-              <th rowSpan={2} style={{ left: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left w-[170px] min-w-[150px] sm:w-[320px] sm:min-w-[280px]">NỘI DUNG</th>
+              <th rowSpan={2} style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="py-1 px-0.5 text-center font-extrabold whitespace-nowrap bg-slate-50">STT</th>
+              <th rowSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 md:static z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left w-[170px] min-w-[150px] sm:w-[320px] sm:min-w-[280px]">NỘI DUNG</th>
               {(subTab === 'TECH' || subTab === 'DOCS' || subTab === 'FINANCE') && (
                 <>
                   <th rowSpan={2} style={{ minWidth: 65, width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
@@ -1452,11 +1452,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                       if (parent) {
                         const isCollapsed = collapsedSections.has(plan._sectionKey || '');
                         return (
-                          <tr key={plan.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                            <td style={{ left: 0, width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap overflow-hidden text-ellipsis" title={String(plan.stt)}>
+                          <tr key={plan.id} className="group bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
+                            <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="bg-blue-50/90 border-r border-blue-200 px-0.5 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap overflow-hidden text-ellipsis" title={String(plan.stt)}>
                               {plan.stt}
                             </td>
-                            <td colSpan={colSpanCount + 1} style={{ left: 'var(--stt-width)', width: 'auto', minWidth: 'auto', maxWidth: 'auto' }} className="sticky left-[var(--stt-width)] z-10 md:static bg-blue-50/90 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={plan.jobContent}>
+                            <td className="sticky left-0 md:static z-10 bg-blue-50/90 border-r border-blue-200 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none" title={plan.jobContent}>
                               <div className="flex items-center gap-1.5 min-w-0 w-full overflow-hidden">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
@@ -1466,20 +1466,25 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                   <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                                 </button>
                                 <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                                <span className="flex-1 min-w-0 cursor-pointer hover:underline truncate whitespace-nowrap overflow-hidden md:break-words leading-tight" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }}>
+                                <span className="flex-1 min-w-0 cursor-pointer hover:underline truncate whitespace-nowrap overflow-hidden leading-tight" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }}>
                                   {plan.jobContent}
                                 </span>
-                                {onAddSubtask && subTab !== 'FINANCE' && (
-                                  <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
-                                    <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                                  </button>
-                                )}
-                                {onDelete && (
-                                  <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-200 transition-colors inline-flex items-center" title="Xóa">
-                                    <span className="material-symbols-outlined text-[16px]">delete</span>
-                                  </button>
-                                )}
+                                <div className="hidden group-hover:flex items-center gap-1">
+                                  {onAddSubtask && subTab !== 'FINANCE' && (
+                                    <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-400 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
+                                      <span className="material-symbols-outlined text-[15px]">add_circle</span>
+                                    </button>
+                                  )}
+                                  {onDelete && (
+                                    <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-200 transition-colors inline-flex items-center" title="Xóa">
+                                      <span className="material-symbols-outlined text-[15px]">delete</span>
+                                    </button>
+                                  )}
+                                </div>
                               </div>
+                            </td>
+                            <td colSpan={colSpanCount} className="bg-blue-50/90 py-1.5 px-2 text-slate-500 truncate text-[11px]" title={cleanNotes(plan.notes)}>
+                              {cleanNotes(plan.notes)}
                             </td>
                           </tr>
                         );
@@ -1487,23 +1492,24 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
                       let rowBg = 'bg-white';
                       let stickyBg = 'bg-white';
-                      let fontStyle = 'font-bold text-slate-900 text-[13px]';
-                      let sttStyle = 'font-bold text-slate-400';
+                      let fontStyle = 'font-medium text-slate-800 text-[12px] leading-snug';
+                      let sttStyle = 'font-bold text-slate-400 text-xs';
                       
                       if (depth === 1) {
                         rowBg = 'bg-white';
                         stickyBg = 'bg-white';
-                        fontStyle = 'font-bold text-slate-900 text-sm';
-                        sttStyle = 'font-bold text-slate-600';
+                        fontStyle = 'font-semibold text-slate-900 text-[12px] leading-snug';
+                        sttStyle = 'font-bold text-slate-600 text-xs';
                       } else if (depth === 2) {
-                        fontStyle = 'font-semibold text-slate-700 text-[13px]';
-                        sttStyle = 'font-semibold text-slate-400';
+                        fontStyle = 'font-medium text-slate-800 text-[12px] leading-snug';
+                        sttStyle = 'font-semibold text-slate-400 text-[11px]';
                       } else if (depth >= 3) {
+                        fontStyle = 'font-normal text-slate-700 text-[11.5px] leading-snug';
                         sttStyle = 'font-medium text-slate-400 text-[10.5px]';
                       }
                       
                       const rowClass = `group transition-colors border-b border-slate-50 ${rowBg} hover:bg-slate-100`;
-                      const paddingLeft = `${depth * 1.5}rem`;
+                      const paddingLeft = depth > 0 ? `${(depth - 1) * 0.4}rem` : '0';
 
                       return (
                         <tr key={plan.id} onDoubleClick={() => {
@@ -1514,7 +1520,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           }
                         }} className={rowClass}>
                           {/* STT */}
-                          <td style={{ left: 0, width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`sticky left-0 z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 p-0 align-middle text-center font-mono whitespace-nowrap overflow-hidden text-ellipsis ${sttStyle}`}>
+                          <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-1.5 px-0.5 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 text-center font-mono whitespace-nowrap overflow-hidden text-ellipsis ${sttStyle}`}>
                             {editingCell?.id === plan.id && editingCell?.field === 'stt' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -1523,15 +1529,15 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 onBlur={() => saveEditing(plan, pRecord)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
                                 autoFocus
-                                className="w-full text-center bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
+                                className="w-full text-center bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1 py-1 h-[26px] box-border outline-none shadow-sm border-none rounded"
                               />
                             ) : (
-                              <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-1 py-0 rounded block w-full truncate" title={String(depth > 0 ? plan.computedStt : plan.stt)}>{depth > 0 ? plan.computedStt : plan.stt}</span>
+                              <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-0.5 py-0 rounded block w-full truncate" title={String(depth > 0 ? plan.computedStt : plan.stt)}>{depth > 0 ? plan.computedStt : plan.stt}</span>
                             )}
                           </td>
                           
                           {/* NỘI DUNG */}
-                          <td className={`sticky left-[var(--stt-width)] z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 p-0 align-middle text-left overflow-hidden ${fontStyle}`} style={{ left: "var(--stt-width)" }}>
+                          <td className={`sticky left-0 md:static z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none border-r border-slate-200 p-0 align-middle text-left overflow-hidden ${fontStyle}`}>
                             {editingCell?.id === plan.id && editingCell?.field === 'jobContent' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -1540,28 +1546,28 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                                 onBlur={() => saveEditing(plan, pRecord)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
                                 autoFocus
-                                className="w-full bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 h-[28px] box-border outline-none shadow-sm border-none rounded"
+                                className="w-full bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1 h-[26px] box-border outline-none shadow-sm border-none rounded"
                               />
                             ) : (
-                              <div className="flex items-center gap-1.5.5 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
+                              <div className="flex items-center gap-1 w-full min-w-0 overflow-hidden" style={{ paddingLeft }}>
                                 {depth > 1 && (
-                                  <span className="material-symbols-outlined flex-shrink-0 text-slate-300 text-[14px] mr-1 translate-y-[1px]">
+                                  <span className="material-symbols-outlined flex-shrink-0 text-slate-400 text-[12px] mr-0.5">
                                     subdirectory_arrow_right
                                   </span>
                                 )}
-                                <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-100 flex-1 px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center whitespace-normal break-words leading-tight" title={plan.jobContent}>
+                                <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-100 flex-1 px-1.5 py-1 w-full min-w-0 flex items-center whitespace-normal break-words leading-tight" title={plan.jobContent}>
                                   {plan.jobContent}
                                 </span>
                                 
-                                <div className="flex items-center ml-1 transition-opacity">
+                                <div className="hidden group-hover:flex items-center gap-0.5 ml-1 shrink-0">
                                 {onAddSubtask && subTab !== 'FINANCE' && (
-                                  <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
-                                    <span className="material-symbols-outlined text-[14px]">add_circle</span>
+                                  <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="p-0.5 rounded text-slate-400 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
+                                    <span className="material-symbols-outlined text-[13px]">add_circle</span>
                                   </button>
                                 )}
                                   {onDelete && (
-                                    <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-100 transition-colors inline-flex items-center flex-shrink-0" title="Xóa">
-                                      <span className="material-symbols-outlined text-[14px]">delete</span>
+                                    <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-100 transition-colors inline-flex items-center flex-shrink-0" title="Xóa">
+                                      <span className="material-symbols-outlined text-[13px]">delete</span>
                                     </button>
                                   )}
                                 </div>

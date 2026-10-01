@@ -1991,12 +1991,14 @@ const hasSyncedRef = useRef(false);
   const maxSttWidth = React.useMemo(() => {
     let maxLen = 3; // Minimum length 3 for "STT" header
     groupedTasks.forEach(t => {
-      const val = String((t as any).computedStt || t.stt || '').trim();
-      if (val.length > maxLen) maxLen = val.length;
+      const rawVal = String((t as any).computedStt || t.stt || '').trim();
+      const cleanVal = rawVal.split(/[\s\-]/)[0];
+      const effectiveVal = cleanVal && cleanVal.length <= 7 ? cleanVal : rawVal.slice(0, 5);
+      if (effectiveVal.length > maxLen) maxLen = effectiveVal.length;
     });
-    // Tự động co giãn theo độ dài thực tế của STT (1, 1.1, 1.1.1, 10.2.1...), đảm bảo không bao giờ bị cắt '...'
-    const calculated = Math.max(44, Math.round(maxLen * 10 + 16));
-    return Math.min(140, calculated);
+    // Thu gọn tối đa vừa khít con số: 3 ký tự (3, 3.7): 26px, 5 ký tự (3.7.1): 32px, 7 ký tự (3.10.12): 38px
+    const calculated = Math.round(maxLen * 5.4 + 4);
+    return Math.max(26, Math.min(42, calculated));
   }, [groupedTasks]);
 
   const totalPureItems = groupedTasks.filter((t) => !t.isSectionHeader).length;
@@ -2308,21 +2310,35 @@ const hasSyncedRef = useRef(false);
           }}
           className="w-full overflow-x-auto overflow-y-auto flex-1 custom-scrollbar"
         >
-          <table className="min-w-[1350px] w-full text-left border-collapse text-[11px] table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+          <table className="min-w-[800px] md:min-w-[950px] w-full text-left border-collapse text-[11px] table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+            <colgroup>
+              <col style={{ width: "var(--stt-width)" }} />
+              <col style={{ width: "auto" }} />
+              <col style={{ width: "40px" }} />
+              <col style={{ width: "36px" }} />
+              <col style={{ width: "36px" }} />
+              <col style={{ width: "110px" }} />
+              <col style={{ width: "110px" }} />
+              {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
+                <col style={{ width: "100px" }} />
+              )}
+              <col style={{ width: "100px" }} />
+              <col style={{ width: "110px" }} />
+            </colgroup>
             <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
               <tr>
-                <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`sticky left-0 z-20 md:static py-2 px-1 bg-slate-50 text-center border-b border-r border-slate-200 whitespace-nowrap transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>STT</th>
-                <th className={`sticky z-20 md:static py-2 px-2 min-w-[200px] md:min-w-[280px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)" }}>NỘI DUNG</th>
-                <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
-                <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
-                <th className="py-2 px-1 w-[46px] min-w-[46px] max-w-[46px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
-                <th className="py-2 px-1 w-[145px] min-w-[145px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
-                <th className="py-2 px-1 w-[145px] min-w-[145px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
+                <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-slate-50 text-center border-b border-r border-slate-200 whitespace-nowrap tracking-tighter">STT</th>
+                <th className="sticky left-0 md:static z-20 py-2 px-2 min-w-[160px] md:min-w-[200px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none">NỘI DUNG</th>
+                <th className="py-2 px-0.5 w-[40px] min-w-[40px] max-w-[40px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
+                <th className="py-2 px-0.5 w-[36px] min-w-[36px] max-w-[36px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
+                <th className="py-2 px-0.5 w-[36px] min-w-[36px] max-w-[36px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
+                <th className="py-2 px-1 w-[110px] min-w-[110px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
+                <th className="py-2 px-1 w-[110px] min-w-[110px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
                 {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
-                    <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">GIAO VIỆC</th>
+                    <th className="py-2 px-1 w-[100px] text-center border-b border-slate-200 whitespace-nowrap">GIAO VIỆC</th>
                   )}
-                <th className="py-2 px-1 w-[130px] border-b border-slate-200 whitespace-nowrap text-center">NGƯỜI CẬP NHẬT</th>
-                <th className="bg-slate-50 py-2 px-1 w-[150px] min-w-[150px] border-b border-l border-slate-200 whitespace-nowrap">GHI CHÚ</th>
+                <th className="py-2 px-1 w-[100px] border-b border-slate-200 whitespace-nowrap text-center">NGƯỜI CẬP NHẬT</th>
+                <th className="bg-slate-50 py-2 px-1 w-[110px] min-w-[110px] border-b border-l border-slate-200 whitespace-nowrap">GHI CHÚ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
@@ -2334,26 +2350,28 @@ const hasSyncedRef = useRef(false);
                   if (t.isSectionHeader) {
                     const isCollapsed = collapsedSections.has(t._sectionKey || '');
                     return (
-                      <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                        <td onClick={() => handleOpenEditModal(t)} style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`sticky left-0 z-10 md:static py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-xs text-primary cursor-pointer hover:underline whitespace-nowrap overflow-hidden text-ellipsis transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`} title={String((t as any).computedStt || t.stt)}>{(t as any).computedStt || t.stt}</td>
-                        <td colSpan={isScrolledHorizontally ? 1 : (hasPermission(authStore.user, 'ASSIGN_TASKS') ? 7 : 6)} className={`sticky z-10 md:static py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)", width: isScrolledHorizontally ? "220px" : "auto", minWidth: isScrolledHorizontally ? "220px" : "auto", maxWidth: isScrolledHorizontally ? "220px" : "auto" }}>
-                          <div className="flex items-center gap-1.5 min-w-0 w-full overflow-hidden">
+                      <tr key={t.id} className="group bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
+                        <td onClick={() => handleOpenEditModal(t)} style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-[11px] text-primary cursor-pointer hover:underline whitespace-nowrap tracking-tighter" title={String((t as any).computedStt || t.stt)}>{(t as any).computedStt || t.stt}</td>
+                        <td className="sticky left-0 md:static z-10 py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary border-r border-blue-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none">
+                          <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}
-                              className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
+                              className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
                               title={isCollapsed ? 'Mở rộng đầu mục' : 'Thu gọn đầu mục'}
                             >
-                              <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
+                              <span className={`material-symbols-outlined text-[15px] text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                             </button>
-                            <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                            <span onClick={() => handleOpenEditModal(t)} className="cursor-pointer hover:underline flex-1 min-w-0 truncate whitespace-nowrap overflow-hidden md:break-words leading-tight pt-0.5" title={t.name}>
+                            <span className="material-symbols-outlined text-[15px] flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
+                            <span onClick={() => handleOpenEditModal(t)} className="cursor-pointer hover:underline flex-1 min-w-0 truncate whitespace-nowrap overflow-hidden leading-tight" title={t.name}>
                               {t.stt ? `${t.stt} - ` : ''}{t.name}
                             </span>
-                            <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-base">add_circle</span></button>
-                            <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-base">delete</span></button>
+                            <div className="hidden group-hover:flex items-center gap-0.5 flex-shrink-0">
+                              <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="p-0.5 rounded text-blue-400 hover:text-blue-700 hover:bg-blue-100 transition-all inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button>
+                              <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-all inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button>
+                            </div>
                           </div>
                         </td>
-                        <td className="bg-blue-50/90 border-l border-blue-200 py-2 px-1 text-slate-500 truncate" title={cleanNotes(t.notes)}>
+                        <td colSpan={hasPermission(authStore.user, 'ASSIGN_TASKS') ? 8 : 7} className="bg-blue-50/90 py-2 px-2 text-slate-500 truncate text-[11px]" title={cleanNotes(t.notes)}>
                           {cleanNotes(t.notes)}
                         </td>
                       </tr>
@@ -2362,23 +2380,23 @@ const hasSyncedRef = useRef(false);
                   const pct = Math.round((t.progress || 0) * 100);
                   const isFinished = t.isDone || pct >= 100;
                   const depth = (t as any).depth || 0;
-                  const paddingLeft = depth > 1 ? `${(depth - 1) * 1.5}rem` : '0';
+                  const paddingLeft = depth > 1 ? `${(depth - 1) * 0.4}rem` : '0';
                   
                   let rowBg = 'bg-white';
                   let stickyBg = 'bg-white';
-                  let fontStyle = "font-bold text-slate-900 text-[13px]";
+                  let fontStyle = "font-medium text-slate-800 text-[12px] leading-snug";
                   let sttStyle = "font-bold text-slate-400 text-xs";
                   
                   if (depth === 1) {
                     rowBg = "bg-white";
                     stickyBg = "bg-white";
-                    fontStyle = "font-bold text-slate-900 text-sm";
+                    fontStyle = "font-semibold text-slate-900 text-[12px] leading-snug";
                     sttStyle = "font-bold text-slate-600 text-xs";
                   } else if (depth === 2) {
-                    fontStyle = "font-semibold text-slate-700 text-[13px]";
+                    fontStyle = "font-medium text-slate-800 text-[12px] leading-snug";
                     sttStyle = "font-semibold text-slate-400 text-[11px]";
                   } else if (depth >= 3) {
-                    fontStyle = "font-medium text-slate-800 text-[13px] leading-relaxed";
+                    fontStyle = "font-normal text-slate-700 text-[11.5px] leading-snug";
                     sttStyle = "font-medium text-slate-400 text-[11px]";
                   }
                   
@@ -2399,27 +2417,29 @@ const hasSyncedRef = useRef(false);
                     ))
                   );
 
-                  const rowClass = `hover:bg-slate-100 transition-colors border-b border-slate-50 ${isHighlighted ? 'highlighted-task-row system-row-highlighted' : rowBg}`;
+                  const rowClass = `group hover:bg-slate-100 transition-colors border-b border-slate-50 ${isHighlighted ? 'highlighted-task-row system-row-highlighted' : rowBg}`;
 
                   return (
                     <tr key={t.id} className={rowClass} onDoubleClick={() => handleOpenEditModal(t)}>
-                      <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`sticky left-0 z-10 md:static py-1.5 px-1 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 font-mono text-center whitespace-nowrap overflow-hidden text-ellipsis ${sttStyle} transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>
+                      <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-1.5 px-0 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 font-mono text-center whitespace-nowrap tracking-tighter text-[11px] ${sttStyle}`}>
                         {editingCell?.id === t.id && editingCell?.field === 'stt' ? (
-                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full text-center border rounded px-0.5 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10px]" />
+                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full text-center border rounded px-0 py-0.5 bg-white text-slate-900 font-bold focus:outline-primary text-[10px]" />
                         ) : (
-                          <span onClick={() => startEditing(t.id, 'stt', (t as any).computedStt || t.stt)} className="cursor-pointer hover:bg-slate-200/50 block w-full px-0.5 truncate" title={String((t as any).computedStt || t.stt || idx + 1)}>{(t as any).computedStt || t.stt || idx + 1}</span>
+                          <span onClick={() => startEditing(t.id, 'stt', (t as any).computedStt || t.stt)} className="cursor-pointer hover:bg-slate-200/50 block w-full px-0 whitespace-nowrap tracking-tighter text-center" title={String((t as any).computedStt || t.stt || idx + 1)}>{(t as any).computedStt || t.stt || idx + 1}</span>
                         )}
                       </td>
-                      <td className={`sticky z-10 md:static py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none border-r border-slate-200 transition-colors whitespace-normal break-words ${fontStyle} transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)" }} title={t.name}>
+                      <td className={`sticky left-0 md:static z-10 py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none border-r border-slate-200 whitespace-normal break-words ${fontStyle}`} title={t.name}>
                         {editingCell?.id === t.id && editingCell?.field === 'name' ? (
-                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 focus:outline-primary text-[13px] font-medium" />
+                          <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 focus:outline-primary text-[12px] font-medium" />
                         ) : (
                           <div style={{ paddingLeft }} className="flex flex-col gap-0.5">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 min-w-0 w-full">
                               {depth > 1 && <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">subdirectory_arrow_right</span>}
-                              <span onClick={() => startEditing(t.id, 'name', t.name)} className="flex-1 cursor-pointer hover:underline hover:text-blue-600 block">{t.name}</span>
-                              <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button>
-                              <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="flex-shrink-0 p-0.5 rounded text-slate-300 hover:text-red-600 hover:bg-red-100 transition-colors inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button>
+                              <span onClick={() => startEditing(t.id, 'name', t.name)} className="flex-1 min-w-0 cursor-pointer hover:underline hover:text-blue-600 block break-words leading-snug">{t.name}</span>
+                              <div className="hidden group-hover:flex items-center gap-0.5 flex-shrink-0">
+                                <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="p-0.5 rounded text-slate-400 hover:text-blue-600 hover:bg-slate-200 transition-all inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[13px]">add_circle</span></button>
+                                <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-all inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[13px]">delete</span></button>
+                              </div>
                             </div>
                             {t.status === 'Có thắc mắc' && (() => {
                               const latestDisc = getLatestDiscussion(t.notes, t.issue);

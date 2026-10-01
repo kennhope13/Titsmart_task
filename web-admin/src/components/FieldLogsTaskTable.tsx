@@ -287,16 +287,16 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
         setIsScrolledHorizontally(scrollLeft > 10);
       }}
     >
-      <table className="w-full text-left text-sm text-slate-600 border-collapse table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
-        <thead className="bg-slate-50 text-[11px] md:text-xs uppercase text-slate-500 font-bold sticky top-0 z-20 shadow-sm border-b border-slate-200">
+      <table className="w-full text-left text-xs text-slate-600 border-collapse table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+        <thead className="bg-slate-50 text-[10px] md:text-xs uppercase text-slate-500 font-bold sticky top-0 z-20 shadow-sm border-b border-slate-200">
           <tr>
-            <th style={{ width: "var(--stt-width)", minWidth: 42 }} className={`sticky left-0 z-20 md:static py-2.5 px-2 md:py-3 md:px-3 bg-slate-50 text-center border-r border-slate-200 whitespace-nowrap transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>STT</th>
-            <th className={`sticky z-20 md:static py-2.5 px-3 md:py-3 md:px-4 w-[220px] min-w-[220px] max-w-[220px] md:w-auto md:min-w-0 md:max-w-none bg-slate-50 border-r border-slate-200 whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)" }}>NỘI DUNG CÔNG VIỆC</th>
-            <th className="py-2.5 px-2 md:py-3 md:px-3 border-r border-slate-200 w-32 md:w-36 text-center whitespace-nowrap">THỜI GIAN</th>
-            <th className="py-2.5 px-2 md:py-3 md:px-3 border-r border-slate-200 w-48 md:w-72 whitespace-nowrap">ẢNH</th>
-            <th className="py-2.5 px-2 md:py-3 md:px-3 border-r border-slate-200 w-44 md:w-64 whitespace-nowrap">NỘI DUNG</th>
-            <th className="py-2.5 px-2 md:py-3 md:px-3 border-r border-slate-200 w-32 md:w-40 whitespace-nowrap">NGƯỜI CẬP NHẬT</th>
-            <th className="py-2.5 px-2 md:py-3 md:px-3 w-20 md:w-28 text-center whitespace-nowrap">TT</th>
+            <th style={{ width: "var(--stt-width)", minWidth: 36 }} className="py-2 px-1 bg-slate-50 text-center border-r border-slate-200 whitespace-nowrap">STT</th>
+            <th className="sticky left-0 md:static z-20 py-2 px-2.5 w-[200px] min-w-[160px] md:w-auto md:min-w-0 bg-slate-50 border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none">NỘI DUNG CÔNG VIỆC</th>
+            <th className="py-2 px-2 border-r border-slate-200 w-28 md:w-36 text-center whitespace-nowrap">THỜI GIAN</th>
+            <th className="py-2 px-2 border-r border-slate-200 w-36 md:w-72 whitespace-nowrap">ẢNH</th>
+            <th className="py-2 px-2 border-r border-slate-200 w-40 md:w-64 whitespace-nowrap">NỘI DUNG</th>
+            <th className="py-2 px-2 border-r border-slate-200 w-28 md:w-40 whitespace-nowrap">NGƯỜI CẬP NHẬT</th>
+            <th className="py-2 px-2 w-16 md:w-28 text-center whitespace-nowrap">TT</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200">
@@ -310,10 +310,10 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
               if (t.isSectionHeader) {
                 const isCollapsed = collapsedSections.has(t._sectionKey || '');
                 return (
-                  <tr key={t.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                    <td className={`sticky left-0 z-10 md:static py-3 px-3 bg-blue-50/90 border-r border-blue-200 text-center font-mono text-xs transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''}`}>{t.computedStt || t.stt}</td>
-                    <td colSpan={isScrolledHorizontally ? 1 : 6} className={`sticky z-10 md:static py-3 px-4 bg-blue-50/90 font-extrabold text-xs shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)", width: isScrolledHorizontally ? "220px" : "auto", minWidth: isScrolledHorizontally ? "220px" : "auto", maxWidth: isScrolledHorizontally ? "220px" : "auto" }}>
-                      <div className="flex items-center gap-2 min-w-0 w-full overflow-hidden">
+                  <tr key={t.id} className="group bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
+                    <td className="py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono text-xs">{t.computedStt || t.stt}</td>
+                    <td className="sticky left-0 md:static z-10 py-2 px-2.5 bg-blue-50/90 border-r border-blue-200 font-extrabold text-xs shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none" style={{ width: "200px", minWidth: "160px" }}>
+                      <div className="flex items-center gap-1.5 min-w-0 w-full overflow-hidden">
                         <button
                           onClick={() => toggleSection(t._sectionKey || '')}
                           className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
@@ -321,17 +321,18 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                           <span className={`material-symbols-outlined text-base transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                         </button>
                         <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                        <span className="flex-1 uppercase truncate min-w-0">{t.name}</span>
+                        <span className="flex-1 uppercase truncate min-w-0 leading-tight">{t.name}</span>
                       </div>
                     </td>
+                    <td colSpan={5} className="bg-blue-50/90 py-2 px-2 text-slate-500 truncate text-[11px]"></td>
                   </tr>
                 );
               }
 
               const depth = t.depth || 0;
-              let fontStyle = "font-medium text-slate-700 text-[13px]";
-              if (depth === 1) fontStyle = "font-bold text-slate-900 text-sm";
-              else if (depth === 2) fontStyle = "font-semibold text-slate-800 text-[13px]";
+              let fontStyle = "font-medium text-slate-700 text-[12px] leading-snug";
+              if (depth === 1) fontStyle = "font-semibold text-slate-900 text-[12px] leading-snug";
+              else if (depth === 2) fontStyle = "font-medium text-slate-800 text-[12px] leading-snug";
 
               const taskLogs = logs.filter(l => l.taskId === t.id).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
               const allImagesForTask = taskLogs.flatMap(l => l.images);
@@ -349,15 +350,15 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
 
               return (
                 <tr key={t.id} onClick={(e) => { e.stopPropagation(); setViewAllLogsTask(t); }} className="hover:bg-blue-50/30 transition-colors group cursor-pointer border-b border-slate-100">
-                  <td className={`sticky left-0 z-10 md:static py-3.5 px-3 bg-white border-r border-slate-200 text-center font-mono text-xs transition-all duration-200 ${isScrolledHorizontally ? 'max-md:hidden' : ''} ${depth === 1 ? 'font-bold text-slate-700' : 'text-slate-500'}`}>
+                  <td className={`py-2 px-1 bg-white border-r border-slate-200 text-center font-mono text-xs ${depth === 1 ? 'font-bold text-slate-700' : 'text-slate-500'}`}>
                     {t.computedStt || t.stt}
                   </td>
-                  <td className={`sticky z-10 md:static py-3.5 px-4 bg-white border-r border-slate-200 ${fontStyle} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none transition-all duration-200`} style={{ left: isScrolledHorizontally ? "0px" : "var(--stt-width)", width: "220px", minWidth: "220px", maxWidth: "220px" }}>
-                    <div className="flex items-center gap-2 min-w-0 w-full" style={{ paddingLeft: `${Math.max(0, depth - 1) * 1}rem` }}>
-                      {depth > 1 && <span className="material-symbols-outlined text-slate-300 text-sm shrink-0">subdirectory_arrow_right</span>}
-                      <span className="text-slate-800 leading-snug truncate flex-1 min-w-0" title={t.name}>{t.name}</span>
+                  <td className={`sticky left-0 md:static z-10 py-2 px-2.5 bg-white border-r border-slate-200 ${fontStyle} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none`} style={{ width: "200px", minWidth: "160px" }}>
+                    <div className="flex items-center gap-1 min-w-0 w-full" style={{ paddingLeft: `${Math.max(0, depth - 1) * 0.4}rem` }}>
+                      {depth > 1 && <span className="material-symbols-outlined text-slate-400 text-[12px] shrink-0">subdirectory_arrow_right</span>}
+                      <span className="text-slate-800 leading-snug break-words flex-1 min-w-0" title={t.name}>{t.name}</span>
                       {taskLogs.length > 0 && (
-                        <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200/80 shrink-0" title={`${taskLogs.length} lần cập nhật`}>
+                        <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200/80 shrink-0" title={`${taskLogs.length} lần cập nhật`}>
                           {taskLogs.length}
                         </span>
                       )}
