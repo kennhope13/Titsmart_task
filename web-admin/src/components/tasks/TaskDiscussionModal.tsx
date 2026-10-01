@@ -5,6 +5,7 @@ import { useAuthStore } from '../../services/authStore';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { Modal } from '../common/Modal';
 import { uploadAttachment } from '../../utils/fileUploadHelper';
+import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower } from '../../utils/taskPermission';
 
 export interface TaskDiscussionModalProps {
   isOpen: boolean;
@@ -39,22 +40,17 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
   onApprove: propOnApprove,
 }) => {
   const authUser = useAuthStore(s => s.user);
+  const engineers = useRealtimeStore(s => s.engineers);
   const activeUserId = currentUserId || authUser?.id || '';
   const activeUserName = currentUserName || authUser?.name || authUser?.username || 'Người dùng';
   
-  const isAssigner = propIsAssigner !== undefined 
-    ? propIsAssigner 
-    : (task?.assignerId === activeUserId || authUser?.role === 'admin' || authUser?.username === 'admin');
+  const calculatedAssignee = isUserTaskAssignee(authUser, task, engineers);
+  const calculatedAssigner = isUserTaskAssigner(authUser, task, engineers);
+  const calculatedFollower = isUserTaskFollower(authUser, task, engineers);
 
-  const isAssignee = propIsAssignee !== undefined
-    ? propIsAssignee
-    : (task?.assignedEngineerId === activeUserId || (task?.assignedEngineerName?.includes('|' + activeUserId) ?? false));
-
-  const isFollower = Boolean(
-    (task?.followerIds && task.followerIds.includes(activeUserId)) ||
-    (task?.followerNames && task.followerNames.some(n => n.toLowerCase() === activeUserName.toLowerCase() || (authUser?.name && n.toLowerCase() === authUser.name.toLowerCase()))) ||
-    (!isAssigner && !isAssignee)
-  );
+  const isAssignee = propIsAssignee !== undefined ? propIsAssignee : calculatedAssignee;
+  const isAssigner = propIsAssigner !== undefined ? propIsAssigner : calculatedAssigner;
+  const isFollower = !isAssigner && !isAssignee ? true : calculatedFollower;
 
   const onAcceptTask = propOnAcceptTask || propOnAccept;
   const onApproveTask = propOnApproveTask || propOnApprove;

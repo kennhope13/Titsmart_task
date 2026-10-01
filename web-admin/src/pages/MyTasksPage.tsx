@@ -7,10 +7,11 @@ import { useAuthStore } from '../services/authStore';
 import { Task } from '../types';
 import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
 import { appendTaskDiscussion, getLatestDiscussion } from '../utils/taskDiscussion';
+import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower } from '../utils/taskPermission';
 
 export const MyTasksPage: React.FC = () => {
   const navigate = useNavigate();
-  const { tasks, projects, updateTask } = useRealtimeStore();
+  const { tasks, projects, engineers, updateTask } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
   const [searchParams] = useSearchParams();
 
@@ -115,24 +116,11 @@ export const MyTasksPage: React.FC = () => {
 
   const allMyTasks = useMemo(() => {
     if (!user) return [];
-    const uId = String(user.id || '').toLowerCase();
-    const uName = String(user.name || '').toLowerCase();
-    const uUsername = String(user.username || '').toLowerCase();
-
     return tasks.filter(t => !t.isSectionHeader && (
-      (t.assignedEngineerId && String(t.assignedEngineerId).toLowerCase() === uId) || 
-      (t.assignedEngineerName && (
-        t.assignedEngineerName.toLowerCase().includes(uId) ||
-        t.assignedEngineerName.toLowerCase().includes(uName) ||
-        (uUsername && t.assignedEngineerName.toLowerCase().includes(uUsername))
-      )) ||
-      (Array.isArray(t.followerIds) && t.followerIds.some(fid => String(fid).toLowerCase() === uId)) ||
-      (Array.isArray(t.followerNames) && t.followerNames.some(fn => {
-        const clean = String(fn).replace(/^[:|]+|[:|]+$/g, '').trim().toLowerCase();
-        return clean && (clean.includes(uName) || uName.includes(clean) || (uUsername && clean.includes(uUsername)));
-      }))
+      isUserTaskAssignee(user, t, engineers) ||
+      isUserTaskFollower(user, t, engineers)
     ));
-  }, [tasks, user]);
+  }, [tasks, user, engineers]);
 
   // Filter tasks strictly by category (Dự án vs Phát sinh)
   const myCategoryTasks = useMemo(() => {
@@ -615,19 +603,8 @@ export const MyTasksPage: React.FC = () => {
                 );
                 const latestDiscussion = getLatestDiscussion(t.notes, t.issue);
                 
-                const isAssignee = Boolean(
-                  user?.id && (
-                    t.assignedEngineerId === user.id || 
-                    t.assignedEngineerName?.includes('|' + user.id) || 
-                    (user.name && t.assignedEngineerName?.includes(user.name))
-                  )
-                );
-                const isFollowerOnly = !isAssignee && Boolean(
-                  user?.id && (
-                    (Array.isArray(t.followerIds) && t.followerIds.includes(user.id)) ||
-                    (user.name && Array.isArray(t.followerNames) && t.followerNames.includes(user.name))
-                  )
-                );
+                const isAssignee = isUserTaskAssignee(user, t, engineers);
+                const isFollowerOnly = !isAssignee && isUserTaskFollower(user, t, engineers);
 
                 return (
                   <div 
@@ -844,17 +821,8 @@ export const MyTasksPage: React.FC = () => {
           currentUserId={user?.id}
           currentUserName={user?.name || user?.username}
           currentUserRole={user?.role}
-          isAssigner={Boolean(
-            discussionTask.assignerId === user?.id || 
-            (discussionTask.assignerName && user?.name && discussionTask.assignerName.toLowerCase().includes(user.name.toLowerCase()))
-          )}
-          isAssignee={Boolean(
-            discussionTask.assignedEngineerId === user?.id || 
-            (discussionTask.assignedEngineerName && (
-              discussionTask.assignedEngineerName.includes('|' + (user?.id || '')) ||
-              (user?.name && discussionTask.assignedEngineerName.toLowerCase().includes(user.name.toLowerCase()))
-            ))
-          )}
+          isAssigner={isUserTaskAssigner(user, discussionTask, engineers)}
+          isAssignee={isUserTaskAssignee(user, discussionTask, engineers)}
           onAcceptTask={handleAcceptTask}
           onSendQuestion={handleSendQuestion}
           onSendReply={handleSendReply}

@@ -11,6 +11,7 @@ import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
 import { appendTaskDiscussion, parseTaskDiscussions, getLatestDiscussion, stripDiscussionThread } from '../utils/taskDiscussion';
 import { getEngineersForProject } from '../utils/projectMemberUtils';
 import { uploadAttachment } from '../utils/fileUploadHelper';
+import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower } from '../utils/taskPermission';
 
 export const TaskAssignmentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -133,23 +134,46 @@ export const TaskAssignmentPage: React.FC = () => {
     if (isFollower) return false;
 
     // 3. Người được giao việc (nhận việc) cũng không có quyền xóa
-    const isAssignee = (task.assignedEngineerId && String(task.assignedEngineerId).toLowerCase() === uId) ||
-      (task.assignedEngineerName && (
-        task.assignedEngineerName.toLowerCase().includes(uId) ||
-        task.assignedEngineerName.toLowerCase().includes(uName) ||
-        (uUsername && task.assignedEngineerName.toLowerCase().includes(uUsername))
-      ));
+    const isAssignee = isUserTaskAssignee(currentUser, task, engineers);
     if (isAssignee) return false;
 
     // 4. Người giao việc chính chủ hoặc Quản lý có quyền
-    const taskAssignerId = String(task.assignerId || '').trim().toLowerCase();
-    const taskAssignerName = String(task.assignerName || '').trim().toLowerCase();
-    const isCreatorOrAssigner = (taskAssignerId && taskAssignerId === uId) ||
-      (taskAssignerName && (taskAssignerName.includes(uName) || uName.includes(taskAssignerName) || (uUsername && taskAssignerName === uUsername)));
-
+    const isCreatorOrAssigner = isUserTaskAssigner(currentUser, task, engineers);
     const isManager = uRole === 'pm' || uRole === 'quản lý dự án' || uRole === 'manager' || uRole === 'quản lý' || hasPermission(currentUser, 'EDIT_TASKS');
 
     return Boolean(isCreatorOrAssigner || isManager);
+  };
+
+  const handleAcceptTask = async (taskToAccept: Task) => {
+    try {
+      const isDirect = taskToAccept.sectionName === 'Giao việc trực tiếp' || taskToAccept.projectCode === 'COMPANY' || taskToAccept.code?.startsWith('TASK-DIRECT');
+      const nextStatus = isDirect ? 'Đang làm' : 'Đang làm';
+      await updateTask(taskToAccept.id, {
+        status: nextStatus,
+        progress: taskToAccept.progress > 0 ? taskToAccept.progress : 0.05
+      });
+
+      triggerToast(`Đã nhận việc thành công: "${taskToAccept.name}"!`, 'success');
+
+      const store = useRealtimeStore.getState();
+      const engName = user?.name || user?.username || 'Nhân sự';
+      store.logActivity(`Nhân sự ${engName} đã XÁC NHẬN NHẬN VIỆC "${taskToAccept.name}"`, taskToAccept.projectCode);
+
+      if (store.addNotification && (taskToAccept.assignerId || taskToAccept.assignerName)) {
+        await store.addNotification({
+          title: 'Nhân sự đã nhận việc',
+          message: `${engName} đã xác nhận nhận việc "${taskToAccept.name}" [${taskToAccept.projectCode}].`,
+          link: `/my-tasks?taskId=${encodeURIComponent(taskToAccept.id)}&highlight=${encodeURIComponent(taskToAccept.name || '')}`,
+          type: `task_accepted:::${taskToAccept.assignerId || ''}:::${taskToAccept.assignerName || ''}`,
+          icon: 'task_alt',
+          senderId: user?.id,
+          senderName: engName
+        });
+      }
+    } catch (err) {
+      console.error('Lỗi nhận việc:', err);
+      triggerToast('Không thể nhận việc. Vui lòng thử lại!', 'warning');
+    }
   };
 
   const handleQuickApprove = async (e: React.MouseEvent, task: any) => {
@@ -186,9 +210,9 @@ export const TaskAssignmentPage: React.FC = () => {
     const userName = user?.name || user?.username || 'Thành viên';
     const userId = user?.id || '';
 
-    const isAssigner = task.assignerId === userId || user?.role === 'admin' || user?.username === 'admin';
-    const isAssignee = task.assignedEngineerId === userId || (task.assignedEngineerName?.includes('|' + userId) ?? false);
-    const isFollower = (task.followerIds && task.followerIds.includes(userId)) || (!isAssigner && !isAssignee);
+    const isAssigner = isUserTaskAssigner(user, task, engineers);
+    const isAssignee = isUserTaskAssignee(user, task, engineers);
+    const isFollower = isUserTaskFollower(user, task, engineers) || (!isAssigner && !isAssignee);
 
     const senderRole = isFollower ? 'Người theo dõi' : (isAssigner ? 'Người giao việc' : 'Người nhận việc');
 
@@ -1878,7 +1902,14 @@ export const TaskAssignmentPage: React.FC = () => {
         isOpen={!!discussionTask}
         onClose={() => setDiscussionTask(null)}
         task={tasks.find(tk => tk.id === discussionTask?.id) || discussionTask}
+        currentUserId={user?.id}
+        currentUserName={user?.name || user?.username}
+        currentUserRole={user?.role}
+        isAssigner={isUserTaskAssigner(user, discussionTask, engineers)}
+        isAssignee={isUserTaskAssignee(user, discussionTask, engineers)}
         onSendReply={handleSendReply}
+        onAccept={handleAcceptTask}
+        onAcceptTask={handleAcceptTask}
       />
 
       {toastState.show && (

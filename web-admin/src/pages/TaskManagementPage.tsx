@@ -17,6 +17,7 @@ import { appendTaskDiscussion, getLatestDiscussion, stripDiscussionThread } from
 import { getEngineersForProject } from '../utils/projectMemberUtils';
 import { uploadAttachment } from '../utils/fileUploadHelper';
 import { PullToRefresh } from '../components/common/PullToRefresh';
+import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower } from '../utils/taskPermission';
 
 // Convert integer to Roman numeral
 const toRoman = (num: number): string => {
@@ -1760,8 +1761,8 @@ const hasSyncedRef = useRef(false);
     const matchesConstr = filterConstr === 'all' || t.constrStatus === filterConstr;
     const currentUser = authStore?.user;
     const matchesAssign = assignFilter === 'all' || 
-      (assignFilter === 'mine' && t.assignedEngineerId?.includes(currentUser?.id || '')) ||
-      (assignFilter === 'delegated' && t.assignerId === currentUser?.id);
+      (assignFilter === 'mine' && isUserTaskAssignee(currentUser, t, engineers)) ||
+      (assignFilter === 'delegated' && isUserTaskAssigner(currentUser, t, engineers));
     const matchesSearch =
       t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (cleanIssue(t.issue) && cleanIssue(t.issue).toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -1770,12 +1771,12 @@ const hasSyncedRef = useRef(false);
       matchesProj &&
       matchesSection &&
       matchesUnit &&
-            matchesPurchase &&
+      matchesPurchase &&
       matchesConstr &&
       matchesAssign &&
       matchesSearch
     );
-  }), [tasks, selectedProjectCode, filterSection, filterUnit, filterPurchase, filterConstr, assignFilter, searchTerm]);
+  }), [tasks, engineers, selectedProjectCode, filterSection, filterUnit, filterPurchase, filterConstr, assignFilter, searchTerm]);
 
   const toRoman = (num: number): string => {
     const roman: Record<string, number> = {
@@ -2523,13 +2524,13 @@ const hasSyncedRef = useRef(false);
                               </button>
                             )}
                             
-                            {(t.assignedEngineerName?.includes('|' + (authStore.user?.id || '')) || t.assignedEngineerId === authStore.user?.id) && t.status === 'Chờ nhận việc' && (
+                            {isUserTaskAssignee(authStore.user, t, engineers) && (t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc') && (
                               <div className="flex items-center gap-1 w-full pointer-events-auto">
                                 <button onClick={(e) => { e.stopPropagation(); handleAcceptTask(t); }} className="text-[9px] bg-emerald-500 hover:bg-emerald-600 text-white px-1.5 py-0.5 rounded shadow-sm flex-1 font-bold">Nhận việc</button>
                                 <button onClick={(e) => { e.stopPropagation(); setDiscussionTask(t); }} className="text-[9px] bg-amber-500 hover:bg-amber-600 text-white px-1.5 py-0.5 rounded shadow-sm flex-1 font-bold">Thắc mắc</button>
                               </div>
                             )}
-                            {(t.assignedEngineerName?.includes('|' + (authStore.user?.id || '')) || t.assignedEngineerId === authStore.user?.id) && (t.status === 'Đang làm' || t.status === 'Chưa làm') && (
+                            {isUserTaskAssignee(authStore.user, t, engineers) && (t.status === 'Đang làm' || t.status === 'Chưa làm') && (
                               <button onClick={(e) => { e.stopPropagation(); handleReportDone(t); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full font-bold">Báo cáo hoàn thành</button>
                             )}
                             {canApproveTask(authStore.user, t) && (
@@ -3077,10 +3078,17 @@ const hasSyncedRef = useRef(false);
         isOpen={!!discussionTask}
         onClose={handleCloseDiscussion}
         task={tasks.find(tk => tk.id === discussionTask?.id) || discussionTask}
+        currentUserId={authStore.user?.id}
+        currentUserName={authStore.user?.name || authStore.user?.username}
+        currentUserRole={authStore.user?.role}
+        isAssigner={isUserTaskAssigner(authStore.user, discussionTask, engineers)}
+        isAssignee={isUserTaskAssignee(authStore.user, discussionTask, engineers)}
         onSendQuestion={handleSendQuestion}
         onSendReply={handleSendReply}
         onAccept={handleAcceptTask}
+        onAcceptTask={handleAcceptTask}
         onApprove={handleApproveTask}
+        onApproveTask={handleApproveTask}
       />
 
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />

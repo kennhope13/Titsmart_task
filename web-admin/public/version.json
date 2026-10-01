@@ -1,10 +1,9 @@
 {
-  "version": "3.8.140",
+  "version": "3.8.141",
   "date": "2026-10-01",
   "notes": [
-    "Cập nhật tính năng Trao đổi & Thảo luận công việc cho Người theo dõi (Follower).",
-    "Tối ưu thanh công cụ giao việc trên thiết bị di động (nằm trên 1 hàng duy nhất).",
-    "Bỏ cột STT trong bảng Giao việc & Công việc trực tiếp để tối ưu hiển thị.",
-    "Khắc phục hiển thị 00:00 và lọc triệt để thẻ người theo dõi trong ghi chú."
+    "Sửa lỗi hiển thị nút Nhận việc / Xác nhận nhận việc và Thắc mắc cho nhân sự được giao việc (Assignee).",
+    "Chuẩn hóa và đồng bộ thuật toán nhận diện người nhận việc (Assignee), người giao việc (Assigner) và người theo dõi (Follower) trên toàn bộ hệ thống.",
+    "Bổ sung nút thao tác Nhận việc trực tiếp trong modal Trao đổi & Hướng dẫn trên tất cả các trang."
   ]
 }
