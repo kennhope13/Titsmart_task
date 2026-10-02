@@ -1,8 +1,8 @@
 {
-  "version": "3.8.145",
+  "version": "3.8.146",
   "date": "2026-10-02",
   "notes": [
-    "Cài đặt plugin @capacitor/app và đồng bộ xử lý nút Back phần cứng của điện thoại Android.",
-    "Hỗ trợ đóng Modal/Popup, quay lại danh sách dự án khi đang ở chi tiết dự án, chống thoát app đột ngột khi bấm nút trở về."
+    "Khắc phục triệt để lỗi đứng màn hình đang tải khi cập nhật ứng dụng trên điện thoại Android.",
+    "Cải thiện luồng tải và cài đặt file APK mới, hiển thị hướng dẫn mở file APK cài đặt trực tiếp không gây đơ ứng dụng."
   ]
 }

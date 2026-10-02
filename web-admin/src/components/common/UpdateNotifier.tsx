@@ -128,6 +128,8 @@ export const UpdateNotifier: React.FC = () => {
 
   const dismiss = () => setState({ ...state, visible: false });
 
+  const [apkDownloadStarted, setApkDownloadStarted] = useState(false);
+
   const handleWebUpdate = async () => {
     const isCapacitorNative = !!(window as any).Capacitor?.isNativePlatform?.();
 
@@ -136,12 +138,17 @@ export const UpdateNotifier: React.FC = () => {
       const downloadUrl = (state.message && state.message.startsWith('http')) 
         ? state.message 
         : `https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`;
-      window.location.href = downloadUrl;
-      dismiss();
+      
+      setApkDownloadStarted(true);
+      try {
+        window.open(downloadUrl, '_system');
+      } catch (_) {
+        window.location.href = downloadUrl;
+      }
       return;
     }
 
-    // 2. Nếu đang chạy trên trình duyệt Web (Desktop PC/Laptop, iOS Safari, Android Chrome):
+    // 2. Nếu đang chạy trên trình duyệt Web / PWA:
     // Làm mới cache bộ nhớ, unregister Service Worker, và tải lại phiên bản mới nhất ngay lập tức
     setIsInstalling(true);
     setState((s) => ({ ...s, status: 'downloading', percent: 60 }));
@@ -160,12 +167,23 @@ export const UpdateNotifier: React.FC = () => {
     }
 
     setState((s) => ({ ...s, status: 'downloaded', percent: 100 }));
+
+    // Tự động tải lại trang với cache-busting
     setTimeout(() => {
-      // Tải lại trang với URL cache-busting để đảm bảo tải bản mới nhất từ Netlify
-      const url = new URL(window.location.href);
-      url.searchParams.set('_v', Date.now().toString());
-      window.location.href = url.toString();
-    }, 600);
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('_v', Date.now().toString());
+        window.location.replace(url.toString());
+      } catch (_) {
+        window.location.reload();
+      }
+    }, 400);
+
+    // Safety fallback: Nếu sau 1.5s chưa reload xong, tự giải phóng overlay tránh bị treo
+    setTimeout(() => {
+      setIsInstalling(false);
+      setState(s => ({ ...s, status: 'available' }));
+    }, 1500);
   };
 
   const handleInstallAndRestart = () => {
@@ -284,30 +302,44 @@ export const UpdateNotifier: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-2 pt-1 border-t border-slate-100/80 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400">Tải file cài đặt:</span>
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={`https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary hover:underline font-medium inline-flex items-center gap-0.5"
-                    >
-                      <span className="material-symbols-outlined text-[13px]">android</span>
-                      APK
-                    </a>
-                    <span className="text-slate-300">•</span>
-                    <a
-                      href="https://github.com/kennhope13/Titsmart_task/releases/latest"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary hover:underline font-medium inline-flex items-center gap-0.5"
-                    >
-                      <span className="material-symbols-outlined text-[13px]">desktop_windows</span>
-                      Windows
-                    </a>
+
+                {apkDownloadStarted ? (
+                  <div className="mt-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1 animate-fadeIn">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                      <span className="material-symbols-outlined text-[16px] text-emerald-600">file_download_done</span>
+                      Đang tải file APK về điện thoại
+                    </div>
+                    <p className="text-[11px] text-emerald-700 leading-relaxed">
+                      Khi thanh thông báo của điện thoại báo <strong>Đã tải xong</strong>, bạn hãy nhấn vào file trong thanh thông báo hoặc thư mục <strong>Tải về (Downloads)</strong> để cài đặt.
+                    </p>
                   </div>
-                </div>
+                ) : (
+                  <div className="mt-2 pt-1 border-t border-slate-100/80 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Tải file cài đặt:</span>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => setApkDownloadStarted(true)}
+                        className="text-primary hover:underline font-medium inline-flex items-center gap-0.5"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">android</span>
+                        APK
+                      </a>
+                      <span className="text-slate-300">•</span>
+                      <a
+                        href="https://github.com/kennhope13/Titsmart_task/releases/latest"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline font-medium inline-flex items-center gap-0.5"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">desktop_windows</span>
+                        Windows
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
