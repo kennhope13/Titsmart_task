@@ -1,9 +1,8 @@
 {
-  "version": "3.8.142",
-  "date": "2026-10-01",
+  "version": "3.8.145",
+  "date": "2026-10-02",
   "notes": [
-    "Sửa lỗi hiển thị người theo dõi (Followers) trên bảng phân công công việc trực tiếp và công việc dự án.",
-    "Bổ sung hàm tự động phân giải tên người theo dõi (getTaskFollowerNames) từ danh sách nhân sự khi tải từ DB.",
-    "Bảo toàn thông tin người theo dõi trong các thao tác cập nhật công việc và lưu trữ trên cơ sở dữ liệu."
+    "Cài đặt plugin @capacitor/app và đồng bộ xử lý nút Back phần cứng của điện thoại Android.",
+    "Hỗ trợ đóng Modal/Popup, quay lại danh sách dự án khi đang ở chi tiết dự án, chống thoát app đột ngột khi bấm nút trở về."
   ]
 }

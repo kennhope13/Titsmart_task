@@ -1,7 +1,7 @@
 {
   "name": "buildcore-pro-web-admin",
   "private": true,
-  "version": "3.8.144",
+  "version": "3.8.145",
   "description": "TITSMART Project Manager",
   "type": "module",
   "main": "dist-electron/main.js",
@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.3",
     "@capacitor/cli": "^6.2.0",
     "@capacitor/core": "^6.2.0",
     "@capacitor/ios": "^6.2.0",

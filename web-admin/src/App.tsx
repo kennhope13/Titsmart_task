@@ -23,6 +23,8 @@ import { TaskAssignmentPage } from './pages/TaskAssignmentPage';
 import { MyTasksPage } from './pages/MyTasksPage';
 import { AttendancePage } from './pages/AttendancePage';
 
+import { App as CapApp } from '@capacitor/app';
+
 import { UpdateNotifier } from './components/common/UpdateNotifier';
 import { GlobalNotificationToast } from './components/common/GlobalNotificationToast';
 import { ChatWidget } from './components/common/ChatWidget';
@@ -114,10 +116,9 @@ export const App: React.FC = () => {
     // 3. Đang ở màn hình chính (Root) → Yêu cầu nhấn 2 lần trong 2 giây mới thoát ứng dụng
     const now = Date.now();
     if (now - lastBackTimeRef.current < 2000) {
-      const capApp = (window as any).Capacitor?.Plugins?.App;
-      if (capApp && typeof capApp.exitApp === 'function') {
-        capApp.exitApp();
-      }
+      try {
+        CapApp.exitApp();
+      } catch (_) {}
       return false; // cho phép thoát
     } else {
       lastBackTimeRef.current = now;
@@ -146,26 +147,26 @@ export const App: React.FC = () => {
 
     window.addEventListener('popstate', onPopState);
 
-    // Xử lý nút back phần cứng trên Android khi chạy qua Capacitor Native
-    const capApp = (window as any).Capacitor?.Plugins?.App;
-    let backListener: any = null;
-
-    if (capApp && typeof capApp.addListener === 'function') {
-      capApp.addListener('backButton', () => {
+    // Xử lý nút back phần cứng trên Android qua plugin @capacitor/app chính thức
+    let capListener: any = null;
+    try {
+      CapApp.addListener('backButton', () => {
         handleGlobalBack();
       })
-        .then((handle: any) => {
-          backListener = handle;
+        .then((handle) => {
+          capListener = handle;
         })
-        .catch((err: any) => {
+        .catch((err) => {
           console.warn('Capacitor backButton listener failed:', err);
         });
+    } catch (e) {
+      console.warn('CapApp not available:', e);
     }
 
     return () => {
       window.removeEventListener('popstate', onPopState);
-      if (backListener && typeof backListener.remove === 'function') {
-        backListener.remove();
+      if (capListener && typeof capListener.remove === 'function') {
+        capListener.remove();
       }
     };
   }, [refreshUser]);
