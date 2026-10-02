@@ -2311,35 +2311,35 @@ const hasSyncedRef = useRef(false);
           }}
           className="w-full overflow-x-auto overflow-y-auto flex-1 custom-scrollbar"
         >
-          <table className="min-w-[850px] md:min-w-[1000px] w-full text-left border-collapse text-[11px] table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+          <table className="min-w-[1050px] w-full text-left border-collapse text-[11px] table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
             <colgroup>
               <col style={{ width: "var(--stt-width)" }} />
-              <col style={{ width: hasPermission(authStore.user, 'ASSIGN_TASKS') ? "23%" : "26%" }} />
+              <col style={{ width: hasPermission(authStore.user, 'ASSIGN_TASKS') ? 220 : 260 }} />
               <col style={{ width: 45 }} />
               <col style={{ width: 65 }} />
               <col style={{ width: 40 }} />
-              <col style={{ width: 125 }} />
-              <col style={{ width: 125 }} />
+              <col style={{ width: 120 }} />
+              <col style={{ width: 120 }} />
               {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
                 <col style={{ width: 110 }} />
               )}
               <col style={{ width: 135 }} />
-              <col style={{ width: "auto" }} />
+              <col style={{ width: 140 }} />
             </colgroup>
             <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
               <tr>
                 <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-slate-50 text-center border-b border-r border-slate-200 whitespace-nowrap tracking-tighter">STT</th>
-                <th className="sticky left-0 md:static z-20 py-2 px-2 min-w-[170px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none">NỘI DUNG</th>
+                <th className="py-2 px-2 min-w-[180px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal">NỘI DUNG</th>
                 <th className="py-2 px-0.5 w-[45px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
                 <th className="py-2 px-0.5 w-[65px] min-w-[65px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-0.5 w-[40px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
-                <th className="py-2 px-1 w-[125px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
-                <th className="py-2 px-1 w-[125px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
+                <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
+                <th className="py-2 px-1 w-[120px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
                 {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
                     <th className="py-2 px-1 w-[110px] text-center border-b border-slate-200 whitespace-nowrap">GIAO VIỆC</th>
                   )}
                 <th className="py-2 px-1 w-[135px] border-b border-slate-200 whitespace-nowrap text-center">NGƯỜI CẬP NHẬT</th>
-                <th className="bg-slate-50 py-2 px-1 min-w-[100px] border-b border-l border-slate-200 whitespace-nowrap">GHI CHÚ</th>
+                <th className="bg-slate-50 py-2 px-1 w-[140px] min-w-[130px] border-b border-l border-slate-200 whitespace-nowrap">GHI CHÚ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
@@ -2353,7 +2353,7 @@ const hasSyncedRef = useRef(false);
                     return (
                       <tr key={t.id} className="group bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
                         <td onClick={() => handleOpenEditModal(t)} style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-[11px] text-primary cursor-pointer hover:underline whitespace-nowrap tracking-tighter" title={String((t as any).computedStt || t.stt)}>{(t as any).computedStt || t.stt}</td>
-                        <td className="sticky left-0 md:static z-10 py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary border-r border-blue-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none min-w-[200px]">
+                        <td className="py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary border-r border-blue-200 min-w-[180px]">
                           <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}
@@ -2429,7 +2429,7 @@ const hasSyncedRef = useRef(false);
                           <span onClick={() => startEditing(t.id, 'stt', (t as any).computedStt || t.stt)} className="cursor-pointer hover:bg-slate-200/50 block w-full px-0 whitespace-nowrap tracking-tighter text-center" title={String((t as any).computedStt || t.stt || idx + 1)}>{(t as any).computedStt || t.stt || idx + 1}</span>
                         )}
                       </td>
-                      <td className={`sticky left-0 md:static z-10 py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none border-r border-slate-200 whitespace-normal break-words ${fontStyle}`} title={t.name}>
+                      <td className={`py-1.5 px-2 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 whitespace-normal break-words ${fontStyle}`} title={t.name}>
                         {editingCell?.id === t.id && editingCell?.field === 'name' ? (
                           <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={() => saveEditing(t)} onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(t); if (e.key === 'Escape') setEditingCell(null); }} autoFocus className="w-full border rounded px-1 py-0.5 bg-white text-slate-900 focus:outline-primary text-[12px] font-medium" />
                         ) : (
