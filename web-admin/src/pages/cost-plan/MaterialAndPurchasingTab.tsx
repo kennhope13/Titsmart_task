@@ -1427,8 +1427,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           </colgroup>
           <thead className="sticky top-0 z-30 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
-              <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="py-2 px-0 text-center font-extrabold whitespace-nowrap bg-slate-50 tracking-tighter">STT</th>
-              <th style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', minWidth: 180, width: subTab === 'FINANCE' ? 240 : undefined }} className="bg-slate-50 bg-clip-padding px-2 py-2 font-extrabold text-left min-w-[180px]">NỘI DUNG</th>
+              <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", left: 0, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 z-30 py-2 px-0 text-center font-extrabold whitespace-nowrap bg-slate-50 tracking-tighter">STT</th>
+              <th style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', minWidth: 180, width: subTab === 'FINANCE' ? 240 : undefined, left: "var(--stt-width)" }} className="sticky z-30 bg-slate-50 bg-clip-padding px-2 py-2 font-extrabold text-left min-w-[180px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">NỘI DUNG</th>
               {(subTab === 'TECH' || subTab === 'DOCS' || subTab === 'FINANCE') && (
                 <>
                   <th style={{ minWidth: 55, width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
@@ -1495,11 +1495,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                   if (parent) {
                     const isCollapsed = collapsedSections.has(plan._sectionKey || '');
                     return (
-                      <tr key={plan.id} className="group bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                        <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="bg-blue-50/90 border-r border-blue-200 py-2 px-0 text-center font-mono font-extrabold text-[11px] text-primary whitespace-nowrap tracking-tighter" title={String(plan.stt)}>
+                      <tr key={plan.id} className="group bg-[#eff6ff] border-t-2 border-b border-blue-200 font-bold text-primary">
+                        <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", left: 0 }} className="sticky left-0 z-10 bg-[#eff6ff] border-r border-blue-200 py-2 px-0 text-center font-mono font-extrabold text-[11px] text-primary whitespace-nowrap tracking-tighter" title={String(plan.stt)}>
                           {plan.stt}
                         </td>
-                        <td className="bg-blue-50/90 border-r border-blue-200 py-2 px-2 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal min-w-[180px]" title={plan.jobContent || plan.name || plan.content}>
+                        <td style={{ left: "var(--stt-width)" }} className="sticky z-10 bg-[#eff6ff] border-r border-blue-200 py-2 px-2 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal min-w-[180px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" title={plan.jobContent || plan.name || plan.content}>
                           <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
@@ -1563,7 +1563,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                       }
                     }} className={rowClass}>
                       {/* STT */}
-                      <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-1 px-0 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 text-center font-mono whitespace-nowrap tracking-tighter ${sttStyle}`}>
+                      <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", left: 0 }} className={`sticky left-0 z-10 py-1 px-0 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 text-center font-mono whitespace-nowrap tracking-tighter ${sttStyle}`}>
                         {editingCell?.id === plan.id && editingCell?.field === 'stt' && !editingCell.isPurchasing ? (
                           <input
                             type="text"
@@ -1580,7 +1580,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                       </td>
                           
                           {/* NỘI DUNG */}
-                          <td className={`${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 py-1 px-2 align-middle text-left overflow-hidden min-w-[180px] ${fontStyle}`}>
+                          <td style={{ left: "var(--stt-width)" }} className={`sticky z-10 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 py-1 px-2 align-middle text-left overflow-hidden min-w-[180px] ${fontStyle} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}>
                             {editingCell?.id === plan.id && editingCell?.field === 'jobContent' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -2129,10 +2129,10 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           {subTab === 'FINANCE' && (
             <tfoot className="sticky bottom-0 z-30 border-t-2 border-slate-400 bg-slate-100 font-extrabold text-slate-800 shadow-[0_-3px_10px_rgba(0,0,0,0.12)] text-[11px]">
               <tr className="bg-slate-100">
-                <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", borderRight: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-100 px-0 py-2 text-center font-black">
+                <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", left: 0, borderRight: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-100 px-0 py-2 text-center font-black">
                   ∑
                 </td>
-                <td style={{ borderRight: '1px solid #94a3b8' }} className="bg-slate-100 px-2 py-2 text-left font-black uppercase text-primary min-w-[180px]">
+                <td style={{ left: "var(--stt-width)", borderRight: '1px solid #94a3b8' }} className="sticky z-20 bg-slate-100 px-2 py-2 text-left font-black uppercase text-primary min-w-[180px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                   TỔNG DỰ ÁN
                 </td>
                 <td className="border-r border-slate-300 p-1 text-center">-</td>
