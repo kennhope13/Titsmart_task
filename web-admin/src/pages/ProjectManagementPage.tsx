@@ -981,7 +981,30 @@ export const ProjectManagementPage: React.FC = () => {
             </div>
           </div>
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Nhân sự</label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block font-bold text-slate-700">Nhân sự</label>
+              {engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').length > 0 && (
+                <label className="flex items-center gap-1.5 text-xs font-bold text-primary hover:text-blue-700 cursor-pointer select-none bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded transition-colors border border-blue-200">
+                  <input
+                    type="checkbox"
+                    checked={
+                      engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').length > 0 &&
+                      engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').every(eng => editSelectedEngineerIds.includes(eng.id))
+                    }
+                    onChange={(e) => {
+                      const validIds = engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').map(eng => eng.id);
+                      if (e.target.checked) {
+                        setEditSelectedEngineerIds(validIds);
+                      } else {
+                        setEditSelectedEngineerIds([]);
+                      }
+                    }}
+                    className="accent-primary w-3.5 h-3.5 cursor-pointer rounded"
+                  />
+                  <span>Chọn tất cả</span>
+                </label>
+              )}
+            </div>
             <div className={`max-h-36 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 ${editSelectedEngineerIds.length === 0 ? 'border-red-200' : 'border-slate-200'}`}>
               {engineers.length === 0 && <p className="text-[11px] text-slate-400">Chưa có nhân sự nào.</p>}
               {engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').map((eng) => (
@@ -1017,7 +1040,30 @@ export const ProjectManagementPage: React.FC = () => {
             <div><label className="block font-bold text-slate-700 mb-1">Hạng mục</label><input value={newProjCategory} onChange={(event) => setNewProjCategory(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" /></div>
           </div>
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Nhân sự</label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block font-bold text-slate-700">Nhân sự</label>
+              {engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').length > 0 && (
+                <label className="flex items-center gap-1.5 text-xs font-bold text-primary hover:text-blue-700 cursor-pointer select-none bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded transition-colors border border-blue-200">
+                  <input
+                    type="checkbox"
+                    checked={
+                      engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').length > 0 &&
+                      engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').every(eng => selectedEngineerIds.includes(eng.id))
+                    }
+                    onChange={(e) => {
+                      const validIds = engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').map(eng => eng.id);
+                      if (e.target.checked) {
+                        setSelectedEngineerIds(validIds);
+                      } else {
+                        setSelectedEngineerIds([]);
+                      }
+                    }}
+                    className="accent-primary w-3.5 h-3.5 cursor-pointer rounded"
+                  />
+                  <span>Chọn tất cả</span>
+                </label>
+              )}
+            </div>
             <div className={`max-h-36 overflow-y-auto border rounded-lg p-2 space-y-1.5 bg-slate-50 ${selectedEngineerIds.length === 0 ? 'border-red-200' : 'border-slate-200'}`}>
               {engineers.length === 0 && <p className="text-[11px] text-slate-400">Chưa có nhân sự nào.</p>}
               {engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').map((eng) => (
