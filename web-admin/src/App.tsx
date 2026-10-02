@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useRealtimeStore, setupRealtimeSync } from './services/realtimeStore';
 import { useAuthStore } from './services/authStore';
 import { Layout } from './components/layout/Layout';
@@ -40,6 +40,8 @@ const ProtectedLayout: React.FC = () => {
 };
 
 export const App: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user, refreshUser } = useAuthStore();
   const [loginStyle, setLoginStyle] = useState<'default' | 'variant'>(() => (localStorage.getItem('titsmart_login_style') as 'default' | 'variant') || 'default');
   const { fetchProjects, fetchTasks, fetchMaterials, fetchIssues, fetchEngineers, fetchActivityLogs, fetchAccounting, fetchFieldLogs } = useRealtimeStore();
@@ -58,55 +60,99 @@ export const App: React.FC = () => {
 
   const [exitToast, setExitToast] = useState(false);
   const lastBackTimeRef = useRef<number>(0);
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+  const locationRef = useRef(location);
+  locationRef.current = location;
+
+  const handleGlobalBack = (): boolean => {
+    // 1. Ưu tiên đóng Modal/Dialog/Popup đang mở nếu có
+    const modalCloseButtons = Array.from(
+      document.querySelectorAll(
+        '.fixed.inset-0 button[title="Đóng"], .fixed.inset-0 button[aria-label="Đóng"], .fixed.inset-0 button[aria-label="Close"], .fixed.inset-0 button.close-btn'
+      )
+    ) as HTMLButtonElement[];
+
+    if (modalCloseButtons.length > 0) {
+      const topModalBtn = modalCloseButtons[modalCloseButtons.length - 1];
+      if (topModalBtn) {
+        topModalBtn.click();
+        return true; // đã xử lý đóng modal
+      }
+    }
+
+    const genericModalCloseBtn = document.querySelector(
+      '.fixed.inset-0 button:has(.material-symbols-outlined)'
+    ) as HTMLButtonElement;
+    if (genericModalCloseBtn) {
+      genericModalCloseBtn.click();
+      return true;
+    }
+
+    // 2. Lấy đường dẫn hiện tại
+    const currentPath = locationRef.current.pathname;
+
+    // Nếu đang ở trong một dự án cụ thể (/projects/:projectId/...) → Quay lại danh sách tất cả dự án
+    if (currentPath.startsWith('/projects/') && currentPath !== '/projects') {
+      navigateRef.current('/projects');
+      return true; // đã xử lý quay lại
+    }
+
+    const isRootScreen =
+      currentPath === '' ||
+      currentPath === '/' ||
+      currentPath === '/projects' ||
+      currentPath === '/dashboard' ||
+      currentPath === '/login';
+
+    if (!isRootScreen) {
+      // Đang ở trang phụ khác (/attendance, /account, /materials, /cost-plan...) → Quay lại /projects
+      navigateRef.current('/projects');
+      return true; // đã xử lý quay lại
+    }
+
+    // 3. Đang ở màn hình chính (Root) → Yêu cầu nhấn 2 lần trong 2 giây mới thoát ứng dụng
+    const now = Date.now();
+    if (now - lastBackTimeRef.current < 2000) {
+      const capApp = (window as any).Capacitor?.Plugins?.App;
+      if (capApp && typeof capApp.exitApp === 'function') {
+        capApp.exitApp();
+      }
+      return false; // cho phép thoát
+    } else {
+      lastBackTimeRef.current = now;
+      setExitToast(true);
+      setTimeout(() => setExitToast(false), 2000);
+      return true; // chặn thoát ở lần nhấn đầu tiên
+    }
+  };
 
   useEffect(() => {
     refreshUser();
 
-    // Xử lý nút back phần cứng trên Android (thanh điều hướng hệ thống)
+    // Thiết lập guard history để bắt sự kiện nút Back trên trình duyệt di động / PWA
+    try {
+      window.history.pushState({ titsmartApp: true }, '', window.location.href);
+    } catch (_) {}
+
+    const onPopState = () => {
+      const consumed = handleGlobalBack();
+      if (consumed) {
+        try {
+          window.history.pushState({ titsmartApp: true }, '', window.location.href);
+        } catch (_) {}
+      }
+    };
+
+    window.addEventListener('popstate', onPopState);
+
+    // Xử lý nút back phần cứng trên Android khi chạy qua Capacitor Native
     const capApp = (window as any).Capacitor?.Plugins?.App;
     let backListener: any = null;
 
     if (capApp && typeof capApp.addListener === 'function') {
       capApp.addListener('backButton', () => {
-        // 1. Ưu tiên đóng Modal/Dialog đang mở nếu có
-        const modalCloseBtn =
-          (document.querySelector('.fixed.inset-0 button[title="Đóng"]') as HTMLButtonElement) ||
-          (document.querySelector('.fixed.inset-0 button:has(.material-symbols-outlined)') as HTMLButtonElement);
-        if (modalCloseBtn) {
-          modalCloseBtn.click();
-          return;
-        }
-
-        // 2. Lấy đường dẫn hiện tại từ Hash
-        const hash = (window.location.hash || '').replace(/^#/, '');
-        const cleanPath = hash.split('?')[0];
-
-        const isRootScreen =
-          cleanPath === '' ||
-          cleanPath === '/' ||
-          cleanPath === '/projects' ||
-          cleanPath === '/dashboard' ||
-          cleanPath === '/login';
-
-        if (!isRootScreen) {
-          // Không phải trang gốc → quay lại trang trước hoặc trang danh sách dự án
-          if (window.history.length > 1) {
-            window.history.back();
-          } else {
-            window.location.hash = '#/projects';
-          }
-          return;
-        }
-
-        // 3. Đang ở trang gốc → Yêu cầu nhấn 2 lần trong 2 giây mới thoát App
-        const now = Date.now();
-        if (now - lastBackTimeRef.current < 2000) {
-          capApp.exitApp();
-        } else {
-          lastBackTimeRef.current = now;
-          setExitToast(true);
-          setTimeout(() => setExitToast(false), 2000);
-        }
+        handleGlobalBack();
       })
         .then((handle: any) => {
           backListener = handle;
@@ -117,6 +163,7 @@ export const App: React.FC = () => {
     }
 
     return () => {
+      window.removeEventListener('popstate', onPopState);
       if (backListener && typeof backListener.remove === 'function') {
         backListener.remove();
       }
