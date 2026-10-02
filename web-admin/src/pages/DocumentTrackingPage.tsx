@@ -261,9 +261,14 @@ export const DocumentTrackingPage: React.FC = () => {
 
   // Helper for due date calculation
   const getDueInfo = (track: DocumentTrack) => {
-    const isSigned = track.docStatus === 'Đã ký' || track.docStatus === 'Đã nhận đủ';
+    const isSigned = track.docStatus === 'Đã ký' || 
+      track.docStatus === 'Đã nhận đủ' || 
+      track.docStatus === 'Đã duyệt' || 
+      track.docStatus === 'Đã nộp' || 
+      track.docStatus === 'Đã hoàn thành' ||
+      track.docStatus === 'Hoàn thành';
     const isPaid = track.paymentStatus?.includes('Đã');
-    if (track.isCompleted || (isSigned && isPaid)) return { status: 'none', daysLeft: null, text: '' };
+    if (track.isCompleted || isSigned || isPaid || (!track.dueDate && track.receiveDate)) return { status: 'none', daysLeft: null, text: '' };
     const effectiveDueDate = track.dueDate || track.receiveDate || track.sendDate;
     if (!effectiveDueDate) return { status: 'none', daysLeft: null, text: '' };
     const today = new Date();

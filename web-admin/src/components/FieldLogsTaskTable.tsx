@@ -140,10 +140,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
     return filtered;
   }, [tasks, selectedProject, searchQuery]);
 
-  const maxSttWidth = useMemo(() => {
-    const maxLen = Math.max(...displayTasks.map((t) => String(t.stt || '').length), 3);
-    return Math.max(48, Math.min(maxLen * 8 + 14, 90));
-  }, [displayTasks]);
+
 
   const groupedTasks = useMemo(() => {
     const map = new Map<string, any>();
@@ -265,6 +262,19 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
     return flattened;
   }, [displayTasks]);
 
+  const maxSttWidth = useMemo(() => {
+    let maxLen = 3; // Minimum length 3 for "STT" header
+    groupedTasks.forEach(t => {
+      const rawVal = String((t as any).computedStt || t.stt || '').trim();
+      const match = rawVal.match(/^[\d.]+/);
+      const cleanVal = match ? match[0] : rawVal.split(/[\s\-]/)[0];
+      if (cleanVal.length > maxLen) maxLen = cleanVal.length;
+    });
+    // Kích thước chuẩn khít vừa vặn số, không bị ... và không bị quá rộng
+    const calculated = Math.round(maxLen * 5.2 + 5);
+    return Math.max(26, Math.min(45, calculated));
+  }, [groupedTasks]);
+
   const toggleSection = (sectionKey: string) => {
     setCollapsedSections(prev => {
       const next = new Set(prev);
@@ -287,16 +297,25 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
         setIsScrolledHorizontally(scrollLeft > 10);
       }}
     >
-      <table className="w-full text-left text-xs text-slate-600 border-collapse table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+      <table className="min-w-[850px] md:min-w-[1000px] w-full text-left text-xs text-slate-600 border-collapse table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+        <colgroup>
+          <col style={{ width: "var(--stt-width)" }} />
+          <col style={{ width: "30%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "24%" }} />
+          <col style={{ width: "16%" }} />
+          <col style={{ width: "8%" }} />
+        </colgroup>
         <thead className="bg-slate-50 text-[10px] md:text-xs uppercase text-slate-500 font-bold sticky top-0 z-20 shadow-sm border-b border-slate-200">
           <tr>
-            <th style={{ width: "var(--stt-width)", minWidth: 36 }} className="py-2 px-1 bg-slate-50 text-center border-r border-slate-200 whitespace-nowrap">STT</th>
-            <th className="sticky left-0 md:static z-20 py-2 px-2.5 w-[200px] min-w-[160px] md:w-auto md:min-w-0 bg-slate-50 border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none">NỘI DUNG CÔNG VIỆC</th>
-            <th className="py-2 px-2 border-r border-slate-200 w-28 md:w-36 text-center whitespace-nowrap">THỜI GIAN</th>
-            <th className="py-2 px-2 border-r border-slate-200 w-36 md:w-72 whitespace-nowrap">ẢNH</th>
-            <th className="py-2 px-2 border-r border-slate-200 w-40 md:w-64 whitespace-nowrap">NỘI DUNG</th>
-            <th className="py-2 px-2 border-r border-slate-200 w-28 md:w-40 whitespace-nowrap">NGƯỜI CẬP NHẬT</th>
-            <th className="py-2 px-2 w-16 md:w-28 text-center whitespace-nowrap">TT</th>
+            <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-slate-50 text-center border-b border-r border-slate-200 whitespace-nowrap tracking-tighter">STT</th>
+            <th className="sticky left-0 md:static z-20 py-2 px-2 min-w-[180px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none font-bold">NỘI DUNG CÔNG VIỆC</th>
+            <th className="py-2 px-1.5 border-b border-r border-slate-200 min-w-[90px] text-center whitespace-nowrap">THỜI GIAN</th>
+            <th className="py-2 px-1.5 border-b border-r border-slate-200 min-w-[75px] text-center whitespace-nowrap">ẢNH</th>
+            <th className="py-2 px-2 border-b border-r border-slate-200 min-w-[130px] whitespace-nowrap">NỘI DUNG</th>
+            <th className="py-2 px-1.5 border-b border-r border-slate-200 min-w-[95px] text-center whitespace-nowrap">NGƯỜI CẬP NHẬT</th>
+            <th className="py-2 px-1 border-b min-w-[50px] text-center whitespace-nowrap">TT</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200">
@@ -311,17 +330,20 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                 const isCollapsed = collapsedSections.has(t._sectionKey || '');
                 return (
                   <tr key={t.id} className="group bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                    <td className="py-2 px-1 bg-blue-50/90 border-r border-blue-200 text-center font-mono text-xs">{t.computedStt || t.stt}</td>
-                    <td className="sticky left-0 md:static z-10 py-2 px-2.5 bg-blue-50/90 border-r border-blue-200 font-extrabold text-xs shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none" style={{ width: "200px", minWidth: "160px" }}>
-                      <div className="flex items-center gap-1.5 min-w-0 w-full overflow-hidden">
+                    <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-[11px] text-primary whitespace-nowrap tracking-tighter" title={String(t.computedStt || t.stt)}>{t.computedStt || t.stt}</td>
+                    <td className="sticky left-0 md:static z-10 py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary border-r border-blue-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none">
+                      <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden">
                         <button
                           onClick={() => toggleSection(t._sectionKey || '')}
-                          className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
+                          className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
+                          title={isCollapsed ? 'Mở rộng đầu mục' : 'Thu gọn đầu mục'}
                         >
-                          <span className={`material-symbols-outlined text-base transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
+                          <span className={`material-symbols-outlined text-[15px] text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                         </button>
-                        <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                        <span className="flex-1 uppercase truncate min-w-0 leading-tight">{t.name}</span>
+                        <span className="material-symbols-outlined text-[15px] flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
+                        <span className="flex-1 uppercase truncate min-w-0 leading-tight" title={t.name}>
+                          {t.stt ? `${t.stt} - ` : ''}{t.name}
+                        </span>
                       </div>
                     </td>
                     <td colSpan={5} className="bg-blue-50/90 py-2 px-2 text-slate-500 truncate text-[11px]"></td>
@@ -350,10 +372,10 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
 
               return (
                 <tr key={t.id} onClick={(e) => { e.stopPropagation(); setViewAllLogsTask(t); }} className="hover:bg-blue-50/30 transition-colors group cursor-pointer border-b border-slate-100">
-                  <td className={`py-2 px-1 bg-white border-r border-slate-200 text-center font-mono text-xs ${depth === 1 ? 'font-bold text-slate-700' : 'text-slate-500'}`}>
+                  <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-1 px-0 bg-white border-r border-slate-200 text-center font-mono text-[11px] whitespace-nowrap tracking-tighter ${depth === 1 ? 'font-bold text-slate-700' : 'text-slate-500'}`}>
                     {t.computedStt || t.stt}
                   </td>
-                  <td className={`sticky left-0 md:static z-10 py-2 px-2.5 bg-white border-r border-slate-200 ${fontStyle} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none`} style={{ width: "200px", minWidth: "160px" }}>
+                  <td className={`sticky left-0 md:static z-10 py-1 px-2 bg-white border-r border-slate-200 ${fontStyle} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none`}>
                     <div className="flex items-center gap-1 min-w-0 w-full" style={{ paddingLeft: `${Math.max(0, depth - 1) * 0.4}rem` }}>
                       {depth > 1 && <span className="material-symbols-outlined text-slate-400 text-[12px] shrink-0">subdirectory_arrow_right</span>}
                       <span className="text-slate-800 leading-snug break-words flex-1 min-w-0" title={t.name}>{t.name}</span>
@@ -364,127 +386,66 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                       )}
                     </div>
                   </td>
-                  {/* CỘT THỜI GIAN THI CÔNG (DIỄN RA NHIỀU NGÀY) */}
-                  <td className="py-3 px-3 border-r border-slate-200 text-center">
-                    <div className="flex flex-col gap-1.5 items-center justify-center">
-                      {dateEntries.length > 0 ? (
-                        dateEntries.map(([dateStr, dayLogs], i) => (
-                          <div 
-                            key={i} 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              setViewAllLogsTask(t);
-                            }}
-                            className="flex items-center gap-1.5 bg-blue-50/80 text-blue-900 hover:bg-blue-100/90 text-xs font-semibold px-2.5 py-1 rounded-lg border border-blue-200 shadow-2xs whitespace-nowrap cursor-pointer transition-colors group/date"
-                            title={`Xem chi tiết nhật ký ngày ${dateStr}`}
-                          >
-                            <span className="material-symbols-outlined text-sm text-blue-600 group-hover/date:scale-110 transition-transform">calendar_today</span>
-                            <span className="font-mono">{dateStr}</span>
-                            <span className="text-[10px] bg-blue-600 text-white rounded-full w-4 h-4 inline-flex items-center justify-center font-bold">
-                              {dayLogs.length}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <span className="text-slate-400 text-xs italic">-</span>
-                      )}
-                    </div>
+                  {/* CỘT THỜI GIAN THI CÔNG */}
+                  <td className="py-1 px-1.5 border-r border-slate-200 text-center">
+                    {dateEntries.length > 0 ? (
+                      <div 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setViewAllLogsTask(t);
+                        }}
+                        className="inline-flex items-center gap-1 bg-blue-50/80 text-blue-900 hover:bg-blue-100 text-[11px] font-semibold px-1.5 py-0.5 rounded border border-blue-200 shadow-2xs whitespace-nowrap cursor-pointer transition-colors"
+                        title={`Xem chi tiết nhật ký ngày ${dateEntries[0][0]}`}
+                      >
+                        <span className="material-symbols-outlined text-[13px] text-blue-600">calendar_today</span>
+                        <span className="font-mono">{dateEntries[0][0]}</span>
+                        {dateEntries.length > 1 && (
+                          <span className="text-[9px] bg-blue-600 text-white rounded-full w-3.5 h-3.5 inline-flex items-center justify-center font-bold">
+                            +{dateEntries.length - 1}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-slate-300 text-xs italic">-</span>
+                    )}
                   </td>
-                  {/* CỘT ẢNH NHẬT KÝ VẬN HÀNH */}
-                  <td className="py-3 px-3 border-r border-slate-200">
-                    <div className="flex items-center gap-2 flex-wrap">
+                  {/* CỘT ẢNH NHẬT KÝ */}
+                  <td className="py-1 px-1.5 border-r border-slate-200 text-center">
+                    <div className="flex items-center justify-center gap-1">
                       {allImagesForTask.length > 0 ? (
                         <>
-                          {allImagesForTask.slice(0, 4).map((img, i) => (
-                            <div key={i} onClick={(e) => { e.stopPropagation(); openLightbox(allImagesForTask, i); }} className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 shadow-2xs hover:scale-105 transition-transform cursor-pointer relative group/img bg-slate-100">
-                              <img src={img} className="w-full h-full object-cover" alt="nhật ký hiện trường" />
-                              <div className="absolute inset-0 bg-black/25 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                <span className="material-symbols-outlined text-white text-base">visibility</span>
-                              </div>
+                          {allImagesForTask.slice(0, 2).map((img, i) => (
+                            <div key={i} onClick={(e) => { e.stopPropagation(); openLightbox(allImagesForTask, i); }} className="w-6 h-6 rounded overflow-hidden border border-slate-200 shadow-2xs hover:scale-105 transition-transform cursor-pointer relative group/img bg-slate-100 shrink-0">
+                              <img src={img} className="w-full h-full object-cover" alt="ảnh" />
                             </div>
                           ))}
-                          {allImagesForTask.length > 4 && (
-                            <div onClick={(e) => { e.stopPropagation(); openLightbox(allImagesForTask, 4); }} className="w-12 h-12 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center text-xs font-bold cursor-pointer hover:bg-blue-100 shadow-2xs">
-                              +{allImagesForTask.length - 4}
+                          {allImagesForTask.length > 2 && (
+                            <div onClick={(e) => { e.stopPropagation(); openLightbox(allImagesForTask, 2); }} className="w-6 h-6 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center text-[10px] font-bold cursor-pointer hover:bg-blue-100 shadow-2xs shrink-0">
+                              +{allImagesForTask.length - 2}
                             </div>
                           )}
                         </>
                       ) : (
-                        <span className="text-slate-400 text-xs italic">Chưa có ảnh</span>
+                        <span className="text-slate-300 text-[11px] italic">-</span>
                       )}
                     </div>
                   </td>
-                  {/* CỘT NỘI DUNG NHẬT KÝ - THEO DÕI GỌN GÀNG VÀ CHUYÊN NGHIỆP */}
-                  <td className="py-3 px-3 border-r border-slate-200">
-                    <div className="flex flex-col gap-2">
-                      {dateEntries.length > 0 ? (
-                        dateEntries.slice(0, 2).map(([dateStr, dayLogs]) => {
-                          const latestLog = dayLogs[0];
-                          const extraLogsCount = dayLogs.length - 1;
-                          return (
-                            <div key={dateStr} className="flex flex-col gap-1 bg-slate-50/90 p-2 rounded-lg border border-slate-200/80">
-                              <div className="text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between border-b border-slate-200 pb-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="material-symbols-outlined text-sm text-blue-600">event</span>
-                                  <span>NGÀY {dateStr}</span>
-                                </div>
-                                {dayLogs.length > 1 && (
-                                  <span className="text-[10px] text-blue-700 bg-blue-100 font-semibold px-1.5 py-0.2 rounded">
-                                    {dayLogs.length} lượt
-                                  </span>
-                                )}
-                              </div>
-                              {latestLog && (
-                                <div 
-                                  onClick={(e) => { e.stopPropagation(); onEditLogClick(latestLog); }} 
-                                  className="flex items-start gap-2 bg-white text-slate-800 text-xs p-2 rounded-lg border border-slate-200/90 hover:border-blue-400 transition-all cursor-pointer shadow-2xs group/log"
-                                  title="Bấm để xem/sửa nhật ký này"
-                                >
-                                  <span className="material-symbols-outlined text-base text-amber-500 shrink-0 mt-0.5">edit_note</span>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="line-clamp-2 break-words leading-relaxed text-slate-700 font-normal">
-                                      {latestLog.note || '(Chỉ có ảnh hiện trường)'}
-                                    </p>
-                                    <div className="mt-1 flex items-center gap-2">
-                                      {latestLog.images && latestLog.images.length > 0 && (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
-                                          <span className="material-symbols-outlined text-xs">photo_camera</span>
-                                          {latestLog.images.length} ảnh
-                                        </span>
-                                      )}
-                                      {extraLogsCount > 0 && (
-                                        <span className="text-[10px] text-slate-500 font-semibold italic">
-                                          +{extraLogsCount} cập nhật khác
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <span className="text-slate-400 text-xs italic">Chưa có nội dung nhật ký</span>
-                      )}
-                      {dateEntries.length > 2 && (
-                        <div className="text-center pt-0.5">
-                          <span className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer">
-                            + Xem thêm {dateEntries.length - 2} ngày khác...
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                  {/* CỘT NỘI DUNG NHẬT KÝ */}
+                  <td className="py-1 px-2 border-r border-slate-200 text-slate-600 text-[11px] truncate" title={allNotesForTask.map(n => n.note).join(' | ')}>
+                    {allNotesForTask.length > 0 ? (
+                      <span className="truncate block leading-tight">{allNotesForTask[0].note}</span>
+                    ) : (
+                      <span className="text-slate-300 italic">-</span>
+                    )}
                   </td>
                   {/* CỘT NGƯỜI CẬP NHẬT */}
-                  <td className="py-3 px-3 border-r border-slate-200">
+                  <td className="py-1 px-1.5 border-r border-slate-200 text-center">
                     <AuditInfoCell updatedBy={taskLogs[0]?.updatedBy || t.updatedBy} updatedAt={taskLogs[0]?.updatedAt || t.updatedAt} />
                   </td>
                   {/* CỘT THAO TÁC */}
-                  <td className="py-3 px-3 text-center">
-                    <button onClick={(e) => { e.stopPropagation(); onAddLogClick(t.id); }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50/50 text-xs font-semibold transition-all shadow-2xs">
-                      <span className="material-symbols-outlined text-base text-blue-600">add_a_photo</span>
-                      <span>Thêm nhật ký</span>
+                  <td className="py-1 px-1 text-center">
+                    <button onClick={(e) => { e.stopPropagation(); onAddLogClick(t.id); }} className="p-1 rounded text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors inline-flex items-center justify-center" title="Thêm nhật ký">
+                      <span className="material-symbols-outlined text-[16px]">add_a_photo</span>
                     </button>
                   </td>
                 </tr>

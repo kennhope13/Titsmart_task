@@ -336,9 +336,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
   const [showPopover, setShowPopover] = useState(false);
   const [showCenterModal, setShowCenterModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'unread' | 'all'>('unread');
-  const [incomingPopupNotif, setIncomingPopupNotif] = useState<any | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const knownNotifIdsRef = useRef<Set<string> | null>(null);
 
   // ─── Dragging functionality state & refs (transient per session, resets to default on reload) ───
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
@@ -481,7 +479,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     }
     setShowPopover(false);
     setShowCenterModal(false);
-    setIncomingPopupNotif(null);
     sessionStorage.setItem('has_shown_center_notif_modal', 'true');
 
     const role = String(user?.role || '').toLowerCase();
@@ -732,46 +729,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     return displayNotifications.filter(n => !n.read);
   }, [displayNotifications]);
 
-  // Realtime incoming popup notification for new unread notifications
-  useEffect(() => {
-    const getNotifKey = (n: any) => `${n.id}:::${n.title}:::${n.message}`;
 
-    if (knownNotifIdsRef.current === null) {
-      // First load: record existing notification signatures so we don't spam popup on initial mount
-      knownNotifIdsRef.current = new Set(displayNotifications.map(getNotifKey));
-      return;
-    }
-
-    // Chỉ bật banner popup nổi nếu thông báo là mới phát sinh trong vòng 30 giây gần nhất
-    const now = Date.now();
-    const brandNewNotif = displayNotifications.find(n => {
-      if (n.read) return false;
-      if (knownNotifIdsRef.current!.has(getNotifKey(n))) return false;
-      
-      // Kiểm tra thời gian tạo thông báo
-      try {
-        const notifTime = new Date(n.timestamp).getTime();
-        if (!isNaN(notifTime) && now - notifTime > 30000) {
-          // Thông báo cũ (đã tạo hơn 30s trước) -> Đánh dấu đã biết để không hiện popup làm phiền
-          knownNotifIdsRef.current!.add(getNotifKey(n));
-          return false;
-        }
-      } catch {}
-      return true;
-    });
-
-    if (brandNewNotif) {
-      knownNotifIdsRef.current.add(getNotifKey(brandNewNotif));
-      setIncomingPopupNotif(brandNewNotif);
-      playNotificationSound();
-
-      // Auto dismiss incoming popup after 5 seconds
-      const timer = setTimeout(() => {
-        setIncomingPopupNotif(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [displayNotifications]);
 
   useEffect(() => {
     const hasShown = sessionStorage.getItem('has_shown_center_notif_modal');
@@ -1270,56 +1228,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
               >
                 Đã hiểu
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* FLOATING REALTIME INCOMING NOTIFICATION BANNER/TOAST */}
-      {incomingPopupNotif && (
-        <div
-          onClick={() => handleNotificationClick(incomingPopupNotif)}
-          className="fixed top-3 sm:top-5 right-3 sm:right-5 z-[99999] w-[calc(100vw-24px)] sm:w-[380px] max-w-[380px] animate-bounce-in shadow-2xl rounded-xl border border-primary/30 bg-white/95 backdrop-blur-md overflow-hidden transition-all cursor-pointer hover:shadow-primary/25 hover:border-primary/60 hover:scale-[1.01] active:scale-[0.99] group select-none box-border"
-        >
-          <div className="bg-primary px-3.5 py-2 flex items-center justify-between text-white gap-2">
-            <div className="flex items-center gap-2 font-bold text-xs min-w-0">
-              <span className="material-symbols-outlined text-[18px] shrink-0">notifications_active</span>
-              <span className="truncate">Thông báo mới</span>
-            </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIncomingPopupNotif(null);
-              }}
-              className="p-1 hover:bg-white/20 rounded-md transition-colors shrink-0 cursor-pointer"
-              title="Đóng"
-            >
-              <span className="material-symbols-outlined text-[16px] block">close</span>
-            </button>
-          </div>
-          <div className="p-3.5 flex items-start gap-3">
-            <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 transition-colors ${
-              incomingPopupNotif.title?.includes('quá hạn') 
-                ? 'bg-amber-50 text-amber-700 group-hover:bg-amber-600 group-hover:text-white' 
-                : 'bg-blue-50 text-primary group-hover:bg-primary group-hover:text-white'
-            }`}>
-              <span className="material-symbols-outlined text-xl">
-                {incomingPopupNotif.icon || (incomingPopupNotif.title?.includes('quá hạn') ? 'warning' : 'notifications')}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="text-xs font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors break-words">
-                {incomingPopupNotif.title}
-              </h4>
-              <p className="text-[11.5px] text-slate-600 mt-1 leading-relaxed break-words whitespace-normal">
-                {incomingPopupNotif.message}
-              </p>
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-[10px] text-slate-400 font-medium">Vừa xong</span>
-                <span className="text-[10.5px] text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                  Xem chi tiết <span className="material-symbols-outlined text-[12px]">arrow_forward</span>
-                </span>
-              </div>
             </div>
           </div>
         </div>

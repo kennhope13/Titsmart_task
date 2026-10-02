@@ -45,6 +45,9 @@ const TEXT = {
 const isParentRow = (plan: any) => {
   if (plan?.isSec) return true;
   if (String(plan?.notes || '').toLowerCase().includes('[section]')) return true;
+  const vol = Number(plan?.contractVolume ?? plan?.volume ?? 0);
+  const unitVal = String(plan?.unit || '').trim();
+  if (vol === 0 && unitVal === '') return true;
   const stt = String(plan?.stt || '').trim();
   if (/^[A-Z]{1,2}$/i.test(stt)) return true;
   if (/^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt)) return true;
@@ -868,15 +871,157 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
     setEditingCell(null);
   };
 
-  const maxSttWidth = React.useMemo(() => {
-    let maxLen = 1;
-    data.forEach(t => {
-      const len = String((t as any).computedStt || t.stt || "").trim().length;
-      if (len > maxLen) maxLen = len;
+  const groupedData = useMemo(() => {
+    // Synthesize missing parent section headers if any child items exist (e.g. 33.1 without 33)
+    const sttSet = new Set(filteredData.map(t => `${t.projectCode || ''}:::${String(t.stt || '').trim()}`));
+    const missingParents: any[] = [];
+    filteredData.forEach(t => {
+      if (missingParents.length >= 30) return;
+      const stt = String(t.stt || '').trim();
+      if (stt.includes('.')) {
+        const parts = stt.split('.');
+        parts.pop();
+        const parentStt = parts.join('.');
+        const parentKey = `${t.projectCode || ''}:::${parentStt}`;
+        if (parentStt && !sttSet.has(parentKey)) {
+          sttSet.add(parentKey);
+          let synthName = '';
+          if (parentStt === '33') {
+            synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+          } else if (parentStt === '36') {
+            synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+          } else {
+            synthName = `HẠNG MỤC ${parentStt}`;
+          }
+
+          missingParents.push({
+            id: `synth_mat_${parentStt}`,
+            stt: parentStt,
+            jobContent: synthName,
+            content: synthName,
+            name: synthName,
+            projectCode: t.projectCode,
+            parentId: t.parentId,
+            isSec: true,
+            notes: '[section]'
+          });
+        }
+      }
     });
-    const calculated = Math.max(24, Math.round(maxLen * 6.5 + 8));
-    return Math.min(80, calculated);
-  }, [data]);
+
+    // Build tree globally exactly like TaskManagementPage
+    const map = new Map<string, any>();
+    const roots: any[] = [];
+
+    const fullTasks = [...missingParents, ...filteredData];
+
+    // Initialize map
+    fullTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
+
+    const sttToItemMap = new Map<string, any>();
+    fullTasks.forEach((t) => {
+      if (t.stt) sttToItemMap.set(`${t.projectCode || ''}:::${String(t.stt).trim()}`, t);
+    });
+
+    // Resolve parent globally
+    const resolveParentIdGlobal = (item: any) => {
+      if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) return item.parentId;
+      if (item.stt && String(item.stt).includes('.')) {
+        const parts = String(item.stt).split('.');
+        parts.pop();
+        const parentStt = parts.join('.');
+        const parentItem = sttToItemMap.get(`${item.projectCode || ''}:::${parentStt}`);
+        if (parentItem && parentItem.id !== item.id && map.has(parentItem.id)) return parentItem.id;
+      }
+      if (!isParentRow(item) && item.sectionName && String(item.sectionName).trim().length > 0) {
+        const secHeader = fullTasks.find(x => 
+          (x.projectCode || '') === (item.projectCode || '') &&
+          x.id !== item.id &&
+          isParentRow(x) &&
+          ((x.jobContent || x.name || '').trim().toLowerCase() === item.sectionName.trim().toLowerCase() ||
+           (x.sectionName || '').trim().toLowerCase() === item.sectionName.trim().toLowerCase())
+        );
+        if (secHeader && map.has(secHeader.id)) return secHeader.id;
+      }
+      return (item.parentId && item.parentId !== item.id) ? item.parentId : undefined;
+    };
+
+    fullTasks.forEach((t) => {
+      const resolvedParentId = resolveParentIdGlobal(t);
+      if (resolvedParentId && map.has(resolvedParentId)) {
+        map.get(resolvedParentId)!.children.push(map.get(t.id));
+      } else {
+        roots.push(map.get(t.id));
+      }
+    });
+
+    let currentSectionKey = '';
+    const flattened: any[] = [];
+
+    const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '', visited = new Set<string>()) => {
+      if (currentDepth > 15) return; // Safety guard against OOM crash
+
+      nodes.sort((a, b) => {
+        const sttCompare = compareTaskStt(a.stt, b.stt);
+        if (sttCompare !== 0) return sttCompare;
+        const orderTagValue = (notes?: string): number | null => {
+          const m = String(notes || '').match(/\[order:([\d.]+)\]/);
+          return m ? parseFloat(m[1]) : null;
+        };
+        const orderA = orderTagValue(a.notes);
+        const orderB = orderTagValue(b.notes);
+        if (orderA !== null && orderB !== null && orderA !== orderB) {
+          return orderA - orderB;
+        }
+        return (a.jobContent || a.name || '').localeCompare(b.jobContent || b.name || '', 'vi', { numeric: true, sensitivity: 'base' });
+      });
+
+      nodes.forEach((node, idx) => {
+        if (!node || !node.id || visited.has(node.id)) return;
+        visited.add(node.id);
+
+        const isSec = node.isSec || isParentRow(node);
+        if (isSec) {
+          currentSectionKey = node.id;
+        }
+
+        let displayDepth = currentDepth;
+        if (currentDepth === 0 && !isSec && currentSectionKey !== '') {
+          displayDepth = 1;
+        }
+
+        const currentNum = (idx + 1).toString();
+        const computedStt = node.stt || (displayDepth === 1 ? currentNum : (displayDepth > 1 ? `${prefix}.${currentNum}` : currentNum));
+
+        flattened.push({
+          ...node,
+          isSec: isSec,
+          depth: displayDepth,
+          computedStt,
+          _sectionKey: currentSectionKey || 'Khác'
+        });
+        if (node.children && node.children.length > 0) {
+          flattenTree(node.children, currentDepth + 1, computedStt, visited);
+        }
+      });
+    };
+
+    flattenTree(roots, 0, '');
+    return flattened;
+  }, [filteredData]);
+
+  const maxSttWidth = React.useMemo(() => {
+    let maxLen = 3; // Minimum length 3 for "STT" header
+    groupedData.forEach(t => {
+      const rawVal = String((t as any).computedStt || t.stt || '').trim();
+      const match = rawVal.match(/^[\d.]+/);
+      const cleanVal = match ? match[0] : rawVal.split(/[\s\-]/)[0];
+      if (cleanVal.length > maxLen) maxLen = cleanVal.length;
+    });
+    // Kích thước chuẩn khít vừa vặn số, không bị ... và không bị quá rộng
+    const calculated = Math.round(maxLen * 5.2 + 5);
+    return Math.max(26, Math.min(45, calculated));
+  }, [groupedData]);
 
   const totals = useMemo(() => {
     let sell = 0;
@@ -917,8 +1062,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const colSpanCount = useMemo(() => {
     if (subTab === 'TECH') return 10;
     if (subTab === 'DOCS') return 7;
-    if (subTab === 'FINANCE') return 23;
-    return 9;
+    if (subTab === 'FINANCE') return 21;
+    return 10;
   }, [subTab]);
 
   return (
@@ -1233,311 +1378,209 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         className={`w-full max-w-full min-h-0 flex-1 overflow-x-auto custom-scrollbar select-none ${isMouseDown ? 'cursor-grabbing' : 'cursor-grab'}`} 
         onScroll={(e) => setIsScrolledHorizontally(e.currentTarget.scrollLeft > 10)}
       >
-        <table className={`w-full table-fixed border-collapse text-left text-xs ${subTab === 'FINANCE' ? 'min-w-[1600px]' : subTab === 'DOCS' ? 'min-w-[800px]' : 'min-w-[1100px]'}`} style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+        <table className={`w-full table-fixed border-collapse text-left text-xs ${subTab === 'FINANCE' ? 'min-w-[2150px]' : subTab === 'DOCS' ? 'min-w-[950px]' : 'min-w-[1050px] md:min-w-[1150px]'}`} style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+          <colgroup>
+            <col style={{ width: "var(--stt-width)" }} />
+            <col style={{ width: subTab === 'FINANCE' ? 240 : (subTab === 'DOCS' ? "24%" : "22%") }} />
+            <col style={{ width: 45 }} />
+            <col style={{ width: 50 }} />
+            <col style={{ width: 85 }} />
+            <col style={{ width: 80 }} />
+            {subTab === 'TECH' && (
+              <>
+                <col style={{ width: 125 }} />
+                <col style={{ width: 55 }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 85 }} />
+                <col style={{ width: "auto" }} />
+                <col style={{ width: 135 }} />
+              </>
+            )}
+            {subTab === 'DOCS' && (
+              <>
+                <col style={{ width: 250 }} />
+                <col style={{ width: "auto" }} />
+                <col style={{ width: 135 }} />
+              </>
+            )}
+            {subTab === 'FINANCE' && (
+              <>
+                <col style={{ width: 65 }} />
+                <col style={{ width: 90 }} />
+                <col style={{ width: 50 }} />
+                <col style={{ width: 100 }} />
+                <col style={{ width: 65 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 140 }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 95 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 105 }} />
+                <col style={{ width: 125 }} />
+                <col style={{ width: 90 }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 130 }} />
+              </>
+            )}
+          </colgroup>
           <thead className="sticky top-0 z-30 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
-              <th rowSpan={2} style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="py-1 px-0.5 text-center font-extrabold whitespace-nowrap bg-slate-50">STT</th>
-              <th rowSpan={2} style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="sticky left-0 md:static z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none bg-slate-50 bg-clip-padding px-1.5 py-1 font-extrabold text-left w-[170px] min-w-[150px] sm:w-[320px] sm:min-w-[280px]">NỘI DUNG</th>
+              <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="py-2 px-0 text-center font-extrabold whitespace-nowrap bg-slate-50 tracking-tighter">STT</th>
+              <th style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', minWidth: 180, width: subTab === 'FINANCE' ? 240 : undefined }} className="sticky left-0 md:static z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none bg-slate-50 bg-clip-padding px-2 py-2 font-extrabold text-left min-w-[180px]">NỘI DUNG</th>
               {(subTab === 'TECH' || subTab === 'DOCS' || subTab === 'FINANCE') && (
                 <>
-                  <th rowSpan={2} style={{ minWidth: 65, width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
-                  <th rowSpan={2} style={{ minWidth: 55, width: 55, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL HĐ</th>
-                  <th rowSpan={2} style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">MÃ HIỆU</th>
-                  <th rowSpan={2} style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">XUẤT XỨ</th>
+                  <th style={{ minWidth: 40, width: 45, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">ĐVT</th>
+                  <th style={{ minWidth: 45, width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL HĐ</th>
+                  <th style={{ width: 85, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">MÃ HIỆU</th>
+                  <th style={{ width: 80, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">XUẤT XỨ</th>
                 </>
               )}
               
               {subTab === 'TECH' && (
                 <>
-                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TÌNH TRẠNG</th>
-                  <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐẶT HÀNG</th>
-                  <th rowSpan={2} style={{ width: 135, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
-                  <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">NGÀY CÓ HÀNG</th>
-                  <th rowSpan={2} style={{ width: 200, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">GHI CHÚ / VƯỚNG MẮC</th>
-                  <th rowSpan={2} style={{ width: 130, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT</th>
+                  <th style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TÌNH TRẠNG</th>
+                  <th style={{ width: 55, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐẶT HÀNG</th>
+                  <th style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
+                  <th style={{ width: 85, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">NGÀY CÓ HÀNG</th>
+                  <th style={{ minWidth: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">GHI CHÚ</th>
+                  <th style={{ width: 135, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT</th>
                 </>
               )}
 
               {subTab === 'DOCS' && (
                 <>
-                  <th rowSpan={2} style={{ width: 240, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
-                  <th rowSpan={2} style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>
-                  <th rowSpan={2} style={{ width: 130, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT</th>
+                  <th style={{ width: 250, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">CHỨNG TỪ HÀNG HÓA</th>
+                  <th style={{ minWidth: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>
+                  <th style={{ width: 135, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT</th>
                 </>
               )}
 
               {subTab === 'FINANCE' && (
                 <>
-                  <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐH</th>
-                  <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">ĐƠN GIÁ BÁN</th>
-                  <th rowSpan={2} style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">VAT %</th>
-                  <th rowSpan={2} style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THÀNH TIỀN BÁN</th>
-                  <th rowSpan={2} style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">% TẠM ỨNG</th>
-                  <th rowSpan={2} style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">CHI PHÍ (GIÁ VỐN) (đ)</th>
-                  <th rowSpan={2} style={{ width: 140, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NHÀ CUNG CẤP (GIÁ VỐN)</th>
-                  <th rowSpan={2} style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">ĐÃ THANH TOÁN (GIÁ VỐN) (đ)</th>
-                  <th rowSpan={2} style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGÀY THANH TOÁN</th>
-                  <th rowSpan={2} style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HÌNH THỨC TT</th>
-                  <th rowSpan={2} style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI THANH TOÁN</th>
-                  <th rowSpan={2} style={{ width: 105, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">LỢI NHUẬN (đ)</th>
-                  <th rowSpan={2} style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TÌNH TRẠNG HĐ</th>
-                  <th rowSpan={2} style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HẠN THANH TOÁN</th>
-                  <th rowSpan={2} style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HÓA ĐƠN VAT</th>
-                  <th rowSpan={2} style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>
-                  <th rowSpan={2} style={{ width: 130, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT</th>
-                </>
-              )}
-            </tr>
-            <tr className="bg-slate-50">
-              
-              {subTab === 'DOCS' && (
-                <>
-                  
+                  <th style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐH</th>
+                  <th style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">ĐƠN GIÁ BÁN</th>
+                  <th style={{ width: 50, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">VAT %</th>
+                  <th style={{ width: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">THÀNH TIỀN BÁN</th>
+                  <th style={{ width: 65, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">% TẠM ỨNG</th>
+                  <th style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">CHI PHÍ (GIÁ VỐN) (đ)</th>
+                  <th style={{ width: 140, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NHÀ CUNG CẤP (GIÁ VỐN)</th>
+                  <th style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">ĐÃ THANH TOÁN (GIÁ VỐN) (đ)</th>
+                  <th style={{ width: 95, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGÀY THANH TOÁN</th>
+                  <th style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HÌNH THỨC TT</th>
+                  <th style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI THANH TOÁN</th>
+                  <th style={{ width: 105, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">LỢI NHUẬN (đ)</th>
+                  <th style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">TÌNH TRẠNG HĐ</th>
+                  <th style={{ width: 90, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HẠN THANH TOÁN</th>
+                  <th style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">HÓA ĐƠN VAT</th>
+                  <th style={{ width: 110, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">GHI CHÚ</th>
+                  <th style={{ width: 130, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT</th>
                 </>
               )}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
-            {(() => {
-              // Synthesize missing parent section headers if any child items exist (e.g. 33.1 without 33)
-              const sttSet = new Set(filteredData.map(t => `${t.projectCode || ''}:::${String(t.stt || '').trim()}`));
-              const missingParents: any[] = [];
-              filteredData.forEach(t => {
-                if (missingParents.length >= 30) return;
-                const stt = String(t.stt || '').trim();
-                if (stt.includes('.')) {
-                  const parts = stt.split('.');
-                  parts.pop();
-                  const parentStt = parts.join('.');
-                  const parentKey = `${t.projectCode || ''}:::${parentStt}`;
-                  if (parentStt && !sttSet.has(parentKey)) {
-                    sttSet.add(parentKey);
-                    let synthName = '';
-                    if (parentStt === '33') {
-                      synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-                    } else if (parentStt === '36') {
-                      synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-                    } else {
-                      synthName = `HẠNG MỤC ${parentStt}`;
-                    }
+            {groupedData.length === 0 ? (
+              <tr><td colSpan={colSpanCount + 2} className="p-8 text-center text-slate-400 whitespace-nowrap">{TEXT.empty}</td></tr>
+            ) : (
+              groupedData
+                .filter(plan => plan.isSec || !collapsedSections.has(plan._sectionKey || ''))
+                .map((plan, index) => {
+                  const parent = plan.isSec || isParentRow(plan);
+                  const depth = plan.depth || 0;
+                  const suggestedStt = '';
+                  const pRecord = parent ? undefined : findPurchasingMatch(plan);
 
-                    missingParents.push({
-                      id: `synth_mat_${parentStt}`,
-                      stt: parentStt,
-                      jobContent: synthName,
-                      content: synthName,
-                      name: synthName,
-                      projectCode: t.projectCode,
-                      parentId: t.parentId,
-                      isSec: true,
-                      notes: '[section]'
-                    });
-                  }
-                }
-              });
-
-              // Build tree globally exactly like TaskManagementPage
-              const map = new Map<string, any>();
-              const roots: any[] = [];
-
-              const fullTasks = [...missingParents, ...filteredData];
-
-              // Initialize map
-              fullTasks.forEach((t) => map.set(t.id, { ...t, children: [] }));
-
-              const sttToItemMap = new Map<string, any>();
-              fullTasks.forEach((t) => {
-                if (t.stt) sttToItemMap.set(`${t.projectCode || ''}:::${String(t.stt).trim()}`, t);
-              });
-
-              // Resolve parent globally
-              const resolveParentIdGlobal = (item: any) => {
-                if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) return item.parentId;
-                if (item.stt && String(item.stt).includes('.')) {
-                  const parts = String(item.stt).split('.');
-                  parts.pop();
-                  const parentStt = parts.join('.');
-                  const parentItem = sttToItemMap.get(`${item.projectCode || ''}:::${parentStt}`);
-                  if (parentItem && parentItem.id !== item.id && map.has(parentItem.id)) return parentItem.id;
-                }
-                if (!isParentRow(item) && item.sectionName && String(item.sectionName).trim().length > 0) {
-                  const secHeader = fullTasks.find(x => 
-                    (x.projectCode || '') === (item.projectCode || '') &&
-                    x.id !== item.id &&
-                    isParentRow(x) &&
-                    ((x.jobContent || x.name || '').trim().toLowerCase() === item.sectionName.trim().toLowerCase() ||
-                     (x.sectionName || '').trim().toLowerCase() === item.sectionName.trim().toLowerCase())
-                  );
-                  if (secHeader && map.has(secHeader.id)) return secHeader.id;
-                }
-                return (item.parentId && item.parentId !== item.id) ? item.parentId : undefined;
-              };
-
-              fullTasks.forEach((t) => {
-                const resolvedParentId = resolveParentIdGlobal(t);
-                if (resolvedParentId && map.has(resolvedParentId)) {
-                  map.get(resolvedParentId)!.children.push(map.get(t.id));
-                } else {
-                  roots.push(map.get(t.id));
-                }
-              });
-
-              let currentSectionKey = '';
-              const flattened: any[] = [];
-
-              const flattenTree = (nodes: any[], currentDepth: number = 0, prefix: string = '', visited = new Set<string>()) => {
-                if (currentDepth > 15) return; // Safety guard against OOM crash
-
-                nodes.sort((a, b) => {
-                  const sttCompare = compareTaskStt(a.stt, b.stt);
-                  if (sttCompare !== 0) return sttCompare;
-                  const orderTagValue = (notes?: string): number | null => {
-                    const m = String(notes || '').match(/\[order:([\d.]+)\]/);
-                    return m ? parseFloat(m[1]) : null;
-                  };
-                  const orderA = orderTagValue(a.notes);
-                  const orderB = orderTagValue(b.notes);
-                  if (orderA !== null && orderB !== null && orderA !== orderB) {
-                    return orderA - orderB;
-                  }
-                  return (a.jobContent || a.name || '').localeCompare(b.jobContent || b.name || '', 'vi', { numeric: true, sensitivity: 'base' });
-                });
-
-                nodes.forEach((node, idx) => {
-                  if (!node || !node.id || visited.has(node.id)) return;
-                  visited.add(node.id);
-
-                  const isSec = node.isSec || isParentRow(node);
-                  if (isSec) {
-                    currentSectionKey = node.id;
-                  }
-
-                  let displayDepth = currentDepth;
-                  if (currentDepth === 0 && !isSec && currentSectionKey !== '') {
-                    displayDepth = 1;
-                  }
-
-                  const currentNum = (idx + 1).toString();
-                  const computedStt = node.stt || (displayDepth === 1 ? currentNum : (displayDepth > 1 ? `${prefix}.${currentNum}` : currentNum));
-
-                  flattened.push({
-                    ...node,
-                    isSec: isSec,
-                    depth: displayDepth,
-                    computedStt,
-                    _sectionKey: currentSectionKey || 'Khác'
-                  });
-                  if (node.children && node.children.length > 0) {
-                    flattenTree(node.children, currentDepth + 1, computedStt, visited);
-                  }
-                });
-              };
-
-              flattenTree(roots, 0, '');
-
-              if (flattened.length === 0) {
-                return <tr><td colSpan={colSpanCount + 2} className="p-8 text-center text-slate-400 whitespace-nowrap">{TEXT.empty}</td></tr>;
-              }
-
-              return (
-                <>
-                  {flattened
-                    .filter(plan => plan.isSec || !collapsedSections.has(plan._sectionKey || ''))
-                    .map((plan, index) => {
-                      const parent = plan.isSec || isParentRow(plan);
-                      const depth = plan.depth || 0;
-                      const suggestedStt = '';
-                      const pRecord = parent ? undefined : findPurchasingMatch(plan);
-
-                      if (parent) {
-                        const isCollapsed = collapsedSections.has(plan._sectionKey || '');
-                        return (
-                          <tr key={plan.id} className="group bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                            <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="bg-blue-50/90 border-r border-blue-200 px-0.5 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap overflow-hidden text-ellipsis" title={String(plan.stt)}>
-                              {plan.stt}
-                            </td>
-                            <td className="sticky left-0 md:static z-10 bg-blue-50/90 border-r border-blue-200 px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none" title={plan.jobContent}>
-                              <div className="flex items-center gap-1.5 min-w-0 w-full overflow-hidden">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
-                                  className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
-                                  title={isCollapsed ? 'Mở rộng đầu mục' : 'Thu gọn đầu mục'}
-                                >
-                                  <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
+                  if (parent) {
+                    const isCollapsed = collapsedSections.has(plan._sectionKey || '');
+                    return (
+                      <tr key={plan.id} className="group bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
+                        <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="bg-blue-50/90 border-r border-blue-200 py-2 px-0 text-center font-mono font-extrabold text-[11px] text-primary whitespace-nowrap tracking-tighter" title={String(plan.stt)}>
+                          {plan.stt}
+                        </td>
+                        <td className="sticky left-0 md:static z-10 bg-blue-50/90 border-r border-blue-200 py-2 px-2 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none min-w-[180px]" title={plan.jobContent || plan.name || plan.content}>
+                          <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
+                              className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
+                              title={isCollapsed ? 'Mở rộng đầu mục' : 'Thu gọn đầu mục'}
+                            >
+                              <span className={`material-symbols-outlined text-[15px] text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
+                            </button>
+                            <span className="material-symbols-outlined text-[15px] flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
+                            <span className="flex-1 min-w-0 cursor-pointer hover:underline truncate whitespace-nowrap overflow-hidden leading-tight" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }} title={plan.jobContent || plan.name || plan.content}>
+                              {plan.stt ? `${plan.stt} - ` : ''}{plan.jobContent || plan.name || plan.content}
+                            </span>
+                            <div className="hidden group-hover:flex items-center gap-0.5">
+                              {onAddSubtask && subTab !== 'FINANCE' && (
+                                <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="p-0.5 rounded text-blue-400 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
+                                  <span className="material-symbols-outlined text-[14px]">add_circle</span>
                                 </button>
-                                <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                                <span className="flex-1 min-w-0 cursor-pointer hover:underline truncate whitespace-nowrap overflow-hidden leading-tight" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }}>
-                                  {plan.jobContent}
-                                </span>
-                                <div className="hidden group-hover:flex items-center gap-1">
-                                  {onAddSubtask && subTab !== 'FINANCE' && (
-                                    <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-400 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
-                                      <span className="material-symbols-outlined text-[15px]">add_circle</span>
-                                    </button>
-                                  )}
-                                  {onDelete && (
-                                    <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-200 transition-colors inline-flex items-center" title="Xóa">
-                                      <span className="material-symbols-outlined text-[15px]">delete</span>
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td colSpan={colSpanCount} className="bg-blue-50/90 py-1.5 px-2 text-slate-500 truncate text-[11px]" title={cleanNotes(plan.notes)}>
-                              {cleanNotes(plan.notes)}
-                            </td>
-                          </tr>
-                        );
-                      }
+                              )}
+                              {onDelete && (
+                                <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-100 transition-colors inline-flex items-center" title="Xóa">
+                                  <span className="material-symbols-outlined text-[14px]">delete</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td colSpan={colSpanCount} className="bg-blue-50/90 py-2 px-2 text-slate-500 truncate text-[11px]" title={cleanNotes(plan.notes)}>
+                          {cleanNotes(plan.notes)}
+                        </td>
+                      </tr>
+                    );
+                  }
 
-                      let rowBg = 'bg-white';
-                      let stickyBg = 'bg-white';
-                      let fontStyle = 'font-medium text-slate-800 text-[12px] leading-snug';
-                      let sttStyle = 'font-bold text-slate-400 text-xs';
-                      
-                      if (depth === 1) {
-                        rowBg = 'bg-white';
-                        stickyBg = 'bg-white';
-                        fontStyle = 'font-semibold text-slate-900 text-[12px] leading-snug';
-                        sttStyle = 'font-bold text-slate-600 text-xs';
-                      } else if (depth === 2) {
-                        fontStyle = 'font-medium text-slate-800 text-[12px] leading-snug';
-                        sttStyle = 'font-semibold text-slate-400 text-[11px]';
-                      } else if (depth >= 3) {
-                        fontStyle = 'font-normal text-slate-700 text-[11.5px] leading-snug';
-                        sttStyle = 'font-medium text-slate-400 text-[10.5px]';
-                      }
-                      
-                      const rowClass = `group transition-colors border-b border-slate-50 ${rowBg} hover:bg-slate-100`;
-                      const paddingLeft = depth > 0 ? `${(depth - 1) * 0.4}rem` : '0';
+                  let rowBg = 'bg-white';
+                  let stickyBg = 'bg-white';
+                  let fontStyle = 'font-medium text-slate-800 text-[12px] leading-snug';
+                  let sttStyle = 'font-bold text-slate-400 text-xs';
+                  
+                  if (depth === 1) {
+                    rowBg = 'bg-white';
+                    stickyBg = 'bg-white';
+                    fontStyle = 'font-semibold text-slate-900 text-[12px] leading-snug';
+                    sttStyle = 'font-bold text-slate-600 text-xs';
+                  } else if (depth === 2) {
+                    fontStyle = 'font-medium text-slate-800 text-[12px] leading-snug';
+                    sttStyle = 'font-semibold text-slate-400 text-[11px]';
+                  } else if (depth >= 3) {
+                    fontStyle = 'font-normal text-slate-700 text-[11.5px] leading-snug';
+                    sttStyle = 'font-medium text-slate-400 text-[10.5px]';
+                  }
+                  
+                  const rowClass = `group transition-colors border-b border-slate-50 ${rowBg} hover:bg-slate-100`;
+                  const paddingLeft = depth > 0 ? `${(depth - 1) * 0.4}rem` : '0';
 
-                      return (
-                        <tr key={plan.id} onDoubleClick={() => {
-                          if (subTab === 'FINANCE') {
-                            if (pRecord) onEditPurchasing(pRecord, 'FINANCE');
-                          } else {
-                            onEditMaterial(plan);
-                          }
-                        }} className={rowClass}>
-                          {/* STT */}
-                          <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-1.5 px-0.5 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 text-center font-mono whitespace-nowrap overflow-hidden text-ellipsis ${sttStyle}`}>
-                            {editingCell?.id === plan.id && editingCell?.field === 'stt' && !editingCell.isPurchasing ? (
-                              <input
-                                type="text"
-                                value={tempValue}
-                                onChange={(e) => setTempValue(e.target.value)}
-                                onBlur={() => saveEditing(plan, pRecord)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                autoFocus
-                                className="w-full text-center bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1 py-1 h-[26px] box-border outline-none shadow-sm border-none rounded"
-                              />
-                            ) : (
-                              <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-0.5 py-0 rounded block w-full truncate" title={String(depth > 0 ? plan.computedStt : plan.stt)}>{depth > 0 ? plan.computedStt : plan.stt}</span>
-                            )}
-                          </td>
+                  return (
+                    <tr key={plan.id} onDoubleClick={() => {
+                      if (subTab === 'FINANCE') {
+                        if (pRecord) onEditPurchasing(pRecord, 'FINANCE');
+                      } else {
+                        onEditMaterial(plan);
+                      }
+                    }} className={rowClass}>
+                      {/* STT */}
+                      <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-1 px-0 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 text-center font-mono whitespace-nowrap tracking-tighter ${sttStyle}`}>
+                        {editingCell?.id === plan.id && editingCell?.field === 'stt' && !editingCell.isPurchasing ? (
+                          <input
+                            type="text"
+                            value={tempValue}
+                            onChange={(e) => setTempValue(e.target.value)}
+                            onBlur={() => saveEditing(plan, pRecord)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
+                            autoFocus
+                            className="w-full text-center bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1 py-1 h-[26px] box-border outline-none shadow-sm border-none rounded"
+                          />
+                        ) : (
+                          <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-0.5 py-0 rounded block w-full whitespace-nowrap tracking-tighter text-center" title={String(depth > 0 ? plan.computedStt : plan.stt)}>{depth > 0 ? plan.computedStt : plan.stt}</span>
+                        )}
+                      </td>
                           
                           {/* NỘI DUNG */}
-                          <td className={`sticky left-0 md:static z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none border-r border-slate-200 p-0 align-middle text-left overflow-hidden ${fontStyle}`}>
+                          <td className={`sticky left-0 md:static z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none border-r border-slate-200 py-1 px-2 align-middle text-left overflow-hidden min-w-[180px] ${fontStyle}`}>
                             {editingCell?.id === plan.id && editingCell?.field === 'jobContent' && !editingCell.isPurchasing ? (
                               <input
                                 type="text"
@@ -1551,12 +1594,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             ) : (
                               <div className="flex items-center gap-1 w-full min-w-0 overflow-hidden" style={{ paddingLeft }}>
                                 {depth > 1 && (
-                                  <span className="material-symbols-outlined flex-shrink-0 text-slate-400 text-[12px] mr-0.5">
+                                  <span className="material-symbols-outlined flex-shrink-0 text-slate-400 text-[12px]">
                                     subdirectory_arrow_right
                                   </span>
                                 )}
-                                <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-100 flex-1 px-1.5 py-1 w-full min-w-0 flex items-center whitespace-normal break-words leading-tight" title={plan.jobContent}>
-                                  {plan.jobContent}
+                                <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent || plan.name || plan.content)} className="cursor-pointer hover:bg-slate-100 flex-1 py-0.5 w-full min-w-0 flex items-center whitespace-normal break-words leading-tight" title={plan.jobContent || plan.name || plan.content}>
+                                  {plan.jobContent || plan.name || plan.content}
                                 </span>
                                 
                                 <div className="hidden group-hover:flex items-center gap-0.5 ml-1 shrink-0">
@@ -2017,77 +2060,33 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           )}
 
                           {subTab === 'TECH' ? (
-                            <td className="bg-white group-hover:bg-slate-50 border-r border-slate-200 p-1 align-middle text-slate-500 min-w-[200px]">
-                              <div className="flex flex-col gap-0.5 w-full text-xs py-0.5">
-                                {/* Vướng mắc */}
-                                <div className="flex items-start gap-1.5">
-                                  <span className="text-[10px] font-bold text-red-500 w-12 shrink-0 mt-0" title="Nội dung vướng mắc">V.MẮC:</span>
-                                  <div className="flex-1 bg-slate-50 rounded">
-                                    {editingCell?.id === plan.id && editingCell?.field === 'issueContent' ? (
-                                      <input
-                                        type="text"
-                                        list="issueContent-options"
-                                        value={tempValue}
-                                        onChange={(e) => setTempValue(e.target.value)}
-                                        onBlur={() => saveEditing(plan, pRecord)}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                        autoFocus
-                                        placeholder="Nhập hoặc chọn..."
-                                        className="w-full bg-white text-red-600 font-semibold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm border border-slate-200 rounded"
-                                      />
-                                    ) : (
-                                      <div onClick={() => startEditing(plan.id, 'issueContent', plan.issueContent)} className="min-h-[16px] cursor-pointer hover:bg-slate-200 px-1 py-0 rounded text-red-600 font-semibold whitespace-normal break-words leading-tight" title={getIssueContentText(plan.issueContent) || 'Click để nhập'}>
-                                        {getIssueContentText(plan.issueContent) || <span className="text-slate-300 italic">...</span>}
-                                      </div>
-                                    )}
-                                  </div>
+                            <td className="bg-white group-hover:bg-slate-50 border-r border-slate-200 py-1 px-1.5 align-middle text-slate-500 text-[11px] truncate">
+                              {editingCell?.id === plan.id && editingCell?.field === 'notes' ? (
+                                <input
+                                  type="text"
+                                  value={tempValue}
+                                  onChange={(e) => setTempValue(e.target.value)}
+                                  onBlur={() => saveEditing(plan, pRecord)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
+                                  autoFocus
+                                  placeholder="Nhập ghi chú..."
+                                  className="w-full bg-white text-slate-700 focus:outline-primary text-[11px] px-1 py-0.5 box-border outline-none border border-slate-200 rounded"
+                                />
+                              ) : (
+                                <div onClick={() => startEditing(plan.id, 'notes', cleanTechNotes(plan.notes))} className="cursor-pointer hover:bg-slate-100 flex items-center gap-1 w-full truncate" title={plan.issueContent ? `Vướng mắc: ${getIssueContentText(plan.issueContent)} | ${cleanTechNotes(plan.notes)}` : cleanTechNotes(plan.notes)}>
+                                  {plan.issueContent && (
+                                    <span className="text-rose-600 font-semibold truncate flex items-center gap-0.5 shrink-0">
+                                      <span className="material-symbols-outlined text-[12px]">warning</span>
+                                      {getIssueContentText(plan.issueContent)}
+                                    </span>
+                                  )}
+                                  {cleanTechNotes(plan.notes) ? (
+                                    <span className="text-slate-600 truncate">{cleanTechNotes(plan.notes)}</span>
+                                  ) : !plan.issueContent ? (
+                                    <span className="text-slate-300 italic">-</span>
+                                  ) : null}
                                 </div>
-                                {/* TT Xử lý */}
-                                <div className="flex items-start gap-1.5">
-                                  <span className="text-[10px] font-bold text-orange-500 w-12 shrink-0 mt-0" title="Trạng thái xử lý">XỬ LÝ:</span>
-                                  <div className="flex-1 bg-slate-50 rounded">
-                                    {editingCell?.id === plan.id && editingCell?.field === 'issueStatus' ? (
-                                      <input
-                                        type="text"
-                                        list="issueStatus-options"
-                                        value={tempValue}
-                                        onChange={(e) => setTempValue(e.target.value)}
-                                        onBlur={() => saveEditing(plan, pRecord)}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                        autoFocus
-                                        placeholder="Nhập hoặc chọn..."
-                                        className="w-full bg-white text-orange-600 font-semibold focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm border border-slate-200 rounded"
-                                      />
-                                    ) : (
-                                      <div onClick={() => startEditing(plan.id, 'issueStatus', plan.issueStatus)} className="min-h-[16px] cursor-pointer hover:bg-slate-200 px-1 py-0 rounded text-orange-600 font-semibold whitespace-normal break-words leading-tight" title={plan.issueStatus || 'Click để nhập'}>
-                                        {plan.issueStatus || <span className="text-slate-300 italic">...</span>}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                {/* Ghi chú */}
-                                <div className="flex items-start gap-1.5">
-                                  <span className="text-[10px] font-bold text-slate-500 w-12 shrink-0 mt-0" title="Ghi chú">NOTE:</span>
-                                  <div className="flex-1 bg-slate-50 rounded">
-                                    {editingCell?.id === plan.id && editingCell?.field === 'notes' ? (
-                                      <input
-                                        type="text"
-                                        value={tempValue}
-                                        onChange={(e) => setTempValue(e.target.value)}
-                                        onBlur={() => saveEditing(plan, pRecord)}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') saveEditing(plan, pRecord); if (e.key === 'Escape') setEditingCell(null); }}
-                                        autoFocus
-                                        placeholder="Nhập ghi chú..."
-                                        className="w-full bg-white text-slate-700 focus:outline-primary text-[11px] px-1.5 py-1 box-border outline-none shadow-sm border border-slate-200 rounded"
-                                      />
-                                    ) : (
-                                      <div onClick={() => startEditing(plan.id, 'notes', cleanTechNotes(plan.notes))} className="min-h-[16px] cursor-pointer hover:bg-slate-200 px-1 py-0 rounded text-slate-700 whitespace-normal break-words leading-tight" title={cleanTechNotes(plan.notes) || 'Click để nhập'}>
-                                        {cleanTechNotes(plan.notes) || <span className="text-slate-300 italic">...</span>}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
+                              )}
                             </td>
                           ) : (
                             <td className="bg-white group-hover:bg-slate-50 border-r border-slate-200 p-0 align-middle text-slate-500">
@@ -2124,18 +2123,16 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           </td>
                       </tr>
                       );
-                    })}
-                </>
-              );
-            })()}
+                    })
+            )}
           </tbody>
           {subTab === 'FINANCE' && (
             <tfoot className="sticky bottom-0 z-30 border-t-2 border-slate-400 bg-slate-100 font-extrabold text-slate-800 shadow-[0_-3px_10px_rgba(0,0,0,0.12)] text-[11px]">
               <tr className="bg-slate-100">
-                <td style={{ minWidth: 50, width: "var(--stt-width)", left: 0, borderRight: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-100 px-1 py-2 text-center font-black">
+                <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", borderRight: '1px solid #94a3b8' }} className="sticky left-0 z-20 bg-slate-100 px-0 py-2 text-center font-black">
                   ∑
                 </td>
-                <td style={{ borderRight: '1px solid #94a3b8', left: "var(--stt-width)" }} className="sticky left-[var(--stt-width)] z-20 bg-slate-100 px-2 py-2 text-left font-black w-[170px] min-w-[150px] sm:w-[320px] sm:min-w-[280px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] uppercase text-primary">
+                <td style={{ borderRight: '1px solid #94a3b8' }} className="sticky left-0 md:static z-20 bg-slate-100 px-2 py-2 text-left font-black shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none uppercase text-primary min-w-[180px]">
                   TỔNG DỰ ÁN
                 </td>
                 <td className="border-r border-slate-300 p-1 text-center">-</td>

@@ -1992,13 +1992,14 @@ const hasSyncedRef = useRef(false);
     let maxLen = 3; // Minimum length 3 for "STT" header
     groupedTasks.forEach(t => {
       const rawVal = String((t as any).computedStt || t.stt || '').trim();
-      const cleanVal = rawVal.split(/[\s\-]/)[0];
-      const effectiveVal = cleanVal && cleanVal.length <= 7 ? cleanVal : rawVal.slice(0, 5);
+      const match = rawVal.match(/^[\d.]+/);
+      const cleanVal = match ? match[0] : rawVal.split(/[\s\-]/)[0];
+      const effectiveVal = cleanVal && cleanVal.length <= 8 ? cleanVal : cleanVal.slice(0, 7);
       if (effectiveVal.length > maxLen) maxLen = effectiveVal.length;
     });
-    // Thu gọn tối đa vừa khít con số: 3 ký tự (3, 3.7): 26px, 5 ký tự (3.7.1): 32px, 7 ký tự (3.10.12): 38px
-    const calculated = Math.round(maxLen * 5.4 + 4);
-    return Math.max(26, Math.min(42, calculated));
+    // Thu gọn vừa khít chữ số trên cả desktop và mobile, không bị rộng
+    const calculated = Math.round(maxLen * 5.2 + 5);
+    return Math.max(26, Math.min(45, calculated));
   }, [groupedTasks]);
 
   const totalPureItems = groupedTasks.filter((t) => !t.isSectionHeader).length;
@@ -2310,35 +2311,35 @@ const hasSyncedRef = useRef(false);
           }}
           className="w-full overflow-x-auto overflow-y-auto flex-1 custom-scrollbar"
         >
-          <table className="min-w-[800px] md:min-w-[950px] w-full text-left border-collapse text-[11px] table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+          <table className="min-w-[850px] md:min-w-[1000px] w-full text-left border-collapse text-[11px] table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
             <colgroup>
               <col style={{ width: "var(--stt-width)" }} />
-              <col style={{ width: "auto" }} />
-              <col style={{ width: "40px" }} />
-              <col style={{ width: "36px" }} />
-              <col style={{ width: "36px" }} />
-              <col style={{ width: "110px" }} />
-              <col style={{ width: "110px" }} />
+              <col style={{ width: hasPermission(authStore.user, 'ASSIGN_TASKS') ? "23%" : "26%" }} />
+              <col style={{ width: 45 }} />
+              <col style={{ width: 40 }} />
+              <col style={{ width: 40 }} />
+              <col style={{ width: 125 }} />
+              <col style={{ width: 125 }} />
               {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
-                <col style={{ width: "100px" }} />
+                <col style={{ width: 110 }} />
               )}
-              <col style={{ width: "100px" }} />
-              <col style={{ width: "110px" }} />
+              <col style={{ width: 135 }} />
+              <col style={{ width: "auto" }} />
             </colgroup>
             <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
               <tr>
                 <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-slate-50 text-center border-b border-r border-slate-200 whitespace-nowrap tracking-tighter">STT</th>
-                <th className="sticky left-0 md:static z-20 py-2 px-2 min-w-[160px] md:min-w-[200px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none">NỘI DUNG</th>
-                <th className="py-2 px-0.5 w-[40px] min-w-[40px] max-w-[40px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
-                <th className="py-2 px-0.5 w-[36px] min-w-[36px] max-w-[36px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
-                <th className="py-2 px-0.5 w-[36px] min-w-[36px] max-w-[36px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
-                <th className="py-2 px-1 w-[110px] min-w-[110px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
-                <th className="py-2 px-1 w-[110px] min-w-[110px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
+                <th className="sticky left-0 md:static z-20 py-2 px-2 min-w-[170px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none">NỘI DUNG</th>
+                <th className="py-2 px-0.5 w-[45px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
+                <th className="py-2 px-0.5 w-[40px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
+                <th className="py-2 px-0.5 w-[40px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
+                <th className="py-2 px-1 w-[125px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
+                <th className="py-2 px-1 w-[125px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>
                 {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
-                    <th className="py-2 px-1 w-[100px] text-center border-b border-slate-200 whitespace-nowrap">GIAO VIỆC</th>
+                    <th className="py-2 px-1 w-[110px] text-center border-b border-slate-200 whitespace-nowrap">GIAO VIỆC</th>
                   )}
-                <th className="py-2 px-1 w-[100px] border-b border-slate-200 whitespace-nowrap text-center">NGƯỜI CẬP NHẬT</th>
-                <th className="bg-slate-50 py-2 px-1 w-[110px] min-w-[110px] border-b border-l border-slate-200 whitespace-nowrap">GHI CHÚ</th>
+                <th className="py-2 px-1 w-[135px] border-b border-slate-200 whitespace-nowrap text-center">NGƯỜI CẬP NHẬT</th>
+                <th className="bg-slate-50 py-2 px-1 min-w-[100px] border-b border-l border-slate-200 whitespace-nowrap">GHI CHÚ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
@@ -2352,7 +2353,7 @@ const hasSyncedRef = useRef(false);
                     return (
                       <tr key={t.id} className="group bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
                         <td onClick={() => handleOpenEditModal(t)} style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-blue-50/90 border-r border-blue-200 text-center font-mono font-extrabold text-[11px] text-primary cursor-pointer hover:underline whitespace-nowrap tracking-tighter" title={String((t as any).computedStt || t.stt)}>{(t as any).computedStt || t.stt}</td>
-                        <td className="sticky left-0 md:static z-10 py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary border-r border-blue-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none">
+                        <td className="sticky left-0 md:static z-10 py-2 px-2 bg-blue-50/90 uppercase tracking-tight font-extrabold text-xs text-primary border-r border-blue-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none min-w-[200px]">
                           <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(t._sectionKey || ''); }}

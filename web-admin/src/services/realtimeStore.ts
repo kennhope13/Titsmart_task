@@ -246,10 +246,15 @@ const generateDocumentDueNotifications = (tracks: DocumentTrack[], existingNotif
   const newNotifs: NotificationItem[] = [];
 
   tracks.forEach(track => {
-    // Nếu hồ sơ đã hoàn thành, hoặc đã ký/nhận đủ, hoặc đã thanh toán (nếu có theo dõi) -> không tạo thông báo
-    const isSigned = track.docStatus === 'Đã ký' || track.docStatus === 'Đã nhận đủ';
+    // Nếu hồ sơ đã hoàn thành, hoặc đã ký/nhận đủ/đã duyệt/đã nộp, hoặc đã thanh toán -> không tạo thông báo
+    const isSigned = track.docStatus === 'Đã ký' || 
+      track.docStatus === 'Đã nhận đủ' || 
+      track.docStatus === 'Đã duyệt' || 
+      track.docStatus === 'Đã nộp' || 
+      track.docStatus === 'Đã hoàn thành' ||
+      track.docStatus === 'Hoàn thành';
     const isPaid = track.paymentStatus?.includes('Đã');
-    if (track.isCompleted || (isSigned && isPaid)) return;
+    if (track.isCompleted || isSigned || isPaid || (!track.dueDate && track.receiveDate)) return;
 
     const effectiveDueDate = track.dueDate || track.receiveDate || track.sendDate;
     if (!effectiveDueDate) return;
@@ -1791,13 +1796,37 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         if (Array.isArray(notifs)) {
           // Filter out notifications older than 30 days locally
           const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-          const freshNotifs = notifs.filter(n => {
+          let freshNotifs = notifs.filter(n => {
             try {
               const t = new Date(n.timestamp).getTime();
               return isNaN(t) || t >= cutoff;
             } catch {
               return true;
             }
+          });
+
+          // Loại bỏ các thông báo quá hạn cũ của các hồ sơ / công việc đã xong
+          const completedDocs = new Set(
+            (get().documentTracks || [])
+              .filter(t => t.isCompleted || t.docStatus === 'Đã ký' || t.docStatus === 'Đã nhận đủ' || t.docStatus === 'Đã duyệt' || t.docStatus === 'Đã nộp' || t.docStatus === 'Đã hoàn thành' || t.docStatus === 'Hoàn thành' || t.paymentStatus?.includes('Đã') || (!t.dueDate && t.receiveDate))
+              .map(t => t.id)
+          );
+          const completedTasks = new Set(
+            (get().tasks || [])
+              .filter(t => t.isSectionHeader || t.status === 'Hoàn thành' || t.status === 'Chờ nghiệm thu' || t.isDone)
+              .map(t => t.id)
+          );
+
+          freshNotifs = freshNotifs.filter(n => {
+            if (n.id.startsWith('overdue-doc-') || n.id.startsWith('due-doc-')) {
+              const docId = n.id.split('-')[2];
+              if (docId && completedDocs.has(docId)) return false;
+            }
+            if (n.id.startsWith('overdue-task-') || n.id.startsWith('due-task-')) {
+              const taskId = n.id.split('-')[2];
+              if (taskId && completedTasks.has(taskId)) return false;
+            }
+            return true;
           });
 
           const docDueNotifs = generateDocumentDueNotifications(get().documentTracks || [], freshNotifs);

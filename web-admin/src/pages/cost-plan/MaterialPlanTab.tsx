@@ -319,13 +319,15 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
   };
 
   const maxSttWidth = React.useMemo(() => {
-    let maxLen = 1;
+    let maxLen = 3;
     data.forEach(t => {
-      const len = String((t as any).computedStt || t.stt || "").trim().length;
-      if (len > maxLen) maxLen = len;
+      const rawVal = String((t as any).computedStt || t.stt || '').trim();
+      const match = rawVal.match(/^[\d.]+/);
+      const cleanVal = match ? match[0] : rawVal.split(/[\s\-]/)[0];
+      if (cleanVal.length > maxLen) maxLen = cleanVal.length;
     });
-    const calculated = Math.max(24, Math.round(maxLen * 6.5 + 8));
-    return Math.min(80, calculated);
+    const calculated = Math.round(maxLen * 5.2 + 5);
+    return Math.max(26, Math.min(45, calculated));
   }, [data]);
 
   return (
