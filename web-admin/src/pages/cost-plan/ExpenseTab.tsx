@@ -109,7 +109,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
               
               <th className="w-[85px] px-1.5 py-1.5 text-center">Ngày chi</th>
               <th className="sticky left-0 z-20 w-[160px] bg-slate-50 border-r border-slate-200/70 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Nội dung / Diễn giải</th>
-              <th className="w-[45px] px-1 py-1.5 text-center">ĐVT</th>
+              <th className="w-[65px] px-1 py-1.5 text-center">ĐVT</th>
               <th className="w-[65px] px-1.5 py-1.5 text-right">Số lượng</th>
               <th className="w-[90px] px-1.5 py-1.5 text-right">Đơn giá (đ)</th>
               <th className="w-[85px] px-1.5 py-1.5 text-right">Thuế VAT (đ)</th>
@@ -131,7 +131,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                   <div className="w-[145px] truncate mt-0.5 text-[11px] leading-relaxed text-slate-500">{exp.description}</div>
                   {exp.notes && <div className="mt-1 inline-block rounded border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Ghi chú: {exp.notes}</div>}
                 </td>
-                <td className="w-[45px] px-1 py-1 text-center font-medium">{exp.unit}</td>
+                <td className="w-[65px] px-1 py-1 text-center font-medium">{exp.unit}</td>
                 <td className="w-[65px] px-1.5 py-1 text-right font-semibold">{exp.quantity}</td>
                 <td className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-right">{exp.unitPrice.toLocaleString('vi-VN')}</td>
                 <td className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-right text-slate-500">{(exp.taxAmount || 0).toLocaleString('vi-VN')}</td>

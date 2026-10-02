@@ -2316,7 +2316,7 @@ const hasSyncedRef = useRef(false);
               <col style={{ width: "var(--stt-width)" }} />
               <col style={{ width: hasPermission(authStore.user, 'ASSIGN_TASKS') ? "23%" : "26%" }} />
               <col style={{ width: 45 }} />
-              <col style={{ width: 40 }} />
+              <col style={{ width: 65 }} />
               <col style={{ width: 40 }} />
               <col style={{ width: 125 }} />
               <col style={{ width: 125 }} />
@@ -2331,7 +2331,7 @@ const hasSyncedRef = useRef(false);
                 <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-slate-50 text-center border-b border-r border-slate-200 whitespace-nowrap tracking-tighter">STT</th>
                 <th className="sticky left-0 md:static z-20 py-2 px-2 min-w-[170px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] md:shadow-none">NỘI DUNG</th>
                 <th className="py-2 px-0.5 w-[45px] text-center border-b border-slate-200 whitespace-nowrap">KL</th>
-                <th className="py-2 px-0.5 w-[40px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
+                <th className="py-2 px-0.5 w-[65px] min-w-[65px] text-center border-b border-slate-200 whitespace-nowrap">ĐVT</th>
                 <th className="py-2 px-0.5 w-[40px] text-center border-b border-slate-200 whitespace-nowrap">%</th>
                 <th className="py-2 px-1 w-[125px] text-center border-b border-slate-200 whitespace-nowrap">TT ĐẶT HÀNG</th>
                 <th className="py-2 px-1 w-[125px] text-center border-b border-slate-200 whitespace-nowrap">TĐ THI CÔNG</th>

@@ -79,7 +79,7 @@ export const LaborTab: React.FC<LaborTabProps> = ({
               <th className="w-[85px] px-1.5 py-1.5 text-center">Ngày làm</th>
               <th className="sticky left-0 z-20 w-[160px] bg-slate-50 border-r border-slate-200/70 px-1.5 py-1 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Họ tên</th>
               <th className="w-[160px] px-1.5 py-1">Nội dung / Diễn giải</th>
-              <th className="w-[45px] px-1 py-1.5 text-center">ĐVT</th>
+              <th className="w-[65px] px-1 py-1.5 text-center">ĐVT</th>
               <th className="w-[65px] px-1.5 py-1.5 text-right">Số lượng</th>
               <th className="w-[85px] px-1.5 py-1.5 text-right">Đơn giá (đ)</th>
               <th className="w-[95px] px-1.5 py-1.5 text-right">Thành tiền (đ)</th>
@@ -103,7 +103,7 @@ export const LaborTab: React.FC<LaborTabProps> = ({
                   <div className="w-[145px] truncate mt-0.5 text-[11px] text-slate-500">{lab.description}</div>
                   {lab.notes && <div className="mt-1 inline-block rounded border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Ghi chú: {lab.notes}</div>}
                 </td>
-                <td className="w-[45px] px-1 py-1 text-center font-medium">{lab.unit}</td>
+                <td className="w-[65px] px-1 py-1 text-center font-medium">{lab.unit}</td>
                 <td className="w-[65px] px-1.5 py-1 text-right font-semibold">{lab.quantity}</td>
                 <td className="px-1.5 py-1.5 text-right">{lab.unitPrice.toLocaleString('vi-VN')}</td>
                 <td className="bg-primary/5 px-1.5 py-1.5 text-right font-extrabold text-primary">{lab.totalAmount.toLocaleString('vi-VN')}</td>
