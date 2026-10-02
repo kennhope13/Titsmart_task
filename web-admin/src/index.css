@@ -25,18 +25,22 @@
 
 /* Custom Scrollbar Styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 0px;
+}
+::-webkit-scrollbar:horizontal {
+  height: 0px !important;
+  display: none !important;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #94a3b8;
+  background: #cbd5e1;
   border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #94a3b8;
 }
 
 /* Excel HTML Preview Table Styling */
@@ -88,7 +92,11 @@
 
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
-  height: 6px;
+  height: 0px;
+}
+.custom-scrollbar::-webkit-scrollbar:horizontal {
+  height: 0px !important;
+  display: none !important;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
@@ -98,12 +106,16 @@
   border-radius: 10px;
 }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+.scrollbar-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
 }
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.scrollbar-hide,
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* Hide Number Input Spinners (Up/Down Arrows) */

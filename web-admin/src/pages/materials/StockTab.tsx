@@ -40,7 +40,6 @@ export const StockTab: React.FC<StockTabProps> = ({ materials, onEdit }) => {
         <table className="w-full table-fixed text-left border-collapse">
           <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
             <tr>
-              <th className="w-14 p-3 text-center">STT</th>
               <th className="p-3">Vật tư</th>
               <th className="w-20 p-3 text-center">ĐVT</th>
               <th className="w-24 p-3 text-right">Tồn đầu</th>
@@ -53,7 +52,6 @@ export const StockTab: React.FC<StockTabProps> = ({ materials, onEdit }) => {
           </thead>
           <tfoot className="bg-slate-50/80 border-t border-slate-200">
             <tr>
-              <td className="p-1"></td>
               <td className="p-1"><input value={columnFilters.name || ''} onChange={e => updateColumnFilter('name', e.target.value)} placeholder="Vật tư..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
               <td className="p-1"><input value={columnFilters.unit || ''} onChange={e => updateColumnFilter('unit', e.target.value)} placeholder="ĐVT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
               <td className="p-1"></td>
@@ -67,7 +65,6 @@ export const StockTab: React.FC<StockTabProps> = ({ materials, onEdit }) => {
           <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
             {filtered.map((material, index) => (
           <tr key={material.id} onClick={() => onEdit(material)} className="hover:bg-blue-50/50 transition-colors align-top cursor-pointer">
-            <td className="p-3 text-center text-slate-400">{index + 1}</td>
             <td className="p-3 min-w-0">
               <div className="font-bold text-slate-900 truncate" title={material.name}>{material.name}</div>
               <div className="mt-1 text-[11px] font-mono font-normal text-slate-500 truncate" title={material.code || ''}>{material.code || '-'}</div>

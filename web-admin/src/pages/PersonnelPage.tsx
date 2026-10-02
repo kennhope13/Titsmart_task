@@ -641,7 +641,6 @@ export const PersonnelPage: React.FC = () => {
             <table className="w-full text-[11px] sm:text-xs text-left border-collapse">
               <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[10px] sm:text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200">
                 <tr>
-                  <th className="text-center p-2 sm:p-3 bg-slate-50 w-10 whitespace-nowrap">STT</th>
                   <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Họ tên</th>
                   <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Mã NV</th>
                   <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Tài khoản</th>
@@ -662,7 +661,6 @@ export const PersonnelPage: React.FC = () => {
                       className="cursor-pointer hover:bg-slate-50"
                       onClick={() => openEditModal(person)}
                     >
-                      <td className="p-2 sm:p-3 text-center font-mono font-bold text-slate-400 whitespace-nowrap text-[10px] sm:text-xs">{index + 1}</td>
                       <td className="p-2 sm:p-3 text-xs sm:text-sm font-semibold text-slate-900 tracking-tight min-w-[120px] whitespace-nowrap">
                         <div>{person.name}</div>
                       </td>

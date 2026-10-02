@@ -313,7 +313,6 @@ export const ActivityLogPage: React.FC = () => {
               <table className="w-full text-xs text-left border-collapse">
                 <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200">
                   <tr>
-                    <th className="text-center p-3 bg-slate-50 w-16">STT</th>
                     <th className="text-left p-3 bg-slate-50 w-40">Thời gian</th>
                     <th className="text-left p-3 bg-slate-50 w-48">Nhân sự</th>
                     
@@ -324,7 +323,7 @@ export const ActivityLogPage: React.FC = () => {
                 <tbody className="divide-y divide-slate-100">
                   {filteredLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-slate-500">
+                      <td colSpan={4} className="p-8 text-center text-slate-500">
                         <div className="flex flex-col items-center justify-center">
                           <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">history_toggle_off</span>
                           <span className="font-semibold text-sm">Chưa có nhật ký hoạt động</span>
@@ -335,7 +334,7 @@ export const ActivityLogPage: React.FC = () => {
                     Object.entries(groupedLogs).map(([dateLabel, logs]) => (
                       <React.Fragment key={dateLabel}>
                         <tr className="bg-slate-50/80 border-t-2 border-slate-200 group">
-                          <td colSpan={5} className="py-2 px-4">
+                          <td colSpan={4} className="py-2 px-4">
                             <div className="flex items-center gap-2">
                               <span className="material-symbols-outlined text-primary/70 text-[18px]">calendar_month</span>
                               <span className="text-xs font-extrabold text-slate-700">{dateLabel}</span>
@@ -352,9 +351,6 @@ export const ActivityLogPage: React.FC = () => {
 
                           return (
                             <tr key={log.id} onClick={() => setSelectedLog(log)} className="cursor-pointer hover:bg-slate-50 transition-colors border-t border-slate-100">
-                              <td className="p-3 text-center font-mono font-bold text-slate-400 whitespace-nowrap">
-                                {globalIndex}
-                              </td>
                               <td className="p-3 whitespace-nowrap">
                                 <span className="font-bold text-slate-600 flex items-center gap-2">
                                   <span className="material-symbols-outlined text-[14px]">schedule</span>

@@ -1383,10 +1383,6 @@ export const MaterialTrackingPage: React.FC = () => {
               </div>
             )}
           </div>
-          <button onClick={handleSyncCodeFromImportLogs} title="Chuẩn hóa lại tất cả mã bị trùng SINGLEMODE-MULTIMODE" className="hidden md:flex items-center gap-1 border border-slate-200 bg-white h-[34px] px-2.5 rounded-lg text-[12px] font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-sm">
-            <span className="material-symbols-outlined text-[14px] text-primary">sync</span>
-            Chuẩn hóa Mã
-          </button>
           <button onClick={() => handleOpenTransaction('IMPORT')} className="hidden md:flex items-center gap-1.5 bg-emerald-600 text-white h-[34px] px-3 rounded-lg text-[12px] font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-sm">
             <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
             Nhập Kho
@@ -1424,6 +1420,102 @@ export const MaterialTrackingPage: React.FC = () => {
               </button>
             ))}
           </div>
+
+          {/* MOBILE ACTION & SEARCH BAR (Chỉ hiển thị khi đang ở trong tab Kho của Dự án, vì trang Tổng kho độc lập đã có ở Header trên cùng) */}
+          {projectId && (
+            <div className="md:hidden flex items-center gap-1.5 p-2 border-t border-slate-100 bg-white">
+              <div className="relative flex-1 min-w-0">
+                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                <input
+                  type="text"
+                  placeholder="Tìm vật tư..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white transition-all h-8"
+                />
+              </div>
+
+              {/* Nhập kho icon button */}
+              <button 
+                onClick={() => handleOpenTransaction('IMPORT')} 
+                title="Nhập Kho"
+                className="flex items-center justify-center bg-emerald-600 text-white h-8 w-8 rounded-lg hover:bg-emerald-700 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-base">arrow_downward</span>
+              </button>
+
+              {/* Xuất kho icon button */}
+              <button 
+                onClick={() => handleOpenTransaction('EXPORT')} 
+                title="Xuất Kho"
+                className="flex items-center justify-center bg-amber-500 text-white h-8 w-8 rounded-lg hover:bg-amber-600 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-base">arrow_upward</span>
+              </button>
+
+              {/* Xuất file dropdown */}
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setShowMobileExportMenu(!showMobileExportMenu)}
+                  className="flex items-center justify-center h-8 px-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 active:scale-95 transition-all shadow-xs gap-0.5 cursor-pointer"
+                  title="Xuất file"
+                >
+                  <span className="material-symbols-outlined text-base">file_download</span>
+                  <span className="material-symbols-outlined text-xs">expand_more</span>
+                </button>
+                {showMobileExportMenu && (
+                  <div 
+                    className="fixed inset-0 z-[9998]" 
+                    onClick={() => setShowMobileExportMenu(false)}
+                  />
+                )}
+                {showMobileExportMenu && (
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 z-[9999] animate-in fade-in zoom-in duration-100">
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                      Excel (.xlsx)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                      CSV (.csv)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        window.print();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                      PDF (.pdf)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                      Word (.docx)
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           
           {/* Lọc chi tiết - ẩn trên mobile để tối ưu giao diện */}
           <div className="hidden md:flex h-[40px] px-5 bg-slate-50/80 border-t border-slate-100 items-center gap-3 overflow-x-auto custom-scrollbar justify-between">
@@ -1483,7 +1575,6 @@ export const MaterialTrackingPage: React.FC = () => {
                    className="bg-slate-50 border-b border-slate-200 text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
                  >
                  <tr>
-                   <th className="p-1.5 md:p-2 w-8 md:w-10 text-center bg-slate-50 whitespace-nowrap">STT</th>
                    {!projectId && <th className="p-1.5 md:p-2 bg-slate-50 whitespace-nowrap">Dự Án</th>}
                    <th className="p-1.5 md:p-2 bg-slate-50 whitespace-nowrap">Danh mục</th>
                    <th className="p-1.5 md:p-2 min-w-32 md:min-w-44 bg-slate-50 whitespace-nowrap">Tên Vật Tư</th>
@@ -1503,7 +1594,6 @@ export const MaterialTrackingPage: React.FC = () => {
                     const purchase = normalizePurchaseStatus(material.status);
                     return (
                       <tr key={material.id} onClick={() => openEditMaterial(material)} className="hover:bg-blue-50/50 transition-colors align-top cursor-pointer">
-                        <td className="p-2 md:p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
                         {!projectId && <td className="p-2 md:p-3.5"><span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-600 inline-block" title={material.projectName || 'Kho Tổng'}>{material.projectName || 'Kho Tổng'}</span></td>}
                         <td className="p-2 md:p-3.5 text-slate-600 text-xs">{material.category || 'Vật tư chung'}</td>
                         <td className="p-2 md:p-3.5">
@@ -1567,7 +1657,6 @@ export const MaterialTrackingPage: React.FC = () => {
                 className="bg-slate-50 border-b border-slate-200 text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
               >
                 <tr>
-                  <th className="p-1.5 md:p-3.5 w-8 md:w-10 text-center bg-slate-50 whitespace-nowrap">STT</th>
                   <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Ngày Nhập</th>
                   <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Mã Vật Tư</th>
                   <th className="p-1.5 md:p-3.5 min-w-32 md:min-w-64 bg-slate-50 whitespace-nowrap">Tên Vật Tư</th>
@@ -1582,7 +1671,6 @@ export const MaterialTrackingPage: React.FC = () => {
               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                 {imports.map((tx, index) => (
                   <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-2 md:p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
                     <td className="p-2 md:p-3.5 font-bold text-slate-900 whitespace-nowrap">{tx.date ? new Date(tx.date).toLocaleDateString("vi-VN") : "-"}</td>
                     <td className="p-2 md:p-3.5 font-mono text-slate-500">{cleanCodeString(tx.materialCode, tx.materialName)}</td>
                     <td className="p-2 md:p-3.5 font-bold text-slate-800">{tx.materialName}</td>
@@ -1594,7 +1682,7 @@ export const MaterialTrackingPage: React.FC = () => {
                     <td className="p-2 md:p-3.5 text-slate-500 italic">{tx.notes || '-'}</td>
                   </tr>
                 ))}
-                {imports.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-slate-500">Chưa có giao dịch nhập kho nào.</td></tr>}
+                {imports.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-slate-500">Chưa có giao dịch nhập kho nào.</td></tr>}
               </tbody>
             </table>
           </PullToRefresh>
@@ -1608,7 +1696,6 @@ export const MaterialTrackingPage: React.FC = () => {
                 className="bg-slate-50 border-b border-slate-200 text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] before:absolute before:inset-0 before:border-b before:border-slate-200"
               >
                 <tr>
-                  <th className="p-1.5 md:p-3.5 w-8 md:w-10 text-center bg-slate-50 whitespace-nowrap">STT</th>
                   <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Ngày Xuất</th>
                   <th className="p-1.5 md:p-3.5 bg-slate-50 whitespace-nowrap">Mã Vật Tư</th>
                   <th className="p-1.5 md:p-3.5 min-w-32 md:min-w-64 bg-slate-50 whitespace-nowrap">Tên Vật Tư</th>
@@ -1623,7 +1710,6 @@ export const MaterialTrackingPage: React.FC = () => {
               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                 {exports.map((tx, index) => (
                   <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-3.5 text-center text-slate-500 font-medium">{index + 1}</td>
                     <td className="p-3.5 font-bold text-slate-900">{tx.date ? new Date(tx.date).toLocaleDateString("vi-VN") : "-"}</td>
                     <td className="p-3.5 font-mono text-slate-500">{cleanCodeString(tx.materialCode, tx.materialName)}</td>
                     <td className="p-3.5 font-bold text-slate-800">{tx.materialName}</td>
@@ -1635,7 +1721,7 @@ export const MaterialTrackingPage: React.FC = () => {
                     <td className="p-3.5 text-slate-500 italic">{tx.notes || '-'}</td>
                   </tr>
                 ))}
-                {exports.length === 0 && <tr><td colSpan={10} className="p-8 text-center text-slate-500">Chưa có giao dịch xuất kho nào.</td></tr>}
+                {exports.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-slate-500">Chưa có giao dịch xuất kho nào.</td></tr>}
               </tbody>
             </table>
           </PullToRefresh>

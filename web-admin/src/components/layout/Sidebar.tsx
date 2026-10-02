@@ -273,6 +273,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                     '/task-assignment',
                     '/task-assignment?tab=assigned',
                     defaultTaskPath,
+                    '/document-tracking',
                     '/office-costs',
                   ])
                 );

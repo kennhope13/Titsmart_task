@@ -1888,25 +1888,26 @@ export const ProjectCostPlanPage: React.FC = () => {
       )}
 
       {/* TABS SELECTOR */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 shadow-xs border-x overflow-x-auto custom-scrollbar flex-nowrap">
-        <div className="flex items-center gap-3 sm:gap-4 flex-nowrap">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-2 sm:px-4 shadow-xs border-x overflow-x-hidden">
+        <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-1 sm:gap-4">
           {[
             { id: 'TECH', label: 'Đặt hàng', icon: 'list_alt', show: true },
             { id: 'DOCS', label: 'Chứng từ', icon: 'description', show: true },
             { id: 'FINANCE', label: 'Thanh toán', icon: 'payments', show: user?.role !== 'engineer' },
-            { id: 'EXPENSE', label: 'Chi Phí Công Trình', icon: 'receipt_long', show: user?.role !== 'engineer' },
+            { id: 'EXPENSE', label: 'Chi phí', fullLabel: 'Chi Phí Công Trình', icon: 'receipt_long', show: user?.role !== 'engineer' },
           ].filter(t => t.show).map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-1.5 py-2 text-[12px] font-bold border-b-2 transition-all whitespace-nowrap shrink-0 ${
+              className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-2 text-[11px] sm:text-[12px] font-bold border-b-2 transition-all shrink-0 ${
                 activeTab === tab.id
                   ? 'border-primary text-primary'
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
-              <span className="material-symbols-outlined text-[16px] flex-shrink-0">{tab.icon}</span>
-              <span className="whitespace-nowrap">{tab.label}</span>
+              <span className="material-symbols-outlined text-[15px] sm:text-[16px] flex-shrink-0">{tab.icon}</span>
+              <span className="whitespace-nowrap sm:hidden">{tab.label}</span>
+              <span className="whitespace-nowrap hidden sm:inline">{tab.fullLabel || tab.label}</span>
             </button>
           ))}
         </div>

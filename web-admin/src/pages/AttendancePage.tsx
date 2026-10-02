@@ -104,6 +104,7 @@ export const AttendancePage: React.FC = () => {
   const [tab, setTab] = useState<'my' | 'all'>('my');
   const [filterDate, setFilterDate] = useState('');
   const [filterUser, setFilterUser] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [checkInImage, setCheckInImage] = useState<string | null>(null);
   const [checkOutImage, setCheckOutImage] = useState<string | null>(null);
   const [viewImage, setViewImage] = useState<string | null>(null);
@@ -116,6 +117,7 @@ export const AttendancePage: React.FC = () => {
 
   // State cho Xin nghỉ phép (khởi tạo từ cache)
   const [leaves, setLeaves] = useState<LeaveRequest[]>(cachedLeaves);
+  const [leaveSearchQuery, setLeaveSearchQuery] = useState('');
   const [leavesLoading, setLeavesLoading] = useState(!hasFetchedAttendanceData && cachedLeaves.length === 0);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaveType, setLeaveType] = useState<LeaveType>('Nghỉ phép năm');
@@ -276,20 +278,35 @@ export const AttendancePage: React.FC = () => {
 
   // Lọc danh sách nghỉ phép ngay trong bộ nhớ (0ms latency, không reload, không spinner khi đổi tab)
   const displayedLeaves = React.useMemo(() => {
-    if (tab === 'all') return leaves;
-    if (!user) return leaves;
-    return leaves.filter(l => {
-      const matchId = String(l.userId || '') === String(user.id || '');
-      const matchName = user.name && l.userName && l.userName.trim().toLowerCase() === user.name.trim().toLowerCase();
-      const matchUsername = user.username && l.userName && l.userName.trim().toLowerCase() === user.username.trim().toLowerCase();
-      const matchFollower = Array.isArray(l.followerIds) && (
-        l.followerIds.includes(user.id) || 
-        (user.name && l.followerNames?.includes(user.name)) ||
-        (user.username && l.followerNames?.includes(user.username))
-      );
-      return matchId || matchName || matchUsername || matchFollower;
-    });
-  }, [leaves, tab, user]);
+    let list = leaves;
+    if (tab === 'my' && user) {
+      list = list.filter(l => {
+        const matchId = String(l.userId || '') === String(user.id || '');
+        const matchName = user.name && l.userName && l.userName.trim().toLowerCase() === user.name.trim().toLowerCase();
+        const matchUsername = user.username && l.userName && l.userName.trim().toLowerCase() === user.username.trim().toLowerCase();
+        const matchFollower = Array.isArray(l.followerIds) && (
+          l.followerIds.includes(user.id) || 
+          (user.name && l.followerNames?.includes(user.name)) ||
+          (user.username && l.followerNames?.includes(user.username))
+        );
+        return matchId || matchName || matchUsername || matchFollower;
+      });
+    }
+    if (leaveSearchQuery.trim()) {
+      const q = leaveSearchQuery.toLowerCase().trim();
+      list = list.filter(l => {
+        const matchUser = l.userName?.toLowerCase().includes(q);
+        const matchType = l.leaveType?.toLowerCase().includes(q);
+        const matchReason = l.reason?.toLowerCase().includes(q);
+        const matchReviewer1 = l.step1ReviewerName?.toLowerCase().includes(q);
+        const matchReviewer2 = l.step2ReviewerName?.toLowerCase().includes(q);
+        const matchStartDate = formatDate(l.startDate)?.toLowerCase().includes(q);
+        const matchEndDate = formatDate(l.endDate)?.toLowerCase().includes(q);
+        return matchUser || matchType || matchReason || matchReviewer1 || matchReviewer2 || matchStartDate || matchEndDate;
+      });
+    }
+    return list;
+  }, [leaves, tab, user, leaveSearchQuery]);
 
   const fetchLogs = async (forceShowSpinner = false) => {
     if (forceShowSpinner || (!hasFetchedAttendanceData && cachedLogs.length === 0)) {
@@ -645,9 +662,17 @@ export const AttendancePage: React.FC = () => {
         if (logDate !== filterDate && l.checkOutTime) return false;
       }
       if (filterUser && l.userId !== filterUser) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchUser = l.userName?.toLowerCase().includes(q);
+        const matchProject = l.projectName?.toLowerCase().includes(q);
+        const matchNotes = l.notes?.toLowerCase().includes(q);
+        const matchDate = formatDate(l.checkInTime)?.toLowerCase().includes(q);
+        if (!matchUser && !matchProject && !matchNotes && !matchDate) return false;
+      }
       return true;
     });
-  }, [logs, tab, user, filterDate, filterUser]);
+  }, [logs, tab, user, filterDate, filterUser, searchQuery]);
 
   const todayStr = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -727,6 +752,27 @@ export const AttendancePage: React.FC = () => {
             )
           ) : (
             <div className="flex items-center gap-2">
+              {/* Desktop Search for Leave */}
+              <div className="relative flex items-center">
+                <span className="material-symbols-outlined absolute left-2 text-slate-400 text-sm pointer-events-none">search</span>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm nghỉ phép..."
+                  value={leaveSearchQuery}
+                  onChange={e => setLeaveSearchQuery(e.target.value)}
+                  className="pl-7 pr-6 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none h-8 w-44 lg:w-56 transition-colors"
+                />
+                {leaveSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setLeaveSearchQuery('')}
+                    className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-xs">close</span>
+                  </button>
+                )}
+              </div>
+
               {leaves.length > 0 && (
                 <div className="relative shrink-0">
                   <button
@@ -818,19 +864,19 @@ export const AttendancePage: React.FC = () => {
                   </p>
                   <button
                     onClick={() => setShowCheckOutModal(true)}
-                    className="flex items-center gap-1.5 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
+                    className="w-8 h-8 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-sm transition-colors shrink-0 active:scale-95 cursor-pointer"
+                    title="Ra ca"
                   >
-                    <span className="material-symbols-outlined text-[16px] sm:text-[18px]">logout</span>
-                    Ra ca
+                    <span className="material-symbols-outlined text-[18px]">logout</span>
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => setShowCheckInModal(true)}
-                  className="flex items-center gap-1.5 px-5 py-1.5 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
+                  className="w-8 h-8 flex items-center justify-center bg-primary hover:bg-blue-800 text-white font-bold rounded-lg shadow-sm transition-colors shrink-0 active:scale-95 cursor-pointer"
+                  title="Vào ca"
                 >
-                  <span className="material-symbols-outlined text-[16px] sm:text-[18px]">login</span>
-                  Vào ca
+                  <span className="material-symbols-outlined text-[18px]">login</span>
                 </button>
               )}
             </div>
@@ -838,27 +884,55 @@ export const AttendancePage: React.FC = () => {
 
           {/* Filters Bar */}
           {mainTab === 'attendance' && (
-            <div className="px-4 py-2 border-b border-slate-200 bg-white flex flex-wrap items-center gap-3 shrink-0 shadow-xs relative z-10">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-slate-400 text-[18px]">calendar_month</span>
-                <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)}
-                  className="px-2.5 py-1 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer" />
+            <div className="px-3 md:px-4 py-2 border-b border-slate-200 bg-white flex flex-nowrap md:flex-wrap items-center justify-between gap-2 shrink-0 shadow-xs relative z-10">
+              {/* Mobile Search Bar */}
+              <div className="flex md:hidden flex-1 relative items-center min-w-0">
+                <span className="material-symbols-outlined absolute left-2.5 text-slate-400 text-sm pointer-events-none">search</span>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-7 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none h-8 transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-xs">close</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Desktop Filters: Date */}
+              <div className="hidden md:flex items-center gap-1.5 md:gap-2 min-w-0">
+                <div className="relative flex items-center">
+                  <span className="material-symbols-outlined absolute left-2 text-slate-500 text-[18px] pointer-events-none">calendar_month</span>
+                  <input 
+                    type="date" 
+                    value={filterDate} 
+                    onChange={e => setFilterDate(e.target.value)}
+                    className="pl-7 pr-2 py-1 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer h-8" 
+                  />
+                </div>
                 {filterDate ? (
                   <button 
                     type="button"
                     onClick={() => setFilterDate('')}
-                    className="px-2 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded flex items-center gap-1 transition-colors border border-slate-200 cursor-pointer"
+                    className="px-2 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 transition-colors border border-slate-200 cursor-pointer h-8 shrink-0"
                     title="Hiển thị tất cả các ngày"
                   >
                     <span className="material-symbols-outlined text-xs">close</span>
-                    Tất cả ngày
+                    <span>Tất cả ngày</span>
                   </button>
                 ) : (
-                  <span className="text-[11px] text-slate-500 font-semibold italic">(Tất cả các ngày)</span>
+                  <span className="text-[11px] text-slate-500 font-semibold italic truncate">(Tất cả các ngày)</span>
                 )}
               </div>
               {canViewAll && tab === 'all' && (
-                <>
+                <div className="hidden md:flex items-center gap-2">
                   <div className="h-4 w-px bg-slate-200"></div>
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-slate-400 text-[18px]">person</span>
@@ -871,22 +945,35 @@ export const AttendancePage: React.FC = () => {
                       ))}
                     </CustomSelect>
                   </div>
-                </>
+                </div>
               )}
-              <div className="ml-auto flex items-center gap-3">
-                <div className="px-2.5 py-1 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200">
+              <div className="ml-auto flex items-center gap-2 md:gap-3 shrink-0">
+                {/* Ẩn badge số bản ghi trên mobile */}
+                <div className="hidden md:block px-2.5 py-1 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200">
                   {filteredLogs.length} bản ghi
                 </div>
                 {filteredLogs.length > 0 && (
-                  <div className="relative">
+                  <div className="relative shrink-0">
+                    {/* Desktop Button */}
                     <button
                       onClick={() => setShowExportMenu(!showExportMenu)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-sm cursor-pointer"
+                      className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-sm cursor-pointer h-8"
                     >
                       <span className="material-symbols-outlined text-[16px]">file_download</span>
                       <span>Xuất file</span>
                       <span className="material-symbols-outlined text-xs">expand_more</span>
                     </button>
+
+                    {/* Mobile Icon Button */}
+                    <button
+                      onClick={() => setShowExportMenu(!showExportMenu)}
+                      className="md:hidden flex items-center justify-center h-8 px-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 active:scale-95 transition-all shadow-xs gap-0.5 cursor-pointer"
+                      title="Xuất file"
+                    >
+                      <span className="material-symbols-outlined text-base">file_download</span>
+                      <span className="material-symbols-outlined text-xs">expand_more</span>
+                    </button>
+
                     {showExportMenu && (
                       <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
                     )}
@@ -949,7 +1036,6 @@ export const AttendancePage: React.FC = () => {
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-bold uppercase sticky top-0 z-10">
-                      <th className="p-3 w-12 text-center">STT</th>
                       <th className="p-3">Nhân viên</th>
                       <th className="p-3">Giờ vào</th>
                       <th className="p-3">Giờ ra</th>
@@ -961,9 +1047,8 @@ export const AttendancePage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredLogs.map((log, idx) => (
+                    {filteredLogs.map((log) => (
                       <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
                         <td className="p-3 font-bold text-slate-800">{log.userName}</td>
                         <td className="p-3 text-slate-700 font-medium whitespace-nowrap">
                           {formatDateTime(log.checkInTime)}
@@ -1026,26 +1111,45 @@ export const AttendancePage: React.FC = () => {
               <div className="inline-flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0">
                 <button
                   onClick={() => setTab('my')}
-                  className={`px-2.5 py-1 rounded-md text-xs transition-all ${tab === 'my' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`px-2 py-0.5 rounded-md text-[10px] transition-all ${tab === 'my' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
                 >Của tôi</button>
                 <button
                   onClick={() => setTab('all')}
-                  className={`px-2.5 py-1 rounded-md text-xs transition-all ${tab === 'all' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`px-2 py-0.5 rounded-md text-[10px] transition-all ${tab === 'all' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
                 >Tất cả</button>
               </div>
-            ) : <div />}
+            ) : null}
 
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Mobile Search Bar in Leave Tab */}
+            <div className="flex-1 relative flex items-center min-w-0">
+              <span className="material-symbols-outlined absolute left-2.5 text-slate-400 text-sm pointer-events-none">search</span>
+              <input
+                type="text"
+                placeholder="Tìm kiếm..."
+                value={leaveSearchQuery}
+                onChange={e => setLeaveSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-7 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none h-8 transition-colors"
+              />
+              {leaveSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setLeaveSearchQuery('')}
+                  className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-xs">close</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
               {leaves.length > 0 && (
                 <div className="relative shrink-0">
                   <button
                     onClick={() => setShowLeaveExportMenu(!showLeaveExportMenu)}
-                    className="flex items-center justify-center gap-1 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-xs cursor-pointer h-8"
+                    className="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold rounded-lg border border-emerald-200 transition-colors shadow-xs cursor-pointer"
                     title="Xuất file"
                   >
-                    <span className="material-symbols-outlined text-[15px]">file_download</span>
-                    <span>Xuất file</span>
-                    <span className="material-symbols-outlined text-xs">expand_more</span>
+                    <span className="material-symbols-outlined text-[17px]">file_download</span>
                   </button>
                   {showLeaveExportMenu && (
                     <div className="fixed inset-0 z-40" onClick={() => setShowLeaveExportMenu(false)} />
@@ -1085,14 +1189,13 @@ export const AttendancePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Add Leave Button (Mobile only) */}
+              {/* Add Leave Button (Mobile only: icon-only) */}
               <button
                 onClick={() => { setShowLeaveModal(true); setModalError(null); }}
-                className="flex items-center justify-center gap-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs rounded-lg shadow-xs transition-all h-8 px-2.5 shrink-0 active:scale-95 cursor-pointer"
+                className="w-8 h-8 flex items-center justify-center bg-primary hover:bg-blue-800 text-white font-bold rounded-lg shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer"
                 title="Tạo đơn xin nghỉ"
               >
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                <span>Tạo đơn</span>
+                <span className="material-symbols-outlined text-[19px]">add</span>
               </button>
             </div>
           </div>
@@ -1292,7 +1395,6 @@ export const AttendancePage: React.FC = () => {
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-bold uppercase sticky top-0 z-10">
-                        <th className="p-3 w-12 text-center">STT</th>
                         <th className="p-3">Nhân viên</th>
                         <th className="p-3">Loại nghỉ</th>
                         <th className="p-3">Thời gian nghỉ</th>
@@ -1306,7 +1408,7 @@ export const AttendancePage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {displayedLeaves.map((l, idx) => {
+                      {displayedLeaves.map((l) => {
                         const isMatch = Boolean(highlightLeaveId && l.id === highlightLeaveId);
                         
                         // Quyền duyệt Quản lý (Trưởng nhóm / Quản lý duyệt bước đầu)
@@ -1341,7 +1443,6 @@ export const AttendancePage: React.FC = () => {
                               : 'hover:bg-slate-50'
                           }`}
                         >
-                          <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
                           <td className="p-3 font-bold text-slate-800">{l.userName}</td>
                           <td className="p-3 font-semibold text-slate-700">{l.leaveType}</td>
                           <td className="p-3 whitespace-nowrap text-slate-700">

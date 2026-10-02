@@ -42,7 +42,6 @@ export const InventoryLogTab: React.FC<InventoryLogTabProps> = ({ rows, kind }) 
       <table className="w-full table-fixed text-left border-collapse">
         <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
           <tr>
-            <th className="w-14 p-3 text-center">STT</th>
             <th className="w-28 p-3">Ngày</th>
             <th className="p-3">Vật tư</th>
             <th className="w-20 p-3 text-center">ĐVT</th>
@@ -55,7 +54,6 @@ export const InventoryLogTab: React.FC<InventoryLogTabProps> = ({ rows, kind }) 
         </thead>
         <tfoot className="bg-slate-50/80 border-t border-slate-200">
           <tr>
-            <td className="w-14 p-1"></td>
             <td className="w-28 p-1"></td>
             <td className="p-1"><input value={columnFilters.materialName || ''} onChange={e => updateColumnFilter('materialName', e.target.value)} placeholder="Vật tư..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
             <td className="w-20 p-1"></td>
@@ -69,7 +67,6 @@ export const InventoryLogTab: React.FC<InventoryLogTabProps> = ({ rows, kind }) 
         <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
           {filtered.map((tx, index) => (
             <tr key={tx.id} className="hover:bg-slate-50 transition-colors align-top">
-              <td className="p-3 text-center text-slate-400">{index + 1}</td>
               <td className="p-3 font-bold text-slate-900 truncate" title={tx.date}>{tx.date || '-'}</td>
               <td className="p-3 min-w-0">
                 <div className="font-bold text-slate-800 truncate" title={tx.materialName}>{tx.materialName}</div>

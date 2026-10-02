@@ -145,14 +145,14 @@ export const ProjectDiagramTab: React.FC = () => {
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-white overflow-y-auto custom-scrollbar relative">
         {/* Mobile Action Bar */}
         {hasPermission(user, 'MANAGE_DOCUMENTS') && (
-          <div className="md:hidden flex items-center justify-between px-4 pt-3 pb-1 border-b border-slate-100 bg-white">
+          <div className="md:hidden flex items-center justify-between px-4 py-2 border-b border-slate-100 bg-white">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Danh sách sơ đồ</span>
             <button 
               onClick={() => { setEditingIndex(null); setDiagramName(''); setPendingUrls([]); setResetKey(Date.now()); setIsModalOpen(true); }}
-              className="h-8 px-3 bg-primary text-white font-bold text-xs rounded-lg hover:bg-blue-800 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              title="Tải sơ đồ"
+              className="h-8 w-8 bg-primary text-white font-bold text-xs rounded-lg hover:bg-blue-800 active:scale-95 transition-all shadow-xs flex items-center justify-center cursor-pointer shrink-0"
             >
-              <span className="material-symbols-outlined text-[16px]">add_a_photo</span>
-              Tải sơ đồ
+              <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
             </button>
           </div>
         )}

@@ -696,7 +696,108 @@ export const DocumentTrackingPage: React.FC = () => {
       {/* TABS & TABLE */}
       <section className="bg-white flex flex-col flex-1 min-w-0 min-h-0 border-y border-slate-200 rounded-none shadow-none overflow-hidden">
 
-          {/* FILTER & SEARCH BAR - ẩn trên mobile để tối ưu giao diện */}
+          {/* MOBILE ACTION & SEARCH BAR (Chỉ hiển thị khi đang ở trong tab Dự án, vì trang Quản lý hồ sơ độc lập đã có thanh search ở Header) */}
+          {projectId && (
+            <div className="md:hidden flex items-center gap-1.5 p-2 border-b border-slate-200 bg-white">
+              <div className="relative flex-1 min-w-0">
+                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white transition-all h-8"
+                />
+              </div>
+
+              {/* '+' Add Button */}
+              <button
+                onClick={() => {
+                  const code = resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '');
+                  setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
+                  setIsNewDocOpen(true);
+                }}
+                title="Thêm hồ sơ mới"
+                className="flex items-center justify-center bg-primary text-white h-8 w-8 rounded-lg hover:opacity-90 active:scale-95 transition-all shadow-xs shrink-0"
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+              </button>
+
+              {/* Export Dropdown */}
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setShowMobileExportMenu(!showMobileExportMenu)}
+                  className="flex items-center justify-center h-8 px-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-xs gap-0.5 cursor-pointer"
+                  title="Xuất file"
+                >
+                  <span className="material-symbols-outlined text-base">file_download</span>
+                  <span className="material-symbols-outlined text-xs">expand_more</span>
+                </button>
+                {showMobileExportMenu && (
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowMobileExportMenu(false)}
+                  />
+                )}
+                {showMobileExportMenu && (
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                      Excel (.xlsx)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                      CSV (.csv)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        window.print();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                      PDF (.pdf)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        handleExportExcel();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                      Word (.docx)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileExportMenu(false);
+                        fileInputRef.current?.click();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 mt-1 pt-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-indigo-600">upload_file</span>
+                      Nhập file Excel
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* FILTER & SEARCH BAR - cho desktop */}
           <div className="hidden md:flex border-b border-slate-200 bg-white px-3 md:px-4 py-2 gap-2 md:gap-3 sticky top-0 z-20 flex-col md:flex-row md:items-center justify-between text-xs text-slate-600">
             <div className="flex items-center gap-2 md:gap-3 overflow-x-auto no-scrollbar py-0.5">
               <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap shrink-0">
@@ -784,25 +885,25 @@ export const DocumentTrackingPage: React.FC = () => {
           }}
           className="custom-scrollbar flex-1 pb-16 md:pb-0"
         >
-          <table className="doc-fit-table w-full text-left border-collapse ">
-               <thead className="bg-white border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10 leading-tight">
+          <table className="doc-fit-table w-full text-left border-collapse">
+               <thead className="bg-slate-50/90 border-b border-slate-200 text-[10px] font-extrabold text-slate-500 uppercase tracking-tight sticky top-0 z-10 leading-tight">
                  <tr>
-                   <th className="p-1 text-center whitespace-nowrap">Bên</th>
-                   {!projectId && <th className="p-1 whitespace-nowrap">Dự án</th>}
-                   <th className="p-1 min-w-[90px]">Số hợp đồng</th>
-                   <th className="p-1 min-w-[150px]">Tên hợp đồng</th>
-                   <th className="p-1 min-w-[120px]">Công ty / Đối tác</th>
-                   <th className="p-1 min-w-[80px]">Người nhận</th>
-                   <th className="p-1 text-center whitespace-nowrap">Ngày gửi</th>
-                   <th className="p-1 text-center whitespace-nowrap">Ngày nhận</th>
-                   <th className="p-1 text-center min-w-[100px]">Hạn nộp / Nhắc</th>
-                   <th className="p-1 text-right min-w-[90px]">Giá trị HĐ (đ)</th>
-                   <th className="p-1 text-center min-w-[70px]">Tạm ứng</th>
-                   <th className="p-1 text-center min-w-[80px]">Thanh toán</th>
-                   <th className="p-1 text-center whitespace-nowrap">File</th>
-                   <th className="p-1 text-center whitespace-nowrap">Hồ sơ</th>
-                   <th className="p-1 min-w-[130px] text-center">NGƯỜI CẬP NHẬT</th>
-                   <th className="p-1 text-center whitespace-nowrap">TT</th>
+                   <th className="px-2 py-1.5 text-center whitespace-nowrap min-w-[62px]">Bên</th>
+                   {!projectId && <th className="px-2 py-1.5 whitespace-nowrap min-w-[90px]">Dự án</th>}
+                   <th className="px-2 py-1.5 min-w-[85px] whitespace-nowrap">Số HĐ</th>
+                   <th className="px-2 py-1.5 min-w-[140px]">Tên hợp đồng</th>
+                   <th className="px-2 py-1.5 min-w-[110px]">Công ty / Đối tác</th>
+                   <th className="px-2 py-1.5 min-w-[80px]">Người nhận</th>
+                   <th className="px-2 py-1.5 text-center whitespace-nowrap min-w-[70px]">Ngày gửi</th>
+                   <th className="px-2 py-1.5 text-center whitespace-nowrap min-w-[70px]">Ngày nhận</th>
+                   <th className="px-2 py-1.5 text-center min-w-[90px] whitespace-nowrap">Hạn nộp / Nhắc</th>
+                   <th className="px-2 py-1.5 text-right min-w-[85px] whitespace-nowrap">Giá trị HĐ (đ)</th>
+                   <th className="px-2 py-1.5 text-center min-w-[65px] whitespace-nowrap">Tạm ứng</th>
+                   <th className="px-2 py-1.5 text-center min-w-[75px] whitespace-nowrap">Thanh toán</th>
+                   <th className="px-1.5 py-1.5 text-center whitespace-nowrap w-9">File</th>
+                   <th className="px-2 py-1.5 text-center whitespace-nowrap min-w-[65px]">Hồ sơ</th>
+                   <th className="px-2 py-1.5 min-w-[110px] text-center whitespace-nowrap">NGƯỜI CẬP NHẬT</th>
+                   <th className="px-1.5 py-1.5 text-center whitespace-nowrap w-9">TT</th>
                  </tr>
                </thead>
                 <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 leading-tight">
@@ -828,30 +929,50 @@ export const DocumentTrackingPage: React.FC = () => {
                       setEditingDoc({ ...track, notes: (track.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim() });
                     }}
                   >
-                    <td className="px-1 py-1 text-center">
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                        track.side === 'Bên nhận' ? 'bg-emerald-50 text-emerald-600' :
-                        track.side === 'Bên gửi' ? 'bg-indigo-50 text-indigo-600' :
-                        'bg-amber-50 text-amber-600'
+                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap shrink-0 ${
+                        track.side === 'Bên nhận' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60' :
+                        track.side === 'Bên gửi' ? 'bg-indigo-50 text-indigo-600 border border-indigo-200/60' :
+                        'bg-amber-50 text-amber-600 border border-amber-200/60'
                       }`}>
                         {track.side || 'Bên trả'}
                       </span>
                     </td>
-                    {!projectId && <td className="px-1 py-1 text-[13px] font-bold text-slate-600">{projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}</td>}
-                    <td className="px-1 py-1 font-mono text-[11px] break-words break-all">{track.contractNo || '-'}</td>
-                    <td className="px-1 py-1">
-                      <div className="font-extrabold text-slate-900 leading-snug max-w-[160px] whitespace-normal line-clamp-2" title={track.contractName}>
+                    {!projectId && (
+                      <td className="px-1.5 py-1.5 text-[11px] font-bold text-slate-700 max-w-[120px] leading-tight">
+                        <div className="line-clamp-2" title={projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode}>
+                          {projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}
+                        </div>
+                      </td>
+                    )}
+                    <td className="px-1.5 py-1.5 font-mono text-[11px] text-slate-800 break-words break-all max-w-[95px] leading-tight" title={track.contractNo}>
+                      {track.contractNo || '-'}
+                    </td>
+                    <td className="px-1.5 py-1.5">
+                      <div className="font-bold text-slate-900 leading-tight max-w-[160px] whitespace-normal line-clamp-2" title={track.contractName}>
                         {track.contractName}
                       </div>
                     </td>
-                    <td className="px-1 py-1"><div className="font-bold text-slate-800 max-w-[130px] whitespace-normal line-clamp-2" title={track.company}>{track.company || '-'}</div></td>
-                    <td className="px-1 py-1">
-                      <div className="font-semibold text-slate-700">{track.receiverName || '-'}</div>
-                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">{track.phone || ''}</div>
+                    <td className="px-1.5 py-1.5">
+                      <div className="font-medium text-slate-800 max-w-[130px] whitespace-normal leading-tight line-clamp-2" title={track.company}>
+                        {track.company || '-'}
+                      </div>
                     </td>
-                    <td className="px-1 py-1 text-center whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.sendDate ? 'bg-slate-100 text-slate-700' : 'text-slate-300'}`}>{track.sendDate ? new Date(track.sendDate).toLocaleDateString('vi-VN') : '-'}</span></td>
-                    <td className="px-1 py-1 text-center whitespace-nowrap"><span className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${track.receiveDate ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-300'}`}>{track.receiveDate ? new Date(track.receiveDate).toLocaleDateString('vi-VN') : '-'}</span></td>
-                    <td className="px-1 py-1 text-center whitespace-nowrap">
+                    <td className="px-1.5 py-1.5">
+                      <div className="font-medium text-slate-700 leading-tight">{track.receiverName || '-'}</div>
+                      {track.phone && <div className="text-[10px] text-slate-400 font-mono mt-0.5">{track.phone}</div>}
+                    </td>
+                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                      <span className={`px-1.5 py-0.5 rounded text-[10.5px] font-mono ${track.sendDate ? 'bg-slate-100 text-slate-700' : 'text-slate-300'}`}>
+                        {track.sendDate ? new Date(track.sendDate).toLocaleDateString('vi-VN') : '-'}
+                      </span>
+                    </td>
+                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                      <span className={`px-1.5 py-0.5 rounded text-[10.5px] font-mono ${track.receiveDate ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-300'}`}>
+                        {track.receiveDate ? new Date(track.receiveDate).toLocaleDateString('vi-VN') : '-'}
+                      </span>
+                    </td>
+                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
                       {(() => {
                         const info = getDueInfo(track);
                         const effDate = track.dueDate || track.receiveDate || track.sendDate;
@@ -874,7 +995,7 @@ export const DocumentTrackingPage: React.FC = () => {
                               <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                 <span className="material-symbols-outlined text-[12px]">warning</span> {info.text}
                               </span>
-                              <span className="text-[9px] text-slate-400 font-mono mt-0.5">{dueStr}</span>
+                              {dueStr && <span className="text-[9px] text-slate-400 font-mono mt-0.5">{dueStr}</span>}
                             </div>
                           );
                         }
@@ -884,7 +1005,7 @@ export const DocumentTrackingPage: React.FC = () => {
                               <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                 <span className="material-symbols-outlined text-[12px]">notifications_active</span> {info.text}
                               </span>
-                              <span className="text-[9px] text-slate-400 font-mono mt-0.5">{dueStr}</span>
+                              {dueStr && <span className="text-[9px] text-slate-400 font-mono mt-0.5">{dueStr}</span>}
                             </div>
                           );
                         }
@@ -895,13 +1016,19 @@ export const DocumentTrackingPage: React.FC = () => {
                         );
                       })()}
                     </td>
-                    <td className="px-1 py-1 text-right font-bold text-slate-950">{(track.contractValue || 0).toLocaleString('vi-VN')}</td>
-                    <td className="px-1 py-1 text-center">
-                      <div className="font-bold text-blue-700">{(track.prepayPercent ? (track.prepayPercent * 100).toFixed(1) : '0')}%</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">{(track.prepayAmount || 0).toLocaleString('vi-VN')}đ</div>
+                    <td className="px-1.5 py-1.5 text-right font-bold text-slate-900 text-[11px] whitespace-nowrap">
+                      {(track.contractValue || 0).toLocaleString('vi-VN')}
                     </td>
-                    <td className="px-1 py-1 text-center"><span className={`text-[10px] font-bold ${track.paymentStatus?.includes('Đã') ? 'text-emerald-700' : 'text-rose-700'}`}>{track.paymentStatus || 'Chưa thanh toán'}</span></td>
-                    <td className="px-1 py-1 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                      <div className="font-bold text-blue-700 text-[11px]">{(track.prepayPercent ? (track.prepayPercent * 100).toFixed(1) : '0')}%</div>
+                      <div className="text-[9.5px] text-slate-500 font-mono mt-0.5">{(track.prepayAmount || 0).toLocaleString('vi-VN')}đ</div>
+                    </td>
+                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${track.paymentStatus?.includes('Đã') ? 'text-emerald-700 bg-emerald-50' : 'text-rose-700 bg-rose-50'}`}>
+                        {track.paymentStatus || 'Chưa thanh toán'}
+                      </span>
+                    </td>
+                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       {track.fileUrls && track.fileUrls.length > 0 ? (
                         <button type="button" onClick={(e) => { e.stopPropagation(); setFileViewerUrls(track.fileUrls || []); }} title="Xem file đính kèm" className="relative inline-flex items-center justify-center w-7 h-7 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
                           <span className="material-symbols-outlined text-[16px]">description</span>
@@ -911,23 +1038,23 @@ export const DocumentTrackingPage: React.FC = () => {
                         <span className="text-slate-300">-</span>
                       )}
                     </td>
-                    <td className="px-1 py-1 text-center">
-                      <span className={`text-[10px] font-bold ${
+                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         track.docStatus === 'Đã ký' || track.docStatus === 'Đã nhận đủ' 
-                          ? 'text-emerald-700' 
+                          ? 'text-emerald-700 bg-emerald-50' 
                           : track.docStatus === 'Chưa ký' || track.docStatus === 'Chưa nhận'
-                          ? 'text-amber-700 font-bold'
-                          : 'text-slate-600'
+                          ? 'text-amber-700 bg-amber-50 font-bold'
+                          : 'text-slate-600 bg-slate-100'
                       }`}>
                         {track.docStatus || 'Chưa ký'}
                       </span>
                     </td>
-                    <td className="px-1 py-1">
+                    <td className="px-1.5 py-1.5 whitespace-nowrap">
                       <AuditInfoCell updatedBy={track.updatedBy || track.createdByName} updatedAt={track.updatedAt} />
                     </td>
                     
-                    <td className="px-1 py-1 text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center gap-1.5">
+                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-1">
                         {canManageItem(user, track) ? (
                           <button onClick={() => {
                             const docLabel = track.contractNo || track.contractName || 'này';
@@ -948,9 +1075,9 @@ export const DocumentTrackingPage: React.FC = () => {
                               isDestructive: true,
                               confirmText: 'Xóa'
                             });
-                          }} title="Xóa hồ sơ" className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"><span className="material-symbols-outlined text-base">delete</span></button>
+                          }} title="Xóa hồ sơ" className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"><span className="material-symbols-outlined text-[15px]">delete</span></button>
                         ) : (
-                          <span title="Chỉ người tạo hoặc Quản trị viên mới có quyền xóa" className="p-1 text-slate-300 cursor-not-allowed"><span className="material-symbols-outlined text-base">lock</span></span>
+                          <span title="Chỉ người tạo hoặc Quản trị viên mới có quyền xóa" className="p-1 text-slate-300 cursor-not-allowed"><span className="material-symbols-outlined text-[15px]">lock</span></span>
                         )}
                       </div>
                     </td>

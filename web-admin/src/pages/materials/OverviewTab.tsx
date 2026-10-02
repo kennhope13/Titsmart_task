@@ -42,7 +42,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ materials, onEdit, onD
         <table className="w-full min-w-[1240px] table-fixed text-left border-collapse">
           <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
               <tr>
-                <th className="w-14 p-3 text-center">STT</th>
                 <th className="w-36 p-3">Danh mục</th>
                 <th className="w-64 p-3">Vật tư / Thiết bị</th>
                 <th className="w-48 p-3">Quy cách / Thông số</th>
@@ -58,7 +57,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ materials, onEdit, onD
             </thead>
             <tfoot className="bg-slate-50/80 border-t border-slate-200">
               <tr>
-                <td className="w-14 p-1"></td>
                 <td className="w-36 p-1"><input value={columnFilters.category || ''} onChange={e => updateColumnFilter('category', e.target.value)} placeholder="Danh mục..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
                 <td className="w-64 p-1"><input value={columnFilters.name || ''} onChange={e => updateColumnFilter('name', e.target.value)} placeholder="Vật tư..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
                 <td className="w-48 p-1"></td>
@@ -77,7 +75,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ materials, onEdit, onD
           const purchase = normalizePurchaseStatus(material.status);
           return (
             <tr key={material.id} onClick={() => onEdit(material)} className="hover:bg-blue-50/50 transition-colors align-top cursor-pointer">
-              <td className="p-3 text-center text-slate-400">{index + 1}</td>
               <td className="p-3 text-slate-600 truncate" title={material.category || ''}>{material.category || '-'}</td>
               <td className="p-3">
                 <div className="font-bold text-slate-900 leading-snug truncate" title={material.name}>{material.name}</div>

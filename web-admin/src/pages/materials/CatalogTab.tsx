@@ -46,13 +46,11 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
             <col style={{ width: '24%' }} />
             <col style={{ width: '12%' }} />
             <col style={{ width: '25%' }} />
-            <col style={{ width: '5%' }} />
             <col style={{ width: '13%' }} />
             <col style={{ width: '7%' }} />
           </colgroup>
           <thead className="bg-slate-50 border-b border-slate-200 text-[12px] font-bold text-slate-500 uppercase">
             <tr>
-              <th className="px-2 py-3 text-center">STT</th>
               <th className="px-2 py-3">Danh mục</th>
               <th className="px-2 py-3">Tên Vật Tư / Thiết Bị</th>
               <th className="px-2 py-3">Mã vật tư</th>
@@ -64,7 +62,6 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
           </thead>
           <tfoot className="bg-slate-50/80 border-t border-slate-200">
             <tr>
-              <td className="px-2 py-1"></td>
               <td className="px-2 py-1"><input value={columnFilters.category || ''} onChange={e => updateColumnFilter('category', e.target.value)} placeholder="Danh mục..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
               <td className="px-2 py-1"><input value={columnFilters.name || ''} onChange={e => updateColumnFilter('name', e.target.value)} placeholder="Tên VT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
               <td className="px-2 py-1"><input value={columnFilters.code || ''} onChange={e => updateColumnFilter('code', e.target.value)} placeholder="Mã VT..." className="w-full border border-slate-200 rounded px-1 py-1 text-[10px] bg-white" /></td>
@@ -77,7 +74,6 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
           <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
             {filtered.map((material, index) => (
           <tr key={material.id} onClick={() => onEdit(material)} className="hover:bg-blue-50/50 transition-colors align-top cursor-pointer">
-            <td className="px-2 py-3 text-center text-slate-400">{index + 1}</td>
             <td className="px-2 py-3 text-slate-600 truncate" title={material.category || ''}>{material.category || '-'}</td>
             <td className="px-2 py-3 min-w-0">
               <div className="font-bold text-slate-900 truncate" title={material.name}>{material.name}</div>
@@ -102,7 +98,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({ materials, onEdit, onDel
             </td>
           </tr>
         ))}
-        {filtered.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-slate-500">{'Kh\u00f4ng c\u00f3 v\u1eadt t\u01b0 n\u00e0o.'}</td></tr>}
+        {filtered.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-slate-500">{'Kh\u00f4ng c\u00f3 v\u1eadt t\u01b0 n\u00e0o.'}</td></tr>}
       </tbody>
     </table>
   </div>
