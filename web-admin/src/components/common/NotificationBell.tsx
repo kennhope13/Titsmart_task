@@ -760,23 +760,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
   }, []);
 
   useEffect(() => {
-    const clampPos = () => {
-      setPosition(prev => {
-        if (!prev) return null;
-        const maxX = window.innerWidth - 50;
-        const maxY = window.innerHeight - 50;
-        const clampedX = Math.max(10, Math.min(maxX, prev.x));
-        const clampedY = Math.max(10, Math.min(maxY, prev.y));
-        if (clampedX !== prev.x || clampedY !== prev.y) {
-          return { x: clampedX, y: clampedY };
-        }
-        return prev;
-      });
+    const handleResize = () => {
+      // Khi người dùng thay đổi kích thước / phóng to / thu nhỏ cửa sổ ứng dụng, tự động đưa chuông về vị trí mặc định
+      setPosition(null);
     };
 
-    clampPos();
-    window.addEventListener('resize', clampPos);
-    return () => window.removeEventListener('resize', clampPos);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -1038,7 +1028,11 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     >
       <button
         onClick={handleBellClick}
-        title="Thông báo hệ thống (Nhấn giữ & kéo để di chuyển)"
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          setPosition(null);
+        }}
+        title="Thông báo hệ thống (Nhấn giữ & kéo để di chuyển, nhấp đúp để đặt lại vị trí)"
         className={`w-[36px] h-[36px] rounded-lg flex items-center justify-center transition-all relative border shadow-xs cursor-grab active:cursor-grabbing
           ${showPopover ? 'bg-blue-50 border-blue-200 text-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800'}`}
       >
