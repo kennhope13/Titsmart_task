@@ -621,6 +621,32 @@ export const TaskAssignmentPage: React.FC = () => {
     });
   }, [projectAllTasks, filterProjectCode, projectFilterStatus, projectSearch, highlightedTaskId]);
 
+  // Trạng thái thu gọn / mở rộng nhóm dự án
+  const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>({});
+  const toggleCollapseProject = (pCode: string) => {
+    setCollapsedProjects(prev => ({ ...prev, [pCode]: !prev[pCode] }));
+  };
+
+  // Nhóm công việc theo từng dự án để hiển thị tinh gọn, không lặp lại cột Dự án
+  const groupedProjectTasks = useMemo(() => {
+    const map = new Map<string, typeof projectDisplayedTasks>();
+    projectDisplayedTasks.forEach(t => {
+      const pCode = t.projectCode || 'OTHER';
+      if (!map.has(pCode)) {
+        map.set(pCode, []);
+      }
+      map.get(pCode)!.push(t);
+    });
+
+    const groups: { project: { code: string; name: string }; tasks: typeof projectDisplayedTasks }[] = [];
+    map.forEach((tList, pCode) => {
+      const proj = projects.find(p => p.code === pCode) || { code: pCode, name: tList[0]?.projectName || pCode };
+      groups.push({ project: proj, tasks: tList });
+    });
+
+    return groups;
+  }, [projectDisplayedTasks, projects]);
+
   // Danh sách công việc giao trực tiếp
   const directAllTasks = useMemo(() => {
     return tasks.filter(t => !t.isSectionHeader && (
@@ -1263,10 +1289,10 @@ export const TaskAssignmentPage: React.FC = () => {
 
           {/* Bảng Danh sách Công việc Dự án tràn viền edge-to-edge */}
           <div className="flex-1 overflow-auto custom-scrollbar bg-white" onScroll={handleTableScroll}>
-            <table className="w-full text-left border-collapse text-xs min-w-[1000px]">
+            <table className="w-full text-left border-collapse text-xs min-w-[900px]">
               <thead className="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase sticky top-0 z-10 shadow-[0_1px_0_0_#e2e8f0]">
                 <tr>
-                  {projectFilterStatus === 'unassigned' && (
+                  {projectFilterStatus === 'unassigned' ? (
                     <th className="py-2.5 px-3 w-10 text-center border-r border-slate-200">
                       <input 
                         type="checkbox" 
@@ -1275,8 +1301,9 @@ export const TaskAssignmentPage: React.FC = () => {
                         onChange={handleToggleSelectAll}
                       />
                     </th>
+                  ) : (
+                    <th className="py-2.5 px-3 w-12 text-center border-r border-slate-200">#</th>
                   )}
-                  <th className="py-2.5 px-4 w-44 border-r border-slate-200">Dự án</th>
                   <th className="py-2.5 px-4 border-r border-slate-200">Nội dung công việc</th>
                   <th className="py-2.5 px-3 w-36 border-r border-slate-200">Người phụ trách</th>
                   <th className="py-2.5 px-3 w-36 border-r border-slate-200">Người theo dõi</th>
@@ -1287,155 +1314,205 @@ export const TaskAssignmentPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 font-medium">
-                {projectDisplayedTasks.length === 0 ? (
+                {groupedProjectTasks.length === 0 ? (
                   <tr>
-                    <td colSpan={projectFilterStatus === 'unassigned' ? 9 : 8} className="py-8 text-center text-slate-400 italic">
+                    <td colSpan={8} className="py-8 text-center text-slate-400 italic">
                       Không có công việc dự án nào phù hợp.
                     </td>
                   </tr>
                 ) : (
-                  projectDisplayedTasks.map((t) => {
-                    const p = projects.find(proj => proj.code === t.projectCode);
-                    const isChecked = selectedTaskIds.includes(t.id);
-                    const isTargetTask = isHighlightActive && (
-                      (highlightedTaskId && t.id === highlightedTaskId) ||
-                      (highlightKeyword && (
-                        t.name?.toLowerCase().includes(highlightKeyword) ||
-                        t.sectionName?.toLowerCase().includes(highlightKeyword)
-                      ))
-                    );
+                  groupedProjectTasks.map((group) => {
+                    const isCollapsed = Boolean(collapsedProjects[group.project.code]);
+                    const completedCount = group.tasks.filter(t => t.isDone || t.status === 'Hoàn thành').length;
+                    const inProgressCount = group.tasks.filter(t => t.status === 'Đang làm').length;
 
                     return (
-                      <tr 
-                        key={t.id} 
-                        className={`transition-colors cursor-pointer group ${
-                          isTargetTask 
-                            ? 'highlighted-task-assignment-row bg-amber-100/60 hover:bg-amber-100/80 border-l-4 border-l-amber-500' 
-                            : isChecked && projectFilterStatus === 'unassigned' 
-                              ? 'bg-blue-50/70' 
-                              : 'hover:bg-blue-50/40'
-                        }`}
-                        onClick={() => handleRowClick(t, p?.code || t.projectCode)}
-                        title="Nhấn vào dòng này để xem chi tiết công việc trong dự án"
-                      >
-                        {projectFilterStatus === 'unassigned' && (
-                          <td className="py-2.5 px-3 text-center border-r border-slate-200" onClick={e => e.stopPropagation()}>
-                            <input 
-                              type="checkbox" 
-                              className="w-4 h-4 cursor-pointer accent-primary"
-                              checked={isChecked}
-                              onChange={() => handleToggleTask(t.id)}
-                            />
-                          </td>
-                        )}
-                        <td className="py-2.5 px-4 font-bold text-slate-800 text-xs border-r border-slate-200">
-                          <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-bold text-[10px] border border-blue-200">
-                            {p ? p.name : t.projectCode}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-4 border-r border-slate-200">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-bold text-slate-900 group-hover:text-primary transition-colors">{t.name}</span>
-                            <span className="material-symbols-outlined text-[15px] text-slate-300 group-hover:text-primary transition-colors shrink-0" title="Đi đến dự án">
-                              arrow_forward
-                            </span>
-                          </div>
-                          {t.sectionName && t.sectionName !== t.name && (
-                            <div className="text-[10px] text-slate-400 mt-0.5 font-medium">{t.sectionName}</div>
-                          )}
-                          {t.status === 'Có thắc mắc' && (() => {
-                            const latestDisc = getLatestDiscussion(t.notes, t.issue);
-                            return (
-                              <div 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDiscussionTask(t);
-                                }}
-                                className="mt-1.5 p-1.5 bg-amber-50 hover:bg-amber-100/80 border border-amber-300 rounded text-[11px] text-amber-950 font-medium flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
-                                title="Nhấn để xem chi tiết thắc mắc và phản hồi"
-                              >
-                                <span className="material-symbols-outlined text-[14px] text-amber-600 shrink-0">help_center</span>
-                                <span className="truncate">
-                                  <strong>Thắc mắc:</strong> {latestDisc?.content || t.issue || 'Cần làm rõ yêu cầu công việc'}
-                                </span>
-                                <span className="text-[10px] text-amber-700 font-bold underline shrink-0 ml-auto">Xem</span>
-                              </div>
-                            );
-                          })()}
-                        </td>
-                        <td className="py-2.5 px-3 border-r border-slate-200">
-                          {t.assignedEngineerName ? (
-                            <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                              <span className="w-5 h-5 rounded-full bg-blue-100 text-primary flex items-center justify-center text-[10px] font-black shrink-0">
-                                {t.assignedEngineerName[0]}
-                              </span>
-                              <span className="truncate">{t.assignedEngineerName.split('|')[0]}</span>
-                            </div>
-                          ) : (
-                            <span className="text-slate-400 font-normal italic">Chưa phân công</span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 border-r border-slate-200">
-                          {(() => {
-                            const followers = getTaskFollowerNames(t, engineers);
-                            return followers.length > 0 ? (
-                              <div className="flex flex-wrap gap-1" title={followers.join(', ')}>
-                                {followers.map((fn: string, fIdx: number) => (
-                                  <span
-                                    key={fIdx}
-                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-semibold border border-slate-200"
-                                  >
-                                    <span className="material-symbols-outlined text-[11px] text-blue-600">visibility</span>
-                                    <span>{fn}</span>
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-slate-400 italic font-normal text-[11px]">—</span>
-                            );
-                          })()}
-                        </td>
-                        <td className="py-2.5 px-3 text-center border-r border-slate-200 text-slate-700 font-bold">
-                          {t.volume || '-'} {t.unit || ''}
-                        </td>
-                        <td className="py-2.5 px-3 text-center border-r border-slate-200">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-block ${
-                            t.status === 'Hoàn thành' || t.isDone ? 'bg-emerald-100 text-emerald-800' :
-                            t.status === 'Chờ nghiệm thu' ? 'bg-indigo-100 text-indigo-800 font-black ring-1 ring-indigo-300' :
-                            t.status === 'Đang làm' ? 'bg-blue-100 text-blue-800' :
-                            t.status === 'Có thắc mắc' ? 'bg-amber-100 text-amber-800' :
-                            t.status === 'Chờ nhận việc' ? 'bg-amber-50 text-amber-700' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
-                            {t.status || 'Chưa làm'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-4 border-r border-slate-200 text-center">
-                          <AuditInfoCell updatedBy={t.updatedBy} updatedAt={t.updatedAt} />
-                        </td>
-                        <td className="py-2.5 px-3 text-center" onClick={e => e.stopPropagation()}>
-                          <div className="flex items-center justify-center gap-1">
-                            {canApproveTask(user, t) && (
+                      <React.Fragment key={group.project.code}>
+                        {/* Dòng Tiêu đề Phân nhóm theo Dự án */}
+                        <tr className="bg-slate-100/95 hover:bg-slate-200/80 transition-colors border-y border-slate-300 sticky top-[33px] z-[5] select-none">
+                          <td colSpan={8} className="py-2 px-3">
+                            <div className="flex items-center justify-between gap-2">
                               <button
                                 type="button"
-                                onClick={(e) => handleQuickApprove(e, t)}
-                                className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs transition-colors"
-                                title="Nghiệm thu hoàn thành"
+                                onClick={() => toggleCollapseProject(group.project.code)}
+                                className="flex items-center gap-2 font-extrabold text-xs sm:text-sm text-slate-800 hover:text-primary transition-colors text-left cursor-pointer"
                               >
-                                <span className="material-symbols-outlined text-[15px]">verified</span>
+                                <span className={`material-symbols-outlined text-slate-500 text-[18px] transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>
+                                  expand_more
+                                </span>
+                                <span className="material-symbols-outlined text-primary text-[18px]">folder_open</span>
+                                <span>{group.project.name}</span>
+                                {group.project.code && group.project.code !== group.project.name && (
+                                  <span className="px-1.5 py-0.5 rounded bg-white text-slate-600 font-mono text-[10px] font-bold border border-slate-200">
+                                    {group.project.code}
+                                  </span>
+                                )}
                               </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => setDiscussionTask(t)}
-                              className="p-1 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-primary rounded transition-colors"
-                              title="Trao đổi, hướng dẫn"
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10.5px] font-bold border border-blue-200">
+                                  {group.tasks.length} công việc
+                                </span>
+                                {completedCount > 0 && (
+                                  <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                                    ✓ {completedCount} xong
+                                  </span>
+                                )}
+                                {inProgressCount > 0 && (
+                                  <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200">
+                                    ⚡ {inProgressCount} đang làm
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Danh sách công việc thuộc nhóm dự án */}
+                        {!isCollapsed && group.tasks.map((t, tIdx) => {
+                          const p = projects.find(proj => proj.code === t.projectCode);
+                          const isChecked = selectedTaskIds.includes(t.id);
+                          const isTargetTask = isHighlightActive && (
+                            (highlightedTaskId && t.id === highlightedTaskId) ||
+                            (highlightKeyword && (
+                              t.name?.toLowerCase().includes(highlightKeyword) ||
+                              t.sectionName?.toLowerCase().includes(highlightKeyword)
+                            ))
+                          );
+
+                          return (
+                            <tr 
+                              key={t.id} 
+                              className={`transition-colors cursor-pointer group ${
+                                isTargetTask 
+                                  ? 'highlighted-task-assignment-row bg-amber-100/60 hover:bg-amber-100/80 border-l-4 border-l-amber-500' 
+                                  : isChecked && projectFilterStatus === 'unassigned' 
+                                    ? 'bg-blue-50/70' 
+                                    : 'hover:bg-blue-50/40'
+                              }`}
+                              onClick={() => handleRowClick(t, p?.code || t.projectCode)}
+                              title="Nhấn vào dòng này để xem chi tiết công việc trong dự án"
                             >
-                              <span className="material-symbols-outlined text-[15px]">chat</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                              {projectFilterStatus === 'unassigned' ? (
+                                <td className="py-2.5 px-3 text-center border-r border-slate-200 w-10" onClick={e => e.stopPropagation()}>
+                                  <input 
+                                    type="checkbox" 
+                                    className="w-4 h-4 cursor-pointer accent-primary"
+                                    checked={isChecked}
+                                    onChange={() => handleToggleTask(t.id)}
+                                  />
+                                </td>
+                              ) : (
+                                <td className="py-2.5 px-3 text-center border-r border-slate-200 text-slate-400 font-mono text-[11px] w-12 font-bold">
+                                  {tIdx + 1}
+                                </td>
+                              )}
+                              <td className="py-2.5 px-4 border-r border-slate-200">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-bold text-slate-900 group-hover:text-primary transition-colors text-xs">{t.name}</span>
+                                  <span className="material-symbols-outlined text-[15px] text-slate-300 group-hover:text-primary transition-colors shrink-0" title="Đi đến dự án">
+                                    arrow_forward
+                                  </span>
+                                </div>
+                                {t.sectionName && t.sectionName !== t.name && (
+                                  <div className="text-[10px] text-slate-400 mt-0.5 font-medium">{t.sectionName}</div>
+                                )}
+                                {t.status === 'Có thắc mắc' && (() => {
+                                  const latestDisc = getLatestDiscussion(t.notes, t.issue);
+                                  return (
+                                    <div 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDiscussionTask(t);
+                                      }}
+                                      className="mt-1.5 p-1.5 bg-amber-50 hover:bg-amber-100/80 border border-amber-300 rounded text-[11px] text-amber-950 font-medium flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                                      title="Nhấn để xem chi tiết thắc mắc và phản hồi"
+                                    >
+                                      <span className="material-symbols-outlined text-[14px] text-amber-600 shrink-0">help_center</span>
+                                      <span className="truncate">
+                                        <strong>Thắc mắc:</strong> {latestDisc?.content || t.issue || 'Cần làm rõ yêu cầu công việc'}
+                                      </span>
+                                      <span className="text-[10px] text-amber-700 font-bold underline shrink-0 ml-auto">Xem</span>
+                                    </div>
+                                  );
+                                })()}
+                              </td>
+                              <td className="py-2.5 px-3 border-r border-slate-200">
+                                {t.assignedEngineerName ? (
+                                  <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span className="w-5 h-5 rounded-full bg-blue-100 text-primary flex items-center justify-center text-[10px] font-black shrink-0">
+                                      {t.assignedEngineerName[0]}
+                                    </span>
+                                    <span className="truncate">{t.assignedEngineerName.split('|')[0]}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-400 font-normal italic">Chưa phân công</span>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 border-r border-slate-200">
+                                {(() => {
+                                  const followers = getTaskFollowerNames(t, engineers);
+                                  return followers.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1" title={followers.join(', ')}>
+                                      {followers.map((fn: string, fIdx: number) => (
+                                        <span
+                                          key={fIdx}
+                                          className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-semibold border border-slate-200"
+                                        >
+                                          <span className="material-symbols-outlined text-[11px] text-blue-600">visibility</span>
+                                          <span>{fn}</span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400 italic font-normal text-[11px]">—</span>
+                                  );
+                                })()}
+                              </td>
+                              <td className="py-2.5 px-3 text-center border-r border-slate-200 text-slate-700 font-bold">
+                                {t.volume || '-'} {t.unit || ''}
+                              </td>
+                              <td className="py-2.5 px-3 text-center border-r border-slate-200">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-block ${
+                                  t.status === 'Hoàn thành' || t.isDone ? 'bg-emerald-100 text-emerald-800' :
+                                  t.status === 'Chờ nghiệm thu' ? 'bg-indigo-100 text-indigo-800 font-black ring-1 ring-indigo-300' :
+                                  t.status === 'Đang làm' ? 'bg-blue-100 text-blue-800' :
+                                  t.status === 'Có thắc mắc' ? 'bg-amber-100 text-amber-800' :
+                                  t.status === 'Chờ nhận việc' ? 'bg-amber-50 text-amber-700' :
+                                  'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {t.status || 'Chưa làm'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-4 border-r border-slate-200 text-center">
+                                <AuditInfoCell updatedBy={t.updatedBy} updatedAt={t.updatedAt} />
+                              </td>
+                              <td className="py-2.5 px-3 text-center" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-center gap-1">
+                                  {canApproveTask(user, t) && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handleQuickApprove(e, t)}
+                                      className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs transition-colors"
+                                      title="Nghiệm thu hoàn thành"
+                                    >
+                                      <span className="material-symbols-outlined text-[15px]">verified</span>
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => setDiscussionTask(t)}
+                                    className="p-1 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-primary rounded transition-colors"
+                                    title="Trao đổi, hướng dẫn"
+                                  >
+                                    <span className="material-symbols-outlined text-[15px]">chat</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
                     );
                   })
                 )}
