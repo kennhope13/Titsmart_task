@@ -128,17 +128,77 @@ export async function exportToStyledExcel({
     };
   });
 
-  // Điền dữ liệu các dòng
+  // 1. Tự động tính toán độ rộng (column width) tối ưu trước khi ghi dòng
+  const columnWidths: number[] = headers.map((header) => {
+    let maxLen = header.length;
+
+    data.forEach((row) => {
+      const rawVal = row[header];
+      if (rawVal !== undefined && rawVal !== null) {
+        const strVal = String(rawVal);
+        const lines = strVal.split(/\r?\n/);
+        lines.forEach((line) => {
+          // Tính trọng số ký tự tiếng Việt có dấu / chữ hoa
+          const weightedLen = [...line].reduce((acc, ch) => {
+            return acc + (/[\u00C0-\u1EF9\u0110\u0111A-Z]/.test(ch) ? 1.15 : 1);
+          }, 0);
+          if (weightedLen > maxLen) {
+            maxLen = weightedLen;
+          }
+        });
+      }
+    });
+
+    const lowerHeader = header.toLowerCase();
+    const padding = 4;
+
+    // Cột STT, ĐVT, Mã ngắn gọn
+    if (lowerHeader === 'stt' || lowerHeader === '#') {
+      return Math.max(Math.ceil(maxLen + padding), 8);
+    }
+    if (lowerHeader === 'đvt' || lowerHeader === 'đơn vị') {
+      return Math.max(Math.ceil(maxLen + padding), 10);
+    }
+
+    // Cột nội dung dài (Đầu mục cha, Tên công việc, Dự án, Ghi chú): cho phép rộng tối đa 100 ký tự
+    return Math.min(Math.max(Math.ceil(maxLen + padding), 14), 100);
+  });
+
+  // Gán độ rộng cột vào worksheet
+  columnWidths.forEach((w, idx) => {
+    worksheet.getColumn(idx + 1).width = w;
+  });
+
+  // 2. Điền dữ liệu từng dòng và tính toán chiều cao dòng (row height) chuẩn xác
   data.forEach((item, rowIdx) => {
-    const rowValues = headers.map(h => {
+    const rowValues = headers.map((h) => {
       const val = item[h];
       return val !== undefined && val !== null ? val : '';
     });
 
     const currentRow = worksheet.addRow(rowValues);
-    currentRow.height = 22;
-
     const isEven = rowIdx % 2 === 0;
+
+    // Tính toán số dòng text tối đa trong row này để set chiều cao đủ chứa toàn bộ text
+    let maxLinesInRow = 1;
+    headers.forEach((header, colIdx) => {
+      const rawVal = item[header];
+      if (rawVal !== undefined && rawVal !== null) {
+        const strVal = String(rawVal).trim();
+        if (strVal) {
+          const explicitLines = strVal.split(/\r?\n/).length;
+          const colWidth = columnWidths[colIdx] || 20;
+          const wrappedLines = Math.ceil(strVal.length / Math.max(colWidth - 2, 10));
+          const totalLines = Math.max(explicitLines, wrappedLines);
+          if (totalLines > maxLinesInRow) {
+            maxLinesInRow = totalLines;
+          }
+        }
+      }
+    });
+
+    // Chiều cao dòng: 1 dòng = 24pt, nhiều dòng = số dòng * 18pt + 8pt đệm
+    currentRow.height = maxLinesInRow > 1 ? Math.max(26, maxLinesInRow * 18 + 8) : 24;
 
     currentRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
       const headerName = headers[colNumber - 1] || '';
@@ -204,30 +264,6 @@ export async function exportToStyledExcel({
         cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
       }
     });
-  });
-
-  // Tự động tính toán độ rộng (column width) để không bao giờ bị cắt chữ
-  headers.forEach((header, colIdx) => {
-    let maxLen = header.length;
-
-    data.forEach(row => {
-      const rawVal = row[header];
-      if (rawVal !== undefined && rawVal !== null) {
-        const strVal = String(rawVal);
-        const lines = strVal.split('\n');
-        lines.forEach(line => {
-          if (line.length > maxLen) {
-            maxLen = line.length;
-          }
-        });
-      }
-    });
-
-    // Cột ngắn tối thiểu 12, cột dài tối đa 65 (để tự xuống dòng)
-    const padding = 4;
-    const computedWidth = Math.min(Math.max(maxLen + padding, 12), 65);
-
-    worksheet.getColumn(colIdx + 1).width = computedWidth;
   });
 
   // Xuất file và tải về trình duyệt
