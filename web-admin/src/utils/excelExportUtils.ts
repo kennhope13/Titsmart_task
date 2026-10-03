@@ -128,7 +128,7 @@ export async function exportToStyledExcel({
     };
   });
 
-  // 1. Tự động tính toán độ rộng (column width) tối ưu trước khi ghi dòng
+  // 1. Tự động tính toán độ rộng (column width) co giãn chuẩn xác theo nội dung của từng cột
   const columnWidths: number[] = headers.map((header) => {
     let maxLen = header.length;
 
@@ -138,9 +138,9 @@ export async function exportToStyledExcel({
         const strVal = String(rawVal);
         const lines = strVal.split(/\r?\n/);
         lines.forEach((line) => {
-          // Tính trọng số ký tự tiếng Việt có dấu / chữ hoa
+          // Tính chiều dài hiển thị thực tế (ký tự tiếng Việt có dấu/hoa chiếm ~1.15-1.2 độ rộng chuẩn)
           const weightedLen = [...line].reduce((acc, ch) => {
-            return acc + (/[\u00C0-\u1EF9\u0110\u0111A-Z]/.test(ch) ? 1.15 : 1);
+            return acc + (/[\u00C0-\u1EF9\u0110\u0111A-Z]/.test(ch) ? 1.2 : 1.0);
           }, 0);
           if (weightedLen > maxLen) {
             maxLen = weightedLen;
@@ -150,26 +150,26 @@ export async function exportToStyledExcel({
     });
 
     const lowerHeader = header.toLowerCase();
-    const padding = 4;
+    const padding = 4; // Khoảng đệm 2 bên ô
 
-    // Cột STT, ĐVT, Mã ngắn gọn
+    // Tự động co giãn theo nội dung, tối thiểu 8 cho cột ngắn, mở rộng thoải mái cho nội dung dài
     if (lowerHeader === 'stt' || lowerHeader === '#') {
       return Math.max(Math.ceil(maxLen + padding), 8);
     }
-    if (lowerHeader === 'đvt' || lowerHeader === 'đơn vị') {
+    if (lowerHeader === 'đvt' || lowerHeader === 'đơn vị' || lowerHeader === 'đv') {
       return Math.max(Math.ceil(maxLen + padding), 10);
     }
 
-    // Cột nội dung dài (Đầu mục cha, Tên công việc, Dự án, Ghi chú): cho phép rộng tối đa 100 ký tự
-    return Math.min(Math.max(Math.ceil(maxLen + padding), 14), 100);
+    // Co giãn hoàn toàn tự động theo độ dài dài nhất của cột
+    return Math.max(Math.ceil(maxLen + padding), 14);
   });
 
-  // Gán độ rộng cột vào worksheet
+  // Gán độ rộng cột co giãn vào worksheet
   columnWidths.forEach((w, idx) => {
     worksheet.getColumn(idx + 1).width = w;
   });
 
-  // 2. Điền dữ liệu từng dòng và tính toán chiều cao dòng (row height) chuẩn xác
+  // 2. Điền dữ liệu từng dòng và co giãn chiều cao dòng tự động
   data.forEach((item, rowIdx) => {
     const rowValues = headers.map((h) => {
       const val = item[h];
@@ -179,7 +179,7 @@ export async function exportToStyledExcel({
     const currentRow = worksheet.addRow(rowValues);
     const isEven = rowIdx % 2 === 0;
 
-    // Tính toán số dòng text tối đa trong row này để set chiều cao đủ chứa toàn bộ text
+    // Đếm số dòng nội dung thực tế trong row này (xuống dòng thủ công hoặc văn bản cực dài)
     let maxLinesInRow = 1;
     headers.forEach((header, colIdx) => {
       const rawVal = item[header];
@@ -197,8 +197,8 @@ export async function exportToStyledExcel({
       }
     });
 
-    // Chiều cao dòng: 1 dòng = 24pt, nhiều dòng = số dòng * 18pt + 8pt đệm
-    currentRow.height = maxLinesInRow > 1 ? Math.max(26, maxLinesInRow * 18 + 8) : 24;
+    // Chiều cao dòng tự động co giãn: 1 dòng = 24pt, nhiều dòng = tự mở rộng theo số dòng
+    currentRow.height = maxLinesInRow > 1 ? Math.max(26, maxLinesInRow * 19 + 8) : 24;
 
     currentRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
       const headerName = headers[colNumber - 1] || '';
@@ -231,6 +231,7 @@ export async function exportToStyledExcel({
       if (
         lowerHeader === 'stt' ||
         lowerHeader === '#' ||
+        lowerHeader === 'tt' ||
         lowerHeader.includes('ngày') ||
         lowerHeader.includes('đơn vị') ||
         lowerHeader.includes('đvt') ||
@@ -238,7 +239,8 @@ export async function exportToStyledExcel({
         lowerHeader.includes('giờ') ||
         lowerHeader.includes('loại') ||
         lowerHeader.includes('trạng thái') ||
-        lowerHeader.includes('ưu tiên')
+        lowerHeader.includes('ưu tiên') ||
+        lowerHeader.includes('chứng từ')
       ) {
         cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
       } else if (
@@ -251,6 +253,7 @@ export async function exportToStyledExcel({
         lowerHeader.includes('xuất') ||
         lowerHeader.includes('khối lượng') ||
         lowerHeader.includes('số lượng') ||
+        lowerHeader.includes('sl') ||
         lowerHeader.includes('tỷ lệ') ||
         lowerHeader.includes('tiến độ')
       ) {
