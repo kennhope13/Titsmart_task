@@ -2,6 +2,7 @@ import { Permission } from '../types';
 import { getDefaultPermissions, hasPermission } from '../services/authStore';
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import { exportToStyledExcel } from '../utils/excelExportUtils';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
 import { Toast } from '../components/common/Toast';
@@ -186,15 +187,16 @@ export const PersonnelPage: React.FC = () => {
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const data = people.map((p, index) => {
       const kpi = computePersonKpi(p, tasks);
       return {
         'STT': index + 1,
         'Mã nhân viên': p.code,
         'Họ tên': p.name,
+        'Tên đăng nhập': p.username || '',
         'Vai trò': p.role,
-        'Đội/Nhóm': p.team,
+        'Đội/Nhóm': p.team || '',
         'Số điện thoại': p.phone || 'Chưa cập nhật',
         'Tổng số công việc': kpi.totalCount,
         'Đã hoàn thành': kpi.completedCount,
@@ -205,13 +207,21 @@ export const PersonnelPage: React.FC = () => {
         'Trạng thái': p.locked ? 'Bị khóa' : 'Đang hoạt động'
       };
     });
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'NhanSu_KPI');
-    XLSX.writeFile(wb, `Danh_Sach_Nhan_Su_KPI_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    if (data.length === 0) {
+      triggerToast('Không có dữ liệu nhân sự để xuất!', 'warning');
+      return;
+    }
+
+    await exportToStyledExcel({
+      fileName: `Danh_Sach_Nhan_Su_KPI_${new Date().toISOString().split('T')[0]}.xlsx`,
+      sheetName: 'NhanSu_KPI',
+      title: 'BÁO CÁO DANH SÁCH NHÂN SỰ VÀ ĐÁNH GIÁ KPI CÔNG VIỆC',
+      data,
+    });
   };
 
-  const handleExportIndividualKpi = (person: any, kpiData: any) => {
+  const handleExportIndividualKpi = async (person: any, kpiData: any) => {
     const data = kpiData.tasks.map((t: any, idx: number) => ({
       'STT': idx + 1,
       'Mã dự án': t.projectCode || '-',
@@ -224,10 +234,17 @@ export const PersonnelPage: React.FC = () => {
       'Ghi chú': t.notes || ''
     }));
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'CongViec_KPI');
-    XLSX.writeFile(wb, `KPI_${person.name}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    if (data.length === 0) {
+      triggerToast(`Không có công việc nào của ${person.name} để xuất!`, 'warning');
+      return;
+    }
+
+    await exportToStyledExcel({
+      fileName: `KPI_${person.name}_${new Date().toISOString().split('T')[0]}.xlsx`,
+      sheetName: 'CongViec_KPI',
+      title: `BÁO CÁO CHI TIẾT KPI CÔNG VIỆC - ${person.name.toUpperCase()}`,
+      data,
+    });
   };
 
   const toggleLock = async (person: any) => {

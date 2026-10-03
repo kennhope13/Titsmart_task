@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
+import { exportToStyledExcel } from '../utils/excelExportUtils';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, canManageItem } from '../services/authStore';
 import { useParams, useSearchParams, useOutletContext, Link } from 'react-router-dom';
@@ -426,7 +427,7 @@ export const FieldLogsPage: React.FC = () => {
     setDeletingId(null);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
       const logsToExport = visibleLogs;
       if (logsToExport.length === 0) {
@@ -440,6 +441,7 @@ export const FieldLogsPage: React.FC = () => {
         rows.push({
           'STT': index + 1,
           'Mã dự án': l.projectCode,
+          'Dự án': projects.find(p => p.code === l.projectCode)?.name || l.projectCode,
           'Mã / STT Hạng mục': task?.stt || '-',
           'Nội dung công việc': task?.name || 'Cập nhật chung',
           'Thời gian thi công': new Date(l.timestamp).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
@@ -450,12 +452,13 @@ export const FieldLogsPage: React.FC = () => {
         });
       });
 
-      const worksheet = XLSX.utils.json_to_sheet(rows);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'NhatKyHienTruong');
-      
       const fileName = `NhatKyHienTruong_${selectedProject || 'TatCa'}_${new Date().toISOString().split('T')[0]}.xlsx`;
-      XLSX.writeFile(workbook, fileName);
+      await exportToStyledExcel({
+        fileName,
+        sheetName: 'NhatKyHienTruong',
+        title: `NHẬT KÝ THI CÔNG HIỆN TRƯỜNG - ${selectedProject ? (projects.find(p => p.code === selectedProject)?.name || selectedProject) : 'TẤT CẢ DỰ ÁN'}`,
+        data: rows,
+      });
     } catch (err: any) {
       console.error(err);
       alert(`Lỗi khi xuất file Excel: ${err.message || 'Không xác định'}`);

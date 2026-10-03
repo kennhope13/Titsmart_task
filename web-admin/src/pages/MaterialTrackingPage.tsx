@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import { exportToStyledExcel } from '../utils/excelExportUtils';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
 import { ConfirmModal } from '../components/common/ConfirmModal';
@@ -897,12 +898,15 @@ export const MaterialTrackingPage: React.FC = () => {
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     let data: any[] = [];
     let filename = '';
+    let title = '';
+    let sheetName = 'VatTu';
     
     if (activeTab === 'OVERVIEW') {
-      data = filteredMaterials.map((material) => ({
+      data = filteredMaterials.map((material, idx) => ({
+        'STT': idx + 1,
         'Mã vật tư': material.code,
         'Tên vật tư / thiết bị': material.name,
         'Mô tả / quy cách': material.englishName || '',
@@ -916,6 +920,8 @@ export const MaterialTrackingPage: React.FC = () => {
         'Nhà cung cấp': material.supplier || '',
       }));
       filename = `Ton_Kho_Tong_Hop_${new Date().toISOString().split('T')[0]}.xlsx`;
+      title = 'BÁO CÁO TỒN KHO TỔNG HỢP VẬT TƯ';
+      sheetName = 'TonKhoTongHop';
     } else if (activeTab === 'IMPORT') {
       data = imports.map((tx, idx) => ({
         'STT': idx + 1,
@@ -929,6 +935,8 @@ export const MaterialTrackingPage: React.FC = () => {
         'Ghi Chú': tx.notes || ''
       }));
       filename = `Nhat_Ky_Nhap_Kho_${new Date().toISOString().split('T')[0]}.xlsx`;
+      title = 'NHẬT KÝ NHẬP KHO VẬT TƯ';
+      sheetName = 'NhapKho';
     } else if (activeTab === 'EXPORT') {
       data = exports.map((tx, idx) => ({
         'STT': idx + 1,
@@ -943,12 +951,21 @@ export const MaterialTrackingPage: React.FC = () => {
         'Ghi Chú': tx.notes || ''
       }));
       filename = `Nhat_Ky_Xuat_Kho_${new Date().toISOString().split('T')[0]}.xlsx`;
+      title = 'NHẬT KÝ XUẤT KHO VẬT TƯ';
+      sheetName = 'XuatKho';
     }
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, activeTab);
-    XLSX.writeFile(workbook, filename);
+    if (data.length === 0) {
+      triggerToast('Không có dữ liệu để xuất Excel!', 'warning');
+      return;
+    }
+
+    await exportToStyledExcel({
+      fileName: filename,
+      sheetName,
+      title,
+      data,
+    });
   };
 
   const handleAddMaterial = async (e: React.FormEvent) => {

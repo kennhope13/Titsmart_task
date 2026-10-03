@@ -9,6 +9,7 @@ import { ConfirmModal } from '../components/common/ConfirmModal';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { Toast } from '../components/common/Toast';
 import * as XLSX from 'xlsx';
+import { exportToStyledExcel } from '../utils/excelExportUtils';
 
 import { LeaveRequest, LeaveType } from '../types';
 import { PullToRefresh } from '../components/common/PullToRefresh';
@@ -213,7 +214,7 @@ export const AttendancePage: React.FC = () => {
     }
   }, [isHighlightActive, highlightLeaveId, leaves]);
 
-  const handleExportExcel = (format: 'xlsx' | 'csv' | 'docx' = 'xlsx') => {
+  const handleExportExcel = async (format: 'xlsx' | 'csv' | 'docx' = 'xlsx') => {
     if (!filteredLogs.length) return;
     const exportData = filteredLogs.map((log, index) => ({
       'STT': index + 1,
@@ -226,20 +227,28 @@ export const AttendancePage: React.FC = () => {
       'Ghi chú': log.notes || '',
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'ChamCong');
     const today = new Date().toISOString().split('T')[0];
     if (format === 'csv') {
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'ChamCong');
       XLSX.writeFile(workbook, `BangChamCong_${today}.csv`, { bookType: 'csv' });
     } else if (format === 'docx') {
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'ChamCong');
       XLSX.writeFile(workbook, `BangChamCong_${today}.docx`, { bookType: 'xlsx' });
     } else {
-      XLSX.writeFile(workbook, `BangChamCong_${today}.xlsx`);
+      await exportToStyledExcel({
+        fileName: `BangChamCong_${today}.xlsx`,
+        sheetName: 'ChamCong',
+        title: 'BẢNG THEO DÕI CHẤM CÔNG NHÂN VIÊN',
+        data: exportData,
+      });
     }
   };
 
-  const handleExportLeavesExcel = (format: 'xlsx' | 'csv' | 'docx' = 'xlsx') => {
+  const handleExportLeavesExcel = async (format: 'xlsx' | 'csv' | 'docx' = 'xlsx') => {
     if (!displayedLeaves.length) return;
     const exportData = displayedLeaves.map((leave, index) => {
       let statusStr = 'Chờ duyệt';
@@ -265,16 +274,24 @@ export const AttendancePage: React.FC = () => {
       };
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'XinNghiPheP');
     const today = new Date().toISOString().split('T')[0];
     if (format === 'csv') {
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'XinNghiPheP');
       XLSX.writeFile(workbook, `BangNghiPhep_${today}.csv`, { bookType: 'csv' });
     } else if (format === 'docx') {
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'XinNghiPheP');
       XLSX.writeFile(workbook, `BangNghiPhep_${today}.docx`, { bookType: 'xlsx' });
     } else {
-      XLSX.writeFile(workbook, `BangNghiPhep_${today}.xlsx`);
+      await exportToStyledExcel({
+        fileName: `BangNghiPhep_${today}.xlsx`,
+        sheetName: 'XinNghiPhep',
+        title: 'DANH SÁCH ĐƠN XIN NGHỈ PHÉP',
+        data: exportData,
+      });
     }
   };
 

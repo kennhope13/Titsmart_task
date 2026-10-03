@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import { exportToStyledExcel } from '../utils/excelExportUtils';
 import { useParams, useOutletContext } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
@@ -1724,7 +1725,7 @@ export const ProjectCostPlanPage: React.FC = () => {
   // ----------------------------------------------------
   // EXPORT TO EXCEL
   // ----------------------------------------------------
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     let data: any[] = [];
     let sheetName = '';
 
@@ -1819,10 +1820,18 @@ export const ProjectCostPlanPage: React.FC = () => {
       return; // No export for Overview
     }
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    XLSX.writeFile(wb, `${selectedProject}_${sheetName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    if (data.length === 0) {
+      triggerToast('Không có dữ liệu để xuất Excel!', 'warning');
+      return;
+    }
+
+    const projName = projects.find(p => p.code === selectedProject)?.name || selectedProject;
+    await exportToStyledExcel({
+      fileName: `${selectedProject}_${sheetName}_${new Date().toISOString().split('T')[0]}.xlsx`,
+      sheetName,
+      title: `BÁO CÁO CHI PHÍ DỰ ÁN - ${projName.toUpperCase()}`,
+      data,
+    });
   };
 
   // Form states for creating items

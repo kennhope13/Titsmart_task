@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import { exportToStyledExcel } from '../utils/excelExportUtils';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, hasPermission, canManageItem } from '../services/authStore';
 import { Modal } from '../components/common/Modal';
@@ -155,7 +156,7 @@ export const OfficeCostsPage: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const sortedForExport = [...filteredExpenses].sort((a, b) => {
       const dateA = a.date ? new Date(a.date).getTime() : 0;
       const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -170,18 +171,26 @@ export const OfficeCostsPage: React.FC = () => {
       'Diễn giải': exp.description || '',
       'ĐVT': exp.unit || '',
       'Số lượng': Number(exp.quantity || 0),
-      'Đơn giá (đ)': Number(exp.unitPrice || 0),
+      'Đơn giá (VNĐ)': Number(exp.unitPrice || 0),
       'Thuế VAT (%)': Number(exp.taxAmount || 0),
-      'Thành tiền (đ)': Number(exp.totalAmount || 0),
-      'Thực thu (đ)': Number(exp.incomeAmount || 0),
-      'Tồn quỹ': Number(exp.balanceFund || 0),
+      'Thành tiền (VNĐ)': Number(exp.totalAmount || 0),
+      'Thực thu (VNĐ)': Number(exp.incomeAmount || 0),
+      'Tồn quỹ (VNĐ)': Number(exp.balanceFund || 0),
       'Ghi chú': exp.notes || '',
       'Hóa đơn': exp.invoiceUrl || ''
     }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'ChiPhiVanPhong');
-    XLSX.writeFile(wb, `Chi_Phi_Van_Phong_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    if (data.length === 0) {
+      triggerToast('Không có dữ liệu chi phí văn phòng để xuất!', 'warning');
+      return;
+    }
+
+    await exportToStyledExcel({
+      fileName: `Chi_Phi_Van_Phong_${new Date().toISOString().split('T')[0]}.xlsx`,
+      sheetName: 'ChiPhiVanPhong',
+      title: 'BÁO CÁO TỔNG HỢP CHI PHÍ VĂN PHÒNG',
+      data,
+    });
   };
 
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {

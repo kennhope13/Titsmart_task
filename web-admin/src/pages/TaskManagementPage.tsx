@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import { exportToStyledExcel } from '../utils/excelExportUtils';
 import jsPDF from 'jspdf';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../services/authStore';
@@ -1355,14 +1356,18 @@ const hasSyncedRef = useRef(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const getTaskExportData = () => displayTasks.map((t) => ({
-    ['STT']: t.stt,
+  const getTaskExportData = () => displayTasks.map((t, idx) => ({
+    ['STT']: t.stt || String(idx + 1),
     ['ĐẦU MỤC CHA']: t.isSectionHeader ? '[TIÊU ĐỀ MỤC]' : t.sectionName || '',
     ['NỘI DUNG CÔNG VIỆC']: t.name,
-    ['DỰ ÁN']: t.projectName,
+    ['DỰ ÁN']: t.projectName || t.projectCode || '',
+    ['NGƯỜI PHỤ TRÁCH']: t.assignedEngineerName || 'Chưa phân công',
+    ['NGƯỜI THEO DÕI']: (t.followerNames && t.followerNames.length > 0) ? t.followerNames.join(', ') : '—',
     ['KHỐI LƯỢNG']: t.isSectionHeader ? '' : t.volume,
     ['ĐVT']: t.unit || '',
-    ['TIẾN ĐỘ']: t.isSectionHeader ? '' : String(Math.round(t.progress * 100)) + '%',
+    ['TIẾN ĐỘ']: t.isSectionHeader ? '' : String(Math.round((t.progress || 0) * 100)) + '%',
+    ['HẠN CHÓT']: t.dueDate || '—',
+    ['MỨC ƯU TIÊN']: t.priority === 'High' ? 'Cao' : t.priority === 'Low' ? 'Thấp' : 'Chuẩn',
     ['TT ĐẶT HÀNG']: t.purchaseStatus || '',
     ['TÌNH TRẠNG THI CÔNG']: t.constrStatus || '',
     ['VƯỚNG MẮC/ TỒN ĐỌNG']: cleanIssue(t.issue) || '',
@@ -1371,18 +1376,22 @@ const hasSyncedRef = useRef(false);
     ['GHI CHÚ']: t.notes || '',
   }));
 
-  const handleExportFile = (format: ExportFileFormat) => {
+  const handleExportFile = async (format: ExportFileFormat) => {
     setIsExportMenuOpen(false);
     const exportData = getTaskExportData();
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
     const baseFileName = `Tien_Do_Cong_Viec_${todayStamp()}`;
 
     if (format === 'xlsx') {
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Dữ liệu Tiến độ');
-      XLSX.writeFile(workbook, `${baseFileName}.xlsx`);
+      await exportToStyledExcel({
+        fileName: `${baseFileName}.xlsx`,
+        sheetName: 'TienDoCongViec',
+        title: 'BẢNG THEO DÕI TIẾN ĐỘ THI CÔNG DỰ ÁN',
+        data: exportData,
+      });
       return;
     }
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
 
     if (format === 'csv') {
       const csv = XLSX.utils.sheet_to_csv(worksheet);

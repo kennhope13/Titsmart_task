@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
+import { exportToStyledExcel } from '../utils/excelExportUtils';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { Modal } from '../components/common/Modal';
 import { PullToRefresh } from '../components/common/PullToRefresh';
@@ -140,7 +141,7 @@ export const ActivityLogPage: React.FC = () => {
     });
   }, [activityLogs, dateFrom, dateTo, searchQuery]);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const data = filteredLogs.map((log, index) => ({
       'STT': index + 1,
       'Thời gian': log.timestamp || '',
@@ -148,10 +149,18 @@ export const ActivityLogPage: React.FC = () => {
       'Dự án': getProjectName(log.project) || '',
       'Thao tác / Hành động': log.action || ''
     }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'NhatKyHoatDong');
-    XLSX.writeFile(wb, `Nhat_Ky_Hoat_Dong_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    if (data.length === 0) {
+      alert('Không có dữ liệu nhật ký hoạt động để xuất!');
+      return;
+    }
+
+    await exportToStyledExcel({
+      fileName: `Nhat_Ky_Hoat_Dong_${new Date().toISOString().split('T')[0]}.xlsx`,
+      sheetName: 'NhatKyHoatDong',
+      title: 'BÁO CÁO NHẬT KÝ HOẠT ĐỘNG HỆ THỐNG',
+      data,
+    });
   };
 
   const groupedLogs = useMemo(() => {

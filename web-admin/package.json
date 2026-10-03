@@ -29,6 +29,7 @@
     "clsx": "^2.1.0",
     "docx": "^9.7.1",
     "electron-updater": "^6.8.9",
+    "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.359.0",

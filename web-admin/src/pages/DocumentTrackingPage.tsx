@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import { exportToStyledExcel } from '../utils/excelExportUtils';
 import { useParams, useSearchParams, useOutletContext } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
@@ -384,11 +385,12 @@ export const DocumentTrackingPage: React.FC = () => {
     };
   }, [filteredTracks]);
 
-  const handleExportExcel = () => {
-    const data = filteredTracks.map(t => ({
-      'STT': t.stt,
+  const handleExportExcel = async () => {
+    const data = filteredTracks.map((t, idx) => ({
+      'STT': t.stt || idx + 1,
       'Số hợp đồng': t.contractNo,
       'Tên hợp đồng': t.contractName,
+      'Dự án': projects.find(p => p.code === t.projectCode)?.name || t.projectCode || '',
       'Công ty': t.company,
       'Người nhận': t.receiverName,
       'Số điện thoại': t.phone,
@@ -397,18 +399,25 @@ export const DocumentTrackingPage: React.FC = () => {
       'Ngày nhận': t.receiveDate || '',
       'Trạng thái hồ sơ': t.docStatus,
       'Bên': t.side || '',
-      'Giá trị HĐ (đ)': t.contractValue,
+      'Giá trị HĐ (VNĐ)': t.contractValue,
       'Tạm ứng (%)': t.prepayPercent * 100,
-      'Số tiền tạm ứng (đ)': t.prepayAmount,
+      'Số tiền tạm ứng (VNĐ)': t.prepayAmount,
       'Trạng thái thanh toán': t.paymentStatus,
       'Hoàn tất': t.isCompleted ? 'Hoàn tất' : 'Chưa hoàn tất',
       'Ghi chú': t.notes || ''
     }));
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'TheoDoiHoSo');
-    XLSX.writeFile(wb, `Theo_Doi_Ho_So_Gui_Di_${new Date().toISOString().split('T')[0]}.xlsx`);
+    if (data.length === 0) {
+      triggerToast('Không có dữ liệu hồ sơ để xuất!', 'warning');
+      return;
+    }
+
+    await exportToStyledExcel({
+      fileName: `Theo_Doi_Ho_So_Gui_Di_${new Date().toISOString().split('T')[0]}.xlsx`,
+      sheetName: 'TheoDoiHoSo',
+      title: 'BẢNG THEO DÕI HỒ SƠ GỬI ĐI VÀ THANH TOÁN',
+      data,
+    });
   };
 
   return (
