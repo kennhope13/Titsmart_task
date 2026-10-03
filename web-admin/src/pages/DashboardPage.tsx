@@ -123,23 +123,32 @@ export const DashboardPage: React.FC = () => {
       }));
   }, [displayEnhancedProjects]);
 
-  // 3. BIỂU ĐỒ 3: TIẾN ĐỘ THANH TOÁN / GIẢI NGÂN
-  const paymentData = useMemo(() => {
+  // 3. BIỂU ĐỒ 3: THỐNG KÊ HỒ SƠ DỰ ÁN (ĐÃ GỬI / CHƯA GỬI)
+  const documentData = useMemo(() => {
     return displayEnhancedProjects.map(p => {
-      // Dùng dữ liệu từ Hồ sơ thanh toán (documentTracks)
-      const pDocs = documentTracks.filter(d => d.projectCode === p.code);
-      const totalContract = pDocs.reduce((sum, d) => sum + (d.contractValue || 0), 0) || (p.contractValue || 0);
-      const totalPaid = pDocs.reduce((sum, d) => sum + (d.prepayAmount || 0), 0);
+      const pDocs = documentTracks.filter(d => (d.projectCode || (d as any).projectId) === p.code || (d as any).projectId === p.id);
       
-      // Hoặc nếu người dùng muốn tính Dòng tiền = Tổng Hợp đồng (Project) - Tổng chi phí thực tế
-      // Nhưng theo mô tả: "So sánh [Tổng giá trị Hợp đồng] với [Số tiền đã nhận/thanh toán]"
+      const sentDocs = pDocs.filter(d => {
+        if (d.sendDate && String(d.sendDate).trim() !== '' && d.sendDate !== '—' && d.sendDate !== '-') return true;
+        const status = (d.docStatus || '').toLowerCase();
+        if (status.includes('đã gửi') || status.includes('da gui') || status.includes('đã nộp') || status.includes('da nop') || status.includes('đã ký') || status.includes('da ky')) return true;
+        return false;
+      });
+      const sentCount = sentDocs.length;
+      const unsentCount = pDocs.length - sentCount;
+      const rate = pDocs.length > 0 ? Math.round((sentCount / pDocs.length) * 100) : 0;
+
       return {
         name: p.name,
-        'Tổng Hợp đồng': totalContract,
-        'Đã giải ngân': totalPaid,
-        total: totalContract
+        'Đã gửi': sentCount,
+        'Chưa gửi': unsentCount,
+        'Tỷ lệ (%)': rate,
+        total: pDocs.length
       };
-    }).filter(d => d.total > 0).sort((a, b) => b.total - a.total).slice(0, 10);
+    })
+    .filter(d => d.total > 0)
+    .sort((a, b) => b.total - a.total || b['Đã gửi'] - a['Đã gửi'])
+    .slice(0, 10);
   }, [displayEnhancedProjects, documentTracks]);
 
   // 4. BIỂU ĐỒ 4: KPI CÔNG VIỆC NHÂN VIÊN
@@ -324,20 +333,31 @@ export const DashboardPage: React.FC = () => {
               </ResponsiveContainer>
             </ChartBox>
 
-            <ChartBox title="TIẾN ĐỘ THANH TOÁN / GIẢI NGÂN (VNĐ)" onClick={() => navigate("/documents")}>
+            <ChartBox title="HỒ SƠ ĐÃ GỬI VÀ CHƯA GỬI" onClick={() => navigate("/documents")}>
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
-                {paymentData.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-slate-400">Không có dữ liệu hợp đồng</div>
+                {documentData.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-1.5">
+                    <span className="material-symbols-outlined text-3xl text-slate-300">folder_shared</span>
+                    <span className="text-xs font-medium">Không có dữ liệu hồ sơ dự án</span>
+                  </div>
                 ) : (
-                  <BarChart data={paymentData} margin={{ top: 10, right: isMobile ? 65 : 90, left: 0, bottom: 0 }} layout="vertical">
+                  <BarChart data={documentData} margin={{ top: 10, right: isMobile ? 35 : 45, left: 0, bottom: 0 }} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                     <XAxis type="number" hide />
                     <YAxis dataKey="name" type="category" tick={{ fontSize: isMobile ? 10 : 11, fill: '#475569' }} tickLine={false} axisLine={false} width={yAxisWidth} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(val: number) => [new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)]} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Tooltip 
+                      cursor={{ fill: '#f8fafc' }} 
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }} 
+                    />
                     <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={10} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                    <Bar dataKey="Tổng Hợp đồng" fill="#94a3b8" barSize={12} radius={[0, 4, 4, 0]} />
-                    <Bar dataKey="Đã giải ngân" fill="#10b981" barSize={12} radius={[0, 4, 4, 0]}>
-                      <LabelList dataKey="Đã giải ngân" position="right" formatter={(val: number) => new Intl.NumberFormat('vi-VN').format(val) + ' ₫'} style={{ fontSize: isMobile ? 9 : 11, fill: '#10b981', fontWeight: 600 }} />
+                    <Bar dataKey="Đã gửi" stackId="a" fill="#10b981" barSize={18} />
+                    <Bar dataKey="Chưa gửi" stackId="a" fill="#f59e0b" barSize={18} radius={[0, 4, 4, 0]}>
+                      <LabelList 
+                        dataKey="Tỷ lệ (%)" 
+                        position="right" 
+                        formatter={(val: number) => `${val}%`} 
+                        style={{ fontSize: isMobile ? 9 : 11, fill: '#10b981', fontWeight: 700 }} 
+                      />
                     </Bar>
                   </BarChart>
                 )}
