@@ -484,7 +484,7 @@ export const ProjectManagementPage: React.FC = () => {
           isDone: false,
           isSectionHeader: isSection,
           sectionName: isSection ? item.name : (importedTasks.slice().reverse().find((t) => t.isSectionHeader)?.name || ''),
-          notes: [item.notes, TEXT.importNote].filter(Boolean).join(' | '),
+          notes: item.notes || '',
           assignedEngineerId: '',
           assignedEngineerName: '',
         });
@@ -509,7 +509,6 @@ export const ProjectManagementPage: React.FC = () => {
         const isSection = matchingTask ? matchingTask.isSectionHeader : false;
 
         const supplyScope: 'contractor' | 'owner' | 'unknown' = item.supplyScope === 'owner' ? 'owner' : item.supplyScope === 'contractor' ? 'contractor' : 'unknown';
-        const supplyLabel = supplyScope === 'owner' ? 'Chủ đầu tư cung cấp' : supplyScope === 'contractor' ? 'Nhà thầu cung cấp' : '';
         const orderTag = `[order:${String(++orderCounter).padStart(5, '0')}]`;
         newMaterialPlans.push({
           id: rowId,
@@ -532,7 +531,7 @@ export const ProjectManagementPage: React.FC = () => {
           docFireInspection: false,
           dispatchToSite: false,
           supplyScope,
-          notes: [orderTag, isSection ? '[section]' : '', supplyScope !== 'unknown' ? `[${supplyScope}]` : '', item.notes, supplyLabel, TEXT.materialSyncNote].filter(Boolean).join(' | '),
+          notes: [orderTag, isSection ? '[section]' : '', supplyScope !== 'unknown' ? `[${supplyScope}]` : '', item.notes].filter(Boolean).join(' | '),
         });
       }
       if (newMaterialPlans.length > 0) {
@@ -575,7 +574,7 @@ export const ProjectManagementPage: React.FC = () => {
           orderStatus: TEXT.purchaseStatus,
           contractStatus: 'Đã có phụ lục',
           invoiceStatus: 'Chưa xuất',
-          notes: [orderTag, isSection ? '[section]' : '', item.notes, 'Đồng bộ từ phụ lục khi tạo dự án'].filter(Boolean).join(' | '),
+          notes: [orderTag, isSection ? '[section]' : '', item.notes].filter(Boolean).join(' | '),
         });
       }
       if (newPurchasingPlans.length > 0) {

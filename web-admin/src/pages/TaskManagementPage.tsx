@@ -1373,7 +1373,7 @@ const hasSyncedRef = useRef(false);
     ['VƯỚNG MẮC/ TỒN ĐỌNG']: cleanIssue(t.issue) || '',
     ['TT XỬ LÝ']: t.issueStatus || '',
     ['HOÀN THÀNH']: t.isDone ? 'Đã hoàn thành' : 'Chưa',
-    ['GHI CHÚ']: t.notes || '',
+    ['GHI CHÚ']: cleanNotes(t.notes) || '',
   }));
 
   const handleExportFile = async (format: ExportFileFormat) => {

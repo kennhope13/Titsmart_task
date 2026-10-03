@@ -688,7 +688,7 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
         name,
         volume: isSectionHeader ? 0 : volume,
         unit: isSectionHeader ? '' : unit,
-        notes: [rawNotes, supplyNote].filter(Boolean).join(' | '),
+        notes: rawNotes || '',
         techSpecModel: isSectionHeader ? '' : techSpecModel,
         techSpecOrigin: isSectionHeader ? '' : techSpecOrigin,
         isSectionHeader,

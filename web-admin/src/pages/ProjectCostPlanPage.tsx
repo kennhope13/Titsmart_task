@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { exportToStyledExcel } from '../utils/excelExportUtils';
+import { cleanNotes } from '../utils/cleanNotesUtils';
 import { useParams, useOutletContext } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
@@ -1765,7 +1766,7 @@ export const ProjectCostPlanPage: React.FC = () => {
           "Lợi nhuận": pRecord ? ((pRecord.totalAmount || 0) - (pRecord.prepayAmount || 0)) : 0,
           "Hạn thanh toán": pRecord?.paymentDate || "",
           "Hóa đơn VAT": pRecord?.invoiceStatus || "",
-          "Ghi chú": p.notes || ""
+          "Ghi chú": cleanNotes(p.notes) || ""
         };
       });
       sheetName = "VatTuVaMuaHang";
@@ -1783,7 +1784,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         'Thành tiền (đ)': e.totalAmount || 0,
         'Thực thu (đ)': e.incomeAmount || 0,
         'Tồn quỹ': e.autoBalance ?? e.balanceFund ?? 0,
-        'Ghi chú': e.notes || '',
+        'Ghi chú': cleanNotes(e.notes) || '',
         'Hóa đơn': e.invoiceUrl || ''
       }));
       sheetName = 'ChiPhiCongTrinh';
@@ -1802,7 +1803,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         'CCCD Mặt trước': l.idCardFrontUrl || '',
         'CCCD Mặt sau': l.idCardBackUrl || '',
         'Tình trạng': l.paymentStatus,
-        'Ghi chú': l.notes || ''
+        'Ghi chú': cleanNotes(l.notes) || ''
       }));
       sheetName = 'LuongCongNhat';
     } else if (activeTab === 'DOCUMENTS') {
@@ -1813,7 +1814,7 @@ export const ProjectCostPlanPage: React.FC = () => {
         'SL': p.contractVolume,
         'Model/xuất xứ': [p.techSpecModel, p.techSpecOrigin].filter(Boolean).join(' / '),
         'Chứng từ': ['CO: ' + (p.docCo ? 'Có' : 'Chưa có'), 'CQ: ' + (p.docCq ? 'Có' : 'Chưa có'), 'Tem KĐ: ' + (p.docStamp ? 'Có' : 'Chưa có'), 'Kiểm định PCCC: ' + (p.docFireInspection ? 'Có' : 'Chưa có')].join('; '),
-        'Ghi chú': p.notes || ''
+        'Ghi chú': cleanNotes(p.notes) || ''
       }));
       sheetName = 'TheoDoiChungTu';
     } else {
