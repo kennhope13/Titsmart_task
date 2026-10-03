@@ -70,25 +70,21 @@ export const AttendancePage: React.FC = () => {
     return (
       isAdmin ||
       usernameStr === 'admin' ||
-      roleStr.includes('admin') ||
+      roleStr === 'admin' ||
       roleStr.includes('quản trị') ||
-      roleStr.includes('quản lý') ||
-      roleStr.includes('manager') ||
-      roleStr.includes('pm') ||
+      roleStr.includes('giám đốc') ||
       roleStr.includes('trưởng') ||
       roleStr.includes('chỉ huy') ||
-      roleStr.includes('giám đốc') ||
+      roleStr.includes('manager') ||
+      roleStr.includes('pm') ||
       titleStr.includes('quản lý') ||
       titleStr.includes('trưởng') ||
       titleStr.includes('chỉ huy') ||
-      titleStr.includes('pm') ||
+      titleStr.includes('giám đốc') ||
       perms.includes('APPROVE_LEAVE_STEP1' as any) ||
       perms.includes('APPROVE_LEAVE_FINAL' as any) ||
       perms.includes('VIEW_ALL_ATTENDANCE' as any) ||
-      perms.includes('MANAGE_ATTENDANCE' as any) ||
-      perms.includes('MANAGE_USERS' as any) ||
-      perms.includes('ASSIGN_TASKS' as any) ||
-      perms.includes('VIEW_PROJECTS' as any)
+      perms.includes('MANAGE_ATTENDANCE' as any)
     );
   }, [user, isAdmin]);
 
@@ -188,12 +184,18 @@ export const AttendancePage: React.FC = () => {
       setMainTab('attendance');
     }
 
-    if (viewParam === 'all' || viewParam === 'tat-ca') {
+    if ((viewParam === 'all' || viewParam === 'tat-ca') && canViewAll) {
       setTab('all');
-    } else if (viewParam === 'my' || viewParam === 'cua-toi') {
+    } else {
       setTab('my');
     }
-  }, [searchParams]);
+  }, [searchParams, canViewAll]);
+
+  useEffect(() => {
+    if (!canViewAll && tab !== 'my') {
+      setTab('my');
+    }
+  }, [canViewAll, tab]);
 
   useEffect(() => {
     if (isHighlightActive && highlightLeaveId) {
@@ -279,7 +281,7 @@ export const AttendancePage: React.FC = () => {
   // Lọc danh sách nghỉ phép ngay trong bộ nhớ (0ms latency, không reload, không spinner khi đổi tab)
   const displayedLeaves = React.useMemo(() => {
     let list = leaves;
-    if (tab === 'my' && user) {
+    if ((!canViewAll || tab === 'my') && user) {
       list = list.filter(l => {
         const matchId = String(l.userId || '') === String(user.id || '');
         const matchName = user.name && l.userName && l.userName.trim().toLowerCase() === user.name.trim().toLowerCase();
@@ -306,7 +308,7 @@ export const AttendancePage: React.FC = () => {
       });
     }
     return list;
-  }, [leaves, tab, user, leaveSearchQuery]);
+  }, [leaves, tab, user, leaveSearchQuery, canViewAll]);
 
   const fetchLogs = async (forceShowSpinner = false) => {
     if (forceShowSpinner || (!hasFetchedAttendanceData && cachedLogs.length === 0)) {
@@ -649,7 +651,7 @@ export const AttendancePage: React.FC = () => {
   // Filter logs (0ms latency, lọc ngay trong bộ nhớ khi chuyển tab 'Của tôi' / 'Tất cả')
   const filteredLogs = React.useMemo(() => {
     let list = logs;
-    if (tab === 'my' && user) {
+    if ((!canViewAll || tab === 'my') && user) {
       list = list.filter(l => {
         const matchId = String(l.userId || '') === String(user.id || '');
         const matchName = user.name && l.userName && l.userName.trim().toLowerCase() === user.name.trim().toLowerCase();
@@ -672,7 +674,7 @@ export const AttendancePage: React.FC = () => {
       }
       return true;
     });
-  }, [logs, tab, user, filterDate, filterUser, searchQuery]);
+  }, [logs, tab, user, filterDate, filterUser, searchQuery, canViewAll]);
 
   const todayStr = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
 
