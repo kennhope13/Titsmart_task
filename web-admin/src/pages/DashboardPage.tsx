@@ -142,22 +142,59 @@ export const DashboardPage: React.FC = () => {
     }).filter(d => d.total > 0).sort((a, b) => b.total - a.total).slice(0, 10);
   }, [displayEnhancedProjects, documentTracks]);
 
-  // 4. BIỂU ĐỒ 4: TÌNH TRẠNG SỰ CỐ / VƯỚNG MẮC
-  const issueData = useMemo(() => {
-    return displayEnhancedProjects.map(p => {
-      const pIssues = issues.filter(i => i.projectCode === p.code);
-      const open = pIssues.filter(i => i.status === 'OPEN').length;
-      const processing = pIssues.filter(i => i.status === 'PROCESSING').length;
-      const resolved = pIssues.filter(i => i.status === 'RESOLVED').length;
+  // 4. BIỂU ĐỒ 4: KPI CÔNG VIỆC NHÂN VIÊN
+  const kpiData = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const targetProjectCodes = displayEnhancedProjects.map(p => p.code);
+    const relevantTasks = tasks.filter(t => !t.isSectionHeader && targetProjectCodes.includes(t.projectCode));
+
+    const engList = engineers.filter(e => !e.isLocked && !(e as any).is_locked);
+    
+    const results = engList.map(eng => {
+      const engId = String(eng.id || '').trim().toLowerCase();
+      const engUsername = String(eng.username || '').trim().toLowerCase();
+      const engCode = String(eng.code || '').trim().toLowerCase();
+      const engName = String(eng.name || '').trim().toLowerCase();
+
+      const pTasks = relevantTasks.filter(t => {
+        const assignedId = String(t.assignedEngineerId || '').trim().toLowerCase();
+        const assignedName = String(t.assignedEngineerName || '').trim().toLowerCase();
+
+        if (engId && assignedId === engId) return true;
+        if (engUsername && assignedId === engUsername) return true;
+        if (engCode && assignedId === engCode) return true;
+        if (engName && assignedName === engName) return true;
+        if (engName && assignedName && (assignedName.includes(engName) || engName.includes(assignedName))) return true;
+        return false;
+      });
+
+      const totalCount = pTasks.length;
+      const completedCount = pTasks.filter(t => t.isDone || t.status === 'Hoàn thành' || (t.progress !== undefined && t.progress >= 1)).length;
+      const pendingTasks = pTasks.filter(t => !t.isDone && t.status !== 'Hoàn thành' && (t.progress === undefined || t.progress < 1));
+      const overdueCount = pendingTasks.filter(t => {
+        if (!t.dueDate) return false;
+        const due = String(t.dueDate).split('T')[0];
+        return due < todayStr;
+      }).length;
+      const inProgressCount = pendingTasks.length - overdueCount;
+
+      const rate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
       return {
-        name: p.name,
-        'Tồn đọng': open,
-        'Đang xử lý': processing,
-        'Đã khắc phục': resolved,
-        total: pIssues.length
+        name: eng.name,
+        'Hoàn thành': completedCount,
+        'Đang làm': inProgressCount,
+        'Quá hạn': overdueCount,
+        'Tỷ lệ (%)': rate,
+        total: totalCount
       };
-    }).sort((a, b) => b.total - a.total).slice(0, 10);
-  }, [displayEnhancedProjects, issues]);
+    })
+    .filter(d => d.total > 0)
+    .sort((a, b) => b.total - a.total || b['Tỷ lệ (%)'] - a['Tỷ lệ (%)'])
+    .slice(0, 10);
+
+    return results;
+  }, [displayEnhancedProjects, tasks, engineers]);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -307,20 +344,33 @@ export const DashboardPage: React.FC = () => {
               </ResponsiveContainer>
             </ChartBox>
 
-            <ChartBox title="THỐNG KÊ SỰ CỐ / VƯỚNG MẮC" onClick={() => navigate("/activity-log")}>
+            <ChartBox title="KPI CÔNG VIỆC NHÂN VIÊN" onClick={() => navigate("/personnel")}>
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
-                {issueData.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-slate-400">Không có dữ liệu sự cố</div>
+                {kpiData.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-1.5">
+                    <span className="material-symbols-outlined text-3xl text-slate-300">assignment_turned_in</span>
+                    <span className="text-xs font-medium">Chưa có dữ liệu công việc nhân viên</span>
+                  </div>
                 ) : (
-                  <BarChart data={issueData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout="vertical">
+                  <BarChart data={kpiData} margin={{ top: 10, right: isMobile ? 35 : 45, left: 0, bottom: 0 }} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                     <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: isMobile ? 10 : 11, fill: '#475569' }} tickLine={false} axisLine={false} width={yAxisWidth} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: isMobile ? 10 : 11, fill: '#475569' }} tickLine={false} axisLine={false} width={isMobile ? 100 : 140} />
+                    <Tooltip 
+                      cursor={{ fill: '#f8fafc' }} 
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }} 
+                    />
                     <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={10} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                    <Bar dataKey="Tồn đọng" stackId="a" fill="#ef4444" barSize={20} />
-                    <Bar dataKey="Đang xử lý" stackId="a" fill="#f59e0b" barSize={20} />
-                    <Bar dataKey="Đã khắc phục" stackId="a" fill="#22c55e" barSize={20} radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="Hoàn thành" stackId="a" fill="#10b981" barSize={18} />
+                    <Bar dataKey="Đang làm" stackId="a" fill="#3b82f6" barSize={18} />
+                    <Bar dataKey="Quá hạn" stackId="a" fill="#ef4444" barSize={18} radius={[0, 4, 4, 0]}>
+                      <LabelList 
+                        dataKey="Tỷ lệ (%)" 
+                        position="right" 
+                        formatter={(val: number) => `${val}%`} 
+                        style={{ fontSize: isMobile ? 9 : 11, fill: '#10b981', fontWeight: 700 }} 
+                      />
+                    </Bar>
                   </BarChart>
                 )}
               </ResponsiveContainer>
