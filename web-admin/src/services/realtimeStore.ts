@@ -1864,21 +1864,35 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       updateProject: async (id, projData) => { try { const updatedProj = await api.projects.update(id, projData); set((state) => { const nextProjs = state.projects.map((p) => (p.id === id ? { ...p, ...updatedProj } : p)); persistAndNotify({ projects: nextProjs }); return { projects: nextProjs }; }); return updatedProj; } catch (e) { console.error('Failed to update project', e); } },
 
     deleteProject: async (id) => {
-      const projectToDelete = get().projects.find((p) => p.id === id);
-      if (!projectToDelete) return;
-      const projectCode = projectToDelete.code;
+      const allProjects = get().projects;
+      let projectToDelete = allProjects.find((p) => p.id === id || p.code === id);
+      if (!projectToDelete && id.startsWith('derived-')) {
+        const derivedCode = id.replace('derived-', '');
+        projectToDelete = { id, code: derivedCode, name: derivedCode } as any;
+      }
+      const projectCode = projectToDelete?.code || (id.startsWith('derived-') ? id.replace('derived-', '') : id);
+      const projectName = projectToDelete?.name || '';
+      const pCodeUpper = (projectCode || '').trim().toUpperCase();
+      const pIdUpper = (id || '').trim().toUpperCase();
+
+      const isMatch = (itemProjCode?: string, itemProjId?: string) => {
+        const uCode = (itemProjCode || '').trim().toUpperCase();
+        const uId = (itemProjId || '').trim().toUpperCase();
+        return (uCode && (uCode === pCodeUpper || uCode === pIdUpper)) || (uId && (uId === pCodeUpper || uId === pIdUpper));
+      };
 
       // 1. Optimistic Update local state immediately so UI updates instantly
       set((state) => {
-        const nextProjects = state.projects.filter((p) => p.id !== id);
-        const nextTasks = state.tasks.filter((t) => t.projectCode !== projectCode);
-        const nextMaterials = state.materials.filter((m) => m.projectCode !== projectCode);
-        const nextIssues = state.issues.filter((i) => i.projectCode !== projectCode);
-        const nextMaterialPlans = state.materialPlans;
-        const nextPurchasingPlans = state.purchasingPlans;
-        const nextExpenses = state.expenses;
-        const nextLaborPayrolls = state.laborPayrolls;
-        const nextFieldLogs = state.fieldLogs.filter((l) => l.projectCode !== projectCode);
+        const nextProjects = state.projects.filter((p) => p.id !== id && p.code !== projectCode);
+        const nextTasks = state.tasks.filter((t) => !isMatch(t.projectCode, (t as any).projectId));
+        const nextMaterials = state.materials.filter((m) => !isMatch(m.projectCode, (m as any).projectId));
+        const nextIssues = state.issues.filter((i) => !isMatch(i.projectCode, (i as any).projectId));
+        const nextMaterialPlans = state.materialPlans.filter((mp) => !isMatch(mp.projectCode));
+        const nextPurchasingPlans = state.purchasingPlans.filter((pp) => !isMatch(pp.projectCode));
+        const nextExpenses = state.expenses.filter((e) => !isMatch(e.projectCode, (e as any).projectId));
+        const nextLaborPayrolls = state.laborPayrolls.filter((lp) => !isMatch(lp.projectCode, (lp as any).projectId));
+        const nextFieldLogs = state.fieldLogs.filter((l) => !isMatch(l.projectCode, (l as any).projectId));
+        const nextDocumentTracks = state.documentTracks ? state.documentTracks.filter((d) => !isMatch(d.projectCode, (d as any).projectId)) : [];
 
         persistAndNotify({
           projects: nextProjects,
@@ -1890,6 +1904,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           expenses: nextExpenses,
           laborPayrolls: nextLaborPayrolls,
           fieldLogs: nextFieldLogs,
+          documentTracks: nextDocumentTracks,
         });
 
         return {
@@ -1902,16 +1917,17 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           expenses: nextExpenses,
           laborPayrolls: nextLaborPayrolls,
           fieldLogs: nextFieldLogs,
+          documentTracks: nextDocumentTracks,
         };
       });
 
       // 2. Perform DB API calls in background
       try {
-        await api.projects.delete(id);
+        await api.projects.delete(id, projectCode, projectName);
 
         // Clean up project from assigned engineers
-        const projectCodeStr = (projectToDelete.code || '').trim();
-        const projectNameStr = (projectToDelete.name || '').trim();
+        const projectCodeStr = (projectCode || '').trim();
+        const projectNameStr = (projectName || '').trim();
         const affectedEngineers = get().engineers.filter(eng => {
           const hasManaged = eng.managedProjects?.some(p => p.code ? p.code.trim() === projectCodeStr : p.name.trim() === projectNameStr);
           const hasMember = eng.memberProjects?.some(p => p.code ? p.code.trim() === projectCodeStr : p.name.trim() === projectNameStr);
@@ -1930,7 +1946,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           })).catch(err => console.warn('Clean up engineers failed', err));
         }
 
-        get().logActivity('Đã xóa dự án: ' + projectToDelete.name, projectToDelete.name);
+        if (projectName) {
+          get().logActivity('Đã xóa dự án: ' + projectName, projectName);
+        }
         get().fetchEngineers();
       } catch (e) {
         console.error('Failed to delete project from DB', e);

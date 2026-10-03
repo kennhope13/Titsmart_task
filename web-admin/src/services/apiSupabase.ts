@@ -197,9 +197,58 @@ export const api = {
       }
       return toCamelCase(result);
     },
-    delete: async (id: string) => {
-      const { error } = await supabase.from('projects').delete().eq('id', id);
-      if (error) throw error;
+    delete: async (id: string, projectCode?: string, projectName?: string) => {
+      // 1. Fetch project info if code or id is missing
+      let targetId = id;
+      let targetCode = projectCode || '';
+      let targetName = projectName || '';
+
+      if (UUID_RE.test(id)) {
+        try {
+          const { data: p } = await supabase.from('projects').select('id, code, name').eq('id', id).maybeSingle();
+          if (p) {
+            targetCode = targetCode || p.code || '';
+            targetName = targetName || p.name || '';
+          }
+        } catch {}
+      } else if (id.startsWith('derived-')) {
+        targetCode = targetCode || id.replace('derived-', '');
+      } else if (!targetCode) {
+        targetCode = id;
+      }
+
+      // 2. Cascade delete linked items in all related tables
+      const codes = [targetCode, id].filter(Boolean);
+      const deletePromises: PromiseLike<any>[] = [];
+
+      codes.forEach((code) => {
+        deletePromises.push(Promise.resolve(supabase.from('tasks').delete().eq('project_code', code)));
+        deletePromises.push(Promise.resolve(supabase.from('materials').delete().eq('project_code', code)));
+        deletePromises.push(Promise.resolve(supabase.from('material_plans').delete().eq('project_code', code)));
+        deletePromises.push(Promise.resolve(supabase.from('purchasing_plans').delete().eq('project_code', code)));
+        deletePromises.push(Promise.resolve(supabase.from('expenses').delete().eq('project_code', code)));
+        deletePromises.push(Promise.resolve(supabase.from('labor_payrolls').delete().eq('project_code', code)));
+        deletePromises.push(Promise.resolve(supabase.from('field_logs').delete().eq('project_code', code)));
+        deletePromises.push(Promise.resolve(supabase.from('document_tracks').delete().eq('project_code', code)));
+        deletePromises.push(Promise.resolve(supabase.from('issues').delete().eq('project_code', code)));
+      });
+
+      if (UUID_RE.test(targetId)) {
+        deletePromises.push(Promise.resolve(supabase.from('project_members').delete().eq('project_id', targetId)));
+        deletePromises.push(Promise.resolve(supabase.from('activity_logs').delete().eq('project_id', targetId)));
+        deletePromises.push(Promise.resolve(supabase.from('inventory_transactions').delete().eq('project_id', targetId)));
+      }
+
+      await Promise.allSettled(deletePromises as any);
+
+      // 3. Delete from projects table
+      if (UUID_RE.test(targetId)) {
+        await supabase.from('projects').delete().eq('id', targetId);
+      }
+      if (targetCode) {
+        await supabase.from('projects').delete().eq('code', targetCode);
+      }
+
       return { success: true };
     },
   },

@@ -707,11 +707,14 @@ export const ProjectManagementPage: React.FC = () => {
   const handleDeleteProject = async () => {
     if (!projectToDelete) return;
     setLoading(true);
-    setLoadingMessage('Đang xóa dự án...');
+    setLoadingMessage('Đang xóa vĩnh viễn dự án...');
     try {
       await deleteProject(projectToDelete.id);
       setProjectToDelete(null);
       triggerToast(TEXT.deleted, 'success');
+    } catch (err: any) {
+      console.error('Delete project failed', err);
+      triggerToast('Lỗi khi xóa dự án: ' + (err?.message || 'Vui lòng thử lại'), 'warning');
     } finally {
       setLoading(false);
       setLoadingMessage('');
