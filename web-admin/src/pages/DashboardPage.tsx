@@ -20,31 +20,16 @@ import {
 
 interface ChartBoxProps {
   title: string;
-  subtitle?: string;
   children: React.ReactNode;
   span?: number;
-  onClick?: () => void;
-  actionText?: string;
 }
 
-const ChartBox: React.FC<ChartBoxProps> = React.memo(({ title, subtitle, children, span = 1, onClick, actionText = 'Chi tiết' }) => (
+const ChartBox: React.FC<ChartBoxProps> = React.memo(({ title, children, span = 1 }) => (
   <div 
-    className={`group relative flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs h-[340px] xl:col-span-${span} overflow-hidden ${onClick ? 'hover:shadow-md hover:border-primary/40 transition-all duration-200' : ''}`}
+    className={`flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs h-[330px] xl:col-span-${span} overflow-hidden`}
   >
-    <div className="bg-white border-b border-slate-100 px-4 py-3 flex justify-between items-center">
-      <div className="min-w-0 pr-2">
-        <span className="text-sm font-bold text-slate-800 truncate block">{title}</span>
-        {subtitle && <p className="text-[11px] text-slate-400 truncate mt-0.5">{subtitle}</p>}
-      </div>
-      {onClick && (
-        <button 
-          onClick={onClick}
-          className="text-xs font-semibold text-primary hover:underline shrink-0 flex items-center gap-0.5"
-        >
-          {actionText}
-          <span className="material-symbols-outlined text-sm">chevron_right</span>
-        </button>
-      )}
+    <div className="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center">
+      <span className="text-xs md:text-sm font-extrabold text-slate-800 uppercase tracking-tight">{title}</span>
     </div>
     <div className="flex-1 h-[275px] relative p-3 overflow-hidden">
       {children}
@@ -573,7 +558,7 @@ export const DashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
             {/* 1. TIẾN ĐỘ THI CÔNG (%) */}
-            <ChartBox title="TIẾN ĐỘ THI CÔNG (%)" subtitle="Top 10 dự án theo tỷ lệ hoàn thành" onClick={() => navigate("/projects")}>
+            <ChartBox title="TIẾN ĐỘ THI CÔNG (%)">
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 <BarChart data={progressData} margin={{ top: 10, right: 35, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
@@ -591,7 +576,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             {/* 2. TỔNG CHI PHÍ THỰC TẾ (VNĐ) */}
-            <ChartBox title="TỔNG CHI PHÍ THỰC TẾ (VNĐ)" subtitle="Chi phí lũy kế đã giải ngân theo từng dự án" onClick={() => navigate("/cost-plan")}>
+            <ChartBox title="TỔNG CHI PHÍ THỰC TẾ (VNĐ)">
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 <BarChart data={costData} margin={{ top: 10, right: isMobile ? 65 : 90, left: 0, bottom: 0 }} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
@@ -606,7 +591,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             {/* 3. SO SÁNH NGÂN SÁCH VS THỰC CHI (VNĐ) */}
-            <ChartBox title="SO SÁNH NGÂN SÁCH VÀ THỰC CHI" subtitle="Đối chiếu giá trị hợp đồng kế hoạch và chi phí thực tế" onClick={() => navigate("/cost-plan")}>
+            <ChartBox title="SO SÁNH NGÂN SÁCH VÀ THỰC CHI (VNĐ)">
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 <BarChart data={budgetVsCostData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -621,7 +606,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             {/* 4. CƠ CẤU CHI PHÍ TOÀN HỆ THỐNG */}
-            <ChartBox title="CƠ CẤU CHI PHÍ TOÀN HỆ THỐNG" subtitle="Tỷ trọng phân bổ nguồn vốn: Vật tư, Dự án & Nhân công" onClick={() => navigate("/cost-plan")}>
+            <ChartBox title="CƠ CẤU CHI PHÍ TOÀN HỆ THỐNG">
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 {costStructureData.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-sm text-slate-400">Chưa có dữ liệu chi phí</div>
@@ -646,7 +631,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             {/* 5. TRẠNG THÁI CÔNG VIỆC TOÀN BỘ DỰ ÁN */}
-            <ChartBox title="TRẠNG THÁI CÔNG VIỆC TOÀN BỘ DỰ ÁN" subtitle="Tổng quan tình trạng thực hiện đầu việc hệ thống" onClick={() => navigate("/task-management")}>
+            <ChartBox title="TRẠNG THÁI CÔNG VIỆC TOÀN BỘ DỰ ÁN">
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 {globalTaskStatusData.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-sm text-slate-400">Chưa có dữ liệu công việc</div>
@@ -671,7 +656,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             {/* 6. TIẾN ĐỘ CUNG ỨNG VẬT TƯ (%) */}
-            <ChartBox title="TIẾN ĐỘ CUNG ỨNG VẬT TƯ (%)" subtitle="Tỷ lệ đáp ứng và giao nhận vật tư theo kế hoạch" onClick={() => navigate("/material-tracking")}>
+            <ChartBox title="TIẾN ĐỘ CUNG ỨNG VẬT TƯ (%)">
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 {materialProgressData.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-sm text-slate-400">Chưa có kế hoạch vật tư</div>
@@ -690,7 +675,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             {/* 7. HỒ SƠ ĐÃ GỬI VÀ CHƯA GỬI */}
-            <ChartBox title="HỒ SƠ ĐÃ GỬI VÀ CHƯA GỬI" subtitle="Tình trạng chuyển giao hồ sơ pháp lý & kỹ thuật" onClick={() => navigate("/documents")}>
+            <ChartBox title="HỒ SƠ ĐÃ GỬI VÀ CHƯA GỬI">
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 {documentData.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-1.5">
@@ -722,7 +707,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             {/* 8. KPI CÔNG VIỆC NHÂN VIÊN */}
-            <ChartBox title="KPI CÔNG VIỆC NHÂN VIÊN" subtitle="Năng suất hoàn thành công việc theo từng nhân viên" onClick={() => navigate("/personnel")}>
+            <ChartBox title="KPI CÔNG VIỆC NHÂN VIÊN">
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 {kpiData.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-1.5">
@@ -755,7 +740,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             {/* 9. THỐNG KÊ SỰ CỐ & VẤN ĐỀ HIỆN TRƯỜNG */}
-            <ChartBox title="SỰ CỐ & VẤN ĐỀ HIỆN TRƯỜNG" subtitle="Phân loại tình trạng xử lý sự cố phát sinh tại công trường" onClick={() => navigate("/issues")}>
+            <ChartBox title="SỰ CỐ & VẤN ĐỀ HIỆN TRƯỜNG">
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 {issueData.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-1.5">
@@ -783,7 +768,7 @@ export const DashboardPage: React.FC = () => {
             </ChartBox>
 
             {/* 10. NHẬT KÝ HIỆN TRƯỜNG THEO DỰ ÁN */}
-            <ChartBox title="NHẬT KÝ HIỆN TRƯỜNG THEO DỰ ÁN" subtitle="Số lượng bài viết nhật ký ảnh & báo cáo được đăng tải" onClick={() => navigate("/projects")}>
+            <ChartBox title="NHẬT KÝ HIỆN TRƯỜNG THEO DỰ ÁN">
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 {fieldLogsData.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-1.5">
