@@ -741,36 +741,36 @@ export const ProjectManagementPage: React.FC = () => {
       <LoadingSpinner loading={loading} message={loadingMessage} />
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
 
-      <section className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 relative z-50 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+      <section className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 relative z-10 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 w-full md:w-auto">
-          <div className="flex items-center justify-between gap-2 shrink-0 h-8 md:h-auto">
+          <div className="flex items-center justify-between gap-2 shrink-0 h-7 md:h-auto">
             <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">{TEXT.projectManagement}</h1>
           </div>
 
-          <div className="h-[34px] flex items-center w-full md:w-[480px] bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 relative z-50 no-drag-region electron-no-drag gap-0.5" style={{ WebkitAppRegion: 'no-drag' } as any}>
+          <div className="h-[34px] flex items-center w-full md:w-[480px] bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 relative z-10 no-drag-region electron-no-drag gap-0.5 overflow-x-auto scrollbar-none" style={{ WebkitAppRegion: 'no-drag' } as any}>
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 h-[28px] px-3 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'all' ? 'bg-white shadow-xs text-slate-800 ring-1 ring-slate-200/80 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`flex-1 h-[28px] px-2 sm:px-3 flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap text-[11px] sm:text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'all' ? 'bg-white shadow-xs text-slate-800 ring-1 ring-slate-200/80 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
-              <span>Tất cả</span> <span className={`px-1.5 py-0.5 min-w-[20px] text-center rounded-full text-[10px] font-medium leading-none ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.all}</span>
+              <span>Tất cả</span> <span className={`px-1.5 py-0.5 min-w-[18px] sm:min-w-[20px] text-center rounded-full text-[9px] sm:text-[10px] font-medium leading-none ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.all}</span>
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter('active')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 h-[28px] px-3 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'active' ? 'bg-white shadow-xs text-blue-600 ring-1 ring-blue-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`flex-1 h-[28px] px-2 sm:px-3 flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap text-[11px] sm:text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'active' ? 'bg-white shadow-xs text-blue-600 ring-1 ring-blue-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
-              <span>Đang triển khai</span> <span className={`px-1.5 py-0.5 min-w-[20px] text-center rounded-full text-[10px] font-medium leading-none ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.active}</span>
+              <span>Đang triển khai</span> <span className={`px-1.5 py-0.5 min-w-[18px] sm:min-w-[20px] text-center rounded-full text-[9px] sm:text-[10px] font-medium leading-none ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.active}</span>
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter('completed')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 h-[28px] px-3 flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'completed' ? 'bg-white shadow-xs text-emerald-600 ring-1 ring-emerald-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`flex-1 h-[28px] px-2 sm:px-3 flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap text-[11px] sm:text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'completed' ? 'bg-white shadow-xs text-emerald-600 ring-1 ring-emerald-200 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
-              <span>Hoàn thành</span> <span className={`px-1.5 py-0.5 min-w-[20px] text-center rounded-full text-[10px] font-medium leading-none ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.completed}</span>
+              <span>Hoàn thành</span> <span className={`px-1.5 py-0.5 min-w-[18px] sm:min-w-[20px] text-center rounded-full text-[9px] sm:text-[10px] font-medium leading-none ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.completed}</span>
             </button>
           </div>
         </div>
@@ -804,7 +804,7 @@ export const ProjectManagementPage: React.FC = () => {
         onRefresh={async () => {
           await fetchProjects();
         }}
-        className="flex-1 p-4 pb-16 md:p-6"
+        className="flex-1 p-3 sm:p-4 pb-28 md:p-6 md:pb-6"
       >
         {isFetchingProjects && projects.length === 0 ? (
           <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center">
@@ -821,7 +821,7 @@ export const ProjectManagementPage: React.FC = () => {
             <h3 className="mt-3 font-bold text-slate-700">{searchQuery ? TEXT.noProjectFound : TEXT.noProject}</h3>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4">
             {enhancedProjects.map((project, idx) => {
               const barColor = project.progress >= 100 ? 'bg-emerald-500'
                 : project.progress >= 60 ? 'bg-blue-500'
@@ -843,13 +843,13 @@ export const ProjectManagementPage: React.FC = () => {
                   {/* Top accent bar */}
                   <div className={`h-1 w-full ${barColor}`} />
 
-                  <div className="flex flex-col gap-3 p-4 flex-1">
+                  <div className="flex flex-col gap-2.5 sm:gap-3 p-3.5 sm:p-4 flex-1">
                     {/* Header: số + tên */}
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-500 font-extrabold text-xs mt-0.5">
+                    <div className="flex items-start gap-2.5 sm:gap-3">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-500 font-extrabold text-xs mt-0.5">
                         {String(idx + 1).padStart(2, '0')}
                       </div>
-                      <div className="flex-1 bg-blue-50 rounded-lg px-3 py-2">
+                      <div className="flex-1 bg-blue-50 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2">
                         <p className="font-bold text-primary text-sm leading-snug line-clamp-2" title={project.name}>
                           {project.name}
                         </p>
@@ -858,12 +858,12 @@ export const ProjectManagementPage: React.FC = () => {
 
                     {/* Badge trạng thái */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
                         {statusLabel[project.status]}
                       </span>
                       {project.location && (
-                        <span className="text-[11px] text-slate-400 truncate">{project.location}</span>
+                        <span className="text-[11px] text-slate-400 truncate max-w-[180px]">{project.location}</span>
                       )}
                     </div>
 
@@ -883,20 +883,27 @@ export const ProjectManagementPage: React.FC = () => {
                     )}
 
                     {/* Nhân sự dự án */}
-                    <div className="mt-1.5 pt-1.5 border-t border-slate-100/50">
-                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5">
+                    <div className="mt-1 pt-1 border-t border-slate-100/50">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
                         <span className="text-[11px] font-semibold text-slate-400 mr-0.5">Nhân sự:</span>
                         {project.memberNames?.length ? (
-                          project.memberNames.map((name, i) => (
-                            <div key={i} className="inline-flex items-center gap-2 bg-sky-50/50 border border-sky-100 rounded-full pr-2 pl-0.5 py-0.5">
-                              <span className="w-3.5 h-3.5 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
-                                <span className="material-symbols-outlined text-[10px]">person</span>
+                          <>
+                            {project.memberNames.slice(0, 3).map((name, i) => (
+                              <div key={i} className="inline-flex items-center gap-1 bg-sky-50/70 border border-sky-100 rounded-full pr-2 pl-0.5 py-0.5 max-w-[130px]">
+                                <span className="w-3.5 h-3.5 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
+                                  <span className="material-symbols-outlined text-[10px]">person</span>
+                                </span>
+                                <span className="text-[10px] font-semibold text-sky-700 truncate">
+                                  {name}
+                                </span>
+                              </div>
+                            ))}
+                            {project.memberNames.length > 3 && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-semibold text-slate-600">
+                                +{project.memberNames.length - 3}
                               </span>
-                              <span className="text-[10px] font-semibold text-sky-700">
-                                {name}
-                              </span>
-                            </div>
-                          ))
+                            )}
+                          </>
                         ) : (
                           <span className="italic text-[11px] text-slate-400">Chưa có</span>
                         )}

@@ -1110,18 +1110,18 @@ export const ChatWidget: React.FC = () => {
           className={`fixed z-[9990] touch-none select-none pointer-events-auto ${
             position
               ? ''
-              : 'right-4 sm:right-5 bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] sm:bottom-5'
+              : 'right-3 sm:right-5 bottom-[calc(env(safe-area-inset-bottom,0px)+72px)] sm:bottom-5'
           }`}
         >
           <button
             type="button"
             onClick={handleButtonClick}
             title="Nội bộ Titsmart (Nhấn giữ & kéo để di chuyển)"
-            className="w-12 h-12 rounded-xl bg-blue-900 text-white shadow-xl flex items-center justify-center hover:bg-blue-800 hover:scale-105 active:scale-95 transition-all duration-200 cursor-grab active:cursor-grabbing relative overflow-visible"
+            className="w-11 h-11 sm:w-12 sm:h-12 rounded-full sm:rounded-xl bg-blue-900 text-white shadow-xl flex items-center justify-center hover:bg-blue-800 hover:scale-105 active:scale-95 transition-all duration-200 cursor-grab active:cursor-grabbing relative overflow-visible border-2 border-white/20"
           >
-            <span className="material-symbols-outlined text-[22px] pointer-events-none">chat</span>
+            <span className="material-symbols-outlined text-[20px] sm:text-[22px] pointer-events-none">chat</span>
             {unreadCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none flex items-center justify-center border-2 border-white pointer-events-none z-20 shadow-md">
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] sm:min-w-[20px] sm:h-[20px] px-1 rounded-full bg-red-500 text-white text-[9px] sm:text-[10px] font-bold leading-none flex items-center justify-center border-2 border-white pointer-events-none z-20 shadow-md">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
