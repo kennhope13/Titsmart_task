@@ -2488,24 +2488,12 @@ const hasSyncedRef = useRef(false);
                         </span>
                       </td>
                       <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200">
-                        {canApproveTask(authStore.user, t) ? (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); handleApproveTask(t); }}
-                            className="inline-flex items-center justify-center gap-1 w-full rounded border border-purple-400 bg-purple-600 hover:bg-purple-700 text-white px-1 py-0.5 text-[10px] font-bold text-center whitespace-nowrap leading-snug cursor-pointer transition-all shadow-xs animate-pulse"
-                            title="Nhấn để nghiệm thu công việc này"
-                          >
-                            <span className="material-symbols-outlined text-[12px]">verified</span>
-                            <span>Nghiệm thu</span>
-                          </button>
-                        ) : (
-                          <span 
-                            title="Tiến độ thi công (được cập nhật theo tiến độ báo cáo và nghiệm thu công việc)" 
-                            className={`inline-block w-full rounded border px-0.5 py-0.5 text-[10px] font-bold text-center whitespace-nowrap leading-snug overflow-visible ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}
-                          >
-                            {t.constrStatus || "Chưa thi công"}
-                          </span>
-                        )}
+                        <span 
+                          title="Tiến độ thi công (được cập nhật theo tiến độ báo cáo và nghiệm thu công việc)" 
+                          className={`inline-block w-full rounded border px-0.5 py-0.5 text-[10px] font-bold text-center whitespace-nowrap leading-snug overflow-visible ${getStatusColorStyle(t.constrStatus || t.status || "Chưa thi công")}`}
+                        >
+                          {t.constrStatus || t.status || "Chưa thi công"}
+                        </span>
                       </td>
                       {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
                           <td 
