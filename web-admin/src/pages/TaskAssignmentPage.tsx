@@ -1292,7 +1292,7 @@ export const TaskAssignmentPage: React.FC = () => {
             <table className="w-full text-left border-collapse text-xs min-w-[900px]">
               <thead className="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase sticky top-0 z-10 shadow-[0_1px_0_0_#e2e8f0]">
                 <tr>
-                  {projectFilterStatus === 'unassigned' ? (
+                  {projectFilterStatus === 'unassigned' && (
                     <th className="py-2.5 px-3 w-10 text-center border-r border-slate-200">
                       <input 
                         type="checkbox" 
@@ -1301,8 +1301,6 @@ export const TaskAssignmentPage: React.FC = () => {
                         onChange={handleToggleSelectAll}
                       />
                     </th>
-                  ) : (
-                    <th className="py-2.5 px-3 w-12 text-center border-r border-slate-200">#</th>
                   )}
                   <th className="py-2.5 px-4 border-r border-slate-200">Nội dung công việc</th>
                   <th className="py-2.5 px-3 w-36 border-r border-slate-200">Người phụ trách</th>
@@ -1316,7 +1314,7 @@ export const TaskAssignmentPage: React.FC = () => {
               <tbody className="divide-y divide-slate-200 font-medium">
                 {groupedProjectTasks.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400 italic">
+                    <td colSpan={projectFilterStatus === 'unassigned' ? 8 : 7} className="py-8 text-center text-slate-400 italic">
                       Không có công việc dự án nào phù hợp.
                     </td>
                   </tr>
@@ -1330,7 +1328,7 @@ export const TaskAssignmentPage: React.FC = () => {
                       <React.Fragment key={group.project.code}>
                         {/* Dòng Tiêu đề Phân nhóm theo Dự án */}
                         <tr className="bg-slate-100/95 hover:bg-slate-200/80 transition-colors border-y border-slate-300 sticky top-[33px] z-[5] select-none">
-                          <td colSpan={8} className="py-2 px-3">
+                          <td colSpan={projectFilterStatus === 'unassigned' ? 8 : 7} className="py-2 px-3">
                             <div className="flex items-center justify-between gap-2">
                               <button
                                 type="button"
@@ -1393,7 +1391,7 @@ export const TaskAssignmentPage: React.FC = () => {
                               onClick={() => handleRowClick(t, p?.code || t.projectCode)}
                               title="Nhấn vào dòng này để xem chi tiết công việc trong dự án"
                             >
-                              {projectFilterStatus === 'unassigned' ? (
+                              {projectFilterStatus === 'unassigned' && (
                                 <td className="py-2.5 px-3 text-center border-r border-slate-200 w-10" onClick={e => e.stopPropagation()}>
                                   <input 
                                     type="checkbox" 
@@ -1401,10 +1399,6 @@ export const TaskAssignmentPage: React.FC = () => {
                                     checked={isChecked}
                                     onChange={() => handleToggleTask(t.id)}
                                   />
-                                </td>
-                              ) : (
-                                <td className="py-2.5 px-3 text-center border-r border-slate-200 text-slate-400 font-mono text-[11px] w-12 font-bold">
-                                  {tIdx + 1}
                                 </td>
                               )}
                               <td className="py-2.5 px-4 border-r border-slate-200">
