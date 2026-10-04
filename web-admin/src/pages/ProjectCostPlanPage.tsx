@@ -1215,17 +1215,23 @@ export const ProjectCostPlanPage: React.FC = () => {
   const projectOptions = useMemo(() => {
     // Collect all project codes from projects list
     const codes = new Set(projects.map(p => p.code));
-    // Also add codes from materialPlans if not present
-    materialPlans.forEach(p => codes.add(p.projectCode));
+    // Also add codes from materialPlans and expenses if not present
+    materialPlans.forEach(p => p.projectCode && codes.add(p.projectCode));
+    expenses.forEach(p => (p.projectCode || (p as any).project_code) && codes.add(p.projectCode || (p as any).project_code));
     return Array.from(codes);
-  }, [projects, materialPlans]);
+  }, [projects, materialPlans, expenses]);
 
   const [selectedProject, setSelectedProject] = useState<string>('');
 
   const resolvedProjectCode = useMemo(() => {
     if (!projectId) return '';
-    const proj = projects.find(p => p.id === projectId || p.code === projectId);
-    return proj ? proj.code : projectId;
+    const cleanId = decodeURIComponent(projectId).trim().toLowerCase();
+    const proj = projects.find(p => 
+      (p.id && p.id.toLowerCase() === cleanId) || 
+      (p.code && p.code.toLowerCase() === cleanId) ||
+      (p.name && p.name.toLowerCase() === cleanId)
+    );
+    return proj ? (proj.code || proj.id) : projectId;
   }, [projectId, projects]);
 
   useEffect(() => {
@@ -1544,24 +1550,41 @@ export const ProjectCostPlanPage: React.FC = () => {
     return Array.from(infos);
   }, [laborPayrolls]);
 
-  const currentProjExpenses = useMemo(() => {
-    const currentProjObj = projects.find(p => p.code === selectedProject || p.id === selectedProject);
-    const isOffice = 
-      selectedProject === 'CHI_PHI_VAN_PHONG' || 
-      selectedProject === 'OFFICE' || 
-      selectedProject === 'VAN_PHONG' || 
-      selectedProject === 'COMPANY' ||
-      currentProjObj?.code === 'CHI_PHI_VAN_PHONG' ||
-      currentProjObj?.code === 'OFFICE' ||
-      String(currentProjObj?.name || '').toLowerCase().includes('văn phòng');
+  const getValidProjectCodeSet = (projCodeOrId: string) => {
+    const clean = (projCodeOrId || '').trim().toLowerCase();
+    const projObj = projects.find(p => 
+      (p.code && p.code.toLowerCase() === clean) || 
+      (p.id && p.id.toLowerCase() === clean) ||
+      (p.name && p.name.toLowerCase() === clean)
+    );
 
-    const validCodes = new Set([
-      selectedProject, 
-      currentProjObj?.code, 
-      currentProjObj?.id,
-      ...(isOffice ? ['CHI_PHI_VAN_PHONG', 'OFFICE', 'VAN_PHONG', 'COMPANY'] : [])
-    ].filter(Boolean));
-    const sortedOldestFirst = expenses.filter(p => validCodes.has(p.projectCode)).sort((a, b) => {
+    const isOffice = 
+      clean === 'chi_phi_van_phong' || 
+      clean === 'office' || 
+      clean === 'van_phong' || 
+      clean === 'company' ||
+      projObj?.code?.toLowerCase() === 'chi_phi_van_phong' ||
+      projObj?.code?.toLowerCase() === 'office' ||
+      String(projObj?.name || '').toLowerCase().includes('văn phòng');
+
+    const validCodes = [
+      projCodeOrId,
+      projObj?.code,
+      projObj?.id,
+      projObj?.name,
+      ...(isOffice ? ['CHI_PHI_VAN_PHONG', 'OFFICE', 'VAN_PHONG', 'COMPANY', 'chi_phi_van_phong', 'office'] : [])
+    ].filter(Boolean).map(s => String(s).trim().toLowerCase());
+
+    return new Set(validCodes);
+  };
+
+  const currentProjExpenses = useMemo(() => {
+    const validCodes = getValidProjectCodeSet(selectedProject || resolvedProjectCode || projectId || '');
+    const sortedOldestFirst = expenses.filter(p => {
+      const pCode = String(p.projectCode || (p as any).project_code || '').trim().toLowerCase();
+      if (!pCode) return false;
+      return validCodes.has(pCode);
+    }).sort((a, b) => {
       return sttSortValue(a.stt) - sttSortValue(b.stt);
     });
     let currentBalance = 0;
@@ -1570,7 +1593,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       return { ...exp, autoBalance: currentBalance };
     });
     return computed;
-  }, [expenses, selectedProject, projects]);
+  }, [expenses, selectedProject, resolvedProjectCode, projectId, projects]);
 
   const expenseDateOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjExpenses.map(p => p.date).filter(Boolean)))], [currentProjExpenses]);
   const expenseContentOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjExpenses.map(p => p.content).filter(Boolean)))], [currentProjExpenses]);
@@ -1594,10 +1617,14 @@ export const ProjectCostPlanPage: React.FC = () => {
     });
   }, [currentProjExpenses, searchQuery, expenseFilterDateFrom, expenseFilterDateTo, expenseFilterContent, expenseFilterUnit]);
 
-  const currentProjLabor = useMemo(() =>
-    laborPayrolls.filter(p => p.projectCode === selectedProject).sort((a, b) => sttSortValue(a.stt) - sttSortValue(b.stt)),
-    [laborPayrolls, selectedProject]
-  );
+  const currentProjLabor = useMemo(() => {
+    const validCodes = getValidProjectCodeSet(selectedProject || resolvedProjectCode || projectId || '');
+    return laborPayrolls.filter(p => {
+      const pCode = String(p.projectCode || (p as any).project_code || '').trim().toLowerCase();
+      if (!pCode) return false;
+      return validCodes.has(pCode);
+    }).sort((a, b) => sttSortValue(a.stt) - sttSortValue(b.stt));
+  }, [laborPayrolls, selectedProject, resolvedProjectCode, projectId, projects]);
 
   const laborDateOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjLabor.map(p => p.date).filter(Boolean)))], [currentProjLabor]);
   const laborContentOptions = useMemo(() => ['all', ...Array.from(new Set(currentProjLabor.map(p => p.content).filter(Boolean)))], [currentProjLabor]);

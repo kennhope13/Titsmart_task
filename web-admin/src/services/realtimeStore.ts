@@ -44,13 +44,17 @@ const filterByProject = (items: any[], codeField: string) => {
   const user = getAuthUser();
   if (!user || !Array.isArray(items)) return items;
 
-  // Admin & PM luôn xem được tất cả dự án
+  // Admin & PM, Quản lý, Giám đốc, Kế toán luôn xem được tất cả dự án
+  const roleLower = String(user.role || '').toLowerCase();
+  const usernameLower = String(user.username || '').toLowerCase();
   if (
-    user.username === 'admin' ||
-    user.role === 'admin' ||
-    user.role === 'pm' ||
-    user.role === 'Quản trị viên' ||
-    user.role === 'Quản lý dự án'
+    usernameLower === 'admin' ||
+    roleLower === 'admin' ||
+    roleLower === 'pm' ||
+    roleLower.includes('quản trị') ||
+    roleLower.includes('quản lý') ||
+    roleLower.includes('giám đốc') ||
+    roleLower.includes('kế toán')
   ) {
     return items;
   }
@@ -79,7 +83,7 @@ const filterByProject = (items: any[], codeField: string) => {
       (item.assignerName && String(item.assignerName).toUpperCase().includes(userNameUpper))
     )) return true;
 
-    const val = String(item[codeField] || '').trim().toUpperCase();
+    const val = String(item[codeField] || item.projectCode || item.project_code || '').trim().toUpperCase();
     const itemId = String(item.id || '').trim().toUpperCase();
     const itemCode = String(item.code || '').trim().toUpperCase();
     const itemName = String(item.name || '').trim().toUpperCase();
