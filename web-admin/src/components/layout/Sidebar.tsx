@@ -355,7 +355,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       )}
 
       {/* Mobile Bottom Navigation Bar (Shown ONLY on screens <= 768px via css md:hidden) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-[58px] bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom,0px)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(56px+env(safe-area-inset-bottom,0px))] bg-white/95 backdrop-blur-md border-t border-slate-200 z-50 flex items-start justify-around px-2 pt-1 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom,0px)]">
         {(currentProject ? [
           { label: 'Tổng quan', path: `/projects/${currentProject.id}/overview`, icon: 'dashboard' },
           { label: 'Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'fact_check' },
