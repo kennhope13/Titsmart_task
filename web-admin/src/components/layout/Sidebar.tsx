@@ -110,8 +110,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         onMouseLeave={() => setIsHovered(false)}
         className={`hidden md:flex fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[170px]' : 'w-[56px]'}`}
       >
-        <div className="relative h-12 px-2 flex items-center gap-2 border-b border-slate-100 min-w-[170px]">
-          <div className="flex-1 flex items-center gap-3 min-w-0">
+        <div className="relative h-12 px-2 flex items-center gap-2 border-b border-slate-100 min-w-0">
+          <div className="flex-1 flex items-center gap-2.5 min-w-0">
             <div 
               className={`relative w-10 h-10 flex items-center justify-center flex-shrink-0 ${sidebarShowToggleButton ? 'cursor-pointer group/logo' : ''}`}
               onClick={() => sidebarShowToggleButton && toggleSidebar && toggleSidebar()}
@@ -129,33 +129,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
               )}
             </div>
             
-            <div className={`min-w-0 transition-opacity duration-300 flex-1 flex flex-row items-center justify-between ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
-              <div className="flex flex-col justify-center">
-                <h1 className="font-extrabold text-[16px] text-blue-900 leading-none tracking-tight">TITSMART</h1>
-                <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Project Manager</p>
+            {isExpanded && (
+              <div className="min-w-0 flex-1 flex flex-col justify-center animate-in fade-in duration-200">
+                <h1 className="font-extrabold text-[15px] text-blue-900 leading-none tracking-tight truncate">TITSMART</h1>
+                <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1 truncate">Project Manager</p>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
-        <nav className="flex-1 w-[170px] px-2 mt-3 pb-4 space-y-3 overflow-y-auto scrollbar-hide">
+        <nav className="flex-1 w-full px-2 mt-3 pb-4 space-y-3 overflow-y-auto overflow-x-hidden scrollbar-hide">
           {navGroups.map((group, index) => (
             <div key={group.title || index} className="space-y-1">
-              {group.title && (
+              {group.title && isExpanded && (
                 <div
-                  className={`flex items-center justify-between mb-2 select-none ${group.collapsible !== false ? 'cursor-pointer hover:text-primary' : ''}`}
+                  className={`flex items-center justify-between mb-2 select-none px-1 ${group.collapsible !== false ? 'cursor-pointer hover:text-primary' : ''}`}
                   onClick={() => group.collapsible !== false && toggleGroup(group.title)}
                 >
-                  <h3 className={`text-[11px] font-black uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'} ${group.collapsible !== false ? 'text-slate-500 hover:text-primary' : 'text-slate-700'}`}>{group.title}</h3>
+                  <h3 className={`text-[11px] font-black uppercase tracking-wider truncate ${group.collapsible !== false ? 'text-slate-500 hover:text-primary' : 'text-slate-700'}`}>{group.title}</h3>
                   {group.collapsible !== false && (
-                    <span className={`material-symbols-outlined text-[14px] text-slate-400 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-0' : 'opacity-0 delay-200'}`}>
+                    <span className="material-symbols-outlined text-[14px] text-slate-400 shrink-0">
                       {collapsedGroups[group.title] ? 'expand_more' : 'expand_less'}
                     </span>
                   )}
                 </div>
               )}
 
-              <div className={`space-y-1 overflow-hidden transition-all duration-200 ${group.collapsible !== false && collapsedGroups[group.title] ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'}`}>
+              <div className={`space-y-1 overflow-hidden transition-all duration-200 ${group.collapsible !== false && collapsedGroups[group.title] && isExpanded ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'}`}>
                 {group.items.map((item) => {
                   const isTask = (item.label === 'Công việc' || item.path.includes('task')) &&
                     (location.pathname === '/task-assignment' || location.pathname === '/my-tasks');
@@ -164,18 +164,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
                       key={item.path}
                       to={item.path}
                       end={item.path === '/'}
+                      title={!isExpanded ? item.label : undefined}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 rounded-lg text-xs transition-all overflow-hidden whitespace-nowrap h-10
-                        ${isExpanded ? 'w-full px-3' : 'w-10'}
-                        ${
+                        `flex items-center rounded-lg text-xs transition-colors overflow-hidden whitespace-nowrap h-10 ${
+                          isExpanded ? 'w-full px-3 gap-3' : 'w-10 h-10 mx-auto justify-center'
+                        } ${
                           isActive || isTask
-                            ? 'text-primary bg-blue-100 font-bold shadow-sm'
-                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-semibold'
+                            ? 'text-primary bg-blue-100 font-bold shadow-xs'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
                         }`
                       }
                     >
-                      <span className={`material-symbols-outlined text-lg flex flex-shrink-0 items-center ${isExpanded ? 'w-auto justify-start' : 'w-10 justify-center'}`}>{item.icon}</span>
-                      <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>{item.label}</span>
+                      <span className="material-symbols-outlined text-lg flex-shrink-0 flex items-center justify-center">{item.icon}</span>
+                      {isExpanded && (
+                        <span className="truncate flex-1 font-semibold text-xs animate-in fade-in duration-150">{item.label}</span>
+                      )}
                     </NavLink>
                   );
                 })}
@@ -189,25 +192,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
             <button
               type="button"
               onClick={() => setShowSettingsModal(true)}
-              title="Cài đặt hệ thống & Tài khoản"
-              className={`flex items-center rounded-xl transition-all overflow-hidden whitespace-normal h-10 hover:bg-slate-100 ${
-                isExpanded ? 'w-full px-2.5 py-2 gap-2.5 h-auto' : 'w-10 justify-center gap-0'
+              title={!isExpanded ? "Cài đặt & Tài khoản" : undefined}
+              className={`flex items-center rounded-xl transition-all overflow-hidden h-10 hover:bg-slate-100 ${
+                isExpanded ? 'w-full px-2.5 py-2 gap-2.5 h-auto' : 'w-10 h-10 mx-auto justify-center'
               }`}
             >
               <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-slate-400 bg-slate-100 uppercase shadow-xs border border-slate-200">
                 <span className="material-symbols-outlined text-[20px]">person</span>
               </div>
-              <div className={`text-left leading-tight transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-1 opacity-100 delay-0 min-w-0' : 'flex-none w-0 opacity-0 delay-200'}`}>
-                <span className="block font-bold text-xs text-slate-800 truncate" title={user?.name}>
-                  {user?.name ? user.name.trim().split(' ').pop() : 'Admin'}
+              {isExpanded && (
+                <div className="text-left leading-tight flex-1 min-w-0 animate-in fade-in duration-150">
+                  <span className="block font-bold text-xs text-slate-800 truncate" title={user?.name}>
+                    {user?.name ? user.name.trim().split(' ').pop() : 'Admin'}
+                  </span>
+                  <span className="block text-[10px] text-slate-500 truncate" title={user?.title}>{user?.title || 'Quản trị viên'}</span>
+                </div>
+              )}
+              {isExpanded && (
+                <span className="material-symbols-outlined text-base text-slate-400 hover:text-primary shrink-0">
+                  settings
                 </span>
-                <span className="block text-[10px] text-slate-500 truncate" title={user?.title}>{user?.title || 'Quản trị viên'}</span>
-              </div>
-              <span
-                className={`material-symbols-outlined text-base text-slate-400 hover:text-primary transition-all duration-300 overflow-hidden ${isExpanded ? 'flex-shrink-0 opacity-100 delay-0 w-[16px]' : 'w-0 opacity-0 delay-200'}`}
-              >
-                settings
-              </span>
+              )}
             </button>
           </div>
       </aside>
