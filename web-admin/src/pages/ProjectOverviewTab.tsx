@@ -172,11 +172,17 @@ export const ProjectOverviewTab: React.FC = () => {
 
   const recentLogs = [...projLogs].sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()).slice(0, 4);
 
+  // --- 7. CÔNG VIỆC NHÂN VIÊN ---
+  const assignedTasks = projTasks.filter(t => t.assignedEngineerId || t.assignedEngineerName || (t.followerIds && t.followerIds.length > 0));
+  const totalAssignedTasks = assignedTasks.length;
+  const completedAssignedTasks = assignedTasks.filter(isTaskCompleted).length;
+  const assignedTaskPercent = totalAssignedTasks > 0 ? Math.round((completedAssignedTasks / totalAssignedTasks) * 100) : 0;
+
   return (
     <div className="p-6 space-y-6 overflow-y-auto bg-slate-50 flex-1">
       
-      {/* 6 SUMMARY CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* 7 SUMMARY CARDS */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
         
         {/* 1. Tiến độ */}
         <div onClick={() => navigate(`/projects/${project.id}/tasks`)} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-pointer hover:shadow-md transition-shadow group">
@@ -197,7 +203,26 @@ export const ProjectOverviewTab: React.FC = () => {
           </div>
         </div>
 
-        {/* 2. Vật tư & Chi phí */}
+        {/* 2. Công việc nhân viên */}
+        <div onClick={() => navigate(`/task-assignment?highlight=${encodeURIComponent(project.name || project.code)}`)} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-pointer hover:shadow-md transition-shadow group">
+          <div className="flex justify-between items-start">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-cyan-600 transition-colors">Công việc nhân viên</p>
+            <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center text-cyan-500 shrink-0 group-hover:bg-cyan-100 transition-colors">
+              <span className="material-symbols-outlined text-lg">assignment_ind</span>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-[26px] leading-tight font-black text-slate-800">{assignedTaskPercent}%</h3>
+          </div>
+          <div className="mt-2">
+            <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
+              <div className="bg-cyan-500 h-1.5 rounded-full" style={{ width: `${assignedTaskPercent}%` }}></div>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium">{completedAssignedTasks} / {totalAssignedTasks} đã giao</p>
+          </div>
+        </div>
+
+        {/* 3. Vật tư & Chi phí */}
         <div onClick={() => navigate(`/projects/${project.id}/cost-plan`)} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-pointer hover:shadow-md transition-shadow group">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-emerald-600 transition-colors">Vật tư & Chi phí</p>
@@ -216,7 +241,7 @@ export const ProjectOverviewTab: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. Hồ sơ */}
+        {/* 4. Hồ sơ */}
         <div onClick={() => navigate(`/projects/${project.id}/documents`)} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-pointer hover:shadow-md transition-shadow group">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-rose-600 transition-colors">Hồ sơ</p>
@@ -235,7 +260,7 @@ export const ProjectOverviewTab: React.FC = () => {
           </div>
         </div>
 
-        {/* 4. Kho Dự Án */}
+        {/* 5. Kho Dự Án */}
         <div onClick={() => navigate(`/projects/${project.id}/inventory`)} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-pointer hover:shadow-md transition-shadow group">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-amber-600 transition-colors">Kho dự án</p>
@@ -254,7 +279,7 @@ export const ProjectOverviewTab: React.FC = () => {
           </div>
         </div>
 
-        {/* 5. Nhật ký hiện trường */}
+        {/* 6. Nhật ký hiện trường */}
         <div onClick={() => navigate(`/projects/${project.id}/field-logs`)} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-pointer hover:shadow-md transition-shadow group">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider overflow-hidden text-ellipsis whitespace-nowrap group-hover:text-purple-600 transition-colors">Nhật ký hiện trường</p>
@@ -273,7 +298,7 @@ export const ProjectOverviewTab: React.FC = () => {
           </div>
         </div>
 
-        {/* 6. Nhân sự tham gia */}
+        {/* 7. Nhân sự tham gia */}
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-default hover:shadow-md transition-shadow group">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-indigo-600 transition-colors">Nhân sự tham gia</p>
