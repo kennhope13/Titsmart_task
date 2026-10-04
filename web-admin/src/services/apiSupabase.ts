@@ -753,73 +753,14 @@ export const api = {
     },
   },
   activityLogs: {
-    getAll: async () => {
-      try {
-        const { data, error } = await supabase.from('activity_logs').select('*');
-        if (error) {
-          console.warn('[ActivityLogs] Error fetching activity logs:', error.message);
-          return [];
-        }
-        const list = mapArray(data || []);
-        return list.sort((a: any, b: any) => {
-          const timeA = new Date(a.createdAt || a.created_at || a.timestamp || 0).getTime();
-          const timeB = new Date(b.createdAt || b.created_at || b.timestamp || 0).getTime();
-          return timeB - timeA;
-        });
-      } catch (err) {
-        console.warn('[ActivityLogs] Error:', err);
-        return [];
-      }
-    },
-    create: async (data: any) => {
-      try {
-        const userName = data.userName || data.user_name || data.user || 'Thành viên';
-        const projName = data.projectName || data.project_name || data.project || 'COMPANY';
-        const nowIso = new Date().toISOString();
-
-        // Check if user has ID
-        const payload: any = {
-          user_name: userName,
-          action: data.action || '',
-          project_name: projName,
-          icon: data.icon || 'history',
-          badge_bg: data.badgeBg || data.badge_bg || 'bg-slate-50',
-          icon_color: data.iconColor || data.icon_color || 'text-slate-500',
-          created_at: nowIso
-        };
-        if (data.userId) payload.user_id = data.userId;
-        if (data.projectId) payload.project_id = data.projectId;
-
-        // Try standard modern schema (001_init_postgresql.sql)
-        const { data: result, error } = await supabase.from('activity_logs').insert(payload).select().single();
-        if (error) {
-          // Try legacy schema (schema.sql: "user", action, project, timestamp, icon, badge_bg, icon_color)
-          const legacyPayload: any = {
-            "user": userName,
-            action: data.action || '',
-            project: projName,
-            timestamp: nowIso,
-            icon: data.icon || 'history',
-            badge_bg: data.badgeBg || data.badge_bg || 'bg-slate-50',
-            icon_color: data.iconColor || data.icon_color || 'text-slate-500'
-          };
-          const { data: legacyRes, error: legacyErr } = await supabase.from('activity_logs').insert(legacyPayload).select().single();
-          if (!legacyErr && legacyRes) {
-            return toCamelCase(legacyRes);
-          }
-          // Ultra minimal fallback
-          const minPayload: any = {
-            user_name: userName,
-            action: data.action || ''
-          };
-          const { data: minRes } = await supabase.from('activity_logs').insert(minPayload).select().single();
-          if (minRes) return toCamelCase(minRes);
-        }
-        return toCamelCase(result || data);
-      } catch {
-        return { id: `log-${Date.now()}`, ...data };
-      }
-    },
+    getAll: async () => [],
+    create: async (data: any) => ({
+      id: `act-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      ...data,
+      timestamp: new Date().toISOString()
+    }),
+    update: async (id: string, data: any) => ({ id, ...data }),
+    delete: async (_id: string) => ({ success: true })
   },
 
   accounting: {
@@ -967,26 +908,7 @@ export const api = {
       return { success: true };
     },
 
-    getExpenses: async () => {
-      try {
-        const { data, error } = await supabase.from('expenses').select('*');
-        if (error) {
-          if (error.code === '57014' || String(error.message).includes('timeout')) {
-            console.warn('[Supabase] Expenses query timed out, retrying with optimized select...');
-            const { data: retryData, error: retryErr } = await supabase
-              .from('expenses')
-              .select('id, project_code, date, content, amount, category, payment_method, requester, status, notes, created_at, updated_at, updated_by')
-              .order('created_at', { ascending: false });
-            if (!retryErr && retryData) return retryData.map(toCamelCase);
-          }
-          throw error;
-        }
-        return (data || []).map(toCamelCase);
-      } catch (e: any) {
-        console.warn('[Accounting] Error fetching expenses:', e?.message || e);
-        return [];
-      }
-    },
+    getExpenses: async () => [],
     createExpense: async (data: any) => {
       const payload = toSnakeCase(data);
       const { data: result, error } = await supabase.from('expenses').insert(payload).select().single();

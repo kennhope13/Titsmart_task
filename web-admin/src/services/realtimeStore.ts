@@ -2499,21 +2499,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         persistAndNotify({ activityLogs: nextLogs });
         return { activityLogs: nextLogs };
       });
-
-      // Lưu vào DB không đồng bộ (fire-and-forget)
-      api.activityLogs.create({ user: actualUser, action, project, icon, badgeBg, iconColor })
-        .then((saved) => {
-          // Thay thế bản optimistic bằng bản từ DB (có ID thật)
-          set((state) => {
-            const nextLogs = state.activityLogs.map((l) =>
-              l.action === action && l.user === actualUser && l.id.startsWith('act-')
-                ? { ...l, id: saved.id, timestamp: saved.timestamp }
-                : l
-            );
-            return { activityLogs: nextLogs };
-          });
-        })
-        .catch((e) => console.warn('logActivity: failed to persist to DB', e));
     },
   };
 });
@@ -2524,7 +2509,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 const REALTIME_TABLES = [
   'projects', 'tasks', 'materials', 'issues', 'engineers',
   'notifications', 'inventory_transactions',
-  'material_plans', 'purchasing_plans', 'expenses',
+  'material_plans', 'purchasing_plans',
   'labor_payrolls', 'document_tracks', 'field_logs', 'direct_messages'
 ];
 
