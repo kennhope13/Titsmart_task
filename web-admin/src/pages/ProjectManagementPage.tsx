@@ -759,7 +759,7 @@ export const ProjectManagementPage: React.FC = () => {
       <LoadingSpinner loading={loading} message={loadingMessage} />
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
 
-      <section className="border-b border-slate-200 bg-white shadow-xs px-3 md:px-6 md:pr-20 py-2.5 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2 relative z-10 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+      <section className="border-b border-slate-200 bg-white shadow-xs px-3 pr-14 md:px-6 md:pr-20 py-2.5 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2 relative z-10 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 w-full md:w-auto min-w-0">
           <div className="flex items-center justify-between gap-2 shrink-0 h-7 sm:h-8 md:h-auto">
             <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">{TEXT.projectManagement}</h1>
@@ -831,7 +831,7 @@ export const ProjectManagementPage: React.FC = () => {
         onRefresh={async () => {
           await fetchProjects();
         }}
-        className="flex-1 p-3 sm:p-4 pb-28 md:p-6 md:pb-6"
+        className="flex-1 p-3 sm:p-4 pb-6 md:p-6 md:pb-6"
       >
         {isFetchingProjects && projects.length === 0 ? (
           <div className="text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center">

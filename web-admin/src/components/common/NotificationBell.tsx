@@ -1058,7 +1058,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
           ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
           : undefined
       }
-      className={`z-[9990] touch-none select-none ${position ? '' : 'fixed top-3 sm:top-[6px] right-4'}`}
+      className={`z-[9990] touch-none select-none mobile-notif-bell ${position ? '' : 'fixed top-[calc(env(safe-area-inset-top,0px)+8px)] sm:top-[6px] right-3 sm:right-4'}`}
     >
       <button
         onClick={handleBellClick}

@@ -674,10 +674,11 @@ button, input, select, textarea, a, .clickable-tab, [role="button"], .no-drag-re
 }
 /* Mobile Responsive Overrides - Mobile Only (does NOT affect desktop) */
 @media (max-width: 768px) {
-  /* Safe Area Inset for Mobile Status Bar Notch */
-  body {
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* Prevent scrolling overflow on body */
+  html, body {
+    margin: 0;
+    padding: 0 !important;
+    overflow-x: hidden;
   }
 
   /* Hide fixed sidebar desktop element completely on mobile, but keep drawer aside visible */
@@ -685,12 +686,11 @@ button, input, select, textarea, a, .clickable-tab, [role="button"], .no-drag-re
     display: none !important;
   }
 
-  /* Main content container takes 100% full screen width without margin-left and has bottom padding for mobile navbar */
+  /* Main content container takes 100% full screen width without desktop margin-left */
   .layout-content-wrapper {
     margin-left: 0 !important;
     width: 100% !important;
     max-width: 100vw !important;
-    padding-bottom: 0 !important;
   }
 
   /* Shift notification bell down on mobile below status bar notch */

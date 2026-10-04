@@ -355,7 +355,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
       )}
 
       {/* Mobile Bottom Navigation Bar (Shown ONLY on screens <= 768px via css md:hidden) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(56px+env(safe-area-inset-bottom,0px))] bg-white/95 backdrop-blur-md border-t border-slate-200 z-50 flex items-start justify-around px-2 pt-1 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom,0px)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(56px+env(safe-area-inset-bottom,0px))] bg-white/95 backdrop-blur-md border-t border-slate-200 z-50 flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_16px_rgba(0,0,0,0.08)] select-none">
         {(currentProject ? [
           { label: 'Tổng quan', path: `/projects/${currentProject.id}/overview`, icon: 'dashboard' },
           { label: 'Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'fact_check' },
@@ -375,13 +375,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center py-0.5 px-2 rounded-lg transition-colors min-w-[48px] ${
+                `flex flex-col items-center justify-center h-[50px] py-0.5 px-1.5 rounded-lg transition-colors min-w-[48px] ${
                   isActive || isTask ? 'text-primary font-bold' : 'text-slate-500 font-medium hover:text-slate-800'
                 }`
               }
             >
               <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-              <span className="text-[10px] leading-tight truncate max-w-[56px]">{item.label}</span>
+              <span className="text-[10px] leading-tight truncate max-w-[56px] mt-0.5">{item.label}</span>
             </NavLink>
           );
         })}
@@ -389,12 +389,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
         {/* 5th Tab: Nút "Khác..." mở Bottom Sheet tất cả tính năng */}
         <button
           onClick={() => setIsMobileDrawerOpen(true)}
-          className={`flex flex-col items-center justify-center py-0.5 px-2 rounded-lg transition-colors min-w-[48px] ${
+          className={`flex flex-col items-center justify-center h-[50px] py-0.5 px-1.5 rounded-lg transition-colors min-w-[48px] ${
             isMobileDrawerOpen ? 'text-primary font-bold' : 'text-slate-500 font-medium hover:text-slate-800'
           }`}
         >
           <span className="material-symbols-outlined text-[20px]">apps</span>
-          <span className="text-[10px] leading-tight truncate max-w-[56px]">Khác...</span>
+          <span className="text-[10px] leading-tight truncate max-w-[56px] mt-0.5">Khác...</span>
         </button>
       </div>
 
