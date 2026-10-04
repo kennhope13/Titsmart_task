@@ -21,17 +21,16 @@ import {
 interface ChartBoxProps {
   title: string;
   children: React.ReactNode;
-  span?: number;
 }
 
-const ChartBox: React.FC<ChartBoxProps> = React.memo(({ title, children, span = 1 }) => (
+const ChartBox: React.FC<ChartBoxProps> = React.memo(({ title, children }) => (
   <div 
-    className={`flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs h-[330px] xl:col-span-${span} overflow-hidden`}
+    className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs h-[330px] min-w-0 w-full overflow-hidden"
   >
-    <div className="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center">
-      <span className="text-xs md:text-sm font-extrabold text-slate-800 uppercase tracking-tight">{title}</span>
+    <div className="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between min-w-0">
+      <span className="text-xs md:text-sm font-extrabold text-slate-800 uppercase tracking-tight truncate" title={title}>{title}</span>
     </div>
-    <div className="flex-1 h-[275px] relative p-3 overflow-hidden">
+    <div className="flex-1 w-full h-[275px] min-w-0 relative p-3 overflow-hidden">
       {children}
     </div>
   </div>
@@ -397,7 +396,7 @@ export const DashboardPage: React.FC = () => {
   const yAxisWidth = isMobile ? 110 : 200;
 
   return (
-    <div className="flex flex-col flex-1 h-full bg-slate-50 overflow-hidden text-slate-800">
+    <div className="flex flex-col flex-1 h-full w-full min-w-0 max-w-full bg-slate-50 overflow-hidden text-slate-800">
       
       {/* HEADER BAR */}
       <section className="sticky top-0 z-50 border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-start items-start md:items-center gap-4 shrink-0 relative no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
@@ -476,74 +475,74 @@ export const DashboardPage: React.FC = () => {
       </section>
 
       {/* MAIN CONTENT AREA */}
-      <div className="flex-1 overflow-y-auto p-3 md:p-5 space-y-5">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-5 space-y-5 w-full min-w-0 max-w-full">
         
         {/* TOP SUMMARY KPI CARDS */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5 w-full min-w-0">
           
-          <div onClick={() => navigate('/projects')} className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group">
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-primary transition-colors">Tổng dự án</span>
-              <span className="material-symbols-outlined text-primary text-xl bg-blue-50 p-1.5 rounded-lg">folder</span>
+          <div onClick={() => navigate('/projects')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
+            <div className="flex justify-between items-start gap-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-primary transition-colors truncate">Tổng dự án</span>
+              <span className="material-symbols-outlined text-primary text-xl bg-blue-50 p-1.5 rounded-lg shrink-0">folder</span>
             </div>
-            <div className="mt-2">
-              <h3 className="text-2xl font-black text-slate-800">{topMetrics.totalProjects}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">{topMetrics.activeProjects} đang triển khai</p>
-            </div>
-          </div>
-
-          <div onClick={() => navigate('/cost-plan')} className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group">
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-emerald-600 transition-colors">Tổng thực chi</span>
-              <span className="material-symbols-outlined text-emerald-600 text-xl bg-emerald-50 p-1.5 rounded-lg">account_balance_wallet</span>
-            </div>
-            <div className="mt-2">
-              <h3 className="text-xl font-black text-slate-800 truncate" title={formatCurrency(topMetrics.totalActualCost)}>{formatCurrency(topMetrics.totalActualCost)}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">{topMetrics.costPercent}% ngân sách</p>
+            <div className="mt-2 min-w-0">
+              <h3 className="text-xl md:text-2xl font-black text-slate-800 truncate">{topMetrics.totalProjects}</h3>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">{topMetrics.activeProjects} đang triển khai</p>
             </div>
           </div>
 
-          <div onClick={() => navigate('/task-management')} className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group">
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Tổng đầu việc</span>
-              <span className="material-symbols-outlined text-blue-600 text-xl bg-blue-50 p-1.5 rounded-lg">task_alt</span>
+          <div onClick={() => navigate('/cost-plan')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
+            <div className="flex justify-between items-start gap-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-emerald-600 transition-colors truncate">Tổng thực chi</span>
+              <span className="material-symbols-outlined text-emerald-600 text-xl bg-emerald-50 p-1.5 rounded-lg shrink-0">account_balance_wallet</span>
             </div>
-            <div className="mt-2">
-              <h3 className="text-2xl font-black text-slate-800">{topMetrics.totalTasksCount}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">{topMetrics.completedTasksCount} đã xong ({topMetrics.taskPercent}%)</p>
-            </div>
-          </div>
-
-          <div onClick={() => navigate('/documents')} className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group">
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-rose-600 transition-colors">Hồ sơ dự án</span>
-              <span className="material-symbols-outlined text-rose-600 text-xl bg-rose-50 p-1.5 rounded-lg">description</span>
-            </div>
-            <div className="mt-2">
-              <h3 className="text-2xl font-black text-slate-800">{topMetrics.totalDocs}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">{topMetrics.completedDocs} đã hoàn thành/gửi</p>
+            <div className="mt-2 min-w-0">
+              <h3 className="text-lg md:text-xl font-black text-slate-800 truncate" title={formatCurrency(topMetrics.totalActualCost)}>{formatCurrency(topMetrics.totalActualCost)}</h3>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">{topMetrics.costPercent}% ngân sách</p>
             </div>
           </div>
 
-          <div onClick={() => navigate('/material-tracking')} className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group">
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-amber-600 transition-colors">Vật tư & Mua sắm</span>
-              <span className="material-symbols-outlined text-amber-600 text-xl bg-amber-50 p-1.5 rounded-lg">inventory_2</span>
+          <div onClick={() => navigate('/task-management')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
+            <div className="flex justify-between items-start gap-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-blue-600 transition-colors truncate">Tổng đầu việc</span>
+              <span className="material-symbols-outlined text-blue-600 text-xl bg-blue-50 p-1.5 rounded-lg shrink-0">task_alt</span>
             </div>
-            <div className="mt-2">
-              <h3 className="text-2xl font-black text-slate-800">{materialPlans.length}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">{purchasingPlans.length} kế hoạch thu mua</p>
+            <div className="mt-2 min-w-0">
+              <h3 className="text-xl md:text-2xl font-black text-slate-800 truncate">{topMetrics.totalTasksCount}</h3>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">{topMetrics.completedTasksCount} đã xong ({topMetrics.taskPercent}%)</p>
             </div>
           </div>
 
-          <div onClick={() => navigate('/personnel')} className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group">
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-indigo-600 transition-colors">Nhân sự</span>
-              <span className="material-symbols-outlined text-indigo-600 text-xl bg-indigo-50 p-1.5 rounded-lg">groups</span>
+          <div onClick={() => navigate('/documents')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
+            <div className="flex justify-between items-start gap-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-rose-600 transition-colors truncate">Hồ sơ dự án</span>
+              <span className="material-symbols-outlined text-rose-600 text-xl bg-rose-50 p-1.5 rounded-lg shrink-0">description</span>
             </div>
-            <div className="mt-2">
-              <h3 className="text-2xl font-black text-slate-800">{topMetrics.activeEngineers}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">kỹ sư & chuyên viên</p>
+            <div className="mt-2 min-w-0">
+              <h3 className="text-xl md:text-2xl font-black text-slate-800 truncate">{topMetrics.totalDocs}</h3>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">{topMetrics.completedDocs} đã hoàn thành/gửi</p>
+            </div>
+          </div>
+
+          <div onClick={() => navigate('/material-tracking')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
+            <div className="flex justify-between items-start gap-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-amber-600 transition-colors truncate">Vật tư & Mua sắm</span>
+              <span className="material-symbols-outlined text-amber-600 text-xl bg-amber-50 p-1.5 rounded-lg shrink-0">inventory_2</span>
+            </div>
+            <div className="mt-2 min-w-0">
+              <h3 className="text-xl md:text-2xl font-black text-slate-800 truncate">{materialPlans.length}</h3>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">{purchasingPlans.length} kế hoạch thu mua</p>
+            </div>
+          </div>
+
+          <div onClick={() => navigate('/personnel')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
+            <div className="flex justify-between items-start gap-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-indigo-600 transition-colors truncate">Nhân sự</span>
+              <span className="material-symbols-outlined text-indigo-600 text-xl bg-indigo-50 p-1.5 rounded-lg shrink-0">groups</span>
+            </div>
+            <div className="mt-2 min-w-0">
+              <h3 className="text-xl md:text-2xl font-black text-slate-800 truncate">{topMetrics.activeEngineers}</h3>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">kỹ sư & chuyên viên</p>
             </div>
           </div>
 
@@ -555,7 +554,7 @@ export const DashboardPage: React.FC = () => {
             <h3 className="mt-3 font-bold text-slate-700">Chưa có dự án nào</h3>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full min-w-0">
             
             {/* 1. TIẾN ĐỘ THI CÔNG (%) */}
             <ChartBox title="TIẾN ĐỘ THI CÔNG (%)">
