@@ -480,69 +480,89 @@ export const DashboardPage: React.FC = () => {
         {/* TOP SUMMARY KPI CARDS */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5 w-full min-w-0">
           
-          <div onClick={() => navigate('/projects')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
-            <div className="flex justify-between items-start gap-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-primary transition-colors truncate">Tổng dự án</span>
-              <span className="material-symbols-outlined text-primary text-xl bg-blue-50 p-1.5 rounded-lg shrink-0">folder</span>
+          {/* Card 1: Tổng dự án */}
+          <div onClick={() => navigate('/projects')} className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200 shadow-xs hover:shadow-md hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 shrink-0 group-hover:scale-105 transition-transform">
+                <span className="material-symbols-outlined text-[20px]">folder</span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-tight truncate">Tổng dự án</h3>
             </div>
-            <div className="mt-2 min-w-0">
-              <h3 className="text-xl md:text-2xl font-black text-slate-800 truncate">{topMetrics.totalProjects}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">{topMetrics.activeProjects} đang triển khai</p>
-            </div>
-          </div>
-
-          <div onClick={() => navigate('/cost-plan')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
-            <div className="flex justify-between items-start gap-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-emerald-600 transition-colors truncate">Tổng thực chi</span>
-              <span className="material-symbols-outlined text-emerald-600 text-xl bg-emerald-50 p-1.5 rounded-lg shrink-0">account_balance_wallet</span>
-            </div>
-            <div className="mt-2 min-w-0">
-              <h3 className="text-lg md:text-xl font-black text-slate-800 truncate" title={formatCurrency(topMetrics.totalActualCost)}>{formatCurrency(topMetrics.totalActualCost)}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">{topMetrics.costPercent}% ngân sách</p>
+            <div className="text-xl sm:text-2xl font-black text-slate-900 truncate">{topMetrics.totalProjects}</div>
+            <div className="mt-2 text-[11px] font-semibold text-slate-500 truncate">
+              <span className="text-blue-600 font-bold">{topMetrics.activeProjects}</span> đang triển khai
             </div>
           </div>
 
-          <div onClick={() => navigate('/task-management')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
-            <div className="flex justify-between items-start gap-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-blue-600 transition-colors truncate">Tổng đầu việc</span>
-              <span className="material-symbols-outlined text-blue-600 text-xl bg-blue-50 p-1.5 rounded-lg shrink-0">task_alt</span>
+          {/* Card 2: Tổng thực chi */}
+          <div onClick={() => navigate('/cost-plan')} className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 shrink-0 group-hover:scale-105 transition-transform">
+                <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-tight truncate">Tổng thực chi</h3>
             </div>
-            <div className="mt-2 min-w-0">
-              <h3 className="text-xl md:text-2xl font-black text-slate-800 truncate">{topMetrics.totalTasksCount}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">{topMetrics.completedTasksCount} đã xong ({topMetrics.taskPercent}%)</p>
+            <div className="text-lg sm:text-xl font-black text-slate-900 truncate" title={formatCurrency(topMetrics.totalActualCost)}>
+              {formatCurrency(topMetrics.totalActualCost)}
             </div>
-          </div>
-
-          <div onClick={() => navigate('/documents')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
-            <div className="flex justify-between items-start gap-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-rose-600 transition-colors truncate">Hồ sơ dự án</span>
-              <span className="material-symbols-outlined text-rose-600 text-xl bg-rose-50 p-1.5 rounded-lg shrink-0">description</span>
-            </div>
-            <div className="mt-2 min-w-0">
-              <h3 className="text-xl md:text-2xl font-black text-slate-800 truncate">{topMetrics.totalDocs}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">{topMetrics.completedDocs} đã hoàn thành/gửi</p>
+            <div className="mt-2 text-[11px] font-semibold text-slate-500 truncate">
+              <span className="text-emerald-600 font-bold">{topMetrics.costPercent}%</span> ngân sách HĐ
             </div>
           </div>
 
-          <div onClick={() => navigate('/material-tracking')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
-            <div className="flex justify-between items-start gap-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-amber-600 transition-colors truncate">Vật tư & Mua sắm</span>
-              <span className="material-symbols-outlined text-amber-600 text-xl bg-amber-50 p-1.5 rounded-lg shrink-0">inventory_2</span>
+          {/* Card 3: Tổng đầu việc */}
+          <div onClick={() => navigate('/task-management')} className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200 shadow-xs hover:shadow-md hover:border-sky-300 transition-all cursor-pointer flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-600 shrink-0 group-hover:scale-105 transition-transform">
+                <span className="material-symbols-outlined text-[20px]">task_alt</span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-tight truncate">Tổng đầu việc</h3>
             </div>
-            <div className="mt-2 min-w-0">
-              <h3 className="text-xl md:text-2xl font-black text-slate-800 truncate">{materialPlans.length}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">{purchasingPlans.length} kế hoạch thu mua</p>
+            <div className="text-xl sm:text-2xl font-black text-slate-900 truncate">{topMetrics.totalTasksCount}</div>
+            <div className="mt-2 text-[11px] font-semibold text-slate-500 truncate">
+              <span className="text-sky-600 font-bold">{topMetrics.completedTasksCount}</span> đã xong ({topMetrics.taskPercent}%)
             </div>
           </div>
 
-          <div onClick={() => navigate('/personnel')} className="bg-white rounded-xl p-3.5 md:p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group min-w-0">
-            <div className="flex justify-between items-start gap-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-indigo-600 transition-colors truncate">Nhân sự</span>
-              <span className="material-symbols-outlined text-indigo-600 text-xl bg-indigo-50 p-1.5 rounded-lg shrink-0">groups</span>
+          {/* Card 4: Hồ sơ dự án */}
+          <div onClick={() => navigate('/documents')} className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200 shadow-xs hover:shadow-md hover:border-rose-300 transition-all cursor-pointer flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600 shrink-0 group-hover:scale-105 transition-transform">
+                <span className="material-symbols-outlined text-[20px]">description</span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-tight truncate">Hồ sơ dự án</h3>
             </div>
-            <div className="mt-2 min-w-0">
-              <h3 className="text-xl md:text-2xl font-black text-slate-800 truncate">{topMetrics.activeEngineers}</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">kỹ sư & chuyên viên</p>
+            <div className="text-xl sm:text-2xl font-black text-slate-900 truncate">{topMetrics.totalDocs}</div>
+            <div className="mt-2 text-[11px] font-semibold text-slate-500 truncate">
+              <span className="text-rose-600 font-bold">{topMetrics.completedDocs}</span> đã hoàn thành/gửi
+            </div>
+          </div>
+
+          {/* Card 5: Vật tư & Mua sắm */}
+          <div onClick={() => navigate('/material-tracking')} className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200 shadow-xs hover:shadow-md hover:border-amber-300 transition-all cursor-pointer flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 shrink-0 group-hover:scale-105 transition-transform">
+                <span className="material-symbols-outlined text-[20px]">inventory_2</span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-tight truncate">Vật tư & Mua sắm</h3>
+            </div>
+            <div className="text-xl sm:text-2xl font-black text-slate-900 truncate">{materialPlans.length}</div>
+            <div className="mt-2 text-[11px] font-semibold text-slate-500 truncate">
+              <span className="text-amber-600 font-bold">{purchasingPlans.length}</span> kế hoạch thu mua
+            </div>
+          </div>
+
+          {/* Card 6: Nhân sự */}
+          <div onClick={() => navigate('/personnel')} className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200 shadow-xs hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 shrink-0 group-hover:scale-105 transition-transform">
+                <span className="material-symbols-outlined text-[20px]">groups</span>
+              </div>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-tight truncate">Nhân sự</h3>
+            </div>
+            <div className="text-xl sm:text-2xl font-black text-slate-900 truncate">{topMetrics.activeEngineers}</div>
+            <div className="mt-2 text-[11px] font-semibold text-slate-500 truncate">
+              <span className="text-indigo-600 font-bold">{topMetrics.activeEngineers}</span> kỹ sư & chuyên viên
             </div>
           </div>
 
