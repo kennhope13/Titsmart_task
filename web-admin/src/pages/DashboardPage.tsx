@@ -399,15 +399,17 @@ export const DashboardPage: React.FC = () => {
     <div className="flex flex-col flex-1 h-full w-full min-w-0 max-w-full bg-slate-50 overflow-hidden text-slate-800">
       
       {/* HEADER BAR */}
-      <section className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-start items-start md:items-center gap-2 md:gap-4 shrink-0 relative no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full md:w-auto">
-          <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter'] whitespace-nowrap shrink-0">TỔNG QUAN CHUNG</h1>
+      <section className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 md:pr-20 py-2.5 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-4 shrink-0 relative no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 w-full md:w-auto">
+          <div className="flex items-center gap-2 shrink-0">
+            <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter'] whitespace-nowrap shrink-0">TỔNG QUAN CHUNG</h1>
+          </div>
           
-          <div className="relative z-50 no-drag-region electron-no-drag w-full sm:w-auto" ref={filterRef} style={{ WebkitAppRegion: 'no-drag' } as any}>
+          <div className="relative z-50 no-drag-region electron-no-drag w-full md:w-auto" ref={filterRef} style={{ WebkitAppRegion: 'no-drag' } as any}>
             <button 
               onClick={() => setIsFilterOpen(!isFilterOpen)} 
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className="flex items-center justify-between w-full sm:w-64 md:w-72 h-[34px] px-3 bg-white border border-slate-200 rounded-lg shadow-xs text-xs font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer select-none no-drag-region electron-no-drag"
+              className="flex items-center justify-between w-full md:w-72 h-[34px] px-3 bg-white border border-slate-200 rounded-lg shadow-xs text-xs font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer select-none no-drag-region electron-no-drag"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span className="material-symbols-outlined text-[18px] text-slate-400 shrink-0">filter_list</span>
@@ -417,7 +419,7 @@ export const DashboardPage: React.FC = () => {
             </button>
             
             {isFilterOpen && (
-              <div className="absolute top-full left-0 mt-2 w-72 md:w-80 bg-white border border-slate-200 shadow-xl rounded-lg z-50 overflow-hidden flex flex-col">
+              <div className="absolute top-full left-0 mt-1.5 w-full sm:w-80 max-w-[calc(100vw-24px)] bg-white border border-slate-200 shadow-xl rounded-lg z-50 overflow-hidden flex flex-col">
                 <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                   <span className="font-bold text-sm text-slate-700">Chọn dự án so sánh</span>
                   <button 
