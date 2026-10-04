@@ -11,11 +11,11 @@ import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
 import { appendTaskDiscussion, parseTaskDiscussions, getLatestDiscussion, stripDiscussionThread } from '../utils/taskDiscussion';
 import { getEngineersForProject } from '../utils/projectMemberUtils';
 import { uploadAttachment } from '../utils/fileUploadHelper';
-import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower, getTaskFollowerNames } from '../utils/taskPermission';
+import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower, getTaskFollowerNames, isTaskReadyForAssignment } from '../utils/taskPermission';
 
 export const TaskAssignmentPage: React.FC = () => {
   const navigate = useNavigate();
-  const { tasks, projects, engineers, updateTask } = useRealtimeStore();
+  const { tasks, projects, engineers, updateTask, materialPlans } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -749,14 +749,26 @@ export const TaskAssignmentPage: React.FC = () => {
   }, [isHighlightActive, highlightedTaskId, highlightKeyword, projectDisplayedTasks, directDisplayedTasks]);
 
   const handleToggleSelectAll = () => {
-    if (selectedTaskIds.length === projectDisplayedTasks.length && projectDisplayedTasks.length > 0) {
+    const readyTasks = projectDisplayedTasks.filter(t => isTaskReadyForAssignment(t, materialPlans).ready);
+    if (selectedTaskIds.length === readyTasks.length && readyTasks.length > 0) {
       setSelectedTaskIds([]);
     } else {
-      setSelectedTaskIds(projectDisplayedTasks.map(t => t.id));
+      setSelectedTaskIds(readyTasks.map(t => t.id));
+      if (readyTasks.length < projectDisplayedTasks.length) {
+        triggerToast(`Đã chọn ${readyTasks.length}/${projectDisplayedTasks.length} công việc đủ điều kiện giao việc (Tình trạng "Đáp ứng" & TT Đặt hàng "Đã có hàng").`, 'info');
+      }
     }
   };
 
   const handleToggleTask = (id: string) => {
+    const targetTask = tasks.find(t => t.id === id);
+    if (targetTask && !selectedTaskIds.includes(id)) {
+      const check = isTaskReadyForAssignment(targetTask, materialPlans);
+      if (!check.ready) {
+        triggerToast(check.reason || 'Công việc chưa đủ điều kiện giao việc!', 'warning');
+        return;
+      }
+    }
     setSelectedTaskIds(prev => 
       prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]
     );
@@ -769,6 +781,13 @@ export const TaskAssignmentPage: React.FC = () => {
     }
     if (selectedTaskIds.length === 0) {
       triggerToast('Vui lòng chọn ít nhất 1 hạng mục!', 'warning');
+      return;
+    }
+
+    const invalidTasks = selectedTaskIds.map(id => tasks.find(t => t.id === id)).filter(Boolean).filter(t => !isTaskReadyForAssignment(t, materialPlans).ready);
+    if (invalidTasks.length > 0) {
+      const firstInvalid = invalidTasks[0];
+      triggerToast(firstInvalid ? isTaskReadyForAssignment(firstInvalid, materialPlans).reason || 'Có công việc chưa đủ điều kiện giao việc!' : 'Công việc chưa đủ điều kiện giao việc!', 'warning');
       return;
     }
 
@@ -1377,19 +1396,31 @@ export const TaskAssignmentPage: React.FC = () => {
                               onClick={() => handleRowClick(t, p?.code || t.projectCode)}
                               title="Nhấn vào dòng này để xem chi tiết công việc trong dự án"
                             >
-                              {projectFilterStatus === 'unassigned' && (
-                                <td className="py-2.5 px-3 text-center border-r border-slate-200 w-10" onClick={e => e.stopPropagation()}>
-                                  <input 
-                                    type="checkbox" 
-                                    className="w-4 h-4 cursor-pointer accent-primary"
-                                    checked={isChecked}
-                                    onChange={() => handleToggleTask(t.id)}
-                                  />
-                                </td>
-                              )}
+                              {projectFilterStatus === 'unassigned' && (() => {
+                                const readiness = isTaskReadyForAssignment(t, materialPlans);
+                                return (
+                                  <td className="py-2.5 px-3 text-center border-r border-slate-200 w-10" onClick={e => e.stopPropagation()}>
+                                    <input 
+                                      type="checkbox" 
+                                      className={`w-4 h-4 accent-primary ${readiness.ready ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}`}
+                                      checked={isChecked}
+                                      disabled={!readiness.ready}
+                                      title={readiness.ready ? 'Chọn để giao việc' : readiness.reason}
+                                      onChange={() => handleToggleTask(t.id)}
+                                    />
+                                  </td>
+                                );
+                              })()}
                               <td className="py-2.5 px-4 border-r border-slate-200">
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="font-bold text-slate-900 group-hover:text-primary transition-colors text-xs">{t.name}</span>
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                                    <span className="font-bold text-slate-900 group-hover:text-primary transition-colors text-xs">{t.name}</span>
+                                    {!isTaskReadyForAssignment(t, materialPlans).ready && (
+                                      <span className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.2 rounded shrink-0 whitespace-nowrap" title={isTaskReadyForAssignment(t, materialPlans).reason}>
+                                        Chưa đủ ĐK giao
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="material-symbols-outlined text-[15px] text-slate-300 group-hover:text-primary transition-colors shrink-0" title="Đi đến dự án">
                                     arrow_forward
                                   </span>

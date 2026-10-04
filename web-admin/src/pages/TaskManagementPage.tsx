@@ -18,7 +18,7 @@ import { appendTaskDiscussion, getLatestDiscussion, stripDiscussionThread } from
 import { getEngineersForProject } from '../utils/projectMemberUtils';
 import { uploadAttachment } from '../utils/fileUploadHelper';
 import { PullToRefresh } from '../components/common/PullToRefresh';
-import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower } from '../utils/taskPermission';
+import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower, isTaskReadyForAssignment } from '../utils/taskPermission';
 
 // Convert integer to Roman numeral
 const toRoman = (num: number): string => {
@@ -2513,6 +2513,11 @@ const hasSyncedRef = useRef(false);
                           onClick={(e) => {
                             if (hasPermission(authStore.user, 'ASSIGN_TASKS')) {
                               e.stopPropagation();
+                              const readiness = isTaskReadyForAssignment(t, materialPlans);
+                              if (!readiness.ready) {
+                                triggerToast(readiness.reason || 'Hạng mục chưa đủ điều kiện giao việc (cần Tình trạng "Đáp ứng" và TT Đặt hàng "Đã có hàng")!', 'warning');
+                                return;
+                              }
                               setAssigningTask(t);
                               setAssignNote('');
                               const parts = t.assignedEngineerName?.split('|') || [];
@@ -2522,9 +2527,25 @@ const hasSyncedRef = useRef(false);
                           }}
                         >
                           <div className="flex flex-col gap-1 items-center justify-center pointer-events-none">
-                            {t.assignedEngineerId && (t.assignedEngineerName?.split('|')[0] || '').split(',').filter((n: string) => n.trim()).map((name: string, i: number) => (
-                              <span key={i} className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1 rounded truncate w-full max-w-[100px]" title={name.trim()}>{name.trim()}</span>
-                            ))}
+                            {t.assignedEngineerId ? (
+                              (t.assignedEngineerName?.split('|')[0] || '').split(',').filter((n: string) => n.trim()).map((name: string, i: number) => (
+                                <span key={i} className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1 rounded truncate w-full max-w-[100px]" title={name.trim()}>{name.trim()}</span>
+                              ))
+                            ) : (() => {
+                              const readiness = isTaskReadyForAssignment(t, materialPlans);
+                              if (!readiness.ready) {
+                                return (
+                                  <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded truncate w-full max-w-[105px] block leading-tight" title={readiness.reason}>
+                                    Chưa đủ ĐK giao
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="text-[10px] text-slate-400 font-medium group-hover:text-primary transition-colors">
+                                  + Giao việc
+                                </span>
+                              );
+                            })()}
 
                             {t.status === 'Có thắc mắc' && (
                               <button 
@@ -2709,6 +2730,11 @@ const hasSyncedRef = useRef(false);
             <button 
               onClick={async () => {
                 if (!assigningTask) return;
+                const readiness = isTaskReadyForAssignment(assigningTask, materialPlans);
+                if (!readiness.ready) {
+                  triggerToast(readiness.reason || 'Hạng mục chưa đủ điều kiện giao việc!', 'warning');
+                  return;
+                }
                 const selectedEngs = engineers.filter(e => assigningUserIds.includes(e.id));
                 const names = selectedEngs.map(e => e.name).join(', ');
                 const ids = selectedEngs.map(e => e.id).join(',');

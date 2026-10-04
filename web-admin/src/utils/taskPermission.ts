@@ -1,5 +1,5 @@
 import { AuthUser } from '../services/authStore';
-import { Task, Engineer } from '../types';
+import { Task, Engineer, ProjectMaterialPlan } from '../types';
 
 /**
  * Normalizes a string for comparison (trims, lowercases, NFC)
@@ -256,4 +256,109 @@ export const getTaskFollowerNames = (task: Task | null | undefined, engineers?: 
   }
 
   return [];
+};
+
+/**
+ * Resolves the technical/material status (Tình trạng) for a task
+ */
+export const getTaskTechSpecStatus = (task: Task | null | undefined, materialPlans?: ProjectMaterialPlan[]): string => {
+  if (!task) return '';
+  if (task.techSpecStatus) return task.techSpecStatus;
+
+  // Check from task notes tag [tech-status:...]
+  const m = String(task.notes || '').match(/\[tech-status:([^\]]+)\]/i);
+  if (m && m[1]) return m[1].trim();
+
+  // Check from matching MaterialPlan
+  if (materialPlans && materialPlans.length > 0 && task.projectCode) {
+    const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const matched = materialPlans.find(mp => 
+      mp.projectCode === task.projectCode &&
+      norm(mp.stt) === norm(task.stt) &&
+      norm(mp.jobContent || (mp as any).name) === norm(task.name)
+    );
+    if (matched) {
+      if (matched.techSpecStatus) return matched.techSpecStatus;
+      const mpTag = String(matched.notes || '').match(/\[tech-status:([^\]]+)\]/i);
+      if (mpTag && mpTag[1]) return mpTag[1].trim();
+    }
+  }
+
+  return '';
+};
+
+/**
+ * Resolves the purchasing / order status (TT Đặt hàng) for a task
+ */
+export const getTaskPurchaseStatus = (task: Task | null | undefined, materialPlans?: ProjectMaterialPlan[]): string => {
+  if (!task) return '';
+  if (task.purchaseStatus) return task.purchaseStatus;
+
+  if (materialPlans && materialPlans.length > 0 && task.projectCode) {
+    const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const matched = materialPlans.find(mp => 
+      mp.projectCode === task.projectCode &&
+      norm(mp.stt) === norm(task.stt) &&
+      norm(mp.jobContent || (mp as any).name) === norm(task.name)
+    );
+    if (matched && matched.orderedStatus) return matched.orderedStatus;
+  }
+
+  return '';
+};
+
+/**
+ * Checks if a task meets the mandatory prerequisites to be assigned:
+ * - Tình trạng: phải là 'Đáp ứng'
+ * - TT Đặt hàng: phải là 'Đã có hàng' hoặc 'Có hàng'
+ * Direct / internal tasks without material tracking are exempt.
+ */
+export const isTaskReadyForAssignment = (
+  task: Task | null | undefined,
+  materialPlans?: ProjectMaterialPlan[]
+): { ready: boolean; reason?: string } => {
+  if (!task) return { ready: false, reason: 'Công việc không tồn tại' };
+
+  if (task.isSectionHeader) return { ready: false, reason: 'Không thể giao đầu mục nhóm' };
+
+  // Direct / Company internal tasks without material tracking can be assigned directly
+  const isDirectTask = task.sectionName === 'Giao việc trực tiếp' || 
+                       task.projectCode === 'COMPANY' || 
+                       task.code?.startsWith('TASK-DIRECT') ||
+                       (!task.projectCode && !task.stt);
+  if (isDirectTask) {
+    return { ready: true };
+  }
+
+  const rawTech = getTaskTechSpecStatus(task, materialPlans);
+  const rawPurchase = getTaskPurchaseStatus(task, materialPlans);
+
+  const techStatus = normalizeText(rawTech);
+  const purchaseStatus = normalizeText(rawPurchase);
+
+  const isTechOk = techStatus === 'đáp ứng' || techStatus === 'dap ung';
+  const isPurchaseOk = purchaseStatus === 'đã có hàng' || purchaseStatus === 'da co hang' || purchaseStatus === 'có hàng' || purchaseStatus === 'co hang';
+
+  if (!isTechOk && !isPurchaseOk) {
+    return {
+      ready: false,
+      reason: `Hạng mục "${task.name}" chưa đủ điều kiện giao việc: Tình trạng cần là "Đáp ứng" (hiện tại: ${rawTech || 'Chưa xác định'}) và TT Đặt hàng cần là "Đã có hàng" (hiện tại: ${rawPurchase || 'Chưa đặt hàng'}).`
+    };
+  }
+
+  if (!isTechOk) {
+    return {
+      ready: false,
+      reason: `Hạng mục "${task.name}" chưa đủ điều kiện giao việc: Tình trạng cần là "Đáp ứng" (hiện tại: ${rawTech || 'Chưa xác định'}).`
+    };
+  }
+
+  if (!isPurchaseOk) {
+    return {
+      ready: false,
+      reason: `Hạng mục "${task.name}" chưa đủ điều kiện giao việc: TT Đặt hàng cần là "Đã có hàng" (hiện tại: ${rawPurchase || 'Chưa đặt hàng'}).`
+    };
+  }
+
+  return { ready: true };
 };

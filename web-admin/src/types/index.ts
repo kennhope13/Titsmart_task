@@ -40,6 +40,7 @@ export interface Task {
   status: TaskStatus;
   purchaseStatus: string;
   constrStatus: string;
+  techSpecStatus?: string;
   issue?: string;
   issueStatus?: string;
   isDone: boolean;
