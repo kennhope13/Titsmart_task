@@ -29,6 +29,7 @@ import { UpdateNotifier } from './components/common/UpdateNotifier';
 import { GlobalNotificationToast } from './components/common/GlobalNotificationToast';
 import { ChatWidget } from './components/common/ChatWidget';
 import { LogoutBlockingModal } from './components/common/LogoutBlockingModal';
+import { requestSystemNotificationPermission } from './services/systemNotificationService';
 
 
 const ProtectedLayout: React.FC = () => {
@@ -173,6 +174,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     if (!user) return;
+    requestSystemNotificationPermission();
     fetchProjects();
     fetchTasks();
     fetchMaterials();

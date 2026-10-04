@@ -3,33 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { useAuthStore } from '../../services/authStore';
 import { useUIStore } from '../../services/uiStore';
+import { sendSystemNotification, requestSystemNotificationPermission } from '../../services/systemNotificationService';
 
 interface NotificationBellProps {
   isSidebar?: boolean;
   isExpanded?: boolean;
 }
-
-const playNotificationSound = () => {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.3);
-    setTimeout(() => {
-      try { ctx.close(); } catch {}
-    }, 500);
-  } catch {}
-};
 
 const isNotificationForUser = (notification: any, user: any, engineers: any[] = []) => {
   if (!user) return true;
@@ -746,6 +725,43 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
   const unreadNotifications = useMemo(() => displayNotifications.filter(item => !item.read), [displayNotifications]);
   const unreadCount = unreadNotifications.length;
   const activeNotifications = activeTab === 'unread' ? unreadNotifications : displayNotifications;
+
+  // ─── TỰ ĐỘNG BẮN THÔNG BÁO RA HỆ ĐIỀU HÀNH (DESKTOP BANNER + MOBILE LOCKSCREEN) ───
+  const isInitialNotifLoadRef = useRef(true);
+  const knownNotificationIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    requestSystemNotificationPermission();
+  }, []);
+
+  useEffect(() => {
+    if (displayNotifications.length === 0) return;
+
+    if (isInitialNotifLoadRef.current) {
+      isInitialNotifLoadRef.current = false;
+      displayNotifications.forEach(n => knownNotificationIdsRef.current.add(n.id));
+      return;
+    }
+
+    // Lọc các thông báo mới chưa đọc vừa được gửi tới
+    const newlyArrived = displayNotifications.filter(n => !n.read && !knownNotificationIdsRef.current.has(n.id));
+
+    if (newlyArrived.length > 0) {
+      const topNotif = newlyArrived[0];
+      const cleanTitle = (topNotif.title || 'Thông báo TITSMART')
+        .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '')
+        .trim();
+
+      sendSystemNotification({
+        id: topNotif.id,
+        title: cleanTitle || 'Thông báo mới',
+        body: topNotif.message || 'Bạn có thông báo mới từ hệ thống TITSMART.',
+        url: topNotif.link
+      });
+
+      newlyArrived.forEach(n => knownNotificationIdsRef.current.add(n.id));
+    }
+  }, [displayNotifications]);
 
   useEffect(() => {
     // Initial fetch
