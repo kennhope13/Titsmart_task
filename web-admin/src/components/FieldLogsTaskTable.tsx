@@ -297,25 +297,25 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
         setIsScrolledHorizontally(scrollLeft > 10);
       }}
     >
-      <table className="min-w-[950px] w-full text-left text-xs text-slate-600 border-collapse table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
+      <table className="min-w-[680px] w-full text-left text-xs text-slate-600 border-collapse table-fixed" style={{ "--stt-width": `${maxSttWidth}px` } as React.CSSProperties}>
         <colgroup>
           <col style={{ width: "var(--stt-width)" }} />
-          <col style={{ width: 260 }} />
-          <col style={{ width: 120 }} />
-          <col style={{ width: 90 }} />
-          <col style={{ width: 240 }} />
-          <col style={{ width: 135 }} />
-          <col style={{ width: 60 }} />
+          <col style={{ width: 180 }} />
+          <col style={{ width: 95 }} />
+          <col style={{ width: 65 }} />
+          <col style={{ width: 160 }} />
+          <col style={{ width: 110 }} />
+          <col style={{ width: 45 }} />
         </colgroup>
         <thead className="bg-slate-50 text-[10px] md:text-xs uppercase text-slate-500 font-bold sticky top-0 z-20 shadow-sm border-b border-slate-200">
           <tr>
-            <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-slate-50 text-center border-b border-r border-slate-200 whitespace-nowrap tracking-tighter">STT</th>
-            <th className="sticky left-0 z-30 py-2 px-2 min-w-[180px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal font-bold shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">NỘI DUNG CÔNG VIỆC</th>
-            <th className="py-2 px-1.5 border-b border-r border-slate-200 min-w-[90px] text-center whitespace-nowrap">THỜI GIAN</th>
-            <th className="py-2 px-1.5 border-b border-r border-slate-200 min-w-[75px] text-center whitespace-nowrap">ẢNH</th>
-            <th className="py-2 px-2 border-b border-r border-slate-200 min-w-[130px] whitespace-nowrap">NỘI DUNG</th>
-            <th className="py-2 px-1.5 border-b border-r border-slate-200 min-w-[95px] text-center whitespace-nowrap">NGƯỜI CẬP NHẬT</th>
-            <th className="py-2 px-1 border-b min-w-[50px] text-center whitespace-nowrap">TT</th>
+            <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="sticky left-0 z-30 py-2 px-0 bg-slate-50 text-center border-b border-r border-slate-200 whitespace-nowrap tracking-tighter">STT</th>
+            <th style={{ left: "var(--stt-width)" }} className="sticky z-30 py-2 px-2 min-w-[150px] bg-slate-50 border-b border-r border-slate-200 whitespace-normal font-bold shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">NỘI DUNG CÔNG VIỆC</th>
+            <th className="py-2 px-1.5 border-b border-r border-slate-200 min-w-[85px] text-center whitespace-nowrap">THỜI GIAN</th>
+            <th className="py-2 px-1 border-b border-r border-slate-200 min-w-[55px] text-center whitespace-nowrap">ẢNH</th>
+            <th className="py-2 px-2 border-b border-r border-slate-200 min-w-[120px] whitespace-nowrap">GHI CHÚ</th>
+            <th className="py-2 px-1.5 border-b border-r border-slate-200 min-w-[90px] text-center whitespace-nowrap">NGƯỜI CẬP NHẬT</th>
+            <th className="py-2 px-1 border-b min-w-[40px] text-center whitespace-nowrap">TT</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200">
@@ -330,8 +330,8 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                 const isCollapsed = collapsedSections.has(t._sectionKey || '');
                 return (
                   <tr key={t.id} className="group bg-[#eff6ff] border-t-2 border-b border-blue-200 font-bold text-primary">
-                    <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-[#eff6ff] border-r border-blue-200 text-center font-mono font-extrabold text-[11px] text-primary whitespace-nowrap tracking-tighter" title={String(t.computedStt || t.stt)}>{t.computedStt || t.stt}</td>
-                    <td className="sticky left-0 z-10 py-2 px-2 bg-[#eff6ff] uppercase tracking-tight font-extrabold text-xs text-primary border-r border-blue-200 min-w-[180px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                    <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="sticky left-0 z-10 py-2 px-0 bg-[#eff6ff] border-r border-blue-200 text-center font-mono font-extrabold text-[11px] text-primary whitespace-nowrap tracking-tighter" title={String(t.computedStt || t.stt)}>{t.computedStt || t.stt}</td>
+                    <td style={{ left: "var(--stt-width)" }} className="sticky z-10 py-2 px-2 bg-[#eff6ff] uppercase tracking-tight font-extrabold text-xs text-primary border-r border-blue-200 min-w-[150px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                       <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden">
                         <button
                           onClick={() => toggleSection(t._sectionKey || '')}
@@ -372,10 +372,10 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
 
               return (
                 <tr key={t.id} onClick={(e) => { e.stopPropagation(); setViewAllLogsTask(t); }} className="hover:bg-blue-50/30 transition-colors group cursor-pointer border-b border-slate-100">
-                  <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-1 px-0 bg-white border-r border-slate-200 text-center font-mono text-[11px] whitespace-nowrap tracking-tighter ${depth === 1 ? 'font-bold text-slate-700' : 'text-slate-500'}`}>
+                  <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`sticky left-0 z-10 py-1 px-0 bg-white group-hover:bg-blue-50/40 border-r border-slate-200 text-center font-mono text-[11px] whitespace-nowrap tracking-tighter ${depth === 1 ? 'font-bold text-slate-700' : 'text-slate-500'}`}>
                     {t.computedStt || t.stt}
                   </td>
-                  <td className={`sticky left-0 z-10 py-1 px-2 bg-white border-r border-slate-200 ${fontStyle} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}>
+                  <td style={{ left: "var(--stt-width)" }} className={`sticky z-10 py-1 px-2 bg-white group-hover:bg-blue-50/40 border-r border-slate-200 ${fontStyle} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}>
                     <div className="flex items-center gap-1 min-w-0 w-full" style={{ paddingLeft: `${Math.max(0, depth - 1) * 0.4}rem` }}>
                       {depth > 1 && <span className="material-symbols-outlined text-slate-400 text-[12px] shrink-0">subdirectory_arrow_right</span>}
                       <span className="text-slate-800 leading-snug break-words flex-1 min-w-0" title={t.name}>{t.name}</span>
@@ -410,7 +410,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                     )}
                   </td>
                   {/* CỘT ẢNH NHẬT KÝ */}
-                  <td className="py-1 px-1.5 border-r border-slate-200 text-center">
+                  <td className="py-1 px-1 border-r border-slate-200 text-center">
                     <div className="flex items-center justify-center gap-1">
                       {allImagesForTask.length > 0 ? (
                         <>
@@ -430,7 +430,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                       )}
                     </div>
                   </td>
-                  {/* CỘT NỘI DUNG NHẬT KÝ */}
+                  {/* CỘT GHI CHÚ NHẬT KÝ */}
                   <td className="py-1 px-2 border-r border-slate-200 text-slate-600 text-[11px] truncate" title={allNotesForTask.map(n => n.note).join(' | ')}>
                     {allNotesForTask.length > 0 ? (
                       <span className="truncate block leading-tight">{allNotesForTask[0].note}</span>
