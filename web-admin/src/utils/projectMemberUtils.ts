@@ -31,6 +31,21 @@ export const getEngineersForProject = (
   const pCodeUpper = targetProject ? norm(targetProject.code) : searchKey;
   const pIdUpper = targetProject ? norm(targetProject.id) : searchKey;
   const pNameUpper = targetProject ? norm(targetProject.name) : '';
+
+  // Nếu là dự án chung / Chi phí văn phòng, trả về toàn bộ nhân sự
+  if (
+    searchKey === 'COMPANY' || 
+    searchKey === 'OFFICE' || 
+    searchKey === 'VAN_PHONG' || 
+    searchKey === 'CHI_PHI_VAN_PHONG' ||
+    pCodeUpper === 'CHI_PHI_VAN_PHONG' ||
+    pCodeUpper === 'COMPANY' ||
+    pNameUpper.includes('CHI PHI VAN PHONG') ||
+    pNameUpper.includes('VAN PHONG')
+  ) {
+    return engineers || [];
+  }
+
   const managerNames = targetProject?.managerName 
     ? targetProject.managerName.split(',').map(s => norm(s)).filter(Boolean)
     : [];
@@ -125,6 +140,18 @@ export const isUserMemberOfProject = (
   const pCodeUpper = norm(project.code);
   const pIdUpper = norm(project.id);
   const pNameUpper = norm(project.name);
+
+  // 0. Dự án nội bộ / Chi phí văn phòng / Chung công ty luôn hiển thị cho tất cả thành viên
+  const isCompanyInternalProject = 
+    pCodeUpper === 'COMPANY' || 
+    pCodeUpper === 'OFFICE' || 
+    pCodeUpper === 'VAN_PHONG' || 
+    pCodeUpper === 'CHI_PHI_VAN_PHONG' ||
+    pNameUpper.includes('CHI PHI VAN PHONG') ||
+    pNameUpper.includes('VAN PHONG');
+  if (isCompanyInternalProject) {
+    return true;
+  }
 
   // 1. Check if user is manager of project
   if (project.managerId && (norm(project.managerId) === userId || norm(project.managerId) === userUsername)) {

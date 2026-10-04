@@ -47,7 +47,7 @@ export const OfficeCostsPage: React.FC = () => {
   const { user } = useAuthStore();
   const { expenses, projects, engineers, addExpense, addExpensesBatch, updateExpense, deleteExpense } = useRealtimeStore();
 
-  const currentProjExpenses = useMemo(() => expenses.filter(e => e.projectCode === 'OFFICE' || e.projectCode === 'VAN_PHONG').sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()), [expenses]);
+  const currentProjExpenses = useMemo(() => expenses.filter(e => e.projectCode === 'OFFICE' || e.projectCode === 'VAN_PHONG' || e.projectCode === 'CHI_PHI_VAN_PHONG' || e.projectCode === 'COMPANY').sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()), [expenses]);
 
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'warning' | 'info' }>({ show: false, message: '', type: 'success' });
   const triggerToast = (message: string, type: 'success' | 'warning' | 'info' = 'success') => {

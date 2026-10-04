@@ -324,10 +324,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
   const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({ startX: 0, startY: 0, initX: 0, initY: 0 });
   const hasMovedRef = useRef(false);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    // Only left click or touch
-    if (e.button !== 0 && e.pointerType === 'mouse') return;
-
+  const startDrag = (clientX: number, clientY: number) => {
     const bellElem = popoverRef.current;
     if (!bellElem) return;
 
@@ -338,38 +335,75 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     isDraggingRef.current = true;
     hasMovedRef.current = false;
     dragStartRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
+      startX: clientX,
+      startY: clientY,
       initX: currentX,
       initY: currentY,
     };
-
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
+  const moveDrag = (clientX: number, clientY: number) => {
     if (!isDraggingRef.current) return;
 
-    const dx = e.clientX - dragStartRef.current.startX;
-    const dy = e.clientY - dragStartRef.current.startY;
+    const dx = clientX - dragStartRef.current.startX;
+    const dy = clientY - dragStartRef.current.startY;
 
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
       hasMovedRef.current = true;
     }
 
-    const newX = Math.max(10, Math.min(window.innerWidth - 50, dragStartRef.current.initX + dx));
-    const newY = Math.max(10, Math.min(window.innerHeight - 50, dragStartRef.current.initY + dy));
+    const maxX = Math.max(10, window.innerWidth - 46);
+    const maxY = Math.max(10, window.innerHeight - 46);
+    const newX = Math.max(8, Math.min(maxX, dragStartRef.current.initX + dx));
+    const newY = Math.max(8, Math.min(maxY, dragStartRef.current.initY + dy));
 
     setPosition({ x: newX, y: newY });
   };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
+  const endDrag = () => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
+  };
 
+  // iOS / Mobile Touch Handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    startDrag(touch.clientX, touch.clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (!touch || !isDraggingRef.current) return;
+    if (e.cancelable) {
+      e.preventDefault(); // Stop iOS Safari viewport scrolling while dragging
+    }
+    moveDrag(touch.clientX, touch.clientY);
+  };
+
+  const handleTouchEnd = () => {
+    endDrag();
+  };
+
+  // Desktop Mouse / Pointer Handlers
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return;
+    if (e.button !== 0) return;
+    startDrag(e.clientX, e.clientY);
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return;
+    moveDrag(e.clientX, e.clientY);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return;
+    endDrag();
     try {
       (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-    } catch (err) {}
+    } catch {}
   };
 
   const handleBellClick = (e: React.MouseEvent) => {
