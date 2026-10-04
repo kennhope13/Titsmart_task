@@ -27,6 +27,7 @@ import { App as CapApp } from '@capacitor/app';
 
 import { UpdateNotifier } from './components/common/UpdateNotifier';
 import { GlobalNotificationToast } from './components/common/GlobalNotificationToast';
+import { NotificationBell } from './components/common/NotificationBell';
 import { ChatWidget } from './components/common/ChatWidget';
 import { LogoutBlockingModal } from './components/common/LogoutBlockingModal';
 import { requestSystemNotificationPermission } from './services/systemNotificationService';
@@ -197,7 +198,8 @@ export const App: React.FC = () => {
       <UpdateNotifier />
       <GlobalNotificationToast />
       <LogoutBlockingModal />
-      {/* ChatWidget rendered at root level to avoid z-index stacking context issues from Layout */}
+      {/* Floating widgets rendered at root level to avoid z-index stacking context and overflow issues from Layout */}
+      {user && <NotificationBell />}
       <ChatWidget />
 
       {exitToast && (

@@ -323,87 +323,53 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({ startX: 0, startY: 0, initX: 0, initY: 0 });
   const hasMovedRef = useRef(false);
+  const buttonRef = useRef<HTMLDivElement>(null);
 
-  const startDrag = (clientX: number, clientY: number) => {
-    const bellElem = popoverRef.current;
-    if (!bellElem) return;
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
 
-    const rect = bellElem.getBoundingClientRect();
+    const btnElem = buttonRef.current;
+    if (!btnElem) return;
+
+    const rect = btnElem.getBoundingClientRect();
     const currentX = position ? position.x : rect.left;
     const currentY = position ? position.y : rect.top;
 
     isDraggingRef.current = true;
     hasMovedRef.current = false;
     dragStartRef.current = {
-      startX: clientX,
-      startY: clientY,
+      startX: e.clientX,
+      startY: e.clientY,
       initX: currentX,
       initY: currentY,
     };
-  };
 
-  const moveDrag = (clientX: number, clientY: number) => {
-    if (!isDraggingRef.current) return;
-
-    const dx = clientX - dragStartRef.current.startX;
-    const dy = clientY - dragStartRef.current.startY;
-
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-      hasMovedRef.current = true;
-    }
-
-    const maxX = Math.max(10, window.innerWidth - 46);
-    const maxY = Math.max(10, window.innerHeight - 46);
-    const newX = Math.max(8, Math.min(maxX, dragStartRef.current.initX + dx));
-    const newY = Math.max(8, Math.min(maxY, dragStartRef.current.initY + dy));
-
-    setPosition({ x: newX, y: newY });
-  };
-
-  const endDrag = () => {
-    if (!isDraggingRef.current) return;
-    isDraggingRef.current = false;
-  };
-
-  // iOS / Mobile Touch Handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    if (!touch) return;
-    startDrag(touch.clientX, touch.clientY);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    if (!touch || !isDraggingRef.current) return;
-    if (e.cancelable) {
-      e.preventDefault(); // Stop iOS Safari viewport scrolling while dragging
-    }
-    moveDrag(touch.clientX, touch.clientY);
-  };
-
-  const handleTouchEnd = () => {
-    endDrag();
-  };
-
-  // Desktop Mouse / Pointer Handlers
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (e.pointerType === 'touch') return;
-    if (e.button !== 0) return;
-    startDrag(e.clientX, e.clientY);
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (e.pointerType === 'touch') return;
-    moveDrag(e.clientX, e.clientY);
+    if (!isDraggingRef.current) return;
+
+    const dx = e.clientX - dragStartRef.current.startX;
+    const dy = e.clientY - dragStartRef.current.startY;
+
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      hasMovedRef.current = true;
+    }
+
+    const newX = Math.max(10, Math.min(window.innerWidth - 50, dragStartRef.current.initX + dx));
+    const newY = Math.max(10, Math.min(window.innerHeight - 50, dragStartRef.current.initY + dy));
+
+    setPosition({ x: newX, y: newY });
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (e.pointerType === 'touch') return;
-    endDrag();
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+
     try {
       (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-    } catch {}
+    } catch (err) {}
   };
 
   const handleBellClick = (e: React.MouseEvent) => {
@@ -414,6 +380,42 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     }
     setShowPopover(!showPopover);
   };
+
+  useEffect(() => {
+    const clampPos = () => {
+      setPosition(prev => {
+        if (!prev) return null;
+        const maxX = window.innerWidth - 50;
+        const maxY = window.innerHeight - 50;
+        const clampedX = Math.max(10, Math.min(maxX, prev.x));
+        const clampedY = Math.max(10, Math.min(maxY, prev.y));
+        if (clampedX !== prev.x || clampedY !== prev.y) {
+          return { x: clampedX, y: clampedY };
+        }
+        return prev;
+      });
+    };
+
+    clampPos();
+    window.addEventListener('resize', clampPos);
+    return () => window.removeEventListener('resize', clampPos);
+  }, []);
+
+  // Click outside listener for notification popover
+  useEffect(() => {
+    if (!showPopover) return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (buttonRef.current && !buttonRef.current.contains(e.target as Node)) {
+        setShowPopover(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showPopover]);
 
   // Per-user dismissed/cleared notification IDs (so each user account only deletes notifications for themselves)
   const userStorageKey = useMemo(() => {
@@ -1083,7 +1085,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
   return (
     <div
-      ref={popoverRef}
+      ref={buttonRef}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -1092,7 +1094,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
           ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
           : undefined
       }
-      className={`z-[9990] touch-none select-none mobile-notif-bell ${position ? '' : 'fixed top-[calc(env(safe-area-inset-top,0px)+8px)] sm:top-[6px] right-3 sm:right-4'}`}
+      className={`fixed z-[9990] touch-none select-none pointer-events-auto mobile-notif-bell ${
+        position ? '' : 'top-[calc(env(safe-area-inset-top,0px)+8px)] sm:top-[6px] right-3 sm:right-4'
+      }`}
     >
       <button
         onClick={handleBellClick}

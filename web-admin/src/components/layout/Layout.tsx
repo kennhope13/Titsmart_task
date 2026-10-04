@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { useUIStore } from '../../services/uiStore';
 import { BackToTop } from '../common/BackToTop';
-import { NotificationBell } from '../common/NotificationBell';
 import { RealtimeClock } from '../common/RealtimeClock';
 
 interface LayoutProps {
@@ -27,7 +26,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <RealtimeClock />
         <main className="flex-1 bg-slate-50 flex flex-col w-full max-w-full overflow-hidden min-h-0">{children}</main>
       </div>
-      <NotificationBell />
       <BackToTop />
     </div>
   );
