@@ -81,36 +81,7 @@ export const TaskAssignmentPage: React.FC = () => {
   const canApproveTask = (currentUser: any, task: any): boolean => {
     if (!currentUser || !task) return false;
     if (task.status !== 'Chờ nghiệm thu') return false;
-
-    const userId = String(currentUser.id || '').toLowerCase();
-    const userName = String(currentUser.name || '').toLowerCase();
-    const userUsername = String(currentUser.username || '').toLowerCase();
-
-    const myEng = Array.isArray(engineers) ? engineers.find(e => 
-      (e.id && String(e.id).toLowerCase() === userId) ||
-      (e.name && String(e.name).toLowerCase() === userName) ||
-      (e.username && String(e.username).toLowerCase() === userUsername)
-    ) : null;
-
-    const myIds = [userId, myEng?.id?.toLowerCase()].filter(Boolean) as string[];
-    const myNames = [userName, userUsername, myEng?.name?.toLowerCase()].filter(Boolean) as string[];
-
-    const taskAssignerId = String(task.assignerId || '').trim().toLowerCase();
-    const taskAssignerName = String(task.assignerName || '').trim().toLowerCase();
-
-    // 1. Nếu công việc có assignerId cụ thể
-    if (taskAssignerId && taskAssignerId !== 'admin') {
-      return myIds.includes(taskAssignerId);
-    }
-
-    // 2. Nếu công việc có assignerName cụ thể
-    if (taskAssignerName && taskAssignerName !== 'quản trị viên' && taskAssignerName !== 'quản lý') {
-      return myNames.some(n => taskAssignerName.includes(n) || n.includes(taskAssignerName));
-    }
-
-    const role = String(currentUser.role || '').toLowerCase();
-    const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || currentUser.username === 'admin';
-    return isAdmin;
+    return isUserTaskAssigner(currentUser, task, engineers);
   };
 
   const canDeleteTask = (currentUser: any, task: any): boolean => {

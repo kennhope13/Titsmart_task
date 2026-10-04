@@ -279,37 +279,7 @@ export const TaskManagementPage: React.FC = () => {
   const canApproveTask = (currentUser: any, task: any): boolean => {
     if (!currentUser || !task) return false;
     if (task.status !== 'Chờ nghiệm thu') return false;
-
-    const userId = String(currentUser.id || '').toLowerCase();
-    const userName = String(currentUser.name || '').toLowerCase();
-    const userUsername = String(currentUser.username || '').toLowerCase();
-
-    const myEng = Array.isArray(engineers) ? engineers.find(e => 
-      (e.id && String(e.id).toLowerCase() === userId) ||
-      (e.name && String(e.name).toLowerCase() === userName) ||
-      (e.username && String(e.username).toLowerCase() === userUsername)
-    ) : null;
-
-    const myIds = [userId, myEng?.id?.toLowerCase()].filter(Boolean) as string[];
-    const myNames = [userName, userUsername, myEng?.name?.toLowerCase()].filter(Boolean) as string[];
-
-    const taskAssignerId = String(task.assignerId || '').trim().toLowerCase();
-    const taskAssignerName = String(task.assignerName || '').trim().toLowerCase();
-
-    // 1. Nếu công việc có assignerId cụ thể
-    if (taskAssignerId && taskAssignerId !== 'admin') {
-      return myIds.includes(taskAssignerId);
-    }
-
-    // 2. Nếu công việc có assignerName cụ thể
-    if (taskAssignerName && taskAssignerName !== 'quản trị viên' && taskAssignerName !== 'quản lý') {
-      return myNames.some(n => taskAssignerName.includes(n) || n.includes(taskAssignerName));
-    }
-
-    // 3. Nếu người giao là admin hoặc không có người giao cụ thể -> chỉ admin/quản trị viên mới được nghiệm thu
-    const role = String(currentUser.role || '').toLowerCase();
-    const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || currentUser.username === 'admin';
-    return isAdmin;
+    return isUserTaskAssigner(currentUser, task, engineers);
   };
 
   const handleApproveTask = async (task: Task) => {
@@ -2518,12 +2488,24 @@ const hasSyncedRef = useRef(false);
                         </span>
                       </td>
                       <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200">
-                        <span 
-                          title="Tiến độ thi công (được cập nhật theo tiến độ báo cáo và nghiệm thu công việc)" 
-                          className={`inline-block w-full rounded border px-0.5 py-0.5 text-[10px] font-bold text-center whitespace-nowrap leading-snug overflow-visible ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}
-                        >
-                          {t.constrStatus || "Chưa thi công"}
-                        </span>
+                        {canApproveTask(authStore.user, t) ? (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleApproveTask(t); }}
+                            className="inline-flex items-center justify-center gap-1 w-full rounded border border-purple-400 bg-purple-600 hover:bg-purple-700 text-white px-1 py-0.5 text-[10px] font-bold text-center whitespace-nowrap leading-snug cursor-pointer transition-all shadow-xs animate-pulse"
+                            title="Nhấn để nghiệm thu công việc này"
+                          >
+                            <span className="material-symbols-outlined text-[12px]">verified</span>
+                            <span>Nghiệm thu</span>
+                          </button>
+                        ) : (
+                          <span 
+                            title="Tiến độ thi công (được cập nhật theo tiến độ báo cáo và nghiệm thu công việc)" 
+                            className={`inline-block w-full rounded border px-0.5 py-0.5 text-[10px] font-bold text-center whitespace-nowrap leading-snug overflow-visible ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}
+                          >
+                            {t.constrStatus || "Chưa thi công"}
+                          </span>
+                        )}
                       </td>
                       {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
                           <td 
@@ -2547,7 +2529,7 @@ const hasSyncedRef = useRef(false);
                             {t.status === 'Có thắc mắc' && (
                               <button 
                                 onClick={(e) => { e.stopPropagation(); setDiscussionTask(t); }} 
-                                className="text-[9px] bg-amber-500 pointer-events-auto hover:bg-amber-600 text-white px-2 py-0.5 rounded shadow-sm w-full flex items-center justify-center gap-0.5 font-bold animate-pulse"
+                                className="text-[9px] bg-amber-500 pointer-events-auto hover:bg-amber-600 text-white px-2 py-0.5 rounded shadow-sm w-full flex items-center justify-center gap-0.5 font-bold animate-pulse cursor-pointer"
                                 title="Xem thắc mắc của nhân sự và phản hồi"
                               >
                                 <span className="material-symbols-outlined text-[11px]">question_answer</span>
@@ -2557,15 +2539,18 @@ const hasSyncedRef = useRef(false);
                             
                             {isUserTaskAssignee(authStore.user, t, engineers) && (t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc') && (
                               <div className="flex items-center gap-1 w-full pointer-events-auto">
-                                <button onClick={(e) => { e.stopPropagation(); handleAcceptTask(t); }} className="text-[9px] bg-emerald-500 hover:bg-emerald-600 text-white px-1.5 py-0.5 rounded shadow-sm flex-1 font-bold">Nhận việc</button>
-                                <button onClick={(e) => { e.stopPropagation(); setDiscussionTask(t); }} className="text-[9px] bg-amber-500 hover:bg-amber-600 text-white px-1.5 py-0.5 rounded shadow-sm flex-1 font-bold">Thắc mắc</button>
+                                <button onClick={(e) => { e.stopPropagation(); handleAcceptTask(t); }} className="text-[9px] bg-emerald-500 hover:bg-emerald-600 text-white px-1.5 py-0.5 rounded shadow-sm flex-1 font-bold cursor-pointer">Nhận việc</button>
+                                <button onClick={(e) => { e.stopPropagation(); setDiscussionTask(t); }} className="text-[9px] bg-amber-500 hover:bg-amber-600 text-white px-1.5 py-0.5 rounded shadow-sm flex-1 font-bold cursor-pointer">Thắc mắc</button>
                               </div>
                             )}
                             {isUserTaskAssignee(authStore.user, t, engineers) && (t.status === 'Đang làm' || t.status === 'Chưa làm') && (
-                              <button onClick={(e) => { e.stopPropagation(); handleReportDone(t); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full font-bold">Báo cáo hoàn thành</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleReportDone(t); }} className="text-[9px] bg-blue-500 pointer-events-auto hover:bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm w-full font-bold cursor-pointer">Báo cáo hoàn thành</button>
                             )}
                             {canApproveTask(authStore.user, t) && (
-                              <button onClick={(e) => { e.stopPropagation(); handleApproveTask(t); }} className="text-[9px] bg-purple-500 pointer-events-auto hover:bg-purple-600 text-white px-2 py-0.5 rounded shadow-sm w-full font-bold">Nghiệm thu</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleApproveTask(t); }} className="text-[9px] bg-purple-600 pointer-events-auto hover:bg-purple-700 text-white px-2 py-0.5 rounded shadow-xs w-full font-bold flex items-center justify-center gap-0.5 animate-pulse cursor-pointer">
+                                <span className="material-symbols-outlined text-[11px]">verified</span>
+                                Nghiệm thu
+                              </button>
                             )}
                           </div>
                         </td>

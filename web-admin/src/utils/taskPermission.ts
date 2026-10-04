@@ -111,8 +111,23 @@ export const isUserTaskAssigner = (
   const uName = normalizeText(user.name);
   const uUsername = normalizeText(user.username);
 
-  const allMyIds = [uId, uUsername].filter(Boolean);
-  const allMyNames = [uName, uUsername].filter(Boolean);
+  // Find linked engineer if exists
+  const myEng = engineers?.find(e => {
+    const eId = normalizeText(e.id);
+    const eName = normalizeText(e.name);
+    const eUsername = normalizeText(e.username);
+    return (
+      (uId && eId === uId) ||
+      (uUsername && eUsername === uUsername) ||
+      (uName && eName === uName)
+    );
+  });
+
+  const myEngId = myEng ? normalizeText(myEng.id) : '';
+  const myEngName = myEng ? normalizeText(myEng.name) : '';
+
+  const allMyIds = [uId, uUsername, myEngId].filter(Boolean);
+  const allMyNames = [uName, uUsername, myEngName].filter(Boolean);
 
   if (task.assignerId) {
     const tAssignerId = normalizeText(task.assignerId);
@@ -121,9 +136,14 @@ export const isUserTaskAssigner = (
 
   if (task.assignerName) {
     const normAssignerName = normalizeText(task.assignerName);
-    if (allMyNames.some(mn => normAssignerName.includes(mn) || mn.includes(normAssignerName))) {
+    if (allMyNames.some(mn => normAssignerName === mn || normAssignerName.includes(mn) || mn.includes(normAssignerName))) {
       return true;
     }
+  }
+
+  // Manager or user with ASSIGN_TASKS permission
+  if (role === 'manager' || role === 'quản lý' || role === 'pm' || role === 'quản lý dự án' || user.permissions?.includes('ASSIGN_TASKS')) {
+    return true;
   }
 
   return false;

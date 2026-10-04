@@ -407,6 +407,39 @@ export const MyTasksPage: React.FC = () => {
     }
   };
 
+  const handleApproveTask = async (task: any) => {
+    if (!isUserTaskAssigner(user, task, engineers)) {
+      triggerToast('Chỉ người giao việc mới có quyền nghiệm thu!', 'warning');
+      return;
+    }
+    updateTask(task.id, { 
+      status: 'Hoàn thành', 
+      progress: 1, 
+      constrStatus: 'Đã hoàn thành', 
+      isDone: true 
+    });
+    triggerToast(`Đã nghiệm thu hoàn thành: "${task.name}"!`, 'success');
+
+    const store = useRealtimeStore.getState();
+    const adminName = user?.name || user?.username || 'Quản lý';
+    const adminId = user?.id || '';
+    store.logActivity(`Người giao việc ${adminName} đã NGHIỆM THU HOÀN THÀNH công việc: "${task.name}"`, task.projectName || task.projectCode);
+
+    if (store.addNotification && (task.assignedEngineerId || task.assignedEngineerName)) {
+      const engId = task.assignedEngineerId || '';
+      const engName = task.assignedEngineerName?.split('|')[0] || '';
+      await store.addNotification({
+        title: 'Công việc đã được nghiệm thu',
+        message: `${adminName} đã nghiệm thu hoàn thành công việc "${task.name}" [${task.projectCode}].`,
+        link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
+        type: `task_approved:::${engId}:::${engName}`,
+        icon: 'verified',
+        senderId: adminId,
+        senderName: adminName
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">
       {/* Top Header Bar */}
@@ -815,10 +848,21 @@ export const MyTasksPage: React.FC = () => {
                             </>
                           )}
                           {isWaitingApproval && (
-                            <span className="text-purple-700 font-bold flex items-center gap-1 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-200">
-                              <span className="material-symbols-outlined text-[16px] animate-pulse">hourglass_top</span>
-                              Chờ nghiệm thu
-                            </span>
+                            isUserTaskAssigner(user, t, engineers) ? (
+                              <button 
+                                onClick={() => handleApproveTask(t)}
+                                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold rounded-lg shadow-xs transition-all animate-pulse text-xs cursor-pointer"
+                                title="Nghiệm thu và xác nhận hoàn thành công việc này"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">verified</span>
+                                Nghiệm thu hoàn thành
+                              </button>
+                            ) : (
+                              <span className="text-purple-700 font-bold flex items-center gap-1 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-200">
+                                <span className="material-symbols-outlined text-[16px] animate-pulse">hourglass_top</span>
+                                Chờ nghiệm thu
+                              </span>
+                            )
                           )}
                           {isCompleted && (
                             <span className="text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
