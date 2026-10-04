@@ -178,6 +178,91 @@ export const ProjectOverviewTab: React.FC = () => {
   const completedAssignedTasks = assignedTasks.filter(isTaskCompleted).length;
   const assignedTaskPercent = totalAssignedTasks > 0 ? Math.round((completedAssignedTasks / totalAssignedTasks) * 100) : 0;
 
+  // --- 8. THỐNG KÊ CÔNG VIỆC THEO TỪNG NHÂN VIÊN ---
+  const engineerWorkloadList = useMemo(() => {
+    const map = new Map<string, {
+      id: string;
+      name: string;
+      role: string;
+      avatar?: string;
+      phone?: string;
+      totalTasks: number;
+      completedTasks: number;
+      inProgressTasks: number;
+      pendingTasks: number;
+      completionRate: number;
+    }>();
+
+    // 1. Thêm các nhân sự thuộc dự án
+    engineers.forEach(eng => {
+      const isMember = (Array.isArray(project.members) && project.members.includes(eng.id)) ||
+                       (Array.isArray(project.memberIds) && project.memberIds.includes(eng.id)) ||
+                       (Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => isProjectMatch(c))) ||
+                       assignedEngineers.includes(eng.name);
+      const roleLower = String(eng.role || '').toLowerCase();
+      const nameLower = String(eng.name || '').toLowerCase();
+      if (roleLower === 'admin' || roleLower === 'quản trị viên' || nameLower === 'admin') return;
+
+      if (isMember) {
+        map.set(eng.name.trim().toLowerCase(), {
+          id: eng.id,
+          name: eng.name,
+          role: eng.role || 'Kỹ sư',
+          avatar: eng.avatar,
+          phone: eng.phone,
+          totalTasks: 0,
+          completedTasks: 0,
+          inProgressTasks: 0,
+          pendingTasks: 0,
+          completionRate: 0,
+        });
+      }
+    });
+
+    // 2. Quét tất cả công việc của dự án để tính số liệu cho nhân viên
+    projTasks.forEach(t => {
+      const engName = t.assignedEngineerName?.trim();
+      const engId = t.assignedEngineerId;
+      const isDone = isTaskCompleted(t);
+      const st = String(t.status || '').trim().toLowerCase();
+      const isProg = st === 'đang làm' || st === 'in_progress';
+
+      const key = (engName || engId || '').toLowerCase();
+      if (!key) return;
+
+      if (!map.has(key)) {
+        const engObj = engineers.find(e => e.id === engId || e.name?.toLowerCase() === engName?.toLowerCase());
+        map.set(key, {
+          id: engId || (engObj ? engObj.id : key),
+          name: engName || (engObj ? engObj.name : 'Nhân sự'),
+          role: engObj?.role || 'Kỹ sư',
+          avatar: engObj?.avatar,
+          phone: engObj?.phone,
+          totalTasks: 0,
+          completedTasks: 0,
+          inProgressTasks: 0,
+          pendingTasks: 0,
+          completionRate: 0,
+        });
+      }
+
+      const item = map.get(key)!;
+      item.totalTasks += 1;
+      if (isDone) {
+        item.completedTasks += 1;
+      } else if (isProg) {
+        item.inProgressTasks += 1;
+      } else {
+        item.pendingTasks += 1;
+      }
+    });
+
+    return Array.from(map.values()).map(item => ({
+      ...item,
+      completionRate: item.totalTasks > 0 ? Math.round((item.completedTasks / item.totalTasks) * 100) : 0,
+    })).sort((a, b) => b.totalTasks - a.totalTasks || b.completedTasks - a.completedTasks);
+  }, [engineers, projTasks, project, assignedEngineers]);
+
   return (
     <div className="p-6 space-y-6 overflow-y-auto bg-slate-50 flex-1">
       
@@ -377,7 +462,7 @@ export const ProjectOverviewTab: React.FC = () => {
       </div>
 
       {/* WIDGETS DƯỚI CÙNG */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cost Bar Chart */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
@@ -448,6 +533,134 @@ export const ProjectOverviewTab: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* SECTION: CÔNG VIỆC NHÂN VIÊN (CARDS DƯỚI CÙNG) */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
+              <span className="material-symbols-outlined text-xl">assignment_ind</span>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                Phân công & Tiến độ công việc nhân viên
+                <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 font-semibold">
+                  {engineerWorkloadList.length} nhân sự
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Chi tiết khối lượng nhiệm vụ và mức độ hoàn thành của từng nhân viên trong dự án
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(`/task-assignment?highlight=${encodeURIComponent(project.name || project.code)}`)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 rounded-lg text-xs font-semibold transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">tune</span>
+              Bảng phân công
+            </button>
+            <button
+              onClick={() => navigate(`/projects/${project.id}/tasks`)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">format_list_bulleted</span>
+              Tất cả công việc
+            </button>
+          </div>
+        </div>
+
+        {engineerWorkloadList.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
+            {engineerWorkloadList.map((eng, idx) => (
+              <div
+                key={eng.id || idx}
+                onClick={() => navigate(`/task-assignment?highlight=${encodeURIComponent(eng.name)}`)}
+                className="bg-slate-50 hover:bg-white rounded-xl p-4 border border-slate-200 hover:border-cyan-400 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+              >
+                {/* Employee Header */}
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+                      {eng.avatar ? (
+                        <img src={eng.avatar} alt={eng.name} className="w-full h-full object-cover rounded-full" />
+                      ) : (
+                        eng.name.split(' ').slice(-2).map(n => n[0]).join('').toUpperCase() || 'NV'
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-slate-800 truncate group-hover:text-cyan-700 transition-colors" title={eng.name}>
+                        {eng.name}
+                      </h4>
+                      <p className="text-xs text-slate-400 truncate">{eng.role || 'Kỹ sư'}</p>
+                    </div>
+                  </div>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                    eng.completionRate === 100 && eng.totalTasks > 0
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : eng.completionRate > 0
+                      ? 'bg-blue-100 text-blue-700'
+                      : eng.totalTasks > 0
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    {eng.totalTasks > 0 ? `${eng.completionRate}%` : 'Chưa giao'}
+                  </span>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="my-2">
+                  <div className="flex justify-between items-center text-xs mb-1">
+                    <span className="text-slate-500 font-medium">Tiến độ hoàn thành</span>
+                    <span className="font-bold text-slate-700">{eng.completedTasks}/{eng.totalTasks} việc</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        eng.completionRate === 100
+                          ? 'bg-emerald-500'
+                          : eng.completionRate >= 50
+                          ? 'bg-cyan-500'
+                          : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${eng.totalTasks > 0 ? eng.completionRate : 0}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* Task Breakdown Badges */}
+                <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-200/60 text-center">
+                  <div className="bg-emerald-50/80 rounded px-1 py-1">
+                    <span className="block text-[10px] text-emerald-600 font-semibold">Xong</span>
+                    <span className="text-xs font-bold text-emerald-700">{eng.completedTasks}</span>
+                  </div>
+                  <div className="bg-blue-50/80 rounded px-1 py-1">
+                    <span className="block text-[10px] text-blue-600 font-semibold">Đang làm</span>
+                    <span className="text-xs font-bold text-blue-700">{eng.inProgressTasks}</span>
+                  </div>
+                  <div className="bg-slate-100 rounded px-1 py-1">
+                    <span className="block text-[10px] text-slate-500 font-semibold">Chưa làm</span>
+                    <span className="text-xs font-bold text-slate-700">{eng.pendingTasks}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">group_off</span>
+            <p className="text-sm font-medium text-slate-500">Chưa có nhân sự nào được phân công công việc trong dự án này</p>
+            <button
+              onClick={() => navigate(`/task-assignment?highlight=${encodeURIComponent(project.name || project.code)}`)}
+              className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              <span className="material-symbols-outlined text-sm">add</span>
+              Phân công công việc ngay
+            </button>
+          </div>
+        )}
       </div>
 
     </div>
