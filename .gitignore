@@ -17,4 +17,4 @@ web-admin/android/.gradle/
 .env
 .env.local
 .env.production
-
+documents/

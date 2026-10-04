@@ -280,7 +280,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     const prefix = parts[0];
     const targetProject = parts[1]?.toUpperCase();
 
-    if (['project', 'document_update', 'field_log', 'material_update', 'issue_alert', 'document_due'].includes(prefix)) {
+    if (['project', 'project_created', 'project_new', 'document_update', 'field_log', 'material_update', 'issue_alert', 'document_due'].includes(prefix)) {
       if (!targetProject || targetProject === 'COMPANY' || targetProject === 'ALL' || targetProject === 'ALL_PROJECTS') return true;
       if (userProjectCodes.has(targetProject)) return true;
       return false;

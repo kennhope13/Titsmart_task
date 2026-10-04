@@ -143,7 +143,7 @@ export const TaskManagementPage: React.FC = () => {
   const authStore = useAuthStore();
   const { projectId } = useParams();
   const [searchParams] = useSearchParams();
-  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addMaterialPlansBatch, addPurchasingPlan, addPurchasingsBatch, materialPlans, purchasingPlans, deleteMaterialPlan, deletePurchasingPlan, updateMaterialPlan, updatePurchasingPlan, fetchTasks } = useRealtimeStore();
+  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addNotification, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addMaterialPlansBatch, addPurchasingPlan, addPurchasingsBatch, materialPlans, purchasingPlans, deleteMaterialPlan, deletePurchasingPlan, updateMaterialPlan, updatePurchasingPlan, fetchTasks } = useRealtimeStore();
 
   const resolvedProjectCode = React.useMemo(() => {
     if (!projectId) return '';
@@ -1741,6 +1741,22 @@ const hasSyncedRef = useRef(false);
       endDate: '2025-12-31',
     });
 
+    if (addNotification) {
+      const creator = authStore?.user;
+      const creatorName = creator?.name || creator?.username || 'Quản lý';
+      const creatorId = creator?.id || '';
+      addNotification({
+        title: `Dự án mới: [${code}] ${newProjName}`,
+        message: `${creatorName} vừa tạo dự án mới: "${newProjName}" (${code}).`,
+        type: `project_created:::ALL:::${encodeURIComponent(code)}`,
+        link: `/projects/${encodeURIComponent(code)}`,
+        senderId: creatorId,
+        senderName: creatorName,
+        createdById: creatorId,
+        createdByName: creatorName,
+      }).catch(err => console.error('Failed to notify project creation:', err));
+    }
+
     setIsNewProjectModalOpen(false);
     setSelectedProjectCode(code);
     setNewProjName('');
@@ -1748,7 +1764,7 @@ const hasSyncedRef = useRef(false);
     setNewProjLocation('');
     setNewProjManagerId(createdManager?.id || engineers[0]?.id || '');
     setNewManagerName('');
-    setNewManagerTitle('Chỉ huy trưởng cng trnh');
+    setNewManagerTitle('Chỉ huy trưởng công trình');
   };
 
   const isMatchingProject = React.useCallback((taskProj?: string, targetProj?: string) => {

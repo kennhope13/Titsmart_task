@@ -108,6 +108,7 @@ export const ProjectManagementPage: React.FC = () => {
     tasks,
     engineers,
     addProject,
+    addNotification,
     addTasksBatch,
     addMaterialPlan,
     addPurchasingPlan,
@@ -591,8 +592,25 @@ export const ProjectManagementPage: React.FC = () => {
       }
     }
 
-    logActivity(`T\u1ea1o d\u1ef1 \u00e1n m\u1edbi: ${newProject.name}`, newProject.name);
-    triggerToast(`${TEXT.created} ${newProject.name}${pendingProjectTasks.length ? ' v\u00e0 import \u0111\u1ea7u m\u1ee5c' : ''}`, 'success');
+    logActivity(`Tạo dự án mới: ${newProject.name}`, newProject.name);
+    
+    // Bắn thông báo đến tất cả người dùng trong hệ thống (ngoại trừ người tạo)
+    if (addNotification) {
+      const creatorName = currentUser?.name || currentUser?.username || 'Quản lý';
+      const creatorId = currentUser?.id || '';
+      await addNotification({
+        title: `Dự án mới: [${newProject.code}] ${newProject.name}`,
+        message: `${creatorName} vừa tạo dự án mới: "${newProject.name}" (${newProject.code}).`,
+        type: `project_created:::ALL:::${encodeURIComponent(newProject.code)}`,
+        link: `/projects/${encodeURIComponent(newProject.code)}`,
+        senderId: creatorId,
+        senderName: creatorName,
+        createdById: creatorId,
+        createdByName: creatorName,
+      }).catch(err => console.error('Failed to notify project creation:', err));
+    }
+
+    triggerToast(`${TEXT.created} ${newProject.name}${pendingProjectTasks.length ? ' và import đầu mục' : ''}`, 'success');
     setIsNewProjectModalOpen(false);
     setNewProjName('');
     setNewProjCode('');
