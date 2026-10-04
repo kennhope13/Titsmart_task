@@ -130,7 +130,7 @@ let cachedDocTracksSchemaType: 'modern' | 'prisma' | 'legacy' | null = null;
 export const api = {
   projects: {
     getAll: async () => {
-      const { data, error } = await supabase.from('projects').select('*');
+      const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return mapArray(data || []);
     },

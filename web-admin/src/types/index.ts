@@ -83,6 +83,7 @@ export interface Project {
   members?: string[]; // Danh sách thành viên (ID)
   startDate?: string;
   endDate?: string;
+  createdAt?: string;
   updatedBy?: string;
   updatedAt?: string;
 }

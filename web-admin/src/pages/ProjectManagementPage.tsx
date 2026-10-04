@@ -317,11 +317,18 @@ export const ProjectManagementPage: React.FC = () => {
 
       if (!q) return true;
       return [project.name, project.code, project.location, project.client, project.managerName, project.memberNames.join(' ')]
-        .some((value) => String(value || '').toLowerCase().includes(q));
     }).sort((a, b) => {
-      const codeA = (a.code || '').toLowerCase();
-      const codeB = (b.code || '').toLowerCase();
-      if (codeA && codeB) return codeA.localeCompare(codeB, 'vi', { numeric: true });
+      const getTimestamp = (p: any) => {
+        const time = new Date(p.createdAt || p.created_at || p.updatedAt || p.updated_at || p.startDate || 0).getTime();
+        return isNaN(time) ? 0 : time;
+      };
+      const timeA = getTimestamp(a);
+      const timeB = getTimestamp(b);
+
+      // Ưu tiên dự án mới nhất (thời gian tạo / cập nhật lớn nhất) lên đầu
+      if (timeB !== timeA) {
+        return timeB - timeA;
+      }
       return (a.name || '').localeCompare(b.name || '', 'vi', { numeric: true });
     });
   }, [allEnhancedProjects, searchQuery, statusFilter]);
@@ -376,6 +383,8 @@ export const ProjectManagementPage: React.FC = () => {
       members: selectedEngineerIds,
       memberIds: selectedEngineerIds,
       startDate: todayStamp(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
     const createdProject = await addProject(newProject);
     if (!createdProject) {
