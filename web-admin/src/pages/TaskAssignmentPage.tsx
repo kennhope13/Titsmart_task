@@ -1034,13 +1034,28 @@ export const TaskAssignmentPage: React.FC = () => {
                               Nội bộ / Văn phòng
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-bold text-[10px] border border-blue-200">
-                              {t.projectName || t.projectCode}
+                            <span 
+                              onClick={() => navigate(`/projects/${encodeURIComponent(t.projectCode)}/tasks?taskId=${encodeURIComponent(t.id)}&highlight=${encodeURIComponent(t.name)}`)}
+                              className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 hover:bg-blue-100 hover:underline font-bold text-[10px] border border-blue-200 cursor-pointer inline-flex items-center gap-1 transition-colors"
+                              title="Bấm để xem trong bảng Tiến độ công việc dự án"
+                            >
+                              <span>{t.projectName || t.projectCode}</span>
+                              <span className="material-symbols-outlined text-[11px]">open_in_new</span>
                             </span>
                           )}
                         </td>
                         <td className="py-2.5 px-4 border-r border-slate-200">
-                          <div className="font-bold text-slate-900 text-xs">{t.name}</div>
+                          <div 
+                            onClick={() => {
+                              if (t.projectCode && t.projectCode !== 'COMPANY') {
+                                navigate(`/projects/${encodeURIComponent(t.projectCode)}/tasks?taskId=${encodeURIComponent(t.id)}&highlight=${encodeURIComponent(t.name)}`);
+                              }
+                            }}
+                            className={`font-bold text-slate-900 text-xs ${t.projectCode && t.projectCode !== 'COMPANY' ? 'hover:text-primary hover:underline cursor-pointer transition-colors' : ''}`}
+                            title={t.projectCode && t.projectCode !== 'COMPANY' ? 'Bấm để mở công việc trong bảng Tiến độ dự án' : undefined}
+                          >
+                            {t.name}
+                          </div>
                           {(() => {
                             const latestDisc = getLatestDiscussion(t.notes, t.issue);
                             const cleanNote = stripDiscussionThread(t.notes)

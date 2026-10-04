@@ -630,13 +630,27 @@ export const MyTasksPage: React.FC = () => {
                       : isOverdue ? 'bg-rose-50 text-rose-900 border-rose-200'
                       : 'bg-slate-50 text-slate-800 border-slate-200'
                     }`}>
-                      <div className="flex items-center gap-1.5 truncate pr-2">
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (t.projectCode && t.projectCode !== 'COMPANY') {
+                            navigate(`/projects/${encodeURIComponent(t.projectCode)}/tasks?taskId=${encodeURIComponent(t.id)}&highlight=${encodeURIComponent(t.name)}`);
+                          }
+                        }}
+                        className={`flex items-center gap-1.5 truncate pr-2 ${t.projectCode && t.projectCode !== 'COMPANY' ? 'hover:underline cursor-pointer text-blue-950 hover:text-primary transition-colors' : ''}`}
+                        title={t.projectCode && t.projectCode !== 'COMPANY' ? 'Bấm để xem công việc tại bảng Tiến độ công việc dự án' : undefined}
+                      >
                         <span className="material-symbols-outlined text-[15px] text-slate-500">
                           {category === 'direct' ? 'flash_on' : 'folder'}
                         </span>
                         <span className="truncate">
                           {category === 'direct' ? (p?.name || t.projectCode || 'Nội bộ Công ty') : (p?.name || t.projectCode)}
                         </span>
+                        {t.projectCode && t.projectCode !== 'COMPANY' && (
+                          <span className="material-symbols-outlined text-[13px] text-slate-400 opacity-70 hover:opacity-100 shrink-0">
+                            open_in_new
+                          </span>
+                        )}
                       </div>
                       
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -661,7 +675,24 @@ export const MyTasksPage: React.FC = () => {
 
                     {/* Card Body */}
                     <div className="p-4 flex-1 flex flex-col">
-                      <h3 className="font-bold text-slate-800 text-sm mb-1">{t.name}</h3>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 
+                          onClick={(e) => {
+                            if (t.projectCode && t.projectCode !== 'COMPANY') {
+                              e.stopPropagation();
+                              navigate(`/projects/${encodeURIComponent(t.projectCode)}/tasks?taskId=${encodeURIComponent(t.id)}&highlight=${encodeURIComponent(t.name)}`);
+                            }
+                          }}
+                          className={`font-bold text-slate-800 text-sm leading-snug ${
+                            t.projectCode && t.projectCode !== 'COMPANY' 
+                              ? 'hover:text-primary hover:underline cursor-pointer transition-colors' 
+                              : ''
+                          }`}
+                          title={t.projectCode && t.projectCode !== 'COMPANY' ? 'Bấm để mở đúng vị trí công việc trong bảng Tiến độ dự án' : undefined}
+                        >
+                          {t.name}
+                        </h3>
+                      </div>
                       {t.sectionName && t.sectionName !== t.name && t.sectionName !== 'Giao việc trực tiếp' && (
                         <p className="text-xs text-slate-500 mb-2">{t.sectionName}</p>
                       )}
