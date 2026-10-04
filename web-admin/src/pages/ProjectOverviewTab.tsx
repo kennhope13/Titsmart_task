@@ -179,6 +179,11 @@ export const ProjectOverviewTab: React.FC = () => {
   const assignedTaskPercent = totalAssignedTasks > 0 ? Math.round((completedAssignedTasks / totalAssignedTasks) * 100) : 0;
 
   // --- 8. THỐNG KÊ CÔNG VIỆC THEO TỪNG NHÂN VIÊN ---
+  const cleanStaffName = (raw?: string) => {
+    if (!raw) return '';
+    return raw.split('|')[0].trim();
+  };
+
   const engineerWorkloadList = useMemo(() => {
     const map = new Map<string, {
       id: string;
@@ -198,63 +203,78 @@ export const ProjectOverviewTab: React.FC = () => {
       const isMember = (Array.isArray(project.members) && project.members.includes(eng.id)) ||
                        (Array.isArray(project.memberIds) && project.memberIds.includes(eng.id)) ||
                        (Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => isProjectMatch(c))) ||
-                       assignedEngineers.includes(eng.name);
+                       assignedEngineers.some(ae => cleanStaffName(ae).toLowerCase() === cleanStaffName(eng.name).toLowerCase());
+      
       const roleLower = String(eng.role || '').toLowerCase();
-      const nameLower = String(eng.name || '').toLowerCase();
-      if (roleLower === 'admin' || roleLower === 'quản trị viên' || nameLower === 'admin') return;
+      const nameLower = cleanStaffName(eng.name).toLowerCase();
+      const userLower = String(eng.username || '').toLowerCase();
+      if (roleLower === 'admin' || roleLower === 'quản trị viên' || nameLower === 'admin' || userLower === 'admin') return;
 
       if (isMember) {
-        map.set(eng.name.trim().toLowerCase(), {
-          id: eng.id,
-          name: eng.name,
-          role: eng.role || 'Kỹ sư',
-          avatar: eng.avatar,
-          phone: eng.phone,
-          totalTasks: 0,
-          completedTasks: 0,
-          inProgressTasks: 0,
-          pendingTasks: 0,
-          completionRate: 0,
-        });
+        const cleanName = cleanStaffName(eng.name);
+        const key = cleanName.toLowerCase();
+        if (key && !map.has(key)) {
+          map.set(key, {
+            id: eng.id,
+            name: cleanName,
+            role: eng.role || 'Kỹ sư',
+            avatar: eng.avatar,
+            phone: eng.phone,
+            totalTasks: 0,
+            completedTasks: 0,
+            inProgressTasks: 0,
+            pendingTasks: 0,
+            completionRate: 0,
+          });
+        }
       }
     });
 
     // 2. Quét tất cả công việc của dự án để tính số liệu cho nhân viên
     projTasks.forEach(t => {
-      const engName = t.assignedEngineerName?.trim();
+      const rawEngName = t.assignedEngineerName?.trim();
       const engId = t.assignedEngineerId;
       const isDone = isTaskCompleted(t);
       const st = String(t.status || '').trim().toLowerCase();
       const isProg = st === 'đang làm' || st === 'in_progress';
 
-      const key = (engName || engId || '').toLowerCase();
-      if (!key) return;
-
-      if (!map.has(key)) {
-        const engObj = engineers.find(e => e.id === engId || e.name?.toLowerCase() === engName?.toLowerCase());
-        map.set(key, {
-          id: engId || (engObj ? engObj.id : key),
-          name: engName || (engObj ? engObj.name : 'Nhân sự'),
-          role: engObj?.role || 'Kỹ sư',
-          avatar: engObj?.avatar,
-          phone: engObj?.phone,
-          totalTasks: 0,
-          completedTasks: 0,
-          inProgressTasks: 0,
-          pendingTasks: 0,
-          completionRate: 0,
-        });
+      // Tách nếu có nhiều tên nhân viên ngăn cách bởi dấu phẩy
+      const candidateNames = rawEngName ? rawEngName.split(',').map(n => cleanStaffName(n)).filter(Boolean) : [];
+      if (candidateNames.length === 0 && engId) {
+        const engObj = engineers.find(e => e.id === engId);
+        if (engObj) candidateNames.push(cleanStaffName(engObj.name));
       }
 
-      const item = map.get(key)!;
-      item.totalTasks += 1;
-      if (isDone) {
-        item.completedTasks += 1;
-      } else if (isProg) {
-        item.inProgressTasks += 1;
-      } else {
-        item.pendingTasks += 1;
-      }
+      candidateNames.forEach(name => {
+        const key = name.toLowerCase();
+        if (key === 'admin' || key === 'quản trị viên') return;
+
+        if (!map.has(key)) {
+          const engObj = engineers.find(e => cleanStaffName(e.name).toLowerCase() === key || e.id === engId);
+          map.set(key, {
+            id: engObj?.id || key,
+            name: engObj ? cleanStaffName(engObj.name) : name,
+            role: engObj?.role || 'Kỹ sư',
+            avatar: engObj?.avatar,
+            phone: engObj?.phone,
+            totalTasks: 0,
+            completedTasks: 0,
+            inProgressTasks: 0,
+            pendingTasks: 0,
+            completionRate: 0,
+          });
+        }
+
+        const item = map.get(key)!;
+        item.totalTasks += 1;
+        if (isDone) {
+          item.completedTasks += 1;
+        } else if (isProg) {
+          item.inProgressTasks += 1;
+        } else {
+          item.pendingTasks += 1;
+        }
+      });
     });
 
     return Array.from(map.values()).map(item => ({
@@ -291,8 +311,8 @@ export const ProjectOverviewTab: React.FC = () => {
         {/* 2. Công việc nhân viên */}
         <div onClick={() => navigate(`/task-assignment?highlight=${encodeURIComponent(project.name || project.code)}`)} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-pointer hover:shadow-md transition-shadow group">
           <div className="flex justify-between items-start">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-cyan-600 transition-colors">Công việc nhân viên</p>
-            <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center text-cyan-500 shrink-0 group-hover:bg-cyan-100 transition-colors">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-primary transition-colors">Công việc nhân viên</p>
+            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-primary shrink-0 group-hover:bg-blue-100 transition-colors">
               <span className="material-symbols-outlined text-lg">assignment_ind</span>
             </div>
           </div>
@@ -301,7 +321,7 @@ export const ProjectOverviewTab: React.FC = () => {
           </div>
           <div className="mt-2">
             <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
-              <div className="bg-cyan-500 h-1.5 rounded-full" style={{ width: `${assignedTaskPercent}%` }}></div>
+              <div className="bg-primary h-1.5 rounded-full" style={{ width: `${assignedTaskPercent}%` }}></div>
             </div>
             <p className="text-[11px] text-slate-400 font-medium">{completedAssignedTasks} / {totalAssignedTasks} đã giao</p>
           </div>
@@ -535,55 +555,43 @@ export const ProjectOverviewTab: React.FC = () => {
         </div>
       </div>
 
-      {/* SECTION: CÔNG VIỆC NHÂN VIÊN (CARDS DƯỚI CÙNG) */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 pb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-xl">assignment_ind</span>
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                Phân công & Tiến độ công việc nhân viên
-                <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 font-semibold">
-                  {engineerWorkloadList.length} nhân sự
-                </span>
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Chi tiết khối lượng nhiệm vụ và mức độ hoàn thành của từng nhân viên trong dự án
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+      {/* SECTION: CÔNG VIỆC NHÂN VIÊN */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+            <span className="material-symbols-outlined text-lg text-slate-400">assignment_ind</span>
+            Công việc nhân viên ({engineerWorkloadList.length})
+          </h3>
+          <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(`/task-assignment?highlight=${encodeURIComponent(project.name || project.code)}`)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 rounded-lg text-xs font-semibold transition-colors"
+              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
             >
-              <span className="material-symbols-outlined text-base">tune</span>
+              <span className="material-symbols-outlined text-sm">tune</span>
               Bảng phân công
             </button>
             <button
               onClick={() => navigate(`/projects/${project.id}/tasks`)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
             >
-              <span className="material-symbols-outlined text-base">format_list_bulleted</span>
+              <span className="material-symbols-outlined text-sm">list_alt</span>
               Tất cả công việc
             </button>
           </div>
         </div>
 
         {engineerWorkloadList.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-1">
             {engineerWorkloadList.map((eng, idx) => (
               <div
                 key={eng.id || idx}
                 onClick={() => navigate(`/task-assignment?highlight=${encodeURIComponent(eng.name)}`)}
-                className="bg-slate-50 hover:bg-white rounded-xl p-4 border border-slate-200 hover:border-cyan-400 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+                className="bg-slate-50 hover:bg-white rounded-xl p-4 border border-slate-200 hover:border-primary/40 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
               >
                 {/* Employee Header */}
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold text-sm flex items-center justify-center shrink-0 border border-primary/20">
                       {eng.avatar ? (
                         <img src={eng.avatar} alt={eng.name} className="w-full h-full object-cover rounded-full" />
                       ) : (
@@ -591,7 +599,7 @@ export const ProjectOverviewTab: React.FC = () => {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-sm font-bold text-slate-800 truncate group-hover:text-cyan-700 transition-colors" title={eng.name}>
+                      <h4 className="text-sm font-bold text-slate-800 truncate group-hover:text-primary transition-colors" title={eng.name}>
                         {eng.name}
                       </h4>
                       <p className="text-xs text-slate-400 truncate">{eng.role || 'Kỹ sư'}</p>
@@ -621,9 +629,7 @@ export const ProjectOverviewTab: React.FC = () => {
                       className={`h-2 rounded-full transition-all duration-300 ${
                         eng.completionRate === 100
                           ? 'bg-emerald-500'
-                          : eng.completionRate >= 50
-                          ? 'bg-cyan-500'
-                          : 'bg-blue-500'
+                          : 'bg-primary'
                       }`}
                       style={{ width: `${eng.totalTasks > 0 ? eng.completionRate : 0}%` }}
                     ></div>
