@@ -2495,34 +2495,12 @@ const hasSyncedRef = useRef(false);
                         </span>
                       </td>
                       <td className="py-1.5 px-1 text-center whitespace-nowrap border-r border-slate-200">
-                        <CustomSelect 
-                          value={t.constrStatus || 'Chưa thi công'} 
-                          onChange={(e) => { 
-                            const nextConstrStatus = e.target.value; 
-                            const nextProgress = calculateAutoProgressRatio(t.purchaseStatus, nextConstrStatus); 
-                            let nextStatus = t.status;
-                            if (nextConstrStatus === 'Chờ nghiệm thu') {
-                              nextStatus = 'Chờ nghiệm thu';
-                            } else if (nextConstrStatus === 'Đã hoàn thành') {
-                              nextStatus = 'Hoàn thành';
-                            } else if (nextProgress > 0) {
-                              nextStatus = (t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc') ? t.status : 'Đang làm';
-                            } else {
-                              nextStatus = 'Chưa làm';
-                            }
-                            handleUpdateTaskSync(t.id, { 
-                              constrStatus: nextConstrStatus, 
-                              progress: nextProgress, 
-                              isDone: nextStatus === 'Hoàn thành', 
-                              status: nextStatus 
-                            }); 
-                          }} 
-                          className={`w-full min-w-0 rounded border px-1 py-0.5 text-[10px] font-bold focus:ring-2 focus:ring-primary focus:outline-none focus:bg-white transition-colors ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}
+                        <span 
+                          title="Tiến độ thi công (được cập nhật theo tiến độ báo cáo và nghiệm thu công việc)" 
+                          className={`inline-block w-full rounded border px-0.5 py-0.5 text-[10px] font-bold text-center whitespace-nowrap leading-snug overflow-visible ${getStatusColorStyle(t.constrStatus || "Chưa thi công")}`}
                         >
-                          {CONSTRUCTION_STATUS_OPTIONS.map((option) => (
-                            <option key={option} value={option} className={getStatusColorStyle(option)}>{option}</option>
-                          ))}
-                        </CustomSelect>
+                          {t.constrStatus || "Chưa thi công"}
+                        </span>
                       </td>
                       {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
                           <td 
@@ -2820,7 +2798,7 @@ const hasSyncedRef = useRef(false);
           <div><label className="block font-bold text-slate-700 mb-1">Nội dung Công việc *</label><textarea required rows={4} value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
           {editingTask && !editingTask.isSectionHeader && (<>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Khối lượng</label><input type="number" step="any" value={editVolume} onChange={(e) => setEditVolume(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị tính (ĐVT)</label><input type="text" value={editUnit} onChange={(e) => setEditUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div></div>
-            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">TT Đặt hàng</label><CustomSelect disabled title="Được đồng bộ tự động từ tab Vật tư" value={editPurchaseStatus} onChange={(e) => setEditPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div><div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><CustomSelect value={editConstrStatus} onChange={(e) => setEditConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div></div>
+            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">TT Đặt hàng</label><CustomSelect disabled title="Được đồng bộ tự động từ tab Vật tư" value={editPurchaseStatus} onChange={(e) => setEditPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-slate-50 opacity-80">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div><div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><CustomSelect disabled title="Được cập nhật tự động theo tiến độ báo cáo và nghiệm thu công việc" value={editConstrStatus} onChange={(e) => setEditConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-slate-50 opacity-80">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Ghi chú thêm cho dòng công việc" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Kỹ sư phụ trách</label><CustomSelect value={editEngineerId} onChange={(e) => setEditEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"><option value="">-- Chưa giao --</option>{editingTaskEngineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}</CustomSelect></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tiến độ tự tính (%)</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">{calculateAutoProgressPercent(editPurchaseStatus, editConstrStatus)}%</div></div><div><label className="block font-bold text-slate-700 mb-1">Hoàn thành</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-bold text-slate-800">{calculateAutoProgressRatio(editPurchaseStatus, editConstrStatus) >= 1 ? 'Đã hoàn thành' : 'Chưa hoàn thành'}</div></div></div>
           </>)}
