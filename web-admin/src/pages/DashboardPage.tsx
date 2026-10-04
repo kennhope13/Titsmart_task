@@ -25,12 +25,12 @@ interface ChartBoxProps {
 
 const ChartBox: React.FC<ChartBoxProps> = React.memo(({ title, children }) => (
   <div 
-    className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs h-[330px] min-w-0 w-full overflow-hidden"
+    className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs h-[330px] min-w-0 w-full max-w-full overflow-hidden"
   >
-    <div className="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between min-w-0">
+    <div className="bg-white border-b border-slate-100 px-3.5 py-2.5 flex items-center justify-between min-w-0">
       <span className="text-xs md:text-sm font-extrabold text-slate-800 uppercase tracking-tight truncate" title={title}>{title}</span>
     </div>
-    <div className="flex-1 w-full h-[275px] min-w-0 relative p-3 overflow-hidden">
+    <div className="flex-1 w-full h-[275px] min-w-0 max-w-full relative p-2 sm:p-3 overflow-hidden">
       {children}
     </div>
   </div>
@@ -393,27 +393,27 @@ export const DashboardPage: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const yAxisWidth = isMobile ? 110 : 200;
+  const yAxisWidth = isMobile ? 85 : 180;
 
   return (
     <div className="flex flex-col flex-1 h-full w-full min-w-0 max-w-full bg-slate-50 overflow-hidden text-slate-800">
       
       {/* HEADER BAR */}
-      <section className="sticky top-0 z-50 border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-start items-start md:items-center gap-4 shrink-0 relative no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
-        <div className="flex items-center gap-6 h-8 md:h-auto mb-1 md:mb-0">
-          <h1 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter'] whitespace-nowrap">TỔNG QUAN CHUNG</h1>
+      <section className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-start items-start md:items-center gap-2 md:gap-4 shrink-0 relative no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full md:w-auto">
+          <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter'] whitespace-nowrap shrink-0">TỔNG QUAN CHUNG</h1>
           
-          <div className="relative z-50 no-drag-region electron-no-drag" ref={filterRef} style={{ WebkitAppRegion: 'no-drag' } as any}>
+          <div className="relative z-50 no-drag-region electron-no-drag w-full sm:w-auto" ref={filterRef} style={{ WebkitAppRegion: 'no-drag' } as any}>
             <button 
               onClick={() => setIsFilterOpen(!isFilterOpen)} 
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className="flex items-center justify-between w-64 md:w-72 h-[34px] px-3.5 bg-white border border-slate-200 rounded-lg shadow-xs text-xs font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer select-none no-drag-region electron-no-drag"
+              className="flex items-center justify-between w-full sm:w-64 md:w-72 h-[34px] px-3 bg-white border border-slate-200 rounded-lg shadow-xs text-xs font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer select-none no-drag-region electron-no-drag"
             >
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[18px] text-slate-400">filter_list</span>
-                <span>{selectedProjects.length === 0 ? 'So sánh tất cả dự án' : `Đang so sánh ${selectedProjects.length} dự án`}</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="material-symbols-outlined text-[18px] text-slate-400 shrink-0">filter_list</span>
+                <span className="truncate">{selectedProjects.length === 0 ? 'So sánh tất cả dự án' : `Đang so sánh ${selectedProjects.length} dự án`}</span>
               </div>
-              <span className="material-symbols-outlined text-[20px] text-slate-400">{isFilterOpen ? 'expand_less' : 'expand_more'}</span>
+              <span className="material-symbols-outlined text-[20px] text-slate-400 shrink-0">{isFilterOpen ? 'expand_less' : 'expand_more'}</span>
             </button>
             
             {isFilterOpen && (
@@ -475,7 +475,7 @@ export const DashboardPage: React.FC = () => {
       </section>
 
       {/* MAIN CONTENT AREA */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-5 space-y-5 w-full min-w-0 max-w-full">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-5 space-y-4 md:space-y-5 w-full min-w-0 max-w-full">
         
         {/* TOP SUMMARY KPI CARDS */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5 w-full min-w-0">
