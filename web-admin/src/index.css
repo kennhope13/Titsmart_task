@@ -693,11 +693,6 @@ button, input, select, textarea, a, .clickable-tab, [role="button"], .no-drag-re
     max-width: 100vw !important;
   }
 
-  /* Shift notification bell down on mobile below status bar notch */
-  .mobile-notif-bell {
-    top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
-  }
-
   /* Shift top headers down on mobile screens */
   main > div > section.border-b:first-child,
   main > div > header:first-child {

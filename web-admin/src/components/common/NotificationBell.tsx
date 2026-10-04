@@ -344,7 +344,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       initY: currentY,
     };
 
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -353,7 +353,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     const dx = e.clientX - dragStartRef.current.startX;
     const dy = e.clientY - dragStartRef.current.startY;
 
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
       hasMovedRef.current = true;
     }
 
@@ -368,7 +368,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     isDraggingRef.current = false;
 
     try {
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    } catch (err) {}
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    isDraggingRef.current = false;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     } catch (err) {}
   };
 
@@ -1089,23 +1096,25 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       style={
         position
           ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
           : undefined
       }
-      className={`fixed z-[9990] touch-none select-none pointer-events-auto mobile-notif-bell ${
+      className={`fixed z-[9990] touch-none select-none pointer-events-auto ${
         position ? '' : 'top-[calc(env(safe-area-inset-top,0px)+8px)] sm:top-[6px] right-3 sm:right-4'
       }`}
     >
       <button
+        type="button"
         onClick={handleBellClick}
         onDoubleClick={(e) => {
           e.stopPropagation();
           setPosition(null);
         }}
         title="Thông báo hệ thống (Nhấn giữ & kéo để di chuyển, nhấp đúp để đặt lại vị trí)"
-        className={`w-[36px] h-[36px] rounded-lg flex items-center justify-center transition-all relative border shadow-xs cursor-grab active:cursor-grabbing
+        className={`w-[36px] h-[36px] rounded-lg flex items-center justify-center transition-all relative border shadow-xs cursor-grab active:cursor-grabbing touch-none select-none
           ${showPopover ? 'bg-blue-50 border-blue-200 text-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800'}`}
       >
         <span className="material-symbols-outlined text-[20px] pointer-events-none">notifications</span>
