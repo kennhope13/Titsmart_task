@@ -1546,7 +1546,21 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   const currentProjExpenses = useMemo(() => {
     const currentProjObj = projects.find(p => p.code === selectedProject || p.id === selectedProject);
-    const validCodes = new Set([selectedProject, currentProjObj?.code, currentProjObj?.id].filter(Boolean));
+    const isOffice = 
+      selectedProject === 'CHI_PHI_VAN_PHONG' || 
+      selectedProject === 'OFFICE' || 
+      selectedProject === 'VAN_PHONG' || 
+      selectedProject === 'COMPANY' ||
+      currentProjObj?.code === 'CHI_PHI_VAN_PHONG' ||
+      currentProjObj?.code === 'OFFICE' ||
+      String(currentProjObj?.name || '').toLowerCase().includes('văn phòng');
+
+    const validCodes = new Set([
+      selectedProject, 
+      currentProjObj?.code, 
+      currentProjObj?.id,
+      ...(isOffice ? ['CHI_PHI_VAN_PHONG', 'OFFICE', 'VAN_PHONG', 'COMPANY'] : [])
+    ].filter(Boolean));
     const sortedOldestFirst = expenses.filter(p => validCodes.has(p.projectCode)).sort((a, b) => {
       return sttSortValue(a.stt) - sttSortValue(b.stt);
     });

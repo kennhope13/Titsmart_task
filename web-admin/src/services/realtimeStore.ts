@@ -84,8 +84,8 @@ const filterByProject = (items: any[], codeField: string) => {
     const itemCode = String(item.code || '').trim().toUpperCase();
     const itemName = String(item.name || '').trim().toUpperCase();
 
-    // Cho phép hiển thị các hồ sơ/mục chung nội bộ không gán mã dự án cụ thể hoặc mã COMPANY
-    if (codeField !== 'code' && (!val || val === 'COMPANY' || val === 'OFFICE' || val === 'KHÁC')) return true;
+    // Cho phép hiển thị các hồ sơ/mục chung nội bộ không gán mã dự án cụ thể hoặc mã COMPANY / OFFICE / CHI_PHI_VAN_PHONG
+    if (codeField !== 'code' && (!val || val === 'COMPANY' || val === 'OFFICE' || val === 'KHÁC' || val === 'CHI_PHI_VAN_PHONG' || val === 'VAN_PHONG')) return true;
 
     return assignedUpper.some(assigned => {
       if (!assigned) return false;

@@ -908,7 +908,16 @@ export const api = {
       return { success: true };
     },
 
-    getExpenses: async () => [],
+    getExpenses: async () => {
+      try {
+        const { data, error } = await supabase.from('expenses').select('*');
+        if (error) throw error;
+        return (data || []).map(toCamelCase);
+      } catch (err) {
+        console.warn('[Accounting] Error fetching expenses:', err);
+        return [];
+      }
+    },
     createExpense: async (data: any) => {
       const payload = toSnakeCase(data);
       const { data: result, error } = await supabase.from('expenses').insert(payload).select().single();
