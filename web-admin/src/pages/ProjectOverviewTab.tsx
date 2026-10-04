@@ -206,14 +206,14 @@ export const ProjectOverviewTab: React.FC = () => {
                        assignedEngineers.some(ae => cleanStaffName(ae).toLowerCase() === cleanStaffName(eng.name).toLowerCase());
       
       const roleLower = String(eng.role || '').toLowerCase();
-      const nameLower = cleanStaffName(eng.name).toLowerCase();
+      const cleanName = cleanStaffName(eng.name);
+      const nameLower = cleanName.toLowerCase();
       const userLower = String(eng.username || '').toLowerCase();
-      if (roleLower === 'admin' || roleLower === 'quản trị viên' || nameLower === 'admin' || userLower === 'admin') return;
+      if (roleLower === 'admin' || roleLower === 'quản trị viên' || nameLower === 'admin' || userLower === 'admin' || !nameLower) return;
 
       if (isMember) {
-        const cleanName = cleanStaffName(eng.name);
-        const key = cleanName.toLowerCase();
-        if (key && !map.has(key)) {
+        const key = nameLower;
+        if (!map.has(key)) {
           map.set(key, {
             id: eng.id,
             name: cleanName,
@@ -232,28 +232,57 @@ export const ProjectOverviewTab: React.FC = () => {
 
     // 2. Quét tất cả công việc của dự án để tính số liệu cho nhân viên
     projTasks.forEach(t => {
-      const rawEngName = t.assignedEngineerName?.trim();
-      const engId = t.assignedEngineerId;
+      const rawEngName = String(t.assignedEngineerName || '').trim();
+      const rawEngId = String(t.assignedEngineerId || '').trim();
       const isDone = isTaskCompleted(t);
       const st = String(t.status || '').trim().toLowerCase();
       const isProg = st === 'đang làm' || st === 'in_progress';
 
-      // Tách nếu có nhiều tên nhân viên ngăn cách bởi dấu phẩy
-      const candidateNames = rawEngName ? rawEngName.split(',').map(n => cleanStaffName(n)).filter(Boolean) : [];
-      if (candidateNames.length === 0 && engId) {
-        const engObj = engineers.find(e => e.id === engId);
-        if (engObj) candidateNames.push(cleanStaffName(engObj.name));
+      // Phân tích định dạng: "Tên 1, Tên 2 | id1, id2"
+      const parts = rawEngName.split('|');
+      const namesPart = parts[0] || '';
+      const idsPart = parts[1] || '';
+
+      const names = namesPart.split(',').map(n => cleanStaffName(n)).filter(Boolean);
+      const ids = idsPart.split(',').map(i => i.trim()).filter(Boolean);
+
+      const targetEntries: { name: string; engObj?: any }[] = [];
+
+      if (names.length > 0) {
+        names.forEach((name, idx) => {
+          const associatedId = ids[idx] || (names.length === 1 ? rawEngId : undefined);
+          const engObj = engineers.find(e => 
+            (associatedId && e.id === associatedId) || 
+            cleanStaffName(e.name).toLowerCase() === name.toLowerCase()
+          );
+          targetEntries.push({
+            name: engObj ? cleanStaffName(engObj.name) : name,
+            engObj
+          });
+        });
+      } else if (rawEngId) {
+        const engObj = engineers.find(e => e.id === rawEngId);
+        if (engObj) {
+          targetEntries.push({
+            name: cleanStaffName(engObj.name),
+            engObj
+          });
+        }
       }
 
-      candidateNames.forEach(name => {
-        const key = name.toLowerCase();
-        if (key === 'admin' || key === 'quản trị viên') return;
+      // Tránh tính trùng lặp cùng 1 người trong cùng 1 task
+      const handledKeys = new Set<string>();
+
+      targetEntries.forEach(({ name, engObj }) => {
+        const cleanName = cleanStaffName(name);
+        const key = cleanName.toLowerCase();
+        if (!key || key === 'admin' || key === 'quản trị viên' || handledKeys.has(key)) return;
+        handledKeys.add(key);
 
         if (!map.has(key)) {
-          const engObj = engineers.find(e => cleanStaffName(e.name).toLowerCase() === key || e.id === engId);
           map.set(key, {
             id: engObj?.id || key,
-            name: engObj ? cleanStaffName(engObj.name) : name,
+            name: cleanName,
             role: engObj?.role || 'Kỹ sư',
             avatar: engObj?.avatar,
             phone: engObj?.phone,
