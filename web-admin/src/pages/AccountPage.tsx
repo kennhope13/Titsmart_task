@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { ChangePasswordModal } from '../components/common/ChangePasswordModal';
+import { Toast } from '../components/common/Toast';
 
 export const AccountPage: React.FC = () => {
   const engineer = useRealtimeStore((state) => state.engineers[0]);
@@ -10,6 +11,14 @@ export const AccountPage: React.FC = () => {
   const isLoggingOut = useAuthStore((state) => state.isLoggingOut);
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
+
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' | 'error' });
+
+  const triggerToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
+    setToastState({ show: true, message, type });
+    setTimeout(() => setToastState({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -27,8 +36,6 @@ export const AccountPage: React.FC = () => {
           <div className="h-6 w-[2px] bg-primary"></div>
           <h2 className="text-lg font-extrabold text-primary uppercase tracking-wide">TÀI KHOẢN</h2>
         </div>
-
-        
       </section>
 
       <div className="p-6 md:p-8 space-y-4 max-w-7xl mx-auto w-full">
@@ -58,13 +65,15 @@ export const AccountPage: React.FC = () => {
 
             <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-3 justify-end">
               <button 
-                onClick={() => alert('Chức năng đổi mật khẩu sẽ kết nối API xác thực ở bản đầy đủ.')} 
+                type="button"
+                onClick={() => setIsChangePasswordOpen(true)} 
                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-colors"
               >
                 <span className="material-symbols-outlined text-lg">lock_reset</span>
                 Đổi mật khẩu
               </button>
               <button 
+                type="button"
                 onClick={handleLogout} 
                 disabled={isLoggingOut}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
@@ -80,6 +89,21 @@ export const AccountPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+        onSuccess={() => triggerToast('Đổi mật khẩu tài khoản thành công!', 'success')}
+      />
+
+      {/* In-app Toast */}
+      <Toast
+        show={toastState.show}
+        message={toastState.message}
+        type={toastState.type}
+        onClose={() => setToastState(prev => ({ ...prev, show: false }))}
+      />
     </div>
   );
 };

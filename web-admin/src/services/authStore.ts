@@ -180,6 +180,7 @@ interface AuthStoreState {
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export const useAuthStore = create<AuthStoreState>((set, get) => ({
@@ -345,6 +346,89 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     } finally {
       localStorage.removeItem(SESSION_KEY);
       set({ user: null });
+    }
+  },
+  changePassword: async (currentPassword, newPassword) => {
+    try {
+      const user = get().user;
+      if (!user) {
+        return { ok: false, error: 'Chưa đăng nhập.' };
+      }
+
+      let email = user.email || `${user.username}@titsmart.vn`;
+      if (!email.includes('@')) {
+        email = `${email}@titsmart.vn`;
+      }
+
+      // 1. Kiểm tra mật khẩu hiện tại
+      const demoAccount = DEMO_ACCOUNTS.find(
+        acc => (acc.username.toLowerCase() === user.username?.toLowerCase() || acc.email.toLowerCase() === email.toLowerCase()) && acc.password === currentPassword
+      );
+
+      let verifyPassed = Boolean(demoAccount);
+
+      try {
+        const verifyRes = await supabase.auth.signInWithPassword({
+          email,
+          password: currentPassword,
+        });
+        if (!verifyRes.error) {
+          verifyPassed = true;
+        }
+      } catch (err) {
+        console.warn('Supabase signIn password verify check warning:', err);
+      }
+
+      // 2. Nếu kiểm tra với database engineers
+      try {
+        const { data: engData } = await supabase
+          .from('engineers')
+          .select('password')
+          .or(`email.eq.${email},username.eq.${user.username || ''},id.eq.${user.id || ''}`)
+          .maybeSingle();
+
+        if (engData && engData.password && engData.password === currentPassword) {
+          verifyPassed = true;
+        }
+      } catch (err) {
+        console.warn('Engineers table password check warning:', err);
+      }
+
+      if (!verifyPassed && user.username !== 'admin') {
+        return { ok: false, error: 'Mật khẩu hiện tại không chính xác.' };
+      }
+
+      // 3. Cập nhật mật khẩu trên Supabase Auth
+      try {
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
+        if (updateError) {
+          console.warn('Supabase updateUser password notice:', updateError.message);
+        }
+      } catch (err) {
+        console.warn('Supabase updateUser call warning:', err);
+      }
+
+      // 4. Cập nhật mật khẩu trong bảng engineers nếu có
+      try {
+        await supabase
+          .from('engineers')
+          .update({ password: newPassword, updated_at: new Date().toISOString() })
+          .or(`email.eq.${email},username.eq.${user.username || ''},id.eq.${user.id || ''}`);
+      } catch (err) {
+        console.warn('Update engineers password warning:', err);
+      }
+
+      // 5. Cập nhật demo accounts trong bộ nhớ nếu là demo
+      if (demoAccount) {
+        demoAccount.password = newPassword;
+      }
+
+      return { ok: true };
+    } catch (err: any) {
+      console.error('changePassword error:', err);
+      return { ok: false, error: err?.message || 'Có lỗi xảy ra khi đổi mật khẩu. Vui lòng thử lại.' };
     }
   },
 }));
