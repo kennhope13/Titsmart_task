@@ -130,9 +130,19 @@ let cachedDocTracksSchemaType: 'modern' | 'prisma' | 'legacy' | null = null;
 export const api = {
   projects: {
     getAll: async () => {
-      const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      return mapArray(data || []);
+      try {
+        const { data, error } = await supabase.from('projects').select('*');
+        if (error) throw error;
+        const list = mapArray(data || []);
+        return list.sort((a: any, b: any) => {
+          const timeA = new Date(a.createdAt || a.created_at || a.startDate || 0).getTime();
+          const timeB = new Date(b.createdAt || b.created_at || b.startDate || 0).getTime();
+          return timeB - timeA;
+        });
+      } catch (err) {
+        console.warn('[Projects] Error fetching projects:', err);
+        return [];
+      }
     },
     getById: async (id: string) => {
       const { data, error } = await supabase.from('projects').select('*').eq('id', id).single();
@@ -744,13 +754,22 @@ export const api = {
   },
   activityLogs: {
     getAll: async () => {
-      const { data, error } = await supabase.from('activity_logs').select('*').order('created_at', { ascending: false });
-      if (error) {
-        const { data: retryData, error: retryErr } = await supabase.from('activity_logs').select('*').order('timestamp', { ascending: false });
-        if (retryErr) throw retryErr;
-        return mapArray(retryData || []);
+      try {
+        const { data, error } = await supabase.from('activity_logs').select('*');
+        if (error) {
+          console.warn('[ActivityLogs] Error fetching activity logs:', error.message);
+          return [];
+        }
+        const list = mapArray(data || []);
+        return list.sort((a: any, b: any) => {
+          const timeA = new Date(a.createdAt || a.created_at || a.timestamp || 0).getTime();
+          const timeB = new Date(b.createdAt || b.created_at || b.timestamp || 0).getTime();
+          return timeB - timeA;
+        });
+      } catch (err) {
+        console.warn('[ActivityLogs] Error:', err);
+        return [];
       }
-      return mapArray(data || []);
     },
     create: async (data: any) => {
       try {
@@ -1963,19 +1982,19 @@ export const api = {
       try {
         const { data, error } = await supabase
           .from('direct_messages')
-          .select('*')
-          .order('created_at', { ascending: true });
+          .select('*');
         if (error) {
-          if (error.code === 'PGRST205' || String(error.message).includes('cache')) {
-            console.warn('[DirectMessages] Table public.direct_messages is missing on database.');
-            return [];
-          }
-          console.error('Failed to fetch direct messages:', error);
+          console.warn('[DirectMessages] Table public.direct_messages query info:', error.message);
           return [];
         }
-        return mapArray(data || []);
+        const list = mapArray(data || []);
+        return list.sort((a: any, b: any) => {
+          const timeA = new Date(a.createdAt || a.created_at || a.timestamp || 0).getTime();
+          const timeB = new Date(b.createdAt || b.created_at || b.timestamp || 0).getTime();
+          return timeA - timeB;
+        });
       } catch (err) {
-        console.warn('[DirectMessages] Table public.direct_messages missing or error:', err);
+        console.warn('[DirectMessages] Error fetching direct messages:', err);
         return [];
       }
     },
