@@ -850,31 +850,49 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
                     </span>
                   )}
                 </div>
-                {activeTab === 'unread' ? (
-                  unreadCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleMarkAllAsRead}
-                      className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
-                      title="Đánh dấu tất cả là đã đọc"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">done_all</span>
-                      Đã đọc tất cả
-                    </button>
-                  )
-                ) : (
-                  displayNotifications.some(n => n.read) && (
-                    <button
-                      type="button"
-                      onClick={handleClearRead}
-                      className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
-                      title="Dọn dẹp các thông báo đã đọc"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
-                      Xóa đã đọc
-                    </button>
-                  )
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await requestSystemNotificationPermission();
+                      sendSystemNotification({
+                        title: '🔔 TITSMART Kiểm Tra Thông Báo',
+                        body: 'Hệ thống thông báo đẩy Desktop & Mobile đang hoạt động rất tốt!',
+                      });
+                    }}
+                    className="text-[11px] text-slate-500 hover:text-primary font-medium flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 hover:bg-blue-50 transition-colors"
+                    title="Bấm để thử nghiệm bắn thông báo ra ngoài Windows / Điện thoại"
+                  >
+                    <span className="material-symbols-outlined text-[13px]">volume_up</span>
+                    Thử
+                  </button>
+                  {activeTab === 'unread' ? (
+                    unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAllAsRead}
+                        className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+                        title="Đánh dấu tất cả là đã đọc"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">done_all</span>
+                        Đã đọc tất cả
+                      </button>
+                    )
+                  ) : (
+                    displayNotifications.some(n => n.read) && (
+                      <button
+                        type="button"
+                        onClick={handleClearRead}
+                        className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+                        title="Dọn dẹp các thông báo đã đọc"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
+                        Xóa đã đọc
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
               <div className="flex rounded-lg bg-slate-200/70 p-0.5 text-xs font-semibold">
                 <button
@@ -1073,31 +1091,49 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
                   </span>
                 )}
               </div>
-              {activeTab === 'unread' ? (
-                unreadCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleMarkAllAsRead}
-                    className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
-                    title="Đánh dấu tất cả là đã đọc"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">done_all</span>
-                    Đã đọc tất cả
-                  </button>
-                )
-              ) : (
-                displayNotifications.some(n => n.read) && (
-                  <button
-                    type="button"
-                    onClick={handleClearRead}
-                    className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
-                    title="Dọn dẹp các thông báo đã đọc"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
-                    Xóa đã đọc
-                  </button>
-                )
-              )}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    await requestSystemNotificationPermission();
+                    sendSystemNotification({
+                      title: '🔔 TITSMART Kiểm Tra Thông Báo',
+                      body: 'Hệ thống thông báo đẩy Desktop & Mobile đang hoạt động rất tốt!',
+                    });
+                  }}
+                  className="text-[11px] text-slate-500 hover:text-primary font-medium flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 hover:bg-blue-50 transition-colors"
+                  title="Bấm để thử nghiệm bắn thông báo ra ngoài Windows / Điện thoại"
+                >
+                  <span className="material-symbols-outlined text-[13px]">volume_up</span>
+                  Thử
+                </button>
+                {activeTab === 'unread' ? (
+                  unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleMarkAllAsRead}
+                      className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+                      title="Đánh dấu tất cả là đã đọc"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">done_all</span>
+                      Đã đọc tất cả
+                    </button>
+                  )
+                ) : (
+                  displayNotifications.some(n => n.read) && (
+                    <button
+                      type="button"
+                      onClick={handleClearRead}
+                      className="text-[11px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+                      title="Dọn dẹp các thông báo đã đọc"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
+                      Xóa đã đọc
+                    </button>
+                  )
+                )}
+              </div>
             </div>
             <div className="flex rounded-lg bg-slate-200/70 p-0.5 text-xs font-semibold">
               <button
