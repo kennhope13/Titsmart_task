@@ -1356,25 +1356,32 @@ const hasSyncedRef = useRef(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const getTaskExportData = () => displayTasks.map((t, idx) => ({
-    ['STT']: t.stt || String(idx + 1),
-    ['ĐẦU MỤC CHA']: t.isSectionHeader ? '[TIÊU ĐỀ MỤC]' : t.sectionName || '',
-    ['NỘI DUNG CÔNG VIỆC']: t.name,
-    ['DỰ ÁN']: t.projectName || t.projectCode || '',
-    ['NGƯỜI PHỤ TRÁCH']: t.assignedEngineerName || 'Chưa phân công',
-    ['NGƯỜI THEO DÕI']: (t.followerNames && t.followerNames.length > 0) ? t.followerNames.join(', ') : '—',
-    ['KHỐI LƯỢNG']: t.isSectionHeader ? '' : t.volume,
-    ['ĐVT']: t.unit || '',
-    ['TIẾN ĐỘ']: t.isSectionHeader ? '' : String(Math.round((t.progress || 0) * 100)) + '%',
-    ['HẠN CHÓT']: t.dueDate || '—',
-    ['MỨC ƯU TIÊN']: t.priority === 'High' ? 'Cao' : t.priority === 'Low' ? 'Thấp' : 'Chuẩn',
-    ['TT ĐẶT HÀNG']: t.purchaseStatus || '',
-    ['TÌNH TRẠNG THI CÔNG']: t.constrStatus || '',
-    ['VƯỚNG MẮC/ TỒN ĐỌNG']: cleanIssue(t.issue) || '',
-    ['TT XỬ LÝ']: t.issueStatus || '',
-    ['HOÀN THÀNH']: t.isDone ? 'Đã hoàn thành' : 'Chưa',
-    ['GHI CHÚ']: cleanNotes(t.notes) || '',
-  }));
+  const cleanStaffName = (raw?: string) => {
+    if (!raw) return '';
+    return raw.split('|')[0].trim();
+  };
+
+  const getTaskExportData = () => groupedTasks.map((t) => {
+    const isSec = !!t.isSectionHeader;
+    return {
+      ['Stt']: t.computedStt || t.stt || '',
+      ['Mô tả công việc mời thầu']: t.name || '',
+      ['ĐVT']: isSec ? '' : (t.unit || ''),
+      ['Khối lượng']: isSec ? '' : (t.volume !== undefined && t.volume !== null ? t.volume : ''),
+      ['Tiến độ']: isSec ? '' : `${Math.round((t.progress || 0) * 100)}%`,
+      ['Người phụ trách']: isSec ? '' : (cleanStaffName(t.assignedEngineerName) || '—'),
+      ['TT Đặt hàng']: isSec ? '' : (t.purchaseStatus || '—'),
+      ['TĐ Thi công']: isSec ? '' : (t.constrStatus || '—'),
+      ['Hạn chót']: isSec ? '' : (t.dueDate || '—'),
+      ['Mức ưu tiên']: isSec ? '' : (t.priority === 'High' ? 'Cao' : t.priority === 'Low' ? 'Thấp' : 'Chuẩn'),
+      ['Vướng mắc / Tồn đọng']: isSec ? '' : (cleanIssue(t.issue) || '—'),
+      ['TT Xử lý']: isSec ? '' : (t.issueStatus || '—'),
+      ['Trạng thái']: isSec ? '' : (t.isDone ? 'Đã hoàn thành' : (t.status || 'Chưa làm')),
+      ['Ghi chú']: isSec ? '' : (cleanNotes(t.notes) || '—'),
+      _isSectionHeader: isSec,
+      _depth: t.depth || 0,
+    };
+  });
 
   const handleExportFile = async (format: ExportFileFormat) => {
     setIsExportMenuOpen(false);
@@ -1411,7 +1418,7 @@ const hasSyncedRef = useRef(false);
           pdf.addPage();
           y = 14;
         }
-        const line = `${index + 1}. ${row['STT']} | ${row['NỘI DUNG CÔNG VIỆC']} | ${row['DỰ ÁN']} | ${row['TIẾN ĐỘ']} | ${row['HOÀN THÀNH']}`;
+        const line = `${index + 1}. ${row['Stt']} | ${row['Mô tả công việc mời thầu']} | ${row['Tiến độ']} | ${row['Trạng thái']}`;
         const wrapped = pdf.splitTextToSize(line, 270);
         pdf.text(wrapped, 12, y);
         y += Math.max(7, wrapped.length * 4);
