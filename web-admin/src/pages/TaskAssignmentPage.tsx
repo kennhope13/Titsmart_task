@@ -108,11 +108,11 @@ export const TaskAssignmentPage: React.FC = () => {
     const isAssignee = isUserTaskAssignee(currentUser, task, engineers);
     if (isAssignee) return false;
 
-    // 4. Người giao việc chính chủ hoặc Quản lý có quyền
+    // 4. Người giao việc chính chủ hoặc Người có quyền quản lý công việc
     const isCreatorOrAssigner = isUserTaskAssigner(currentUser, task, engineers);
-    const isManager = uRole === 'pm' || uRole === 'quản lý dự án' || uRole === 'manager' || uRole === 'quản lý' || hasPermission(currentUser, 'EDIT_TASKS');
+    const hasEditPermission = hasPermission(currentUser, 'EDIT_TASKS') || hasPermission(currentUser, 'ASSIGN_TASKS');
 
-    return Boolean(isCreatorOrAssigner || isManager);
+    return Boolean(isCreatorOrAssigner || hasEditPermission);
   };
 
   const handleAcceptTask = async (taskToAccept: Task) => {

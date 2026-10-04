@@ -141,8 +141,8 @@ export const isUserTaskAssigner = (
     }
   }
 
-  // Manager or user with ASSIGN_TASKS permission
-  if (role === 'manager' || role === 'quản lý' || role === 'pm' || role === 'quản lý dự án' || user.permissions?.includes('ASSIGN_TASKS')) {
+  // User with ASSIGN_TASKS permission configured in the system
+  if (user.permissions && Array.isArray(user.permissions) && user.permissions.includes('ASSIGN_TASKS')) {
     return true;
   }
 
