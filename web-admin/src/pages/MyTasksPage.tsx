@@ -209,6 +209,31 @@ export const MyTasksPage: React.FC = () => {
     });
   }, [myCategoryTasks, filterProjectCode, searchQuery, statusFilter, highlightTaskId]);
 
+  // Group displayed tasks by project
+  const tasksByProject = useMemo(() => {
+    const groups: { projectCode: string; projectName: string; tasks: typeof displayedTasks }[] = [];
+    const map = new Map<string, { projectCode: string; projectName: string; tasks: typeof displayedTasks }>();
+
+    displayedTasks.forEach(t => {
+      const pCode = t.projectCode || 'COMPANY';
+      if (!map.has(pCode)) {
+        const proj = projects.find(p => p.code === pCode || p.id === pCode);
+        const group = {
+          projectCode: pCode,
+          projectName: category === 'direct' && pCode === 'COMPANY' 
+            ? 'Nội bộ Công ty / Giao việc trực tiếp' 
+            : (proj?.name || t.projectName || pCode),
+          tasks: []
+        };
+        map.set(pCode, group);
+        groups.push(group);
+      }
+      map.get(pCode)!.tasks.push(t);
+    });
+
+    return groups;
+  }, [displayedTasks, projects, category]);
+
   useEffect(() => {
     if (isHighlightActive && (highlightTaskId || highlightKeyword)) {
       const timer = setTimeout(() => {
@@ -595,32 +620,73 @@ export const MyTasksPage: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden flex flex-col">
-        <div className="w-full h-full overflow-auto custom-scrollbar bg-slate-50/50 p-3 sm:p-4 lg:p-6 pb-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {displayedTasks.length === 0 ? (
-              <div className="col-span-full py-16 text-center text-slate-500 font-medium bg-white rounded-2xl border border-dashed border-slate-300 flex flex-col items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-4xl text-slate-400">
-                  {statusFilter === 'completed' ? 'task_alt' : statusFilter === 'pending' ? 'pending_actions' : 'assignment_late'}
-                </span>
-                <p className="text-sm font-bold text-slate-700">
-                  {statusFilter === 'completed' 
-                    ? 'Chưa có công việc nào đã hoàn thành.' 
-                    : statusFilter === 'pending'
-                    ? 'Chưa có công việc nào đang chờ nhận.'
-                    : statusFilter === 'review'
-                    ? 'Chưa có công việc nào đang chờ nghiệm thu.'
-                    : statusFilter === 'overdue'
-                    ? 'Không có công việc nào bị trễ hạn.'
-                    : 'Không tìm thấy công việc nào phù hợp.'}
-                </p>
-                <p className="text-xs text-slate-400">
-                  {category === 'direct' 
-                    ? 'Các công việc phát sinh/giao trực tiếp được phân công sẽ hiển thị tại đây.'
-                    : 'Các công việc thuộc các dự án đảm nhiệm sẽ hiển thị tại đây.'}
-                </p>
-              </div>
-            ) : (
-              displayedTasks.map((t) => {
+        <div className="w-full h-full overflow-auto custom-scrollbar bg-slate-50/50 p-3 sm:p-4 lg:p-6 pb-20 space-y-6">
+          {displayedTasks.length === 0 ? (
+            <div className="py-16 text-center text-slate-500 font-medium bg-white rounded-2xl border border-dashed border-slate-300 flex flex-col items-center justify-center gap-2">
+              <span className="material-symbols-outlined text-4xl text-slate-400">
+                {statusFilter === 'completed' ? 'task_alt' : statusFilter === 'pending' ? 'pending_actions' : 'assignment_late'}
+              </span>
+              <p className="text-sm font-bold text-slate-700">
+                {statusFilter === 'completed' 
+                  ? 'Chưa có công việc nào đã hoàn thành.' 
+                  : statusFilter === 'pending'
+                  ? 'Chưa có công việc nào đang chờ nhận.'
+                  : statusFilter === 'review'
+                  ? 'Chưa có công việc nào đang chờ nghiệm thu.'
+                  : statusFilter === 'overdue'
+                  ? 'Không có công việc nào bị trễ hạn.'
+                  : 'Không tìm thấy công việc nào phù hợp.'}
+              </p>
+              <p className="text-xs text-slate-400">
+                {category === 'direct' 
+                  ? 'Các công việc phát sinh/giao trực tiếp được phân công sẽ hiển thị tại đây.'
+                  : 'Các công việc thuộc các dự án đảm nhiệm sẽ hiển thị tại đây.'}
+              </p>
+            </div>
+          ) : (
+            tasksByProject.map((group) => {
+              const isRealProject = group.projectCode && group.projectCode !== 'COMPANY' && group.projectCode !== 'OTHER';
+              return (
+                <div key={group.projectCode} className="space-y-3">
+                  {/* Project Section Header */}
+                  <div className="flex items-center justify-between bg-white border border-slate-200 px-4 py-2.5 rounded-xl shadow-2xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                        <span className="material-symbols-outlined text-base">
+                          {isRealProject ? 'cell_tower' : 'flash_on'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <h2 className="text-sm font-bold text-slate-900 truncate" title={group.projectName}>
+                          {group.projectName}
+                        </h2>
+                        {isRealProject && (
+                          <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                            {group.projectCode}
+                          </span>
+                        )}
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 shrink-0">
+                        {group.tasks.length} công việc
+                      </span>
+                    </div>
+
+                    {isRealProject && (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/projects/${encodeURIComponent(group.projectCode)}/tasks`)}
+                        className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 shrink-0 ml-2 cursor-pointer"
+                        title="Xem toàn bộ tiến độ dự án"
+                      >
+                        <span className="hidden sm:inline">Tiến độ dự án</span>
+                        <span className="material-symbols-outlined text-sm">open_in_new</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Task Cards Grid for this project */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {group.tasks.map((t) => {
                 const p = projects.find(proj => proj.code === t.projectCode);
                 const isWaiting = t.status === 'Chờ nhận việc';
                 const hasQuestion = t.status === 'Có thắc mắc';
@@ -861,11 +927,14 @@ export const MyTasksPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })
-            )}
-          </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
