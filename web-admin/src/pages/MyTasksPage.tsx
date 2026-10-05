@@ -660,27 +660,29 @@ export const MyTasksPage: React.FC = () => {
                   {/* Project Section Accordion Header */}
                   <div 
                     onClick={() => toggleProjectCollapse(group.projectCode)}
-                    className="flex items-center justify-between bg-white hover:bg-slate-50/80 border border-slate-200 px-3.5 py-2 rounded-xl shadow-2xs cursor-pointer select-none transition-all group"
+                    className="flex items-center justify-between bg-slate-100 hover:bg-slate-200/80 border border-slate-300/90 border-l-4 border-l-slate-800 px-3.5 sm:px-4 py-2.5 rounded-xl shadow-xs cursor-pointer select-none transition-all group"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className={`material-symbols-outlined text-lg text-slate-400 group-hover:text-primary transition-transform duration-200 shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}>
-                        chevron_right
-                      </span>
-                      <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
-                        <span className="material-symbols-outlined text-[15px]">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-slate-900 shadow-2xs transition-transform duration-200 shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}>
+                        <span className="material-symbols-outlined text-base">
+                          chevron_right
+                        </span>
+                      </div>
+                      <div className="w-7 h-7 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                        <span className="material-symbols-outlined text-[16px]">
                           {isRealProject ? 'cell_tower' : 'flash_on'}
                         </span>
                       </div>
-                      <h2 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-primary transition-colors truncate" title={group.projectName}>
+                      <h2 className="text-xs sm:text-sm font-bold text-slate-900 truncate" title={group.projectName}>
                         {group.projectName}
                       </h2>
                       {isRealProject && (
-                        <span className="hidden sm:inline-block px-1.5 py-0.2 rounded text-[9.5px] font-mono font-bold bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
+                        <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-white text-slate-700 border border-slate-300 shrink-0">
                           {group.projectCode}
                         </span>
                       )}
-                      <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-slate-100 text-slate-700 shrink-0">
-                        {group.tasks.length}
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-white shrink-0 shadow-2xs">
+                        {group.tasks.length} {group.tasks.length === 1 ? 'việc' : 'việc'}
                       </span>
                     </div>
 
@@ -691,7 +693,7 @@ export const MyTasksPage: React.FC = () => {
                           e.stopPropagation();
                           navigate(`/projects/${encodeURIComponent(group.projectCode)}/tasks`);
                         }}
-                        className="text-xs font-semibold text-slate-500 hover:text-primary hover:underline flex items-center gap-1 shrink-0 ml-2 cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 flex items-center gap-1 shrink-0 ml-2 cursor-pointer shadow-2xs transition-all"
                         title="Xem toàn bộ tiến độ dự án"
                       >
                         <span className="hidden sm:inline">Tiến độ dự án</span>
