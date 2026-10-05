@@ -656,11 +656,11 @@ export const MyTasksPage: React.FC = () => {
               const isRealProject = group.projectCode && group.projectCode !== 'COMPANY' && group.projectCode !== 'OTHER';
               const isCollapsed = !!collapsedProjects[group.projectCode];
               return (
-                <div key={group.projectCode} className="space-y-2 w-full">
-                  {/* Project Section Accordion Header (Edge-to-Edge / Tràn viền) */}
+                <div key={group.projectCode} className="space-y-3 w-full">
+                  {/* Project Section Accordion Header */}
                   <div 
                     onClick={() => toggleProjectCollapse(group.projectCode)}
-                    className="flex items-center justify-between bg-slate-100 hover:bg-slate-200/70 border-y border-slate-200 -mx-2.5 sm:-mx-3.5 md:-mx-4 px-3 sm:px-4 md:px-5 py-2 cursor-pointer select-none transition-all group sticky top-0 z-10"
+                    className="flex items-center justify-between bg-white hover:bg-slate-50 border border-slate-200 px-3.5 sm:px-4 py-2.5 rounded-xl shadow-xs cursor-pointer select-none transition-all group w-full"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className={`material-symbols-outlined text-slate-400 group-hover:text-primary text-xl transition-transform duration-200 shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}>
@@ -672,7 +672,7 @@ export const MyTasksPage: React.FC = () => {
                       <h2 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-primary transition-colors truncate" title={group.projectName}>
                         {group.projectName}
                       </h2>
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white text-slate-600 border border-slate-200 shrink-0">
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
                         {group.tasks.length} công việc
                       </span>
                     </div>
@@ -695,7 +695,7 @@ export const MyTasksPage: React.FC = () => {
 
                   {/* Task Cards Grid for this project */}
                   {!isCollapsed && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5 pt-1 w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5 w-full">
                       {group.tasks.map((t) => {
                 const p = projects.find(proj => proj.code === t.projectCode);
                 const isWaiting = t.status === 'Chờ nhận việc';
