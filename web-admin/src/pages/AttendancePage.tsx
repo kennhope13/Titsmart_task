@@ -94,7 +94,6 @@ export const AttendancePage: React.FC = () => {
   const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
   const [logs, setLogs] = useState<AttendanceLog[]>(cachedLogs);
   const [loading, setLoading] = useState(!hasFetchedAttendanceData && cachedLogs.length === 0);
-  const [activeSession, setActiveSession] = useState<AttendanceLog | null>(null);
   const [selectedProject, setSelectedProject] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,11 +102,8 @@ export const AttendancePage: React.FC = () => {
   const [filterUser, setFilterUser] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [checkInImage, setCheckInImage] = useState<string | null>(null);
-  const [checkOutImage, setCheckOutImage] = useState<string | null>(null);
   const [viewImage, setViewImage] = useState<string | null>(null);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
-  const [showCheckOutModal, setShowCheckOutModal] = useState(false);
-  const [checkOutNotes, setCheckOutNotes] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -138,7 +134,6 @@ export const AttendancePage: React.FC = () => {
   const [reviewStep, setReviewStep] = useState<1 | 2>(1);
   const [reviewNote, setReviewNote] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const checkOutFileRef = useRef<HTMLInputElement>(null);
 
   // Danh sách Người duyệt Cấp 2 (Chỉ những người được cấp quyền Cấp 2 / APPROVE_LEAVE_STEP1, không bao gồm Cấp 1 / Admin)
   const step1Reviewers = React.useMemo(() => {
@@ -221,10 +216,8 @@ export const AttendancePage: React.FC = () => {
     const exportData = filteredLogs.map((log, index) => ({
       'STT': index + 1,
       'Ngày': formatDate(log.checkInTime),
+      'Giờ': formatTime(log.checkInTime),
       'Nhân viên': log.userName,
-      'Giờ vào': formatTime(log.checkInTime),
-      'Giờ ra': log.checkOutTime ? formatTime(log.checkOutTime) : 'Đang làm',
-      'Thời gian': log.checkOutTime ? getDuration(log.checkInTime, log.checkOutTime) : '—',
       'Dự án': log.projectName || '',
       'Ghi chú': log.notes || '',
     }));
@@ -348,17 +341,6 @@ export const AttendancePage: React.FC = () => {
       const data = await api.attendance.getAll();
       cachedLogs = data;
       setLogs(data);
-      // Find active session for today
-      if (user) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todaySession = data.find((l: AttendanceLog) =>
-          (l.userId === user.id || l.userName === user.name) &&
-          new Date(l.checkInTime) >= today &&
-          !l.checkOutTime
-        );
-        setActiveSession(todaySession || null);
-      }
     } catch (e) {
       console.error('Failed to fetch attendance logs', e);
     } finally {
@@ -590,13 +572,12 @@ export const AttendancePage: React.FC = () => {
     return data.publicUrl;
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: 'in' | 'out') => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       const url = await uploadImage(file);
-      if (type === 'in') setCheckInImage(url);
-      else setCheckOutImage(url);
+      setCheckInImage(url);
     } catch (err: any) {
       console.error('Upload failed', err);
       showToast('Lỗi tải ảnh: ' + (err.message || 'Không thể tải ảnh'), 'error');
@@ -617,57 +598,25 @@ export const AttendancePage: React.FC = () => {
         checkInImage: checkInImage || undefined,
         notes: notes || undefined,
       });
-      setActiveSession(result);
       cachedLogs = [result, ...cachedLogs];
       setLogs(prev => [result, ...prev]);
       setCheckInImage(null);
       setNotes('');
       setSelectedProject('');
       setShowCheckInModal(false);
-      showToast('Check-in thành công!', 'success');
+      showToast('Chấm công thành công!', 'success');
 
       // Gửi thông báo realtime chỉ đến admin
       await addNotification({
-        title: 'Chấm công vào ca',
-        message: `${user.name} đã check-in${proj ? ` tại dự án ${proj.name}` : ''} lúc ${formatTime(result.checkInTime)}`,
+        title: 'Chấm công',
+        message: `${user.name} đã chấm công${proj ? ` tại dự án ${proj.name}` : ''} lúc ${formatTime(result.checkInTime)}`,
         link: '/attendance?tab=attendance&view=all',
         type: 'attendance:::admin',
-        icon: 'login',
+        icon: 'fingerprint',
       });
     } catch (e: any) {
-      console.error('Check-in failed', e);
-      showToast('Lỗi chấm công: ' + (e.message || 'Check-in thất bại'), 'error');
-    }
-    setIsSubmitting(false);
-  };
-
-  const handleCheckOut = async () => {
-    if (!activeSession || !user || isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      const result = await api.attendance.checkOut(activeSession.id, {
-        checkOutImage: checkOutImage || undefined,
-        notes: checkOutNotes || undefined,
-      });
-      setActiveSession(null);
-      cachedLogs = cachedLogs.map(l => l.id === result.id ? result : l);
-      setLogs(prev => prev.map(l => l.id === result.id ? result : l));
-      setCheckOutImage(null);
-      setCheckOutNotes('');
-      setShowCheckOutModal(false);
-      showToast('Check-out thành công!', 'success');
-
-      // Gửi thông báo realtime chỉ đến admin
-      await addNotification({
-        title: 'Chấm công ra ca',
-        message: `${user.name} đã check-out lúc ${formatTime(result.checkOutTime)}. Thời gian làm việc: ${getDuration(result.checkInTime, result.checkOutTime)}`,
-        link: '/attendance?tab=attendance&view=all',
-        type: 'attendance:::admin',
-        icon: 'logout',
-      });
-    } catch (e: any) {
-      console.error('Check-out failed', e);
-      showToast('Lỗi check-out: ' + (e.message || 'Check-out thất bại'), 'error');
+      console.error('Attendance failed', e);
+      showToast('Lỗi chấm công: ' + (e.message || 'Chấm công thất bại'), 'error');
     }
     setIsSubmitting(false);
   };
@@ -678,7 +627,6 @@ export const AttendancePage: React.FC = () => {
       await api.attendance.delete(deleteId);
       cachedLogs = cachedLogs.filter(l => l.id !== deleteId);
       setLogs(prev => prev.filter(l => l.id !== deleteId));
-      if (activeSession?.id === deleteId) setActiveSession(null);
     } catch (e) { console.error(e); }
     setDeleteId(null);
   };
@@ -875,30 +823,14 @@ export const AttendancePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Vào ca / Ra ca Button */}
-              {activeSession ? (
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200 h-8">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    Đang làm
-                  </span>
-                  <button
-                    onClick={() => setShowCheckOutModal(true)}
-                    className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0 h-8 cursor-pointer active:scale-95"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">logout</span>
-                    <span>Ra ca</span>
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowCheckInModal(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0 h-8 cursor-pointer active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-[16px]">login</span>
-                  <span>Vào ca</span>
-                </button>
-              )}
+              {/* Nút Chấm công */}
+              <button
+                onClick={() => setShowCheckInModal(true)}
+                className="flex items-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0 h-8 cursor-pointer active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[16px]">fingerprint</span>
+                <span>Chấm công</span>
+              </button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -1026,33 +958,13 @@ export const AttendancePage: React.FC = () => {
                 </div>
               ) : <div />}
 
-              {activeSession ? (
-                <div className="flex items-center gap-3 sm:gap-4 flex-wrap justify-end">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    Đang làm
-                  </span>
-                  <p className="text-xs sm:text-sm text-slate-600">
-                    <span className="hidden sm:inline">Giờ vào: </span>
-                    <span className="font-bold text-slate-800">{formatDateTime(activeSession.checkInTime)}</span>
-                  </p>
-                  <button
-                    onClick={() => setShowCheckOutModal(true)}
-                    className="w-8 h-8 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-sm transition-colors shrink-0 active:scale-95 cursor-pointer"
-                    title="Ra ca"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">logout</span>
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowCheckInModal(true)}
-                  className="w-8 h-8 flex items-center justify-center bg-primary hover:bg-blue-800 text-white font-bold rounded-lg shadow-sm transition-colors shrink-0 active:scale-95 cursor-pointer"
-                  title="Vào ca"
-                >
-                  <span className="material-symbols-outlined text-[18px]">login</span>
-                </button>
-              )}
+              <button
+                onClick={() => setShowCheckInModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs rounded-lg shadow-sm transition-colors shrink-0 h-8 cursor-pointer active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[16px]">fingerprint</span>
+                <span>Chấm công</span>
+              </button>
             </div>
 
             {/* Mobile Search & Date Filter */}
@@ -1102,7 +1014,7 @@ export const AttendancePage: React.FC = () => {
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-bold uppercase sticky top-0 z-10">
                       <th className="p-3">Nhân viên</th>
-                      <th className="p-3">Ngày</th>
+                      <th className="p-3">Thời gian</th>
                       <th className="p-3">Dự án</th>
                       <th className="p-3">Ghi chú</th>
                       <th className="p-3 text-center">Hình ảnh</th>
@@ -1114,7 +1026,7 @@ export const AttendancePage: React.FC = () => {
                       <tr key={log.id} className="hover:bg-slate-50 transition-colors">
                         <td className="p-3 font-bold text-slate-800">{log.userName}</td>
                         <td className="p-3 text-slate-700 font-medium whitespace-nowrap">
-                          {formatDate(log.checkInTime)}
+                          {formatDateTime(log.checkInTime)}
                         </td>
                         <td className="p-3 text-slate-600 max-w-[200px] truncate" title={log.projectName}>
                           {log.projectName || <span className="text-slate-400">—</span>}
@@ -1123,19 +1035,17 @@ export const AttendancePage: React.FC = () => {
                           {log.notes || <span className="text-slate-400">—</span>}
                         </td>
                         <td className="p-3 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-2">
-                            {log.checkInImage && (
-                              <button onClick={() => setViewImage(log.checkInImage || null)} className="flex items-center gap-1 text-primary hover:text-blue-700 transition-colors bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[11px] font-bold">
-                                <span className="material-symbols-outlined text-[12px]">image</span> Vào
-                              </button>
-                            )}
-                            {log.checkOutImage && (
-                              <button onClick={() => setViewImage(log.checkOutImage || null)} className="flex items-center gap-1 text-red-600 hover:text-red-800 transition-colors bg-red-50 px-2 py-0.5 rounded border border-red-100 text-[11px] font-bold">
-                                <span className="material-symbols-outlined text-[12px]">image</span> Ra
-                              </button>
-                            )}
-                            {!log.checkInImage && !log.checkOutImage && <span className="text-slate-300 text-xs">—</span>}
-                          </div>
+                          {log.checkInImage || log.checkOutImage ? (
+                            <button
+                              onClick={() => setViewImage(log.checkInImage || log.checkOutImage || null)}
+                              className="inline-flex items-center gap-1 text-primary hover:text-blue-700 transition-colors bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[11px] font-bold cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[13px]">image</span>
+                              <span>Xem ảnh</span>
+                            </button>
+                          ) : (
+                            <span className="text-slate-300 text-xs">—</span>
+                          )}
                         </td>
                         {isAdmin && (
                           <td className="p-3 text-center whitespace-nowrap">
@@ -1893,14 +1803,14 @@ export const AttendancePage: React.FC = () => {
         )}
       </Modal>
 
-      {/* Check-in Modal */}
-      <Modal isOpen={showCheckInModal} onClose={() => setShowCheckInModal(false)} title="Check-in (Vào ca)" icon="login" size="md">
+      {/* Chấm công Modal */}
+      <Modal isOpen={showCheckInModal} onClose={() => setShowCheckInModal(false)} title="Chấm công" icon="fingerprint" size="md">
         <div className="space-y-4 py-2">
           <p className="text-sm text-slate-600">
-            Bạn đang chuẩn bị bắt đầu ca làm việc lúc <span className="font-bold">{formatTime(new Date().toISOString())} {formatDate(new Date().toISOString())}</span>
+            Thời gian chấm công: <span className="font-bold text-slate-800">{formatTime(new Date().toISOString())} {formatDate(new Date().toISOString())}</span>
           </p>
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Ảnh hiện trường khi vào ca (tùy chọn)</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Ảnh hiện trường / hình ảnh (tùy chọn)</label>
             <div className="flex items-center gap-3">
               {checkInImage ? (
                 <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200">
@@ -1911,12 +1821,12 @@ export const AttendancePage: React.FC = () => {
                 </div>
               ) : (
                 <button onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-1.5 px-3 py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition text-xs">
+                  className="flex items-center gap-1.5 px-3 py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition text-xs cursor-pointer">
                   <span className="material-symbols-outlined text-base">add_a_photo</span>
                   Chọn ảnh
                 </button>
               )}
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileSelect(e, 'in')} />
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
             </div>
           </div>
           <div>
@@ -1934,76 +1844,26 @@ export const AttendancePage: React.FC = () => {
             </CustomSelect>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Ghi chú</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Ghi chú (tùy chọn)</label>
             <textarea
               rows={2}
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="VD: Làm ca sáng, bảo trì..."
+              placeholder="Nhập ghi chú công việc..."
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none resize-none"
             />
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 mt-2">
           <button onClick={() => setShowCheckInModal(false)}
-            className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors text-sm">
+            className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors text-sm cursor-pointer">
             Hủy
           </button>
           <button onClick={handleCheckIn} disabled={isSubmitting}
-            className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-blue-800 text-white font-bold rounded-lg disabled:opacity-50 transition-colors text-sm">
-            {isSubmitting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <span className="material-symbols-outlined text-lg">login</span>}
-            Xác nhận Check-in
+            className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-blue-800 text-white font-bold rounded-lg disabled:opacity-50 transition-colors text-sm cursor-pointer shadow-sm">
+            {isSubmitting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <span className="material-symbols-outlined text-lg">fingerprint</span>}
+            Xác nhận Chấm công
           </button>
-        </div>
-      </Modal>
-
-      {/* Check-out Modal */}
-      <Modal isOpen={showCheckOutModal} onClose={() => setShowCheckOutModal(false)} title="Check-out (Ra ca)" icon="logout" size="md">
-        <div className="space-y-4 py-2">
-          <p className="text-sm text-slate-600">
-            Bạn đã check-in lúc <span className="font-bold">{activeSession ? formatDateTime(activeSession.checkInTime) : ''}</span>
-          </p>
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Ảnh hiện trường khi ra ca (tùy chọn)</label>
-            <div className="flex items-center gap-3">
-              {checkOutImage ? (
-                <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200">
-                  <img src={checkOutImage} alt="preview" className="w-full h-full object-cover" />
-                  <button onClick={() => setCheckOutImage(null)} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[10px]">close</span>
-                  </button>
-                </div>
-              ) : (
-                <button onClick={() => checkOutFileRef.current?.click()}
-                  className="flex items-center gap-1.5 px-3 py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition text-xs">
-                  <span className="material-symbols-outlined text-base">add_a_photo</span>
-                  Chọn ảnh
-                </button>
-              )}
-              <input ref={checkOutFileRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileSelect(e, 'out')} />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Ghi chú</label>
-            <textarea
-              rows={2}
-              value={checkOutNotes}
-              onChange={e => setCheckOutNotes(e.target.value)}
-              placeholder="Công việc đã hoàn thành..."
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none resize-none"
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
-            <button onClick={() => setShowCheckOutModal(false)}
-              className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors text-sm">
-              Hủy
-            </button>
-            <button onClick={handleCheckOut} disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg disabled:opacity-50 transition-colors text-sm">
-              {isSubmitting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <span className="material-symbols-outlined text-lg">logout</span>}
-              Xác nhận Check-out
-            </button>
-          </div>
         </div>
       </Modal>
 
