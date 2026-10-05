@@ -51,7 +51,7 @@ export const ProjectDetailPage: React.FC = () => {
       { label: 'Hồ sơ', path: `/projects/${projectId}/documents`, icon: 'file_present', requireAdmin: true },
       { label: 'Sơ đồ dự án', path: `/projects/${projectId}/diagram`, icon: 'account_tree', reqPerm: 'VIEW_PROJECT_DIAGRAM' },
       { label: 'Kho Dự án', path: `/projects/${projectId}/inventory`, icon: 'inventory_2' },
-      { label: 'Nhật ký Hiện trường', path: `/projects/${projectId}/field-logs`, icon: 'add_a_photo' }
+      { label: 'Hiện trường', path: `/projects/${projectId}/field-logs`, icon: 'add_a_photo' }
     ];
 
     const tabs = baseTabs.filter(tab => {

@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
           { label: 'Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'file_present', req: 'VIEW_DOCUMENTS' },
           { label: 'Sơ đồ dự án', path: `/projects/${currentProject.id}/diagram`, icon: 'account_tree', req: 'VIEW_PROJECT_DIAGRAM' },
           { label: 'Kho Dự án', path: `/projects/${currentProject.id}/inventory`, icon: 'inventory_2', req: 'VIEW_MATERIALS' },
-          { label: 'Nhật ký Hiện trường', path: `/projects/${currentProject.id}/field-logs`, icon: 'add_a_photo', req: 'VIEW_FIELD_LOGS' }
+          { label: 'Hiện trường', path: `/projects/${currentProject.id}/field-logs`, icon: 'add_a_photo', req: 'VIEW_FIELD_LOGS' }
         ];
 
       const projectItems = baseProjectItems.filter(item => hasPermission(user, item.req as any));
