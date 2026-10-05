@@ -343,8 +343,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       initX: currentX,
       initY: currentY,
     };
-
-    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -353,14 +351,18 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     const dx = e.clientX - dragStartRef.current.startX;
     const dy = e.clientY - dragStartRef.current.startY;
 
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+    if (!hasMovedRef.current && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
       hasMovedRef.current = true;
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      } catch (err) {}
     }
 
-    const newX = Math.max(10, Math.min(window.innerWidth - 50, dragStartRef.current.initX + dx));
-    const newY = Math.max(10, Math.min(window.innerHeight - 50, dragStartRef.current.initY + dy));
-
-    setPosition({ x: newX, y: newY });
+    if (hasMovedRef.current) {
+      const newX = Math.max(10, Math.min(window.innerWidth - 50, dragStartRef.current.initX + dx));
+      const newY = Math.max(10, Math.min(window.innerHeight - 50, dragStartRef.current.initY + dy));
+      setPosition({ x: newX, y: newY });
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -370,6 +372,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     } catch (err) {}
+
+    setTimeout(() => {
+      hasMovedRef.current = false;
+    }, 120);
   };
 
   const handlePointerCancel = (e: React.PointerEvent) => {
@@ -377,15 +383,17 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     } catch (err) {}
+    setTimeout(() => {
+      hasMovedRef.current = false;
+    }, 120);
   };
 
   const handleBellClick = (e: React.MouseEvent) => {
-    // If user dragged the bell, do not open popover
+    e.stopPropagation();
     if (hasMovedRef.current) {
-      e.stopPropagation();
       return;
     }
-    setShowPopover(!showPopover);
+    setShowPopover(prev => !prev);
   };
 
   useEffect(() => {
@@ -408,21 +416,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     return () => window.removeEventListener('resize', clampPos);
   }, []);
 
-  // Click outside listener for notification popover
-  useEffect(() => {
-    if (!showPopover) return;
-    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-      if (buttonRef.current && !buttonRef.current.contains(e.target as Node)) {
-        setShowPopover(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [showPopover]);
 
   // Per-user dismissed/cleared notification IDs (so each user account only deletes notifications for themselves)
   const userStorageKey = useMemo(() => {
@@ -926,6 +919,15 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
   if (isSidebar) {
     return (
       <>
+        {showPopover && (
+          <div
+            className="fixed inset-0 z-[9988] bg-transparent"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowPopover(false);
+            }}
+          />
+        )}
         <div ref={popoverRef} className="relative w-full">
         <button
           onClick={handleBellClick}
@@ -971,22 +973,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      await requestSystemNotificationPermission();
-                      sendSystemNotification({
-                        title: '🔔 TITSMART Kiểm Tra Thông Báo',
-                        body: 'Hệ thống thông báo đẩy Desktop & Mobile đang hoạt động rất tốt!',
-                      });
-                    }}
-                    className="text-[11px] text-slate-500 hover:text-primary font-medium flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 hover:bg-blue-50 transition-colors"
-                    title="Bấm để thử nghiệm bắn thông báo ra ngoài Windows / Điện thoại"
-                  >
-                    <span className="material-symbols-outlined text-[13px]">volume_up</span>
-                    Thử
-                  </button>
                   {activeTab === 'unread' ? (
                     unreadCount > 0 && (
                       <button
@@ -1115,44 +1101,94 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     );
   }
 
+  const floatingPopoverStyle = useMemo<React.CSSProperties>(() => {
+    if (!position) {
+      return {
+        position: 'fixed',
+        top: 'calc(env(safe-area-inset-top, 0px) + 48px)',
+        right: '12px',
+        zIndex: 9995,
+      };
+    }
+    const isRight = typeof window !== 'undefined' ? position.x > window.innerWidth / 2 : true;
+    const isBottom = typeof window !== 'undefined' ? position.y > window.innerHeight / 2 : false;
+
+    const style: React.CSSProperties = {
+      position: 'fixed',
+      zIndex: 9995,
+    };
+
+    if (isBottom) {
+      style.bottom = `${Math.max(10, (typeof window !== 'undefined' ? window.innerHeight : 800) - position.y + 8)}px`;
+      style.top = 'auto';
+    } else {
+      style.top = `${Math.max(10, position.y + 42)}px`;
+      style.bottom = 'auto';
+    }
+
+    if (isRight) {
+      style.right = `${Math.max(10, (typeof window !== 'undefined' ? window.innerWidth : 400) - position.x - 36)}px`;
+      style.left = 'auto';
+    } else {
+      style.left = `${Math.max(10, position.x)}px`;
+      style.right = 'auto';
+    }
+
+    return style;
+  }, [position]);
+
   return (
     <>
+      {showPopover && (
+        <div
+          className="fixed inset-0 z-[9988] bg-transparent"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowPopover(false);
+          }}
+        />
+      )}
+
       <div
-      ref={buttonRef}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerCancel}
-      style={
-        position
-          ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
-          : undefined
-      }
-      className={`fixed z-[9990] touch-none select-none pointer-events-auto ${
-        position ? '' : 'top-[calc(env(safe-area-inset-top,0px)+8px)] sm:top-[6px] right-3 sm:right-4'
-      }`}
-    >
-      <button
-        type="button"
-        onClick={handleBellClick}
-        onDoubleClick={(e) => {
-          e.stopPropagation();
-          setPosition(null);
-        }}
-        title="Thông báo hệ thống (Nhấn giữ & kéo để di chuyển, nhấp đúp để đặt lại vị trí)"
-        className={`w-[36px] h-[36px] rounded-lg flex items-center justify-center transition-all relative border shadow-xs cursor-grab active:cursor-grabbing touch-none select-none
-          ${showPopover ? 'bg-blue-50 border-blue-200 text-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800'}`}
+        ref={buttonRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        style={
+          position
+            ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
+            : undefined
+        }
+        className={`fixed z-[9990] touch-none select-none pointer-events-auto ${
+          position ? '' : 'top-[calc(env(safe-area-inset-top,0px)+8px)] sm:top-[6px] right-3 sm:right-4'
+        }`}
       >
-        <span className="material-symbols-outlined text-[20px] pointer-events-none">notifications</span>
-        {unreadCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white rounded-full text-[10px] font-black flex items-center justify-center border-2 border-white pointer-events-none shadow-xs">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-      </button>
+        <button
+          type="button"
+          onClick={handleBellClick}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            setPosition(null);
+          }}
+          title="Thông báo hệ thống (Nhấn giữ & kéo để di chuyển, nhấp đúp để đặt lại vị trí)"
+          className={`w-[36px] h-[36px] rounded-lg flex items-center justify-center transition-all relative border shadow-xs cursor-grab active:cursor-grabbing touch-none select-none
+            ${showPopover ? 'bg-blue-50 border-blue-200 text-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800'}`}
+        >
+          <span className="material-symbols-outlined text-[20px] pointer-events-none">notifications</span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white rounded-full text-[10px] font-black flex items-center justify-center border-2 border-white pointer-events-none shadow-xs">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
+      </div>
 
       {showPopover && (
-        <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-slate-200 overflow-hidden z-50 w-[calc(100vw-24px)] sm:w-[350px] max-w-[350px] flex flex-col">
+        <div
+          style={floatingPopoverStyle}
+          className="bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-slate-200 overflow-hidden w-[calc(100vw-24px)] sm:w-[350px] max-w-[350px] flex flex-col pointer-events-auto animate-in fade-in zoom-in-95 duration-150"
+        >
           <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80">
             <div className="flex justify-between items-center mb-2.5">
               <div className="flex items-center gap-2">
@@ -1165,22 +1201,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    await requestSystemNotificationPermission();
-                    sendSystemNotification({
-                      title: '🔔 TITSMART Kiểm Tra Thông Báo',
-                      body: 'Hệ thống thông báo đẩy Desktop & Mobile đang hoạt động rất tốt!',
-                    });
-                  }}
-                  className="text-[11px] text-slate-500 hover:text-primary font-medium flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 hover:bg-blue-50 transition-colors"
-                  title="Bấm để thử nghiệm bắn thông báo ra ngoài Windows / Điện thoại"
-                >
-                  <span className="material-symbols-outlined text-[13px]">volume_up</span>
-                  Thử
-                </button>
                 {activeTab === 'unread' ? (
                   unreadCount > 0 && (
                     <button
@@ -1296,8 +1316,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
           </div>
         </div>
       )}
-
-      </div>
 
       {renderCenterModal()}
     </>
