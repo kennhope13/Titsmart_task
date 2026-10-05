@@ -205,7 +205,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       }
       const { data: engineerData } = await query.maybeSingle();
       if (engineerData) {
-        if (engineerData.is_locked || engineerData.isLocked) {
+        if (engineerData.is_locked || engineerData.isLocked || engineerData.is_active === false) {
           get().logout();
           window.location.href = '/login';
           return;
@@ -300,7 +300,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
         .or(`email.eq.${email},username.eq.${usernameOrEmail.trim()}`)
         .maybeSingle();
 
-      if (engineerData && (engineerData.is_locked || engineerData.isLocked)) {
+      if (engineerData && (engineerData.is_locked || engineerData.isLocked || engineerData.is_active === false)) {
         await supabase.auth.signOut();
         return { ok: false, error: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.' };
       }

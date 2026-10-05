@@ -791,18 +791,27 @@ export const api = {
     getAll: async () => {
       const { data, error } = await supabase.from('engineers').select('*').order('created_at', { ascending: true });
       if (error) throw error;
-      return mapArray(data || []);
+      return mapArray((data || []).map((d: any) => ({
+        ...d,
+        isLocked: d.is_locked !== undefined ? d.is_locked : (d.is_active !== undefined ? !d.is_active : false),
+      })));
     },
     create: async (data: any) => {
       const payload = toSnakeCase(data);
+      if (payload.is_locked !== undefined) {
+        payload.is_active = !payload.is_locked;
+        delete payload.is_locked;
+      }
       const { data: result, error } = await supabase.from('engineers').insert(payload).select().single();
       if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('password')) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('password') || String(error.message).includes('is_locked') || String(error.message).includes('is_active')) {
           delete payload.updated_by;
           delete payload.updated_at;
+          delete payload.is_locked;
           const { data: retryResult, error: retryError } = await supabase.from('engineers').insert(payload).select().single();
           if (retryError) {
             delete payload.password;
+            delete payload.is_active;
             const { data: finalResult, error: finalError } = await supabase.from('engineers').insert(payload).select().single();
             if (finalError) throw finalError;
             return toCamelCase(finalResult);
@@ -815,14 +824,20 @@ export const api = {
     },
     update: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
+      if (payload.is_locked !== undefined) {
+        payload.is_active = !payload.is_locked;
+        delete payload.is_locked;
+      }
       const { data: result, error } = await supabase.from('engineers').update(payload).eq('id', id).select().single();
       if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('password')) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('password') || String(error.message).includes('is_locked') || String(error.message).includes('is_active')) {
           delete payload.updated_by;
           delete payload.updated_at;
+          delete payload.is_locked;
           const { data: retryResult, error: retryError } = await supabase.from('engineers').update(payload).eq('id', id).select().single();
           if (retryError) {
             delete payload.password;
+            delete payload.is_active;
             const { data: finalResult, error: finalError } = await supabase.from('engineers').update(payload).eq('id', id).select().single();
             if (finalError) throw finalError;
             return toCamelCase(finalResult);
