@@ -643,24 +643,12 @@ export const MyTasksPage: React.FC = () => {
                     onClick={() => setIsHighlightActive(false)}
                     className={`flex flex-col bg-white border rounded-xl shadow-xs overflow-hidden transition-all hover:shadow-md ${
                       isMatch
-                        ? 'highlighted-task-card ring-2 ring-blue-500 ring-offset-2'
-                        : isOverdue ? 'border-rose-300 ring-1 ring-rose-200'
-                        : hasQuestion ? 'border-orange-300 ring-1 ring-orange-200'
-                        : isWaiting ? 'border-amber-300'
-                        : isWaitingApproval ? 'border-purple-300'
-                        : isCompleted ? 'border-emerald-300'
-                        : 'border-slate-200'
+                        ? 'highlighted-task-card ring-2 ring-primary ring-offset-2 border-primary/40'
+                        : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     {/* Card Header */}
-                    <div className={`px-4 py-2.5 border-b text-xs font-bold flex justify-between items-center ${
-                      hasQuestion ? 'bg-orange-50 text-orange-950 border-orange-200'
-                      : isWaiting ? 'bg-amber-50 text-amber-900 border-amber-200'
-                      : isWaitingApproval ? 'bg-purple-50 text-purple-900 border-purple-200'
-                      : isCompleted ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                      : isOverdue ? 'bg-rose-50 text-rose-900 border-rose-200'
-                      : 'bg-slate-50 text-slate-800 border-slate-200'
-                    }`}>
+                    <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/80 text-xs font-semibold text-slate-700 flex justify-between items-center">
                       <div 
                         onClick={(e) => {
                           e.stopPropagation();
@@ -668,10 +656,10 @@ export const MyTasksPage: React.FC = () => {
                             navigate(`/projects/${encodeURIComponent(t.projectCode)}/tasks?taskId=${encodeURIComponent(t.id)}&highlight=${encodeURIComponent(t.name)}`);
                           }
                         }}
-                        className={`flex items-center gap-1.5 truncate pr-2 ${t.projectCode && t.projectCode !== 'COMPANY' ? 'hover:underline cursor-pointer text-blue-950 hover:text-primary transition-colors' : ''}`}
+                        className={`flex items-center gap-1.5 truncate pr-2 ${t.projectCode && t.projectCode !== 'COMPANY' ? 'hover:underline cursor-pointer text-slate-900 hover:text-primary transition-colors font-bold' : 'font-bold'}`}
                         title={t.projectCode && t.projectCode !== 'COMPANY' ? 'Bấm để xem công việc tại bảng Tiến độ công việc dự án' : undefined}
                       >
-                        <span className="material-symbols-outlined text-[15px] text-slate-500">
+                        <span className="material-symbols-outlined text-[15px] text-slate-400">
                           {category === 'direct' ? 'flash_on' : 'folder'}
                         </span>
                         <span className="truncate">
@@ -686,19 +674,12 @@ export const MyTasksPage: React.FC = () => {
                       
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isFollowerOnly && (
-                          <span className="px-2 py-0.5 rounded-full font-bold text-[10px] bg-teal-100 text-teal-800 border border-teal-300 flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-md font-semibold text-[10px] bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1">
                             <span className="material-symbols-outlined text-[12px]">visibility</span>
                             Theo dõi
                           </span>
                         )}
-                        <span className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
-                          hasQuestion ? 'bg-orange-500 text-white shadow-xs animate-pulse' :
-                          isWaiting ? 'bg-white text-amber-800 border border-amber-300 shadow-2xs' :
-                          isWaitingApproval ? 'bg-white text-purple-800 border border-purple-300 shadow-2xs' :
-                          isCompleted ? 'bg-white text-emerald-800 border border-emerald-300 shadow-2xs' :
-                          isOverdue ? 'bg-rose-500 text-white shadow-xs' :
-                          'bg-white text-blue-800 border border-blue-200 shadow-2xs'
-                        }`}>
+                        <span className="px-2.5 py-0.5 rounded-md font-semibold text-[11px] bg-slate-100 text-slate-700 border border-slate-200">
                           {isOverdue && !isCompleted ? 'Trễ hạn' : (t.status || 'Chưa làm')}
                         </span>
                       </div>
@@ -849,31 +830,31 @@ export const MyTasksPage: React.FC = () => {
                             isUserTaskAssigner(user, t, engineers) ? (
                               <button 
                                 onClick={() => handleApproveTask(t)}
-                                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold rounded-lg shadow-xs transition-all animate-pulse text-xs cursor-pointer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold rounded-lg shadow-xs transition-all text-xs cursor-pointer"
                                 title="Nghiệm thu và xác nhận hoàn thành công việc này"
                               >
                                 <span className="material-symbols-outlined text-[16px]">verified</span>
                                 Nghiệm thu hoàn thành
                               </button>
                             ) : (
-                              <span className="text-purple-700 font-bold flex items-center gap-1 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-200">
-                                <span className="material-symbols-outlined text-[16px] animate-pulse">hourglass_top</span>
+                              <span className="text-slate-700 font-semibold flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 text-xs">
+                                <span className="material-symbols-outlined text-[16px] text-slate-500">hourglass_top</span>
                                 Chờ nghiệm thu
                               </span>
                             )
                           )}
                           {isCompleted && (
-                            <span className="text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-                              <span className="material-symbols-outlined text-[16px]">verified</span>
+                            <span className="text-slate-700 font-semibold flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 text-xs">
+                              <span className="material-symbols-outlined text-[16px] text-slate-500">verified</span>
                               Đã nghiệm thu
                             </span>
                           )}
                           {isFollowerOnly && !isWaitingApproval && !isCompleted && (
                             <button 
                               onClick={() => setDiscussionTask(t)}
-                              className="flex items-center gap-1 px-2.5 py-1.5 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-800 font-bold rounded-lg shadow-2xs transition-all text-[11px]"
+                              className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold rounded-lg shadow-2xs transition-all text-[11px]"
                             >
-                              <span className="material-symbols-outlined text-[14px]">chat</span>
+                              <span className="material-symbols-outlined text-[14px] text-slate-500">chat</span>
                               Theo dõi & Trao đổi
                             </button>
                           )}

@@ -211,14 +211,7 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
               <span className="font-mono font-bold text-xs text-primary px-2.5 py-1 bg-white rounded-md border border-blue-200 shadow-2xs">
                 {task.projectCode || 'DỰ ÁN'}
               </span>
-              <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                task.status === 'Chờ nhận việc' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                task.status === 'Có thắc mắc' ? 'bg-orange-500 text-white font-bold shadow-2xs animate-pulse' :
-                task.status === 'Đang làm' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                task.status === 'Chờ nghiệm thu' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
-                task.status === 'Hoàn thành' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
-                'bg-slate-100 text-slate-700'
-              }`}>
+              <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                 {task.status || 'Chưa làm'}
               </span>
             </div>

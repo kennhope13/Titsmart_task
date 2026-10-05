@@ -1117,22 +1117,12 @@ export const TaskAssignmentPage: React.FC = () => {
                           )}
                         </td>
                         <td className="py-2.5 px-3 text-center border-r border-slate-200">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            t.priority === 'High' ? 'bg-red-100 text-red-700' :
-                            t.priority === 'Low' ? 'bg-slate-100 text-slate-600' :
-                            'bg-amber-100 text-amber-700'
-                          }`}>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                             {t.priority === 'High' ? 'Cao' : t.priority === 'Low' ? 'Thấp' : 'Chuẩn'}
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-center border-r border-slate-200">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-block ${
-                            t.status === 'Hoàn thành' || t.isDone ? 'bg-emerald-100 text-emerald-800' :
-                            t.status === 'Chờ nghiệm thu' ? 'bg-indigo-100 text-indigo-800 font-black ring-1 ring-indigo-300' :
-                            t.status === 'Đang làm' ? 'bg-blue-100 text-blue-800' :
-                            t.status === 'Có thắc mắc' ? 'bg-amber-100 text-amber-800' :
-                            'bg-amber-50 text-amber-700'
-                          }`}>
+                          <span className="px-2.5 py-1 rounded-md text-[10px] font-semibold inline-block bg-slate-100 text-slate-700 border border-slate-200">
                             {t.status || 'Chờ nhận việc'}
                           </span>
                         </td>
@@ -1142,7 +1132,7 @@ export const TaskAssignmentPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={(e) => handleQuickApprove(e, t)}
-                                className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs transition-colors"
+                                className="p-1 bg-slate-900 hover:bg-slate-800 text-white rounded shadow-xs transition-colors"
                                 title="Nghiệm thu hoàn thành"
                               >
                                 <span className="material-symbols-outlined text-[15px]">verified</span>
@@ -1493,14 +1483,7 @@ export const TaskAssignmentPage: React.FC = () => {
                                 {t.volume || '-'} {t.unit || ''}
                               </td>
                               <td className="py-2.5 px-3 text-center border-r border-slate-200">
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-block ${
-                                  t.status === 'Hoàn thành' || t.isDone ? 'bg-emerald-100 text-emerald-800' :
-                                  t.status === 'Chờ nghiệm thu' ? 'bg-indigo-100 text-indigo-800 font-black ring-1 ring-indigo-300' :
-                                  t.status === 'Đang làm' ? 'bg-blue-100 text-blue-800' :
-                                  t.status === 'Có thắc mắc' ? 'bg-amber-100 text-amber-800' :
-                                  t.status === 'Chờ nhận việc' ? 'bg-amber-50 text-amber-700' :
-                                  'bg-slate-100 text-slate-600'
-                                }`}>
+                                <span className="px-2.5 py-1 rounded-md text-[10px] font-semibold inline-block bg-slate-100 text-slate-700 border border-slate-200">
                                   {t.status || 'Chưa làm'}
                                 </span>
                               </td>
@@ -1513,7 +1496,7 @@ export const TaskAssignmentPage: React.FC = () => {
                                     <button
                                       type="button"
                                       onClick={(e) => handleQuickApprove(e, t)}
-                                      className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs transition-colors"
+                                      className="p-1 bg-slate-900 hover:bg-slate-800 text-white rounded shadow-xs transition-colors"
                                       title="Nghiệm thu hoàn thành"
                                     >
                                       <span className="material-symbols-outlined text-[15px]">verified</span>
