@@ -49,20 +49,11 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
   const { activityLogs = [], engineers = [] } = useRealtimeStore();
 
   const formattedTime = formatAuditDateTime(updatedAt);
+  const isSystemOrEmpty = !updatedBy || updatedBy.trim() === '';
 
   const userList = React.useMemo(() => {
+    if (!showModal) return [];
     const map = new Map<string, { name: string; count: number; lastTime: string; rawTimeMs: number; title?: string }>();
-
-    // Filter activity logs strictly by projectCode if provided
-    const filteredLogs = (activityLogs || []).filter(log => {
-      if (!log) return false;
-      if (projectCode) {
-        const logProj = String(log.project || '').trim().toLowerCase();
-        const pCode = String(projectCode).trim().toLowerCase();
-        return logProj === pCode;
-      }
-      return true;
-    });
 
     // Helper to normalize user name (e.g. Admin -> Quản trị hệ thống)
     const normalizeUser = (nameStr?: string): string => {
@@ -74,7 +65,26 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
       return trimmed;
     };
 
-    // Aggregate log counts and track latest timestamp per user
+    // 1. Current row's updatedBy is always prioritized
+    const currentMs = parseAuditTime(updatedAt);
+    if (updatedBy && updatedBy !== 'Excel Sync' && !updatedBy.toLowerCase().includes('excel')) {
+      const u = normalizeUser(updatedBy);
+      const eng = (engineers || []).find(e => e?.name?.toLowerCase() === u.toLowerCase());
+      const title = u === 'Quản trị hệ thống' ? 'Chủ tịch / Admin' : eng?.title;
+      map.set(u, { name: u, count: 1, lastTime: formattedTime, rawTimeMs: currentMs, title });
+    }
+
+    // 2. Filter activity logs strictly by projectCode if provided
+    const filteredLogs = (activityLogs || []).filter(log => {
+      if (!log) return false;
+      if (projectCode) {
+        const logProj = String(log.project || '').trim().toLowerCase();
+        const pCode = String(projectCode).trim().toLowerCase();
+        return logProj === pCode;
+      }
+      return true;
+    });
+
     filteredLogs.forEach(log => {
       const rawUser = String(log.user || '').trim();
       if (!rawUser || rawUser === 'Excel Sync' || rawUser.toLowerCase().includes('excel')) return;
@@ -95,35 +105,16 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
       }
     });
 
-    // Make sure the current updatedBy user is in the list with updatedAt
-    const currentMs = parseAuditTime(updatedAt);
-    if (updatedBy && updatedBy !== 'Excel Sync' && !updatedBy.toLowerCase().includes('excel')) {
-      const u = normalizeUser(updatedBy);
-      if (!map.has(u)) {
-        const eng = (engineers || []).find(e => e?.name?.toLowerCase() === u.toLowerCase());
-        const title = u === 'Quản trị hệ thống' ? 'Chủ tịch / Admin' : eng?.title;
-        map.set(u, { name: u, count: 1, lastTime: formattedTime, rawTimeMs: currentMs, title });
-      } else {
-        const existing = map.get(u)!;
-        if (currentMs > existing.rawTimeMs) {
-          existing.rawTimeMs = currentMs;
-          existing.lastTime = formattedTime;
-        }
-      }
-    }
+    // Sort: Current row's updater first, then by latest timestamp descending
+    const currentNorm = normalizeUser(updatedBy);
+    return Array.from(map.values()).sort((a, b) => {
+      if (currentNorm && a.name.toLowerCase() === currentNorm.toLowerCase()) return -1;
+      if (currentNorm && b.name.toLowerCase() === currentNorm.toLowerCase()) return 1;
+      return b.rawTimeMs - a.rawTimeMs;
+    });
+  }, [showModal, activityLogs, engineers, updatedBy, updatedAt, formattedTime, projectCode]);
 
-    // Sort by latest update time descending (newest first)
-    return Array.from(map.values()).sort((a, b) => b.rawTimeMs - a.rawTimeMs);
-  }, [activityLogs, engineers, updatedBy, updatedAt, formattedTime, projectCode]);
-
-  const latestItem = userList.length > 0 ? userList[0] : null;
-  const currentMs = parseAuditTime(updatedAt);
-  const displayUser = (latestItem && latestItem.rawTimeMs > currentMs) ? latestItem.name : (updatedBy || latestItem?.name || '');
-  const displayTime = (latestItem && latestItem.rawTimeMs > currentMs) ? latestItem.lastTime : (formattedTime || latestItem?.lastTime || '');
-
-  const isSystemOrEmpty = !displayUser || displayUser.trim() === '';
-
-  if (isSystemOrEmpty && !displayTime) {
+  if (isSystemOrEmpty && !formattedTime) {
     return <div className="text-center w-full"><span className="text-slate-300 italic text-[10px]">-</span></div>;
   }
 
@@ -142,11 +133,11 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
         className={`flex flex-col items-center justify-center text-center text-[10px] leading-tight w-full cursor-pointer hover:bg-slate-100/80 p-1 rounded transition-colors group/audit ${className}`}
       >
         <span className="font-bold text-slate-700 truncate w-full group-hover/audit:text-primary underline decoration-dotted decoration-slate-300 underline-offset-2">
-          {displayUser}
+          {updatedBy}
         </span>
-        {displayTime && (
-          <span className="text-slate-400 font-mono text-[9px] mt-0.5" title={displayTime}>
-            {displayTime}
+        {formattedTime && (
+          <span className="text-slate-400 font-mono text-[9px] mt-0.5" title={formattedTime}>
+            {formattedTime}
           </span>
         )}
       </div>
