@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../services/authStore';
+import { useAuthStore, hasPermission } from '../../services/authStore';
 
 export interface SharedTaskTabsProps {
   activeTab: 'project_tasks' | 'unassigned' | 'assigned' | 'completed' | 'direct' | 'my-tasks' | 'my-tasks-completed';
@@ -21,7 +21,7 @@ export const SharedTaskTabs: React.FC<SharedTaskTabsProps> = ({
 }) => {
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
-  const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
+  const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm' || user?.username === 'admin' || hasPermission(user, 'ASSIGN_TASKS');
 
   if (!isAdmin) {
     const isDirect = category === 'direct' || activeTab === 'direct';

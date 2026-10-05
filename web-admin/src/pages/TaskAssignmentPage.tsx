@@ -878,7 +878,12 @@ export const TaskAssignmentPage: React.FC = () => {
     }
   };
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm' || user?.username === 'admin';
+  const canAccessAssignment = isAdmin || hasPermission(user, 'ASSIGN_TASKS');
 
+  if (!canAccessAssignment) {
+    return <Navigate to="/my-tasks" replace />;
+  }
 
   return (
     <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden">

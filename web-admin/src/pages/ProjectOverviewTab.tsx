@@ -1,12 +1,18 @@
 import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore, hasPermission } from '../services/authStore';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 export const ProjectOverviewTab: React.FC = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { projects, tasks, expenses, engineers, materialPlans, materials, fetchMaterials, documentTracks, fieldLogs } = useRealtimeStore();
+  const user = useAuthStore(s => s.user);
+
+  const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm' || user?.username === 'admin';
+  const canAssignTasks = isAdmin || hasPermission(user, 'ASSIGN_TASKS');
+  const canViewTasks = isAdmin || hasPermission(user, 'VIEW_TASKS');
 
   const project = useMemo(() => {
     if (!projectId) return undefined;
@@ -340,10 +346,17 @@ export const ProjectOverviewTab: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
         
         {/* 1. Tiến độ */}
-        <div onClick={() => navigate(`/projects/${project.id}/tasks`)} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-pointer hover:shadow-md transition-shadow group">
+        <div 
+          onClick={() => {
+            if (canViewTasks) {
+              navigate(`/projects/${project.id}/tasks`);
+            }
+          }} 
+          className={`bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] transition-shadow group ${canViewTasks ? 'cursor-pointer hover:shadow-md' : 'cursor-default'}`}
+        >
           <div className="flex justify-between items-start">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Tiến độ công việc</p>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500 shrink-0 group-hover:bg-blue-100 transition-colors">
+            <p className={`text-[11px] font-bold text-slate-500 uppercase tracking-wider transition-colors ${canViewTasks ? 'group-hover:text-blue-600' : ''}`}>Tiến độ công việc</p>
+            <div className={`w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500 shrink-0 transition-colors ${canViewTasks ? 'group-hover:bg-blue-100' : ''}`}>
               <span className="material-symbols-outlined text-lg">fact_check</span>
             </div>
           </div>
@@ -359,10 +372,19 @@ export const ProjectOverviewTab: React.FC = () => {
         </div>
 
         {/* 2. Công việc nhân viên */}
-        <div onClick={() => navigate(`/task-assignment?highlight=${encodeURIComponent(project.name || project.code)}`)} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] cursor-pointer hover:shadow-md transition-shadow group">
+        <div 
+          onClick={() => {
+            if (canAssignTasks) {
+              navigate(`/task-assignment?highlight=${encodeURIComponent(project.name || project.code)}`);
+            } else if (canViewTasks) {
+              navigate(`/projects/${project.id}/tasks`);
+            }
+          }} 
+          className={`bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-[130px] transition-shadow group ${(canAssignTasks || canViewTasks) ? 'cursor-pointer hover:shadow-md' : 'cursor-default'}`}
+        >
           <div className="flex justify-between items-start">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-primary transition-colors">Công việc nhân viên</p>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-primary shrink-0 group-hover:bg-blue-100 transition-colors">
+            <p className={`text-[11px] font-bold text-slate-500 uppercase tracking-wider transition-colors ${(canAssignTasks || canViewTasks) ? 'group-hover:text-primary' : ''}`}>Công việc nhân viên</p>
+            <div className={`w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-primary shrink-0 transition-colors ${(canAssignTasks || canViewTasks) ? 'group-hover:bg-blue-100' : ''}`}>
               <span className="material-symbols-outlined text-lg">assignment_ind</span>
             </div>
           </div>
@@ -613,20 +635,24 @@ export const ProjectOverviewTab: React.FC = () => {
             Công việc nhân viên ({engineerWorkloadList.length})
           </h3>
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate(`/task-assignment?highlight=${encodeURIComponent(project.name || project.code)}`)}
-              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-sm">tune</span>
-              Bảng phân công
-            </button>
-            <button
-              onClick={() => navigate(`/projects/${project.id}/tasks`)}
-              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-sm">list_alt</span>
-              Tất cả công việc
-            </button>
+            {canAssignTasks && (
+              <button
+                onClick={() => navigate(`/task-assignment?highlight=${encodeURIComponent(project.name || project.code)}`)}
+                className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-sm">tune</span>
+                Bảng phân công
+              </button>
+            )}
+            {canViewTasks && (
+              <button
+                onClick={() => navigate(`/projects/${project.id}/tasks`)}
+                className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-sm">list_alt</span>
+                Tất cả công việc
+              </button>
+            )}
           </div>
         </div>
 
@@ -635,8 +661,16 @@ export const ProjectOverviewTab: React.FC = () => {
             {engineerWorkloadList.map((eng, idx) => (
               <div
                 key={eng.id || idx}
-                onClick={() => navigate(`/task-assignment?highlight=${encodeURIComponent(eng.name)}`)}
-                className="bg-slate-50 hover:bg-white rounded-xl p-4 border border-slate-200 hover:border-primary/40 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+                onClick={() => {
+                  if (canAssignTasks) {
+                    navigate(`/task-assignment?highlight=${encodeURIComponent(eng.name)}`);
+                  } else if (canViewTasks) {
+                    navigate(`/projects/${project.id}/tasks`);
+                  }
+                }}
+                className={`bg-slate-50 hover:bg-white rounded-xl p-4 border border-slate-200 transition-all flex flex-col justify-between group ${
+                  (canAssignTasks || canViewTasks) ? 'cursor-pointer hover:border-primary/40 hover:shadow-md' : 'cursor-default'
+                }`}
               >
                 {/* Employee Header */}
                 <div className="flex items-start justify-between gap-2 mb-3">
