@@ -351,6 +351,7 @@ export const MaterialTrackingPage: React.FC = () => {
   const [transferQuantity, setTransferQuantity] = useState(0);
 
   // Filter state
+  const [filterDate, setFilterDate] = useState('');
   const [filterProject, setFilterProject] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterName, setFilterName] = useState('');
@@ -732,6 +733,11 @@ export const MaterialTrackingPage: React.FC = () => {
       if (filterName && m.name !== filterName) return false;
       if (filterUnit && m.unit !== filterUnit) return false;
 
+      if (filterDate) {
+        const d = (m.updatedAt || (m as any).createdAt || (m as any).date || '').substring(0, 10);
+        if (d !== filterDate) return false;
+      }
+
       if (searchQuery.trim()) {
         const rawQ = searchQuery.toLowerCase().trim();
         const rawMatch = (m.code || '').toLowerCase().includes(rawQ) || 
@@ -765,7 +771,7 @@ export const MaterialTrackingPage: React.FC = () => {
     });
 
     return result;
-  }, [materials, activeTab, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, searchQuery]);
+  }, [materials, activeTab, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, filterDate, searchQuery]);
 
   const imports = useMemo(() => {
     return inventoryTransactions
@@ -779,6 +785,11 @@ export const MaterialTrackingPage: React.FC = () => {
         if (filterCategory && ((mat?.category) || 'Vật tư chung') !== filterCategory) return false;
         if (filterName && (tx.materialName || mat?.name) !== filterName) return false;
         if (filterUnit && (tx.unit || mat?.unit) !== filterUnit) return false;
+
+        if (filterDate) {
+          const d = (tx.date || tx.createdAt || '').substring(0, 10);
+          if (d !== filterDate) return false;
+        }
 
         if (searchQuery.trim()) {
           const rawQ = searchQuery.toLowerCase().trim();
@@ -802,7 +813,7 @@ export const MaterialTrackingPage: React.FC = () => {
         return true;
       })
       .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
-  }, [inventoryTransactions, materials, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, searchQuery]);
+  }, [inventoryTransactions, materials, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, filterDate, searchQuery]);
 
   const exports = useMemo(() => {
     return inventoryTransactions
@@ -816,6 +827,11 @@ export const MaterialTrackingPage: React.FC = () => {
         if (filterCategory && ((mat?.category) || 'Vật tư chung') !== filterCategory) return false;
         if (filterName && (tx.materialName || mat?.name) !== filterName) return false;
         if (filterUnit && (tx.unit || mat?.unit) !== filterUnit) return false;
+
+        if (filterDate) {
+          const d = (tx.date || tx.createdAt || '').substring(0, 10);
+          if (d !== filterDate) return false;
+        }
 
         if (searchQuery.trim()) {
           const rawQ = searchQuery.toLowerCase().trim();
@@ -840,7 +856,7 @@ export const MaterialTrackingPage: React.FC = () => {
         return true;
       })
       .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
-  }, [inventoryTransactions, materials, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, searchQuery]);
+  }, [inventoryTransactions, materials, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, filterDate, searchQuery]);
 
   const summaryCards = [
     { label: 'Tổng vật tư', value: filteredMaterials.length, icon: 'inventory_2', tone: 'text-slate-700 bg-slate-100' },
@@ -1157,7 +1173,7 @@ export const MaterialTrackingPage: React.FC = () => {
         <section className="sticky top-0 z-30 border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-1 md:py-0 md:h-12 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between h-full">
             <div className="flex items-center gap-3 h-8 md:h-auto mb-1 md:mb-0">
-              <h2 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">TỔNG KHO</h2>
+              <h2 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 shrink-0">Tổng kho</h2>
             </div>
 
             <div className="flex items-center gap-2 justify-between md:justify-end w-full md:w-auto pt-0.5 md:pt-0">
@@ -1579,6 +1595,30 @@ export const MaterialTrackingPage: React.FC = () => {
                 <option value="">ĐVT: Tất cả</option>
                 {uniqueUnits.map(u => <option key={u} value={u}>{u}</option>)}
               </CustomSelect>
+
+              {/* Lọc theo ngày */}
+              <div className="flex items-center gap-1">
+                <div className="relative flex items-center">
+                  <span className="material-symbols-outlined absolute left-1.5 text-slate-400 text-[14px] pointer-events-none">calendar_month</span>
+                  <input 
+                    type="date" 
+                    value={filterDate} 
+                    onChange={e => setFilterDate(e.target.value)}
+                    className="pl-5 pr-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer hover:bg-slate-50 transition-colors h-[26px]" 
+                  />
+                </div>
+                {filterDate && (
+                  <button 
+                    type="button"
+                    onClick={() => setFilterDate('')}
+                    className="px-1.5 py-0.5 text-[10px] font-bold text-slate-600 bg-white hover:bg-slate-100 rounded flex items-center gap-0.5 transition-colors border border-slate-200 cursor-pointer h-[26px] shrink-0"
+                    title="Hiển thị tất cả các ngày"
+                  >
+                    <span className="material-symbols-outlined text-[12px]">close</span>
+                    <span>Tất cả ngày</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1594,6 +1634,7 @@ export const MaterialTrackingPage: React.FC = () => {
                  <tr>
                    {!projectId && <th className="p-1.5 md:p-2 bg-slate-50 whitespace-nowrap">Dự Án</th>}
                    <th className="p-1.5 md:p-2 bg-slate-50 whitespace-nowrap">Danh mục</th>
+                   <th className="p-1.5 md:p-2 text-center bg-slate-50 whitespace-nowrap">Ngày</th>
                    <th className="p-1.5 md:p-2 min-w-32 md:min-w-44 bg-slate-50 whitespace-nowrap">Tên Vật Tư</th>
                    <th className="p-1.5 md:p-2 bg-slate-50 whitespace-nowrap">Mã Vật Tư</th>
                    <th className="p-1.5 md:p-2 bg-slate-50 whitespace-nowrap">Thông Số Kỹ Thuật</th>
@@ -1613,6 +1654,9 @@ export const MaterialTrackingPage: React.FC = () => {
                       <tr key={material.id} onClick={() => openEditMaterial(material)} className="hover:bg-blue-50/50 transition-colors align-top cursor-pointer">
                         {!projectId && <td className="p-2 md:p-3.5"><span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-600 inline-block" title={material.projectName || 'Kho Tổng'}>{material.projectName || 'Kho Tổng'}</span></td>}
                         <td className="p-2 md:p-3.5 text-slate-600 text-xs">{material.category || 'Vật tư chung'}</td>
+                        <td className="p-2 md:p-3.5 text-center text-slate-600 text-xs font-medium whitespace-nowrap">
+                          {material.updatedAt ? new Date(material.updatedAt).toLocaleDateString('vi-VN') : '-'}
+                        </td>
                         <td className="p-2 md:p-3.5">
                           <div className="font-bold text-slate-900 leading-snug">{material.name}</div>
                         </td>

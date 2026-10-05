@@ -16,11 +16,11 @@ function terminalDbLoggerPlugin(mode: string) {
       const isLocal = dbUrl.includes('127.0.0.1') || dbUrl.includes('localhost');
       
       console.log('\n' + '='.repeat(60));
-      console.log(`  🚀 TITSMART APP DEV SERVER STARTED`);
-      console.log(`  📌 SUPABASE DATABASE URL : ${dbUrl}`);
-      console.log(`  📊 DB CONNECTION MODE    : ${isLocal ? 'LOCAL SUPABASE (CLI)' : 'CLOUD SUPABASE (ONLINE)'}`);
+      console.log(`  TITSMART APP DEV SERVER STARTED`);
+      console.log(`  SUPABASE DATABASE URL : ${dbUrl}`);
+      console.log(`  DB CONNECTION MODE    : ${isLocal ? 'LOCAL SUPABASE (CLI)' : 'CLOUD SUPABASE (ONLINE)'}`);
       if (isLocal) {
-        console.log(`  🛠️ LOCAL STUDIO DB URL   : http://localhost:54323`);
+        console.log(`  LOCAL STUDIO DB URL   : http://localhost:54323`);
       }
       
       // Ping DB endpoint to verify active connectivity
@@ -31,13 +31,13 @@ function terminalDbLoggerPlugin(mode: string) {
         }
       }).then(res => {
         if (res.ok || res.status === 200 || res.status === 206) {
-          console.log(`  🟢 DB HEALTHCHECK        : KẾT NỐI THÀNH CÔNG! (Status: ${res.status})`);
+          console.log(`  DB HEALTHCHECK        : KẾT NỐI THÀNH CÔNG! (Status: ${res.status})`);
         } else {
-          console.log(`  🟡 DB HEALTHCHECK        : PHẢN HỒI MÃ (${res.status} ${res.statusText})`);
+          console.log(`  DB HEALTHCHECK        : PHẢN HỒI MÃ (${res.status} ${res.statusText})`);
         }
         console.log('='.repeat(60) + '\n');
       }).catch(err => {
-        console.log(`  🔴 DB HEALTHCHECK        : KẾT NỐI THẤT BẠI! (${err.message})`);
+        console.log(`  DB HEALTHCHECK        : KẾT NỐI THẤT BẠI! (${err.message})`);
         console.log('='.repeat(60) + '\n');
       });
     }

@@ -402,7 +402,7 @@ export const DashboardPage: React.FC = () => {
       <section className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 md:pr-20 py-2.5 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-4 shrink-0 relative no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 w-full md:w-auto">
           <div className="flex items-center gap-2 shrink-0">
-            <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase font-['Inter'] whitespace-nowrap shrink-0">TỔNG QUAN CHUNG</h1>
+            <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 font-['Inter'] whitespace-nowrap shrink-0">Tổng quan chung</h1>
           </div>
           
           <div className="relative z-50 no-drag-region electron-no-drag w-full md:w-auto" ref={filterRef} style={{ WebkitAppRegion: 'no-drag' } as any}>

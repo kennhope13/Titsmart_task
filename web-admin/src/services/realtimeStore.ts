@@ -450,7 +450,7 @@ interface RealtimeStoreState {
   fetchIssues: (projectId?: string) => Promise<void>;
   fetchEngineers: () => Promise<void>;
   fetchActivityLogs: () => Promise<void>;
-  fetchAccounting: () => Promise<void>;
+  fetchAccounting: (force?: boolean) => Promise<void>;
   fetchFieldLogs: () => Promise<void>;
 
   // Actions
@@ -904,12 +904,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           set({ isFetchingProjects: true });
         }
         const projects = await api.projects.getAll();
-        // Lọc bỏ project nội bộ "Kho Công Ty" nếu có
-        let filtered = Array.isArray(projects)
-          ? projects.filter((p: any) => p.code !== 'COMPANY')
-          : projects;
-        
-        set({ projects: filtered, isFetchingProjects: false });
+        set({ projects: Array.isArray(projects) ? projects : [], isFetchingProjects: false });
       } catch (e) {
         console.error('Failed to fetch projects', e);
         set({ isFetchingProjects: false });
@@ -1075,8 +1070,16 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       }
     },
 
-    fetchAccounting: async () => {
-      const fetchStartTime = Date.now();
+    fetchAccounting: async (force: boolean = false) => {
+      const now = Date.now();
+      const hasCachedData = (get().materialPlans.length > 0 || get().purchasingPlans.length > 0 || get().expenses.length > 0 || get().documentTracks.length > 0);
+      
+      // Nếu không phải ép buộc tải lại và đã có dữ liệu trong cache -> Bỏ qua truy vấn DB
+      if (!force && hasCachedData) {
+        return;
+      }
+
+      const fetchStartTime = now;
       const nextState: any = {};
 
       // Tải từng bảng độc lập để 1 bảng lỗi không ảnh hưởng bảng khác
@@ -1416,11 +1419,13 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
       const updated = await api.engineers.update(id, updateData);
       
-      // Fetch fresh engineers from DB to obtain synced project relations and updated state
-      const freshEngineers = await api.engineers.getAll();
+      // Update in-place to preserve row order
+      const currentEngineers = get().engineers || [];
+      const updatedEngineers = currentEngineers.map(e => e.id === id ? { ...e, ...updateData, ...updated } : e);
+      
       set(() => {
-        persistAndNotify({ engineers: freshEngineers });
-        return { engineers: freshEngineers };
+        persistAndNotify({ engineers: updatedEngineers });
+        return { engineers: updatedEngineers };
       });
       get().logActivity('Đã cập nhật nhân sự: ' + (input.name || existing?.name || id), input.name || existing?.name || id);
       return updated;
@@ -1428,10 +1433,10 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     deleteEngineer: async (id) => {
       await api.engineers.delete(id);
-      const engineers = await api.engineers.getAll();
+      const remaining = (get().engineers || []).filter(e => e.id !== id);
       set(() => {
-        persistAndNotify({ engineers });
-        return { engineers };
+        persistAndNotify({ engineers: remaining });
+        return { engineers: remaining };
       });
       get().logActivity('Đã xóa nhân sự', 'Hệ thống');
     },
@@ -2584,12 +2589,7 @@ let realtimeChannel: any = null;
 
 export function setupRealtimeSync() {
   if (realtimeChannel) {
-    try {
-      supabase.removeChannel(realtimeChannel);
-    } catch (e) {
-      console.warn('[Realtime] Failed to remove previous channel', e);
-    }
-    realtimeChannel = null;
+    return () => {};
   }
 
   // Debounce: gom nhiều thay đổi trong 4 giây thành 1 lần refresh và CHỈ fetch bảng bị đổi
@@ -2617,7 +2617,7 @@ export function setupRealtimeSync() {
       if (payload.table === 'direct_messages') store.fetchDirectMessages();
       if (payload.table === 'notifications') store.fetchNotifications();
       if (payload.table === 'tasks') store.fetchTasks(undefined);
-      if (payload.table === 'document_tracks') store.fetchAccounting();
+      if (payload.table === 'document_tracks') store.fetchAccounting(true);
       if (payload.table === 'field_logs') store.fetchFieldLogs();
       if (payload.table === 'materials') store.fetchMaterials(undefined);
       if (payload.table === 'issues') store.fetchIssues(undefined);
@@ -2648,7 +2648,7 @@ export function setupRealtimeSync() {
       if (tables.length === 0 || tables.includes('materials') || tables.includes('inventory_transactions') || tables.includes('material_plans') || tables.includes('purchasing_plans')) store.fetchMaterials(undefined);
       if (tables.length === 0 || tables.includes('issues')) store.fetchIssues(undefined);
       if (tables.length === 0 || tables.includes('engineers')) store.fetchEngineers();
-      if (tables.length === 0 || tables.includes('expenses') || tables.includes('labor_payrolls')) store.fetchAccounting();
+      if (tables.length === 0 || tables.includes('expenses') || tables.includes('labor_payrolls') || tables.includes('material_plans') || tables.includes('purchasing_plans') || tables.includes('document_tracks')) store.fetchAccounting(true);
       if (tables.length === 0 || tables.includes('field_logs')) store.fetchFieldLogs();
       if (tables.length === 0 || tables.includes('notifications')) store.fetchNotifications();
       if (tables.length === 0 || tables.includes('direct_messages')) store.fetchDirectMessages();
@@ -2675,12 +2675,7 @@ export function setupRealtimeSync() {
   console.log('[Realtime] Đã kích hoạt 1 kênh đồng bộ thời gian thực tối ưu duy nhất cho 14 bảng.');
 
   return () => {
-    if (realtimeChannel) {
-      try {
-        supabase.removeChannel(realtimeChannel);
-      } catch (e) {}
-      realtimeChannel = null;
-    }
+    // Keep channel alive across page navigations within the session
   };
 }
 

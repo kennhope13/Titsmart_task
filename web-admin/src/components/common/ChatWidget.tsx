@@ -176,12 +176,6 @@ export const ChatWidget: React.FC = () => {
     fetchDirectMessages();
     fetchEngineers();
     fetchProjects();
-
-    const interval = setInterval(() => {
-      fetchDirectMessages();
-    }, 3000);
-
-    return () => clearInterval(interval);
   }, []);
 
   // Supabase Presence tracking for real-time online status

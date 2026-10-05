@@ -205,11 +205,9 @@ export const DocumentTrackingPage: React.FC = () => {
   const [filterProjectCode, setFilterProjectCode] = useState('all');
 
   useEffect(() => {
-    fetchAccounting();
-    const interval = setInterval(() => {
+    if (documentTracks.length === 0) {
       fetchAccounting();
-    }, 15000);
-    return () => clearInterval(interval);
+    }
   }, []);
 
   useEffect(() => {
@@ -687,17 +685,19 @@ export const DocumentTrackingPage: React.FC = () => {
             )}
           </div>
 
-          <button 
-            onClick={() => {
-              const code = resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '');
-              setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
-              setIsNewDocOpen(true);
-            }} 
-            className="hidden md:flex items-center gap-1.5 bg-primary text-white h-[34px] px-3.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[14px]">add</span>
-            Thêm hồ sơ mới
-          </button>
+          {(hasPermission(user, 'CREATE_DOCUMENTS') || hasPermission(user, 'MANAGE_DOCUMENTS')) && (
+            <button 
+              onClick={() => {
+                const code = resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '');
+                setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
+                setIsNewDocOpen(true);
+              }} 
+              className="hidden md:flex items-center gap-1.5 bg-primary text-white h-[34px] px-3.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[14px]">add</span>
+              Thêm hồ sơ mới
+            </button>
+          )}
         </div>
       , portalNode)}
 
@@ -720,17 +720,19 @@ export const DocumentTrackingPage: React.FC = () => {
               </div>
 
               {/* '+' Add Button */}
-              <button
-                onClick={() => {
-                  const code = resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '');
-                  setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
-                  setIsNewDocOpen(true);
-                }}
-                title="Thêm hồ sơ mới"
-                className="flex items-center justify-center bg-primary text-white h-8 w-8 rounded-lg hover:opacity-90 active:scale-95 transition-all shadow-xs shrink-0"
-              >
-                <span className="material-symbols-outlined text-base">add</span>
-              </button>
+              {(hasPermission(user, 'CREATE_DOCUMENTS') || hasPermission(user, 'MANAGE_DOCUMENTS')) && (
+                <button
+                  onClick={() => {
+                    const code = resolvedProjectCode || (filterProjectCode !== 'all' ? filterProjectCode : '');
+                    setNewDoc(prev => ({ ...prev, projectCode: code || prev.projectCode || '' }));
+                    setIsNewDocOpen(true);
+                  }}
+                  title="Thêm hồ sơ mới"
+                  className="flex items-center justify-center bg-primary text-white h-8 w-8 rounded-lg hover:opacity-90 active:scale-95 transition-all shadow-xs shrink-0"
+                >
+                  <span className="material-symbols-outlined text-base">add</span>
+                </button>
+              )}
 
               {/* Export Dropdown */}
               <div className="relative shrink-0">
@@ -1064,7 +1066,7 @@ export const DocumentTrackingPage: React.FC = () => {
                     
                     <td className="px-1.5 py-1.5 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1">
-                        {canManageItem(user, track) ? (
+                        {canManageItem(user, track, 'DELETE_DOCUMENTS') ? (
                           <button onClick={() => {
                             const docLabel = track.contractNo || track.contractName || 'này';
                             setConfirmConfig({
@@ -1235,11 +1237,11 @@ export const DocumentTrackingPage: React.FC = () => {
       </Modal>
 
       {/* Edit Doc Modal */}
-      <Modal isOpen={!!editingDoc} onClose={() => setEditingDoc(null)} title={editingDoc && !canManageItem(user, editingDoc) ? "Chi tiết Theo dõi Hồ sơ (Chỉ xem)" : "Cập nhật Theo dõi Hồ sơ Gửi Đi"}>
+      <Modal isOpen={!!editingDoc} onClose={() => setEditingDoc(null)} title={editingDoc && !canManageItem(user, editingDoc, 'EDIT_DOCUMENTS') ? "Chi tiết Theo dõi Hồ sơ (Chỉ xem)" : "Cập nhật Theo dõi Hồ sơ Gửi Đi"}>
         {editingDoc && (
           <form onSubmit={async (e) => {
             e.preventDefault();
-            if (!canManageItem(user, editingDoc)) return;
+            if (!canManageItem(user, editingDoc, 'EDIT_DOCUMENTS')) return;
             if (isSubmitting) return;
             setIsSubmitting(true);
             try {
@@ -1260,13 +1262,13 @@ export const DocumentTrackingPage: React.FC = () => {
               setIsSubmitting(false);
             }
           }} className="space-y-3 text-xs">
-            {!canManageItem(user, editingDoc) && (
+            {!canManageItem(user, editingDoc, 'EDIT_DOCUMENTS') && (
               <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2 mb-2">
                 <span className="material-symbols-outlined text-base text-amber-600">lock</span>
                 <span>Bạn đang xem hồ sơ ở chế độ chỉ đọc. Chỉ người tạo ({editingDoc.createdByName || editingDoc.updatedBy || 'Chính chủ'}) hoặc Quản trị viên mới có quyền chỉnh sửa/xóa hồ sơ này.</span>
               </div>
             )}
-            <fieldset disabled={!canManageItem(user, editingDoc)} className="space-y-3">
+            <fieldset disabled={!canManageItem(user, editingDoc, 'EDIT_DOCUMENTS')} className="space-y-3">
               <div className="grid grid-cols-2 gapx-1 py-1">
                 <div className="min-w-0">
                   <label className="block font-bold mb-1 truncate">Dự án (Không bắt buộc)</label>

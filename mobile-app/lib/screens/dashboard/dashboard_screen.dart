@@ -34,9 +34,9 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade100),
+                border: Border.all(color: Colors.grey.shade300),
               ),
               child: const Icon(Icons.grid_view, color: Color(0xFF00236F), size: 20),
             ),
@@ -120,7 +120,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
-        title.toUpperCase(),
+        title,
         style: const TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 14,

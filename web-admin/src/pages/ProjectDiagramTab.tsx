@@ -144,7 +144,7 @@ export const ProjectDiagramTab: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-white overflow-y-auto custom-scrollbar relative">
         {/* Mobile Action Bar */}
-        {hasPermission(user, 'MANAGE_DOCUMENTS') && (
+        {(hasPermission(user, 'MANAGE_PROJECT_DIAGRAM') || hasPermission(user, 'MANAGE_DOCUMENTS')) && (
           <div className="md:hidden flex items-center justify-between px-4 py-2 border-b border-slate-100 bg-white">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Danh sách sơ đồ</span>
             <button 
@@ -172,7 +172,7 @@ export const ProjectDiagramTab: React.FC = () => {
                       <span className="text-sm font-bold text-slate-700 truncate mr-2" title={url}>{name}</span>
                       
                       <div className="flex items-center gap-1 shrink-0">
-                        {hasPermission(user, 'MANAGE_DOCUMENTS') && (
+                        {(hasPermission(user, 'MANAGE_PROJECT_DIAGRAM') || hasPermission(user, 'MANAGE_DOCUMENTS')) && (
                           <>
                             <button onClick={(e) => { e.stopPropagation(); handleOpenEditModal(idx); }} className="text-slate-400 hover:text-primary p-1.5 rounded-lg hover:bg-slate-100 transition-colors" title="Đổi tên">
                               <span className="material-symbols-outlined text-[18px] block">edit</span>
@@ -208,7 +208,7 @@ export const ProjectDiagramTab: React.FC = () => {
           )}
 
           {/* Desktop Portal Button to trigger Modal */}
-          {hasPermission(user, 'MANAGE_DOCUMENTS') && portalNode && createPortal(
+          {(hasPermission(user, 'MANAGE_PROJECT_DIAGRAM') || hasPermission(user, 'MANAGE_DOCUMENTS')) && portalNode && createPortal(
             <button 
               onClick={() => { setEditingIndex(null); setDiagramName(''); setPendingUrls([]); setResetKey(Date.now()); setIsModalOpen(true); }}
               className="hidden md:flex h-[36px] px-4 bg-primary text-white font-bold text-sm rounded-lg hover:bg-blue-800 transition-colors shadow-sm items-center gap-2 cursor-pointer"

@@ -53,7 +53,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ selectedProject }) => 
 
   const costBreakdownData = [
     { name: 'Mua sắm (đã thanh toán)', value: metrics.purchasing.paid, color: '#3b82f6' },
-    { name: 'Chi phí công trình', value: metrics.expense.total, color: '#10b981' },
+    { name: 'Chi phí', value: metrics.expense.total, color: '#10b981' },
     { name: 'Lương công nhật', value: metrics.labor.total, color: '#f59e0b' }
   ].filter(d => d.value > 0);
 

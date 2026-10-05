@@ -36,7 +36,7 @@ export const ProjectDetailPage: React.FC = () => {
         <span className="material-symbols-outlined text-5xl text-rose-500 mb-3 animate-pulse">error</span>
         <h2 className="text-lg font-bold text-slate-800">Không tìm thấy dự án</h2>
         <p className="text-slate-500 text-sm mb-5 text-center max-w-sm">Dự án này không tồn tại, đã bị xóa hoặc bạn không có quyền truy cập.</p>
-        <Link to="/projects" className="page-title text-lg font-extrabold text-slate-900 hover:text-primary transition-colors border-l-4 border-primary pl-2 uppercase shrink-0 cursor-pointer inline-flex items-center">
+        <Link to="/projects" className="page-title text-lg font-extrabold text-slate-900 hover:text-primary transition-colors border-l-4 border-primary pl-2 shrink-0 cursor-pointer inline-flex items-center">
           Quay lại Danh sách Dự án
         </Link>
       </div>
@@ -89,7 +89,7 @@ export const ProjectDetailPage: React.FC = () => {
 
           {/* Mobile View Header Layout */}
           <div className="md:hidden border-l-4 border-primary pl-2 flex flex-col gap-0.5 min-w-0 flex-1">
-            <Link to="/projects" className="page-title text-sm font-extrabold text-slate-900 hover:text-primary transition-colors uppercase truncate cursor-pointer leading-tight">
+            <Link to="/projects" className="page-title text-sm font-extrabold text-slate-900 hover:text-primary transition-colors truncate cursor-pointer leading-tight">
               {project.name}
             </Link>
             {activeTab && (
@@ -109,7 +109,7 @@ export const ProjectDetailPage: React.FC = () => {
 
           {/* Desktop View Header Layout (Standard horizontal layout) */}
           <div className="hidden md:flex items-center gap-2 min-w-0">
-            <Link to="/projects" className="page-title text-base md:text-lg font-extrabold text-slate-900 hover:text-primary transition-colors border-l-4 border-primary pl-2 uppercase shrink-0 cursor-pointer">
+            <Link to="/projects" className="page-title text-base md:text-lg font-extrabold text-slate-900 hover:text-primary transition-colors border-l-4 border-primary pl-2 shrink-0 cursor-pointer">
               {project.name}
             </Link>
             {activeTab && (

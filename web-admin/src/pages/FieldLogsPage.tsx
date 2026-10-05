@@ -473,7 +473,7 @@ export const FieldLogsPage: React.FC = () => {
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between h-full">
             <div className="flex items-center gap-4">
               <div>
-                <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">NHẬT KÝ HIỆN TRƯỜNG</h1>
+                <h1 className="page-title text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2">Nhật ký hiện trường</h1>
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
@@ -49,7 +49,7 @@ class _CreateProjectBottomSheetState extends State<CreateProjectBottomSheet> {
       str = str.replaceAll(withDiacritics[i], withoutDiacritics[i]);
     }
     
-    str = str.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]+'), '_');
+    str = str.replaceAll(RegExp(r'[^A-Z0-9]+'), '_');
     str = str.replaceAll(RegExp(r'^_+|_+$'), '');
     
     if (str.length > 40) {
@@ -156,14 +156,14 @@ class _CreateProjectBottomSheetState extends State<CreateProjectBottomSheet> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200, style: BorderStyle.solid, width: 1),
+                border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid, width: 1),
               ),
               child: Stack(
                 children: [
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1, style: BorderStyle.none),
+                        border: Border.all(color: Colors.grey.withOpacity(0.3), width: 1, style: BorderStyle.none),
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
@@ -367,7 +367,7 @@ class _CreateProjectBottomSheetState extends State<CreateProjectBottomSheet> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  field.label.toUpperCase(),
+                                  field.label,
                                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade400),
                                 ),
                                 const SizedBox(height: 4),
@@ -389,13 +389,13 @@ class _CreateProjectBottomSheetState extends State<CreateProjectBottomSheet> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade50,
+                        color: Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.green.shade200),
+                        border: Border.all(color: Colors.grey.shade200),
                       ),
                       child: Text(
                         'Đã tự động điền dữ liệu vào form. Có thể chỉnh lại từng ô trước khi lưu.',
-                        style: TextStyle(color: Colors.green.shade700, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                     ),
                   ],
@@ -433,9 +433,9 @@ class _CreateProjectBottomSheetState extends State<CreateProjectBottomSheet> {
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.red.shade100),
+                border: Border.all(color: Colors.grey.shade300),
                 borderRadius: BorderRadius.circular(4),
-                color: Colors.red.shade50.withOpacity(0.1),
+                color: Colors.grey.shade50.withOpacity(0.1),
               ),
               child: Column(
                 children: [
@@ -567,7 +567,7 @@ class _CreateProjectBottomSheetState extends State<CreateProjectBottomSheet> {
   Widget _buildCheckboxItem(String name, String role, bool isChecked, {bool isLast = false}) {
     return Container(
       decoration: BoxDecoration(
-        border: isLast ? null : Border(bottom: BorderSide(color: Colors.red.shade100)),
+        border: isLast ? null : Border(bottom: BorderSide(color: Colors.grey.shade300)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(

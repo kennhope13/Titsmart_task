@@ -20,7 +20,7 @@ export const CostPlanHeader: React.FC<CostPlanHeaderProps> = ({
         <div className="min-w-0">
           <div className="flex items-center gap-3">
             <div className="border-l-4 border-primary pl-2 min-w-0">
-              <h1 className="page-title text-lg font-extrabold uppercase text-slate-900">KẾ HOẠCH & CHI PHÍ DỰ ÁN</h1>
+              <h1 className="page-title text-lg font-extrabold text-slate-900">Kế hoạch & Chi phí dự án</h1>
               <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
                 {selectedProjectName}
               </p>

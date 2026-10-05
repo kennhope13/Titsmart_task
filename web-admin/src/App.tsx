@@ -191,7 +191,7 @@ export const App: React.FC = () => {
     return () => {
       if (cleanup) cleanup();
     };
-  }, [user]);
+  }, [user?.id]);
 
   return (
     <>

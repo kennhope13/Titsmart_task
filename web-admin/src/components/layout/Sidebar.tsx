@@ -12,22 +12,31 @@ interface SidebarProps {
   toggleSidebar?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = false, toggleSidebar }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, toggleSidebar: toggleSidebarProp }) => {
   const { notifications, markNotificationRead, clearNotifications, projects } = useRealtimeStore();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const { sidebarHoverToExpand, sidebarShowToggleButton, showNotificationBell, setSidebarHoverToExpand, setSidebarShowToggleButton, setShowNotificationBell } = useUIStore();
+  const { 
+    sidebarHoverToExpand, 
+    sidebarShowToggleButton, 
+    isSidebarExpanded, 
+    isSidebarHovered, 
+    setIsSidebarHovered, 
+    toggleSidebarExpanded 
+  } = useUIStore();
   
   const location = useLocation();
   const match = location.pathname.match(/^\/projects\/([^\/]+)/);
   const currentProjectId = match && match[1] !== 'new' ? match[1] : null;
   const currentProject = projects.find(p => p.id === currentProjectId || p.code === currentProjectId);
 
-  const [isHovered, setIsHovered] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   
-  const isExpanded = isExpandedProp || (sidebarHoverToExpand && isHovered);
+  const isExpanded = isExpandedProp !== undefined 
+    ? isExpandedProp 
+    : (isSidebarExpanded || (sidebarHoverToExpand && isSidebarHovered));
+  const toggleSidebar = toggleSidebarProp || toggleSidebarExpanded;
   const navigate = useNavigate();
   const unreadCount = notifications.filter((item) => !item.read).length;
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
@@ -106,8 +115,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp = f
     <>
       <aside 
         ref={sidebarRef} 
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseEnter={() => {
+          if (sidebarHoverToExpand) {
+            setIsSidebarHovered(true);
+          }
+        }}
+        onMouseLeave={() => {
+          if (sidebarHoverToExpand) {
+            setIsSidebarHovered(false);
+          }
+        }}
         className={`hidden md:flex fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[170px]' : 'w-[56px]'}`}
       >
         <div className="relative h-12 px-2 flex items-center gap-2 border-b border-slate-100 min-w-0">

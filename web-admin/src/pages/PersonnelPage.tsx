@@ -24,7 +24,7 @@ const ALL_AVAILABLE_PERMISSIONS: Permission[] = [
   'VIEW_MATERIALS', 'IMPORT_MATERIALS', 'EDIT_MATERIALS', 'UPDATE_MATERIAL_STATUS', 'MANAGE_INVENTORY',
   'VIEW_FINANCE', 'EDIT_PRICES', 'VIEW_PAYMENTS', 'EDIT_PAYMENTS', 'VIEW_EXPENSES', 'EDIT_EXPENSES',
   'VIEW_USERS', 'MANAGE_USERS', 'MANAGE_PERMISSIONS', 'MANAGE_PAYROLL', 'APPROVE_LEAVE_STEP1', 'APPROVE_LEAVE_FINAL', 'EXPORT_DATA', 'VIEW_ACTIVITY_LOG',
-  'VIEW_PROJECT_DIAGRAM', 'VIEW_DOCUMENTS', 'MANAGE_DOCUMENTS'
+  'VIEW_PROJECT_DIAGRAM', 'MANAGE_PROJECT_DIAGRAM', 'VIEW_DOCUMENTS', 'CREATE_DOCUMENTS', 'EDIT_DOCUMENTS', 'DELETE_DOCUMENTS', 'MANAGE_DOCUMENTS'
 ];
 
 const getPersonTasks = (person: any, allTasks: any[]) => {
@@ -355,6 +355,13 @@ export const PersonnelPage: React.FC = () => {
       || (filter === 'active' && !person.locked)
       || (filter === 'locked' && person.locked);
     return matchFilter && matchSearch;
+  }).sort((a, b) => {
+    // Sắp xếp ổn định cố định: Theo ngày tạo (created_at / createdAt)
+    const timeA = new Date(a.createdAt || (a as any).created_at || 0).getTime();
+    const timeB = new Date(b.createdAt || (b as any).created_at || 0).getTime();
+    if (timeA && timeB && timeA !== timeB) return timeA - timeB;
+    // Nếu cùng ngày tạo hoặc không có ngày: Sắp xếp theo tên A-Z
+    return String(a.name || '').localeCompare(String(b.name || ''), 'vi');
   }), [engineers, filter, searchTerm]);
 
   const openCreateModal = () => {
@@ -496,7 +503,7 @@ export const PersonnelPage: React.FC = () => {
       <section className="border-b border-slate-200 bg-white pl-3 pr-16 md:pr-20 py-2.5 md:py-0 md:h-12 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between h-full">
           <div className="flex items-center justify-between w-full md:w-auto h-8 md:h-auto mb-1 md:mb-0">
-            <h2 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase">TÀI KHOẢN & NHÂN SỰ</h2>
+            <h2 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2">Tài khoản & Nhân sự</h2>
           </div>
 
           <div className="flex items-center gap-2 justify-between md:justify-end w-full md:w-auto pt-0.5 md:pt-0 flex-wrap">
@@ -656,7 +663,7 @@ export const PersonnelPage: React.FC = () => {
         <div className="bg-white border-b border-r border-slate-200 shadow-xs overflow-hidden flex flex-col">
           <PullToRefresh onRefresh={async () => { await Promise.all([fetchEngineers(), fetchProjects()]); }} className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative pb-16 md:pb-0">
             <table className="w-full text-[11px] sm:text-xs text-left border-collapse">
-              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-500 uppercase text-[10px] sm:text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200">
+              <thead className="sticky top-0 z-20 bg-slate-50 text-slate-700 font-semibold text-[10px] sm:text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200">
                 <tr>
                   <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Họ tên</th>
                   <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Mã NV</th>
@@ -684,12 +691,7 @@ export const PersonnelPage: React.FC = () => {
                       <td className="p-2 sm:p-3 font-mono font-bold text-primary max-w-[140px] truncate whitespace-nowrap text-[10px] sm:text-xs" title={person.code}>{person.code}</td>
                       <td className="p-2 sm:p-3 text-slate-700 font-semibold max-w-[110px] truncate whitespace-nowrap text-[10px] sm:text-xs" title={person.username || '-'}>{person.username || '-'}</td>
                       <td className="p-2 sm:p-3 whitespace-nowrap">
-                        <span className={`text-[10px] sm:text-[11px] font-bold ${
-                          person.role === 'Quản trị viên' ? 'text-purple-700' :
-                          person.role === 'Quản lý dự án' ? 'text-blue-700' :
-                          person.role === 'Kỹ sư hiện trường' ? 'text-orange-700' :
-                          'text-slate-700'
-                        }`}>
+                        <span className="text-[10px] sm:text-[11px] font-medium text-slate-700">
                           {person.role}
                         </span>
                       </td>
@@ -704,12 +706,12 @@ export const PersonnelPage: React.FC = () => {
                               setProjectModalSearch('');
                               setViewingProjectsPerson(person);
                             }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-primary hover:bg-blue-100 border border-blue-200 text-[11px] sm:text-xs font-bold transition-all active:scale-95 shadow-2xs cursor-pointer group"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 text-[11px] sm:text-xs font-medium transition-all active:scale-95 shadow-2xs cursor-pointer group"
                             title={`Xem ${person.assignedProjects.length} dự án tham gia`}
                           >
-                            <span className="material-symbols-outlined text-[15px] group-hover:scale-110 transition-transform">folder_open</span>
+                            <span className="material-symbols-outlined text-[15px] text-slate-500 group-hover:scale-110 transition-transform">folder_open</span>
                             <span>Xem dự án</span>
-                            <span className="px-1.5 py-0.2 bg-primary text-white rounded-full text-[10px] font-bold">
+                            <span className="px-1.5 py-0.2 bg-slate-200 text-slate-700 rounded-full text-[10px] font-semibold">
                               {person.assignedProjects.length}
                             </span>
                           </button>
@@ -727,14 +729,9 @@ export const PersonnelPage: React.FC = () => {
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[11px] sm:text-xs font-bold transition-all active:scale-95 shadow-2xs group cursor-pointer"
                           title={`Xem chi tiết KPI (${kpi.completedCount}/${kpi.totalCount} công việc hoàn thành)`}
                         >
-                          <span className="material-symbols-outlined text-[15px] text-primary group-hover:scale-110 transition-transform">analytics</span>
-                          <span className="text-slate-800 font-extrabold">{kpi.completedCount}/{kpi.totalCount} CV</span>
-                          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                            kpi.totalCount === 0 ? 'bg-slate-100 text-slate-500' :
-                            kpi.percent === 100 ? 'bg-emerald-100 text-emerald-700' :
-                            kpi.percent >= 50 ? 'bg-blue-100 text-blue-700' :
-                            'bg-amber-100 text-amber-700'
-                          }`}>
+                          <span className="material-symbols-outlined text-[15px] text-slate-500 group-hover:scale-110 transition-transform">analytics</span>
+                          <span className="text-slate-700 font-semibold">{kpi.completedCount}/{kpi.totalCount} CV</span>
+                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-medium bg-slate-200 text-slate-700">
                             {kpi.percent}%
                           </span>
                           {kpi.overdueCount > 0 && (
@@ -1049,8 +1046,12 @@ export const PersonnelPage: React.FC = () => {
                 <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-500 uppercase border-b pb-1">Hồ sơ & Tài liệu</h4>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_PROJECT_DIAGRAM')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_PROJECT_DIAGRAM']) : setPermissions(p => p.filter(x => x !== 'VIEW_PROJECT_DIAGRAM'))} className="accent-primary w-3.5 h-3.5"/>Xem sơ đồ dự án</label>
-                  <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'VIEW_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Xem hồ sơ</label>
-                  <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'MANAGE_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Quản lý hồ sơ</label>
+                  <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_PROJECT_DIAGRAM')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_PROJECT_DIAGRAM']) : setPermissions(p => p.filter(x => x !== 'MANAGE_PROJECT_DIAGRAM'))} className="accent-primary w-3.5 h-3.5"/>Chỉnh sửa sơ đồ dự án</label>
+                  <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'VIEW_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Xem hồ sơ & chứng từ</label>
+                  <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('CREATE_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'CREATE_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'CREATE_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Thêm mới hồ sơ gửi đi</label>
+                  <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('EDIT_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'EDIT_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'EDIT_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Cập nhật thông tin & tình trạng ký</label>
+                  <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('DELETE_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'DELETE_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'DELETE_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Xóa hồ sơ</label>
+                  <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_DOCUMENTS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_DOCUMENTS']) : setPermissions(p => p.filter(x => x !== 'MANAGE_DOCUMENTS'))} className="accent-primary w-3.5 h-3.5"/>Toàn quyền quản lý hồ sơ</label>
                 </div></div></div></div>
 </div>
 </form>

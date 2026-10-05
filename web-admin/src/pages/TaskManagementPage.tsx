@@ -163,13 +163,9 @@ export const TaskManagementPage: React.FC = () => {
   const [isHighlightActive, setIsHighlightActive] = useState(false);
   const [discussionTask, setDiscussionTask] = useState<Task | null>(null);
 
-  // Background polling to ensure multi-user realtime sync across browsers
+  // Fetch tasks on initial mount if not loaded (Supabase Realtime handles live updates automatically)
   useEffect(() => {
     useRealtimeStore.getState().fetchTasks(undefined);
-    const interval = setInterval(() => {
-      useRealtimeStore.getState().fetchTasks(undefined);
-    }, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   // Keep discussionTask synced with updated tasks from realtime store
@@ -2084,7 +2080,7 @@ const hasSyncedRef = useRef(false);
             </button>
           )}
           <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <h2 className="page-title text-base lg:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase whitespace-nowrap flex-shrink-0">QUẢN LÝ TIẾN ĐỘ CÔNG VIỆC <span className="text-[10px] text-slate-400 font-mono font-normal tracking-normal lowercase ml-1">v1.1.88</span></h2>
+            <h2 className="page-title text-base lg:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 whitespace-nowrap flex-shrink-0">Quản lý tiến độ công việc <span className="text-[10px] text-slate-400 font-mono font-normal tracking-normal lowercase ml-1">v1.1.88</span></h2>
             {selectedProjectFromUrl && (
               <div className="inline-flex min-w-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-bold text-slate-700">
                 <span className="truncate">Dự án: {currentProject?.name || selectedProjectFromUrl}</span>

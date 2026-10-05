@@ -105,13 +105,9 @@ export const MyTasksPage: React.FC = () => {
     }
   }, [tasks, discussionTask]);
 
-  // Background polling for tasks
+  // Initial fetch for tasks (live sync is handled by Supabase Realtime)
   useEffect(() => {
     useRealtimeStore.getState().fetchTasks(undefined);
-    const interval = setInterval(() => {
-      useRealtimeStore.getState().fetchTasks(undefined);
-    }, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   const allMyTasks = useMemo(() => {
@@ -446,8 +442,8 @@ export const MyTasksPage: React.FC = () => {
       <div className="border-b border-slate-200 bg-white shadow-xs px-3 md:px-6 md:pr-20 py-2.5 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 md:gap-2 relative z-50 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 w-full md:w-auto min-w-0">
           <div className="flex items-center justify-between gap-2 shrink-0 h-7 sm:h-8 md:h-auto pr-12 md:pr-0">
-            <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">
-              CÔNG VIỆC
+            <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 shrink-0">
+              Công việc
             </h1>
           </div>
           <SharedTaskTabs 
@@ -509,7 +505,7 @@ export const MyTasksPage: React.FC = () => {
           onClick={() => setStatusFilter('all')}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
             statusFilter === 'all'
-              ? 'bg-primary text-white shadow-xs'
+              ? 'bg-slate-900 text-white shadow-xs'
               : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
           }`}
         >
@@ -524,12 +520,12 @@ export const MyTasksPage: React.FC = () => {
           onClick={() => setStatusFilter('pending')}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
             statusFilter === 'pending'
-              ? 'bg-amber-500 text-white shadow-xs'
-              : 'bg-white text-amber-700 hover:bg-amber-50/60 border border-slate-200'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
           }`}
         >
           <span>Chờ nhận</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'pending' ? 'bg-white/25 text-white' : 'bg-amber-100 text-amber-800'}`}>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'pending' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
             {stats.pending}
           </span>
         </button>
@@ -539,12 +535,12 @@ export const MyTasksPage: React.FC = () => {
           onClick={() => setStatusFilter('in_progress')}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
             statusFilter === 'in_progress'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'bg-white text-blue-700 hover:bg-blue-50/60 border border-slate-200'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
           }`}
         >
           <span>Đang làm</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'in_progress' ? 'bg-white/25 text-white' : 'bg-blue-100 text-blue-800'}`}>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'in_progress' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
             {stats.inProgress}
           </span>
         </button>
@@ -554,12 +550,12 @@ export const MyTasksPage: React.FC = () => {
           onClick={() => setStatusFilter('review')}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
             statusFilter === 'review'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'bg-white text-purple-700 hover:bg-purple-50/60 border border-slate-200'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
           }`}
         >
           <span>Chờ nghiệm thu</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'review' ? 'bg-white/25 text-white' : 'bg-purple-100 text-purple-800'}`}>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'review' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
             {stats.review}
           </span>
         </button>
@@ -569,30 +565,32 @@ export const MyTasksPage: React.FC = () => {
           onClick={() => setStatusFilter('completed')}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
             statusFilter === 'completed'
-              ? 'bg-emerald-600 text-white shadow-xs'
-              : 'bg-white text-emerald-700 hover:bg-emerald-50/60 border border-slate-200'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
           }`}
         >
           <span>Hoàn thành</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'completed' ? 'bg-white/25 text-white' : 'bg-emerald-100 text-emerald-800'}`}>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'completed' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
             {stats.completed}
           </span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setStatusFilter('overdue')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-            statusFilter === 'overdue'
-              ? 'bg-rose-600 text-white shadow-xs'
-              : 'bg-white text-rose-700 hover:bg-rose-50/60 border border-slate-200'
-          }`}
-        >
-          <span>Trễ hạn</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'overdue' ? 'bg-white/25 text-white' : 'bg-rose-100 text-rose-800'}`}>
-            {stats.overdue}
-          </span>
-        </button>
+        {stats.overdue > 0 && (
+          <button
+            type="button"
+            onClick={() => setStatusFilter('overdue')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              statusFilter === 'overdue'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <span>Trễ hạn</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${statusFilter === 'overdue' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
+              {stats.overdue}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Main Content Area */}

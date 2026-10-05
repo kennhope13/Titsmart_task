@@ -505,13 +505,9 @@ export const TaskAssignmentPage: React.FC = () => {
     }
   }, [location.state, searchParams, highlightedTaskId, highlightKeyword]);
 
-  // Fast background polling fallback so task status updates immediately across all browsers
+  // Initial fetch for tasks (live sync is handled by Supabase Realtime)
   useEffect(() => {
     useRealtimeStore.getState().fetchTasks(undefined);
-    const interval = setInterval(() => {
-      useRealtimeStore.getState().fetchTasks(undefined);
-    }, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   // Danh sách công việc dự án (không bao gồm việc nội bộ / trực tiếp)
@@ -881,8 +877,8 @@ export const TaskAssignmentPage: React.FC = () => {
       <div className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 md:pr-20 py-2.5 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 md:gap-2 relative z-50 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 w-full md:w-auto min-w-0">
           <div className="flex items-center justify-between gap-2 shrink-0 h-7 sm:h-8 md:h-auto pr-12 md:pr-0">
-            <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">
-              CÔNG VIỆC
+            <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 shrink-0">
+              Công việc
             </h1>
           </div>
           <SharedTaskTabs activeTab={activeTab as any} onTabChange={(t) => { setActiveTab(t as any); setSelectedTaskIds([]); }} />
@@ -901,7 +897,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setDirectFilterStatus('all')}
                 className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  directFilterStatus === 'all' ? 'bg-primary text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  directFilterStatus === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Tất cả ({directKpiStats.total})
@@ -910,7 +906,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setDirectFilterStatus('pending')}
                 className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  directFilterStatus === 'pending' ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                  directFilterStatus === 'pending' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Chờ nhận ({directKpiStats.pending})
@@ -919,7 +915,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setDirectFilterStatus('in_progress')}
                 className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  directFilterStatus === 'in_progress' ? 'bg-blue-600 text-white shadow-xs' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  directFilterStatus === 'in_progress' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Đang làm ({directKpiStats.inProgress})
@@ -928,7 +924,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setDirectFilterStatus('review')}
                 className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  directFilterStatus === 'review' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                  directFilterStatus === 'review' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Chờ nghiệm thu ({directKpiStats.review})
@@ -937,7 +933,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setDirectFilterStatus('completed')}
                 className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  directFilterStatus === 'completed' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  directFilterStatus === 'completed' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Hoàn thành ({directKpiStats.completed})
@@ -947,7 +943,7 @@ export const TaskAssignmentPage: React.FC = () => {
                   type="button"
                   onClick={() => setDirectFilterStatus('overdue')}
                   className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                    directFilterStatus === 'overdue' ? 'bg-red-600 text-white shadow-xs' : 'bg-red-50 text-red-700 hover:bg-red-100'
+                    directFilterStatus === 'overdue' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   Trễ hạn ({directKpiStats.overdue})
@@ -1019,11 +1015,7 @@ export const TaskAssignmentPage: React.FC = () => {
                     return (
                       <tr key={t.id} className="hover:bg-blue-50/40 transition-colors">
                         <td className="py-2.5 px-3 border-r border-slate-200">
-                          {t.projectCode === 'COMPANY' || !t.projectCode ? (
-                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px] border border-slate-200">
-                              Nội bộ / Văn phòng
-                            </span>
-                          ) : (
+                          {t.projectCode ? (
                             <span 
                               onClick={() => navigate(`/projects/${encodeURIComponent(t.projectCode)}/tasks?taskId=${encodeURIComponent(t.id)}&highlight=${encodeURIComponent(t.name)}`)}
                               className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 hover:bg-blue-100 hover:underline font-bold text-[10px] border border-blue-200 cursor-pointer inline-flex items-center gap-1 transition-colors"
@@ -1032,17 +1024,21 @@ export const TaskAssignmentPage: React.FC = () => {
                               <span>{t.projectName || t.projectCode}</span>
                               <span className="material-symbols-outlined text-[11px]">open_in_new</span>
                             </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px] border border-slate-200">
+                              Chưa gán dự án
+                            </span>
                           )}
                         </td>
                         <td className="py-2.5 px-4 border-r border-slate-200">
                           <div 
                             onClick={() => {
-                              if (t.projectCode && t.projectCode !== 'COMPANY') {
+                              if (t.projectCode) {
                                 navigate(`/projects/${encodeURIComponent(t.projectCode)}/tasks?taskId=${encodeURIComponent(t.id)}&highlight=${encodeURIComponent(t.name)}`);
                               }
                             }}
-                            className={`font-bold text-slate-900 text-xs ${t.projectCode && t.projectCode !== 'COMPANY' ? 'hover:text-primary hover:underline cursor-pointer transition-colors' : ''}`}
-                            title={t.projectCode && t.projectCode !== 'COMPANY' ? 'Bấm để mở công việc trong bảng Tiến độ dự án' : undefined}
+                            className={`font-bold text-slate-900 text-xs ${t.projectCode ? 'hover:text-primary hover:underline cursor-pointer transition-colors' : ''}`}
+                            title={t.projectCode ? 'Bấm để mở công việc trong bảng Tiến độ dự án' : undefined}
                           >
                             {t.name}
                           </div>
@@ -1180,7 +1176,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setProjectFilterStatus('all')}
                 className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  projectFilterStatus === 'all' ? 'bg-primary text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  projectFilterStatus === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Tất cả ({projectKpiStats.total})
@@ -1189,7 +1185,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setProjectFilterStatus('unassigned')}
                 className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  projectFilterStatus === 'unassigned' ? 'bg-slate-700 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  projectFilterStatus === 'unassigned' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Cần phân công ({projectKpiStats.unassigned})
@@ -1198,7 +1194,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setProjectFilterStatus('pending')}
                 className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  projectFilterStatus === 'pending' ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                  projectFilterStatus === 'pending' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Chờ nhận ({projectKpiStats.pending})
@@ -1207,7 +1203,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setProjectFilterStatus('in_progress')}
                 className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  projectFilterStatus === 'in_progress' ? 'bg-blue-600 text-white shadow-xs' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  projectFilterStatus === 'in_progress' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Đang làm ({projectKpiStats.inProgress})
@@ -1216,7 +1212,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setProjectFilterStatus('review')}
                 className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  projectFilterStatus === 'review' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                  projectFilterStatus === 'review' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Chờ nghiệm thu ({projectKpiStats.review})
@@ -1225,7 +1221,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setProjectFilterStatus('completed')}
                 className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  projectFilterStatus === 'completed' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  projectFilterStatus === 'completed' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Hoàn thành ({projectKpiStats.completed})
@@ -1235,7 +1231,7 @@ export const TaskAssignmentPage: React.FC = () => {
                   type="button"
                   onClick={() => setProjectFilterStatus('overdue')}
                   className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                    projectFilterStatus === 'overdue' ? 'bg-red-600 text-white shadow-xs' : 'bg-red-50 text-red-700 hover:bg-red-100'
+                    projectFilterStatus === 'overdue' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   Trễ hạn ({projectKpiStats.overdue})

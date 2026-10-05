@@ -115,6 +115,7 @@ export const AttendancePage: React.FC = () => {
   // State cho Xin nghỉ phép (khởi tạo từ cache)
   const [leaves, setLeaves] = useState<LeaveRequest[]>(cachedLeaves);
   const [leaveSearchQuery, setLeaveSearchQuery] = useState('');
+  const [leaveFilterDate, setLeaveFilterDate] = useState('');
   const [leavesLoading, setLeavesLoading] = useState(!hasFetchedAttendanceData && cachedLeaves.length === 0);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaveType, setLeaveType] = useState<LeaveType>('Nghỉ phép năm');
@@ -324,8 +325,19 @@ export const AttendancePage: React.FC = () => {
         return matchUser || matchType || matchReason || matchReviewer1 || matchReviewer2 || matchStartDate || matchEndDate;
       });
     }
+    if (leaveFilterDate) {
+      list = list.filter(l => {
+        const start = l.startDate ? String(l.startDate).split('T')[0] : '';
+        const end = l.endDate ? String(l.endDate).split('T')[0] : start;
+        const target = leaveFilterDate.split('T')[0];
+        if (start && end) {
+          return target >= start && target <= end;
+        }
+        return start === target || end === target;
+      });
+    }
     return list;
-  }, [leaves, tab, user, leaveSearchQuery, canViewAll]);
+  }, [leaves, tab, user, leaveSearchQuery, leaveFilterDate, canViewAll]);
 
   const fetchLogs = async (forceShowSpinner = false) => {
     if (forceShowSpinner || (!hasFetchedAttendanceData && cachedLogs.length === 0)) {
@@ -701,7 +713,7 @@ export const AttendancePage: React.FC = () => {
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white px-2 py-1.5 md:py-0 md:h-12 flex items-center justify-between gap-1.5 shrink-0 pr-14 md:pr-4">
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div className="border-l-4 border-primary pl-1.5 flex items-center">
-            <h1 className="page-title text-xs sm:text-sm md:text-base font-extrabold text-slate-900 uppercase shrink-0">
+            <h1 className="page-title text-xs sm:text-sm md:text-base font-extrabold text-slate-900 shrink-0">
               {mainTab === 'attendance' ? 'Chấm công' : 'Nghỉ phép'}
             </h1>
           </div>
@@ -709,20 +721,20 @@ export const AttendancePage: React.FC = () => {
             <button
               type="button"
               onClick={() => setMainTab('attendance')}
-              className={`px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 text-[11px] sm:text-xs font-bold rounded-md transition-all flex items-center gap-0.5 sm:gap-1 cursor-pointer select-none shrink-0 ${mainTab === 'attendance' ? 'bg-primary text-white shadow-xs font-black' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200'}`}
+              className={`px-2 py-1 sm:px-2.5 sm:py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1 cursor-pointer select-none shrink-0 ${mainTab === 'attendance' ? 'bg-white text-slate-900 shadow-xs font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
-              <span className="material-symbols-outlined text-[13px] sm:text-[14px]">fingerprint</span>
+              <span className="material-symbols-outlined text-[15px]">fingerprint</span>
               <span>Chấm công</span>
             </button>
             <button
               type="button"
               onClick={() => setMainTab('leave')}
-              className={`px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 text-[11px] sm:text-xs font-bold rounded-md transition-all flex items-center gap-0.5 sm:gap-1 cursor-pointer select-none shrink-0 ${mainTab === 'leave' ? 'bg-primary text-white shadow-xs font-black' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200'}`}
+              className={`px-2 py-1 sm:px-2.5 sm:py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1 cursor-pointer select-none shrink-0 ${mainTab === 'leave' ? 'bg-white text-slate-900 shadow-xs font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
             >
-              <span className="material-symbols-outlined text-[13px] sm:text-[14px]">event_busy</span>
+              <span className="material-symbols-outlined text-[15px]">event_busy</span>
               <span>Xin nghỉ</span>
               {leaves.filter(l => l.status === 'PENDING').length > 0 && (
-                <span className="ml-0.5 px-1 py-0.2 bg-red-500 text-white rounded-full text-[9px] font-extrabold">
+                <span className="ml-0.5 px-1.5 py-0.2 bg-red-500 text-white rounded-full text-[10px] font-bold">
                   {leaves.filter(l => l.status === 'PENDING').length}
                 </span>
               )}
@@ -731,46 +743,183 @@ export const AttendancePage: React.FC = () => {
         </div>
 
         {/* Desktop-only Right controls (My/All switcher + Action Button) pushed to far right */}
-        <div className="hidden md:flex items-center gap-3 shrink-0">
+        <div className="hidden md:flex items-center gap-2 lg:gap-3 shrink-0">
           {canViewAll && (
-            <div className="inline-flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0">
+            <div className="inline-flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs shrink-0">
               <button
                 onClick={() => setTab('my')}
-                className={`px-2.5 py-1 rounded-md transition-all ${tab === 'my' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${tab === 'my' ? 'bg-white text-slate-900 shadow-xs font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900'}`}
               >Của tôi</button>
               <button
                 onClick={() => setTab('all')}
-                className={`px-2.5 py-1 rounded-md transition-all ${tab === 'all' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${tab === 'all' ? 'bg-white text-slate-900 shadow-xs font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900'}`}
               >Tất cả</button>
             </div>
           )}
 
           {mainTab === 'attendance' ? (
-            activeSession ? (
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  Đang làm
-                </span>
-                <button
-                  onClick={() => setShowCheckOutModal(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
-                >
-                  <span className="material-symbols-outlined text-[16px]">logout</span>
-                  Ra ca
-                </button>
+            <div className="flex items-center gap-2">
+              {/* Desktop Date Filter for Attendance */}
+              <div className="flex items-center gap-1.5">
+                <div className="relative flex items-center">
+                  <span className="material-symbols-outlined absolute left-2 text-slate-500 text-[18px] pointer-events-none">calendar_month</span>
+                  <input 
+                    type="date" 
+                    value={filterDate} 
+                    onChange={e => setFilterDate(e.target.value)}
+                    className="pl-7 pr-2 py-1 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer h-8" 
+                  />
+                </div>
+                {filterDate && (
+                  <button 
+                    type="button"
+                    onClick={() => setFilterDate('')}
+                    className="px-2 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 transition-colors border border-slate-200 cursor-pointer h-8 shrink-0"
+                    title="Hiển thị tất cả các ngày"
+                  >
+                    <span className="material-symbols-outlined text-xs">close</span>
+                    <span>Tất cả ngày</span>
+                  </button>
+                )}
               </div>
-            ) : (
-              <button
-                onClick={() => setShowCheckInModal(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0"
-              >
-                <span className="material-symbols-outlined text-[16px]">login</span>
-                Vào ca
-              </button>
-            )
+
+              {/* User filter if viewing all */}
+              {canViewAll && tab === 'all' && (
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-slate-400 text-[18px]">person</span>
+                  <CustomSelect value={filterUser} onChange={e => setFilterUser(e.target.value)}
+                    searchable={true}
+                    className="px-2.5 py-1 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 min-w-[140px] h-8">
+                    <option value="">Tất cả nhân viên</option>
+                    {engineers.map(e => (
+                      <option key={e.id} value={e.id}>{e.name}</option>
+                    ))}
+                  </CustomSelect>
+                </div>
+              )}
+
+              {/* Desktop Search for Attendance */}
+              <div className="relative flex items-center">
+                <span className="material-symbols-outlined absolute left-2 text-slate-400 text-sm pointer-events-none">search</span>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-7 pr-6 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none h-8 w-36 lg:w-44 transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-xs">close</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Export file for Attendance */}
+              {filteredLogs.length > 0 && (
+                <div className="relative shrink-0">
+                  <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    className="flex items-center justify-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-xs cursor-pointer h-8"
+                    title="Xuất file"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">file_download</span>
+                    <span>Xuất file</span>
+                    <span className="material-symbols-outlined text-xs">expand_more</span>
+                  </button>
+                  {showExportMenu && (
+                    <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
+                  )}
+                  {showExportMenu && (
+                    <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                      <button
+                        onClick={() => { setShowExportMenu(false); handleExportExcel('xlsx'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                        Excel (.xlsx)
+                      </button>
+                      <button
+                        onClick={() => { setShowExportMenu(false); handleExportExcel('csv'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                        CSV (.csv)
+                      </button>
+                      <button
+                        onClick={() => { setShowExportMenu(false); window.print(); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                        PDF (.pdf)
+                      </button>
+                      <button
+                        onClick={() => { setShowExportMenu(false); handleExportExcel('docx'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                        Word (.docx)
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Vào ca / Ra ca Button */}
+              {activeSession ? (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200 h-8">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    Đang làm
+                  </span>
+                  <button
+                    onClick={() => setShowCheckOutModal(true)}
+                    className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0 h-8 cursor-pointer active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">logout</span>
+                    <span>Ra ca</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowCheckInModal(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0 h-8 cursor-pointer active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-[16px]">login</span>
+                  <span>Vào ca</span>
+                </button>
+              )}
+            </div>
           ) : (
             <div className="flex items-center gap-2">
+              {/* Desktop Date Filter for Leave */}
+              <div className="flex items-center gap-1.5">
+                <div className="relative flex items-center">
+                  <span className="material-symbols-outlined absolute left-2 text-slate-500 text-[18px] pointer-events-none">calendar_month</span>
+                  <input 
+                    type="date" 
+                    value={leaveFilterDate} 
+                    onChange={e => setLeaveFilterDate(e.target.value)}
+                    className="pl-7 pr-2 py-1 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer h-8" 
+                  />
+                </div>
+                {leaveFilterDate && (
+                  <button 
+                    type="button"
+                    onClick={() => setLeaveFilterDate('')}
+                    className="px-2 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 transition-colors border border-slate-200 cursor-pointer h-8 shrink-0"
+                    title="Hiển thị tất cả các ngày"
+                  >
+                    <span className="material-symbols-outlined text-xs">close</span>
+                    <span>Tất cả ngày</span>
+                  </button>
+                )}
+              </div>
+
               {/* Desktop Search for Leave */}
               <div className="relative flex items-center">
                 <span className="material-symbols-outlined absolute left-2 text-slate-400 text-sm pointer-events-none">search</span>
@@ -779,7 +928,7 @@ export const AttendancePage: React.FC = () => {
                   placeholder="Tìm kiếm nghỉ phép..."
                   value={leaveSearchQuery}
                   onChange={e => setLeaveSearchQuery(e.target.value)}
-                  className="pl-7 pr-6 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none h-8 w-44 lg:w-56 transition-colors"
+                  className="pl-7 pr-6 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none h-8 w-36 lg:w-48 transition-colors"
                 />
                 {leaveSearchQuery && (
                   <button
@@ -796,7 +945,7 @@ export const AttendancePage: React.FC = () => {
                 <div className="relative shrink-0">
                   <button
                     onClick={() => setShowLeaveExportMenu(!showLeaveExportMenu)}
-                    className="flex items-center justify-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-xs cursor-pointer"
+                    className="flex items-center justify-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-xs cursor-pointer h-8"
                     title="Xuất file"
                   >
                     <span className="material-symbols-outlined text-[15px]">file_download</span>
@@ -842,7 +991,7 @@ export const AttendancePage: React.FC = () => {
               )}
               <button
                 onClick={() => { setShowLeaveModal(true); setModalError(null); }}
-                className="flex items-center justify-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0 cursor-pointer active:scale-95"
+                className="flex items-center justify-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0 cursor-pointer active:scale-95 h-8"
                 title="Tạo đơn xin nghỉ"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span>
@@ -855,7 +1004,7 @@ export const AttendancePage: React.FC = () => {
 
       {mainTab === 'attendance' ? (
         <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col bg-slate-50">
-          {/* Check-in / Check-out Bar (Mobile only) */}
+          {/* Check-in / Check-out & Search Bar (Mobile only) */}
           <div className="bg-white border-b border-slate-200 shadow-xs shrink-0 md:hidden">
             <div className="px-3 py-2 sm:px-4 sm:py-2 flex items-center justify-between gap-2">
               {canViewAll ? (
@@ -899,13 +1048,10 @@ export const AttendancePage: React.FC = () => {
                 </button>
               )}
             </div>
-          </div>
 
-          {/* Filters Bar */}
-          {mainTab === 'attendance' && (
-            <div className="px-3 md:px-4 py-2 border-b border-slate-200 bg-white flex flex-nowrap md:flex-wrap items-center justify-between gap-2 shrink-0 shadow-xs relative z-10">
-              {/* Mobile Search Bar */}
-              <div className="flex md:hidden flex-1 relative items-center min-w-0">
+            {/* Mobile Search & Date Filter */}
+            <div className="px-3 pb-2 flex items-center gap-2">
+              <div className="flex-1 relative items-center min-w-0">
                 <span className="material-symbols-outlined absolute left-2.5 text-slate-400 text-sm pointer-events-none">search</span>
                 <input
                   type="text"
@@ -924,123 +1070,17 @@ export const AttendancePage: React.FC = () => {
                   </button>
                 )}
               </div>
-
-              {/* Desktop Filters: Date */}
-              <div className="hidden md:flex items-center gap-1.5 md:gap-2 min-w-0">
-                <div className="relative flex items-center">
-                  <span className="material-symbols-outlined absolute left-2 text-slate-500 text-[18px] pointer-events-none">calendar_month</span>
-                  <input 
-                    type="date" 
-                    value={filterDate} 
-                    onChange={e => setFilterDate(e.target.value)}
-                    className="pl-7 pr-2 py-1 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer h-8" 
-                  />
-                </div>
-                {filterDate ? (
-                  <button 
-                    type="button"
-                    onClick={() => setFilterDate('')}
-                    className="px-2 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 transition-colors border border-slate-200 cursor-pointer h-8 shrink-0"
-                    title="Hiển thị tất cả các ngày"
-                  >
-                    <span className="material-symbols-outlined text-xs">close</span>
-                    <span>Tất cả ngày</span>
-                  </button>
-                ) : (
-                  <span className="text-[11px] text-slate-500 font-semibold italic truncate">(Tất cả các ngày)</span>
-                )}
-              </div>
-              {canViewAll && tab === 'all' && (
-                <div className="hidden md:flex items-center gap-2">
-                  <div className="h-4 w-px bg-slate-200"></div>
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-slate-400 text-[18px]">person</span>
-                    <CustomSelect value={filterUser} onChange={e => setFilterUser(e.target.value)}
-                      searchable={true}
-                      className="px-2.5 py-1 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 min-w-[150px]">
-                      <option value="">Tất cả nhân viên</option>
-                      {engineers.map(e => (
-                        <option key={e.id} value={e.id}>{e.name}</option>
-                      ))}
-                    </CustomSelect>
-                  </div>
-                </div>
-              )}
-              <div className="ml-auto flex items-center gap-2 md:gap-3 shrink-0">
-                {/* Ẩn badge số bản ghi trên mobile */}
-                <div className="hidden md:block px-2.5 py-1 bg-slate-100 text-[11px] text-slate-600 font-bold rounded-full border border-slate-200">
-                  {filteredLogs.length} bản ghi
-                </div>
-                {filteredLogs.length > 0 && (
-                  <div className="relative shrink-0">
-                    {/* Desktop Button */}
-                    <button
-                      onClick={() => setShowExportMenu(!showExportMenu)}
-                      className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-sm cursor-pointer h-8"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">file_download</span>
-                      <span>Xuất file</span>
-                      <span className="material-symbols-outlined text-xs">expand_more</span>
-                    </button>
-
-                    {/* Mobile Icon Button */}
-                    <button
-                      onClick={() => setShowExportMenu(!showExportMenu)}
-                      className="md:hidden flex items-center justify-center h-8 px-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 active:scale-95 transition-all shadow-xs gap-0.5 cursor-pointer"
-                      title="Xuất file"
-                    >
-                      <span className="material-symbols-outlined text-base">file_download</span>
-                      <span className="material-symbols-outlined text-xs">expand_more</span>
-                    </button>
-
-                    {showExportMenu && (
-                      <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
-                    )}
-                    {showExportMenu && (
-                      <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
-                        <button
-                          onClick={() => { setShowExportMenu(false); handleExportExcel('xlsx'); }}
-                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
-                          Excel (.xlsx)
-                        </button>
-                        <button
-                          onClick={() => { setShowExportMenu(false); handleExportExcel('csv'); }}
-                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-base text-teal-600">csv</span>
-                          CSV (.csv)
-                        </button>
-                        <button
-                          onClick={() => { setShowExportMenu(false); window.print(); }}
-                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
-                          PDF (.pdf)
-                        </button>
-                        <button
-                          onClick={() => { setShowExportMenu(false); handleExportExcel('docx'); }}
-                          className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-base text-blue-600">description</span>
-                          Word (.docx)
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              <input 
+                type="date" 
+                value={filterDate} 
+                onChange={e => setFilterDate(e.target.value)}
+                className="px-2 py-1 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer h-8 w-32" 
+              />
             </div>
-          )}
+          </div>
 
           {/* Attendance Table Area */}
           <div className="flex-1 overflow-hidden flex flex-col bg-white">
-            <div className="px-4 py-2 border-b border-slate-200 bg-slate-50 flex items-center gap-2 shrink-0">
-              <span className="material-symbols-outlined text-slate-500 text-[18px]">history</span>
-              <h3 className="text-xs font-bold text-slate-700 uppercase">Lịch sử chấm công</h3>
-            </div>
-
             <PullToRefresh
               onRefresh={async () => {
                 await Promise.all([fetchLogs(true), fetchLeaves(true)]);
@@ -1056,9 +1096,7 @@ export const AttendancePage: React.FC = () => {
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-bold uppercase sticky top-0 z-10">
                       <th className="p-3">Nhân viên</th>
-                      <th className="p-3">Giờ vào</th>
-                      <th className="p-3">Giờ ra</th>
-                      <th className="p-3">Thời gian làm</th>
+                      <th className="p-3">Ngày</th>
                       <th className="p-3">Dự án</th>
                       <th className="p-3">Ghi chú</th>
                       <th className="p-3 text-center">Hình ảnh</th>
@@ -1070,20 +1108,7 @@ export const AttendancePage: React.FC = () => {
                       <tr key={log.id} className="hover:bg-slate-50 transition-colors">
                         <td className="p-3 font-bold text-slate-800">{log.userName}</td>
                         <td className="p-3 text-slate-700 font-medium whitespace-nowrap">
-                          {formatDateTime(log.checkInTime)}
-                        </td>
-                        <td className="p-3 text-slate-700 font-medium whitespace-nowrap">
-                          {log.checkOutTime ? (
-                            formatTime(log.checkOutTime)
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-amber-200 bg-amber-50 text-amber-700 font-bold text-[11px]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                              Đang làm
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3 text-slate-700 font-bold whitespace-nowrap">
-                          {getDuration(log.checkInTime, log.checkOutTime)}
+                          {formatDate(log.checkInTime)}
                         </td>
                         <td className="p-3 text-slate-600 max-w-[200px] truncate" title={log.projectName}>
                           {log.projectName || <span className="text-slate-400">—</span>}
@@ -1138,6 +1163,26 @@ export const AttendancePage: React.FC = () => {
                 >Tất cả</button>
               </div>
             ) : null}
+
+            {/* Mobile Date Filter in Leave Tab */}
+            <div className="relative flex items-center shrink-0">
+              <input 
+                type="date" 
+                value={leaveFilterDate} 
+                onChange={e => setLeaveFilterDate(e.target.value)}
+                className="w-28 px-1.5 py-1 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer h-8" 
+              />
+              {leaveFilterDate && (
+                <button
+                  type="button"
+                  onClick={() => setLeaveFilterDate('')}
+                  className="absolute right-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  title="Xóa lọc ngày"
+                >
+                  <span className="material-symbols-outlined text-xs">close</span>
+                </button>
+              )}
+            </div>
 
             {/* Mobile Search Bar in Leave Tab */}
             <div className="flex-1 relative flex items-center min-w-0">

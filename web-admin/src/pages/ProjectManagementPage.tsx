@@ -759,36 +759,39 @@ export const ProjectManagementPage: React.FC = () => {
       <LoadingSpinner loading={loading} message={loadingMessage} />
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
 
-      <section className="border-b border-slate-200 bg-white shadow-xs px-3 pr-14 md:px-6 md:pr-20 py-2.5 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2 relative z-10 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 w-full md:w-auto min-w-0">
-          <div className="flex items-center justify-between gap-2 shrink-0 h-7 sm:h-8 md:h-auto">
-            <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 border-l-4 border-primary pl-2 uppercase shrink-0">{TEXT.projectManagement}</h1>
+      <section className="border-b border-slate-200 bg-white shadow-xs px-3 pr-14 md:px-6 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 relative z-10 shrink-0 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
+        <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          <div className="border-l-4 border-primary pl-2 flex items-center">
+            <h1 className="page-title text-sm md:text-base font-extrabold text-slate-900 shrink-0">{TEXT.projectManagement}</h1>
           </div>
 
-          <div className="h-[34px] flex items-center w-full sm:w-auto md:w-[420px] bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 relative z-10 no-drag-region electron-no-drag gap-0.5 overflow-x-auto scrollbar-none" style={{ WebkitAppRegion: 'no-drag' } as any}>
+          <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 gap-0.5 no-drag-region electron-no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 sm:flex-initial min-w-[72px] sm:min-w-[80px] h-[28px] px-2 sm:px-3 flex items-center justify-center gap-1 whitespace-nowrap text-[11px] sm:text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'all' ? 'bg-white shadow-xs text-slate-800 ring-1 ring-slate-200/80 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`px-2.5 py-1 flex items-center gap-1.5 whitespace-nowrap text-xs rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'all' ? 'bg-white shadow-xs text-slate-900 ring-1 ring-slate-200/80 font-bold' : 'text-slate-600 hover:text-slate-900 font-medium hover:bg-white/50'}`}
             >
-              <span>Tất cả</span> <span className={`px-1.5 py-0.5 min-w-[18px] text-center rounded-full text-[9px] sm:text-[10px] font-bold leading-none ${statusFilter === 'all' ? 'bg-slate-200 text-slate-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.all}</span>
+              <span>Tất cả</span> 
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold leading-none bg-slate-200 text-slate-700">{counts.all}</span>
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter('active')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 sm:flex-initial min-w-[105px] sm:min-w-[120px] h-[28px] px-2 sm:px-3 flex items-center justify-center gap-1 whitespace-nowrap text-[11px] sm:text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'active' ? 'bg-white shadow-xs text-blue-600 ring-1 ring-blue-200 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`px-2.5 py-1 flex items-center gap-1.5 whitespace-nowrap text-xs rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'active' ? 'bg-white shadow-xs text-slate-900 ring-1 ring-slate-200/80 font-bold' : 'text-slate-600 hover:text-slate-900 font-medium hover:bg-white/50'}`}
             >
-              <span>Đang triển khai</span> <span className={`px-1.5 py-0.5 min-w-[18px] text-center rounded-full text-[9px] sm:text-[10px] font-bold leading-none ${statusFilter === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.active}</span>
+              <span>Đang triển khai</span> 
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold leading-none bg-slate-200 text-slate-700">{counts.active}</span>
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter('completed')}
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className={`flex-1 sm:flex-initial min-w-[85px] sm:min-w-[95px] h-[28px] px-2 sm:px-3 flex items-center justify-center gap-1 whitespace-nowrap text-[11px] sm:text-xs font-medium rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'completed' ? 'bg-white shadow-xs text-emerald-600 ring-1 ring-emerald-200 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+              className={`px-2.5 py-1 flex items-center gap-1.5 whitespace-nowrap text-xs rounded-md transition-all cursor-pointer select-none active:scale-95 no-drag-region electron-no-drag ${statusFilter === 'completed' ? 'bg-white shadow-xs text-slate-900 ring-1 ring-slate-200/80 font-bold' : 'text-slate-600 hover:text-slate-900 font-medium hover:bg-white/50'}`}
             >
-              <span>Hoàn thành</span> <span className={`px-1.5 py-0.5 min-w-[18px] text-center rounded-full text-[9px] sm:text-[10px] font-bold leading-none ${statusFilter === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/60 text-slate-500'}`}>{counts.completed}</span>
+              <span>Hoàn thành</span> 
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold leading-none bg-slate-200 text-slate-700">{counts.completed}</span>
             </button>
           </div>
         </div>

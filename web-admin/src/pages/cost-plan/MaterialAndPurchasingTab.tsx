@@ -2142,17 +2142,17 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 <td className="border-r border-slate-300 p-1 text-center">-</td>
                 <td className="border-r border-slate-300 p-1 text-center">-</td>
                 <td className="border-r border-slate-300 p-1 text-center">-</td>
-                <td className="border-r border-slate-300 p-1 text-right font-mono font-black text-slate-900 px-1.5">{showNumber(totals.sell)}</td>
+                <td className="border-r border-slate-300 p-1 text-right font-mono font-black text-slate-900 px-1.5">{showNumber(totals.sell) || '0'}</td>
                 <td className="border-r border-slate-300 p-1 text-center">-</td>
-                <td className="border-r border-slate-300 p-1 text-right font-mono font-black text-slate-900 px-1.5">{showNumber(totals.cost)}</td>
+                <td className="border-r border-slate-300 p-1 text-right font-mono font-black text-slate-900 px-1.5">{showNumber(totals.cost) || '0'}</td>
                 <td className="border-r border-slate-300 p-1 text-center">-</td>
-                <td className="border-r border-slate-300 p-1 text-right font-mono font-black text-blue-700 px-1.5">{showNumber(totals.costPaid)}</td>
+                <td className="border-r border-slate-300 p-1 text-right font-mono font-black text-blue-700 px-1.5">{showNumber(totals.costPaid) || '0'}</td>
                 <td className="border-r border-slate-300 p-1 text-center">-</td>
                 <td className="border-r border-slate-300 p-1 text-center">-</td>
                 <td className="border-r border-slate-300 p-1 text-center">-</td>
                 <td className="border-r border-slate-300 p-1 text-right font-mono font-black px-1.5">
                   <span className={totals.profit < 0 ? 'text-rose-600' : 'text-emerald-700'}>
-                    {showNumber(totals.profit)}
+                    {showNumber(totals.profit) || '0'}
                   </span>
                 </td>
                 <td className="border-r border-slate-300 p-1 text-center">-</td>

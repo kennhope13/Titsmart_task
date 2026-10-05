@@ -198,7 +198,10 @@ export const ProjectCostPlanPage: React.FC = () => {
   } = useRealtimeStore();
 
   useEffect(() => {
-    fetchAccounting();
+    // Chỉ tải từ DB nếu store chưa có dữ liệu (lần đầu vào app)
+    if ((materialPlans.length === 0 && purchasingPlans.length === 0 && expenses.length === 0)) {
+      fetchAccounting();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1254,7 +1257,7 @@ export const ProjectCostPlanPage: React.FC = () => {
       if (activeTab === 'TECH') outletContext.setSubTitle('Đặt hàng');
       else if (activeTab === 'DOCS') outletContext.setSubTitle('Chứng từ');
       else if (activeTab === 'FINANCE') outletContext.setSubTitle('Thanh toán');
-      else if (activeTab === 'EXPENSE') outletContext.setSubTitle('Chi phí công trình');
+      else if (activeTab === 'EXPENSE') outletContext.setSubTitle('Chi phí');
       else outletContext.setSubTitle('');
     }
 
@@ -1769,6 +1772,119 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   const COLORS = ['#0284c7', '#e11d48', '#f59e0b'];
 
+  const handleExpenseTransferFund = async ({ fromSpender, toProjectCode, toSpender, amount, date, notes }: any) => {
+    try {
+      const toProjObj = projects.find(p => p.code === toProjectCode);
+      const toProjName = toProjObj ? toProjObj.name : toProjectCode;
+      const fromProjObj = projects.find(p => p.code === selectedProject);
+      const fromProjName = fromProjObj ? fromProjObj.name : selectedProject;
+
+      // 1. Dòng Xuất/Chi giảm quỹ tại Dự án hiện tại
+      await addExpense({
+        projectCode: selectedProject,
+        spenderName: fromSpender || 'DỰ ÁN',
+        content: `Chuyển quỹ đến ${toProjName}`,
+        description: `Chuyển quỹ cho ${toSpender} (${toProjName})${notes ? ` - ${notes}` : ''}`,
+        date: date || new Date().toISOString().split('T')[0],
+        quantity: 1,
+        unit: '',
+        unitPrice: amount,
+        taxAmount: 0,
+        totalAmount: amount,
+        incomeAmount: 0,
+        balanceFund: 0,
+        notes: `Chuyển quỹ đến ${toProjectCode}: ${user?.name || user?.username || ''}`
+      } as any);
+
+      // 2. Dòng Nạp/Thu tăng quỹ tại Dự án đích
+      await addExpense({
+        projectCode: toProjectCode,
+        spenderName: toSpender || fromSpender || 'DỰ ÁN',
+        content: toSpender === 'DỰ ÁN' ? 'Quỹ Công Trình' : 'Cấp quỹ',
+        description: `Nhận chuyển quỹ từ ${fromProjName} (${fromSpender})${notes ? ` - ${notes}` : ''}`,
+        date: date || new Date().toISOString().split('T')[0],
+        quantity: 0,
+        unit: '',
+        unitPrice: 0,
+        taxAmount: 0,
+        totalAmount: 0,
+        incomeAmount: amount,
+        balanceFund: amount,
+        notes: `Nhận từ ${selectedProject}: ${user?.name || user?.username || ''}`
+      } as any);
+
+      logActivity('Chuyển quỹ', `${fromProjName} -> ${toProjName}: ${amount.toLocaleString('vi-VN')} đ`);
+      triggerToast(`Đã chuyển quỹ ${amount.toLocaleString('vi-VN')} đ sang dự án ${toProjName} thành công!`, 'success');
+    } catch (error: any) {
+      triggerToast(error.message || 'Lỗi khi thực hiện chuyển quỹ!', 'warning');
+    }
+  };
+
+  const handleExpenseAllocateFund = (name: string, amount?: number, date?: string) => {
+    if (name === 'KHÁC') return;
+
+    let targetName = name;
+    let currentTotalFund = 0;
+    let personExpenses: any[] = [];
+    let title = '';
+
+    if (name === '__PROJECT__') {
+      personExpenses = currentProjExpenses.filter(e => e.spenderName === 'DỰ ÁN' && e.content === 'Quỹ Công Trình');
+      currentTotalFund = currentProjExpenses.reduce((acc, curr) => acc + (curr.incomeAmount || 0), 0);
+      title = 'Quỹ Tổng Công Trình';
+      targetName = 'DỰ ÁN';
+    } else {
+      if (!targetName) {
+        const inputName = window.prompt('Nhập tên người muốn cấp quỹ:');
+        if (!inputName || !inputName.trim()) return;
+        targetName = inputName.trim();
+      }
+      personExpenses = currentProjExpenses.filter(e => e.spenderName === targetName);
+      currentTotalFund = personExpenses.reduce((acc, curr) => acc + (curr.incomeAmount || 0), 0);
+      title = `Tổng Quỹ cho [${targetName.toUpperCase()}]`;
+    }
+
+    let newTotal = 0;
+
+    if (amount !== undefined) {
+      newTotal = amount;
+    } else {
+      const input = window.prompt(`Cập nhật ${title}:\n(Nhập số tiền, hiện tại là: ${currentTotalFund.toLocaleString('vi-VN')})`, currentTotalFund.toString());
+      if (input === null) return;
+
+      newTotal = parseInt(input.replace(/[,.]/g, ''), 10);
+      if (isNaN(newTotal)) {
+        triggerToast('Số tiền không hợp lệ', 'warning');
+        return;
+      }
+    }
+
+    const diff = newTotal - currentTotalFund;
+    if (diff <= 0) return;
+
+    const adjustmentContent = name === '__PROJECT__' ? 'Quỹ Công Trình' : 'Cấp quỹ';
+    const hasFundRecords = personExpenses.some(e => e.content === adjustmentContent || e.incomeAmount > 0);
+
+    addExpense({
+      projectCode: selectedProject,
+      spenderName: targetName,
+      content: adjustmentContent,
+      description: hasFundRecords 
+        ? (name === '__PROJECT__' ? 'Nạp thêm Quỹ Công Trình' : `Nạp thêm quỹ cho ${targetName}`)
+        : (name === '__PROJECT__' ? 'Khởi tạo Quỹ Công Trình' : `Cấp quỹ cho ${targetName}`),
+      date: date || new Date().toISOString().split('T')[0],
+      quantity: 0,
+      unitPrice: 0,
+      taxAmount: 0,
+      totalAmount: 0,
+      incomeAmount: diff,
+      balanceFund: diff,
+      notes: user?.name || user?.username || 'Cấp quỹ'
+    } as any);
+
+    triggerToast(`Đã nạp thêm ${diff.toLocaleString('vi-VN')} VNĐ vào ${title.toLowerCase()}`, 'success');
+  };
+
   // ----------------------------------------------------
   // EXPORT TO EXCEL
   // ----------------------------------------------------
@@ -1950,7 +2066,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             { id: 'TECH', label: 'Đặt hàng', icon: 'list_alt', show: true },
             { id: 'DOCS', label: 'Chứng từ', icon: 'description', show: true },
             { id: 'FINANCE', label: 'Thanh toán', icon: 'payments', show: user?.role !== 'engineer' },
-            { id: 'EXPENSE', label: 'Chi phí', fullLabel: 'Chi Phí Công Trình', icon: 'receipt_long', show: user?.role !== 'engineer' },
+            { id: 'EXPENSE', label: 'Chi phí', fullLabel: 'Chi phí', icon: 'receipt_long', show: user?.role !== 'engineer' },
           ].filter(t => t.show).map(tab => (
             <button
               key={tab.id}
@@ -2168,128 +2284,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 2. BẢNG TỔNG QUAN */}
-            <div className="shrink-0 w-full overflow-x-auto">
-              <CostPlanSummaryTable
-                expenses={currentProjExpenses}
-                labors={currentProjLabor}
-                projects={projects}
-                currentProjectCode={selectedProject}
-                onTransferFund={async ({ fromSpender, toProjectCode, toSpender, amount, date, notes }) => {
-                  try {
-                    const toProjObj = projects.find(p => p.code === toProjectCode);
-                    const toProjName = toProjObj ? toProjObj.name : toProjectCode;
-                    const fromProjObj = projects.find(p => p.code === selectedProject);
-                    const fromProjName = fromProjObj ? fromProjObj.name : selectedProject;
-
-                    // 1. Dòng Xuất/Chi giảm quỹ tại Dự án hiện tại
-                    await addExpense({
-                      projectCode: selectedProject,
-                      spenderName: fromSpender || 'DỰ ÁN',
-                      content: `Chuyển quỹ đến ${toProjName}`,
-                      description: `Chuyển quỹ cho ${toSpender} (${toProjName})${notes ? ` - ${notes}` : ''}`,
-                      date: date || new Date().toISOString().split('T')[0],
-                      quantity: 1,
-                      unit: '',
-                      unitPrice: amount,
-                      taxAmount: 0,
-                      totalAmount: amount,
-                      incomeAmount: 0,
-                      balanceFund: 0,
-                      notes: `Chuyển quỹ đến ${toProjectCode}: ${user?.name || user?.username || ''}`
-                    } as any);
-
-                    // 2. Dòng Nạp/Thu tăng quỹ tại Dự án đích
-                    await addExpense({
-                      projectCode: toProjectCode,
-                      spenderName: toSpender || fromSpender || 'DỰ ÁN',
-                      content: toSpender === 'DỰ ÁN' ? 'Quỹ Công Trình' : 'Cấp quỹ',
-                      description: `Nhận chuyển quỹ từ ${fromProjName} (${fromSpender})${notes ? ` - ${notes}` : ''}`,
-                      date: date || new Date().toISOString().split('T')[0],
-                      quantity: 0,
-                      unit: '',
-                      unitPrice: 0,
-                      taxAmount: 0,
-                      totalAmount: 0,
-                      incomeAmount: amount,
-                      balanceFund: amount,
-                      notes: `Nhận từ ${selectedProject}: ${user?.name || user?.username || ''}`
-                    } as any);
-
-                    logActivity('Chuyển quỹ', `${fromProjName} -> ${toProjName}: ${amount.toLocaleString('vi-VN')} đ`);
-                    triggerToast(`Đã chuyển quỹ ${amount.toLocaleString('vi-VN')} đ sang dự án ${toProjName} thành công!`, 'success');
-                  } catch (error: any) {
-                    triggerToast(error.message || 'Lỗi khi thực hiện chuyển quỹ!', 'warning');
-                  }
-                }}
-                onAllocateFund={(name, amount, date) => {
-                  if (name === 'KHÁC') return;
-
-                  let targetName = name;
-                  let currentTotalFund = 0;
-                  let personExpenses: any[] = [];
-                  let title = '';
-
-                  if (name === '__PROJECT__') {
-                    personExpenses = currentProjExpenses.filter(e => e.spenderName === 'DỰ ÁN' && e.content === 'Quỹ Công Trình');
-                    currentTotalFund = currentProjExpenses.reduce((acc, curr) => acc + (curr.incomeAmount || 0), 0);
-                    title = 'Quỹ Tổng Công Trình';
-                    targetName = 'DỰ ÁN';
-                  } else {
-                    if (!targetName) {
-                      const inputName = window.prompt('Nhập tên người muốn cấp quỹ:');
-                      if (!inputName || !inputName.trim()) return;
-                      targetName = inputName.trim();
-                    }
-                    personExpenses = currentProjExpenses.filter(e => e.spenderName === targetName);
-                    currentTotalFund = personExpenses.reduce((acc, curr) => acc + (curr.incomeAmount || 0), 0);
-                    title = `Tổng Quỹ cho [${targetName.toUpperCase()}]`;
-                  }
-
-                  let newTotal = 0;
-
-                  if (amount !== undefined) {
-                    newTotal = amount;
-                  } else {
-                    const input = window.prompt(`Cập nhật ${title}:\n(Nhập số tiền, hiện tại là: ${currentTotalFund.toLocaleString('vi-VN')})`, currentTotalFund.toString());
-                    if (input === null) return;
-
-                    newTotal = parseInt(input.replace(/[,.]/g, ''), 10);
-                    if (isNaN(newTotal)) {
-                      triggerToast('Số tiền không hợp lệ', 'warning');
-                      return;
-                    }
-                  }
-
-                  const diff = newTotal - currentTotalFund;
-                  if (diff <= 0) return;
-
-                  const adjustmentContent = name === '__PROJECT__' ? 'Quỹ Công Trình' : 'Cấp quỹ';
-                  const hasFundRecords = personExpenses.some(e => e.content === adjustmentContent || e.incomeAmount > 0);
-
-                  addExpense({
-                    projectCode: selectedProject,
-                    spenderName: targetName,
-                    content: adjustmentContent,
-                    description: hasFundRecords 
-                      ? (name === '__PROJECT__' ? 'Nạp thêm Quỹ Công Trình' : `Nạp thêm quỹ cho ${targetName}`)
-                      : (name === '__PROJECT__' ? 'Khởi tạo Quỹ Công Trình' : `Cấp quỹ cho ${targetName}`),
-                    date: date || new Date().toISOString().split('T')[0],
-                    quantity: 0,
-                    unitPrice: 0,
-                    taxAmount: 0,
-                    totalAmount: 0,
-                    incomeAmount: diff,
-                    balanceFund: diff,
-                    notes: user?.name || user?.username || 'Cấp quỹ'
-                  } as any);
-
-                  triggerToast(`Đã nạp thêm ${diff.toLocaleString('vi-VN')} VNĐ vào ${title.toLowerCase()}`, 'success');
-                }}
-              />
-            </div>
-
-            {/* 3. CHI TIẾT PHIẾU CHI */}
+            {/* 2. CHI TIẾT PHIẾU CHI */}
             <div className="bg-white border-t border-slate-200 overflow-hidden flex-1 flex flex-col">
               <div className="overflow-x-auto custom-scrollbar flex-1">
                 <table className="w-full text-left border-collapse min-w-[1100px]">
@@ -2438,6 +2433,18 @@ export const ProjectCostPlanPage: React.FC = () => {
                     )}
                   </tbody>
             </table>
+            </div>
+
+            {/* 3. BẢNG TỔNG QUAN CHI PHÍ (ĐẶT Ở DƯỚI) */}
+            <div className="shrink-0 w-full overflow-x-auto border-t border-slate-200 bg-slate-50/50">
+              <CostPlanSummaryTable
+                expenses={currentProjExpenses}
+                labors={currentProjLabor}
+                projects={projects}
+                currentProjectCode={selectedProject}
+                onTransferFund={handleExpenseTransferFund}
+                onAllocateFund={handleExpenseAllocateFund}
+              />
             </div>
 
             </div>

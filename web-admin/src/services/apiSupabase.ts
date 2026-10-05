@@ -233,7 +233,10 @@ export const api = {
 
       codes.forEach((code) => {
         deletePromises.push(Promise.resolve(supabase.from('tasks').delete().eq('project_code', code)));
-        deletePromises.push(Promise.resolve(supabase.from('materials').delete().eq('project_code', code)));
+        // Bảo vệ kho tổng COMPANY: Tuyệt đối không xóa vật tư kho tổng khi xóa dự án
+        if (code !== 'COMPANY') {
+          deletePromises.push(Promise.resolve(supabase.from('materials').delete().eq('project_code', code)));
+        }
         deletePromises.push(Promise.resolve(supabase.from('material_plans').delete().eq('project_code', code)));
         deletePromises.push(Promise.resolve(supabase.from('purchasing_plans').delete().eq('project_code', code)));
         deletePromises.push(Promise.resolve(supabase.from('expenses').delete().eq('project_code', code)));
@@ -348,6 +351,29 @@ export const api = {
         }
         lastError = error;
         if (error) {
+          // Handle foreign key constraint if project_code (e.g. 'COMPANY' / 'OFFICE') is missing in projects table
+          if (error.code === '23503' || String(error.message).includes('foreign key constraint') || String(error.message).includes('tasks_project_code_fkey')) {
+            const projCode = payload.project_code || 'COMPANY';
+            try {
+              await supabase.from('projects').insert({
+                code: projCode,
+                name: projCode === 'COMPANY' ? 'Nội bộ Công ty / Văn phòng' : projCode,
+                status: 'active',
+                location: 'Văn phòng Công ty',
+                client: 'Nội bộ'
+              });
+              const { data: retryRes, error: retryErr } = await supabase.from('tasks').insert(payload).select().single();
+              if (!retryErr && retryRes) {
+                const resCamel = toCamelCase({ ...data, ...retryRes });
+                if (data.followerIds && (!resCamel.followerIds || resCamel.followerIds.length === 0)) resCamel.followerIds = data.followerIds;
+                if (data.followerNames && (!resCamel.followerNames || resCamel.followerNames.length === 0)) resCamel.followerNames = data.followerNames;
+                return resCamel;
+              }
+            } catch {
+              // Ignore insert project error and try nulling project_code as fallback
+            }
+          }
+
           const missingColMatch = (error.message || '').match(/Could not find the '([^']+)' column/i);
           if (missingColMatch) {
             delete payload[missingColMatch[1]];
@@ -463,6 +489,28 @@ export const api = {
         lastError = error;
         if (error) {
           if (error.code === 'PGRST116') throw new Error('Dữ liệu không tồn tại trên máy chủ (có thể đã bị xóa bởi người khác). Vui lòng F5 tải lại trang.');
+          if (error.code === '23503' || String(error.message).includes('foreign key constraint') || String(error.message).includes('tasks_project_code_fkey')) {
+            const projCode = payload.project_code || 'COMPANY';
+            try {
+              await supabase.from('projects').insert({
+                code: projCode,
+                name: projCode === 'COMPANY' ? 'Nội bộ Công ty / Văn phòng' : projCode,
+                status: 'active',
+                location: 'Văn phòng Công ty',
+                client: 'Nội bộ'
+              });
+              const { data: retryRes, error: retryErr } = await supabase.from('tasks').update(payload).eq('id', id).select().single();
+              if (!retryErr && retryRes) {
+                const audit = getCurrentAuditPayload();
+                const resCamel = toCamelCase({ updated_by: audit.updated_by, updated_at: audit.updated_at, ...data, ...retryRes });
+                if (data.followerIds && (!resCamel.followerIds || resCamel.followerIds.length === 0)) resCamel.followerIds = data.followerIds;
+                if (data.followerNames && (!resCamel.followerNames || resCamel.followerNames.length === 0)) resCamel.followerNames = data.followerNames;
+                return resCamel;
+              }
+            } catch {
+              // Fallback
+            }
+          }
           const missingColMatch = (error.message || '').match(/Could not find the '([^']+)' column/i);
           if (missingColMatch) {
             delete payload[missingColMatch[1]];
@@ -629,6 +677,45 @@ export const api = {
       }
       return toCamelCase(result);
     },
+    createBatch: async (dataArray: any[]) => {
+      const allowedKeys = [
+        'code', 'name', 'english_name', 'project_code', 'project_name',
+        'volume', 'initial_stock', 'current_stock', 'total_import', 'total_export',
+        'unit', 'unit_price', 'status', 'constr_status', 'supplier', 'specs', 'category', 'notes',
+        'created_at'
+      ];
+      const payloads = dataArray.map(data => {
+        const payload = toSnakeCase(data);
+        if (payload.id && String(payload.id).startsWith('mat-')) {
+          delete payload.id;
+        }
+        const sanitized: any = {};
+        for (const key of Object.keys(payload)) {
+          if (allowedKeys.includes(key)) {
+            sanitized[key] = payload[key];
+          }
+        }
+        return sanitized;
+      });
+
+      const { data: result, error } = await supabase.from('materials').insert(payloads).select();
+      if (error) {
+        if (error.code === '23503' || String(error.message).includes('foreign key constraint')) {
+          await supabase.from('projects').upsert({
+            name: 'Kho Tổng (Kho Công Ty)',
+            code: 'COMPANY',
+            status: 'active',
+            location: 'Kho Công ty',
+            client: 'Nội bộ'
+          }, { onConflict: 'code' });
+          const { data: retryResult, error: retryError } = await supabase.from('materials').insert(payloads).select();
+          if (retryError) throw retryError;
+          return mapArray(retryResult || []);
+        }
+        throw error;
+      }
+      return mapArray(result || []);
+    },
     update: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
       if (Object.keys(payload).length === 0) return { id };
@@ -702,7 +789,7 @@ export const api = {
   },
   engineers: {
     getAll: async () => {
-      const { data, error } = await supabase.from('engineers').select('*');
+      const { data, error } = await supabase.from('engineers').select('*').order('created_at', { ascending: true });
       if (error) throw error;
       return mapArray(data || []);
     },
