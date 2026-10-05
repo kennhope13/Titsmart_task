@@ -1071,13 +1071,11 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     fetchAccounting: async (force: boolean = false) => {
-      const now = Date.now();
-      const hasCachedData = (get().materialPlans.length > 0 || get().purchasingPlans.length > 0 || get().expenses.length > 0 || get().documentTracks.length > 0);
-      
-      // Nếu không phải ép buộc tải lại và đã có dữ liệu trong cache -> Bỏ qua truy vấn DB
-      if (!force && hasCachedData) {
-        return;
-      }
+        const now = Date.now();
+        const hasCriticalData = (get().materialPlans.length > 0 || get().purchasingPlans.length > 0);
+        if (!force && hasCriticalData) {
+          return;
+        }
 
       const fetchStartTime = now;
       const nextState: any = {};

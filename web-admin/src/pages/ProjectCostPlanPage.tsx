@@ -234,7 +234,44 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   const handleUpdatePurchasingPlanSync = async (id: string, updates: Partial<ProjectPurchasing>) => {
     const existing = purchasingPlans.find(p => p.id === id);
-    if (!existing) return;
+    if (!existing) {
+      const fakePurchasings = currentProjPurchasing.filter(p => !purchasingPlans.some(pp => pp.id === p.id));
+      if (fakePurchasings.length > 0) {
+        try {
+          const payloads = fakePurchasings.map(p => ({
+            projectCode: p.projectCode,
+            materialPlanId: undefined,
+            stt: p.stt,
+            content: p.content,
+            unit: p.unit,
+            volumeContract: p.volumeContract,
+            volumeOrder: p.id === id && updates.volumeOrder !== undefined ? updates.volumeOrder : p.volumeOrder,
+            unitPrice: p.id === id && updates.unitPrice !== undefined ? updates.unitPrice : p.unitPrice,
+            vatRate: p.id === id && updates.vatRate !== undefined ? updates.vatRate : p.vatRate,
+            vatAmount: p.id === id && updates.vatAmount !== undefined ? updates.vatAmount : p.vatAmount,
+            totalAmount: p.id === id && updates.totalAmount !== undefined ? updates.totalAmount : p.totalAmount,
+            prepayPercent: p.id === id && updates.prepayPercent !== undefined ? updates.prepayPercent : p.prepayPercent,
+            prepayAmount: p.id === id && updates.prepayAmount !== undefined ? updates.prepayAmount : p.prepayAmount,
+            remainingAmount: p.id === id && updates.remainingAmount !== undefined ? updates.remainingAmount : p.remainingAmount,
+            orderStatus: p.id === id && updates.orderStatus !== undefined ? updates.orderStatus : p.orderStatus,
+            contractStatus: p.id === id && updates.contractStatus !== undefined ? updates.contractStatus : p.contractStatus,
+            paymentDate: p.paymentDate,
+            deliveryDate: (p as any).deliveryDate,
+            invoiceStatus: p.id === id && updates.invoiceStatus !== undefined ? updates.invoiceStatus : p.invoiceStatus,
+            paymentNotes: p.id === id && (updates as any).paymentNotes !== undefined ? (updates as any).paymentNotes : (p as any).paymentNotes,
+            actualAmount: p.id === id && (updates as any).actualAmount !== undefined ? (updates as any).actualAmount : (p as any).actualAmount,
+            costPaymentMethod: p.id === id && updates.costPaymentMethod !== undefined ? updates.costPaymentMethod : p.costPaymentMethod,
+            costNotes: p.id === id && (updates as any).costNotes !== undefined ? (updates as any).costNotes : (p as any).costNotes,
+            notes: p.id === id && updates.notes !== undefined ? updates.notes : p.notes,
+          }));
+          await addPurchasingsBatch(payloads);
+          triggerToast('Đã tự động khởi tạo dữ liệu Mua hàng', 'success');
+        } catch (e) {
+          triggerToast('Lỗi khi khởi tạo dữ liệu Mua hàng!', 'warning');
+        }
+      }
+      return;
+    }
 
     const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
     const matchingMaterial = materialPlans.find(m =>
@@ -301,6 +338,40 @@ export const ProjectCostPlanPage: React.FC = () => {
   const handleUpdateMaterialPlanSync = async (id: string, updates: Partial<ProjectMaterialPlan>) => {
     syncingIdsRef.current.add(id);
     const existing = materialPlans.find(p => p.id === id);
+
+    if (!existing) {
+      // Find all fake plans currently shown to auto-initialize them
+      const fakePlans = currentProjMaterialPlans.filter(p => !materialPlans.some(mp => mp.id === p.id));
+      if (fakePlans.length > 0) {
+        try {
+          const payloads = fakePlans.map(p => ({
+            projectCode: p.projectCode,
+            parentId: undefined, // Usually sections aren't deeply linked yet in fake plans
+            stt: p.stt,
+            jobContent: p.jobContent,
+            unit: p.unit,
+            contractVolume: p.contractVolume,
+            techSpecModel: p.techSpecModel,
+            techSpecOrigin: p.techSpecOrigin,
+            techSpecStatus: p.id === id && updates.techSpecStatus !== undefined ? updates.techSpecStatus : p.techSpecStatus,
+            orderedVolume: p.id === id && updates.orderedVolume !== undefined ? updates.orderedVolume : p.orderedVolume,
+            orderedStatus: p.id === id && updates.orderedStatus !== undefined ? updates.orderedStatus : p.orderedStatus,
+            expectedDate: p.expectedDate,
+            issueContent: p.issueContent,
+            issueStatus: p.issueStatus,
+            supplyScope: p.supplyScope,
+            notes: p.id === id && updates.notes !== undefined ? updates.notes : p.notes,
+          }));
+          await addMaterialPlansBatch(payloads);
+          triggerToast('Đã tự động khởi tạo dữ liệu Kế hoạch vật tư', 'success');
+        } catch (e) {
+          triggerToast('Lỗi khi khởi tạo Kế hoạch vật tư!', 'warning');
+        }
+      }
+      syncingIdsRef.current.delete(id);
+      return;
+    }
+
     try {
       await updateMaterialPlan(id, updates);
       if (!existing) return;
