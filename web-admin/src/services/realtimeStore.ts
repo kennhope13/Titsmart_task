@@ -2565,10 +2565,18 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           badgeBg,
           iconColor,
         };
-        const nextLogs = [optimisticLog, ...state.activityLogs].slice(0, 100);
+        const nextLogs = [optimisticLog, ...state.activityLogs].slice(0, 300);
         persistAndNotify({ activityLogs: nextLogs });
         return { activityLogs: nextLogs };
       });
+
+      api.activityLogs.create({
+        action,
+        project,
+        user: actualUser,
+        icon,
+        badgeBg,
+      }).catch(err => console.warn('Could not save activity log:', err));
     },
   };
 });
@@ -2580,7 +2588,8 @@ const REALTIME_TABLES = [
   'projects', 'tasks', 'materials', 'issues', 'engineers',
   'notifications', 'inventory_transactions',
   'material_plans', 'purchasing_plans', 'expenses',
-  'labor_payrolls', 'document_tracks', 'field_logs', 'direct_messages'
+  'labor_payrolls', 'document_tracks', 'field_logs', 'direct_messages',
+  'activity_logs'
 ];
 
 let realtimeChannel: any = null;
@@ -2609,7 +2618,8 @@ export function setupRealtimeSync() {
       payload.table === 'materials' ||
       payload.table === 'issues' ||
       payload.table === 'engineers' ||
-      payload.table === 'projects'
+      payload.table === 'projects' ||
+      payload.table === 'activity_logs'
     )) {
       const store = useRealtimeStore.getState();
       if (payload.table === 'direct_messages') store.fetchDirectMessages();
@@ -2625,6 +2635,7 @@ export function setupRealtimeSync() {
         });
       }
       if (payload.table === 'projects') store.fetchProjects();
+      if (payload.table === 'activity_logs') store.fetchActivityLogs();
       return;
     }
 

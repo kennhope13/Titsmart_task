@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { exportToStyledExcel } from '../utils/excelExportUtils';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useAuthStore } from '../services/authStore';
 import { Modal } from '../components/common/Modal';
 import { PullToRefresh } from '../components/common/PullToRefresh';
 
@@ -105,10 +106,14 @@ const renderActionText = (text: string, fullDetail: boolean = false) => {
 
 export const ActivityLogPage: React.FC = () => {
   const { activityLogs, projects, fetchActivityLogs } = useRealtimeStore();
+  const user = useAuthStore(state => state.user);
+  const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.username === 'admin';
 
   React.useEffect(() => {
-    fetchActivityLogs();
-  }, []);
+    if (isAdmin) {
+      fetchActivityLogs();
+    }
+  }, [isAdmin]);
 
   const getProjectName = (projCodeOrName: string) => {
     if (!projCodeOrName) return projCodeOrName;
@@ -120,6 +125,16 @@ export const ActivityLogPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
+
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center min-h-[400px] text-slate-500 bg-slate-50">
+        <span className="material-symbols-outlined text-5xl text-slate-300 mb-2">lock</span>
+        <h3 className="font-bold text-base text-slate-700">Quyền truy cập bị hạn chế</h3>
+        <p className="text-xs text-slate-500 mt-1">Chỉ có Quản trị viên (Admin) mới có quyền xem Nhật ký hoạt động hệ thống.</p>
+      </div>
+    );
+  }
 
   const filteredLogs = useMemo(() => {
     return activityLogs.filter((log) => {

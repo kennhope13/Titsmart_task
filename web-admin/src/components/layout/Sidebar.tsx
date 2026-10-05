@@ -91,6 +91,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
       ].filter(group => group.items.length > 0);
     }
 
+    const isAdminAccount = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.username === 'admin';
+
     const mainItems = [
       { label: 'Tổng quan', path: '/dashboard', icon: 'analytics', req: 'VIEW_PROJECTS' },
       { label: 'Tất cả dự án', path: '/projects', icon: 'cell_tower', req: 'VIEW_PROJECTS' },
@@ -99,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
       { label: 'Tổng kho', path: '/materials', icon: 'warehouse', req: 'VIEW_MATERIALS' },
       { label: 'Công và nghỉ', path: '/attendance', icon: 'schedule', req: 'VIEW_TASKS' },
       { label: 'Nhân sự', path: '/personnel', icon: 'groups', req: 'VIEW_USERS' },
-      { label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history', req: 'VIEW_ACTIVITY_LOG' }
+      ...(isAdminAccount ? [{ label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history', req: 'VIEW_ACTIVITY_LOG' }] : [])
     ];
 
     return [{

@@ -855,12 +855,89 @@ export const api = {
     },
   },
   activityLogs: {
-    getAll: async () => [],
-    create: async (data: any) => ({
-      id: `act-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      ...data,
-      timestamp: new Date().toISOString()
-    }),
+    getAll: async () => {
+      try {
+        let { data, error } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .neq('icon', 'LEAVE_REQUEST')
+          .order('created_at', { ascending: false })
+          .limit(300);
+
+        if (error) {
+          const res = await supabase
+            .from('activity_logs')
+            .select('*')
+            .neq('icon', 'LEAVE_REQUEST')
+            .order('timestamp', { ascending: false })
+            .limit(300);
+          data = res.data;
+          error = res.error;
+        }
+
+        if (error) {
+          const res = await supabase
+            .from('activity_logs')
+            .select('*')
+            .neq('icon', 'LEAVE_REQUEST')
+            .limit(300);
+          data = res.data;
+        }
+
+        return (data || []).map(row => {
+          const act = (row.action || '').toLowerCase();
+          const icon = row.icon || (act.includes('tiến độ') ? 'trending_up' :
+            act.includes('chi') || act.includes('lương') || act.includes('hợp đồng') ? 'payments' :
+            act.includes('kho') || act.includes('vật tư') ? 'warehouse' :
+            act.includes('hồ sơ') ? 'drafts' : 'history');
+          const badgeBg = row.badge_bg || row.badgeBg || (act.includes('tiến độ') ? 'bg-blue-50' :
+            act.includes('chi') || act.includes('lương') || act.includes('hợp đồng') ? 'bg-emerald-50' :
+            act.includes('kho') || act.includes('vật tư') ? 'bg-amber-50' :
+            act.includes('hồ sơ') ? 'bg-violet-50' : 'bg-slate-50');
+          const iconColor = row.icon_color || row.iconColor || (act.includes('tiến độ') ? 'text-blue-500' :
+            act.includes('chi') || act.includes('lương') || act.includes('hợp đồng') ? 'text-emerald-500' :
+            act.includes('kho') || act.includes('vật tư') ? 'text-amber-500' :
+            act.includes('hồ sơ') ? 'text-violet-500' : 'text-slate-500');
+
+          return {
+            id: row.id,
+            action: row.action || '',
+            project: row.project_code || row.project || 'COMPANY',
+            user: row.user_name || row.user || row.user_id || 'Hệ thống',
+            timestamp: row.timestamp || row.created_at || new Date().toISOString(),
+            icon,
+            badgeBg,
+            iconColor,
+          };
+        });
+      } catch (err) {
+        console.error('[ActivityLogs] Failed to fetch:', err);
+        return [];
+      }
+    },
+    create: async (data: any) => {
+      try {
+        const payload: any = {
+          action: data.action,
+          project_code: data.project || 'COMPANY',
+          user_name: data.user || 'Hệ thống',
+          icon: data.icon || 'history',
+          badge_bg: data.badgeBg || 'bg-slate-50'
+        };
+        const { data: res, error } = await supabase.from('activity_logs').insert(payload).select().single();
+        if (error) {
+          const fallbackPayload: any = {
+            action: data.action,
+            icon: data.icon || 'history'
+          };
+          const { data: fbRes } = await supabase.from('activity_logs').insert(fallbackPayload).select().single();
+          return { id: fbRes?.id || `act-${Date.now()}`, ...data };
+        }
+        return { id: res.id, ...data };
+      } catch (err) {
+        return { id: `act-${Date.now()}`, ...data, timestamp: new Date().toISOString() };
+      }
+    },
     update: async (id: string, data: any) => ({ id, ...data }),
     delete: async (_id: string) => ({ success: true })
   },
