@@ -27,6 +27,21 @@ const ALL_AVAILABLE_PERMISSIONS: Permission[] = [
   'VIEW_PROJECT_DIAGRAM', 'MANAGE_PROJECT_DIAGRAM', 'VIEW_DOCUMENTS', 'CREATE_DOCUMENTS', 'EDIT_DOCUMENTS', 'DELETE_DOCUMENTS', 'MANAGE_DOCUMENTS'
 ];
 
+export const formatPhoneNumber = (phoneStr?: string): string => {
+  if (!phoneStr) return 'Chưa cập nhật';
+  const clean = String(phoneStr).trim();
+  if (!clean || clean === 'Chưa cập nhật' || clean === '-') return 'Chưa cập nhật';
+  
+  const digits = clean.replace(/\D/g, '');
+  if (digits.length === 10) {
+    return `${digits.slice(0, 4)}.${digits.slice(4, 7)}.${digits.slice(7)}`;
+  }
+  if (digits.length === 11) {
+    return `${digits.slice(0, 3)}.${digits.slice(3, 7)}.${digits.slice(7)}`;
+  }
+  return clean;
+};
+
 const getPersonTasks = (person: any, allTasks: any[]) => {
   if (!person || !Array.isArray(allTasks)) return [];
   const personId = String(person.id || '').trim().toLowerCase();
@@ -197,7 +212,7 @@ export const PersonnelPage: React.FC = () => {
         'Tên đăng nhập': p.username || '',
         'Vai trò': p.role,
         'Đội/Nhóm': p.team || '',
-        'Số điện thoại': p.phone || 'Chưa cập nhật',
+        'Số điện thoại': formatPhoneNumber(p.phone),
         'Tổng số công việc': kpi.totalCount,
         'Đã hoàn thành': kpi.completedCount,
         'Chưa hoàn thành': kpi.pendingCount,
@@ -343,11 +358,14 @@ export const PersonnelPage: React.FC = () => {
     if (person.role === 'Quản trị viên' || person.username === 'admin') return false;
     
     const term = searchTerm.toLowerCase();
+    const termDigits = term.replace(/\D/g, '');
+    const personPhoneDigits = (person.phone || '').replace(/\D/g, '');
     const matchSearch = !term 
       || person.name.toLowerCase().includes(term)
       || person.code.toLowerCase().includes(term)
       || person.role.toLowerCase().includes(term)
-      || (person.phone && person.phone.toLowerCase().includes(term));
+      || (person.phone && person.phone.toLowerCase().includes(term))
+      || (termDigits.length >= 3 && personPhoneDigits.includes(termDigits));
 
     const matchFilter = filter === 'all'
       || (filter === 'manager' && person.role.includes('Quản lý'))
@@ -741,7 +759,7 @@ export const PersonnelPage: React.FC = () => {
                           )}
                         </button>
                       </td>
-                      <td className="p-2 sm:p-3 text-slate-600 whitespace-nowrap text-[10px] sm:text-xs">{person.phone || 'Chưa cập nhật'}</td>
+                      <td className="p-2 sm:p-3 text-slate-600 whitespace-nowrap text-[10px] sm:text-xs">{formatPhoneNumber(person.phone)}</td>
                     <td className="p-2 sm:p-3 whitespace-nowrap"><span className={`text-[10px] sm:text-[11px] font-bold ${person.locked ? 'text-red-700' : 'text-emerald-700'}`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>
                     <td className="p-2 sm:p-3 min-w-[140px] whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
@@ -1209,7 +1227,7 @@ export const PersonnelPage: React.FC = () => {
                       {viewingKpiPerson.phone && (
                         <>
                           <span>•</span>
-                          <span>{viewingKpiPerson.phone}</span>
+                          <span>{formatPhoneNumber(viewingKpiPerson.phone)}</span>
                         </>
                       )}
                     </div>
