@@ -23,7 +23,7 @@ const ALL_AVAILABLE_PERMISSIONS: Permission[] = [
   'VIEW_TASKS', 'IMPORT_TASKS', 'EDIT_TASKS', 'ASSIGN_TASKS', 'UPDATE_TASK_PROGRESS', 'APPROVE_TASKS', 'VIEW_FIELD_LOGS', 'MANAGE_FIELD_LOGS',
   'VIEW_MATERIALS', 'IMPORT_MATERIALS', 'EDIT_MATERIALS', 'UPDATE_MATERIAL_STATUS', 'MANAGE_INVENTORY',
   'VIEW_FINANCE', 'EDIT_PRICES', 'VIEW_PAYMENTS', 'EDIT_PAYMENTS', 'VIEW_EXPENSES', 'EDIT_EXPENSES',
-  'VIEW_USERS', 'MANAGE_USERS', 'MANAGE_PERMISSIONS', 'MANAGE_PAYROLL', 'APPROVE_LEAVE_STEP1', 'APPROVE_LEAVE_FINAL', 'EXPORT_DATA', 'VIEW_ACTIVITY_LOG',
+  'VIEW_USERS', 'EDIT_USERS', 'MANAGE_USERS', 'MANAGE_PERMISSIONS', 'MANAGE_PAYROLL', 'APPROVE_LEAVE_STEP1', 'APPROVE_LEAVE_FINAL', 'EXPORT_DATA', 'VIEW_ACTIVITY_LOG',
   'VIEW_PROJECT_DIAGRAM', 'MANAGE_PROJECT_DIAGRAM', 'VIEW_DOCUMENTS', 'CREATE_DOCUMENTS', 'EDIT_DOCUMENTS', 'DELETE_DOCUMENTS', 'MANAGE_DOCUMENTS'
 ];
 
@@ -702,14 +702,16 @@ export const PersonnelPage: React.FC = () => {
               )}
             </div>
 
-            <button
-              onClick={openCreateModal}
-              title="Thêm nhân sự"
-              className="bg-primary text-white h-8 md:h-[34px] w-8 md:w-auto px-0 md:px-3.5 rounded-lg text-xs font-bold hover:opacity-90 flex items-center justify-center gap-1.5 shadow-xs shrink-0"
-            >
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              <span className="hidden md:inline">Thêm nhân sự</span>
-            </button>
+            {(hasPermission(user, 'MANAGE_USERS') || hasPermission(user, 'EDIT_USERS')) && (
+              <button
+                onClick={openCreateModal}
+                title="Thêm nhân sự"
+                className="bg-primary text-white h-8 md:h-[34px] w-8 md:w-auto px-0 md:px-3.5 rounded-lg text-xs font-bold hover:opacity-90 flex items-center justify-center gap-1.5 shadow-xs shrink-0"
+              >
+                <span className="material-symbols-outlined text-[14px]">add</span>
+                <span className="hidden md:inline">Thêm nhân sự</span>
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -729,17 +731,18 @@ export const PersonnelPage: React.FC = () => {
                   <th className="text-center p-2 sm:p-3 bg-slate-50 whitespace-nowrap">KPI & Công việc</th>
                   <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">SĐT</th>
                   <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Trạng thái</th>
-                  {hasPermission(user, 'MANAGE_USERS') && <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Chức năng</th>}
+                  {(hasPermission(user, 'MANAGE_USERS') || hasPermission(user, 'EDIT_USERS')) && <th className="text-left p-2 sm:p-3 bg-slate-50 whitespace-nowrap">Chức năng</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {people.map((person, index) => {
                   const kpi = computePersonKpi(person, tasks);
+                  const canEditPerson = hasPermission(user, 'MANAGE_USERS') || hasPermission(user, 'EDIT_USERS');
                   return (
                     <tr
                       key={person.id}
-                      className="cursor-pointer hover:bg-slate-50"
-                      onClick={() => openEditModal(person)}
+                      className={canEditPerson ? "cursor-pointer hover:bg-slate-50" : "hover:bg-slate-50"}
+                      onClick={() => canEditPerson && openEditModal(person)}
                     >
                       <td className="p-2 sm:p-3 text-xs sm:text-sm font-semibold text-slate-900 tracking-tight min-w-[120px] whitespace-nowrap">
                         <div>{person.name}</div>
@@ -799,29 +802,31 @@ export const PersonnelPage: React.FC = () => {
                       </td>
                       <td className="p-2 sm:p-3 text-slate-600 whitespace-nowrap text-[10px] sm:text-xs">{formatPhoneNumber(person.phone)}</td>
                     <td className="p-2 sm:p-3 whitespace-nowrap"><span className={`text-[10px] sm:text-[11px] font-bold ${person.locked ? 'text-red-700' : 'text-emerald-700'}`}>{person.locked ? 'Bị khóa' : 'Đang hoạt động'}</span></td>
-                    <td className="p-2 sm:p-3 min-w-[140px] whitespace-nowrap">
-                      <div className="flex items-center gap-2.5">
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            toggleLock(person);
-                          }}
-                          className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-[11px] font-bold active:scale-95 transition-all ${person.locked ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10'}`}
-                        >
-                          <span className="material-symbols-outlined text-[14px]">{person.locked ? 'lock_open' : 'lock'}</span>
-                          {person.locked ? 'Mở khóa' : 'Khóa'}
-                        </button>
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setDeletingPerson({ id: person.id, name: person.name });
-                          }}
-                          className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-red-200 bg-white text-[11px] font-bold text-red-600 hover:bg-red-50 hover:border-red-300 active:scale-95 transition-all"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">delete</span>Xóa
-                        </button>
-                      </div>
-                    </td>
+                    {(hasPermission(user, 'MANAGE_USERS') || hasPermission(user, 'EDIT_USERS')) && (
+                      <td className="p-2 sm:p-3 min-w-[140px] whitespace-nowrap">
+                        <div className="flex items-center gap-2.5">
+                          <button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              toggleLock(person);
+                            }}
+                            className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-[11px] font-bold active:scale-95 transition-all ${person.locked ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10'}`}
+                          >
+                            <span className="material-symbols-outlined text-[14px]">{person.locked ? 'lock_open' : 'lock'}</span>
+                            {person.locked ? 'Mở khóa' : 'Khóa'}
+                          </button>
+                          <button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setDeletingPerson({ id: person.id, name: person.name });
+                            }}
+                            className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-red-200 bg-white text-[11px] font-bold text-red-600 hover:bg-red-50 hover:border-red-300 active:scale-95 transition-all"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">delete</span>Xóa
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -908,7 +913,7 @@ export const PersonnelPage: React.FC = () => {
                           'VIEW_TASKS', 'IMPORT_TASKS', 'EDIT_TASKS', 'ASSIGN_TASKS', 'UPDATE_TASK_PROGRESS', 'APPROVE_TASKS', 'VIEW_FIELD_LOGS', 'MANAGE_FIELD_LOGS',
                           'VIEW_MATERIALS', 'IMPORT_MATERIALS', 'EDIT_MATERIALS', 'UPDATE_MATERIAL_STATUS', 'MANAGE_INVENTORY',
                           'VIEW_FINANCE', 'VIEW_PAYMENTS', 'VIEW_EXPENSES', 'EDIT_EXPENSES',
-                          'VIEW_USERS', 'MANAGE_PAYROLL', 'EXPORT_DATA', 'VIEW_ACTIVITY_LOG',
+                          'VIEW_USERS', 'EDIT_USERS', 'MANAGE_PAYROLL', 'EXPORT_DATA', 'VIEW_ACTIVITY_LOG',
                           'APPROVE_LEAVE_STEP1',
                           'VIEW_PROJECT_DIAGRAM', 'VIEW_DOCUMENTS', 'MANAGE_DOCUMENTS'
                         ]);
@@ -1092,6 +1097,7 @@ export const PersonnelPage: React.FC = () => {
                 <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-500 uppercase border-b pb-1">Nhân sự & Hệ thống</h4>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('VIEW_USERS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'VIEW_USERS']) : setPermissions(p => p.filter(x => x !== 'VIEW_USERS'))} className="accent-primary w-3.5 h-3.5"/>Xem nhân sự</label>
+                  <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('EDIT_USERS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'EDIT_USERS']) : setPermissions(p => p.filter(x => x !== 'EDIT_USERS'))} className="accent-primary w-3.5 h-3.5"/>Chỉnh sửa nhân sự</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_USERS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_USERS']) : setPermissions(p => p.filter(x => x !== 'MANAGE_USERS'))} className="accent-primary w-3.5 h-3.5"/>Quản lý nhân sự</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_PERMISSIONS')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_PERMISSIONS']) : setPermissions(p => p.filter(x => x !== 'MANAGE_PERMISSIONS'))} className="accent-primary w-3.5 h-3.5"/>Cấp quyền hệ thống</label>
                   <label className="flex items-center gap-2 text-[13px] text-slate-700 font-medium"><input type="checkbox" checked={permissions.includes('MANAGE_PAYROLL')} onChange={(e) => e.target.checked ? setPermissions(p => [...p, 'MANAGE_PAYROLL']) : setPermissions(p => p.filter(x => x !== 'MANAGE_PAYROLL'))} className="accent-primary w-3.5 h-3.5"/>Bảng chấm công</label>
