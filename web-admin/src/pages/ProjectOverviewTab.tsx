@@ -142,6 +142,27 @@ export const ProjectOverviewTab: React.FC = () => {
       })
       .map((eng) => eng.name);
 
+    // Bổ sung nhân sự đã được giao công việc trong dự án
+    const memberNamesFromTasks: string[] = [];
+    projTasks.forEach(t => {
+      const rawEngName = String(t.assignedEngineerName || '').trim();
+      const rawEngId = String(t.assignedEngineerId || '').trim();
+      if (rawEngId) {
+        const eng = engineers.find(e => e.id === rawEngId);
+        if (eng && !isAdminAccount(eng)) {
+          memberNamesFromTasks.push(eng.name);
+        }
+      }
+      if (rawEngName) {
+        const parts = rawEngName.split('|')[0].split(',').map(n => n.trim()).filter(Boolean);
+        parts.forEach(pName => {
+          if (pName.toLowerCase() !== 'admin' && pName.toLowerCase() !== 'quản trị viên') {
+            memberNamesFromTasks.push(pName);
+          }
+        });
+      }
+    });
+
     let managerNames: string[] = [];
     if (project.managerName && project.managerName !== 'Chưa phân công') {
       managerNames = project.managerName
@@ -150,8 +171,8 @@ export const ProjectOverviewTab: React.FC = () => {
         .filter(s => Boolean(s) && s.toLowerCase() !== 'admin' && s.toLowerCase() !== 'quản trị viên');
     }
 
-    return Array.from(new Set([...memberNamesFromEngineers, ...managerNames]));
-  }, [engineers, project]);
+    return Array.from(new Set([...memberNamesFromEngineers, ...memberNamesFromTasks, ...managerNames]));
+  }, [engineers, project, projTasks]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);

@@ -484,7 +484,7 @@ export const PersonnelPage: React.FC = () => {
           return;
         }
 
-        await createEngineer({
+        const created = await createEngineer({
           name: name.trim(),
           phone,
           role,
@@ -494,8 +494,36 @@ export const PersonnelPage: React.FC = () => {
           projectCodes: finalProjectCodes,
           permissions,
         });
+
+        if (created && created.id) {
+          const engId = created.id;
+          const targetCodesUpper = finalProjectCodes.map(c => String(c || '').trim().toUpperCase());
+          const projectSyncPromises: Promise<any>[] = [];
+          
+          for (const proj of projects) {
+            const pCodeUpper = String(proj.code || '').trim().toUpperCase();
+            const pIdUpper = String(proj.id || '').trim().toUpperCase();
+            const currentMembers = Array.isArray(proj.members) ? proj.members : [];
+            const currentMemberIds = Array.isArray(proj.memberIds) ? proj.memberIds : [];
+            
+            const isAssigned = targetCodesUpper.includes(pCodeUpper) || targetCodesUpper.includes(pIdUpper);
+            const hasMember = currentMembers.includes(engId) || currentMemberIds.includes(engId);
+
+            if (isAssigned && !hasMember) {
+              const nextMembers = Array.from(new Set([...currentMembers, engId]));
+              const nextMemberIds = Array.from(new Set([...currentMemberIds, engId]));
+              projectSyncPromises.push(useRealtimeStore.getState().updateProject(proj.id, { members: nextMembers, memberIds: nextMemberIds }));
+            }
+          }
+          if (projectSyncPromises.length > 0) {
+            await Promise.all(projectSyncPromises).catch(err => console.warn('Project member sync failed on create:', err));
+          }
+        }
+
         triggerToast(`Đã thêm nhân sự "${name.trim()}" và gán ${selectedProjectCodes.length} dự án!`, 'success');
       }
+      await fetchProjects();
+      await fetchEngineers();
       closeForm();
     } catch (e: any) {
       triggerToast(
@@ -510,6 +538,16 @@ export const PersonnelPage: React.FC = () => {
   const handleDeletePerson = async (id: string, name: string) => {
     try {
       await deleteEngineer(id);
+      projects.forEach(proj => {
+        if ((proj.members && proj.members.includes(id)) || (proj.memberIds && proj.memberIds.includes(id))) {
+          useRealtimeStore.getState().updateProject(proj.id, {
+            members: (proj.members || []).filter(m => m !== id),
+            memberIds: (proj.memberIds || []).filter(m => m !== id),
+          });
+        }
+      });
+      await fetchProjects();
+      await fetchEngineers();
       triggerToast(`Đã xóa nhân sự "${name}"`, 'success');
     } catch (err: any) {
       triggerToast(`Lỗi khi xóa nhân sự: ${err?.response?.data?.error || err.message}`, 'warning');
