@@ -672,11 +672,6 @@ export const MyTasksPage: React.FC = () => {
                       <h2 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-primary transition-colors truncate" title={group.projectName}>
                         {group.projectName}
                       </h2>
-                      {isRealProject && (
-                        <span className="hidden sm:inline-block px-1.5 py-0.2 rounded text-[10px] font-mono font-medium bg-white text-slate-600 border border-slate-200 shrink-0">
-                          {group.projectCode}
-                        </span>
-                      )}
                       <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white text-slate-600 border border-slate-200 shrink-0">
                         {group.tasks.length} công việc
                       </span>
