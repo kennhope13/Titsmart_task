@@ -1,8 +1,8 @@
 import { app as s, BrowserWindow as c, shell as u, ipcMain as i } from "electron";
 import r from "path";
-import { fileURLToPath as f } from "url";
-import m from "electron-updater";
-const { autoUpdater: t } = m, w = f(import.meta.url), d = r.dirname(w);
+import { fileURLToPath as m } from "url";
+import f from "electron-updater";
+const { autoUpdater: t } = f, w = m(import.meta.url), d = r.dirname(w);
 let n;
 const l = process.env.VITE_DEV_SERVER_URL;
 function p() {
@@ -32,7 +32,7 @@ function g(e) {
 `) : e ?? "";
 }
 function b() {
-  s.isPackaged && (t.autoDownload = !1, t.autoInstallOnAppQuit = !0, t.disableDifferentialDownload = !0, t.disableWebInstaller = !0, t.on("checking-for-update", () => {
+  s.isPackaged && (t.autoDownload = !0, t.autoInstallOnAppQuit = !0, t.disableDifferentialDownload = !0, t.disableWebInstaller = !0, t.on("checking-for-update", () => {
     o("update:status", { status: "checking" });
   }), i.on("open-external", async (e, a) => {
     if (a && typeof a == "string")

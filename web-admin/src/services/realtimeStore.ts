@@ -71,6 +71,28 @@ const filterByProject = (items: any[], codeField: string) => {
   const userUsernameUpper = String(user.username || '').trim().toUpperCase();
   const userNameUpper = String(user.name || '').trim().toUpperCase();
 
+  // Tra cứu tất cả alias (id, code, name) của các dự án được gán cho người dùng
+  const allProjects = useRealtimeStore?.getState?.()?.projects || [];
+  const allowedAliasSet = new Set<string>();
+  assignedUpper.forEach(a => {
+    allowedAliasSet.add(a);
+    allowedAliasSet.add(normalizeVietnamese(a).toUpperCase());
+    const matched = allProjects.find(p => 
+      (p.id && String(p.id).toUpperCase() === a) ||
+      (p.code && String(p.code).toUpperCase() === a) ||
+      (p.name && String(p.name).toUpperCase() === a) ||
+      (p.name && normalizeVietnamese(p.name).toUpperCase() === normalizeVietnamese(a).toUpperCase())
+    );
+    if (matched) {
+      if (matched.id) allowedAliasSet.add(String(matched.id).toUpperCase());
+      if (matched.code) allowedAliasSet.add(String(matched.code).toUpperCase());
+      if (matched.name) {
+        allowedAliasSet.add(String(matched.name).toUpperCase());
+        allowedAliasSet.add(normalizeVietnamese(matched.name).toUpperCase());
+      }
+    }
+  });
+
   return items.filter(item => {
     // Check if user is explicit member/manager of this project item
     if (userEngId && Array.isArray(item.members) && item.members.includes(userEngId)) return true;
@@ -91,7 +113,14 @@ const filterByProject = (items: any[], codeField: string) => {
     // Cho phép hiển thị các hồ sơ/mục chung nội bộ không gán mã dự án cụ thể hoặc mã COMPANY / OFFICE / CHI_PHI_VAN_PHONG
     if (codeField !== 'code' && (!val || val === 'COMPANY' || val === 'OFFICE' || val === 'KHÁC' || val === 'CHI_PHI_VAN_PHONG' || val === 'VAN_PHONG')) return true;
 
-    return assignedUpper.some(assigned => {
+    if (allowedAliasSet.has(val) || allowedAliasSet.has(itemId) || allowedAliasSet.has(itemCode) || allowedAliasSet.has(itemName)) {
+      return true;
+    }
+
+    const valNorm = normalizeVietnamese(val).toUpperCase();
+    if (allowedAliasSet.has(valNorm)) return true;
+
+    return Array.from(allowedAliasSet).some(assigned => {
       if (!assigned) return false;
       return (val && (val === assigned || assigned.includes(val) || val.includes(assigned))) || 
              (itemId && (itemId === assigned || assigned.includes(itemId) || itemId.includes(assigned))) || 
@@ -1053,34 +1082,68 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       // Tải từng bảng độc lập để 1 bảng lỗi không ảnh hưởng bảng khác
       try {
         const materialPlans = await api.accounting.getMaterialPlans();
+        const currentMaterialPlans = get().materialPlans || [];
         const mutationGuardMP = get().lastMutationTime + 5000;
         if (mutationGuardMP > fetchStartTime) {
           console.log('[Realtime] Skipping materialPlans overwrite because local mutation occurred recently');
         } else if (Array.isArray(materialPlans)) {
-          nextState.materialPlans = filterByProject(materialPlans.map(normalizeMaterialPlan), 'projectCode');
+          const normalized = materialPlans.map(normalizeMaterialPlan);
+          const remoteIds = new Set(normalized.map(m => m.id));
+          const unsynced = currentMaterialPlans.filter(m => !remoteIds.has(m.id) && (m.id.startsWith('mat-') || m.id.startsWith('temp-') || m.id.startsWith('plan-')));
+          const merged = [...normalized, ...unsynced];
+          const filtered = filterByProject(merged, 'projectCode');
+          if (filtered.length > 0 || materialPlans.length > 0 || currentMaterialPlans.length === 0) {
+            nextState.materialPlans = filtered;
+          }
         }
         console.log('[Accounting] Loaded material_plans:', materialPlans?.length || 0);
       } catch (e) { console.error('[Accounting] Failed material_plans', e); }
 
       try {
         const purchasingPlans = await api.accounting.getPurchasings();
+        const currentPurchasingPlans = get().purchasingPlans || [];
         const mutationGuardPP = get().lastMutationTime + 5000;
         if (mutationGuardPP > fetchStartTime) {
           console.log('[Realtime] Skipping purchasingPlans overwrite because local mutation occurred recently');
         } else if (Array.isArray(purchasingPlans)) {
-          nextState.purchasingPlans = filterByProject(purchasingPlans.map(normalizePurchasingPlan), 'projectCode');
+          const normalized = purchasingPlans.map(normalizePurchasingPlan);
+          const remoteIds = new Set(normalized.map(p => p.id));
+          const unsynced = currentPurchasingPlans.filter(p => !remoteIds.has(p.id) && (p.id.startsWith('pur-') || p.id.startsWith('temp-') || p.id.startsWith('plan-')));
+          const merged = [...normalized, ...unsynced];
+          const filtered = filterByProject(merged, 'projectCode');
+          if (filtered.length > 0 || purchasingPlans.length > 0 || currentPurchasingPlans.length === 0) {
+            nextState.purchasingPlans = filtered;
+          }
         }
         console.log('[Accounting] Loaded purchasing_plans:', purchasingPlans?.length || 0);
       } catch (e) { console.error('[Accounting] Failed purchasing_plans', e); }
 
       try {
         const expenses = await api.accounting.getExpenses();
-        if (Array.isArray(expenses)) nextState.expenses = filterByProject(expenses, 'projectCode');
+        const currentExpenses = get().expenses || [];
+        if (Array.isArray(expenses)) {
+          const remoteIds = new Set(expenses.map(e => e.id));
+          const unsynced = currentExpenses.filter(e => !remoteIds.has(e.id) && (e.id.startsWith('exp-') || e.id.startsWith('temp-')));
+          const merged = [...expenses, ...unsynced];
+          const filtered = filterByProject(merged, 'projectCode');
+          if (filtered.length > 0 || expenses.length > 0 || currentExpenses.length === 0) {
+            nextState.expenses = filtered;
+          }
+        }
       } catch (e) { console.error('[Accounting] Failed expenses', e); }
 
       try {
         const laborPayrolls = await api.accounting.getLaborPayrolls();
-        if (Array.isArray(laborPayrolls)) nextState.laborPayrolls = filterByProject(laborPayrolls, 'projectCode');
+        const currentLabor = get().laborPayrolls || [];
+        if (Array.isArray(laborPayrolls)) {
+          const remoteIds = new Set(laborPayrolls.map(l => l.id));
+          const unsynced = currentLabor.filter(l => !remoteIds.has(l.id) && (l.id.startsWith('lab-') || l.id.startsWith('temp-')));
+          const merged = [...laborPayrolls, ...unsynced];
+          const filtered = filterByProject(merged, 'projectCode');
+          if (filtered.length > 0 || laborPayrolls.length > 0 || currentLabor.length === 0) {
+            nextState.laborPayrolls = filtered;
+          }
+        }
       } catch (e) { console.error('[Accounting] Failed labor_payrolls', e); }
 
       try {
@@ -2513,7 +2576,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 const REALTIME_TABLES = [
   'projects', 'tasks', 'materials', 'issues', 'engineers',
   'notifications', 'inventory_transactions',
-  'material_plans', 'purchasing_plans',
+  'material_plans', 'purchasing_plans', 'expenses',
   'labor_payrolls', 'document_tracks', 'field_logs', 'direct_messages'
 ];
 

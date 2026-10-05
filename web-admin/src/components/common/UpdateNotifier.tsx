@@ -1,20 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Download, X, Loader2, CheckCircle2, AlertTriangle, RotateCcw, Sparkles } from 'lucide-react';
 import type { UpdateStatusPayload } from '@/types/electron';
-
+import { useUIStore } from '../../services/uiStore';
+import { sendSystemNotification } from '../../services/systemNotificationService';
 
 type UiState = {
   visible: boolean;
   status: 'available' | 'downloading' | 'downloaded' | 'error';
   version?: string;
-  releaseNotes?: string;
-  notes?: string[];
-  percent?: number;
-  transferred?: number;
-  total?: number;
-  bytesPerSecond?: number;
-  message?: string;
   source?: 'electron' | 'web';
+  message?: string;
 };
 
 const initialState: UiState = { visible: false, status: 'available' };
@@ -35,9 +29,44 @@ function compareVersions(a: string, b: string): number {
 
 export const UpdateNotifier: React.FC = () => {
   const [state, setState] = useState<UiState>(initialState);
-  const [isInstalling, setIsInstalling] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
+  const { setAvailableUpdateVersion, availableUpdateVersion, isUpdatingApp, setIsUpdatingApp } = useUIStore();
 
-  // ─── Electron auto-update (giữ nguyên logic cũ) ───
+  const isUpdating = isRestarting || isUpdatingApp;
+  const currentVer = state.version || availableUpdateVersion || '';
+
+  const notifyNewVersion = useCallback((ver: string, source: 'electron' | 'web', downloadUrl?: string) => {
+    setState({
+      visible: true,
+      status: 'downloaded',
+      version: ver,
+      source,
+      message: downloadUrl,
+    });
+    setAvailableUpdateVersion(ver);
+
+    // Gửi thông báo hệ thống ra ngoài ứng dụng (Desktop Windows / Mobile Phone)
+    const hasNotifiedKey = `titsmart_notified_ver_${ver}`;
+    if (!sessionStorage.getItem(hasNotifiedKey)) {
+      sessionStorage.setItem(hasNotifiedKey, 'true');
+      sendSystemNotification({
+        id: `update-${ver}`,
+        title: `TITSMART có phiên bản mới v${ver}`,
+        body: `Bản cập nhật v${ver} đã sẵn sàng. Mở ứng dụng để cập nhật ngay!`,
+      });
+    }
+  }, [setAvailableUpdateVersion]);
+
+  // Cho phép kiểm tra hiển thị nút demo qua url ?demo_update=1 hoặc hash
+  useEffect(() => {
+    const search = window.location.search || (window.location.hash.includes('?') ? '?' + window.location.hash.split('?')[1] : '');
+    const params = new URLSearchParams(search);
+    if (params.get('demo_update') === '1' || params.get('demo_update') === 'true' || localStorage.getItem('titsmart_show_update_preview') === 'true') {
+      notifyNewVersion('3.8.176', 'web');
+    }
+  }, [notifyNewVersion]);
+
+  // ─── Electron auto-update listener ───
   useEffect(() => {
     const api = window.electronAPI;
     if (!api) return;
@@ -45,32 +74,20 @@ export const UpdateNotifier: React.FC = () => {
     api.onUpdateStatus((p: UpdateStatusPayload) => {
       switch (p.status) {
         case 'available':
-          setState({ visible: true, status: 'available', version: p.version, releaseNotes: p.releaseNotes, source: 'electron' });
-          break;
-        case 'downloading':
-          setState((s) => ({
-            ...s,
-            visible: true,
-            status: 'downloading',
-            percent: p.percent,
-            transferred: p.transferred,
-            total: p.total,
-            bytesPerSecond: p.bytesPerSecond,
-            source: 'electron',
-          }));
           break;
         case 'downloaded':
-          setState((s) => ({ ...s, visible: true, status: 'downloaded', version: p.version, source: 'electron' }));
+          if (p.version) {
+            notifyNewVersion(p.version, 'electron');
+          }
           break;
         case 'error':
-          setState((s) => ({ ...s, visible: true, status: 'error', message: p.message || 'Lỗi không xác định', source: 'electron' }));
-          console.error('[Update] Lỗi kiểm tra/cập nhật:', p.message);
+          console.warn('[UpdateNotifier] Electron auto-updater:', p.message);
           break;
         default:
           break;
       }
     });
-  }, []);
+  }, [notifyNewVersion]);
 
   // ─── Web & Mobile In-App Update Checker (GitHub Releases) ───
   const checkWebVersion = useCallback(async () => {
@@ -81,34 +98,19 @@ export const UpdateNotifier: React.FC = () => {
       if (!response.ok) return;
       const data = await response.json();
       const latestTag = (data.tag_name || '').replace(/^v/, '').trim();
-      const currentVer = import.meta.env.VITE_APP_VERSION || '1.0.0';
+      const currentVerEnv = import.meta.env.VITE_APP_VERSION || '1.0.0';
 
-      if (latestTag && compareVersions(latestTag, currentVer) > 0) {
-        // Tìm link tải APK trực tiếp từ release assets hoặc URL quy chuẩn
+      if (latestTag && compareVersions(latestTag, currentVerEnv) > 0) {
         const apkAsset = data.assets?.find((a: any) => a.name.toLowerCase().endsWith('.apk'));
         const downloadUrl = apkAsset?.browser_download_url 
           || `https://github.com/kennhope13/Titsmart_task/releases/download/v${latestTag}/TITSMART-v${latestTag}.apk`;
 
-        const rawBody = data.body || '';
-        const notes = rawBody
-          .split('\n')
-          .map((line: string) => line.replace(/^[\s*-]+/, '').replace(/\*\*/g, '').trim())
-          .filter((line: string) => line.length > 0 && !line.startsWith('#') && !line.includes('Full Changelog'));
-
-        setState({
-          visible: true,
-          status: 'available',
-          version: latestTag,
-          releaseNotes: rawBody,
-          notes: notes.length > 0 ? notes : ['Cải tiến hiệu năng & tối ưu giao diện mới nhất'],
-          message: downloadUrl,
-          source: 'web'
-        });
+        notifyNewVersion(latestTag, 'web', downloadUrl);
       }
     } catch (err) {
       console.warn('[UpdateNotifier] Check release failed:', err);
     }
-  }, []);
+  }, [notifyNewVersion]);
 
   useEffect(() => {
     if (window.electronAPI) return;
@@ -126,33 +128,39 @@ export const UpdateNotifier: React.FC = () => {
     };
   }, [checkWebVersion]);
 
-  const dismiss = () => setState({ ...state, visible: false });
+  const handleRestart = async () => {
+    setIsRestarting(true);
+    setIsUpdatingApp(true);
 
-  const [apkDownloadStarted, setApkDownloadStarted] = useState(false);
+    // 1. Electron Desktop App: Gọi updater restart & install ngay lập tức
+    if (state.source === 'electron') {
+      try {
+        window.electronAPI?.installUpdate();
+      } catch (e) {
+        console.error(e);
+        setIsRestarting(false);
+        setIsUpdatingApp(false);
+      }
+      return;
+    }
 
-  const handleWebUpdate = async () => {
+    // 2. Mobile App (Capacitor Native APK)
     const isCapacitorNative = !!(window as any).Capacitor?.isNativePlatform?.();
-
-    // 1. Nếu là ứng dụng Android APK cài đặt gốc (Capacitor Native)
     if (isCapacitorNative) {
       const downloadUrl = (state.message && state.message.startsWith('http')) 
         ? state.message 
-        : `https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`;
-      
-      setApkDownloadStarted(true);
+        : `https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version || availableUpdateVersion}/TITSMART-v${state.version || availableUpdateVersion}.apk`;
       try {
         window.open(downloadUrl, '_system');
       } catch (_) {
         window.location.href = downloadUrl;
       }
+      setIsRestarting(false);
+      setIsUpdatingApp(false);
       return;
     }
 
-    // 2. Nếu đang chạy trên trình duyệt Web / PWA:
-    // Làm mới cache bộ nhớ, unregister Service Worker, và tải lại phiên bản mới nhất ngay lập tức
-    setIsInstalling(true);
-    setState((s) => ({ ...s, status: 'downloading', percent: 60 }));
-
+    // 3. Web Browser: Dọn sạch cache và tải lại trang tức thì
     try {
       if ('caches' in window) {
         const cacheKeys = await caches.keys();
@@ -166,9 +174,6 @@ export const UpdateNotifier: React.FC = () => {
       console.warn('Lỗi dọn cache web:', err);
     }
 
-    setState((s) => ({ ...s, status: 'downloaded', percent: 100 }));
-
-    // Tự động tải lại trang với cache-busting
     setTimeout(() => {
       try {
         const url = new URL(window.location.href);
@@ -177,246 +182,62 @@ export const UpdateNotifier: React.FC = () => {
       } catch (_) {
         window.location.reload();
       }
-    }, 400);
-
-    // Safety fallback: Nếu sau 1.5s chưa reload xong, tự giải phóng overlay tránh bị treo
-    setTimeout(() => {
-      setIsInstalling(false);
-      setState(s => ({ ...s, status: 'available' }));
-    }, 1500);
+    }, 300);
   };
-
-  const handleInstallAndRestart = () => {
-    setIsInstalling(true);
-    // Trigger electron auto-updater install
-    try {
-      window.electronAPI?.installUpdate();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  // Tự động kích hoạt cài đặt và khởi động lại sau 2 giây khi đã tải xong trên Electron
-  useEffect(() => {
-    if (state.status === 'downloaded' && state.source === 'electron') {
-      const timer = setTimeout(() => {
-        handleInstallAndRestart();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [state.status, state.source]);
-
-  if (!state.visible && !isInstalling) {
-    return null;
-  }
-
-  const isUpdating = state.status === 'downloading' || state.status === 'downloaded' || isInstalling;
 
   return (
     <>
-      {/* ─── FULLSCREEN BLOCKING OVERLAY KHI ĐANG TẢI & CÀI ĐẶT BẢN CẬP NHẬT ─── */}
+      {/* ─── FULL-SCREEN BLOCKING OVERLAY: Chặn toàn bộ thao tác click/gõ khi đang cập nhật ─── */}
       {isUpdating && (
         <div 
-          className="fixed inset-0 z-[999999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 select-none cursor-wait animate-in fade-in duration-200 pointer-events-auto"
-          style={{ WebkitAppRegion: 'no-drag' } as any}
+          className="fixed inset-0 z-[99999999] bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center pointer-events-auto select-none cursor-wait p-4 touch-none overscroll-contain"
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+          onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+          onKeyDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
         >
-          <div className="bg-white rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center justify-center min-w-[220px] max-w-[280px] border border-slate-100 animate-in zoom-in-95 duration-200">
-            <div className="relative w-12 h-12 flex items-center justify-center mb-3">
-              <svg className="w-12 h-12 animate-spin text-primary" viewBox="0 0 50 50">
-                <circle
-                  className="text-slate-100"
-                  strokeWidth="4"
-                  stroke="currentColor"
-                  fill="transparent"
-                  r="20"
-                  cx="25"
-                  cy="25"
-                />
-                <circle
-                  className="text-primary"
-                  strokeWidth="4"
-                  strokeDasharray="80, 150"
-                  strokeDashoffset="0"
-                  strokeLinecap="round"
-                  stroke="currentColor"
-                  fill="transparent"
-                  r="20"
-                  cx="25"
-                  cy="25"
-                />
-              </svg>
-              <span className="material-symbols-outlined absolute text-primary text-[18px]">
-                sync
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 md:p-8 max-w-[280px] xs:max-w-xs sm:max-w-sm w-full shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mb-3 sm:mb-4 text-[#00236f] dark:text-blue-400">
+              <span className="material-symbols-outlined text-2xl sm:text-3xl animate-spin">
+                restart_alt
               </span>
             </div>
-            <span className="text-sm font-bold text-slate-800 tracking-wide text-center">
-              Đang cập nhật...
-            </span>
-            <span className="text-[11px] text-slate-500 font-medium mt-1 text-center">
-              Vui lòng đợi trong giây lát
-            </span>
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+              Đang cập nhật phiên bản {currentVer ? `v${currentVer}` : ''}
+            </h3>
           </div>
         </div>
       )}
 
-      {/* ─── TOAST / BANNER THÔNG BÁO KHI CÓ BẢN MỚI HOẶC LỖI (CHƯA TẢI) ─── */}
+      {/* ─── FLOATING BADGE NÚT TẢI LẠI (ĐÃ CHUẨN HÓA CHO CẢ MOBILE & DESKTOP) ─── */}
       {state.visible && !isUpdating && (
-      <div className="fixed bottom-24 md:bottom-5 right-3 md:right-5 z-[9999] w-[380px] max-w-[calc(100vw-1.5rem)] pb-[env(safe-area-inset-bottom,0px)]">
-        <div className="rounded-2xl bg-white border border-outline-variant shadow-2xl overflow-hidden flex flex-col">
-          {/* Header */}
-          <div className="px-4 py-2.5 bg-surface-container-low border-b border-outline-variant flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-[18px]">
-                {state.source === 'web' ? 'auto_awesome' : 'download'}
-              </span>
-              <h3 className="text-xs font-bold text-primary">
-                {state.status === 'error' ? 'Lỗi cập nhật' : 'Có bản cập nhật mới'}
-              </h3>
-            </div>
-            <button 
-              onClick={dismiss} 
-              className="p-1 text-slate-400 hover:text-slate-600 rounded-md transition-colors cursor-pointer" 
-              title="Để sau"
+        <div className="fixed right-16 sm:right-20 bottom-[calc(env(safe-area-inset-bottom,0px)+74px)] sm:bottom-5 md:right-20 z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-150 pointer-events-auto select-none">
+          <div className="inline-flex items-center gap-1.5 bg-[#00236f] hover:bg-[#001c5a] active:bg-[#001545] text-white px-2.5 py-1.5 min-h-[34px] rounded-xl shadow-lg border border-white/20 text-xs font-bold transition-all">
+            <button
+              type="button"
+              onClick={handleRestart}
+              disabled={isUpdating}
+              title={`Khởi động lại để cập nhật phiên bản mới v${state.version || ''}`}
+              className="inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-75 disabled:cursor-wait"
             >
-              <span className="material-symbols-outlined text-[18px] block">close</span>
-            </button>
-          </div>
-
-          <div className="p-4 space-y-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-500">Phiên bản hiện tại: <strong className="text-slate-700 font-mono">v{import.meta.env.VITE_APP_VERSION || '1.0.0'}</strong></span>
-              <span className="text-primary font-bold font-mono px-2 py-0.5 bg-blue-50 border border-blue-100 rounded-md">
-                Mới: v{state.version || 'mới'}
+              <span className={`material-symbols-outlined text-[17px] ${isUpdating ? 'animate-spin' : ''}`}>
+                restart_alt
               </span>
-            </div>
-
-            {/* Web / Mobile: hiển thị danh sách notes dạng list gọn gàng */}
-            {state.source === 'web' && state.notes && state.notes.length > 0 && (
-              <div className="pt-1">
-                <p className="text-[11px] font-bold text-slate-700 mb-1">Nội dung cập nhật:</p>
-                <ul className="space-y-1 max-h-28 overflow-y-auto custom-scrollbar">
-                  {state.notes.map((note, i) => (
-                    <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-600 leading-tight">
-                      <span className="text-emerald-500 font-bold shrink-0">✓</span>
-                      <span>{note}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {apkDownloadStarted ? (
-                  <div className="mt-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1 animate-fadeIn">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
-                      <span className="material-symbols-outlined text-[16px] text-emerald-600">file_download_done</span>
-                      Đang tải file APK về điện thoại
-                    </div>
-                    <p className="text-[11px] text-emerald-700 leading-relaxed">
-                      Khi thanh thông báo của điện thoại báo <strong>Đã tải xong</strong>, bạn hãy nhấn vào file trong thanh thông báo hoặc thư mục <strong>Tải về (Downloads)</strong> để cài đặt.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="mt-2 pt-1 border-t border-slate-100/80 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Tải file cài đặt:</span>
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={`https://github.com/kennhope13/Titsmart_task/releases/download/v${state.version}/TITSMART-v${state.version}.apk`}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={() => setApkDownloadStarted(true)}
-                        className="text-primary hover:underline font-medium inline-flex items-center gap-0.5"
-                      >
-                        <span className="material-symbols-outlined text-[13px]">android</span>
-                        APK
-                      </a>
-                      <span className="text-slate-300">•</span>
-                      <a
-                        href="https://github.com/kennhope13/Titsmart_task/releases/latest"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary hover:underline font-medium inline-flex items-center gap-0.5"
-                      >
-                        <span className="material-symbols-outlined text-[13px]">desktop_windows</span>
-                        Windows
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <span className="font-mono text-xs font-bold tracking-tight">
+                v{state.version}
+              </span>
+            </button>
+            {!isUpdating && (
+              <button
+                type="button"
+                onClick={() => setState(s => ({ ...s, visible: false }))}
+                className="p-0.5 hover:bg-white/20 rounded-md transition-colors cursor-pointer ml-0.5 opacity-75 hover:opacity-100"
+                title="Để sau"
+              >
+                <span className="material-symbols-outlined text-[14px] block">close</span>
+              </button>
             )}
-
-            {/* Electron: hiển thị releaseNotes */}
-            {state.source === 'electron' && state.status === 'available' && state.releaseNotes && (
-              <div 
-                className="text-xs text-slate-600 max-h-32 overflow-y-auto custom-scrollbar prose prose-sm prose-slate bg-slate-50 p-2.5 rounded-lg border border-slate-100"
-                dangerouslySetInnerHTML={{ __html: state.releaseNotes }}
-              />
-            )}
-
-            {state.status === 'error' && (
-              <div>
-                <p className="text-xs text-red-500 whitespace-pre-line max-h-24 overflow-y-auto">{state.message}</p>
-                {state.source === 'electron' && (
-                  <div className="mt-2 p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
-                    <p className="text-[11px] text-slate-600 leading-relaxed">
-                      Lỗi kết nối mạng khi tải bản cập nhật tự động. Vui lòng tải file cài đặt thủ công:
-                    </p>
-                    <a 
-                      href="https://github.com/kennhope13/Titsmart_task/releases/latest" 
-                      target="_blank" 
-                      rel="noreferrer" 
-                      className="inline-flex items-center gap-1 mt-1.5 text-xs font-bold text-primary hover:underline"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">download</span>
-                      Tải Setup.exe mới nhất
-                    </a>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-              {state.status === 'available' && (
-                <>
-                  <button
-                    onClick={dismiss}
-                    className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
-                  >
-                    Để sau
-                  </button>
-                  {state.source === 'web' ? (
-                    <button
-                      onClick={handleWebUpdate}
-                      className="px-3.5 py-1.5 text-xs font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">sync</span>
-                      Cập nhật ngay
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setState(s => ({ ...s, status: 'downloading', percent: 0 }));
-                        window.electronAPI?.downloadUpdate();
-                      }}
-                      className="px-3.5 py-1.5 text-xs font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">download</span>
-                      Cập nhật ngay
-                    </button>
-                  )}
-                </>
-              )}
-              {state.status === 'error' && (
-                <button
-                  onClick={dismiss}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                >
-                  Đóng
-                </button>
-              )}
-            </div>
           </div>
         </div>
-      </div>
       )}
     </>
   );

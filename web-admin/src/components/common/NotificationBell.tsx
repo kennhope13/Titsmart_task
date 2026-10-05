@@ -311,6 +311,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
   const user = useAuthStore(state => state.user);
   const showNotificationBell = useUIStore(state => state.showNotificationBell);
   const autoShowNotificationPopup = useUIStore(state => state.autoShowNotificationPopup);
+  const availableUpdateVersion = useUIStore(state => state.availableUpdateVersion);
   
   const [showPopover, setShowPopover] = useState(false);
   const [showCenterModal, setShowCenterModal] = useState(false);
@@ -495,6 +496,42 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     setShowPopover(false);
     setShowCenterModal(false);
     sessionStorage.setItem('has_shown_center_notif_modal', 'true');
+
+    if (notification.type === 'app_update' || notification.link === '__RESTART_UPDATE__') {
+      useUIStore.getState().setIsUpdatingApp(true);
+      const isCapacitorNative = !!(window as any).Capacitor?.isNativePlatform?.();
+      if ((window as any).electronAPI?.installUpdate) {
+        (window as any).electronAPI.installUpdate();
+      } else if (isCapacitorNative) {
+        const downloadUrl = `https://github.com/kennhope13/Titsmart_task/releases/download/v${availableUpdateVersion}/TITSMART-v${availableUpdateVersion}.apk`;
+        try {
+          window.open(downloadUrl, '_system');
+        } catch (_) {
+          window.location.href = downloadUrl;
+        }
+      } else {
+        (async () => {
+          try {
+            if ('caches' in window) {
+              const cacheKeys = await caches.keys();
+              await Promise.all(cacheKeys.map(k => caches.delete(k)));
+            }
+            if ('serviceWorker' in navigator) {
+              const registrations = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(registrations.map(r => r.unregister()));
+            }
+          } catch (_) {}
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('_v', Date.now().toString());
+            window.location.replace(url.toString());
+          } catch (_) {
+            window.location.reload();
+          }
+        })();
+      }
+      return;
+    }
 
     const role = String(user?.role || '').toLowerCase();
     const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || role === 'quản lý' || role === 'giám sát' || user?.username === 'admin' || user?.permissions?.includes('ASSIGN_TASKS');
@@ -723,6 +760,21 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
   const displayNotifications = useMemo(() => {
     const seen = new Set<string>();
     const uniqueList: typeof notifications = [];
+
+    // Inject app update notification if available
+    if (availableUpdateVersion && !dismissedNotifIds.has(`app-update-${availableUpdateVersion}`)) {
+      uniqueList.push({
+        id: `app-update-${availableUpdateVersion}`,
+        title: `Bản cập nhật mới v${availableUpdateVersion}`,
+        message: `Đã có phiên bản mới v${availableUpdateVersion}. Nhấn vào đây để khởi động lại và cập nhật ngay.`,
+        timestamp: new Date().toISOString(),
+        read: false,
+        icon: 'system_update',
+        type: 'app_update',
+        link: '__RESTART_UPDATE__'
+      } as any);
+    }
+
     notifications.forEach(n => {
       // Filter out notifications not intended for this user
       if (!isNotificationForUser(n, user, engineers)) return;
@@ -737,7 +789,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       }
     });
     return uniqueList;
-  }, [notifications, user, engineers, dismissedNotifIds]);
+  }, [notifications, user, engineers, dismissedNotifIds, availableUpdateVersion]);
 
   // Priority notifications: Overdue 1-2 days or Due soon
   const centerModalNotifications = useMemo(() => {

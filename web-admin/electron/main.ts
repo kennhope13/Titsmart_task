@@ -63,7 +63,7 @@ function setupAutoUpdater() {
   // Chỉ chạy ở bản đã đóng gói, không chạy ở môi trường dev/electron script
   if (!app.isPackaged) return;
 
-  autoUpdater.autoDownload = false; // Không tải về ngay, để người dùng chọn
+  autoUpdater.autoDownload = true; // Tự động tải ngầm như Antigravity/VS Code, sẵn sàng để khởi động lại
   autoUpdater.autoInstallOnAppQuit = true; // Nếu đã tải xong thì cài khi thoát app
   autoUpdater.disableDifferentialDownload = true; // Tải 1 luồng trực tiếp toàn bộ gói .exe, ngăn GitHub bóp băng thông chia nhỏ file
   autoUpdater.disableWebInstaller = true;

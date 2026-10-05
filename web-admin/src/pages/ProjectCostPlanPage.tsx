@@ -1552,10 +1552,13 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   const getValidProjectCodeSet = (projCodeOrId: string) => {
     const clean = (projCodeOrId || '').trim().toLowerCase();
+    const cleanNorm = clean.replace(/[_\-\s]+/g, ' ').trim();
     const projObj = projects.find(p => 
       (p.code && p.code.toLowerCase() === clean) || 
       (p.id && p.id.toLowerCase() === clean) ||
-      (p.name && p.name.toLowerCase() === clean)
+      (p.name && p.name.toLowerCase() === clean) ||
+      (p.name && p.name.toLowerCase().replace(/[_\-\s]+/g, ' ').trim() === cleanNorm) ||
+      (p.code && p.code.toLowerCase().replace(/[_\-\s]+/g, ' ').trim() === cleanNorm)
     );
 
     const isOffice = 
@@ -1572,6 +1575,8 @@ export const ProjectCostPlanPage: React.FC = () => {
       projObj?.code,
       projObj?.id,
       projObj?.name,
+      projObj?.code?.toLowerCase().replace(/[_\-\s]+/g, '_'),
+      projObj?.name?.toLowerCase().replace(/[_\-\s]+/g, '_'),
       ...(isOffice ? ['CHI_PHI_VAN_PHONG', 'OFFICE', 'VAN_PHONG', 'COMPANY', 'chi_phi_van_phong', 'office'] : [])
     ].filter(Boolean).map(s => String(s).trim().toLowerCase());
 
