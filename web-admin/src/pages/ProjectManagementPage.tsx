@@ -368,8 +368,8 @@ export const ProjectManagementPage: React.FC = () => {
 
     const selectedEngineers = engineers.filter(eng => selectedEngineerIds.includes(eng.id));
     const managerEng = engineers.find(eng => eng.id === newProjManagerId);
-    const managerName = managerEng ? managerEng.name : (selectedEngineers.length > 0 ? selectedEngineers[0].name : TEXT.unassigned);
-    const managerId = newProjManagerId || selectedEngineerIds[0] || undefined;
+    const managerName = managerEng ? managerEng.name : TEXT.unassigned;
+    const managerId = managerEng ? managerEng.id : undefined;
 
     const newProject: Omit<Project, 'id'> = {
       code,
@@ -667,7 +667,11 @@ export const ProjectManagementPage: React.FC = () => {
     const allMemberIds = Array.from(new Set([...(project.members || []), ...(project.memberIds || []), ...assignedEngineers]));
     setEditSelectedEngineerIds(allMemberIds);
 
-    const foundManagerId = project.managerId || engineers.find(e => project.managerName && project.managerName.split(',').map(s => s.trim().toUpperCase()).includes((e.name || '').toUpperCase()))?.id || (allMemberIds[0] || '');
+    const foundManagerId = (project.managerId && engineers.some(e => e.id === project.managerId))
+      ? project.managerId
+      : (project.managerName && project.managerName !== TEXT.unassigned
+          ? engineers.find(e => project.managerName?.split(',').map(s => s.trim().toUpperCase()).includes((e.name || '').toUpperCase()))?.id || ''
+          : '');
     setEditProjManagerId(foundManagerId);
   };
 
@@ -679,10 +683,9 @@ export const ProjectManagementPage: React.FC = () => {
     setLoading(true);
     setLoadingMessage('Đang cập nhật dự án...');
     try {
-      const selectedEngineers = engineers.filter(eng => editSelectedEngineerIds.includes(eng.id));
       const managerEng = engineers.find(eng => eng.id === editProjManagerId);
-      const managerName = managerEng ? managerEng.name : (selectedEngineers.length > 0 ? selectedEngineers[0].name : TEXT.unassigned);
-      const managerId = editProjManagerId || editSelectedEngineerIds[0] || undefined;
+      const managerName = managerEng ? managerEng.name : TEXT.unassigned;
+      const managerId = managerEng ? managerEng.id : undefined;
 
       const payload = {
         name: editProjName.trim(),
@@ -828,7 +831,17 @@ export const ProjectManagementPage: React.FC = () => {
           {hasPermission(user, "CREATE_PROJECTS") && (
             <button
               type="button"
-              onClick={() => setIsNewProjectModalOpen(true)}
+              onClick={() => {
+                setNewProjName('');
+                setNewProjCode('');
+                setNewProjLocation('');
+                setNewProjClient('');
+                setNewProjCategory('');
+                setNewProjManagerId('');
+                setSelectedEngineerIds([]);
+                setPendingProjectTasks([]);
+                setIsNewProjectModalOpen(true);
+              }}
               title={TEXT.createProject}
               className="flex items-center justify-center gap-1 bg-primary text-white px-2.5 sm:px-3 h-[34px] rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
             >
