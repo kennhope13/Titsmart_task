@@ -756,7 +756,7 @@ export const ProjectCostPlanPage: React.FC = () => {
               const cleanUnitVal = String(row[unitCol] || '').replace(/^[-–—_.\s]+$/, '').trim();
               const hasNoVolumeAndUnit = (volumeContract === 0 || !volumeContract) && (!cleanUnitVal || cleanUnitVal === '');
 
-              const isSectionPattern = isRoman || /^[A-Z]{1,2}$/i.test(cleanStt) || startsWithPhan || isMainSectionName(content);
+              const isSectionPattern = isRoman || /^[A-Z]{1,2}$/i.test(cleanStt) || /^\d+$/.test(cleanStt) || startsWithPhan || isMainSectionName(content);
               const isSection = isSectionPattern && hasNoVolumeAndUnit;
 
               if (stt.startsWith('26') || stt.startsWith('27')) {

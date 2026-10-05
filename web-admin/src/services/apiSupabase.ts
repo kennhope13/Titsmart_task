@@ -828,17 +828,28 @@ export const api = {
         payload.is_active = !payload.is_locked;
         delete payload.is_locked;
       }
-      const { data: result, error } = await supabase.from('engineers').update(payload).eq('id', id).select().single();
+      
+      const sanitizeEngineersPayload = (p: any) => {
+        const clean = { ...p };
+        delete clean.managed_projects;
+        delete clean.member_projects;
+        delete clean.project_codes;
+        return clean;
+      };
+
+      const sanitized = sanitizeEngineersPayload(payload);
+
+      const { data: result, error } = await supabase.from('engineers').update(sanitized).eq('id', id).select().single();
       if (error) {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('password') || String(error.message).includes('is_locked') || String(error.message).includes('is_active')) {
-          delete payload.updated_by;
-          delete payload.updated_at;
-          delete payload.is_locked;
-          const { data: retryResult, error: retryError } = await supabase.from('engineers').update(payload).eq('id', id).select().single();
+          delete sanitized.updated_by;
+          delete sanitized.updated_at;
+          delete sanitized.is_locked;
+          const { data: retryResult, error: retryError } = await supabase.from('engineers').update(sanitized).eq('id', id).select().single();
           if (retryError) {
-            delete payload.password;
-            delete payload.is_active;
-            const { data: finalResult, error: finalError } = await supabase.from('engineers').update(payload).eq('id', id).select().single();
+            delete sanitized.password;
+            delete sanitized.is_active;
+            const { data: finalResult, error: finalError } = await supabase.from('engineers').update(sanitized).eq('id', id).select().single();
             if (finalError) throw finalError;
             return toCamelCase(finalResult);
           }
@@ -1441,6 +1452,8 @@ export const api = {
             prepay_amount: Number(data.prepayAmount) || 0,
             payment_status: data.paymentStatus || 'Chưa thanh toán',
             is_completed: !!data.isCompleted,
+            file_urls: Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []),
+            soft_copy_link: (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : ''),
             notes: combinedNotes
           };
           if (data.projectCode && data.projectCode !== 'COMPANY') {
@@ -1599,7 +1612,10 @@ export const api = {
         if (data.prepayPercent !== undefined) corePayload.prepay_percent = Number(data.prepayPercent) || 0;
         if (data.prepayAmount !== undefined) corePayload.prepay_amount = Number(data.prepayAmount) || 0;
         if (data.paymentStatus !== undefined) corePayload.payment_status = data.paymentStatus;
-        if (data.isCompleted !== undefined) corePayload.is_completed = !!data.isCompleted;
+        if (data.fileUrls !== undefined) {
+          corePayload.file_urls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []);
+          corePayload.soft_copy_link = (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '');
+        }
         corePayload.notes = combinedNotes;
 
         result = await tryUpdate(corePayload);

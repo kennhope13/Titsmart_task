@@ -886,10 +886,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         if (parentStt && !sttSet.has(parentKey)) {
           sttSet.add(parentKey);
           let synthName = '';
-          if (parentStt === '33') {
-            synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-          } else if (parentStt === '36') {
-            synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+          const parentItem: any = filteredData.find(d => String(d.stt || '').trim() === parentStt);
+          if (parentItem && (parentItem.content || parentItem.jobContent || parentItem.name)) {
+            synthName = parentItem.content || parentItem.jobContent || parentItem.name || '';
           } else {
             synthName = `HẠNG MỤC ${parentStt}`;
           }

@@ -530,6 +530,7 @@ const hasSyncedRef = useRef(false);
   const assignCameraInputRef = useRef<HTMLInputElement>(null);
   const assignImageInputRef = useRef<HTMLInputElement>(null);
 
+  const [bulkAssignSection, setBulkAssignSection] = useState<{ sectionKey: string; sectionName: string; projectCode: string } | null>(null);
   const [isAssignUploading, setIsAssignUploading] = useState(false);
 
   const handleAssignFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1817,10 +1818,9 @@ const hasSyncedRef = useRef(false);
         if (parentStt && !sttSet.has(parentKey)) {
           sttSet.add(parentKey);
           let synthName = '';
-          if (parentStt === '33') {
-            synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-          } else if (parentStt === '36') {
-            synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+          const parentItem = tasks.find(d => String(d.stt || '').trim() === parentStt);
+          if (parentItem && (parentItem.name || parentItem.sectionName)) {
+            synthName = parentItem.name || parentItem.sectionName || '';
           } else {
             synthName = `HẠNG MỤC ${parentStt}`;
           }
@@ -2364,7 +2364,27 @@ const hasSyncedRef = useRef(false);
                             <span onClick={() => handleOpenEditModal(t)} className="cursor-pointer hover:underline flex-1 min-w-0 truncate whitespace-nowrap overflow-hidden leading-tight" title={t.name}>
                               {t.stt ? `${t.stt} - ` : ''}{t.name}
                             </span>
-                            <div className="hidden group-hover:flex items-center gap-0.5 flex-shrink-0">
+                            <div className="hidden group-hover:flex items-center gap-1 flex-shrink-0">
+                              {hasPermission(authStore.user, 'ASSIGN_TASKS') && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAssigningTask(null);
+                                    setBulkAssignSection({
+                                      sectionKey: t._sectionKey || '',
+                                      sectionName: t.name,
+                                      projectCode: t.projectCode
+                                    });
+                                    setAssignNote('');
+                                    setAssigningUserIds([]);
+                                  }}
+                                  className="px-1.5 py-0.5 rounded bg-primary text-white hover:bg-primary/90 text-[10px] font-bold transition-all inline-flex items-center gap-0.5 shadow-xs cursor-pointer"
+                                  title="Giao toàn bộ công việc trong đầu mục này"
+                                >
+                                  <span className="material-symbols-outlined text-[12px]">assignment_ind</span>
+                                  <span>Giao hàng loạt</span>
+                                </button>
+                              )}
                               <button onClick={(e) => { e.stopPropagation(); handleAddSubtask(t); }} className="p-0.5 rounded text-blue-400 hover:text-blue-700 hover:bg-blue-100 transition-all inline-flex items-center" title="Thêm mục con"><span className="material-symbols-outlined text-[14px]">add_circle</span></button>
                               <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-all inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[14px]">delete</span></button>
                             </div>
@@ -2778,6 +2798,234 @@ const hasSyncedRef = useRef(false);
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* BULK ASSIGN TASK MODAL */}
+      <Modal
+        isOpen={!!bulkAssignSection}
+        onClose={() => { setBulkAssignSection(null); setAssigningUserIds([]); setAssignNote(''); setAssignSelectedFile(null); }}
+        title={`Giao hàng loạt công việc: ${bulkAssignSection?.sectionName || ''}`}
+        size="lg"
+      >
+        {bulkAssignSection && (() => {
+          const sectionChildTasks = tasks.filter(t => 
+            (t.projectCode === bulkAssignSection.projectCode || !bulkAssignSection.projectCode || bulkAssignSection.projectCode === 'all') && 
+            !t.isSectionHeader && 
+            (
+              t.sectionName === bulkAssignSection.sectionName || 
+              t.sectionName === bulkAssignSection.sectionKey || 
+              (t as any)._sectionKey === bulkAssignSection.sectionKey ||
+              (bulkAssignSection.sectionKey && String(t.stt || '').startsWith(bulkAssignSection.sectionKey + '.'))
+            )
+          );
+          const eligibleTasks = sectionChildTasks.filter(t => isTaskReadyForAssignment(t, materialPlans).ready);
+          // If no tasks pass strict check, allow assigning all non-section tasks in section so management flow is never blocked
+          const tasksToAssign = eligibleTasks.length > 0 ? eligibleTasks : sectionChildTasks;
+          const ineligibleCount = sectionChildTasks.length - tasksToAssign.length;
+          const targetEngs = getEngineersForProject(bulkAssignSection.projectCode, engineers, projects);
+
+          return (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-900 flex flex-col gap-1">
+                <div className="font-bold text-sm flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-primary text-base">assignment_ind</span>
+                  <span>Đầu mục: {bulkAssignSection.sectionName}</span>
+                </div>
+                <div className="flex items-center gap-3 mt-1 text-slate-700">
+                  <span>Tổng số công việc: <strong className="text-slate-900">{sectionChildTasks.length}</strong></span>
+                  <span>Sẽ giao việc cho: <strong className="text-emerald-700">{tasksToAssign.length}</strong> công việc</span>
+                  {eligibleTasks.length === 0 && sectionChildTasks.length > 0 && (
+                    <span className="text-amber-800 font-semibold bg-amber-100 px-1.5 py-0.5 rounded text-[11px]">
+                      (Tất cả {sectionChildTasks.length} mục chưa có trạng thái "Đáp ứng" / "Đã có hàng", hệ thống vẫn hỗ trợ giao việc hàng loạt theo lệnh Quản lý)
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">1. Chọn nhân sự nhận việc (Áp dụng cho {tasksToAssign.length} công việc trong đầu mục):</label>
+                <div className="max-h-52 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1 bg-slate-50">
+                  {targetEngs.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-slate-500 font-medium">
+                      Dự án này chưa có thành viên nào được phân công.
+                    </div>
+                  ) : (
+                    targetEngs.map(eng => {
+                      const isChecked = assigningUserIds.includes(eng.id);
+                      return (
+                        <label key={eng.id} className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded cursor-pointer transition-colors">
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) setAssigningUserIds(prev => [...prev, eng.id]);
+                              else setAssigningUserIds(prev => prev.filter(id => id !== eng.id));
+                            }}
+                            className="rounded border-slate-300 text-primary focus:ring-primary"
+                          />
+                          <div>
+                            <div className="text-sm font-bold text-slate-700">{eng.name}</div>
+                            <div className="text-xs text-slate-500">{eng.title || 'Nhân viên'}</div>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2 relative">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-primary text-[15px]">edit_note</span>
+                    2. Ghi chú / Hướng dẫn công việc chung (Tùy chọn)
+                  </label>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setAssignShowAttachMenu(prev => !prev)}
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">attach_file</span>
+                    <span>Đính kèm</span>
+                  </button>
+                </div>
+
+                {assignSelectedFile && (
+                  <div className="flex items-center justify-between bg-blue-50 px-2.5 py-1.5 rounded-lg text-[11px] text-blue-900 border border-blue-100">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="material-symbols-outlined text-[16px] text-blue-700 shrink-0">
+                        {assignSelectedFile.type === 'image' ? 'image' : 'attach_file'}
+                      </span>
+                      <span className="truncate font-medium max-w-[240px]">{assignSelectedFile.name}</span>
+                    </div>
+                    <button type="button" onClick={() => setAssignSelectedFile(null)} className="text-red-500 hover:text-red-700 font-bold ml-2 cursor-pointer">✕</button>
+                  </div>
+                )}
+
+                {assignShowAttachMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setAssignShowAttachMenu(false)} />
+                    <div className="absolute right-0 top-7 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 flex flex-col gap-1 min-w-[170px] animate-in fade-in zoom-in-95 duration-150">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAssignShowAttachMenu(false);
+                          assignCameraInputRef.current?.click();
+                        }}
+                        className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-emerald-600 text-[18px]">photo_camera</span>
+                        <span>Chụp ảnh mới</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAssignShowAttachMenu(false);
+                          assignImageInputRef.current?.click();
+                        }}
+                        className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-blue-600 text-[18px]">image</span>
+                        <span>Thư viện ảnh</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAssignShowAttachMenu(false);
+                          assignFileInputRef.current?.click();
+                        }}
+                        className="flex items-center gap-2.5 px-3 py-2 text-[12px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-left cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-amber-500 text-[18px]">folder_open</span>
+                        <span>Tệp tài liệu</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                <textarea
+                  value={assignNote}
+                  onChange={(e) => setAssignNote(e.target.value)}
+                  onPaste={handleAssignPaste}
+                  rows={3}
+                  placeholder="Nhập yêu cầu, lưu ý hoặc tiêu chuẩn kỹ thuật áp dụng cho tất cả công việc trong đầu mục..."
+                  className="w-full p-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-white resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-100">
+                <button onClick={() => { setBulkAssignSection(null); setAssigningUserIds([]); setAssignNote(''); setAssignSelectedFile(null); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
+                <button
+                  disabled={tasksToAssign.length === 0 || assigningUserIds.length === 0}
+                  onClick={async () => {
+                    if (tasksToAssign.length === 0) {
+                      triggerToast('Không có công việc nào trong đầu mục để giao!', 'warning');
+                      return;
+                    }
+                    if (assigningUserIds.length === 0) {
+                      triggerToast('Vui lòng chọn ít nhất 1 nhân sự để giao việc!', 'warning');
+                      return;
+                    }
+                    const selectedEngs = targetEngs.filter(e => assigningUserIds.includes(e.id));
+                    const names = selectedEngs.map(e => e.name).join(', ');
+                    const ids = selectedEngs.map(e => e.id).join(',');
+                    const firstId = selectedEngs.length > 0 ? selectedEngs[0].id : '';
+                    const assignerId = authStore.user?.id || '';
+                    const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
+
+                    for (const taskItem of tasksToAssign) {
+                      let updatedNotes = taskItem.notes || '';
+                      if (assignNote.trim() || assignSelectedFile) {
+                        updatedNotes = appendTaskDiscussion(updatedNotes, {
+                          senderId: assignerId,
+                          senderName: assignerName,
+                          senderRole: 'Người giao việc',
+                          type: 'note',
+                          content: assignNote.trim() || (assignSelectedFile ? `Đã đính kèm ${assignSelectedFile.type === 'image' ? 'hình ảnh' : 'tài liệu'}: ${assignSelectedFile.name}` : ''),
+                          fileUrl: assignSelectedFile?.url,
+                          fileType: assignSelectedFile?.type,
+                          fileName: assignSelectedFile?.name
+                        });
+                      }
+
+                      handleUpdateTaskSync(taskItem.id, {
+                        assignedEngineerId: firstId,
+                        assignedEngineerName: names + (ids ? '|' + ids : ''),
+                        assignerId: assignerId,
+                        assignerName: assignerName,
+                        status: ids ? 'Chờ nhận việc' : taskItem.status,
+                        notes: updatedNotes
+                      });
+                    }
+
+                    const store = useRealtimeStore.getState();
+                    store.logActivity(`Quản lý ${assignerName} đã GIAO HÀNG LOẠT ${tasksToAssign.length} công việc thuộc đầu mục "${bulkAssignSection.sectionName}" cho ${names}`, bulkAssignSection.projectCode || 'Dự án');
+                    if (store.addNotification) {
+                      await store.addNotification({
+                        title: `Giao hàng loạt: ${names}`,
+                        message: `${assignerName} đã giao hàng loạt ${tasksToAssign.length} công việc thuộc đầu mục "${bulkAssignSection.sectionName}" cho ${names}.`,
+                        type: `task_assigned:::${ids}:::${names}`,
+                        icon: 'assignment_ind',
+                        senderId: assignerId,
+                        senderName: assignerName
+                      });
+                    }
+
+                    setBulkAssignSection(null);
+                    setAssigningUserIds([]);
+                    setAssignNote('');
+                    setAssignSelectedFile(null);
+                    triggerToast(`Đã giao hàng loạt thành công ${tasksToAssign.length} công việc cho ${names}!`, 'success');
+                  }}
+                  className="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  Giao việc hàng loạt ({tasksToAssign.length})
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
 
       {/* EDIT TASK MODAL */}

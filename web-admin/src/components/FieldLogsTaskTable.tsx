@@ -158,10 +158,9 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
         if (parentStt && !sttSet.has(parentStt)) {
           sttSet.add(parentStt);
           let synthName = '';
-          if (parentStt === '33') {
-            synthName = 'HỆ THỐNG THÔNG TIN LIÊN LẠC DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
-          } else if (parentStt === '36') {
-            synthName = 'HỆ THỐNG SCADA DO BÊN A CUNG CẤP TẠI KHO TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM, NHÀ THẦU VẬN CHUYỂN VÀ LẮP ĐẶT HOÀN THIỆN TẠI CÔNG TRƯỜNG';
+          const parentItem = tasks.find(d => String(d.stt || '').trim() === parentStt);
+          if (parentItem && (parentItem.name || parentItem.sectionName)) {
+            synthName = parentItem.name || parentItem.sectionName || '';
           } else {
             synthName = `HẠNG MỤC ${parentStt}`;
           }

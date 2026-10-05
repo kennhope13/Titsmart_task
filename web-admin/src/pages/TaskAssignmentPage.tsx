@@ -753,26 +753,23 @@ export const TaskAssignmentPage: React.FC = () => {
   }, [isHighlightActive, highlightedTaskId, highlightKeyword, projectDisplayedTasks, directDisplayedTasks]);
 
   const handleToggleSelectAll = () => {
-    const readyTasks = projectDisplayedTasks.filter(t => isTaskReadyForAssignment(t, materialPlans).ready);
-    if (selectedTaskIds.length === readyTasks.length && readyTasks.length > 0) {
+    // Ưu tiên các task đủ điều kiện, nếu không có task nào đủ điều kiện thì lấy tất cả các task hiển thị
+    const eligibleTasks = projectDisplayedTasks.filter(t => isTaskReadyForAssignment(t, materialPlans).ready);
+    const targetTasks = eligibleTasks.length > 0 ? eligibleTasks : projectDisplayedTasks;
+
+    if (selectedTaskIds.length === targetTasks.length && targetTasks.length > 0) {
       setSelectedTaskIds([]);
     } else {
-      setSelectedTaskIds(readyTasks.map(t => t.id));
-      if (readyTasks.length < projectDisplayedTasks.length) {
-        triggerToast(`Đã chọn ${readyTasks.length}/${projectDisplayedTasks.length} công việc đủ điều kiện giao việc (Tình trạng "Đáp ứng" & TT Đặt hàng "Đã có hàng").`, 'info');
+      setSelectedTaskIds(targetTasks.map(t => t.id));
+      if (eligibleTasks.length === 0 && projectDisplayedTasks.length > 0) {
+        triggerToast(`Đã chọn toàn bộ ${projectDisplayedTasks.length} công việc theo lệnh người giao việc.`, 'info');
+      } else if (eligibleTasks.length < projectDisplayedTasks.length) {
+        triggerToast(`Đã chọn ${eligibleTasks.length}/${projectDisplayedTasks.length} công việc đáp ứng đủ điều kiện vật tư.`, 'info');
       }
     }
   };
 
   const handleToggleTask = (id: string) => {
-    const targetTask = tasks.find(t => t.id === id);
-    if (targetTask && !selectedTaskIds.includes(id)) {
-      const check = isTaskReadyForAssignment(targetTask, materialPlans);
-      if (!check.ready) {
-        triggerToast(check.reason || 'Công việc chưa đủ điều kiện giao việc!', 'warning');
-        return;
-      }
-    }
     setSelectedTaskIds(prev => 
       prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]
     );
@@ -780,18 +777,11 @@ export const TaskAssignmentPage: React.FC = () => {
 
   const handleAssign = () => {
     if (!selectedEngineerId) {
-      triggerToast('Vui lòng chọn kỹ sư!', 'warning');
+      triggerToast('Vui lòng chọn kỹ sư / nhân sự!', 'warning');
       return;
     }
     if (selectedTaskIds.length === 0) {
       triggerToast('Vui lòng chọn ít nhất 1 hạng mục!', 'warning');
-      return;
-    }
-
-    const invalidTasks = selectedTaskIds.map(id => tasks.find(t => t.id === id)).filter(Boolean).filter(t => !isTaskReadyForAssignment(t, materialPlans).ready);
-    if (invalidTasks.length > 0) {
-      const firstInvalid = invalidTasks[0];
-      triggerToast(firstInvalid ? isTaskReadyForAssignment(firstInvalid, materialPlans).reason || 'Có công việc chưa đủ điều kiện giao việc!' : 'Công việc chưa đủ điều kiện giao việc!', 'warning');
       return;
     }
 
@@ -1344,11 +1334,6 @@ export const TaskAssignmentPage: React.FC = () => {
                                 </span>
                                 <span className="material-symbols-outlined text-primary text-[18px]">folder_open</span>
                                 <span>{group.project.name}</span>
-                                {group.project.code && group.project.code !== group.project.name && (
-                                  <span className="px-1.5 py-0.5 rounded bg-white text-slate-600 font-mono text-[10px] font-bold border border-slate-200">
-                                    {group.project.code}
-                                  </span>
-                                )}
                               </button>
 
                               <div className="flex items-center gap-2 shrink-0">
@@ -1395,21 +1380,17 @@ export const TaskAssignmentPage: React.FC = () => {
                               onClick={() => handleRowClick(t, p?.code || t.projectCode)}
                               title="Nhấn vào dòng này để xem chi tiết công việc trong dự án"
                             >
-                              {projectFilterStatus === 'unassigned' && (() => {
-                                const readiness = isTaskReadyForAssignment(t, materialPlans);
-                                return (
-                                  <td className="py-2.5 px-3 text-center border-r border-slate-200 w-10" onClick={e => e.stopPropagation()}>
-                                    <input 
-                                      type="checkbox" 
-                                      className={`w-4 h-4 accent-primary ${readiness.ready ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}`}
-                                      checked={isChecked}
-                                      disabled={!readiness.ready}
-                                      title={readiness.ready ? 'Chọn để giao việc' : readiness.reason}
-                                      onChange={() => handleToggleTask(t.id)}
-                                    />
-                                  </td>
-                                );
-                              })()}
+                              {projectFilterStatus === 'unassigned' && (
+                                <td className="py-2.5 px-3 text-center border-r border-slate-200 w-10" onClick={e => e.stopPropagation()}>
+                                  <input 
+                                    type="checkbox" 
+                                    className="w-4 h-4 accent-primary cursor-pointer"
+                                    checked={isChecked}
+                                    title="Chọn để giao việc"
+                                    onChange={() => handleToggleTask(t.id)}
+                                  />
+                                </td>
+                              )}
                               <td className="py-2.5 px-4 border-r border-slate-200">
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
@@ -1522,6 +1503,23 @@ export const TaskAssignmentPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Floating banner thông báo số lượng công việc đang chọn */}
+          {projectFilterStatus === 'unassigned' && selectedTaskIds.length > 0 && (
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-blue-600 text-white px-4 py-2.5 rounded-full shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200 border border-blue-400">
+              <span className="material-symbols-outlined text-xl">info</span>
+              <span className="text-xs font-bold">
+                Đã chọn {selectedTaskIds.length}/{projectDisplayedTasks.length} công việc để giao việc
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="ml-2 px-3 py-1 bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-xs rounded-full shadow-xs transition-colors cursor-pointer"
+              >
+                Giao ngay
+              </button>
+            </div>
+          )}
         </div>
       )}
 
