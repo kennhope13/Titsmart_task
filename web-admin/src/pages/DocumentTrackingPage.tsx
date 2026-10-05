@@ -33,6 +33,7 @@ export const DocumentTrackingPage: React.FC = () => {
 
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const [loading, setLoading] = useState(false);
+  const [isFileUploading, setIsFileUploading] = useState(false);
   const isSubmittingRef = useRef(false);
   const triggerToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
     setToastState({ show: true, message, type });
@@ -1220,17 +1221,17 @@ export const DocumentTrackingPage: React.FC = () => {
             <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={Boolean(newDoc.isCompleted)} onChange={(e) => setNewDoc({...newDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
           </div>
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newDoc.notes || ''} onChange={(e) => setNewDoc({...newDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-          <FileUpload multiple label="File đính kèm" value={newDoc.fileUrls} onChange={(urls) => setNewDoc({...newDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} />
+          <FileUpload multiple label="File đính kèm" value={newDoc.fileUrls} onChange={(urls) => setNewDoc({...newDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} onUploadStateChange={setIsFileUploading} />
           <div className="pt-3 border-t flex justify-end gap-2">
-            <button disabled={isSubmitting} type="button" onClick={() => setIsNewDocOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100 disabled:opacity-50">Hủy</button>
-            <button disabled={isSubmitting} type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50">
-              {isSubmitting && (
+            <button disabled={isSubmitting || isFileUploading} type="button" onClick={() => setIsNewDocOpen(false)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100 disabled:opacity-50">Hủy</button>
+            <button disabled={isSubmitting || isFileUploading} type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50">
+              {(isSubmitting || isFileUploading) && (
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               )}
-              {isSubmitting ? 'Đang thêm...' : 'Thêm hồ sơ mới'}
+              {isFileUploading ? 'Đang tải tệp lên...' : (isSubmitting ? 'Đang thêm...' : 'Thêm hồ sơ mới')}
             </button>
           </div>
         </form>
@@ -1334,21 +1335,21 @@ export const DocumentTrackingPage: React.FC = () => {
                 <div className="flex items-center pt-5 gap-2"><input type="checkbox" checked={Boolean(editingDoc.isCompleted)} onChange={(e) => setEditingDoc({...editingDoc, isCompleted: e.target.checked})} className="w-4 h-4" /> <span className="font-bold">Đã hoàn tất hồ sơ</span></div>
               </div>
               <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={(editingDoc.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()} onChange={(e) => setEditingDoc({...editingDoc, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
-              <FileUpload multiple label="File đính kèm" value={editingDoc.fileUrls} onChange={(urls) => setEditingDoc({...editingDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} />
+              <FileUpload multiple label="File đính kèm" value={editingDoc.fileUrls} onChange={(urls) => setEditingDoc({...editingDoc, fileUrls: Array.isArray(urls) ? urls : [urls]})} onUploadStateChange={setIsFileUploading} />
             </fieldset>
             <div className="pt-3 border-t flex justify-end gap-2">
-              <button disabled={isSubmitting} type="button" onClick={() => setEditingDoc(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100 disabled:opacity-50">
+              <button disabled={isSubmitting || isFileUploading} type="button" onClick={() => setEditingDoc(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100 disabled:opacity-50">
                 {!canManageItem(user, editingDoc) ? 'Đóng' : 'Hủy'}
               </button>
               {canManageItem(user, editingDoc) && (
-                <button disabled={isSubmitting} type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 cursor-pointer">
-                  {isSubmitting && (
+                <button disabled={isSubmitting || isFileUploading} type="submit" className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 cursor-pointer">
+                  {(isSubmitting || isFileUploading) && (
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 )}
-                  {isSubmitting ? 'Đang lưu...' : 'Cập nhật'}
+                  {isFileUploading ? 'Đang tải tệp lên...' : (isSubmitting ? 'Đang lưu...' : 'Cập nhật')}
                 </button>
               )}
             </div>
