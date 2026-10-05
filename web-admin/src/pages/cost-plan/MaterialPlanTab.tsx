@@ -600,30 +600,30 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         const isCollapsed = collapsedSections.has(plan._sectionKey || '');
                     return (
                       <tr key={plan.id} className="bg-blue-50/90 border-t-2 border-b border-blue-200 font-bold text-primary">
-                        <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1.5 text-center font-mono font-extrabold text-xs text-primary whitespace-nowrap overflow-hidden text-ellipsis" title={String(plan.stt)}>
+                        <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="sticky left-0 z-10 bg-blue-50/90 border-r border-blue-200 px-1 py-1 sm:py-1.5 text-center font-mono font-extrabold text-[10.5px] sm:text-xs text-primary whitespace-nowrap overflow-hidden text-ellipsis" title={String(plan.stt)}>
                           {plan.stt}
                         </td>
-                        <td colSpan={colSpanCount} className=" bg-blue-50/90  px-2 py-1.5 uppercase tracking-tight font-extrabold text-xs text-primary whitespace-normal break-words" title={plan.jobContent}>
-                          <div className="flex items-center gap-2 min-w-0 overflow-hidden whitespace-normal break-words">
+                        <td colSpan={colSpanCount} className="bg-blue-50/90 px-1.5 sm:px-2 py-1 sm:py-1.5 uppercase tracking-tight font-extrabold text-[11px] sm:text-xs text-primary whitespace-normal break-words" title={plan.jobContent}>
+                          <div className="flex items-center gap-1 sm:gap-2 min-w-0 overflow-hidden whitespace-normal break-words">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleSection(plan._sectionKey || ''); }}
-                              className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
+                              className="flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center rounded hover:bg-blue-200 transition-colors"
                               title={isCollapsed ? 'Mở rộng đầu mục' : 'Thu gọn đầu mục'}
                             >
-                              <span className={`material-symbols-outlined text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
+                              <span className={`material-symbols-outlined text-[13px] sm:text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                             </button>
-                            <span className="material-symbols-outlined text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                            <span className="flex-1 cursor-pointer hover:underline break-words leading-tight" onClick={(e) => { e.stopPropagation(); onEdit?.(plan); }}>
+                            <span className="material-symbols-outlined text-[13px] sm:text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
+                            <span className="flex-1 cursor-pointer hover:underline break-words leading-tight text-[11px] sm:text-xs" onClick={(e) => { e.stopPropagation(); onEdit?.(plan); }}>
                               {plan.jobContent}
                             </span>
                             {onAddSubtask && (
                               <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="flex-shrink-0 p-0.5 rounded text-blue-300 hover:text-blue-700 hover:bg-blue-100 transition-colors inline-flex items-center" title="Thêm hạng mục mới">
-                                <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                                <span className="material-symbols-outlined text-[13px] sm:text-[16px]">add_circle</span>
                               </button>
                             )}
                             {onDelete && (
                               <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="flex-shrink-0 p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-200 transition-colors inline-flex items-center" title="Xóa">
-                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                                <span className="material-symbols-outlined text-[13px] sm:text-[16px]">delete</span>
                               </button>
                             )}
                         </div>
@@ -634,24 +634,24 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
 
               let rowBg = 'bg-white';
               let stickyBg = 'bg-white';
-              let fontStyle = 'font-bold text-slate-900';
-              let sttStyle = 'font-bold text-slate-400';
+              let fontStyle = 'font-bold text-slate-900 text-[11px] sm:text-[12px] leading-snug';
+              let sttStyle = 'font-bold text-slate-400 text-[10.5px] sm:text-xs';
               
               if (depth === 1) {
                 rowBg = 'bg-white';
                 stickyBg = 'bg-white';
-                fontStyle = 'font-bold text-slate-900';
-                sttStyle = 'font-bold text-slate-600';
+                fontStyle = 'font-bold text-slate-900 text-[11px] sm:text-[12px] leading-snug';
+                sttStyle = 'font-bold text-slate-600 text-[10.5px] sm:text-xs';
               } else if (depth === 2) {
-                fontStyle = 'font-semibold text-slate-700';
-                sttStyle = 'font-semibold text-slate-400';
+                fontStyle = 'font-semibold text-slate-700 text-[11px] sm:text-[12px] leading-snug';
+                sttStyle = 'font-semibold text-slate-400 text-[10px] sm:text-[11px]';
               } else if (depth >= 3) {
-                fontStyle = 'font-medium text-slate-600 text-[10.5px]';
-                sttStyle = 'font-medium text-slate-400 text-[10.5px]';
+                fontStyle = 'font-medium text-slate-600 text-[10px] sm:text-[10.5px] leading-snug';
+                sttStyle = 'font-medium text-slate-400 text-[9.5px] sm:text-[10.5px]';
               }
               
               const rowClass = `group transition-colors border-b border-slate-50 ${rowBg} hover:bg-slate-100`;
-              const paddingLeft = `${depth * 1.5}rem`;
+              const paddingLeft = `${depth * 0.6}rem`;
 
               return (
                 <tr key={plan.id} onDoubleClick={() => onEdit(plan)} className={rowClass}>
@@ -672,7 +672,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                     )}
                   </td>
                   {/* NỘI DUNG */}
-                  <td className={`sticky z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 p-0 align-top  text-left overflow-hidden ${fontStyle}`} style={{ left: "var(--stt-width)" }}>
+                  <td className={`sticky z-10 ${stickyBg} group-hover:bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r border-slate-200 py-0.5 sm:py-1 px-1 sm:px-1.5 align-top text-left overflow-hidden ${fontStyle}`} style={{ left: "var(--stt-width)" }}>
                     {editingCell?.id === plan.id && editingCell?.field === 'jobContent' ? (
                       <input
                         type="text"
@@ -684,25 +684,25 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                         className="w-full bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1.5 py-1.5 w-full h-[28px] box-border outline-none shadow-sm border-none rounded"
                       />
                     ) : (
-                      <div className="flex items-center gap-2.5 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
+                      <div className="flex items-center gap-1 sm:gap-2 w-full min-w-0 overflow-hidden whitespace-nowrap" style={{ paddingLeft }}>
                         {depth > 1 && (
-                          <span className="material-symbols-outlined flex-shrink-0 text-slate-300 text-[14px] mr-1 translate-y-[1px]">
+                          <span className="material-symbols-outlined flex-shrink-0 text-slate-400 text-[11px] sm:text-[13px] mr-0.5 translate-y-[1px]">
                             subdirectory_arrow_right
                           </span>
                         )}
-                        <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-100 flex-1 px-1.5 py-1.5 w-full h-full min-h-[32px] flex items-center whitespace-normal break-words leading-tight" title={plan.jobContent}>
+                        <span onClick={() => startEditing(plan.id, 'jobContent', plan.jobContent)} className="cursor-pointer hover:bg-slate-100 flex-1 px-1 py-0.5 w-full line-clamp-2 sm:line-clamp-none break-words leading-tight" title={plan.jobContent}>
                           {plan.jobContent}
                         </span>
                         
-                        <div className="flex items-center ml-1 transition-opacity">
+                        <div className="hidden group-hover:flex items-center ml-1 transition-opacity">
                         {onAddSubtask && (
                           <button onClick={(e) => { e.stopPropagation(); onAddSubtask(plan, suggestedStt); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-blue-600 hover:bg-slate-200 transition-colors inline-flex items-center flex-shrink-0" title="thêm hạng mục mới">
-                            <span className="material-symbols-outlined text-[14px]">add_circle</span>
+                            <span className="material-symbols-outlined text-[13px]">add_circle</span>
                           </button>
                         )}
                         {onDelete && (
                           <button onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }} className="ml-1 p-0.5 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-100 transition-colors inline-flex items-center flex-shrink-0" title="Xóa">
-                            <span className="material-symbols-outlined text-[14px]">delete</span>
+                            <span className="material-symbols-outlined text-[13px]">delete</span>
                           </button>
                         )}
                       </div>
