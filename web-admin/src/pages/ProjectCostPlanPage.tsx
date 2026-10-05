@@ -2202,7 +2202,7 @@ export const ProjectCostPlanPage: React.FC = () => {
             purchasingData={currentProjPurchasing}
             onUpdateMaterial={handleUpdateMaterialPlanSync}
             onUpdatePurchasing={handleUpdatePurchasingPlanSync}
-            onEditMaterial={setEditingPlan}
+            onEditMaterial={(plan) => setEditingPlan(plan ? { ...plan, notes: cleanNotes(plan.notes) } : null)}
             onEditPurchasing={setEditingPurchasing}
             onDelete={(id) => {
               const item = currentProjMaterialPlans.find(p => p.id === id);
@@ -2921,20 +2921,6 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <div className="flex items-center gap-2.5"><input type="checkbox" checked={newPlanData.docCq} onChange={(e) => setNewPlanData({...newPlanData, docCq: e.target.checked})} /> <span className="font-bold">Chứng từ CQ</span></div>
                 <div className="flex items-center gap-2.5"><input type="checkbox" checked={newPlanData.dispatchToSite} onChange={(e) => setNewPlanData({...newPlanData, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi tới CT</span></div>
               </div>
-              {/* Nhà thầu cung cấp */}
-              <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-                <input
-                  type="checkbox"
-                  id="isContractorCheck"
-                  checked={!!newPlanData.isContractor}
-                  onChange={(e) => setNewPlanData({...newPlanData, isContractor: e.target.checked})}
-                  className="w-4 h-4 accent-amber-500"
-                />
-                <label htmlFor="isContractorCheck" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
-                  Nhà thầu cung cấp — tự động đồng bộ sang tab Mua hàng
-                </label>
-              </div>
             </>
           )}
 
@@ -3048,20 +3034,6 @@ export const ProjectCostPlanPage: React.FC = () => {
                   <div className="flex items-center gap-2.5"><input type="checkbox" checked={editingPlan.docStamp} onChange={(e) => setEditingPlan({...editingPlan, docStamp: e.target.checked})} /> <span className="font-bold">Tem KĐ</span></div>
                   <div className="flex items-center gap-2.5"><input type="checkbox" checked={editingPlan.docCq} onChange={(e) => setEditingPlan({...editingPlan, docCq: e.target.checked})} /> <span className="font-bold">CQ</span></div>
                   <div className="flex items-center gap-2.5"><input type="checkbox" checked={editingPlan.dispatchToSite} onChange={(e) => setEditingPlan({...editingPlan, dispatchToSite: e.target.checked})} /> <span className="font-bold">Đã gửi CT</span></div>
-                </div>
-                {/* Nhà thầu */}
-                <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-                  <input
-                    type="checkbox"
-                    id="editIsContractorCheck"
-                    checked={isEffectiveContractorPlan(editingPlan, currentProjMaterialPlans)}
-                    onChange={(e) => setEditingPlan({...editingPlan, supplyScope: e.target.checked ? 'contractor' : 'owner'})}
-                    className="w-4 h-4 accent-amber-500"
-                  />
-                  <label htmlFor="editIsContractorCheck" className="font-bold text-amber-700 cursor-pointer select-none flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-[16px] text-amber-500">handshake</span>
-                    Nhà thầu cung cấp — hiển thị trong tab Mua hàng
-                  </label>
                 </div>
                 <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingPlan.notes} onChange={(e) => setEditingPlan({...editingPlan, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               </>
