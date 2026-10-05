@@ -1034,7 +1034,7 @@ export const TaskAssignmentPage: React.FC = () => {
                               className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 hover:bg-blue-100 hover:underline font-bold text-[10px] border border-blue-200 cursor-pointer inline-flex items-center gap-1 transition-colors"
                               title="Bấm để xem trong bảng Tiến độ công việc dự án"
                             >
-                              <span>{t.projectName || t.projectCode}</span>
+                              <span>{projects.find(p => p.code === t.projectCode)?.name || t.projectName || t.projectCode}</span>
                               <span className="material-symbols-outlined text-[11px]">open_in_new</span>
                             </span>
                           ) : (
