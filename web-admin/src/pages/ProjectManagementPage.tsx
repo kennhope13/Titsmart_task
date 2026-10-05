@@ -11,6 +11,7 @@ import { WebOcrExtractedData } from '../services/webOcrService';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
 import { isUserMemberOfProject } from '../utils/projectMemberUtils';
 import { PullToRefresh } from '../components/common/PullToRefresh';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 const todayStamp = () => new Date().toISOString().split('T')[0];
 
@@ -1054,7 +1055,7 @@ export const ProjectManagementPage: React.FC = () => {
           </div>
           <div>
             <label className="block font-bold text-slate-700 mb-1">Chỉ huy trưởng / Quản lý dự án</label>
-            <select
+            <CustomSelect
               value={editProjManagerId}
               onChange={(e) => {
                 const val = e.target.value;
@@ -1063,7 +1064,8 @@ export const ProjectManagementPage: React.FC = () => {
                   setEditSelectedEngineerIds(prev => [...prev, val]);
                 }
               }}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white text-xs font-semibold"
+              className="w-full text-xs font-semibold"
+              placeholder="-- Chưa phân công --"
             >
               <option value="">-- Chưa phân công --</option>
               {engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').map((eng) => (
@@ -1071,7 +1073,7 @@ export const ProjectManagementPage: React.FC = () => {
                   {eng.name} {eng.title || eng.role ? `(${eng.title || eng.role})` : ''}
                 </option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
             <div className="flex justify-between items-center mb-1.5">
@@ -1133,7 +1135,7 @@ export const ProjectManagementPage: React.FC = () => {
           </div>
           <div>
             <label className="block font-bold text-slate-700 mb-1">Chỉ huy trưởng / Quản lý dự án</label>
-            <select
+            <CustomSelect
               value={newProjManagerId}
               onChange={(e) => {
                 const val = e.target.value;
@@ -1142,7 +1144,8 @@ export const ProjectManagementPage: React.FC = () => {
                   setSelectedEngineerIds(prev => [...prev, val]);
                 }
               }}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white text-xs font-semibold"
+              className="w-full text-xs font-semibold"
+              placeholder="-- Chưa phân công --"
             >
               <option value="">-- Chưa phân công --</option>
               {engineers.filter(eng => eng.username !== 'admin' && eng.role !== 'Quản trị viên').map((eng) => (
@@ -1150,7 +1153,7 @@ export const ProjectManagementPage: React.FC = () => {
                   {eng.name} {eng.title || eng.role ? `(${eng.title || eng.role})` : ''}
                 </option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
           <div>
             <div className="flex justify-between items-center mb-1.5">
