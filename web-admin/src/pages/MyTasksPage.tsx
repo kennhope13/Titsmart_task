@@ -627,8 +627,8 @@ export const MyTasksPage: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        <div className="w-full h-full overflow-auto custom-scrollbar bg-slate-50/50 p-3 sm:p-4 lg:p-6 pb-20 space-y-6">
+      <div className="flex-1 overflow-hidden flex flex-col w-full">
+        <div className="w-full h-full overflow-auto custom-scrollbar bg-slate-50/50 p-2.5 sm:p-3.5 md:p-4 pb-20 space-y-4">
           {displayedTasks.length === 0 ? (
             <div className="py-16 text-center text-slate-500 font-medium bg-white rounded-2xl border border-dashed border-slate-300 flex flex-col items-center justify-center gap-2">
               <span className="material-symbols-outlined text-4xl text-slate-400">
@@ -656,32 +656,32 @@ export const MyTasksPage: React.FC = () => {
               const isRealProject = group.projectCode && group.projectCode !== 'COMPANY' && group.projectCode !== 'OTHER';
               const isCollapsed = !!collapsedProjects[group.projectCode];
               return (
-                <div key={group.projectCode} className="space-y-2">
+                <div key={group.projectCode} className="space-y-2 w-full">
                   {/* Project Section Accordion Header */}
                   <div 
                     onClick={() => toggleProjectCollapse(group.projectCode)}
-                    className="flex items-center justify-between bg-slate-100 hover:bg-slate-200/80 border border-slate-300/90 border-l-4 border-l-slate-800 px-3.5 sm:px-4 py-2.5 rounded-xl shadow-xs cursor-pointer select-none transition-all group"
+                    className="flex items-center justify-between bg-white hover:bg-blue-50/30 border border-slate-200 hover:border-blue-200/80 border-l-4 border-l-primary px-3.5 sm:px-4 py-2.5 rounded-xl shadow-xs cursor-pointer select-none transition-all group w-full"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-slate-900 shadow-2xs transition-transform duration-200 shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}>
+                      <div className={`w-6 h-6 rounded-md bg-slate-100 group-hover:bg-primary/10 flex items-center justify-center text-slate-500 group-hover:text-primary shadow-2xs transition-all duration-200 shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}>
                         <span className="material-symbols-outlined text-base">
                           chevron_right
                         </span>
                       </div>
-                      <div className="w-7 h-7 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0 shadow-2xs">
                         <span className="material-symbols-outlined text-[16px]">
                           {isRealProject ? 'cell_tower' : 'flash_on'}
                         </span>
                       </div>
-                      <h2 className="text-xs sm:text-sm font-bold text-slate-900 truncate" title={group.projectName}>
+                      <h2 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-primary transition-colors truncate" title={group.projectName}>
                         {group.projectName}
                       </h2>
                       {isRealProject && (
-                        <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-white text-slate-700 border border-slate-300 shrink-0">
+                        <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shrink-0">
                           {group.projectCode}
                         </span>
                       )}
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-white shrink-0 shadow-2xs">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary text-white shrink-0 shadow-2xs">
                         {group.tasks.length} {group.tasks.length === 1 ? 'việc' : 'việc'}
                       </span>
                     </div>
@@ -693,7 +693,7 @@ export const MyTasksPage: React.FC = () => {
                           e.stopPropagation();
                           navigate(`/projects/${encodeURIComponent(group.projectCode)}/tasks`);
                         }}
-                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 flex items-center gap-1 shrink-0 ml-2 cursor-pointer shadow-2xs transition-all"
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50/80 border border-slate-200 hover:border-blue-200 text-xs font-semibold text-primary hover:text-blue-700 flex items-center gap-1 shrink-0 ml-2 cursor-pointer shadow-2xs transition-all"
                         title="Xem toàn bộ tiến độ dự án"
                       >
                         <span className="hidden sm:inline">Tiến độ dự án</span>
@@ -704,7 +704,7 @@ export const MyTasksPage: React.FC = () => {
 
                   {/* Task Cards Grid for this project */}
                   {!isCollapsed && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5 pt-1 w-full">
                       {group.tasks.map((t) => {
                 const p = projects.find(proj => proj.code === t.projectCode);
                 const isWaiting = t.status === 'Chờ nhận việc';
