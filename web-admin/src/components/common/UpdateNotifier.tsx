@@ -187,29 +187,8 @@ export const UpdateNotifier: React.FC = () => {
 
   return (
     <>
-      {/* ─── FULL-SCREEN BLOCKING OVERLAY: Chặn toàn bộ thao tác click/gõ khi đang cập nhật ─── */}
-      {isUpdating && (
-        <div 
-          className="fixed inset-0 z-[99999999] bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center pointer-events-auto select-none cursor-wait p-4 touch-none overscroll-contain"
-          onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
-          onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
-          onKeyDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
-        >
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 md:p-8 max-w-[280px] xs:max-w-xs sm:max-w-sm w-full shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mb-3 sm:mb-4 text-[#00236f] dark:text-blue-400">
-              <span className="material-symbols-outlined text-2xl sm:text-3xl animate-spin">
-                restart_alt
-              </span>
-            </div>
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-              Đang cập nhật phiên bản {currentVer ? `v${currentVer}` : ''}
-            </h3>
-          </div>
-        </div>
-      )}
-
       {/* ─── FLOATING BADGE NÚT TẢI LẠI (ĐÃ CHUẨN HÓA CHO CẢ MOBILE & DESKTOP) ─── */}
-      {state.visible && !isUpdating && (
+      {state.visible && (
         <div className="fixed right-16 sm:right-20 bottom-[calc(env(safe-area-inset-bottom,0px)+74px)] sm:bottom-5 md:right-20 z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-150 pointer-events-auto select-none">
           <div className="inline-flex items-center gap-1.5 bg-[#00236f] hover:bg-[#001c5a] active:bg-[#001545] text-white px-2.5 py-1.5 min-h-[34px] rounded-xl shadow-lg border border-white/20 text-xs font-bold transition-all">
             <button
