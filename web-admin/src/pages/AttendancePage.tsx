@@ -109,6 +109,7 @@ export const AttendancePage: React.FC = () => {
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [checkOutNotes, setCheckOutNotes] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showLeaveExportMenu, setShowLeaveExportMenu] = useState(false);
 
@@ -563,16 +564,21 @@ export const AttendancePage: React.FC = () => {
     setIsSubmitting(false);
   };
 
-  const handleDeleteLeave = async (id: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa đơn nghỉ phép này?')) return;
+  const handleDeleteLeave = (id: string) => {
+    setDeleteLeaveId(id);
+  };
+
+  const handleConfirmDeleteLeave = async () => {
+    if (!deleteLeaveId) return;
     try {
-      await api.leaves.delete(id);
-      cachedLeaves = cachedLeaves.filter(l => l.id !== id);
-      setLeaves(prev => prev.filter(l => l.id !== id));
+      await api.leaves.delete(deleteLeaveId);
+      cachedLeaves = cachedLeaves.filter(l => l.id !== deleteLeaveId);
+      setLeaves(prev => prev.filter(l => l.id !== deleteLeaveId));
       showToast('Đã xóa đơn nghỉ phép thành công.', 'info');
     } catch (e: any) {
       showToast('Lỗi xóa đơn: ' + (e.message || 'Không thể xóa đơn'), 'error');
     }
+    setDeleteLeaveId(null);
   };
 
   const uploadImage = async (file: File): Promise<string> => {
@@ -2008,6 +2014,16 @@ export const AttendancePage: React.FC = () => {
         title="Xác nhận xóa"
         message="Bạn có chắc chắn muốn xóa bản ghi chấm công này?"
         confirmText="Xóa"
+        icon="delete"
+      />
+
+      <ConfirmModal
+        isOpen={deleteLeaveId !== null}
+        onClose={() => setDeleteLeaveId(null)}
+        onConfirm={handleConfirmDeleteLeave}
+        title="Xác nhận xóa đơn"
+        message="Bạn có chắc chắn muốn xóa đơn nghỉ phép này?"
+        confirmText="Xóa đơn"
         icon="delete"
       />
 

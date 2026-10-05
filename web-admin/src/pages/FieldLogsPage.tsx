@@ -394,18 +394,12 @@ export const FieldLogsPage: React.FC = () => {
   const projectName = (code: string) => projects.find(p => p.code === code)?.name || code;
   const totalImages = visibleLogs.reduce((sum, l) => sum + l.images.length, 0);
 
-  const handleDeleteLog = async (log: FieldLog) => {
+  const handleDeleteLog = (log: FieldLog) => {
     if (!canManageItem(user, log)) {
       alert("Bạn không có quyền xóa nhật ký này (Chỉ người tạo hoặc Quản trị viên mới có quyền xóa)!");
       return;
     }
-    if (window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) {
-      try {
-        await deleteFieldLog(log.id);
-      } catch (err) {
-        alert("Lỗi khi xóa nhật ký.");
-      }
-    }
+    setDeletingId(log.id);
   };
 
   const handleUpload = async (input: { projectCode: string; note: string; images: string[]; taskId?: string }) => {

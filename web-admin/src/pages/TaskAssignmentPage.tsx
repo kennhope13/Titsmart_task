@@ -6,6 +6,7 @@ import { CustomSelect } from '../components/common/CustomSelect';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../services/authStore';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 import { Task } from '../types';
 import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
 import { appendTaskDiscussion, parseTaskDiscussions, getLatestDiscussion, stripDiscussionThread } from '../utils/taskDiscussion';
@@ -455,16 +456,23 @@ export const TaskAssignmentPage: React.FC = () => {
     }
   };
 
+  const [taskToDelete, setTaskToDelete] = useState<{ id: string; name: string } | null>(null);
+
   const handleDeleteDirectTask = (taskId: string, taskName: string) => {
     const target = tasks.find(t => t.id === taskId);
     if (target && !canDeleteTask(user, target)) {
       triggerToast('Người theo dõi và người nhận việc không có quyền xóa công việc!', 'warning');
       return;
     }
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa công việc "${taskName}"?`)) return;
+    setTaskToDelete({ id: taskId, name: taskName });
+  };
+
+  const handleConfirmDeleteTask = () => {
+    if (!taskToDelete) return;
     const store = useRealtimeStore.getState();
-    store.deleteTask(taskId);
-    triggerToast(`Đã xóa công việc "${taskName}"!`, 'success');
+    store.deleteTask(taskToDelete.id);
+    triggerToast(`Đã xóa công việc "${taskToDelete.name}"!`, 'success');
+    setTaskToDelete(null);
   };
 
   useEffect(() => {
@@ -1992,6 +2000,16 @@ export const TaskAssignmentPage: React.FC = () => {
         onSendReply={handleSendReply}
         onAccept={handleAcceptTask}
         onAcceptTask={handleAcceptTask}
+      />
+
+      <ConfirmModal
+        isOpen={!!taskToDelete}
+        onClose={() => setTaskToDelete(null)}
+        onConfirm={handleConfirmDeleteTask}
+        title="Xác nhận xóa công việc"
+        message={`Bạn có chắc chắn muốn xóa công việc "${taskToDelete?.name}"?`}
+        confirmText="Xóa công việc"
+        icon="delete"
       />
 
       {toastState.show && (
