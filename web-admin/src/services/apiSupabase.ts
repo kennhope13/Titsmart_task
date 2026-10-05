@@ -1572,31 +1572,51 @@ export const api = {
       }));
     },
     create: async (data: any) => {
+      const creatorName = data.createdByName || data.createdById || data.updatedBy || '';
       const payload: any = {
         project_code: data.projectCode,
         notes: data.note,
-        photos: data.images,
+        photos: data.images || [],
         task_id: data.taskId || null,
-        created_by_id: data.createdById || null,
-        created_by_name: data.createdByName || null,
+        created_by: creatorName || null,
       };
       if (data.timestamp) {
         payload.created_at = data.timestamp;
       }
-      const { data: result, error } = await supabase.from('field_logs').insert(payload).select().single();
-      if (error) throw error;
-      return {
-        id: result.id,
-        projectCode: result.project_code,
-        note: result.notes,
-        images: result.photos || [],
-        timestamp: result.created_at,
-        taskId: result.task_id,
-        createdById: result.created_by_id || data.createdById || '',
-        createdByName: result.created_by_name || data.createdByName || '',
-        updatedBy: result.updated_by || '',
-        updatedAt: result.updated_at || '',
-      };
+      try {
+        const { data: result, error } = await supabase.from('field_logs').insert(payload).select().single();
+        if (error) {
+          delete payload.created_by;
+          const { data: fbResult, error: fbError } = await supabase.from('field_logs').insert(payload).select().single();
+          if (fbError) throw fbError;
+          return {
+            id: fbResult.id,
+            projectCode: fbResult.project_code,
+            note: fbResult.notes,
+            images: fbResult.photos || [],
+            timestamp: fbResult.created_at,
+            taskId: fbResult.task_id,
+            createdById: data.createdById || '',
+            createdByName: data.createdByName || '',
+            updatedBy: fbResult.updated_by || '',
+            updatedAt: fbResult.updated_at || '',
+          };
+        }
+        return {
+          id: result.id,
+          projectCode: result.project_code,
+          note: result.notes,
+          images: result.photos || [],
+          timestamp: result.created_at,
+          taskId: result.task_id,
+          createdById: data.createdById || result.created_by || '',
+          createdByName: data.createdByName || result.created_by || '',
+          updatedBy: result.updated_by || '',
+          updatedAt: result.updated_at || '',
+        };
+      } catch (err) {
+        throw err;
+      }
     },
     delete: async (id: string) => {
       const { data } = await supabase.from('field_logs').select('photos').eq('id', id).single();
@@ -1641,8 +1661,8 @@ export const api = {
           images: fbResult.photos || [],
           timestamp: fbResult.created_at,
           taskId: fbResult.task_id,
-          createdById: fbResult.created_by_id || data.createdById || '',
-          createdByName: fbResult.created_by_name || data.createdByName || '',
+          createdById: fbResult.created_by_id || data.createdById || fbResult.created_by || '',
+          createdByName: fbResult.created_by_name || data.createdByName || fbResult.created_by || '',
           updatedBy: data.updatedBy || audit.updated_by,
           updatedAt: new Date().toISOString(),
         };
@@ -1654,8 +1674,8 @@ export const api = {
         images: result.photos || [],
         timestamp: result.created_at,
         taskId: result.task_id,
-        createdById: result.created_by_id || data.createdById || '',
-        createdByName: result.created_by_name || data.createdByName || '',
+        createdById: result.created_by_id || data.createdById || result.created_by || '',
+        createdByName: result.created_by_name || data.createdByName || result.created_by || '',
         updatedBy: result.updated_by || data.updatedBy || audit.updated_by,
         updatedAt: result.updated_at || new Date().toISOString(),
       };
