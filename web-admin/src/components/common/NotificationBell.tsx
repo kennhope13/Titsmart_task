@@ -753,16 +753,27 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
 
 
+  const userClosedCenterModalRef = useRef(false);
+
   useEffect(() => {
-    const hasShown = sessionStorage.getItem('has_shown_center_notif_modal');
-    if (autoShowNotificationPopup && !hasShown && centerModalNotifications.length > 0) {
-      setShowCenterModal(true);
-    }
+    try {
+      const hasShown = sessionStorage.getItem('has_shown_center_notif_modal');
+      if (autoShowNotificationPopup && !hasShown && !userClosedCenterModalRef.current && centerModalNotifications.length > 0) {
+        setShowCenterModal(true);
+      }
+    } catch {}
   }, [centerModalNotifications, autoShowNotificationPopup]);
 
-  const closeCenterModal = () => {
+  const closeCenterModal = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    userClosedCenterModalRef.current = true;
     setShowCenterModal(false);
-    sessionStorage.setItem('has_shown_center_notif_modal', 'true');
+    try {
+      sessionStorage.setItem('has_shown_center_notif_modal', 'true');
+    } catch {}
   };
 
   const unreadNotifications = useMemo(() => displayNotifications.filter(item => !item.read), [displayNotifications]);
@@ -843,13 +854,79 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     };
   }, [showPopover]);
 
+  const renderCenterModal = () => {
+    if (!showCenterModal || centerModalNotifications.length === 0) return null;
+    return (
+      <div 
+        className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-fadeIn pointer-events-auto"
+        onClick={closeCenterModal}
+      >
+        <div 
+          className="bg-white rounded-lg shadow-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-lg overflow-hidden border border-outline-variant flex flex-col max-h-[85vh] sm:max-h-[80vh] pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="px-3 py-1.5 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
+            <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 truncate">
+              <span className="material-symbols-outlined text-[17px]">notifications</span>
+              <span className="truncate">Thông báo</span>
+            </h3>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={closeCenterModal}
+                title="Đóng"
+                className="p-1 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px] block pointer-events-none">close</span>
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-4 overflow-y-auto space-y-3 bg-slate-50 flex-1">
+            {centerModalNotifications.map(n => (
+              <div
+                key={n.id}
+                onClick={() => handleNotificationClick(n)}
+                className="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs flex items-start gap-3 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
+              >
+                <div className={`p-2 rounded-lg shrink-0 ${n.title.includes('quá hạn') ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+                  <span className="material-symbols-outlined text-xl pointer-events-none">
+                    {n.title.includes('quá hạn') ? 'warning' : 'event_available'}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0 pointer-events-none">
+                  <h4 className="font-bold text-xs text-slate-800 group-hover:text-blue-600 transition-colors flex items-center justify-between">
+                    <span>{n.title}</span>
+                    <span className="material-symbols-outlined text-sm text-slate-400 group-hover:text-blue-600 transition-colors">chevron_right</span>
+                  </h4>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">{n.message}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-3 bg-white border-t border-slate-200 flex justify-end">
+            <button
+              type="button"
+              onClick={closeCenterModal}
+              className="px-5 py-1.5 bg-primary hover:opacity-90 active:scale-95 text-white font-bold text-xs rounded-lg transition-all shadow-xs cursor-pointer"
+            >
+              Đã hiểu
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!showNotificationBell) {
     return null;
   }
 
   if (isSidebar) {
     return (
-      <div ref={popoverRef} className="relative w-full">
+      <>
+        <div ref={popoverRef} className="relative w-full">
         <button
           onClick={handleBellClick}
           title="Thông báo hệ thống"
@@ -1032,66 +1109,15 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
           </div>
         )}
 
-        {/* MODAL POPUP GIỮA MÀN HÌNH */}
-        {showCenterModal && centerModalNotifications.length > 0 && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
-            <div className="bg-white rounded-lg shadow-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-lg overflow-hidden border border-outline-variant flex flex-col max-h-[85vh] sm:max-h-[80vh]">
-              <div className="px-3 py-1.5 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
-                <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 truncate">
-                  <span className="material-symbols-outlined text-[17px]">notifications</span>
-                  <span className="truncate">Thông báo</span>
-                </h3>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={closeCenterModal}
-                    title="Đóng"
-                    className="p-1 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[20px] block">close</span>
-                  </button>
-                </div>
-              </div>
-              
-              <div className="p-4 overflow-y-auto space-y-3 bg-slate-50 flex-1">
-                {centerModalNotifications.map(n => (
-                  <div
-                    key={n.id}
-                    onClick={() => handleNotificationClick(n)}
-                    className="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs flex items-start gap-3 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
-                  >
-                    <div className={`p-2 rounded-lg shrink-0 ${n.title.includes('quá hạn') ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-                      <span className="material-symbols-outlined text-xl">
-                        {n.title.includes('quá hạn') ? 'warning' : 'event_available'}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-xs text-slate-800 group-hover:text-blue-600 transition-colors flex items-center justify-between">
-                        <span>{n.title}</span>
-                        <span className="material-symbols-outlined text-sm text-slate-400 group-hover:text-blue-600 transition-colors">chevron_right</span>
-                      </h4>
-                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">{n.message}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="p-3 bg-white border-t border-slate-200 flex justify-end">
-                <button
-                  onClick={closeCenterModal}
-                  className="px-5 py-1.5 bg-primary hover:opacity-90 active:scale-95 text-white font-bold text-xs rounded-lg transition-all shadow-xs cursor-pointer"
-                >
-                  Đã hiểu
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+        {renderCenterModal()}
+      </>
     );
   }
 
   return (
-    <div
+    <>
+      <div
       ref={buttonRef}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -1271,60 +1297,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
         </div>
       )}
 
-      {/* MODAL POPUP GIỮA MÀN HÌNH - NHẮC HẠN & QUÁ HẠN 1-2 NGÀY */}
-      {showCenterModal && centerModalNotifications.length > 0 && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-lg overflow-hidden border border-outline-variant flex flex-col max-h-[85vh] sm:max-h-[80vh]">
-            <div className="px-3 py-1.5 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
-              <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 truncate">
-                <span className="material-symbols-outlined text-[17px]">notifications</span>
-                <span className="truncate">Thông báo</span>
-              </h3>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={closeCenterModal}
-                  title="Đóng"
-                  className="p-1 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[20px] block">close</span>
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-4 overflow-y-auto space-y-3 bg-slate-50 flex-1">
-              {centerModalNotifications.map(n => (
-                <div
-                  key={n.id}
-                  onClick={() => handleNotificationClick(n)}
-                  className="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs flex items-start gap-3 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
-                >
-                  <div className={`p-2 rounded-lg shrink-0 ${n.title.includes('quá hạn') ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-                    <span className="material-symbols-outlined text-xl">
-                      {n.title.includes('quá hạn') ? 'warning' : 'event_available'}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-xs text-slate-800 group-hover:text-blue-600 transition-colors flex items-center justify-between">
-                      <span>{n.title}</span>
-                      <span className="material-symbols-outlined text-sm text-slate-400 group-hover:text-blue-600 transition-colors">chevron_right</span>
-                    </h4>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">{n.message}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+      </div>
 
-            <div className="p-3 bg-white border-t border-slate-200 flex justify-end">
-              <button
-                onClick={closeCenterModal}
-                className="px-5 py-1.5 bg-primary hover:opacity-90 active:scale-95 text-white font-bold text-xs rounded-lg transition-all shadow-xs cursor-pointer"
-              >
-                Đã hiểu
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {renderCenterModal()}
+    </>
   );
 };
