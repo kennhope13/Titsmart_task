@@ -3,7 +3,7 @@ import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, canManageItem } from '../services/authStore';
 import { FieldLog, Task } from '../types';
 import { compareTaskStt } from '../utils/taskTreeUtils';
-import { AuditInfoCell } from './common/AuditInfoCell';
+import { AuditInfoCell, parseAuditTime } from './common/AuditInfoCell';
 
 const CustomLightbox: React.FC<{ images: string[]; index: number; onClose: () => void; onPrev: () => void; onNext: () => void }> = ({
   images, index, onClose, onPrev, onNext,
@@ -440,7 +440,21 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                   </td>
                   {/* CỘT NGƯỜI CẬP NHẬT */}
                   <td className="py-1 px-1.5 border-r border-slate-200 text-center">
-                    <AuditInfoCell updatedBy={taskLogs[0]?.updatedBy || t.updatedBy} updatedAt={taskLogs[0]?.updatedAt || t.updatedAt} />
+                    {(() => {
+                      const latestLog = taskLogs[0];
+                      const logTime = latestLog ? parseAuditTime(latestLog.updatedAt || latestLog.timestamp) : 0;
+                      const taskTime = parseAuditTime(t.updatedAt);
+
+                      const effectiveUpdater = logTime >= taskTime 
+                        ? (latestLog?.updatedBy || latestLog?.createdByName || t.updatedBy)
+                        : (t.updatedBy || latestLog?.updatedBy || latestLog?.createdByName);
+
+                      const effectiveTime = logTime >= taskTime
+                        ? (latestLog?.updatedAt || latestLog?.timestamp || t.updatedAt)
+                        : (t.updatedAt || latestLog?.updatedAt || latestLog?.timestamp);
+
+                      return <AuditInfoCell updatedBy={effectiveUpdater} updatedAt={effectiveTime} projectCode={t.projectCode} />;
+                    })()}
                   </td>
                   {/* CỘT THAO TÁC */}
                   <td className="py-1 px-1 text-center">

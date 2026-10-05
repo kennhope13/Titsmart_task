@@ -21,6 +21,24 @@ export const formatAuditDateTime = (isoString?: string): string => {
   }
 };
 
+export const parseAuditTime = (str?: string): number => {
+  if (!str || typeof str !== 'string') return 0;
+  const trimmed = str.trim();
+  if (!trimmed) return 0;
+
+  // Check VN datetime format (HH:mm DD/MM/YYYY or DD/MM/YYYY) first to prevent MM/DD/YYYY misparsing
+  const vnMatch = trimmed.match(/(?:(\d{1,2}):(\d{2})(?::\d{2})?\s+)?(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (vnMatch) {
+    const [, hh = '0', mm = '0', d, m, y] = vnMatch;
+    const dt = new Date(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm));
+    if (!isNaN(dt.getTime())) return dt.getTime();
+  }
+
+  // Try standard ISO format
+  const isoMs = new Date(trimmed).getTime();
+  return isNaN(isoMs) ? 0 : isoMs;
+};
+
 export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; projectCode?: string; className?: string }> = ({
   updatedBy,
   updatedAt,
@@ -31,25 +49,9 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
   const { activityLogs = [], engineers = [] } = useRealtimeStore();
 
   const formattedTime = formatAuditDateTime(updatedAt);
-  const isSystemOrEmpty = !updatedBy || updatedBy.trim() === '';
 
   const userList = React.useMemo(() => {
-    if (!showModal) return [];
     const map = new Map<string, { name: string; count: number; lastTime: string; rawTimeMs: number; title?: string }>();
-
-    // Helper to parse date string safely (supports ISO format or HH:mm DD/MM/YYYY)
-    const parseTime = (str?: string): number => {
-      if (!str || typeof str !== 'string') return 0;
-      const isoMs = new Date(str).getTime();
-      if (!isNaN(isoMs)) return isoMs;
-      const match = str.match(/(\d{1,2}):(\d{2})\s+(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-      if (match) {
-        const [, hh, mm, d, m, y] = match;
-        const dt = new Date(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm));
-        return isNaN(dt.getTime()) ? 0 : dt.getTime();
-      }
-      return 0;
-    };
 
     // Filter activity logs strictly by projectCode if provided
     const filteredLogs = (activityLogs || []).filter(log => {
@@ -77,7 +79,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
       const rawUser = String(log.user || '').trim();
       if (!rawUser || rawUser === 'Excel Sync' || rawUser.toLowerCase().includes('excel')) return;
       const u = normalizeUser(rawUser);
-      const logTimeMs = parseTime(log.timestamp);
+      const logTimeMs = parseAuditTime(log.timestamp);
       const displayTime = formatAuditDateTime(log.timestamp);
       if (!map.has(u)) {
         const eng = (engineers || []).find(e => e?.name?.toLowerCase() === u.toLowerCase());
@@ -94,7 +96,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
     });
 
     // Make sure the current updatedBy user is in the list with updatedAt
-    const currentMs = parseTime(updatedAt);
+    const currentMs = parseAuditTime(updatedAt);
     if (updatedBy && updatedBy !== 'Excel Sync' && !updatedBy.toLowerCase().includes('excel')) {
       const u = normalizeUser(updatedBy);
       if (!map.has(u)) {
@@ -112,9 +114,16 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
 
     // Sort by latest update time descending (newest first)
     return Array.from(map.values()).sort((a, b) => b.rawTimeMs - a.rawTimeMs);
-  }, [showModal, activityLogs, engineers, updatedBy, updatedAt, formattedTime, projectCode]);
+  }, [activityLogs, engineers, updatedBy, updatedAt, formattedTime, projectCode]);
 
-  if (isSystemOrEmpty && !formattedTime) {
+  const latestItem = userList.length > 0 ? userList[0] : null;
+  const currentMs = parseAuditTime(updatedAt);
+  const displayUser = (latestItem && latestItem.rawTimeMs > currentMs) ? latestItem.name : (updatedBy || latestItem?.name || '');
+  const displayTime = (latestItem && latestItem.rawTimeMs > currentMs) ? latestItem.lastTime : (formattedTime || latestItem?.lastTime || '');
+
+  const isSystemOrEmpty = !displayUser || displayUser.trim() === '';
+
+  if (isSystemOrEmpty && !displayTime) {
     return <div className="text-center w-full"><span className="text-slate-300 italic text-[10px]">-</span></div>;
   }
 
@@ -133,11 +142,11 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
         className={`flex flex-col items-center justify-center text-center text-[10px] leading-tight w-full cursor-pointer hover:bg-slate-100/80 p-1 rounded transition-colors group/audit ${className}`}
       >
         <span className="font-bold text-slate-700 truncate w-full group-hover/audit:text-primary underline decoration-dotted decoration-slate-300 underline-offset-2">
-          {updatedBy}
+          {displayUser}
         </span>
-        {formattedTime && (
-          <span className="text-slate-400 font-mono text-[9px] mt-0.5" title={formattedTime}>
-            {formattedTime}
+        {displayTime && (
+          <span className="text-slate-400 font-mono text-[9px] mt-0.5" title={displayTime}>
+            {displayTime}
           </span>
         )}
       </div>
@@ -160,25 +169,25 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
             </div>
           ) : (
             <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
-              {userList.map((user) => {
-                const isCurrent = user.name.toLowerCase() === updatedBy?.toLowerCase();
+              {userList.map((user, index) => {
+                const isLatest = index === 0;
                 return (
                   <div 
                     key={user.name} 
                     className={`flex items-center justify-between p-2.5 transition-colors ${
-                      isCurrent ? 'bg-blue-50/60' : 'hover:bg-slate-50'
+                      isLatest ? 'bg-blue-50/60' : 'hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                        isCurrent ? 'bg-primary text-white shadow-sm' : 'bg-slate-100 text-slate-600'
+                        isLatest ? 'bg-primary text-white shadow-sm' : 'bg-slate-100 text-slate-600'
                       }`}>
                         {user.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-xs text-slate-800 truncate">{user.name}</span>
-                          {isCurrent && (
+                          {isLatest && (
                             <span className="px-1.5 py-0.5 text-[9px] font-bold bg-primary/10 text-primary rounded border border-primary/20 shrink-0">
                               Vừa cập nhật
                             </span>
