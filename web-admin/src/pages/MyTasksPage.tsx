@@ -660,29 +660,25 @@ export const MyTasksPage: React.FC = () => {
                   {/* Project Section Accordion Header */}
                   <div 
                     onClick={() => toggleProjectCollapse(group.projectCode)}
-                    className="flex items-center justify-between bg-white hover:bg-blue-50/30 border border-slate-200 hover:border-blue-200/80 border-l-4 border-l-primary px-3.5 sm:px-4 py-2.5 rounded-xl shadow-xs cursor-pointer select-none transition-all group w-full"
+                    className="flex items-center justify-between bg-white hover:bg-slate-50/90 border border-slate-200 px-4 py-2.5 rounded-xl shadow-xs cursor-pointer select-none transition-all group w-full"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`w-6 h-6 rounded-md bg-slate-100 group-hover:bg-primary/10 flex items-center justify-center text-slate-500 group-hover:text-primary shadow-2xs transition-all duration-200 shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}>
-                        <span className="material-symbols-outlined text-base">
-                          chevron_right
-                        </span>
-                      </div>
-                      <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0 shadow-2xs">
-                        <span className="material-symbols-outlined text-[16px]">
-                          {isRealProject ? 'cell_tower' : 'flash_on'}
-                        </span>
-                      </div>
-                      <h2 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-primary transition-colors truncate" title={group.projectName}>
+                      <span className={`material-symbols-outlined text-slate-400 group-hover:text-primary text-xl transition-transform duration-200 shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}>
+                        chevron_right
+                      </span>
+                      <span className="material-symbols-outlined text-primary text-[20px] shrink-0">
+                        {isRealProject ? 'cell_tower' : 'flash_on'}
+                      </span>
+                      <h2 className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors truncate" title={group.projectName}>
                         {group.projectName}
                       </h2>
                       {isRealProject && (
-                        <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shrink-0">
+                        <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
                           {group.projectCode}
                         </span>
                       )}
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary text-white shrink-0 shadow-2xs">
-                        {group.tasks.length} {group.tasks.length === 1 ? 'việc' : 'việc'}
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 shrink-0">
+                        {group.tasks.length} công việc
                       </span>
                     </div>
 
@@ -693,7 +689,7 @@ export const MyTasksPage: React.FC = () => {
                           e.stopPropagation();
                           navigate(`/projects/${encodeURIComponent(group.projectCode)}/tasks`);
                         }}
-                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50/80 border border-slate-200 hover:border-blue-200 text-xs font-semibold text-primary hover:text-blue-700 flex items-center gap-1 shrink-0 ml-2 cursor-pointer shadow-2xs transition-all"
+                        className="text-xs font-semibold text-slate-500 hover:text-primary hover:underline flex items-center gap-1 shrink-0 ml-2 cursor-pointer transition-colors"
                         title="Xem toàn bộ tiến độ dự án"
                       >
                         <span className="hidden sm:inline">Tiến độ dự án</span>
