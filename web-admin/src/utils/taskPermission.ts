@@ -273,9 +273,15 @@ export const getTaskTechSpecStatus = (task: Task | null | undefined, materialPla
   if (materialPlans && materialPlans.length > 0 && task.projectCode) {
     const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
     const matched = materialPlans.find(mp => 
-      mp.projectCode === task.projectCode &&
-      norm(mp.stt) === norm(task.stt) &&
-      norm(mp.jobContent || (mp as any).name) === norm(task.name)
+      mp.id === task.id ||
+      (
+        (mp.projectCode === task.projectCode || !mp.projectCode || !task.projectCode) &&
+        (
+          (norm(mp.stt) === norm(task.stt) && norm(mp.jobContent || (mp as any).name) === norm(task.name)) ||
+          (task.stt && norm(mp.stt) === norm(task.stt)) ||
+          (task.name && norm(mp.jobContent || (mp as any).name) === norm(task.name))
+        )
+      )
     );
     if (matched) {
       if (matched.techSpecStatus) return matched.techSpecStatus;
@@ -297,9 +303,15 @@ export const getTaskPurchaseStatus = (task: Task | null | undefined, materialPla
   if (materialPlans && materialPlans.length > 0 && task.projectCode) {
     const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
     const matched = materialPlans.find(mp => 
-      mp.projectCode === task.projectCode &&
-      norm(mp.stt) === norm(task.stt) &&
-      norm(mp.jobContent || (mp as any).name) === norm(task.name)
+      mp.id === task.id ||
+      (
+        (mp.projectCode === task.projectCode || !mp.projectCode || !task.projectCode) &&
+        (
+          (norm(mp.stt) === norm(task.stt) && norm(mp.jobContent || (mp as any).name) === norm(task.name)) ||
+          (task.stt && norm(mp.stt) === norm(task.stt)) ||
+          (task.name && norm(mp.jobContent || (mp as any).name) === norm(task.name))
+        )
+      )
     );
     if (matched && matched.orderedStatus) return matched.orderedStatus;
   }
