@@ -928,8 +928,24 @@ export const api = {
     },
     create: async (data: any) => {
       const nowIso = new Date().toISOString();
-      
-      // Smart check: Try primary schema payload first
+      if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
+        try {
+          const payload = {
+            action: data.action,
+            project_code: data.project || 'COMPANY',
+            user_name: data.user || 'Hệ thống',
+            icon: data.icon || 'history',
+            badge_bg: data.badgeBg || 'bg-slate-50',
+            created_at: nowIso
+          };
+          const { data: res, error } = await supabase.from('activity_logs').insert(payload).select().single();
+          if (!error && res) return { id: res.id, ...data };
+        } catch {
+          // ignore
+        }
+        return { id: `act-${Date.now()}`, ...data, timestamp: nowIso };
+      }
+
       try {
         const payload = {
           action: data.action,
@@ -941,24 +957,9 @@ export const api = {
         };
         const { data: res, error } = await supabase.from('activity_logs').insert(payload).select().single();
         if (!error && res) return { id: res.id, ...data };
-        
-        // Secondary schema fallback if project_code/user_name column missing in local DB
-        if (error && (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('project_code'))) {
-          const fallbackPayload = {
-            action: data.action,
-            project: data.project || 'COMPANY',
-            user: data.user || 'Hệ thống',
-            icon: data.icon || 'history',
-            timestamp: nowIso
-          };
-          const { data: fbRes, error: fbError } = await supabase.from('activity_logs').insert(fallbackPayload).select().single();
-          if (!fbError && fbRes) return { id: fbRes.id, ...data };
-        }
       } catch {
-        // Silent fallback
+        // ignore
       }
-
-      // Safe local mock return without raising errors
       return { id: `act-${Date.now()}`, ...data, timestamp: nowIso };
     },
     update: async (id: string, data: any) => ({ id, ...data }),
