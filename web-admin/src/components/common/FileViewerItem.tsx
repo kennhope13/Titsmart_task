@@ -208,7 +208,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const getContentTransformStyle = (): React.CSSProperties => {
     let scaleMultiplier = 1;
     if (isRotated90 && containerSize.w > 0 && containerSize.h > 0) {
-      // Keep exact 1:1 scale ratio so rotated PDF doesn't shrink into empty space
+      // Keep exact 1:1 scale ratio so rotated image doesn't shrink into empty space
       scaleMultiplier = containerSize.w / containerSize.h;
     }
 
@@ -218,6 +218,9 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
       transition: isDragging ? 'none' : 'transform 100ms ease-out',
       width: '100%',
       height: '100%',
+      maxHeight: '100%',
+      maxWidth: '100%',
+      objectFit: 'contain',
     };
   };
 

@@ -80,7 +80,7 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
 
           {/* Modal Content */}
-          <div className="p-3.5 sm:p-4 overflow-y-auto custom-scrollbar flex-1 flex flex-col">{children}</div>
+          <div className={`${size === 'full' ? 'p-1 sm:p-4' : 'p-3.5 sm:p-4'} overflow-y-auto custom-scrollbar flex-1 flex flex-col min-h-0 h-full`}>{children}</div>
         </div>
       </div>
 
