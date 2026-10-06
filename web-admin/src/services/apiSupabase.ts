@@ -1802,13 +1802,23 @@ export const api = {
 
   notifications: {
     create: async (data: Omit<NotificationItem, 'id' | 'timestamp' | 'read'>) => {
+      const nowIso = new Date().toISOString();
+      if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
+        return {
+          id: 'notif-' + Date.now(),
+          ...data,
+          read: false,
+          timestamp: nowIso
+        };
+      }
+
       const payload: any = {
         title: data.title,
         message: data.message,
         type: data.type,
         icon: data.icon,
         read: false,
-        timestamp: new Date().toISOString()
+        timestamp: nowIso
       };
       if (data.senderId || data.createdById) payload.sender_id = data.senderId || data.createdById;
       if (data.senderName || data.createdByName) payload.sender_name = data.senderName || data.createdByName;
@@ -1830,7 +1840,7 @@ export const api = {
           id: 'notif-' + Date.now(),
           ...data,
           read: false,
-          timestamp: new Date().toISOString()
+          timestamp: nowIso
         };
       }
     },
