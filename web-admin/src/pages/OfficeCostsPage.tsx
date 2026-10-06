@@ -110,6 +110,9 @@ export const OfficeCostsPage: React.FC = () => {
     return Array.from(names).sort();
   }, [currentProjExpenses, engineers]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
   const filteredExpenses = useMemo(() => {
     return currentProjExpenses.filter(e => {
       if (expenseFilterSpender !== 'all' && e.spenderName !== expenseFilterSpender) return false;
@@ -124,6 +127,17 @@ export const OfficeCostsPage: React.FC = () => {
       return true;
     });
   }, [currentProjExpenses, expenseFilterSpender, expenseFilterContent, expenseFilterUnit, expenseFilterDateFrom, expenseFilterDateTo, searchQuery]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [expenseFilterSpender, expenseFilterContent, expenseFilterUnit, expenseFilterDateFrom, expenseFilterDateTo, searchQuery]);
+
+  const totalPages = Math.ceil(filteredExpenses.length / pageSize) || 1;
+  const paginatedExpenses = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredExpenses.slice(start, start + pageSize);
+  }, [filteredExpenses, currentPage, pageSize]);
 
   useEffect(() => {
     const idParam = searchParams.get('id') || searchParams.get('expenseId');
@@ -623,7 +637,7 @@ export const OfficeCostsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-[12px] text-slate-700 leading-tight">
-                {filteredExpenses.map((exp) => {
+                {paginatedExpenses.map((exp) => {
                   const canManage = canManageItem(user, exp, 'EDIT_EXPENSES');
                   const isHighlighted = isHighlightActive && (
                     (highlightExpenseId && String(exp.id) === String(highlightExpenseId)) ||
@@ -700,6 +714,50 @@ export const OfficeCostsPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination bar */}
+          {filteredExpenses.length > 0 && (
+            <div className="px-3 py-2 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0 text-xs text-slate-600">
+              <div className="flex items-center gap-2">
+                <span>Hiển thị</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                >
+                  <option value={20}>20 dòng/trang</option>
+                  <option value={50}>50 dòng/trang</option>
+                  <option value={100}>100 dòng/trang</option>
+                </select>
+                <span className="hidden sm:inline">| Tổng cộng <strong>{filteredExpenses.length}</strong> khoản chi</span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  className="px-2 py-1 border border-slate-200 rounded bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-xs transition-all"
+                >
+                  Trang trước
+                </button>
+                <span className="px-2 font-bold text-slate-800">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className="px-2 py-1 border border-slate-200 rounded bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-xs transition-all"
+                >
+                  Trang sau
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>

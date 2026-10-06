@@ -11,6 +11,52 @@ interface ImageUploadProps {
   onUploadStateChange?: (isUploading: boolean) => void;
 }
 
+// Helper compress image using canvas before upload
+const compressImageFile = async (file: File): Promise<Blob | File> => {
+  if (!file.type.startsWith('image/') || file.type.includes('svg')) return file;
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_SIZE = 1280;
+        let width = img.width;
+        let height = img.height;
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          if (width > height) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          } else {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(file);
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob && blob.size < file.size) {
+              resolve(blob);
+            } else {
+              resolve(file);
+            }
+          },
+          'image/jpeg',
+          0.8
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+};
+
 export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: initialValue, onChange, className = '', multiple = false, onUploadStateChange }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
@@ -37,18 +83,19 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
       const newUrls: string[] = [];
       const filesToUpload = multiple ? Array.from(event.target.files) : [event.target.files[0]];
       
-      for (const file of filesToUpload) {
-        const fileExt = file.name.split('.').pop();
+      for (const rawFile of filesToUpload) {
+        const compressedBlob = await compressImageFile(rawFile);
+        const fileExt = rawFile.type.startsWith('image/') ? 'jpg' : (rawFile.name.split('.').pop() || 'bin');
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
         const filePath = `files/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('titsmart-images')
-          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+          .upload(filePath, compressedBlob, { cacheControl: '3600', upsert: true, contentType: rawFile.type.startsWith('image/') ? 'image/jpeg' : rawFile.type });
 
         if (uploadError) {
           console.error("Supabase Storage upload error:", uploadError);
-          const objectUrl = URL.createObjectURL(file);
+          const objectUrl = URL.createObjectURL(rawFile);
           newUrls.push(objectUrl);
           setError(`Cảnh báo Storage Supabase: ${uploadError.message}. Đã tạo preview tạm thời.`);
           continue;
@@ -139,7 +186,16 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
                         <span className="text-[8px] font-bold mt-0.5">WORD</span>
                       </div>
                     ) : isImg ? (
-                      <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover group-hover:opacity-60 transition-opacity" />
+                      <img 
+                        src={url} 
+                        alt={`Preview ${idx + 1}`} 
+                        className="w-full h-full object-cover group-hover:opacity-60 transition-opacity" 
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.onerror = null;
+                          target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+                        }}
+                      />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 bg-white group-hover:bg-slate-50 transition-colors">
                         <span className="material-symbols-outlined text-2xl">draft</span>
