@@ -6,6 +6,7 @@ import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
 import { Task } from '../types';
 import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
+import { Toast } from '../components/common/Toast';
 import { appendTaskDiscussion, getLatestDiscussion } from '../utils/taskDiscussion';
 import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower, getTaskFollowerNames } from '../utils/taskPermission';
 
@@ -966,19 +967,7 @@ export const MyTasksPage: React.FC = () => {
         />
       )}
 
-      {toastState.show && (
-        <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-5">
-          <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-white font-medium ${
-            toastState.type === 'success' ? 'bg-emerald-600' :
-            toastState.type === 'warning' ? 'bg-amber-500' : 'bg-blue-500'
-          }`}>
-            <span className="material-symbols-outlined">
-              {toastState.type === 'success' ? 'check_circle' : toastState.type === 'warning' ? 'warning' : 'info'}
-            </span>
-            {toastState.message}
-          </div>
-        </div>
-      )}
+      <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
     </div>
   );
 };
