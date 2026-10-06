@@ -1013,13 +1013,13 @@ export const AttendancePage: React.FC = () => {
               ) : (
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-bold uppercase sticky top-0 z-10">
-                      <th className="p-3">Nhân viên</th>
-                      <th className="p-3">Thời gian</th>
-                      <th className="p-3">Dự án</th>
-                      <th className="p-3">Ghi chú</th>
-                      <th className="p-3 text-center">Hình ảnh</th>
-                      {isAdmin && <th className="p-3 text-center w-12">TT</th>}
+                    <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-bold uppercase sticky top-0 z-10 text-[10px] sm:text-xs">
+                      <th className="px-2 py-2 sm:p-3 leading-tight break-words">Nhân viên</th>
+                      <th className="px-2 py-2 sm:p-3 leading-tight break-words">Thời gian</th>
+                      <th className="px-2 py-2 sm:p-3 leading-tight break-words">Dự án</th>
+                      <th className="px-2 py-2 sm:p-3 leading-tight break-words">Ghi chú</th>
+                      <th className="px-2 py-2 sm:p-3 text-center leading-tight break-words">Hình ảnh</th>
+                      {isAdmin && <th className="px-2 py-2 sm:p-3 text-center w-10 sm:w-12 leading-tight">TT</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
