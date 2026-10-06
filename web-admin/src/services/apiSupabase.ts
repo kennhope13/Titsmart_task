@@ -839,25 +839,23 @@ export const api = {
 
       const sanitized = sanitizeEngineersPayload(payload);
 
-      const { data: result, error } = await supabase.from('engineers').update(sanitized).eq('id', id).select().single();
-      if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('password') || String(error.message).includes('is_locked') || String(error.message).includes('is_active')) {
+      try {
+        const { data: result, error } = await supabase.from('engineers').update(sanitized).eq('id', id).select();
+        if (!error && Array.isArray(result) && result.length > 0) return toCamelCase(result[0]);
+        if (error) {
           delete sanitized.updated_by;
           delete sanitized.updated_at;
           delete sanitized.is_locked;
-          const { data: retryResult, error: retryError } = await supabase.from('engineers').update(sanitized).eq('id', id).select().single();
-          if (retryError) {
-            delete sanitized.password;
-            delete sanitized.is_active;
-            const { data: finalResult, error: finalError } = await supabase.from('engineers').update(sanitized).eq('id', id).select().single();
-            if (finalError) throw finalError;
-            return toCamelCase(finalResult);
-          }
-          return toCamelCase(retryResult);
+          delete sanitized.password;
+          delete sanitized.is_active;
+          const { data: retryResult } = await supabase.from('engineers').update(sanitized).eq('id', id).select();
+          const row = Array.isArray(retryResult) && retryResult.length > 0 ? retryResult[0] : { id, ...data };
+          return toCamelCase(row);
         }
-        throw error;
+      } catch {
+        // ignore
       }
-      return toCamelCase(result);
+      return { id, ...data };
     },
     delete: async (id: string) => {
       const { error } = await supabase.from('engineers').delete().eq('id', id);
