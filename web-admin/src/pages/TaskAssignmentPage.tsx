@@ -782,6 +782,19 @@ export const TaskAssignmentPage: React.FC = () => {
       return;
     }
 
+    const selectedTasks = tasks.filter(t => selectedTaskIds.includes(t.id));
+    const readyTasks = selectedTasks.filter(t => isTaskReadyForAssignment(t, materialPlans).ready);
+    const unreadyCount = selectedTasks.length - readyTasks.length;
+
+    if (readyTasks.length === 0) {
+      triggerToast('Tất cả các công việc được chọn đều chưa đủ điều kiện giao việc (Yêu cầu: "Đáp ứng" và "Đã có hàng")!', 'warning');
+      return;
+    }
+
+    if (unreadyCount > 0) {
+      triggerToast(`Đã bỏ qua ${unreadyCount} công việc chưa đủ điều kiện (Chưa "Đáp ứng" & "Đã có hàng").`, 'warning');
+    }
+
     const eng = engineers.find(e => e.id === selectedEngineerId);
     const engName = eng ? eng.name : '';
     const assignerId = user?.id || '';
@@ -790,8 +803,9 @@ export const TaskAssignmentPage: React.FC = () => {
     const followerEngs = engineers.filter(e => batchFollowerIds.includes(e.id));
     const followerNames = followerEngs.map(e => e.name);
 
-    selectedTaskIds.forEach(id => {
-      const existingTask = tasks.find(t => t.id === id);
+    readyTasks.forEach(task => {
+      const id = task.id;
+      const existingTask = task;
       let updatedNotes = existingTask?.notes || '';
       if (assignNote.trim() || selectedFile) {
         updatedNotes = appendTaskDiscussion(updatedNotes, {
@@ -818,12 +832,12 @@ export const TaskAssignmentPage: React.FC = () => {
     });
 
     const store = useRealtimeStore.getState();
-    store.logActivity(`Quản lý ${assignerName} đã GIAO ${selectedTaskIds.length} CÔNG VIỆC cho ${engName}`, 'Hệ thống');
+    store.logActivity(`Quản lý ${assignerName} đã GIAO ${readyTasks.length} CÔNG VIỆC cho ${engName}`, 'Hệ thống');
 
     if (store.addNotification) {
       store.addNotification({
         title: `Giao việc: ${engName}`,
-        message: `${assignerName} đã giao ${selectedTaskIds.length} công việc mới cho ${engName}${assignNote.trim() ? `: "${assignNote.trim()}"` : ''}${selectedFile ? (selectedFile.type === 'image' ? ' [Kèm 1 hình ảnh]' : ` [Kèm tệp: ${selectedFile.name}]`) : '.'}`,
+        message: `${assignerName} đã giao ${readyTasks.length} công việc mới cho ${engName}${assignNote.trim() ? `: "${assignNote.trim()}"` : ''}${selectedFile ? (selectedFile.type === 'image' ? ' [Kèm 1 hình ảnh]' : ` [Kèm tệp: ${selectedFile.name}]`) : '.'}`,
         link: '/my-tasks?tab=pending&category=project',
         type: `task_assigned:::${selectedEngineerId}:::${engName}`,
         icon: 'assignment_ind',
