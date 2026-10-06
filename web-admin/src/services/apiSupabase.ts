@@ -1801,6 +1801,49 @@ export const api = {
       };
     },
   },
+  activityLogs: {
+    getAll: async () => {
+      try {
+        const { data, error } = await supabase.from('activity_logs').select('*').order('timestamp', { ascending: false }).limit(300);
+        if (!error && data) return mapArray(data);
+        if (error) {
+          const { data: fbData, error: fbError } = await supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(300);
+          if (!fbError && fbData) return mapArray(fbData);
+        }
+      } catch (err) {
+        console.warn('activityLogs getAll fallback:', err);
+      }
+      return [];
+    },
+    create: async (data: { action: string; project: string; user: string; icon?: string; badgeBg?: string; iconColor?: string }) => {
+      const nowIso = new Date().toISOString();
+      const payload: any = {
+        action: data.action,
+        project: data.project || 'HT',
+        user: data.user || 'Hệ thống',
+        icon: data.icon || 'history',
+        timestamp: nowIso
+      };
+      try {
+        let { data: result, error } = await supabase.from('activity_logs').insert(payload).select().single();
+        if (error) {
+          delete payload.timestamp;
+          payload.created_at = nowIso;
+          const retryRes = await supabase.from('activity_logs').insert(payload).select().single();
+          if (retryRes.error) {
+            delete payload.created_at;
+            const retryRes2 = await supabase.from('activity_logs').insert(payload).select().single();
+            if (retryRes2.error) return { success: false };
+            return toCamelCase(retryRes2.data);
+          }
+          return toCamelCase(retryRes.data);
+        }
+        return toCamelCase(result);
+      } catch (err) {
+        return { success: false };
+      }
+    }
+  },
   notifications: {
     create: async (data: Omit<NotificationItem, 'id' | 'timestamp' | 'read'>) => {
       const payload: any = {
