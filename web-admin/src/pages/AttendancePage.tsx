@@ -666,7 +666,7 @@ export const AttendancePage: React.FC = () => {
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white px-2 py-1.5 md:py-0 md:h-12 flex items-center justify-between gap-1.5 shrink-0 pr-16 md:pr-20">
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <div className="border-l-4 border-primary pl-1.5 flex items-center">
+          <div className="hidden sm:flex items-center border-l-4 border-primary pl-1.5">
             <h1 className="page-title text-xs sm:text-sm md:text-base font-extrabold text-slate-900 shrink-0">
               {mainTab === 'attendance' ? 'Chấm công' : 'Nghỉ phép'}
             </h1>
@@ -968,7 +968,7 @@ export const AttendancePage: React.FC = () => {
               </button>
             </div>
 
-            {/* Mobile Search & Date Filter */}
+            {/* Mobile Search Filter */}
             <div className="px-3 pb-2 flex items-center gap-2">
               <div className="flex-1 relative items-center min-w-0">
                 <span className="material-symbols-outlined absolute left-2.5 text-slate-400 text-sm pointer-events-none">search</span>
@@ -989,12 +989,6 @@ export const AttendancePage: React.FC = () => {
                   </button>
                 )}
               </div>
-              <input 
-                type="date" 
-                value={filterDate} 
-                onChange={e => setFilterDate(e.target.value)}
-                className="px-2 py-1 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer h-8 w-32" 
-              />
             </div>
           </div>
 
@@ -1081,25 +1075,7 @@ export const AttendancePage: React.FC = () => {
               </div>
             ) : null}
 
-            {/* Mobile Date Filter in Leave Tab */}
-            <div className="relative flex items-center shrink-0">
-              <input 
-                type="date" 
-                value={leaveFilterDate} 
-                onChange={e => setLeaveFilterDate(e.target.value)}
-                className="w-28 px-1.5 py-1 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer h-8" 
-              />
-              {leaveFilterDate && (
-                <button
-                  type="button"
-                  onClick={() => setLeaveFilterDate('')}
-                  className="absolute right-1 text-slate-400 hover:text-slate-600 cursor-pointer"
-                  title="Xóa lọc ngày"
-                >
-                  <span className="material-symbols-outlined text-xs">close</span>
-                </button>
-              )}
-            </div>
+
 
             {/* Mobile Search Bar in Leave Tab */}
             <div className="flex-1 relative flex items-center min-w-0">
