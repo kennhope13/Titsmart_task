@@ -85,12 +85,56 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     });
   };
 
-  // Mouse Drag to Pan khi Bàn tay kéo bật hoặc Zoom > 1
+  const touchStartDistRef = useRef<number | null>(null);
+  const touchStartZoomRef = useRef<number>(1);
+
+  // Mouse / Touch Drag & Pinch Zoom for Mobile
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 0 && (zoom > 1 || dragMode || isImage)) {
       setIsDragging(true);
       dragStartRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
     }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isImage) return;
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      setIsDragging(true);
+      dragStartRef.current = { x: touch.clientX - position.x, y: touch.clientY - position.y };
+    } else if (e.touches.length === 2) {
+      // Pinch to zoom start
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      touchStartDistRef.current = dist;
+      touchStartZoomRef.current = zoom;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isImage) return;
+    if (e.touches.length === 1 && isDragging) {
+      const touch = e.touches[0];
+      setPosition({
+        x: touch.clientX - dragStartRef.current.x,
+        y: touch.clientY - dragStartRef.current.y,
+      });
+    } else if (e.touches.length === 2 && touchStartDistRef.current !== null) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const scale = dist / touchStartDistRef.current;
+      const nextZoom = Math.min(Math.max(touchStartZoomRef.current * scale, 0.5), 4);
+      setZoom(nextZoom);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    touchStartDistRef.current = null;
   };
 
   useEffect(() => {
@@ -243,7 +287,11 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
       <div className="w-full flex-1 flex min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-hidden border border-slate-200">
         <div
           ref={containerRef}
-          className="flex-1 min-h-0 relative h-full flex items-center justify-center p-1 select-none overflow-hidden"
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="flex-1 min-h-0 relative h-full flex items-center justify-center p-1 select-none overflow-hidden touch-none"
         >
 
           <div className="w-full h-full flex items-center justify-center">
