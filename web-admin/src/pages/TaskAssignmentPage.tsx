@@ -753,19 +753,20 @@ export const TaskAssignmentPage: React.FC = () => {
   }, [isHighlightActive, highlightedTaskId, highlightKeyword, projectDisplayedTasks, directDisplayedTasks]);
 
   const handleToggleSelectAll = () => {
-    // Ưu tiên các task đủ điều kiện, nếu không có task nào đủ điều kiện thì lấy tất cả các task hiển thị
-    const eligibleTasks = projectDisplayedTasks.filter(t => isTaskReadyForAssignment(t, materialPlans).ready);
-    const targetTasks = eligibleTasks.length > 0 ? eligibleTasks : projectDisplayedTasks;
-
-    if (selectedTaskIds.length === targetTasks.length && targetTasks.length > 0) {
+    if (selectedTaskIds.length === projectDisplayedTasks.length && projectDisplayedTasks.length > 0) {
       setSelectedTaskIds([]);
     } else {
-      setSelectedTaskIds(targetTasks.map(t => t.id));
-      if (eligibleTasks.length === 0 && projectDisplayedTasks.length > 0) {
-        triggerToast(`Đã chọn toàn bộ ${projectDisplayedTasks.length} công việc theo lệnh người giao việc.`, 'info');
-      } else if (eligibleTasks.length < projectDisplayedTasks.length) {
-        triggerToast(`Đã chọn ${eligibleTasks.length}/${projectDisplayedTasks.length} công việc đáp ứng đủ điều kiện vật tư.`, 'info');
-      }
+      setSelectedTaskIds(projectDisplayedTasks.map(t => t.id));
+    }
+  };
+
+  const handleToggleProjectGroup = (groupTasks: typeof projectDisplayedTasks) => {
+    const groupIds = groupTasks.map(t => t.id);
+    const isAllGroupSelected = groupIds.every(id => selectedTaskIds.includes(id));
+    if (isAllGroupSelected) {
+      setSelectedTaskIds(prev => prev.filter(id => !groupIds.includes(id)));
+    } else {
+      setSelectedTaskIds(prev => Array.from(new Set([...prev, ...groupIds])));
     }
   };
 
@@ -1322,7 +1323,18 @@ export const TaskAssignmentPage: React.FC = () => {
                       <React.Fragment key={group.project.code}>
                         {/* Dòng Tiêu đề Phân nhóm theo Dự án */}
                         <tr className="bg-slate-100/95 hover:bg-slate-200/80 transition-colors border-y border-slate-300 sticky top-[33px] z-[5] select-none">
-                          <td colSpan={projectFilterStatus === 'unassigned' ? 8 : 7} className="py-2 px-3">
+                          {projectFilterStatus === 'unassigned' && (
+                            <td className="py-2 px-3 w-10 text-center border-r border-slate-200">
+                              <input
+                                type="checkbox"
+                                className="w-4 h-4 cursor-pointer accent-primary"
+                                checked={group.tasks.length > 0 && group.tasks.every(t => selectedTaskIds.includes(t.id))}
+                                onChange={() => handleToggleProjectGroup(group.tasks)}
+                                title="Chọn tất cả công việc của dự án này"
+                              />
+                            </td>
+                          )}
+                          <td colSpan={7} className="py-2 px-3">
                             <div className="flex items-center justify-between gap-2">
                               <button
                                 type="button"
