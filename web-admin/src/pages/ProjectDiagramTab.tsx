@@ -192,13 +192,13 @@ export const ProjectDiagramTab: React.FC = () => {
                     </div>
 
                     <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm cursor-pointer group-hover:bg-slate-100 transition-colors" onClick={() => setViewerItem({url, name})} title="Nhấn để xem ảnh lớn">
-                      {isPdf ? (
+                      {(!isPdf || url.startsWith('data:image/') || url.startsWith('blob:')) ? (
+                        <img src={url} alt={name} className="w-full h-full object-contain rounded" />
+                      ) : (
                         <div className="relative w-full h-full overflow-hidden rounded">
                           <iframe src={`${url}#toolbar=0&navpanes=0&scrollbar=0`} className="w-[calc(100%+24px)] h-[calc(100%+24px)] -m-[12px] bg-white pointer-events-none" title={name} tabIndex={-1} />
                           <div className="absolute inset-0 z-10 bg-transparent" />
                         </div>
-                      ) : (
-                        <img src={url} alt={name} className="w-full h-full object-contain rounded" />
                       )}
                     </div>
                   </div>
