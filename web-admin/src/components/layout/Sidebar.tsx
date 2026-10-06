@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
   const navigate = useNavigate();
   const unreadCount = notifications.filter((item) => !item.read).length;
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
-  const defaultTaskPath = isAdmin ? '/task-assignment?tab=assigned' : '/my-tasks';
+  const defaultTaskPath = isAdmin ? '/task-assignment?tab=unassigned' : '/my-tasks';
   const sidebarRef = useRef<HTMLElement>(null);
 
   const handleLogout = async () => {

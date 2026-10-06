@@ -268,10 +268,8 @@ export const TaskAssignmentPage: React.FC = () => {
 
   // Project Task Filter State
   const [projectFilterStatus, setProjectFilterStatus] = useState<'all' | 'unassigned' | 'pending' | 'in_progress' | 'review' | 'completed' | 'overdue'>(() => {
-    if (urlTab === 'unassigned') return 'unassigned';
     if (urlTab === 'completed') return 'completed';
-    if (urlTab === 'assigned') return 'in_progress';
-    return 'all';
+    return 'unassigned';
   });
   const [projectSearch, setProjectSearch] = useState('');
 
@@ -489,15 +487,12 @@ export const TaskAssignmentPage: React.FC = () => {
     const qTab = searchParams.get('tab') as 'project_tasks' | 'unassigned' | 'assigned' | 'completed' | 'direct' | 'my-tasks' | null;
     if (qTab === 'direct') {
       setActiveTab('direct');
-    } else if (qTab === 'unassigned') {
+    } else if (qTab === 'unassigned' || qTab === 'assigned') {
       setActiveTab('project_tasks');
       setProjectFilterStatus('unassigned');
     } else if (qTab === 'completed') {
       setActiveTab('project_tasks');
       setProjectFilterStatus('completed');
-    } else if (qTab === 'assigned') {
-      setActiveTab('project_tasks');
-      setProjectFilterStatus('in_progress');
     } else if (qTab === 'project_tasks') {
       setActiveTab('project_tasks');
     } else if ((location.state as any)?.tab) {
@@ -506,6 +501,7 @@ export const TaskAssignmentPage: React.FC = () => {
         setActiveTab('direct');
       } else {
         setActiveTab('project_tasks');
+        setProjectFilterStatus('unassigned');
       }
     }
     if (highlightedTaskId || highlightKeyword) {
