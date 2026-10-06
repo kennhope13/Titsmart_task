@@ -208,7 +208,7 @@ export const ActivityLogPage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 min-h-full bg-slate-50 relative overflow-hidden">
       {/* HEADER SECTION */}
-      <section className="sticky top-0 z-30 border-b border-slate-200 bg-white px-3 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-4 shrink-0 shadow-xs">
+      <section className="sticky top-0 z-30 border-b border-slate-200 bg-white px-3 pr-16 md:pr-20 py-2 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-4 shrink-0 shadow-xs">
         <div className="flex items-center justify-between w-full md:w-auto h-8 md:h-auto pr-12 md:pr-0">
           <h1 className="page-title text-base md:text-lg font-extrabold text-slate-900 border-l-4 border-primary pl-2 shrink-0">Nhật ký hoạt động</h1>
           <span className="flex items-center justify-center px-2 py-0.5 rounded-lg bg-blue-50 text-primary text-[11px] font-bold border border-blue-100 whitespace-nowrap md:hidden">
