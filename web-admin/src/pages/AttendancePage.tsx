@@ -823,13 +823,13 @@ export const AttendancePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Nút Chấm công */}
               <button
                 onClick={() => setShowCheckInModal(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0 h-8 cursor-pointer active:scale-95"
+                className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0 h-8 cursor-pointer active:scale-95"
+                title="Chấm công"
               >
-                <span className="material-symbols-outlined text-[16px]">fingerprint</span>
-                <span>Chấm công</span>
+                <span className="material-symbols-outlined text-[18px]">fingerprint</span>
+                <span className="hidden sm:inline">Chấm công</span>
               </button>
             </div>
           ) : (
@@ -960,10 +960,11 @@ export const AttendancePage: React.FC = () => {
 
               <button
                 onClick={() => setShowCheckInModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs rounded-lg shadow-sm transition-colors shrink-0 h-8 cursor-pointer active:scale-95"
+                className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs rounded-lg shadow-sm transition-colors shrink-0 h-8 cursor-pointer active:scale-95"
+                title="Chấm công"
               >
-                <span className="material-symbols-outlined text-[16px]">fingerprint</span>
-                <span>Chấm công</span>
+                <span className="material-symbols-outlined text-[18px]">fingerprint</span>
+                <span className="hidden sm:inline">Chấm công</span>
               </button>
             </div>
 
