@@ -1580,8 +1580,20 @@ export const api = {
       if (data.updatedBy !== undefined) fullPayload.updated_by = data.updatedBy;
       fullPayload.updated_at = new Date().toISOString();
 
-      const tryUpdate = async (payload: any) => {
-        const { data: res, error } = await supabase.from('document_tracks').update(payload).eq('id', id).select().single();
+      const tryUpdate = async (initialPayload: any) => {
+        let currentPayload = { ...initialPayload };
+        for (let attempt = 0; attempt < 10; attempt++) {
+          const { data: res, error } = await supabase.from('document_tracks').update(currentPayload).eq('id', id).select().single();
+          if (!error) return { data: res, error: null };
+          
+          const missingMatch = (error.message || '').match(/Could not find the '([^']+)' column/i);
+          if (missingMatch && missingMatch[1] && currentPayload[missingMatch[1]] !== undefined) {
+            delete currentPayload[missingMatch[1]];
+            continue;
+          }
+          return { data: res, error };
+        }
+        const { data: res, error } = await supabase.from('document_tracks').update(currentPayload).eq('id', id).select().single();
         return { data: res, error };
       };
 
