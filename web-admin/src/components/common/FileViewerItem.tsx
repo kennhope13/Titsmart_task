@@ -216,11 +216,6 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
       transform: `translate(${position.x}px, ${position.y}px) scale(${zoom * scaleMultiplier}) rotate(${rotation}deg)`,
       transformOrigin: 'center center',
       transition: isDragging ? 'none' : 'transform 100ms ease-out',
-      width: '100%',
-      height: '100%',
-      maxHeight: '100%',
-      maxWidth: '100%',
-      objectFit: 'contain',
     };
   };
 
@@ -307,7 +302,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
               <img
                 src={url}
                 alt={`File ${index + 1}`}
-                className="max-w-full max-h-full object-contain shadow-sm rounded border border-slate-200 bg-white"
+                className="max-w-full max-h-full w-auto h-auto object-contain shadow-sm rounded border border-slate-200 bg-white block shrink-0"
                 style={getContentTransformStyle()}
                 onError={(e) => {
                   const target = e.currentTarget;
