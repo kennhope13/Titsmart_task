@@ -929,20 +929,7 @@ export const api = {
     create: async (data: any) => {
       const nowIso = new Date().toISOString();
       if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
-        try {
-          const payload = {
-            action: data.action,
-            project_code: data.project || 'COMPANY',
-            user_name: data.user || 'Hệ thống',
-            icon: data.icon || 'history',
-            badge_bg: data.badgeBg || 'bg-slate-50',
-            created_at: nowIso
-          };
-          const { data: res, error } = await supabase.from('activity_logs').insert(payload).select().single();
-          if (!error && res) return { id: res.id, ...data };
-        } catch {
-          // ignore
-        }
+        // Skip calling Supabase DB in local dev mode if local PostgreSQL activity_logs schema differs
         return { id: `act-${Date.now()}`, ...data, timestamp: nowIso };
       }
 
