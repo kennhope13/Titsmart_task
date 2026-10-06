@@ -14,7 +14,13 @@ export const ProjectDiagramTab: React.FC = () => {
   const { user } = useAuthStore();
   const { projects, updateProject } = useRealtimeStore();
 
-  const project = projects.find(p => p.id === projectId || p.code === projectId);
+  const project = projects.find(p => {
+    if (!projectId) return false;
+    const decodedId = decodeURIComponent(projectId).trim().toLowerCase();
+    return p.id?.toLowerCase() === decodedId || 
+           p.code?.toLowerCase() === decodedId ||
+           p.name?.toLowerCase() === decodedId;
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 

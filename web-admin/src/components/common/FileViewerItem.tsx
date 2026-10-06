@@ -300,7 +300,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         >
 
           <div className="w-full h-full flex items-center justify-center">
-            {isImage ? (
+            {(!isExcel && !isOfficeDoc) ? (
               <img
                 src={url}
                 alt={`File ${index + 1}`}
@@ -309,7 +309,14 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
                 onError={(e) => {
                   const target = e.currentTarget;
                   target.onerror = null;
-                  target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="%23cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = url;
+                    iframe.className = 'w-full h-full rounded border border-slate-200 bg-white shadow-xs';
+                    parent.appendChild(iframe);
+                  }
                 }}
               />
             ) : isExcel ? (

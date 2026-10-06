@@ -59,7 +59,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4 pt-[calc(env(safe-area-inset-top,0px)+56px)] pb-20 md:pb-4 animate-fadeIn">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-1.5 sm:p-4 pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2 md:pb-4 animate-fadeIn">
         <div className={`bg-white rounded-2xl shadow-2xl border border-outline-variant w-full ${sizeClass} overflow-hidden flex flex-col transition-all duration-200`}>
           {/* Modal Header */}
           <div className="px-4 py-2 bg-surface-container-low border-b border-outline-variant flex justify-between items-center select-none shrink-0">
