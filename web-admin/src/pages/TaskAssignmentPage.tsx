@@ -29,7 +29,7 @@ export const TaskAssignmentPage: React.FC = () => {
 
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEngineerId, setSelectedEngineerId] = useState('');
+  const [selectedEngineerIds, setSelectedEngineerIds] = useState<string[]>([]);
   const [assignNote, setAssignNote] = useState('');
   const [selectedFile, setSelectedFile] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -773,8 +773,8 @@ export const TaskAssignmentPage: React.FC = () => {
   };
 
   const handleAssign = () => {
-    if (!selectedEngineerId) {
-      triggerToast('Vui lòng chọn kỹ sư / nhân sự!', 'warning');
+    if (selectedEngineerIds.length === 0) {
+      triggerToast('Vui lòng chọn ít nhất 1 người phụ trách!', 'warning');
       return;
     }
     if (selectedTaskIds.length === 0) {
@@ -795,8 +795,12 @@ export const TaskAssignmentPage: React.FC = () => {
       triggerToast(`Đã bỏ qua ${unreadyCount} công việc chưa đủ điều kiện (Chưa "Đáp ứng" & "Đã có hàng").`, 'warning');
     }
 
-    const eng = engineers.find(e => e.id === selectedEngineerId);
-    const engName = eng ? eng.name : '';
+    const selectedEngs = engineers.filter(e => selectedEngineerIds.includes(e.id));
+    const engNamesStr = selectedEngs.map(e => e.name).join(', ');
+    const engIdsStr = selectedEngs.map(e => e.id).join(',');
+    const firstEngId = selectedEngs[0]?.id || '';
+    const formattedAssigneeName = `${engNamesStr}|${engIdsStr}`;
+
     const assignerId = user?.id || '';
     const assignerName = user?.name || user?.username || 'Quản lý';
 
@@ -820,8 +824,8 @@ export const TaskAssignmentPage: React.FC = () => {
         });
       }
       updateTask(id, {
-        assignedEngineerId: selectedEngineerId,
-        assignedEngineerName: engName,
+        assignedEngineerId: firstEngId,
+        assignedEngineerName: formattedAssigneeName,
         followerIds: batchFollowerIds.length > 0 ? batchFollowerIds : undefined,
         followerNames: followerNames.length > 0 ? followerNames : undefined,
         assignerId: assignerId,
@@ -832,14 +836,14 @@ export const TaskAssignmentPage: React.FC = () => {
     });
 
     const store = useRealtimeStore.getState();
-    store.logActivity(`Quản lý ${assignerName} đã GIAO ${readyTasks.length} CÔNG VIỆC cho ${engName}`, 'Hệ thống');
+    store.logActivity(`Quản lý ${assignerName} đã GIAO ${readyTasks.length} CÔNG VIỆC cho ${engNamesStr}`, 'Hệ thống');
 
     if (store.addNotification) {
       store.addNotification({
-        title: `Giao việc: ${engName}`,
-        message: `${assignerName} đã giao ${readyTasks.length} công việc mới cho ${engName}${assignNote.trim() ? `: "${assignNote.trim()}"` : ''}${selectedFile ? (selectedFile.type === 'image' ? ' [Kèm 1 hình ảnh]' : ` [Kèm tệp: ${selectedFile.name}]`) : '.'}`,
+        title: `Giao việc: ${engNamesStr}`,
+        message: `${assignerName} đã giao ${readyTasks.length} công việc mới cho ${engNamesStr}${assignNote.trim() ? `: "${assignNote.trim()}"` : ''}${selectedFile ? (selectedFile.type === 'image' ? ' [Kèm 1 hình ảnh]' : ` [Kèm tệp: ${selectedFile.name}]`) : '.'}`,
         link: '/my-tasks?tab=pending&category=project',
-        type: `task_assigned:::${selectedEngineerId}:::${engName}`,
+        type: `task_assigned:::${engIdsStr}:::${engNamesStr}`,
         icon: 'assignment_ind',
         senderId: assignerId,
         senderName: assignerName
@@ -848,7 +852,7 @@ export const TaskAssignmentPage: React.FC = () => {
       if (batchFollowerIds.length > 0) {
         store.addNotification({
           title: `Theo dõi ${selectedTaskIds.length} công việc mới`,
-          message: `${assignerName} đã thêm bạn vào danh sách THEO DÕI ${selectedTaskIds.length} công việc giao cho ${engName}.`,
+          message: `${assignerName} đã thêm bạn vào danh sách THEO DÕI ${selectedTaskIds.length} công việc giao cho ${engNamesStr}.`,
           link: '/my-tasks?category=project',
           type: `task_follower:::${batchFollowerIds.join(',')}:::${followerNames.join(',')}`,
           icon: 'visibility',
@@ -858,10 +862,10 @@ export const TaskAssignmentPage: React.FC = () => {
       }
     }
 
-    triggerToast(`Đã giao ${selectedTaskIds.length} hạng mục cho ${engName}!`, 'success');
+    triggerToast(`Đã giao ${selectedTaskIds.length} hạng mục cho ${engNamesStr}!`, 'success');
     setSelectedTaskIds([]);
     setIsModalOpen(false);
-    setSelectedEngineerId('');
+    setSelectedEngineerIds([]);
     setBatchFollowerIds([]);
     setAssignNote('');
     setSelectedFile(null);
@@ -1808,23 +1812,34 @@ export const TaskAssignmentPage: React.FC = () => {
               
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-bold text-slate-700">Chọn người phụ trách <span className="text-red-500">*</span></label>
-                <CustomSelect 
-                  value={selectedEngineerId} 
-                  onChange={(e) => setSelectedEngineerId(e.target.value)}
-                  searchable={true}
-                  placeholder="-- Chọn nhân viên / kỹ sư --"
-                  className="w-full h-[38px] text-sm bg-white font-medium"
-                >
-                  <option value="">-- Chọn nhân viên / kỹ sư --</option>
-                  {assignableEngineers.map(e => (
-                    <option key={e.id} value={e.id}>{e.name} {e.title ? `(${e.title})` : ''}</option>
-                  ))}
-                </CustomSelect>
-                {assignableEngineers.length === 0 && (
-                  <p className="text-xs text-amber-600 font-medium">
-                    * Dự án này chưa có nhân sự thành viên nào. Vui lòng thêm thành viên trong Quản lý dự án trước khi giao việc.
-                  </p>
-                )}
+                <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1 bg-slate-50">
+                  {assignableEngineers.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-amber-600 font-medium">
+                      Dự án này chưa có nhân sự thành viên nào. Vui lòng thêm thành viên trong Quản lý dự án trước khi giao việc.
+                    </div>
+                  ) : (
+                    assignableEngineers.map(e => {
+                      const isChecked = selectedEngineerIds.includes(e.id);
+                      return (
+                        <label key={e.id} className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors">
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked}
+                            onChange={(ev) => {
+                              if (ev.target.checked) setSelectedEngineerIds(prev => [...prev, e.id]);
+                              else setSelectedEngineerIds(prev => prev.filter(id => id !== e.id));
+                            }}
+                            className="rounded border-slate-300 text-primary focus:ring-primary"
+                          />
+                          <div>
+                            <div className="text-sm font-bold text-slate-700">{e.name}</div>
+                            <div className="text-xs text-slate-500">{e.title || 'Nhân viên'}</div>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
               {/* Người theo dõi (Tùy chọn) */}
@@ -1847,7 +1862,7 @@ export const TaskAssignmentPage: React.FC = () => {
                 >
                   <option value="">+ Thêm người theo dõi...</option>
                   {engineers
-                    .filter(e => e.id !== selectedEngineerId && !batchFollowerIds.includes(e.id))
+                    .filter(e => !selectedEngineerIds.includes(e.id) && !batchFollowerIds.includes(e.id))
                     .map(e => (
                       <option key={e.id} value={e.id}>{e.name} {e.title ? `(${e.title})` : ''}</option>
                     ))}
