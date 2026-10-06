@@ -753,20 +753,20 @@ export const TaskAssignmentPage: React.FC = () => {
   }, [isHighlightActive, highlightedTaskId, highlightKeyword, projectDisplayedTasks, directDisplayedTasks]);
 
   const handleToggleSelectAll = () => {
-    if (selectedTaskIds.length === projectDisplayedTasks.length && projectDisplayedTasks.length > 0) {
+    if (selectedTaskIds.length > 0) {
       setSelectedTaskIds([]);
-    } else {
-      setSelectedTaskIds(projectDisplayedTasks.map(t => t.id));
+    } else if (groupedProjectTasks.length > 0) {
+      setSelectedTaskIds(groupedProjectTasks[0].tasks.map(t => t.id));
     }
   };
 
   const handleToggleProjectGroup = (groupTasks: typeof projectDisplayedTasks) => {
     const groupIds = groupTasks.map(t => t.id);
-    const isAllGroupSelected = groupIds.every(id => selectedTaskIds.includes(id));
+    const isAllGroupSelected = groupIds.length > 0 && groupIds.every(id => selectedTaskIds.includes(id));
     if (isAllGroupSelected) {
       setSelectedTaskIds(prev => prev.filter(id => !groupIds.includes(id)));
     } else {
-      setSelectedTaskIds(prev => Array.from(new Set([...prev, ...groupIds])));
+      setSelectedTaskIds(groupIds);
     }
   };
 
