@@ -1004,7 +1004,7 @@ export const AttendancePage: React.FC = () => {
               onRefresh={async () => {
                 await Promise.all([fetchLogs(true), fetchLeaves(true)]);
               }}
-              className="flex-1 pb-16 md:pb-0"
+              className="flex-1"
             >
               {loading ? (
                 <div className="p-8 text-center text-slate-400 text-sm">Đang tải lịch sử chấm công...</div>
@@ -1185,7 +1185,7 @@ export const AttendancePage: React.FC = () => {
             onRefresh={async () => {
               await Promise.all([fetchLeaves(true), fetchLogs(true)]);
             }}
-            className="flex-1 bg-slate-50 md:bg-white pb-16 md:pb-0"
+            className="flex-1 bg-slate-50 md:bg-white"
           >
             {leavesLoading ? (
               <div className="p-12 flex flex-col items-center justify-center gap-3 text-slate-400">

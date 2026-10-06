@@ -716,10 +716,10 @@ export const PersonnelPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col pb-4">
+      <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col">
       <section className="flex-1 grid grid-cols-1 gap-0 overflow-hidden">
         <div className="bg-white border-b border-r border-slate-200 shadow-xs overflow-hidden flex flex-col">
-          <PullToRefresh onRefresh={async () => { await Promise.all([fetchEngineers(), fetchProjects()]); }} className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative pb-16 md:pb-0">
+          <PullToRefresh onRefresh={async () => { await Promise.all([fetchEngineers(), fetchProjects()]); }} className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar relative">
             <table className="w-full text-[11px] sm:text-xs text-left border-collapse">
               <thead className="sticky top-0 z-20 bg-slate-50 text-slate-700 font-semibold text-[10px] sm:text-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-200">
                 <tr>

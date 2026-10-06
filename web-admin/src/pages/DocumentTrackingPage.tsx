@@ -895,7 +895,7 @@ export const DocumentTrackingPage: React.FC = () => {
           onRefresh={async () => {
             await fetchAccounting();
           }}
-          className="custom-scrollbar flex-1 pb-16 md:pb-0"
+          className="custom-scrollbar flex-1"
         >
           <table className="doc-fit-table w-full text-left border-collapse">
                <thead className="bg-slate-50/90 border-b border-slate-200 text-[9.5px] sm:text-[10.5px] font-extrabold text-slate-500 uppercase tracking-tight sticky top-0 z-10 leading-tight">
