@@ -928,29 +928,37 @@ export const api = {
     },
     create: async (data: any) => {
       const nowIso = new Date().toISOString();
-      const attempts: Record<string, any>[] = [
-        // Attempt 1: Full payload with project_code & user_name
-        { action: data.action, project_code: data.project || 'COMPANY', user_name: data.user || 'Hệ thống', icon: data.icon || 'history', badge_bg: data.badgeBg || 'bg-slate-50', created_at: nowIso },
-        // Attempt 2: Full payload with project & user (alternative schema)
-        { action: data.action, project: data.project || 'COMPANY', user: data.user || 'Hệ thống', icon: data.icon || 'history', timestamp: nowIso },
-        // Attempt 3: Minimal payload with created_at
-        { action: data.action, icon: data.icon || 'history', created_at: nowIso },
-        // Attempt 4: Bare minimal payload (only action)
-        { action: data.action }
-      ];
-
-      for (const payload of attempts) {
-        try {
-          const { data: res, error } = await supabase.from('activity_logs').insert(payload).select().single();
-          if (!error && res) {
-            return { id: res.id, ...data };
-          }
-        } catch {
-          // continue to next fallback attempt
+      
+      // Smart check: Try primary schema payload first
+      try {
+        const payload = {
+          action: data.action,
+          project_code: data.project || 'COMPANY',
+          user_name: data.user || 'Hệ thống',
+          icon: data.icon || 'history',
+          badge_bg: data.badgeBg || 'bg-slate-50',
+          created_at: nowIso
+        };
+        const { data: res, error } = await supabase.from('activity_logs').insert(payload).select().single();
+        if (!error && res) return { id: res.id, ...data };
+        
+        // Secondary schema fallback if project_code/user_name column missing in local DB
+        if (error && (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('project_code'))) {
+          const fallbackPayload = {
+            action: data.action,
+            project: data.project || 'COMPANY',
+            user: data.user || 'Hệ thống',
+            icon: data.icon || 'history',
+            timestamp: nowIso
+          };
+          const { data: fbRes, error: fbError } = await supabase.from('activity_logs').insert(fallbackPayload).select().single();
+          if (!fbError && fbRes) return { id: fbRes.id, ...data };
         }
+      } catch {
+        // Silent fallback
       }
 
-      // If database insertion is fully unavailable in local dev schema, return local mock item without throwing
+      // Safe local mock return without raising errors
       return { id: `act-${Date.now()}`, ...data, timestamp: nowIso };
     },
     update: async (id: string, data: any) => ({ id, ...data }),
