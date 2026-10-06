@@ -898,24 +898,24 @@ export const DocumentTrackingPage: React.FC = () => {
           className="custom-scrollbar flex-1 pb-16 md:pb-0"
         >
           <table className="doc-fit-table w-full text-left border-collapse">
-               <thead className="bg-slate-50/90 border-b border-slate-200 text-[10px] font-extrabold text-slate-500 uppercase tracking-tight sticky top-0 z-10 leading-tight">
+               <thead className="bg-slate-50/90 border-b border-slate-200 text-[9.5px] sm:text-[10.5px] font-extrabold text-slate-500 uppercase tracking-tight sticky top-0 z-10 leading-tight">
                  <tr>
-                   <th className="px-2 py-1.5 text-center whitespace-nowrap min-w-[62px]">Bên</th>
-                   {!projectId && <th className="px-2 py-1.5 whitespace-nowrap min-w-[90px]">Dự án</th>}
-                   <th className="px-2 py-1.5 min-w-[85px] whitespace-nowrap">Số HĐ</th>
-                   <th className="px-2 py-1.5 min-w-[140px]">Tên hợp đồng</th>
-                   <th className="px-2 py-1.5 min-w-[110px]">Công ty / Đối tác</th>
-                   <th className="px-2 py-1.5 min-w-[80px]">Người nhận</th>
-                   <th className="px-2 py-1.5 text-center whitespace-nowrap min-w-[70px]">Ngày gửi</th>
-                   <th className="px-2 py-1.5 text-center whitespace-nowrap min-w-[70px]">Ngày nhận</th>
-                   <th className="px-2 py-1.5 text-center min-w-[90px] whitespace-nowrap">Hạn nộp / Nhắc</th>
-                   <th className="px-2 py-1.5 text-right min-w-[85px] whitespace-nowrap">Giá trị HĐ (đ)</th>
-                   <th className="px-2 py-1.5 text-center min-w-[65px] whitespace-nowrap">Tạm ứng</th>
-                   <th className="px-2 py-1.5 text-center min-w-[75px] whitespace-nowrap">Thanh toán</th>
-                   <th className="px-1.5 py-1.5 text-center whitespace-nowrap w-9">File</th>
-                   <th className="px-2 py-1.5 text-center whitespace-nowrap min-w-[65px]">Hồ sơ</th>
-                   <th className="px-2 py-1.5 min-w-[110px] text-center whitespace-nowrap">NGƯỜI CẬP NHẬT</th>
-                   <th className="px-1.5 py-1.5 text-center whitespace-nowrap w-9">TT</th>
+                   <th className="px-1.5 py-1.5 text-center min-w-[48px] leading-tight break-words">Bên</th>
+                   {!projectId && <th className="px-1.5 py-1.5 min-w-[70px] leading-tight break-words">Dự án</th>}
+                   <th className="px-1.5 py-1.5 min-w-[65px] leading-tight break-words">Số HĐ</th>
+                   <th className="px-1.5 py-1.5 min-w-[110px] leading-tight break-words">Tên hợp đồng</th>
+                   <th className="px-1.5 py-1.5 min-w-[95px] leading-tight break-words">Công ty / Đối tác</th>
+                   <th className="px-1.5 py-1.5 min-w-[70px] leading-tight break-words">Người nhận</th>
+                   <th className="px-1.5 py-1.5 text-center min-w-[60px] leading-tight break-words">Ngày gửi</th>
+                   <th className="px-1.5 py-1.5 text-center min-w-[60px] leading-tight break-words">Ngày nhận</th>
+                   <th className="px-1.5 py-1.5 text-center min-w-[75px] leading-tight break-words">Hạn nộp / Nhắc</th>
+                   <th className="px-1.5 py-1.5 text-right min-w-[75px] leading-tight break-words">Giá trị HĐ (đ)</th>
+                   <th className="px-1.5 py-1.5 text-center min-w-[55px] leading-tight break-words">Tạm ứng</th>
+                   <th className="px-1.5 py-1.5 text-center min-w-[65px] leading-tight break-words">Thanh toán</th>
+                   <th className="px-1 py-1.5 text-center w-8 leading-tight">File</th>
+                   <th className="px-1.5 py-1.5 text-center min-w-[55px] leading-tight break-words">Hồ sơ</th>
+                   <th className="px-1.5 py-1.5 min-w-[90px] text-center leading-tight break-words">NGƯỜI CẬP NHẬT</th>
+                   <th className="px-1 py-1.5 text-center w-8 leading-tight">TT</th>
                  </tr>
                </thead>
                 <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 leading-tight">
