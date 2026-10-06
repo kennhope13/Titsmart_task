@@ -766,7 +766,7 @@ export const TaskAssignmentPage: React.FC = () => {
     if (isAllGroupSelected) {
       setSelectedTaskIds(prev => prev.filter(id => !groupIds.includes(id)));
     } else {
-      setSelectedTaskIds(groupIds);
+      setSelectedTaskIds(prev => Array.from(new Set([...prev, ...groupIds])));
     }
   };
 
