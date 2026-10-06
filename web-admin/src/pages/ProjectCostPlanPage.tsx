@@ -937,16 +937,8 @@ export const ProjectCostPlanPage: React.FC = () => {
           } else {
             // Tự động tạo Tasks ngay — không cần hỏi
             if (pendingTasks.length > 0) {
-              // Debug logging
-              const debugPayload = {
-                user: "DEBUG_BROWSER",
-                action: JSON.stringify(pendingTasks.map(t => ({ stt: t.stt, name: t.name, isSectionHeader: t.isSectionHeader }))),
-                project: selectedProject
-              };
-              supabase.from('activity_logs').insert([debugPayload]).then(({ error }) => {
-                if (error) console.error('Debug log error:', error);
-                else console.log('Debug log inserted successfully!');
-              });
+              // Debug logging via store logActivity
+              logActivity(`Nhập PL01: ${appendixMaterialCount} vật tư, ${appendixPurchasingCount} mua hàng, ${pendingTasks.length} công việc`, selectedProject);
 
               addTasksBatch(pendingTasks);
               triggerToast(
