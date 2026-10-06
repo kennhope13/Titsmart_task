@@ -2819,9 +2819,8 @@ const hasSyncedRef = useRef(false);
             )
           );
           const eligibleTasks = sectionChildTasks.filter(t => isTaskReadyForAssignment(t, materialPlans).ready);
-          // If no tasks pass strict check, allow assigning all non-section tasks in section so management flow is never blocked
-          const tasksToAssign = eligibleTasks.length > 0 ? eligibleTasks : sectionChildTasks;
-          const ineligibleCount = sectionChildTasks.length - tasksToAssign.length;
+          const tasksToAssign = eligibleTasks;
+          const ineligibleCount = sectionChildTasks.length - eligibleTasks.length;
           const targetEngs = getEngineersForProject(bulkAssignSection.projectCode, engineers, projects);
 
           return (
@@ -2831,13 +2830,20 @@ const hasSyncedRef = useRef(false);
                   <span className="material-symbols-outlined text-primary text-base">assignment_ind</span>
                   <span>Đầu mục: {bulkAssignSection.sectionName}</span>
                 </div>
-                <div className="flex items-center gap-3 mt-1 text-slate-700">
-                  <span>Tổng số công việc: <strong className="text-slate-900">{sectionChildTasks.length}</strong></span>
-                  <span>Sẽ giao việc cho: <strong className="text-emerald-700">{tasksToAssign.length}</strong> công việc</span>
+                <div className="flex flex-col gap-1 mt-1 text-slate-700">
+                  <div className="flex items-center gap-3">
+                    <span>Tổng số công việc: <strong className="text-slate-900">{sectionChildTasks.length}</strong></span>
+                    <span>Đủ điều kiện giao: <strong className="text-emerald-700">{eligibleTasks.length}</strong> công việc</span>
+                    {ineligibleCount > 0 && (
+                      <span className="text-amber-800 font-bold bg-amber-100 px-1.5 py-0.5 rounded text-[11px]">
+                        Bỏ qua: {ineligibleCount} công việc chưa đủ điều kiện (Chưa "Đáp ứng" & "Đã có hàng")
+                      </span>
+                    )}
+                  </div>
                   {eligibleTasks.length === 0 && sectionChildTasks.length > 0 && (
-                    <span className="text-amber-800 font-semibold bg-amber-100 px-1.5 py-0.5 rounded text-[11px]">
-                      (Tất cả {sectionChildTasks.length} mục chưa có trạng thái "Đáp ứng" / "Đã có hàng", hệ thống vẫn hỗ trợ giao việc hàng loạt theo lệnh Quản lý)
-                    </span>
+                    <div className="text-red-700 font-bold bg-red-100 border border-red-200 p-2 rounded text-xs mt-1">
+                      ⚠️ Tất cả {sectionChildTasks.length} công việc thuộc đầu mục này đều chưa đủ điều kiện giao việc (Yêu cầu Tình trạng: "Đáp ứng" và TT Đặt hàng: "Đã có hàng"). Không thể giao việc!
+                    </div>
                   )}
                 </div>
               </div>
