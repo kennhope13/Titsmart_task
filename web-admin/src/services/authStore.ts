@@ -241,28 +241,35 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     let error: any = null;
 
     try {
-      const signInRes = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      data = signInRes.data;
-      error = signInRes.error;
-
-      // Auto-register if user doesn't exist, then sign in again
-      if (error && error.message.includes('Invalid login credentials')) {
-        const signUpRes = await supabase.auth.signUp({
+      // Direct demo login fallback when in DEV local mode or matching demo accounts
+      const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      if (demoAccount && (import.meta.env.DEV || isLocalHost)) {
+        data = { user: { id: 'user-' + demoAccount.username, email: demoAccount.email } };
+        error = null;
+      } else {
+        const signInRes = await supabase.auth.signInWithPassword({
           email,
           password,
-          options: { data: { confirmed_at: new Date().toISOString() } },
         });
-        if (!signUpRes.error) {
-          const retryRes = await supabase.auth.signInWithPassword({ email, password });
-          if (!retryRes.error) {
-            data = retryRes.data;
-            error = null;
-          } else if (signUpRes.data.user) {
-            data = signUpRes.data;
-            error = null;
+        data = signInRes.data;
+        error = signInRes.error;
+
+        // Auto-register if user doesn't exist, then sign in again
+        if (error && error.message.includes('Invalid login credentials')) {
+          const signUpRes = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { confirmed_at: new Date().toISOString() } },
+          });
+          if (!signUpRes.error) {
+            const retryRes = await supabase.auth.signInWithPassword({ email, password });
+            if (!retryRes.error) {
+              data = retryRes.data;
+              error = null;
+            } else if (signUpRes.data.user) {
+              data = signUpRes.data;
+              error = null;
+            }
           }
         }
       }
