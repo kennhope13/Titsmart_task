@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { compressImage } from '../../utils/fileUploadHelper';
 
 interface FileUploadProps {
   label?: string;
@@ -52,16 +53,35 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, name, value: init
 
         if (uploadError) {
           console.warn("Supabase Storage upload warning:", uploadError);
-          // Fallback cho Local Dev khi chưa bật / chưa tạo Storage Bucket
-          const reader = new FileReader();
-          const base64Url = await new Promise<string>((res) => {
-            reader.onload = () => res(reader.result as string);
-            reader.onerror = () => res('');
-            reader.readAsDataURL(file);
-          });
-          if (base64Url) {
-            newUrls.push(base64Url);
-            continue;
+          // Fallback cho Local Dev: Nếu là ảnh thì nén nhỏ (<300KB), nếu là PDF/file lớn thì giới hạn dung lượng để tránh tràn bộ nhớ V8 OOM
+          const isImg = file.type.startsWith('image/');
+          if (isImg) {
+            const compressedBlob = await compressImage(file, 1200, 1200, 0.7);
+            const base64Url = await new Promise<string>((res) => {
+              const reader = new FileReader();
+              reader.onload = () => res(reader.result as string);
+              reader.onerror = () => res('');
+              reader.readAsDataURL(compressedBlob);
+            });
+            if (base64Url) {
+              newUrls.push(base64Url);
+              continue;
+            }
+          } else {
+            if (file.size > 5 * 1024 * 1024) {
+              setError(`File PDF/Tài liệu quá lớn (${(file.size / 1024 / 1024).toFixed(1)}MB). Vui lòng chọn file < 5MB khi chạy ở bản Local dev.`);
+              continue;
+            }
+            const base64Url = await new Promise<string>((res) => {
+              const reader = new FileReader();
+              reader.onload = () => res(reader.result as string);
+              reader.onerror = () => res('');
+              reader.readAsDataURL(file);
+            });
+            if (base64Url) {
+              newUrls.push(base64Url);
+              continue;
+            }
           }
           setError(`Lỗi tải file. Vui lòng đảm bảo đã tạo Bucket "titsmart-images" và bật Public.`);
           continue;
