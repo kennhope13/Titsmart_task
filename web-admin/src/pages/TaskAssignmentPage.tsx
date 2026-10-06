@@ -1509,22 +1509,7 @@ export const TaskAssignmentPage: React.FC = () => {
             </table>
           </div>
 
-          {/* Floating banner thông báo số lượng công việc đang chọn */}
-          {projectFilterStatus === 'unassigned' && selectedTaskIds.length > 0 && (
-            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-blue-600 text-white px-4 py-2.5 rounded-full shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200 border border-blue-400">
-              <span className="material-symbols-outlined text-xl">info</span>
-              <span className="text-xs font-bold">
-                Đã chọn {selectedTaskIds.length}/{projectDisplayedTasks.length} công việc để giao việc
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-                className="ml-2 px-3 py-1 bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-xs rounded-full shadow-xs transition-colors cursor-pointer"
-              >
-                Giao ngay
-              </button>
-            </div>
-          )}
+
         </div>
       )}
 
