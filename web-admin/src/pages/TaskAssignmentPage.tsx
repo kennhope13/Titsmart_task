@@ -1288,14 +1288,7 @@ export const TaskAssignmentPage: React.FC = () => {
               <thead className="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase sticky top-0 z-10 shadow-[0_1px_0_0_#e2e8f0]">
                 <tr>
                   {projectFilterStatus === 'unassigned' && (
-                    <th className="py-2.5 px-3 w-10 text-center border-r border-slate-200">
-                      <input 
-                        type="checkbox" 
-                        className="w-4 h-4 cursor-pointer accent-primary"
-                        checked={projectDisplayedTasks.length > 0 && selectedTaskIds.length === projectDisplayedTasks.length}
-                        onChange={handleToggleSelectAll}
-                      />
-                    </th>
+                    <th className="py-2.5 px-3 w-10 text-center border-r border-slate-200"></th>
                   )}
                   <th className="py-2.5 px-4 border-r border-slate-200">Nội dung công việc</th>
                   <th className="py-2.5 px-3 w-36 border-r border-slate-200">Người phụ trách</th>
