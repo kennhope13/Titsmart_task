@@ -167,7 +167,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
           } else if (t.sectionName && t.sectionName.trim()) {
             synthName = t.sectionName;
           } else {
-            synthName = `HẠNG MỤC ${parentStt}`;
+            synthName = parentStt;
           }
 
           missingParents.push({

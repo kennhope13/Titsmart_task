@@ -1827,7 +1827,7 @@ const hasSyncedRef = useRef(false);
           } else if (t.sectionName && t.sectionName.trim()) {
             synthName = t.sectionName;
           } else {
-            synthName = `HẠNG MỤC ${parentStt}`;
+            synthName = parentStt;
           }
 
           missingParents.push({

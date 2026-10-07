@@ -886,13 +886,16 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         if (parentStt && !sttSet.has(parentKey)) {
           sttSet.add(parentKey);
           let synthName = '';
-          const parentItem: any = filteredData.find(d => d.projectCode === t.projectCode && String(d.stt || '').trim() === parentStt);
+          const parentItem: any = filteredData.find((d: any) => d.projectCode === t.projectCode && String(d.stt || '').trim() === parentStt);
+          const siblingWithSection: any = filteredData.find((d: any) => d.projectCode === t.projectCode && (String(d.stt || '').startsWith(parentStt + '.') || String(d.stt || '').trim() === parentStt) && (d.sectionName || d.content || d.jobContent || d.name));
           if (parentItem && (parentItem.content || parentItem.jobContent || parentItem.name)) {
             synthName = parentItem.content || parentItem.jobContent || parentItem.name || '';
+          } else if (siblingWithSection && (siblingWithSection.sectionName || siblingWithSection.content || siblingWithSection.jobContent || siblingWithSection.name)) {
+            synthName = siblingWithSection.sectionName || siblingWithSection.content || siblingWithSection.jobContent || siblingWithSection.name || '';
           } else if ((t as any).sectionName && (t as any).sectionName.trim()) {
             synthName = (t as any).sectionName;
           } else {
-            synthName = `HẠNG MỤC ${parentStt}`;
+            synthName = parentStt;
           }
 
           missingParents.push({
