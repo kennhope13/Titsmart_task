@@ -20,20 +20,19 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     resolvedUrl.startsWith('blob:')
   ) || (!isExcel && !isPdf && !isOfficeDoc);
 
-  // Default useCanvasPdf to true so all devices (mobile & desktop) render PDF inside app modal without dark iframe
-  const [useCanvasPdf, setUseCanvasPdf] = useState<boolean>(true);
-
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [activeSheet, setActiveSheet] = useState<string>('');
   const [sheetsHtmlMap, setSheetsHtmlMap] = useState<Record<string, string>>({});
   const [excelLoading, setExcelLoading] = useState<boolean>(false);
 
-  // PDF Viewer State (pdfjs-dist for in-app mobile canvas view)
+  // PDF Viewer State (Chrome Dark Theme PDF Viewer in React for both Mobile & Desktop)
   const [pdfLoading, setPdfLoading] = useState<boolean>(false);
   const [pdfError, setPdfError] = useState<boolean>(false);
   const [pdfNumPages, setPdfNumPages] = useState<number>(0);
   const [pdfCurrentPage, setPdfCurrentPage] = useState<number>(1);
   const [pdfPageImageUrl, setPdfPageImageUrl] = useState<string>('');
+  const [pdfThumbnails, setPdfThumbnails] = useState<string[]>([]);
+  const [showSidebar, setShowSidebar] = useState<boolean>(false);
 
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
@@ -81,9 +80,9 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     };
   }, [resolvedUrl, isExcel]);
 
-  // Render PDF page to Canvas image data URL for in-app mobile view
+  // Load PDF and render high-res page + thumbnails
   useEffect(() => {
-    if (!isPdf || !resolvedUrl || !useCanvasPdf) return;
+    if (!isPdf || !resolvedUrl) return;
     let isMounted = true;
     setPdfLoading(true);
     setPdfError(false);
@@ -118,6 +117,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         setPdfNumPages(pdfDoc.numPages);
         const targetPageNum = Math.min(Math.max(pdfCurrentPage || 1, 1), pdfDoc.numPages);
 
+        // Render target page high-res
         const page = await pdfDoc.getPage(targetPageNum);
         const viewport = page.getViewport({ scale: 2 });
         const canvas = document.createElement('canvas');
@@ -130,8 +130,30 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             setPdfPageImageUrl(canvas.toDataURL('image/png'));
           }
         }
+
+        // Generate thumbnail images for sidebar
+        const thumbs: string[] = [];
+        for (let i = 1; i <= Math.min(pdfDoc.numPages, 20); i++) {
+          try {
+            const p = await pdfDoc.getPage(i);
+            const vp = p.getViewport({ scale: 0.25 });
+            const c = document.createElement('canvas');
+            const ctx = c.getContext('2d');
+            if (ctx) {
+              c.width = Math.ceil(vp.width);
+              c.height = Math.ceil(vp.height);
+              await p.render({ canvasContext: ctx, viewport: vp, canvas: c } as any).promise;
+              thumbs.push(c.toDataURL('image/jpeg', 0.7));
+            }
+          } catch (e) {
+            console.warn(`Thumbnail error page ${i}:`, e);
+          }
+        }
+        if (isMounted) {
+          setPdfThumbnails(thumbs);
+        }
       } catch (err) {
-        console.warn('In-app PDF rendering error:', err);
+        console.warn('PDF rendering error:', err);
         if (isMounted) {
           setPdfError(true);
         }
@@ -143,7 +165,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     return () => {
       isMounted = false;
     };
-  }, [resolvedUrl, isPdf, pdfCurrentPage, useCanvasPdf]);
+  }, [resolvedUrl, isPdf, pdfCurrentPage]);
 
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -164,11 +186,23 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     setPosition({ x: 0, y: 0 });
   };
 
+  const handlePrint = () => {
+    if (pdfPageImageUrl) {
+      const win = window.open('');
+      if (win) {
+        win.document.write(`<img src="${pdfPageImageUrl}" onload="window.print();window.close();" style="max-width:100%"/>`);
+        win.document.close();
+      }
+    } else {
+      window.print();
+    }
+  };
+
   const touchStartDistRef = useRef<number | null>(null);
   const touchStartZoomRef = useRef<number>(1);
 
-  // Mouse / Touch Drag & Pinch Zoom for Mobile Image / Canvas
-  const canInteractImage = isImage || (isPdf && useCanvasPdf && Boolean(pdfPageImageUrl));
+  // Mouse / Touch Drag & Pinch Zoom for Mobile Image / PDF Canvas
+  const canInteractImage = isImage || (isPdf && Boolean(pdfPageImageUrl));
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 0 && (zoom > 1 || dragMode || canInteractImage)) {
@@ -239,7 +273,6 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     };
   }, [isDragging]);
 
-  // Measure container dimensions for rotation aspect ratio calculation
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -290,8 +323,181 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     };
   };
 
-  const renderActiveImageSrc = (isPdf && useCanvasPdf) ? pdfPageImageUrl : resolvedUrl;
+  const renderActiveImageSrc = isPdf ? pdfPageImageUrl : resolvedUrl;
 
+  // Render Full Dark Theme Chrome-Style PDF Viewer for PDF files
+  if (isPdf) {
+    const fileName = resolvedUrl.split('/').pop()?.split('?')[0] || `Tài liệu ${index + 1}`;
+    return (
+      <div className="flex flex-col border border-slate-700 rounded-lg bg-[#323639] text-white shadow-xl flex-1 min-h-0 h-full select-none overflow-hidden">
+        {/* Dark Chrome PDF Top Header Toolbar */}
+        <div className="flex flex-wrap justify-between items-center px-2 py-1.5 bg-[#2a2e31] border-b border-[#1f2224] gap-2 shrink-0 text-xs">
+          {/* Left: Sidebar toggle + Filename */}
+          <div className="flex items-center gap-2 max-w-[40%] min-w-0">
+            {pdfNumPages > 1 && (
+              <button
+                onClick={() => setShowSidebar(!showSidebar)}
+                className={`p-1 rounded hover:bg-slate-700 transition-colors ${showSidebar ? 'bg-slate-700 text-blue-400' : 'text-slate-300'}`}
+                title="Hiện / Ẩn trang thu nhỏ bên trái"
+              >
+                <span className="material-symbols-outlined text-[18px]">menu</span>
+              </button>
+            )}
+            <span className="font-semibold text-slate-200 truncate text-[12px]" title={fileName}>
+              {fileName}
+            </span>
+          </div>
+
+          {/* Center: Page controls + Zoom controls */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Page Counter */}
+            {pdfNumPages > 0 && (
+              <div className="flex items-center gap-1 bg-[#1a1d1f] px-2 py-0.5 rounded text-[11px] border border-slate-700">
+                <button
+                  disabled={pdfCurrentPage <= 1}
+                  onClick={() => setPdfCurrentPage((p) => Math.max(p - 1, 1))}
+                  className="text-slate-400 hover:text-white disabled:opacity-30"
+                  title="Trang trước"
+                >
+                  <span className="material-symbols-outlined text-[14px]">chevron_left</span>
+                </button>
+                <span className="font-bold text-white px-1">
+                  {pdfCurrentPage} / {pdfNumPages}
+                </span>
+                <button
+                  disabled={pdfCurrentPage >= pdfNumPages}
+                  onClick={() => setPdfCurrentPage((p) => Math.min(p + 1, pdfNumPages))}
+                  className="text-slate-400 hover:text-white disabled:opacity-30"
+                  title="Trang sau"
+                >
+                  <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                </button>
+              </div>
+            )}
+
+            <span className="h-4 w-[1px] bg-slate-700 hidden sm:block" />
+
+            {/* Zoom Controls */}
+            <div className="flex items-center bg-[#1a1d1f] rounded text-[11px] border border-slate-700">
+              <button
+                onClick={handleZoomOut}
+                className="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded-l transition-colors"
+                title="Thu nhỏ (-)"
+              >
+                <span className="material-symbols-outlined text-[14px]">remove</span>
+              </button>
+              <button
+                onClick={handleReset}
+                className="px-1.5 font-bold text-slate-200 hover:text-white text-[11px]"
+                title="Khôi phục 100%"
+              >
+                {Math.round(zoom * 100)}%
+              </button>
+              <button
+                onClick={handleZoomIn}
+                className="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded-r transition-colors"
+                title="Phóng to (+)"
+              >
+                <span className="material-symbols-outlined text-[14px]">add</span>
+              </button>
+            </div>
+
+            {/* Rotate */}
+            <button
+              onClick={handleRotate}
+              className="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition-colors"
+              title="Xoay 90 độ"
+            >
+              <span className="material-symbols-outlined text-[16px]">rotate_right</span>
+            </button>
+          </div>
+
+          {/* Right: Print & Download */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handlePrint}
+              className="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition-colors"
+              title="In bản vẽ PDF"
+            >
+              <span className="material-symbols-outlined text-[16px]">print</span>
+            </button>
+
+            <a
+              href={`${resolvedUrl}?download=`}
+              download
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-[11px] font-bold shadow-xs transition-colors"
+              title="Tải tệp PDF về máy"
+            >
+              <span className="material-symbols-outlined text-[14px]">download</span> Tải về
+            </a>
+          </div>
+        </div>
+
+        {/* Main Body: Collapsible Thumbnail Sidebar + Dark Viewport */}
+        <div className="flex-1 min-h-0 flex relative bg-[#323639]">
+          {/* Left Thumbnail Sidebar */}
+          {showSidebar && pdfThumbnails.length > 0 && (
+            <div className="w-36 bg-[#2a2e31] border-r border-[#1a1d1f] flex flex-col p-2 gap-3 overflow-y-auto shrink-0 animate-in slide-in-from-left duration-200">
+              {pdfThumbnails.map((thumb, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setPdfCurrentPage(idx + 1)}
+                  className={`flex flex-col items-center cursor-pointer p-1 rounded transition-colors ${
+                    pdfCurrentPage === idx + 1
+                      ? 'bg-blue-600/30 border-2 border-blue-500 shadow-md'
+                      : 'hover:bg-slate-700 border border-transparent'
+                  }`}
+                >
+                  <img src={thumb} alt={`Page ${idx + 1}`} className="w-full h-auto bg-white rounded shadow-sm object-contain" />
+                  <span className="text-[10px] font-bold text-slate-300 mt-1">{idx + 1}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Main Dark Viewer Viewport */}
+          <div
+            ref={containerRef}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            className="flex-1 min-h-0 relative h-full flex items-center justify-center p-2 select-none overflow-hidden touch-none"
+          >
+            {pdfLoading ? (
+              <div className="flex flex-col items-center justify-center gap-2 text-slate-300 p-6">
+                <span className="w-8 h-8 border-3 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs font-semibold text-slate-300">Đang nạp sơ đồ PDF...</span>
+              </div>
+            ) : pdfError ? (
+              <iframe
+                src={
+                  resolvedUrl.startsWith('http')
+                    ? `https://docs.google.com/viewer?url=${encodeURIComponent(resolvedUrl)}&embedded=true`
+                    : resolvedUrl
+                }
+                className="w-full h-full rounded border-0 bg-white shadow-xs"
+                title={`PDF Viewer ${index + 1}`}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <img
+                  src={pdfPageImageUrl}
+                  alt={`Page ${pdfCurrentPage}`}
+                  className="max-w-full max-h-full w-auto h-auto object-contain shadow-2xl rounded bg-white block shrink-0 border border-slate-600"
+                  style={getContentTransformStyle()}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Standard Light View for Images, Excel, Word
   return (
     <div className="flex flex-col border border-slate-200 rounded-lg p-0.5 sm:p-1 bg-white shadow-sm flex-1 min-h-0 h-full select-none">
       {/* Header Toolbar */}
@@ -300,34 +506,10 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
           <span className="text-xs font-bold text-slate-800 truncate">
             Tài liệu {index + 1}
           </span>
-          {isPdf && useCanvasPdf && pdfNumPages > 1 && (
-            <div className="flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-xs">
-              <button
-                disabled={pdfCurrentPage <= 1}
-                onClick={() => setPdfCurrentPage((p) => Math.max(p - 1, 1))}
-                className="text-slate-600 disabled:opacity-30 hover:text-slate-900"
-                title="Trang trước"
-              >
-                <span className="material-symbols-outlined text-[14px] align-middle">chevron_left</span>
-              </button>
-              <span className="text-[11px] font-bold text-slate-700">
-                {pdfCurrentPage} / {pdfNumPages}
-              </span>
-              <button
-                disabled={pdfCurrentPage >= pdfNumPages}
-                onClick={() => setPdfCurrentPage((p) => Math.min(p + 1, pdfNumPages))}
-                className="text-slate-600 disabled:opacity-30 hover:text-slate-900"
-                title="Trang sau"
-              >
-                <span className="material-symbols-outlined text-[14px] align-middle">chevron_right</span>
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="flex items-center gap-1.5">
-          {/* Zoom controls for Image / Canvas PDF */}
-          {(isImage || (isPdf && useCanvasPdf)) && (
+          {isImage && (
             <div className="flex items-center gap-0.5 bg-slate-100 px-1 py-0.5 rounded-md border border-slate-200 text-xs">
               <button
                 onClick={handleZoomOut}
@@ -356,8 +538,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             </div>
           )}
 
-          {/* Rotate Button */}
-          {(isImage || (isPdf && useCanvasPdf)) && (
+          {isImage && (
             <button
               onClick={handleRotate}
               title="Xoay 90 độ"
@@ -367,7 +548,6 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             </button>
           )}
 
-          {/* Download Button */}
           <a
             href={`${resolvedUrl}?download=`}
             download
@@ -380,7 +560,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         </div>
       </div>
 
-      {/* Main Document Viewport */}
+      {/* Viewport */}
       <div className="w-full flex-1 flex min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-hidden border border-slate-200">
         <div
           ref={containerRef}
@@ -392,42 +572,12 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         >
 
           <div className="w-full h-full flex items-center justify-center">
-            {isPdf && pdfLoading ? (
-              <div className="flex flex-col items-center justify-center gap-2 text-slate-500 p-6">
-                <span className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs font-bold text-slate-600">Đang hiển thị PDF...</span>
-              </div>
-            ) : isPdf && pdfError ? (
-              /* Google Docs Embedded Viewer fallback inside app modal for production URLs if pdfjs arrayBuffer fails */
-              <iframe
-                src={
-                  resolvedUrl.startsWith('http')
-                    ? `https://docs.google.com/viewer?url=${encodeURIComponent(resolvedUrl)}&embedded=true`
-                    : resolvedUrl
-                }
-                className="w-full h-full rounded border-0 bg-white shadow-xs"
-                title={`PDF Viewer ${index + 1}`}
-              />
-            ) : (isImage || (isPdf && renderActiveImageSrc)) ? (
+            {isImage ? (
               <img
                 src={renderActiveImageSrc}
                 alt={`File ${index + 1}`}
                 className="max-w-full max-h-full w-auto h-auto object-contain shadow-sm rounded border border-slate-200 bg-white block shrink-0"
                 style={getContentTransformStyle()}
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  target.onerror = null;
-                  target.style.display = 'none';
-                  const parent = target.parentElement;
-                  if (parent) {
-                    const iframe = document.createElement('iframe');
-                    iframe.src = resolvedUrl.startsWith('http')
-                      ? `https://docs.google.com/viewer?url=${encodeURIComponent(resolvedUrl)}&embedded=true`
-                      : resolvedUrl;
-                    iframe.className = 'w-full h-full rounded border border-slate-200 bg-white shadow-xs';
-                    parent.appendChild(iframe);
-                  }
-                }}
               />
             ) : isExcel ? (
               <div className="w-full h-full relative flex flex-col bg-white overflow-hidden border border-slate-200 rounded">
@@ -443,7 +593,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
                       dangerouslySetInnerHTML={{ __html: sheetsHtmlMap[activeSheet] }} 
                     />
                     
-                    {/* Excel Sheet Tabs Bar at bottom */}
+                    {/* Excel Sheet Tabs */}
                     {sheetNames.length > 0 && (
                       <div className="flex items-center gap-1 px-2 py-1 bg-slate-100 border-t border-slate-200 overflow-x-auto shrink-0 select-none">
                         <span className="text-[11px] font-bold text-slate-500 px-1 shrink-0">Sheet:</span>
@@ -467,24 +617,15 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-600 p-6 text-center">
                     <span className="material-symbols-outlined text-4xl text-amber-500">description</span>
                     <p className="font-bold text-sm">Không thể xem trực tiếp tệp Excel trên trình duyệt</p>
-                    <p className="text-xs text-slate-500 max-w-sm">Tệp Excel này có thể được bảo mật hoặc xem từ môi trường localhost/mạng nội bộ.</p>
                     <div className="flex gap-2 mt-2">
                       <a
                         href={resolvedUrl}
                         download
                         target="_blank"
                         rel="noreferrer"
-                        className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-800 transition-colors flex items-center gap-1.5"
+                        className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5"
                       >
                         <span className="material-symbols-outlined text-base">download</span> Tải tệp về máy
-                      </a>
-                      <a
-                        href={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(resolvedUrl)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1.5 border border-slate-300"
-                      >
-                        <span className="material-symbols-outlined text-base">open_in_new</span> Xem trên Office Online
                       </a>
                     </div>
                   </div>
