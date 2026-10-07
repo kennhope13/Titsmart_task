@@ -61,13 +61,21 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   }
   if (notification.senderName) {
     const sNameLow = String(notification.senderName).trim().toLowerCase();
-    if (myNames.some(n => sNameLow === n || sNameLow.includes(n) || n.includes(sNameLow))) {
+    // Do not filter out generic sender names like "quản trị hệ thống", "hệ thống", "quản trị viên" unless exact match with user's name/username
+    const isGenericSystemSender = ['quản trị hệ thống', 'quản trị viên', 'hệ thống', 'admin', 'quản lý'].includes(sNameLow);
+    if (!isGenericSystemSender) {
+      if (myNames.some(n => sNameLow === n || (n.length >= 3 && (sNameLow.includes(n) || n.includes(sNameLow))))) {
+        return false;
+      }
+    } else if (myNames.some(n => n === sNameLow)) {
+      // Only filter out generic system sender if user's exact name/username is literally that generic sender string
       return false;
     }
   }
 
   // Nhận diện người thực hiện hành động qua nội dung message / title
   for (const myName of myNames) {
+    if (!myName || myName === 'admin' || myName === 'quản trị hệ thống' || myName === 'quản trị viên') continue;
     if (
       mLow.startsWith(myName + ' đã ') ||
       mLow.startsWith(myName + ' vừa ') ||
@@ -83,9 +91,6 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     ) {
       return false; // Chính tài khoản hiện tại vừa tạo hành động này
     }
-  }
-  if (isAdmin && (mLow.startsWith('quản trị hệ thống đã ') || mLow.startsWith('quản trị viên đã '))) {
-    return false; // Admin vừa thao tác hành động này
   }
 
   // ─── 1. TASK-RELATED NOTIFICATIONS: STRICT RECIPIENT FILTERING ───
