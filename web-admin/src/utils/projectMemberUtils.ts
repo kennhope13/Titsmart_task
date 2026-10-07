@@ -180,8 +180,16 @@ export const isUserMemberOfProject = (
 
   // 4. Also check corresponding engineer record in engineers store
   if (engineers && Array.isArray(engineers)) {
-    const matchedEng = engineers.find(e => norm(e.id) === userId || norm(e.username) === userUsername || norm(e.name) === userName);
+    const matchedEng = engineers.find(e => norm(e.id) === userId || norm(e.username) === userUsername || (userName && norm(e.name) === userName));
     if (matchedEng) {
+      const engIdUpper = norm(matchedEng.id);
+      const engNameUpper = norm(matchedEng.name);
+
+      const isMember = (Array.isArray(project.members) && project.members.some(m => norm(m) === engIdUpper || norm(m) === engNameUpper)) ||
+                       (Array.isArray(project.memberIds) && project.memberIds.some(m => norm(m) === engIdUpper || norm(m) === engNameUpper));
+      const isManager = project.managerId ? norm(project.managerId) === engIdUpper : false;
+      if (isMember || isManager) return true;
+
       if (Array.isArray(matchedEng.projectCodes) && matchedEng.projectCodes.some((c: string) => {
         const u = norm(c);
         return u && (u === pCodeUpper || u === pIdUpper || (pNameUpper && u === pNameUpper));

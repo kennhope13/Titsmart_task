@@ -2070,23 +2070,31 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
       try {
         await api.projects.delete(id, projectCode, projectName);
 
-        // Clean up project from assigned engineers
-        const projectCodeStr = (projectCode || '').trim();
-        const projectNameStr = (projectName || '').trim();
+        // Clean up project from assigned engineers (case-insensitive)
+        const pCodeUpper = (projectCode || '').trim().toUpperCase();
+        const pNameUpper = (projectName || '').trim().toUpperCase();
+        const pIdUpper = (id || '').trim().toUpperCase();
+
+        const isProjMatch = (c?: string, n?: string) => {
+          const uC = String(c || '').trim().toUpperCase();
+          const uN = String(n || '').trim().toUpperCase();
+          return (uC && (uC === pCodeUpper || uC === pIdUpper)) || (uN && uN === pNameUpper);
+        };
+
         const affectedEngineers = get().engineers.filter(eng => {
-          const hasManaged = eng.managedProjects?.some(p => p.code ? p.code.trim() === projectCodeStr : p.name.trim() === projectNameStr);
-          const hasMember = eng.memberProjects?.some(p => p.code ? p.code.trim() === projectCodeStr : p.name.trim() === projectNameStr);
-          const hasCode = Array.isArray(eng.projectCodes) && projectCodeStr && eng.projectCodes.some(c => c.trim() === projectCodeStr);
+          const hasManaged = eng.managedProjects?.some(p => isProjMatch(p.code, p.name));
+          const hasMember = eng.memberProjects?.some(p => isProjMatch(p.code, p.name));
+          const hasCode = Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => isProjMatch(c));
           return hasManaged || hasMember || hasCode;
         });
 
         if (affectedEngineers.length > 0) {
           await Promise.all(affectedEngineers.map(eng => {
-            const keepProject = (p: any) => p.code ? p.code.trim() !== projectCodeStr : p.name.trim() !== projectNameStr;
+            const keepProject = (p: any) => !isProjMatch(p.code, p.name);
             return api.engineers.update(eng.id, {
               managedProjects: eng.managedProjects?.filter(keepProject) || [],
               memberProjects: eng.memberProjects?.filter(keepProject) || [],
-              projectCodes: Array.isArray(eng.projectCodes) && projectCodeStr ? eng.projectCodes.filter(c => c.trim() !== projectCodeStr) : (eng.projectCodes || [])
+              projectCodes: Array.isArray(eng.projectCodes) ? eng.projectCodes.filter(c => !isProjMatch(c)) : (eng.projectCodes || [])
             });
           })).catch(err => console.warn('Clean up engineers failed', err));
         }
