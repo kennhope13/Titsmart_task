@@ -249,7 +249,13 @@ export const api = {
       if (UUID_RE.test(targetId)) {
         deletePromises.push(Promise.resolve(supabase.from('project_members').delete().eq('project_id', targetId)));
         deletePromises.push(Promise.resolve(supabase.from('activity_logs').delete().eq('project_id', targetId)));
-        deletePromises.push(Promise.resolve(supabase.from('inventory_transactions').delete().eq('project_id', targetId)));
+      }
+      if (Array.isArray(codes) && codes.length > 0) {
+        codes.forEach((c: string) => {
+          if (c) {
+            deletePromises.push(Promise.resolve(supabase.from('inventory_transactions').delete().eq('project_code', c)));
+          }
+        });
       }
 
       await Promise.allSettled(deletePromises as any);
@@ -834,6 +840,13 @@ export const api = {
         delete clean.managed_projects;
         delete clean.member_projects;
         delete clean.project_codes;
+        delete clean.managedProjects;
+        delete clean.memberProjects;
+        delete clean.projectCodes;
+        delete clean.updated_by;
+        delete clean.updated_at;
+        delete clean.updatedBy;
+        delete clean.updatedAt;
         return clean;
       };
 
@@ -843,8 +856,6 @@ export const api = {
         const { data: result, error } = await supabase.from('engineers').update(sanitized).eq('id', id).select();
         if (!error && Array.isArray(result) && result.length > 0) return toCamelCase(result[0]);
         if (error) {
-          delete sanitized.updated_by;
-          delete sanitized.updated_at;
           delete sanitized.is_locked;
           delete sanitized.password;
           delete sanitized.is_active;
