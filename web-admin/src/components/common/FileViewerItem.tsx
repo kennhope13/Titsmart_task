@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
 
 interface FileViewerItemProps {
   url: string;
@@ -19,13 +20,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     resolvedUrl.startsWith('blob:')
   ) || (!isExcel && !isPdf && !isOfficeDoc);
 
-  // Detect mobile device to default to canvas rendering on mobile vs native Chrome viewer on desktop
-  const isMobileDevice = typeof window !== 'undefined' && (
-    window.innerWidth < 768 ||
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  );
-
-  // Default useCanvasPdf to true so all devices (mobile & desktop) render PDF clearly without blank iframe errors
+  // Default useCanvasPdf to true so all devices (mobile & desktop) render PDF inside app modal without dark iframe
   const [useCanvasPdf, setUseCanvasPdf] = useState<boolean>(true);
 
   const [sheetNames, setSheetNames] = useState<string[]>([]);
@@ -33,7 +28,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const [sheetsHtmlMap, setSheetsHtmlMap] = useState<Record<string, string>>({});
   const [excelLoading, setExcelLoading] = useState<boolean>(false);
 
-  // PDF Viewer State (pdfjs-dist for mobile canvas view)
+  // PDF Viewer State (pdfjs-dist for in-app mobile canvas view)
   const [pdfLoading, setPdfLoading] = useState<boolean>(false);
   const [pdfError, setPdfError] = useState<boolean>(false);
   const [pdfNumPages, setPdfNumPages] = useState<number>(0);
@@ -86,7 +81,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     };
   }, [resolvedUrl, isExcel]);
 
-  // Render PDF page to Canvas image data URL when useCanvasPdf is active
+  // Render PDF page to Canvas image data URL for in-app mobile view
   useEffect(() => {
     if (!isPdf || !resolvedUrl || !useCanvasPdf) return;
     let isMounted = true;
@@ -96,10 +91,9 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     (async () => {
       try {
         const pdfjs = await import('pdfjs-dist');
-        const worker = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
-        (pdfjs as any).GlobalWorkerOptions.workerSrc = worker;
+        (pdfjs as any).GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
-        let arrayBuffer: ArrayBuffer;
+        let pdfDoc: any;
         if (resolvedUrl.startsWith('data:application/pdf;base64,')) {
           const base64Str = resolvedUrl.split(',')[1];
           const binaryStr = atob(base64Str);
@@ -107,20 +101,24 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
           for (let i = 0; i < binaryStr.length; i++) {
             bytes[i] = binaryStr.charCodeAt(i);
           }
-          arrayBuffer = bytes.buffer;
+          pdfDoc = await pdfjs.getDocument({ data: bytes.buffer }).promise;
         } else {
-          const res = await fetch(resolvedUrl);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          arrayBuffer = await res.arrayBuffer();
+          try {
+            const res = await fetch(resolvedUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const arrayBuffer = await res.arrayBuffer();
+            pdfDoc = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+          } catch {
+            pdfDoc = await pdfjs.getDocument({ url: resolvedUrl }).promise;
+          }
         }
 
-        const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
         if (!isMounted) return;
 
-        setPdfNumPages(pdf.numPages);
-        const targetPageNum = Math.min(Math.max(pdfCurrentPage || 1, 1), pdf.numPages);
+        setPdfNumPages(pdfDoc.numPages);
+        const targetPageNum = Math.min(Math.max(pdfCurrentPage || 1, 1), pdfDoc.numPages);
 
-        const page = await pdf.getPage(targetPageNum);
+        const page = await pdfDoc.getPage(targetPageNum);
         const viewport = page.getViewport({ scale: 2 });
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -133,10 +131,9 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
           }
         }
       } catch (err) {
-        console.warn('PDF rendering failed, falling back to native iframe:', err);
+        console.warn('In-app PDF rendering error:', err);
         if (isMounted) {
           setPdfError(true);
-          setUseCanvasPdf(false);
         }
       } finally {
         if (isMounted) setPdfLoading(false);
@@ -329,29 +326,6 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         </div>
 
         <div className="flex items-center gap-1.5">
-          {/* Toggle PDF Mode (Native Chrome Viewer vs Mobile Canvas View) */}
-          {isPdf && (
-            <>
-              <a
-                href={resolvedUrl}
-                target="_blank"
-                rel="noreferrer"
-                title="Mở tệp PDF trong Tab mới của trình duyệt (Xem PDF Gốc bằng trình duyệt di động)"
-                className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 h-[26px] px-2 rounded-md text-[11px] font-bold transition-all"
-              >
-                <span className="material-symbols-outlined text-[14px]">open_in_new</span> Tab mới (PDF Gốc)
-              </a>
-              <button
-                onClick={() => setUseCanvasPdf((prev) => !prev)}
-                title={useCanvasPdf ? "Chuyển sang Trình xem PDF Gốc Chrome (Có in & thanh phụ)" : "Chuyển sang Chế độ Mobile Canvas"}
-                className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 h-[26px] px-2 rounded-md text-[11px] font-bold transition-all"
-              >
-                <span className="material-symbols-outlined text-[14px]">{useCanvasPdf ? "picture_as_pdf" : "touch_app"}</span>
-                {useCanvasPdf ? "Xem PDF Gốc (PC)" : "Xem dạng Mobile"}
-              </button>
-            </>
-          )}
-
           {/* Zoom controls for Image / Canvas PDF */}
           {(isImage || (isPdf && useCanvasPdf)) && (
             <div className="flex items-center gap-0.5 bg-slate-100 px-1 py-0.5 rounded-md border border-slate-200 text-xs">
@@ -418,19 +392,23 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         >
 
           <div className="w-full h-full flex items-center justify-center">
-            {isPdf && !useCanvasPdf ? (
-              /* Native Chrome PDF Viewer for Desktop (Restores sidebar thumbnails, dark toolbar, print button) */
-              <iframe
-                src={`${resolvedUrl}#toolbar=1`}
-                className="w-full h-full rounded border-0 bg-slate-800 shadow-xs"
-                title={`PDF Viewer ${index + 1}`}
-              />
-            ) : isPdf && pdfLoading ? (
+            {isPdf && pdfLoading ? (
               <div className="flex flex-col items-center justify-center gap-2 text-slate-500 p-6">
                 <span className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
                 <span className="text-xs font-bold text-slate-600">Đang hiển thị PDF...</span>
               </div>
-            ) : (isImage || (isPdf && renderActiveImageSrc && !pdfError)) ? (
+            ) : isPdf && pdfError ? (
+              /* Google Docs Embedded Viewer fallback inside app modal for production URLs if pdfjs arrayBuffer fails */
+              <iframe
+                src={
+                  resolvedUrl.startsWith('http')
+                    ? `https://docs.google.com/viewer?url=${encodeURIComponent(resolvedUrl)}&embedded=true`
+                    : resolvedUrl
+                }
+                className="w-full h-full rounded border-0 bg-white shadow-xs"
+                title={`PDF Viewer ${index + 1}`}
+              />
+            ) : (isImage || (isPdf && renderActiveImageSrc)) ? (
               <img
                 src={renderActiveImageSrc}
                 alt={`File ${index + 1}`}
@@ -443,7 +421,9 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
                   const parent = target.parentElement;
                   if (parent) {
                     const iframe = document.createElement('iframe');
-                    iframe.src = resolvedUrl;
+                    iframe.src = resolvedUrl.startsWith('http')
+                      ? `https://docs.google.com/viewer?url=${encodeURIComponent(resolvedUrl)}&embedded=true`
+                      : resolvedUrl;
                     iframe.className = 'w-full h-full rounded border border-slate-200 bg-white shadow-xs';
                     parent.appendChild(iframe);
                   }
