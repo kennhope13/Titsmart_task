@@ -170,23 +170,13 @@ export const ChatWidget: React.FC = () => {
   };
 
   useEffect(() => {
-    const clampPos = () => {
-      setPosition(prev => {
-        if (!prev) return null;
-        const maxX = window.innerWidth - 60;
-        const maxY = window.innerHeight - 60;
-        const clampedX = Math.max(10, Math.min(maxX, prev.x));
-        const clampedY = Math.max(10, Math.min(maxY, prev.y));
-        if (clampedX !== prev.x || clampedY !== prev.y) {
-          return { x: clampedX, y: clampedY };
-        }
-        return prev;
-      });
+    const handleResize = () => {
+      // Khi người dùng phóng to, thu nhỏ hoặc đổi kích thước cửa sổ, tự động đưa nút chat về vị trí mặc định
+      setPosition(null);
     };
 
-    clampPos();
-    window.addEventListener('resize', clampPos);
-    return () => window.removeEventListener('resize', clampPos);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);

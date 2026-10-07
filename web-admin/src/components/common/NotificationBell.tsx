@@ -411,25 +411,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     setShowPopover(prev => !prev);
   };
 
-  useEffect(() => {
-    const clampPos = () => {
-      setPosition(prev => {
-        if (!prev) return null;
-        const maxX = window.innerWidth - 50;
-        const maxY = window.innerHeight - 50;
-        const clampedX = Math.max(10, Math.min(maxX, prev.x));
-        const clampedY = Math.max(10, Math.min(maxY, prev.y));
-        if (clampedX !== prev.x || clampedY !== prev.y) {
-          return { x: clampedX, y: clampedY };
-        }
-        return prev;
-      });
-    };
 
-    clampPos();
-    window.addEventListener('resize', clampPos);
-    return () => window.removeEventListener('resize', clampPos);
-  }, []);
 
 
   // Per-user dismissed/cleared notification IDs (so each user account only deletes notifications for themselves)
