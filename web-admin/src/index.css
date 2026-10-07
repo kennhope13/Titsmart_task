@@ -22,23 +22,6 @@
     pointer-events: none !important;
   }
 
-  /* Smooth & Natural Hover Transition Optimization */
-  .transition-all,
-  .transition-colors,
-  .transition-transform,
-  .transition-opacity {
-    transition-property: color, background-color, border-color, opacity, box-shadow, transform !important;
-    transition-duration: 220ms !important;
-    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important; /* Mượt êm ái tự nhiên, không giật drop fps */
-    -webkit-font-smoothing: antialiased;
-  }
-  
-  @media (prefers-reduced-motion: reduce) {
-    .transition-all, .transition-colors, .transition-transform, button, .cursor-pointer {
-      transition: none !important;
-    }
-  }
-
   button, .cursor-pointer, [role="button"] {
     -webkit-tap-highlight-color: transparent;
   }
