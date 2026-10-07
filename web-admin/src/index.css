@@ -21,6 +21,19 @@
     opacity: 0 !important;
     pointer-events: none !important;
   }
+
+  /* GPU Acceleration & Performance Optimization for Hover Effects */
+  .transition-all {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform !important;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  button, .cursor-pointer, [role="button"] {
+    backface-visibility: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 /* Custom Scrollbar Styling */
