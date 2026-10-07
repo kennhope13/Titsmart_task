@@ -1191,8 +1191,20 @@ export const ProjectManagementPage: React.FC = () => {
               ))}
             </div>
           </div>
-          {pendingProjectTasks.length > 0 && <p className="text-sm text-emerald-700 font-semibold">Khi lưu dự án, hệ thống sẽ đưa {pendingProjectTasks.length} dòng vào tab Công việc và KH Vật tư.</p>}
-          <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setIsNewProjectModalOpen(false)} className="px-4 py-2 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">{TEXT.cancel}</button><button type="submit" disabled={loading}  className="px-5 py-2 bg-primary text-white rounded-lg font-bold hover:opacity-90 disabled:opacity-50">{TEXT.create}</button></div>
+          {pendingProjectTasks.length > 0 && (
+            <div className="flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 font-semibold">
+              <span>Hệ thống đã đọc {pendingProjectTasks.length} công việc từ file đính kèm.</span>
+              <button
+                type="button"
+                onClick={() => setPendingProjectTasks([])}
+                className="text-red-600 hover:underline font-bold text-[11px] ml-2"
+                title="Bỏ qua danh sách công việc từ file, chỉ tạo dự án rỗng"
+              >
+                Xóa file đính kèm
+              </button>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => { setIsNewProjectModalOpen(false); setPendingProjectTasks([]); }} className="px-4 py-2 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">{TEXT.cancel}</button><button type="submit" disabled={loading}  className="px-5 py-2 bg-primary text-white rounded-lg font-bold hover:opacity-90 disabled:opacity-50">{TEXT.create}</button></div>
         </form>
       </Modal>
     </div>
