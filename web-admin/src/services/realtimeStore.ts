@@ -1238,6 +1238,31 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { tasks: nextTasks, projects: nextProjects };
         });
         get().logActivity('Đã tạo thủ công hạng mục công việc: ' + createdTask.name, createdTask.projectName || createdTask.projectCode);
+
+        // Tự động phát thông báo Realtime giao việc khi tạo công việc mới có gán nhân sự
+        try {
+          if (createdTask.assignedEngineerId || createdTask.assignedEngineerName) {
+            const parts = String(createdTask.assignedEngineerName || '').split('|');
+            const engIds = (parts.length > 1 ? parts[1] : (createdTask.assignedEngineerId || '')).split(',').map((s: string) => s.trim()).filter(Boolean);
+            const engNames = (parts[0] || (createdTask.assignedEngineerName || '')).split(',').map((s: string) => s.trim()).filter(Boolean);
+            const assignerName = (window as any).__titsmart_current_user?.name || (window as any).__titsmart_current_user?.username || createdTask.assignerName || 'Quản trị hệ thống';
+            const assignerId = (window as any).__titsmart_current_user?.id || createdTask.assignerId || '';
+            const taskName = createdTask.name || 'Công việc';
+            const pCode = createdTask.projectCode || 'Dự án';
+
+            if (engIds.length > 0 || engNames.length > 0) {
+              get().addNotification({
+                title: `Giao việc: ${engNames.join(', ')}`,
+                message: `${assignerName} đã giao công việc "${taskName}" [${pCode}] cho ${engNames.join(', ')}.`,
+                type: `task_assigned:::${engIds.join(',')}:::${engNames.join(',')}`,
+                icon: 'assignment_ind',
+                senderId: assignerId,
+                senderName: assignerName
+              });
+            }
+          }
+        } catch {}
+
         return createdTask.id;
       } catch (e) {
         console.error('Failed to add task', e);
