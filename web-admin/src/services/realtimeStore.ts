@@ -793,6 +793,9 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
             console.error('[BroadcastChannel] parse error', err);
           }
         }
+        // Refetch latest notifications and tasks across local tabs
+        get().fetchNotifications();
+        get().fetchTasks(undefined);
       }
     };
   }
@@ -810,6 +813,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(lightweightSaved));
       channel?.postMessage({ type: 'SYNC_STATE' });
+      broadcastRealtimeSync();
     } catch (e) {
       console.warn('[Storage] Skipped localStorage write to prevent quota crash:', e);
     }
@@ -2702,6 +2706,18 @@ const REALTIME_TABLES = [
 
 let realtimeChannel: any = null;
 
+export function broadcastRealtimeSync(table?: string) {
+  if (realtimeChannel) {
+    try {
+      realtimeChannel.send({
+        type: 'broadcast',
+        event: 'REALTIME_SYNC',
+        payload: { table, timestamp: Date.now() }
+      });
+    } catch {}
+  }
+}
+
 export function setupRealtimeSync() {
   if (realtimeChannel) {
     return () => {};
@@ -2779,6 +2795,11 @@ export function setupRealtimeSync() {
     channel.on('postgres_changes', { event: '*', schema: 'public', table: tableName }, debouncedRefresh);
   });
 
+  // Lắng nghe sự kiện Broadcast thời gian thực giữa tất cả các thiết bị/trình duyệt
+  channel.on('broadcast', { event: 'REALTIME_SYNC' }, (eventData: any) => {
+    debouncedRefresh(eventData?.payload);
+  });
+
   try {
     channel.subscribe((status: string, err?: any) => {
       console.log('[Realtime] Trạng thái kết nối (Single Channel):', status);
@@ -2788,11 +2809,32 @@ export function setupRealtimeSync() {
     console.warn('[Realtime] Could not subscribe to realtime channel', e);
   }
 
+  // Heartbeat polling 10s tự động kiểm tra bản tin mới
+  const heartbeatInterval = setInterval(() => {
+    const store = useRealtimeStore.getState();
+    store.fetchNotifications();
+    store.fetchTasks(undefined);
+  }, 10000);
+
+  // Tự động tải lại dữ liệu mới nhất khi chuyển tab / focus lại cửa sổ
+  const handleFocus = () => {
+    const store = useRealtimeStore.getState();
+    store.fetchNotifications();
+    store.fetchTasks(undefined);
+    store.fetchProjects();
+  };
+  if (typeof window !== 'undefined') {
+    window.addEventListener('focus', handleFocus);
+  }
+
   realtimeChannel = channel;
   console.log('[Realtime] Đã kích hoạt 1 kênh đồng bộ thời gian thực tối ưu duy nhất cho 14 bảng.');
 
   return () => {
-    // Keep channel alive across page navigations within the session
+    clearInterval(heartbeatInterval);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('focus', handleFocus);
+    }
   };
 }
 
