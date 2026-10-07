@@ -131,9 +131,29 @@ export const api = {
   projects: {
     getAll: async () => {
       try {
-        const { data, error } = await supabase.from('projects').select('*');
-        if (error) throw error;
-        const list = mapArray(data || []);
+        const [projRes, pmRes] = await Promise.all([
+          supabase.from('projects').select('*'),
+          supabase.from('project_members').select('*')
+        ]);
+        if (projRes.error) throw projRes.error;
+        const pmList = pmRes.data || [];
+        const pmMap = new Map<string, string[]>();
+        pmList.forEach((pm: any) => {
+          if (pm.project_id && pm.engineer_id) {
+            const arr = pmMap.get(pm.project_id) || [];
+            arr.push(pm.engineer_id);
+            pmMap.set(pm.project_id, arr);
+          }
+        });
+
+        const list = mapArray(projRes.data || []).map((p: any) => {
+          const mIds = pmMap.get(p.id) || p.members || p.memberIds || [];
+          return {
+            ...p,
+            members: mIds,
+            memberIds: mIds
+          };
+        });
         return list.sort((a: any, b: any) => {
           const timeA = new Date(a.createdAt || a.created_at || a.startDate || 0).getTime();
           const timeB = new Date(b.createdAt || b.created_at || b.startDate || 0).getTime();
@@ -150,6 +170,7 @@ export const api = {
       return toCamelCase(data);
     },
     create: async (data: any) => {
+      const memberIds = Array.isArray(data.members) ? data.members : (Array.isArray(data.memberIds) ? data.memberIds : []);
       const payload = toSnakeCase(data);
       delete payload.members;
       delete payload.member_ids;
@@ -157,7 +178,8 @@ export const api = {
          payload.manager_id = null;
       }
       
-      const { data: result, error } = await supabase.from('projects').insert(payload).select().single();
+      let result: any = null;
+      const { data: res, error } = await supabase.from('projects').insert(payload).select().single();
       if (error) {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
           delete payload.updated_by;
@@ -166,11 +188,33 @@ export const api = {
           const { data: retryResult, error: retryError } = await supabase.from('projects').insert(payload).select().single();
           if (retryError) throw retryError;
           const audit = getCurrentAuditPayload();
-          return toCamelCase({ updated_by: audit.updated_by, updated_at: audit.updated_at, ...data, ...retryResult });
+          result = { updated_by: audit.updated_by, updated_at: audit.updated_at, ...data, ...retryResult };
+        } else {
+          throw error;
         }
-        throw error;
+      } else {
+        result = res;
       }
-      return toCamelCase(result);
+
+      const created = toCamelCase(result);
+      created.members = memberIds;
+      created.memberIds = memberIds;
+
+      if (memberIds.length > 0 && UUID_RE.test(created.id)) {
+        try {
+          const pmInserts = memberIds.filter((mId: any) => UUID_RE.test(String(mId))).map((mId: any) => ({
+            project_id: created.id,
+            engineer_id: mId
+          }));
+          if (pmInserts.length > 0) {
+            await supabase.from('project_members').insert(pmInserts);
+          }
+        } catch (pmErr) {
+          console.warn('[Projects] Insert project_members failed:', pmErr);
+        }
+      }
+
+      return created;
     },
     update: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
@@ -205,7 +249,27 @@ export const api = {
         }
         throw error;
       }
-      return toCamelCase(result);
+      const memberIds = Array.isArray(data.members) ? data.members : (Array.isArray(data.memberIds) ? data.memberIds : undefined);
+      const updated = toCamelCase(result);
+      if (memberIds !== undefined) {
+        updated.members = memberIds;
+        updated.memberIds = memberIds;
+        if (UUID_RE.test(id)) {
+          (async () => {
+            try {
+              await supabase.from('project_members').delete().eq('project_id', id);
+              const pmInserts = memberIds.filter((mId: any) => UUID_RE.test(String(mId))).map((mId: any) => ({
+                project_id: id,
+                engineer_id: mId
+              }));
+              if (pmInserts.length > 0) {
+                await supabase.from('project_members').insert(pmInserts);
+              }
+            } catch {}
+          })();
+        }
+      }
+      return updated;
     },
     delete: async (id: string, projectCode?: string, projectName?: string) => {
       // 1. Fetch project info if code or id is missing
