@@ -1229,26 +1229,30 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             )}
 
             {subTab === 'TECH' && (
-              <div className="flex items-center gap-2 border-l border-slate-200 pl-2 ml-1 bg-slate-100/70 py-1 px-2 rounded-lg">
-                {/* Chọn tất cả */}
-                <label className="flex items-center gap-1 cursor-pointer select-none text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-300 px-2 py-1 rounded shadow-xs">
+              <div className="flex items-center gap-2 border-l border-slate-200 pl-2 ml-1 flex-nowrap flex-shrink-0">
+                {/* Chọn tất cả Button */}
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-1.5 h-7 px-2.5 bg-white border border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-700 font-bold text-[11px] rounded-md shadow-xs whitespace-nowrap flex-shrink-0 cursor-pointer transition-colors"
+                >
                   <input
                     type="checkbox"
                     checked={isAllSelected}
-                    onChange={toggleSelectAll}
-                    className="w-3.5 h-3.5 rounded border-slate-300 text-primary focus:ring-0 cursor-pointer"
+                    readOnly
+                    className="w-3.5 h-3.5 rounded border-slate-300 text-primary pointer-events-none"
                   />
-                  <span>Chọn tất cả ({selectableItems.length})</span>
-                </label>
+                  <span>{isAllSelected ? 'Bỏ chọn tất cả' : `Chọn tất cả (${selectableItems.length})`}</span>
+                </button>
 
                 {selectedIds.size > 0 && (
-                  <span className="text-[11px] font-extrabold text-blue-700 bg-blue-100 border border-blue-300 px-2 py-0.5 rounded-full">
-                    Đã chọn {selectedIds.size} vật tư
+                  <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md whitespace-nowrap flex-shrink-0">
+                    Đã chọn: {selectedIds.size}
                   </span>
                 )}
 
                 {/* Gán nhanh Tình trạng */}
-                <div className="flex items-center gap-1 ml-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <span className="text-emerald-700 font-bold whitespace-nowrap text-[11px] flex items-center gap-0.5">
                     <span className="material-symbols-outlined text-[14px]">done_all</span>
                     Gán Tình trạng:
@@ -1287,7 +1291,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 </div>
 
                 {/* Gán nhanh TT Đặt hàng */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <span className="text-blue-700 font-bold whitespace-nowrap text-[11px] flex items-center gap-0.5">
                     <span className="material-symbols-outlined text-[14px]">shopping_bag</span>
                     Gán TT Đặt hàng:
