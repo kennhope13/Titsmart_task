@@ -114,39 +114,18 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   const mLow = message.toLowerCase();
 
   // 0. SENDER / CREATOR FILTER
-  const isSenderById = (
+  const isSenderById = Boolean(
     (notification.senderId && isMatchingId(notification.senderId)) ||
     (notification.createdById && isMatchingId(notification.createdById))
   );
 
   const senderNameStr = String(notification.senderName || '').trim().toLowerCase();
   const isGenericSender = ['quản trị hệ thống', 'quản trị viên', 'hệ thống', 'admin', 'quản lý'].includes(senderNameStr);
-  const isSenderByName = !isGenericSender && senderNameStr && (
+  const isSenderByName = !isGenericSender && Boolean(senderNameStr && (
     senderNameStr === name || 
     senderNameStr === username || 
-    normalizeStr(senderNameStr) === normName
-  );
-
-  let isActionAuthor = false;
-  if (normName && normName.length >= 3) {
-    for (const rawMyName of [name, username]) {
-      if (!rawMyName || isGenericSender) continue;
-      const nm = rawMyName.toLowerCase();
-      if (
-        mLow.startsWith(nm + ' đã ') ||
-        mLow.startsWith(nm + ' vừa ') ||
-        mLow.startsWith('quản lý ' + nm + ' đã ') ||
-        mLow.startsWith('kỹ sư ' + nm + ' đã ') ||
-        mLow.startsWith('nhân sự ' + nm + ' đã ') ||
-        mLow.startsWith('nhân sự ' + nm + ' vừa ') ||
-        tLow.startsWith(nm + ' đã ') ||
-        tLow.startsWith(nm + ' vừa ')
-      ) {
-        isActionAuthor = true;
-        break;
-      }
-    }
-  }
+    (normName && normalizeStr(senderNameStr) === normName)
+  ));
 
   // ─── 1. TASK-RELATED NOTIFICATIONS: STRICT RECIPIENT FILTERING ───
   const isTaskNotification = 
@@ -175,7 +154,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       tLow.includes('báo cáo hoàn thành') ||
       tLow.includes('báo cáo xong')
     ) {
-      if (isSenderById || isSenderByName || isActionAuthor) return false;
+      if (isSenderById || isSenderByName) return false;
       if (typeStr.includes(':::')) {
         const parts = typeStr.split(':::');
         const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -205,7 +184,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       tLow.includes('quá hạn hoàn thành') || 
       tLow.includes('nhắc hạn công việc')
     ) {
-      if (isSenderById || isSenderByName || isActionAuthor) return false;
+      if (isSenderById || isSenderByName) return false;
       if (typeStr.includes(':::')) {
         const parts = typeStr.split(':::');
         const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -228,7 +207,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       typeStr.startsWith('task_follower') ||
       tLow.includes('theo dõi')
     ) {
-      if (isSenderById || isSenderByName || isActionAuthor) return false;
+      if (isSenderById || isSenderByName) return false;
       if (typeStr.includes(':::')) {
         const parts = typeStr.split(':::');
         const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -250,6 +229,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       tLow.includes('được giao') || 
       tLow.includes('nghiệm thu')
     ) {
+      if (isSenderById || isSenderByName) return false;
       if (typeStr.includes(':::')) {
         const parts = typeStr.split(':::');
         const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -289,7 +269,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   }
 
   // Filter sender from seeing non-task broadcast
-  if (isSenderById || isSenderByName || isActionAuthor) {
+  if (isSenderById || isSenderByName) {
     return false;
   }
 
