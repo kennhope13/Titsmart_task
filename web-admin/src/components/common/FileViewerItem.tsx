@@ -339,23 +339,13 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   if (isPdf) {
     const fileName = resolvedUrl.split('/').pop()?.split('?')[0] || `Tài liệu ${index + 1}`;
 
-    // Desktop mode (useCanvasPdf = false): Render native Chrome PDF viewer iframe
+    // Desktop mode (useCanvasPdf = false): Render pure native Chrome PDF viewer iframe without extra top bar
     if (!useCanvasPdf) {
       return (
         <div className="flex flex-col border border-slate-700 rounded-lg bg-[#323639] text-white shadow-xl flex-1 min-h-0 h-full select-none overflow-hidden relative">
-          <div className="flex justify-between items-center px-2 py-1 bg-[#2a2e31] border-b border-[#1f2224] text-xs shrink-0">
-            <span className="font-semibold text-slate-200 truncate">{fileName}</span>
-            <button
-              onClick={() => setUseCanvasPdf(true)}
-              className="text-[11px] bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-0.5 rounded flex items-center gap-1 border border-slate-600 transition-colors"
-              title="Chuyển sang bộ đọc Canvas Cảm ứng Mobile"
-            >
-              <span className="material-symbols-outlined text-[14px]">touch_app</span> Chế độ Canvas Mobile
-            </button>
-          </div>
           <iframe
             src={`${resolvedUrl}#toolbar=1`}
-            className="w-full h-full rounded-b border-0 bg-[#323639]"
+            className="w-full h-full rounded-lg border-0 bg-[#323639]"
             title={`PDF Viewer ${index + 1}`}
           />
         </div>
@@ -447,19 +437,8 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             </button>
           </div>
 
-          {/* Right: Toggle Mode + Print & Download */}
+          {/* Right: Print & Download */}
           <div className="flex items-center gap-1">
-            {!isMobileDevice && (
-              <button
-                onClick={() => setUseCanvasPdf(false)}
-                className="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition-colors text-[11px] flex items-center gap-1"
-                title="Chuyển sang Chrome PDF Gốc"
-              >
-                <span className="material-symbols-outlined text-[15px]">picture_as_pdf</span>
-                <span className="hidden md:inline">Chrome Gốc</span>
-              </button>
-            )}
-
             <button
               onClick={handlePrint}
               className="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition-colors"
