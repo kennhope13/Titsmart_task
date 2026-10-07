@@ -87,11 +87,11 @@ export const ChatWidget: React.FC = () => {
 
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  // Dragging functionality state & refs (transient per session, resets to default on reload)
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  // Position stored as offset from right & bottom (or left/top) to preserve position across resize/zoom
+  const [position, setPosition] = useState<{ right: number; bottom: number } | null>(null);
 
   const isDraggingRef = useRef(false);
-  const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({ startX: 0, startY: 0, initX: 0, initY: 0 });
+  const dragStartRef = useRef<{ startX: number; startY: number; initRight: number; initBottom: number }>({ startX: 0, startY: 0, initRight: 0, initBottom: 0 });
   const hasMovedRef = useRef(false);
   const buttonRef = useRef<HTMLDivElement>(null);
 
@@ -102,19 +102,21 @@ export const ChatWidget: React.FC = () => {
     if (!btnElem) return;
 
     const rect = btnElem.getBoundingClientRect();
-    const currentX = position ? position.x : rect.left;
-    const currentY = position ? position.y : rect.top;
+    const currentRight = window.innerWidth - rect.right;
+    const currentBottom = window.innerHeight - rect.bottom;
 
     isDraggingRef.current = true;
     hasMovedRef.current = false;
     dragStartRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      initX: currentX,
-      initY: currentY,
+      initRight: position ? position.right : currentRight,
+      initBottom: position ? position.bottom : currentBottom,
     };
 
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    } catch (err) {}
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -127,10 +129,10 @@ export const ChatWidget: React.FC = () => {
       hasMovedRef.current = true;
     }
 
-    const newX = Math.max(10, Math.min(window.innerWidth - 60, dragStartRef.current.initX + dx));
-    const newY = Math.max(10, Math.min(window.innerHeight - 60, dragStartRef.current.initY + dy));
+    const newRight = Math.max(10, Math.min(window.innerWidth - 60, dragStartRef.current.initRight - dx));
+    const newBottom = Math.max(10, Math.min(window.innerHeight - 60, dragStartRef.current.initBottom - dy));
 
-    setPosition({ x: newX, y: newY });
+    setPosition({ right: newRight, bottom: newBottom });
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -138,8 +140,11 @@ export const ChatWidget: React.FC = () => {
     isDraggingRef.current = false;
 
     try {
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     } catch (err) {}
+    setTimeout(() => {
+      hasMovedRef.current = false;
+    }, 120);
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
@@ -154,12 +159,12 @@ export const ChatWidget: React.FC = () => {
     const clampPos = () => {
       setPosition(prev => {
         if (!prev) return null;
-        const maxX = window.innerWidth - 60;
-        const maxY = window.innerHeight - 60;
-        const clampedX = Math.max(10, Math.min(maxX, prev.x));
-        const clampedY = Math.max(10, Math.min(maxY, prev.y));
-        if (clampedX !== prev.x || clampedY !== prev.y) {
-          return { x: clampedX, y: clampedY };
+        const maxRight = window.innerWidth - 60;
+        const maxBottom = window.innerHeight - 60;
+        const clampedRight = Math.max(10, Math.min(maxRight, prev.right));
+        const clampedBottom = Math.max(10, Math.min(maxBottom, prev.bottom));
+        if (clampedRight !== prev.right || clampedBottom !== prev.bottom) {
+          return { right: clampedRight, bottom: clampedBottom };
         }
         return prev;
       });
@@ -1106,7 +1111,7 @@ export const ChatWidget: React.FC = () => {
           onPointerUp={handlePointerUp}
           style={
             position
-              ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
+              ? { position: 'fixed', right: `${position.right}px`, bottom: `${position.bottom}px`, left: 'auto', top: 'auto' }
               : undefined
           }
           className={`fixed z-[9990] touch-none select-none pointer-events-auto ${
@@ -1118,7 +1123,11 @@ export const ChatWidget: React.FC = () => {
           <button
             type="button"
             onClick={handleButtonClick}
-            title="Nội bộ Titsmart (Nhấn giữ & kéo để di chuyển)"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setPosition(null);
+            }}
+            title="Nội bộ Titsmart (Nhấn giữ & kéo để di chuyển, nhấp đúp để đặt lại vị trí)"
             className="w-11 h-11 sm:w-12 sm:h-12 rounded-full sm:rounded-xl bg-blue-900 text-white shadow-xl flex items-center justify-center hover:bg-blue-800 hover:scale-105 active:scale-95 transition-all duration-200 cursor-grab active:cursor-grabbing relative overflow-visible border-2 border-white/20"
           >
             <span className="material-symbols-outlined text-[20px] sm:text-[22px] pointer-events-none">chat</span>
