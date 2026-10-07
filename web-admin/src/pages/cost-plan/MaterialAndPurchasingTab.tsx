@@ -1514,9 +1514,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                         }}
                         className="h-6 w-full border border-emerald-400 rounded px-1 py-0 bg-emerald-50 text-emerald-800 text-[10px] font-bold shadow-xs hover:bg-emerald-100 transition-colors normal-case cursor-pointer"
                       >
-                        <option value="">-- Gán nhanh --</option>
-                        {['Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét', 'Chưa xác định'].map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
+                        <option value="" className="bg-white text-slate-700 font-normal">-- Gán nhanh --</option>
+                        {['Chưa xác định', 'Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét'].map(opt => (
+                          <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>
                         ))}
                       </CustomSelect>
                     </div>
@@ -1543,9 +1543,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                         }}
                         className="h-6 w-full border border-blue-400 rounded px-1 py-0 bg-blue-50 text-blue-800 text-[10px] font-bold shadow-xs hover:bg-blue-100 transition-colors normal-case cursor-pointer"
                       >
-                        <option value="">-- Gán nhanh --</option>
-                        {['Đã có hàng', 'Chưa đặt hàng', 'Đã đặt hàng', 'Đang giao hàng'].map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
+                        <option value="" className="bg-white text-slate-700 font-normal">-- Gán nhanh --</option>
+                        {PURCHASE_STATUS_OPTIONS.map(opt => (
+                          <option key={opt} value={opt} className={getStatusColorStyle(opt)}>{opt}</option>
                         ))}
                       </CustomSelect>
                     </div>
