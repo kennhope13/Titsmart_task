@@ -20,12 +20,22 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     resolvedUrl.startsWith('blob:')
   ) || (!isExcel && !isPdf && !isOfficeDoc);
 
+  // Detect mobile device to use Canvas reader on Mobile and native Chrome viewer on Desktop
+  const isMobileDevice = typeof window !== 'undefined' && (
+    window.innerWidth < 768 ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  );
+
+  // On Desktop: use native Chrome iframe PDF viewer by default (useCanvasPdf = false)
+  // On Mobile: use Canvas PDF reader by default (useCanvasPdf = true)
+  const [useCanvasPdf, setUseCanvasPdf] = useState<boolean>(isMobileDevice);
+
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [activeSheet, setActiveSheet] = useState<string>('');
   const [sheetsHtmlMap, setSheetsHtmlMap] = useState<Record<string, string>>({});
   const [excelLoading, setExcelLoading] = useState<boolean>(false);
 
-  // PDF Viewer State (Chrome Dark Theme PDF Viewer in React for both Mobile & Desktop)
+  // PDF Viewer State (pdfjs-dist for in-app mobile canvas view)
   const [pdfLoading, setPdfLoading] = useState<boolean>(false);
   const [pdfError, setPdfError] = useState<boolean>(false);
   const [pdfNumPages, setPdfNumPages] = useState<number>(0);
@@ -80,9 +90,9 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     };
   }, [resolvedUrl, isExcel]);
 
-  // Load PDF and render high-res page + thumbnails
+  // Load PDF and render high-res page + thumbnails when useCanvasPdf is active
   useEffect(() => {
-    if (!isPdf || !resolvedUrl) return;
+    if (!isPdf || !resolvedUrl || !useCanvasPdf) return;
     let isMounted = true;
     setPdfLoading(true);
     setPdfError(false);
@@ -165,7 +175,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     return () => {
       isMounted = false;
     };
-  }, [resolvedUrl, isPdf, pdfCurrentPage]);
+  }, [resolvedUrl, isPdf, pdfCurrentPage, useCanvasPdf]);
 
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -202,7 +212,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const touchStartZoomRef = useRef<number>(1);
 
   // Mouse / Touch Drag & Pinch Zoom for Mobile Image / PDF Canvas
-  const canInteractImage = isImage || (isPdf && Boolean(pdfPageImageUrl));
+  const canInteractImage = isImage || (isPdf && useCanvasPdf && Boolean(pdfPageImageUrl));
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 0 && (zoom > 1 || dragMode || canInteractImage)) {
@@ -325,9 +335,34 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
 
   const renderActiveImageSrc = isPdf ? pdfPageImageUrl : resolvedUrl;
 
-  // Render Full Dark Theme Chrome-Style PDF Viewer for PDF files
+  // PDF File View Mode Handling
   if (isPdf) {
     const fileName = resolvedUrl.split('/').pop()?.split('?')[0] || `Tài liệu ${index + 1}`;
+
+    // Desktop mode (useCanvasPdf = false): Render native Chrome PDF viewer iframe
+    if (!useCanvasPdf) {
+      return (
+        <div className="flex flex-col border border-slate-700 rounded-lg bg-[#323639] text-white shadow-xl flex-1 min-h-0 h-full select-none overflow-hidden relative">
+          <div className="flex justify-between items-center px-2 py-1 bg-[#2a2e31] border-b border-[#1f2224] text-xs shrink-0">
+            <span className="font-semibold text-slate-200 truncate">{fileName}</span>
+            <button
+              onClick={() => setUseCanvasPdf(true)}
+              className="text-[11px] bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-0.5 rounded flex items-center gap-1 border border-slate-600 transition-colors"
+              title="Chuyển sang bộ đọc Canvas Cảm ứng Mobile"
+            >
+              <span className="material-symbols-outlined text-[14px]">touch_app</span> Chế độ Canvas Mobile
+            </button>
+          </div>
+          <iframe
+            src={`${resolvedUrl}#toolbar=1`}
+            className="w-full h-full rounded-b border-0 bg-[#323639]"
+            title={`PDF Viewer ${index + 1}`}
+          />
+        </div>
+      );
+    }
+
+    // Mobile mode (useCanvasPdf = true): Render Canvas Dark Theme PDF Reader with touch controls & sidebar
     return (
       <div className="flex flex-col border border-slate-700 rounded-lg bg-[#323639] text-white shadow-xl flex-1 min-h-0 h-full select-none overflow-hidden">
         {/* Dark Chrome PDF Top Header Toolbar */}
@@ -412,8 +447,19 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             </button>
           </div>
 
-          {/* Right: Print & Download */}
+          {/* Right: Toggle Mode + Print & Download */}
           <div className="flex items-center gap-1">
+            {!isMobileDevice && (
+              <button
+                onClick={() => setUseCanvasPdf(false)}
+                className="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition-colors text-[11px] flex items-center gap-1"
+                title="Chuyển sang Chrome PDF Gốc"
+              >
+                <span className="material-symbols-outlined text-[15px]">picture_as_pdf</span>
+                <span className="hidden md:inline">Chrome Gốc</span>
+              </button>
+            )}
+
             <button
               onClick={handlePrint}
               className="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition-colors"
