@@ -1297,6 +1297,35 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           return { tasks: nextTasks, projects: nextProjects };
         });
         get().logActivity('Đã chỉnh sửa thông tin công việc', mergedTask.projectName || mergedTask.projectCode);
+
+        // Tự động phát thông báo Realtime giao việc nếu có gán nhân sự mới hoặc chuyển trạng thái sang Chờ nhận việc
+        try {
+          const isNewAssignee = (
+            (updatedFields.assignedEngineerId && updatedFields.assignedEngineerId !== existingTask?.assignedEngineerId) ||
+            (updatedFields.assignedEngineerName && updatedFields.assignedEngineerName !== existingTask?.assignedEngineerName) ||
+            (updatedFields.status === 'Chờ nhận việc' && existingTask?.status !== 'Chờ nhận việc')
+          );
+          if (isNewAssignee) {
+            const parts = String(updatedFields.assignedEngineerName || existingTask?.assignedEngineerName || '').split('|');
+            const engIds = (parts.length > 1 ? parts[1] : (updatedFields.assignedEngineerId || existingTask?.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
+            const engNames = (parts[0] || (updatedFields.assignedEngineerName || existingTask?.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
+            const assignerName = (window as any).__titsmart_current_user?.name || (window as any).__titsmart_current_user?.username || updatedFields.assignerName || existingTask?.assignerName || 'Quản lý';
+            const assignerId = (window as any).__titsmart_current_user?.id || updatedFields.assignerId || existingTask?.assignerId || '';
+            const taskName = updatedFields.name || existingTask?.name || mergedTask.name || 'Công việc';
+            const pCode = updatedFields.projectCode || existingTask?.projectCode || mergedTask.projectCode || 'Dự án';
+
+            if (engIds.length > 0 || engNames.length > 0) {
+              get().addNotification({
+                title: `Giao việc: ${engNames.join(', ')}`,
+                message: `${assignerName} đã giao công việc "${taskName}" [${pCode}] cho ${engNames.join(', ')}.`,
+                type: `task_assigned:::${engIds.join(',')}:::${engNames.join(',')}`,
+                icon: 'assignment_ind',
+                senderId: assignerId,
+                senderName: assignerName
+              });
+            }
+          }
+        } catch {}
       } catch (e) {
         console.error('Failed to update task', e);
       }
