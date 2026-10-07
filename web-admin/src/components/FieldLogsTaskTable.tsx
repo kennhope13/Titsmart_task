@@ -158,9 +158,11 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
         if (parentStt && !sttSet.has(parentStt)) {
           sttSet.add(parentStt);
           let synthName = '';
-          const parentItem = tasks.find(d => String(d.stt || '').trim() === parentStt);
+          const parentItem = tasks.find(d => d.projectCode === t.projectCode && String(d.stt || '').trim() === parentStt);
           if (parentItem && (parentItem.name || parentItem.sectionName)) {
             synthName = parentItem.name || parentItem.sectionName || '';
+          } else if (t.sectionName && t.sectionName.trim()) {
+            synthName = t.sectionName;
           } else {
             synthName = `HẠNG MỤC ${parentStt}`;
           }

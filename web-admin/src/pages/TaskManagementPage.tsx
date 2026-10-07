@@ -1818,9 +1818,11 @@ const hasSyncedRef = useRef(false);
         if (parentStt && !sttSet.has(parentKey)) {
           sttSet.add(parentKey);
           let synthName = '';
-          const parentItem = tasks.find(d => String(d.stt || '').trim() === parentStt);
+          const parentItem = tasks.find(d => d.projectCode === t.projectCode && String(d.stt || '').trim() === parentStt);
           if (parentItem && (parentItem.name || parentItem.sectionName)) {
             synthName = parentItem.name || parentItem.sectionName || '';
+          } else if (t.sectionName && t.sectionName.trim()) {
+            synthName = t.sectionName;
           } else {
             synthName = `HẠNG MỤC ${parentStt}`;
           }

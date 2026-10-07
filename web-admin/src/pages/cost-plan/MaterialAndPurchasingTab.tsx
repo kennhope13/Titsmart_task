@@ -886,9 +886,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         if (parentStt && !sttSet.has(parentKey)) {
           sttSet.add(parentKey);
           let synthName = '';
-          const parentItem: any = filteredData.find(d => String(d.stt || '').trim() === parentStt);
+          const parentItem: any = filteredData.find(d => d.projectCode === t.projectCode && String(d.stt || '').trim() === parentStt);
           if (parentItem && (parentItem.content || parentItem.jobContent || parentItem.name)) {
             synthName = parentItem.content || parentItem.jobContent || parentItem.name || '';
+          } else if ((t as any).sectionName && (t as any).sectionName.trim()) {
+            synthName = (t as any).sectionName;
           } else {
             synthName = `HẠNG MỤC ${parentStt}`;
           }
