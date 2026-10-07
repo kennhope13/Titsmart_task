@@ -312,13 +312,15 @@ export const PersonnelPage: React.FC = () => {
       });
     }
 
-    // Also check projects where this engineer is listed in project.members, memberIds, or managerName
+    // Also check projects where this engineer is listed in project.members, memberIds, or managerName/managerId
     const engNameUpper = (engineer.name || '').trim().toUpperCase();
+    const engIdUpper = String(engineer.id || '').trim().toUpperCase();
     projects.forEach(p => {
-      const isMember = (Array.isArray(p.members) && p.members.includes(engineer.id)) ||
-                       (Array.isArray(p.memberIds) && p.memberIds.includes(engineer.id));
+      const isMember = (Array.isArray(p.members) && p.members.some(m => String(m).trim().toUpperCase() === engIdUpper)) ||
+                       (Array.isArray(p.memberIds) && p.memberIds.some(m => String(m).trim().toUpperCase() === engIdUpper));
       const isManager = p.managerName ? p.managerName.split(',').map(s => s.trim().toUpperCase()).includes(engNameUpper) : false;
-      if (isMember || isManager) {
+      const isManagerId = p.managerId ? String(p.managerId).trim().toUpperCase() === engIdUpper : false;
+      if (isMember || isManager || isManagerId) {
         allAssigned.push({ code: p.code || p.id, name: p.name });
       }
     });

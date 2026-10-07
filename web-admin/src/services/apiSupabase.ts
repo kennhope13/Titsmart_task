@@ -892,16 +892,23 @@ export const api = {
 
       const sanitized = sanitizeEngineersPayload(payload);
 
+      const projCodes = data.projectCodes || data.project_codes;
       try {
         const { data: result, error } = await supabase.from('engineers').update(sanitized).eq('id', id).select();
-        if (!error && Array.isArray(result) && result.length > 0) return toCamelCase(result[0]);
+        if (!error && Array.isArray(result) && result.length > 0) {
+          const row = toCamelCase(result[0]);
+          if (projCodes !== undefined) row.projectCodes = projCodes;
+          return row;
+        }
         if (error) {
           delete sanitized.is_locked;
           delete sanitized.password;
           delete sanitized.is_active;
           const { data: retryResult } = await supabase.from('engineers').update(sanitized).eq('id', id).select();
           const row = Array.isArray(retryResult) && retryResult.length > 0 ? retryResult[0] : { id, ...data };
-          return toCamelCase(row);
+          const camel = toCamelCase(row);
+          if (projCodes !== undefined) camel.projectCodes = projCodes;
+          return camel;
         }
       } catch {
         // ignore
