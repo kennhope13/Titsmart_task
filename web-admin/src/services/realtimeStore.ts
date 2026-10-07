@@ -1891,6 +1891,18 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           senderId,
           senderName
         };
+        // Assignee -> assigner events must ALWAYS also reach admin/managers (legacy behaviour). When the real
+        // assignerId is present it used to REPLACE the 'admin' target, so admins/assigners whose id/name did not
+        // match exactly stopped receiving these notifications.
+        if (/^task_(accepted|completed|question|reply|due)(:::|$)/.test(String(payloadWithSender.type || ''))) {
+          const tp = String(payloadWithSender.type).split(':::');
+          const ids = (tp[1] || '').split(',').map(s => s.trim()).filter(Boolean);
+          const names = (tp[2] || '').split(',').map(s => s.trim()).filter(Boolean);
+          if (!ids.some(i => i.toLowerCase() === 'admin')) ids.push('admin');
+          if (!names.some(n => n.toLowerCase() === 'quản lý')) names.push('Quản lý');
+          payloadWithSender.type = `${tp[0]}:::${ids.join(',')}:::${names.join(',')}`;
+        }
+
         const createdNotif = await api.notifications.create(payloadWithSender);
         set((state) => {
           const nextNotifs = [createdNotif, ...state.notifications];

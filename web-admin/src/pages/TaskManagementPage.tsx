@@ -384,11 +384,14 @@ export const TaskManagementPage: React.FC = () => {
       const engIds = (parts.length > 1 ? parts[1] : (task.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
       const engNames = (parts[0] || (task.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
 
+      const targetIdList = Array.from(new Set([task.assignerId || 'admin', ...engIds, ...(task.followerIds || [])])).filter(Boolean);
+      const targetNameList = Array.from(new Set([task.assignerName || 'Quản lý', ...engNames, ...(task.followerNames || [])])).filter(Boolean);
+
       await store.addNotification({
         title: 'Phản hồi hướng dẫn công việc',
         message: `${userName} đã phản hồi thắc mắc về công việc "${task.name}" [${task.projectCode}]: "${replyText}".`,
         link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
-        type: `task_reply:::${engIds.join(',')}:::${engNames.join(',')}`,
+        type: `task_reply:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
         icon: 'chat',
         senderId: userId,
         senderName: userName
@@ -523,6 +526,7 @@ const hasSyncedRef = useRef(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
   const [assigningUserIds, setAssigningUserIds] = useState<string[]>([]);
+  const [assigningFollowerIds, setAssigningFollowerIds] = useState<string[]>([]);
   const [assignNote, setAssignNote] = useState('');
   const [assignSelectedFile, setAssignSelectedFile] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
   const [assignShowAttachMenu, setAssignShowAttachMenu] = useState(false);
@@ -2550,6 +2554,7 @@ const hasSyncedRef = useRef(false);
                               const parts = t.assignedEngineerName?.split('|') || [];
                               const idsString = parts.length > 1 ? parts[1] : t.assignedEngineerId;
                               setAssigningUserIds(idsString ? idsString.split(',') : []);
+                              setAssigningFollowerIds(t.followerIds || []);
                             }
                           }}
                         >
@@ -2631,38 +2636,97 @@ const hasSyncedRef = useRef(false);
       {/* ASSIGN TASK MODAL */}
       <Modal
         isOpen={!!assigningTask}
-        onClose={() => { setAssigningTask(null); setAssigningUserIds([]); setAssignNote(''); }}
+        onClose={() => { setAssigningTask(null); setAssigningUserIds([]); setAssigningFollowerIds([]); setAssignNote(''); }}
         title="Giao việc cho nhân viên"
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-600 font-medium">Chọn một hoặc nhiều nhân viên cho hạng mục: <strong className="text-primary">{assigningTask?.name}</strong></p>
-          <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1 bg-slate-50">
-            {assigningTaskEngineers.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-500 font-medium">
-                Dự án này chưa có thành viên nào được phân công. Vui lòng vào trang Quản lý dự án để thêm thành viên.
+          <p className="text-xs font-bold text-slate-700">Hạng mục: <strong className="text-primary">{assigningTask?.name}</strong></p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-primary text-[16px]">assignment_ind</span>
+                  Người đảm nhiệm
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal">(Bắt buộc)</span>
+              </p>
+              <div className="h-48 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1 bg-slate-50">
+                {assigningTaskEngineers.length === 0 ? (
+                  <div className="p-3 text-center text-xs text-slate-500 font-medium">
+                    Dự án này chưa có thành viên nào được phân công. Vui lòng vào trang Quản lý dự án để thêm thành viên.
+                  </div>
+                ) : (
+                  assigningTaskEngineers.map(eng => {
+                    const isChecked = assigningUserIds.includes(eng.id);
+                    return (
+                      <label key={eng.id} className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors">
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setAssigningUserIds(prev => [...prev, eng.id]);
+                              setAssigningFollowerIds(prev => prev.filter(id => id !== eng.id));
+                            } else {
+                              setAssigningUserIds(prev => prev.filter(id => id !== eng.id));
+                            }
+                          }}
+                          className="rounded border-slate-300 text-primary focus:ring-primary"
+                        />
+                        <div>
+                          <div className="text-xs font-bold text-slate-700">{eng.name}</div>
+                          <div className="text-[11px] text-slate-500">{eng.title || 'Nhân viên'}</div>
+                        </div>
+                      </label>
+                    );
+                  })
+                )}
               </div>
-            ) : (
-              assigningTaskEngineers.map(eng => {
-                const isChecked = assigningUserIds.includes(eng.id);
-                return (
-                  <label key={eng.id} className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded cursor-pointer transition-colors">
-                    <input 
-                      type="checkbox" 
-                      checked={isChecked}
-                      onChange={(e) => {
-                        if (e.target.checked) setAssigningUserIds(prev => [...prev, eng.id]);
-                        else setAssigningUserIds(prev => prev.filter(id => id !== eng.id));
-                      }}
-                      className="rounded border-slate-300 text-primary focus:ring-primary"
-                    />
-                    <div>
-                      <div className="text-sm font-bold text-slate-700">{eng.name}</div>
-                      <div className="text-xs text-slate-500">{eng.title || 'Nhân viên'}</div>
-                    </div>
-                  </label>
-                );
-              })
-            )}
+            </div>
+
+            <div>
+              <p className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-amber-600 text-[16px]">visibility</span>
+                  Người theo dõi (CC)
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal">(Tùy chọn)</span>
+              </p>
+              <div className="h-48 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1 bg-slate-50">
+                {assigningTaskEngineers.length === 0 ? (
+                  <div className="p-3 text-center text-xs text-slate-500 font-medium">
+                    Không có nhân sự khả dụng.
+                  </div>
+                ) : (
+                  assigningTaskEngineers.map(eng => {
+                    const isAssigned = assigningUserIds.includes(eng.id);
+                    const isFollowerChecked = assigningFollowerIds.includes(eng.id);
+                    return (
+                      <label key={`follower-${eng.id}`} className={`flex items-center gap-2 p-1.5 rounded transition-colors ${isAssigned ? 'opacity-50 cursor-not-allowed bg-slate-100' : 'hover:bg-slate-100 cursor-pointer'}`}>
+                        <input 
+                          type="checkbox" 
+                          disabled={isAssigned}
+                          checked={isFollowerChecked && !isAssigned}
+                          onChange={(e) => {
+                            if (e.target.checked) setAssigningFollowerIds(prev => [...prev, eng.id]);
+                            else setAssigningFollowerIds(prev => prev.filter(id => id !== eng.id));
+                          }}
+                          className="rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                        />
+                        <div>
+                          <div className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                            <span>{eng.name}</span>
+                            {isAssigned && <span className="text-[10px] text-blue-600 bg-blue-50 px-1 rounded font-normal">(Đảm nhiệm)</span>}
+                          </div>
+                          <div className="text-[11px] text-slate-500">{eng.title || 'Nhân viên'}</div>
+                        </div>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2 relative">
@@ -2753,7 +2817,7 @@ const hasSyncedRef = useRef(false);
           </div>
 
           <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-100">
-            <button onClick={() => { setAssigningTask(null); setAssigningUserIds([]); setAssignNote(''); setAssignSelectedFile(null); setAssignShowAttachMenu(false); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
+            <button onClick={() => { setAssigningTask(null); setAssigningUserIds([]); setAssigningFollowerIds([]); setAssignNote(''); setAssignSelectedFile(null); setAssignShowAttachMenu(false); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
             <button 
               onClick={async () => {
                 if (!assigningTask) return;
@@ -2768,6 +2832,10 @@ const hasSyncedRef = useRef(false);
                 const firstId = selectedEngs.length > 0 ? selectedEngs[0].id : '';
                 const assignerId = authStore.user?.id || '';
                 const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
+
+                const followerEngs = engineers.filter(e => assigningFollowerIds.includes(e.id) && !assigningUserIds.includes(e.id));
+                const followerNames = followerEngs.map(e => e.name);
+                const followerIds = followerEngs.map(e => e.id);
 
                 let updatedNotes = assigningTask.notes || '';
                 if (assignNote.trim() || assignSelectedFile) {
@@ -2786,6 +2854,8 @@ const hasSyncedRef = useRef(false);
                 handleUpdateTaskSync(assigningTask.id, {
                   assignedEngineerId: firstId,
                   assignedEngineerName: names + (ids ? '|' + ids : ''),
+                  followerIds: followerIds.length > 0 ? followerIds : undefined,
+                  followerNames: followerNames.length > 0 ? followerNames : undefined,
                   assignerId: assignerId,
                   assignerName: assignerName,
                   status: ids ? 'Chờ nhận việc' : assigningTask.status,
@@ -2805,11 +2875,23 @@ const hasSyncedRef = useRef(false);
                       senderId: assignerId,
                       senderName: assignerName
                     });
+
+                    if (followerIds.length > 0) {
+                      await store.addNotification({
+                        title: `Theo dõi công việc: ${assigningTask.name}`,
+                        message: `${assignerName} đã thêm bạn vào danh sách THEO DÕI công việc "${assigningTask.name}" (phụ trách: ${names}).`,
+                        type: `task_follower:::${followerIds.join(',')}:::${followerNames.join(',')}`,
+                        icon: 'visibility',
+                        senderId: assignerId,
+                        senderName: assignerName
+                      });
+                    }
                   }
                 }
 
                 setAssigningTask(null);
                 setAssigningUserIds([]);
+                setAssigningFollowerIds([]);
                 setAssignNote('');
                 setAssignSelectedFile(null);
                 setAssignShowAttachMenu(false);

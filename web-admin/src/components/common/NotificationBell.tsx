@@ -539,6 +539,39 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     }
   });
 
+  // Per-user READ state. The DB `read` column is shared by every account, so using it made one
+  // user's "read"/"mark all read" hide the notification from everybody else (e.g. the assigner).
+  const readStorageKey = useMemo(() => `buildcore_read_notifs_${user?.id || user?.username || 'guest'}`, [user]);
+  const [readNotifIds, setReadNotifIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(`buildcore_read_notifs_${user?.id || user?.username || 'guest'}`);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const addReadIds = (ids: string[]) => {
+    setReadNotifIds(prev => {
+      const next = new Set(prev);
+      ids.forEach(id => next.add(id));
+      try {
+        localStorage.setItem(readStorageKey, JSON.stringify(Array.from(next).slice(-500)));
+      } catch {}
+      return next;
+    });
+  };
+
+  // First run for this account: notifications already flagged read in DB count as read (avoid flood of "unread")
+  useEffect(() => {
+    try {
+      const seedKey = `${readStorageKey}_seeded`;
+      if (localStorage.getItem(seedKey) || !Array.isArray(notifications) || notifications.length === 0) return;
+      localStorage.setItem(seedKey, '1');
+      addReadIds(notifications.filter((n: any) => n.read).map((n: any) => n.id));
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readStorageKey, notifications.length]);
+
   // Keep dismissed state in sync if user changes
   useEffect(() => {
     try {
@@ -551,25 +584,18 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
   const handleMarkAllAsRead = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      await markAllNotificationsRead();
-    } catch (err) {
-      console.error(err);
-    }
+    addReadIds(displayNotifications.map((n: any) => n.id));
   };
 
   const handleClearRead = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // CHỈ xóa các thông báo ĐÃ ĐỌC cho riêng tài khoản hiện tại
+    // CHỈ ẩn các thông báo ĐÃ ĐỌC cho riêng tài khoản hiện tại (không xóa trên DB để người khác vẫn nhận được)
     const readIds = displayNotifications.filter(n => n.read).map(n => n.id);
     if (readIds.length === 0) return;
 
     setDismissedNotifIds(prev => {
       const next = new Set(prev);
-      readIds.forEach(id => {
-        next.add(id);
-        deleteNotification(id).catch(() => {});
-      });
+      readIds.forEach(id => next.add(id));
       try {
         localStorage.setItem(userStorageKey, JSON.stringify(Array.from(next)));
       } catch (err) {
@@ -591,13 +617,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       }
       return next;
     });
-    deleteNotification(notifId).catch(() => {});
   };
 
   const handleNotificationClick = (notification: any) => {
     if (!notification.read) {
-      markNotificationRead(notification.id);
+      addReadIds([notification.id]);
     }
+
     setShowPopover(false);
     setShowCenterModal(false);
     sessionStorage.setItem('has_shown_center_notif_modal', 'true');
@@ -911,11 +937,11 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       const key = `${cleanTitle}:::${n.message}`;
       if (!seen.has(key)) {
         seen.add(key);
-        uniqueList.push(n);
+        uniqueList.push(n.type === 'app_update' ? n : { ...n, read: readNotifIds.has(n.id) });
       }
     });
     return uniqueList;
-  }, [notifications, user, engineers, tasks, dismissedNotifIds, availableUpdateVersion]);
+  }, [notifications, user, engineers, tasks, dismissedNotifIds, availableUpdateVersion, readNotifIds]);
 
   // Priority notifications: Overdue 1-2 days or Due soon
   const centerModalNotifications = useMemo(() => {

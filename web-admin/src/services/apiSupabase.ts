@@ -125,6 +125,28 @@ const toCamelCase = (obj: any) => {
 
 const mapArray = (arr: any[]) => arr.map(toCamelCase);
 
+// Index of the notifications insert shape that last worked (0 = all columns, 1 = meta in message, 2 = base)
+let notifInsertStartIdx = 0;
+
+// Unpack link/sender metadata that was appended to `message` when the DB table lacks those columns
+const parseNotificationMeta = (n: any) => {
+  if (!n || typeof n.message !== 'string') return n;
+  const m = n.message.match(/\u200B\[\[META:([^\]]*)\]\]$/);
+  if (!m) return n;
+  try {
+    const meta = JSON.parse(decodeURIComponent(m[1]));
+    return {
+      ...n,
+      message: n.message.replace(m[0], ''),
+      link: n.link || meta.l || undefined,
+      senderId: n.senderId || meta.s || undefined,
+      senderName: n.senderName || meta.n || undefined
+    };
+  } catch {
+    return { ...n, message: n.message.replace(m[0], '') };
+  }
+};
+
 let cachedDocTracksSchemaType: 'modern' | 'prisma' | 'legacy' | null = null;
 
 const encodeProjectMembers = (notes: string | undefined, memberIds: string[]): string => {
@@ -1903,53 +1925,65 @@ export const api = {
   notifications: {
     create: async (data: Omit<NotificationItem, 'id' | 'timestamp' | 'read'>) => {
       const nowIso = new Date().toISOString();
+      const senderId = (data as any).senderId || (data as any).createdById || '';
+      const senderName = (data as any).senderName || (data as any).createdByName || '';
+      const link = (data as any).link || '';
 
-      const payload: any = {
+      const basePayload: any = {
         title: data.title,
         message: data.message,
         type: data.type,
         icon: data.icon,
-        link: (data as any).link,
         read: false,
         timestamp: nowIso
       };
-      if (data.senderId || data.createdById) payload.sender_id = data.senderId || data.createdById;
-      if (data.senderName || data.createdByName) payload.sender_name = data.senderName || data.createdByName;
 
-      try {
-        const { data: result, error } = await supabase.from('notifications').insert(payload).select().single();
-        if (error) {
-          // If extra column doesn't exist on DB table, retry with base columns
-          delete payload.sender_id;
-          delete payload.sender_name;
-          const { data: fbResult, error: fbError } = await supabase.from('notifications').insert(payload).select().single();
-          if (fbError) throw fbError;
-          return { ...toCamelCase(fbResult), ...data };
+      // The production `notifications` table only has title/message/type/icon/read/timestamp.
+      // Inserting `link`/`sender_*` fails with 400, which previously made the notification exist ONLY in the
+      // sender's browser (so the assigner never received it). Try full columns first, then fall back to
+      // packing link + sender into a hidden meta suffix of the message that getAll() unpacks.
+      const metaSuffix = (link || senderId || senderName)
+        ? `\u200B[[META:${encodeURIComponent(JSON.stringify({ l: link, s: senderId, n: senderName }))}]]`
+        : '';
+      const attempts: any[] = [
+        { ...basePayload, link, ...(senderId ? { sender_id: senderId } : {}), ...(senderName ? { sender_name: senderName } : {}) },
+        { ...basePayload, message: `${data.message}${metaSuffix}` },
+        { ...basePayload }
+      ];
+
+      for (let i = notifInsertStartIdx; i < attempts.length; i++) {
+        try {
+          const { data: result, error } = await supabase.from('notifications').insert(attempts[i]).select().single();
+          if (error || !result) continue;
+          notifInsertStartIdx = i;
+          const row = parseNotificationMeta(toCamelCase(result));
+          return { ...row, link: row.link || link, senderId: row.senderId || senderId, senderName: row.senderName || senderName };
+        } catch {
+          // try next attempt
         }
-        return toCamelCase(result);
-      } catch (err) {
-        console.warn('Notification insert fallback:', err);
-        return {
-          id: 'notif-' + Date.now(),
-          ...data,
-          read: false,
-          timestamp: nowIso
-        };
       }
+      console.warn('Notification insert failed on all attempts, keeping local copy only');
+      return {
+        id: 'notif-' + Date.now(),
+        ...data,
+        read: false,
+        timestamp: nowIso
+      };
     },
     getAll: async () => {
       try {
         const { data, error } = await supabase.from('notifications').select('*').order('timestamp', { ascending: false }).limit(50);
-        if (!error && data) return mapArray(data);
+        if (!error && data) return mapArray(data).map(parseNotificationMeta);
         if (error) {
           const { data: fbData, error: fbError } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(50);
-          if (!fbError && fbData) return mapArray(fbData);
+          if (!fbError && fbData) return mapArray(fbData).map(parseNotificationMeta);
         }
       } catch (err) {
         console.warn('Notification getAll fallback:', err);
       }
       return [];
     },
+
     markRead: async (id: string) => {
       if (!id || !UUID_RE.test(id)) return { success: true };
       const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id);
