@@ -166,17 +166,14 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     tLow.includes('quá hạn hoàn thành');
 
   if (isTaskNotification) {
-    // 1A. Giao việc / Nghiệm thu / Phản hồi hướng dẫn -> CHỈ người được giao việc (nhân sự thực hiện) mới nhận
+    // 1A. Giao việc / Nghiệm thu -> Người được giao việc nhận
     if (
       tLow.startsWith('giao việc') || 
       tLow.includes('giao việc') ||
       tLow.includes('được giao') || 
       tLow.includes('nghiệm thu') || 
-      tLow.includes('phản hồi') || 
-      tLow.includes('hướng dẫn') ||
       typeStr.startsWith('task_assigned') || 
-      typeStr.startsWith('task_approved') || 
-      typeStr.startsWith('task_reply')
+      typeStr.startsWith('task_approved')
     ) {
       if (typeStr.includes(':::')) {
         const parts = typeStr.split(':::');
@@ -213,7 +210,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       return false;
     }
 
-    // 1B. Nhận việc / Báo cáo hoàn thành -> CHỈ người giao việc mới nhận
+    // 1B. Nhận việc / Báo cáo hoàn thành -> Người giao việc nhận
     if (
       tLow.includes('đã nhận việc') || 
       tLow.includes('hoàn thành công việc') || 
@@ -232,7 +229,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
         const isMeName = targetName && isMatchingName(targetName);
 
         if (isMeId || isMeName) return true;
-        if (targetId === 'admin' || targetName.toLowerCase().includes('quản lý') || targetName.toLowerCase().includes('quản trị viên')) {
+        if (targetId === 'admin' || targetName.toLowerCase().includes('quản lý') || targetName.toLowerCase().includes('quản trị viên') || targetName.toLowerCase().includes('admin')) {
           return isAdmin;
         }
         return false;
@@ -240,12 +237,15 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       return isAdmin;
     }
 
-    // 1C. Thắc mắc / Trao đổi / Nhắc hạn / Quá hạn
+    // 1C. Phản hồi / Trao đổi / Thắc mắc / Hướng dẫn / Nhắc hạn / Quá hạn -> Người giao việc VÀ những người được giao việc nhận
     if (
-      tLow.includes('thắc mắc') || 
+      tLow.includes('phản hồi') || 
       tLow.includes('trao đổi') || 
+      tLow.includes('thắc mắc') || 
+      tLow.includes('hướng dẫn') || 
       tLow.includes('quá hạn hoàn thành') || 
       tLow.includes('nhắc hạn công việc') || 
+      typeStr.startsWith('task_reply') || 
       typeStr.startsWith('task_question') || 
       typeStr.startsWith('task_due')
     ) {
@@ -259,15 +259,15 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
         const isMeName = targetNames.some(tName => isMatchingName(tName));
 
         if (isMeId || isMeName) return true;
-        if (targetIds.includes('admin') || targetNames.some(tn => tn.toLowerCase().includes('quản lý') || tn.toLowerCase().includes('quản trị viên'))) {
+        if (targetIds.includes('admin') || targetNames.some(tn => tn.toLowerCase().includes('quản lý') || tn.toLowerCase().includes('quản trị viên') || tn.toLowerCase().includes('admin'))) {
           return isAdmin;
         }
         return false;
       }
-      return false;
+      return true;
     }
 
-    // 1D. Theo dõi công việc
+    // 1D. Theo dõi công việc -> CHỈ những người trong danh sách người theo dõi mới nhận
     if (
       tLow.includes('theo dõi') || 
       typeStr.startsWith('task_follower')
