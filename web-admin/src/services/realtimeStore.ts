@@ -1612,6 +1612,23 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
           persistAndNotify(nextState);
           return nextState;
         });
+
+        // Tự động phát thông báo Realtime giao dịch kho / cấp vật tư
+        try {
+          const typeLabel = transactionData.type === 'IMPORT' ? 'Nhập kho' : 'Xuất kho / Cấp vật tư';
+          const senderId = (window as any).__titsmart_current_user?.id || '';
+          const senderName = (window as any).__titsmart_current_user?.name || (window as any).__titsmart_current_user?.username || 'Thủ kho';
+          const projTarget = transactionData.sourceOrProject || 'Dự án';
+          get().addNotification({
+            title: `Giao dịch kho: ${typeLabel}`,
+            message: `${senderName} đã thực hiện ${typeLabel.toLowerCase()} "${transactionData.materialName || 'Vật tư'}" (SL: ${transactionData.quantity || 1} ${transactionData.unit || ''}) cho ${projTarget}.`,
+            link: `/materials`,
+            type: `material_update:::${projTarget}`,
+            icon: 'inventory_2',
+            senderId,
+            senderName
+          });
+        } catch {}
         // Đồng bộ lại toàn bộ dữ liệu kho từ DB để đảm bảo số tồn luôn chính xác
         try {
           const [freshMaterials, freshTransactions] = await Promise.all([
@@ -1727,6 +1744,20 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         persistAndNotify({ issues: nextIssues });
         return { issues: nextIssues };
       });
+
+      try {
+        const senderId = (window as any).__titsmart_current_user?.id || '';
+        const senderName = (window as any).__titsmart_current_user?.name || (window as any).__titsmart_current_user?.username || 'Nhân sự';
+        get().addNotification({
+          title: `Cảnh báo sự cố mới: ${newIssue.title}`,
+          message: `${senderName} đã báo cáo sự cố "${newIssue.title}" tại ${newIssue.projectName || newIssue.projectCode || 'Dự án'}.`,
+          link: `/project-diagram`,
+          type: `issue_alert:::${newIssue.projectCode || ''}`,
+          icon: 'warning',
+          senderId,
+          senderName
+        });
+      } catch {}
     },
 
     updateIssueStatus: (id, status: IssueStatus) => {
@@ -1762,6 +1793,21 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         persistAndNotify({ issues: nextIssues });
         return { issues: nextIssues };
       });
+
+      try {
+        const issue = get().issues.find(i => i.id === issueId);
+        const senderId = (window as any).__titsmart_current_user?.id || '';
+        const senderName = (window as any).__titsmart_current_user?.name || (window as any).__titsmart_current_user?.username || 'Ban Quản lý';
+        get().addNotification({
+          title: `Chỉ đạo xử lý sự cố: ${issue?.title || ''}`,
+          message: `${senderName} đã chỉ đạo xử lý sự cố "${issue?.title || 'Sự cố'}": "${directive}".`,
+          link: `/project-diagram`,
+          type: `issue_alert:::${issue?.projectCode || ''}`,
+          icon: 'assignment_turned_in',
+          senderId,
+          senderName
+        });
+      } catch {}
     },
 
     markNotificationRead: async (id) => {
