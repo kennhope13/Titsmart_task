@@ -1228,102 +1228,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               </div>
             )}
 
-            {subTab === 'TECH' && (
-              <div className="flex items-center gap-2 border-l border-slate-200 pl-2 ml-1 flex-nowrap flex-shrink-0">
-                {/* Chọn tất cả Button */}
-                <button
-                  type="button"
-                  onClick={toggleSelectAll}
-                  className="flex items-center gap-1.5 h-7 px-2.5 bg-white border border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-700 font-bold text-[11px] rounded-md shadow-xs whitespace-nowrap flex-shrink-0 cursor-pointer transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    readOnly
-                    className="w-3.5 h-3.5 rounded border-slate-300 text-primary pointer-events-none"
-                  />
-                  <span>{isAllSelected ? 'Bỏ chọn tất cả' : `Chọn tất cả (${selectableItems.length})`}</span>
-                </button>
 
-                {selectedIds.size > 0 && (
-                  <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md whitespace-nowrap flex-shrink-0">
-                    Đã chọn: {selectedIds.size}
-                  </span>
-                )}
-
-                {/* Gán nhanh Tình trạng */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <span className="text-emerald-700 font-bold whitespace-nowrap text-[11px] flex items-center gap-0.5">
-                    <span className="material-symbols-outlined text-[14px]">done_all</span>
-                    Gán Tình trạng:
-                  </span>
-                  <CustomSelect
-                    value=""
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                      const val = e.target.value;
-                      if (!val) return;
-                      if (selectedIds.size === 0) {
-                        alert('Vui lòng tích chọn ít nhất 1 vật tư cần gán (hoặc bấm "Chọn tất cả")!');
-                        e.target.value = '';
-                        return;
-                      }
-                      const targetVal = val === 'Chưa xác định' ? '' : val;
-                      const targetList = selectableItems.filter((p: ProjectMaterialPlan) => selectedIds.has(p.id));
-                      if (targetList.length === 0) return;
-                      targetList.forEach((plan: ProjectMaterialPlan) => {
-                        const rawNotes = String(plan.notes || '');
-                        let currentTech = getTechNote(rawNotes).replace(/\[tech-status:[^\]]+\]/gi, '').trim();
-                        if (targetVal) currentTech = `${currentTech} [tech-status:${targetVal}]`.trim();
-                        const docNote = getDocNoteFull(rawNotes);
-                        const newNotes = docNote ? `${currentTech} [DOC-NOTE]${docNote}` : currentTech;
-                        onUpdateMaterial(plan.id, { techSpecStatus: targetVal, notes: newNotes });
-                      });
-                      alert(`Đã gán Tình trạng "${val}" thành công cho ${targetList.length} vật tư được chọn!`);
-                      e.target.value = '';
-                    }}
-                    className="h-7 min-w-[110px] max-w-[130px] border border-emerald-300 rounded px-1.5 py-0.5 bg-emerald-50 text-emerald-800 text-[11px] font-bold shadow-xs hover:bg-emerald-100 transition-colors"
-                  >
-                    <option value="">-- Chọn gán --</option>
-                    {['Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét', 'Chưa xác định'].map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </CustomSelect>
-                </div>
-
-                {/* Gán nhanh TT Đặt hàng */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <span className="text-blue-700 font-bold whitespace-nowrap text-[11px] flex items-center gap-0.5">
-                    <span className="material-symbols-outlined text-[14px]">shopping_bag</span>
-                    Gán TT Đặt hàng:
-                  </span>
-                  <CustomSelect
-                    value=""
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                      const val = e.target.value;
-                      if (!val) return;
-                      if (selectedIds.size === 0) {
-                        alert('Vui lòng tích chọn ít nhất 1 vật tư cần gán (hoặc bấm "Chọn tất cả")!');
-                        e.target.value = '';
-                        return;
-                      }
-                      const targetList = selectableItems.filter((p: ProjectMaterialPlan) => selectedIds.has(p.id));
-                      if (targetList.length === 0) return;
-                      targetList.forEach((plan: ProjectMaterialPlan) => {
-                        onUpdateMaterial(plan.id, { orderedStatus: val });
-                      });
-                      alert(`Đã gán TT Đặt hàng "${val}" thành công cho ${targetList.length} vật tư được chọn!`);
-                      e.target.value = '';
-                    }}
-                    className="h-7 min-w-[110px] max-w-[130px] border border-blue-300 rounded px-1.5 py-0.5 bg-blue-50 text-blue-800 text-[11px] font-bold shadow-xs hover:bg-blue-100 transition-colors"
-                  >
-                    <option value="">-- Chọn gán --</option>
-                    {['Đã có hàng', 'Chưa đặt hàng', 'Đã đặt hàng', 'Đang giao hàng'].map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </CustomSelect>
-                </div>
-              </div>
-            )}
             
             
 
@@ -1510,9 +1415,9 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
             <col style={{ width: 80 }} />
             {subTab === 'TECH' && (
               <>
-                <col style={{ width: 125 }} />
+                <col style={{ width: 135 }} />
                 <col style={{ width: 55 }} />
-                <col style={{ width: 120 }} />
+                <col style={{ width: 135 }} />
                 <col style={{ width: 85 }} />
                 <col style={{ width: 140 }} />
                 <col style={{ width: 135 }} />
@@ -1549,7 +1454,20 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           </colgroup>
           <thead className="sticky top-0 z-30 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
-              <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="py-2 px-0 text-center font-extrabold whitespace-nowrap bg-slate-50 tracking-tighter">STT</th>
+              <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="py-1.5 px-0.5 text-center font-extrabold whitespace-nowrap bg-slate-50 tracking-tighter">
+                <div className="flex items-center justify-center gap-1">
+                  {subTab === 'TECH' && (
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={toggleSelectAll}
+                      className="w-3.5 h-3.5 rounded border-slate-300 text-primary cursor-pointer"
+                      title={isAllSelected ? "Bỏ chọn tất cả" : "Chọn tất cả vật tư"}
+                    />
+                  )}
+                  <span>STT</span>
+                </div>
+              </th>
               <th style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', minWidth: 180, width: subTab === 'FINANCE' ? 240 : undefined }} className="sticky left-0 z-30 bg-slate-50 bg-clip-padding px-2 py-2 font-extrabold text-left min-w-[180px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">NỘI DUNG</th>
               {(subTab === 'TECH' || subTab === 'DOCS' || subTab === 'FINANCE') && (
                 <>
@@ -1562,9 +1480,67 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
               
               {subTab === 'TECH' && (
                 <>
-                  <th style={{ width: 125, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TÌNH TRẠNG</th>
+                  <th style={{ width: 135, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">
+                    <div className="flex flex-col items-center gap-1">
+                      <span>TÌNH TRẠNG</span>
+                      <CustomSelect
+                        value=""
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                          const val = e.target.value;
+                          if (!val) return;
+                          const targetVal = val === 'Chưa xác định' ? '' : val;
+                          const targetList = selectedIds.size > 0
+                            ? selectableItems.filter((p: ProjectMaterialPlan) => selectedIds.has(p.id))
+                            : selectableItems;
+                          if (targetList.length === 0) return;
+                          targetList.forEach((plan: ProjectMaterialPlan) => {
+                            const rawNotes = String(plan.notes || '');
+                            let currentTech = getTechNote(rawNotes).replace(/\[tech-status:[^\]]+\]/gi, '').trim();
+                            if (targetVal) currentTech = `${currentTech} [tech-status:${targetVal}]`.trim();
+                            const docNote = getDocNoteFull(rawNotes);
+                            const newNotes = docNote ? `${currentTech} [DOC-NOTE]${docNote}` : currentTech;
+                            onUpdateMaterial(plan.id, { techSpecStatus: targetVal, notes: newNotes });
+                          });
+                          alert(`Đã gán Tình trạng "${val}" thành công cho ${targetList.length} vật tư!`);
+                          e.target.value = '';
+                        }}
+                        className="h-6 w-full border border-emerald-400 rounded px-1 py-0 bg-emerald-50 text-emerald-800 text-[10px] font-bold shadow-xs hover:bg-emerald-100 transition-colors normal-case cursor-pointer"
+                      >
+                        <option value="">-- Gán nhanh --</option>
+                        {['Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét', 'Chưa xác định'].map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </CustomSelect>
+                    </div>
+                  </th>
                   <th style={{ width: 55, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">KL ĐẶT HÀNG</th>
-                  <th style={{ width: 120, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">TT ĐẶT HÀNG</th>
+                  <th style={{ width: 135, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1 text-center leading-tight">
+                    <div className="flex flex-col items-center gap-1">
+                      <span>TT ĐẶT HÀNG</span>
+                      <CustomSelect
+                        value=""
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                          const val = e.target.value;
+                          if (!val) return;
+                          const targetList = selectedIds.size > 0
+                            ? selectableItems.filter((p: ProjectMaterialPlan) => selectedIds.has(p.id))
+                            : selectableItems;
+                          if (targetList.length === 0) return;
+                          targetList.forEach((plan: ProjectMaterialPlan) => {
+                            onUpdateMaterial(plan.id, { orderedStatus: val });
+                          });
+                          alert(`Đã gán TT Đặt hàng "${val}" thành công cho ${targetList.length} vật tư!`);
+                          e.target.value = '';
+                        }}
+                        className="h-6 w-full border border-blue-400 rounded px-1 py-0 bg-blue-50 text-blue-800 text-[10px] font-bold shadow-xs hover:bg-blue-100 transition-colors normal-case cursor-pointer"
+                      >
+                        <option value="">-- Gán nhanh --</option>
+                        {['Đã có hàng', 'Chưa đặt hàng', 'Đã đặt hàng', 'Đang giao hàng'].map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </CustomSelect>
+                    </div>
+                  </th>
                   <th style={{ width: 85, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">NGÀY CÓ HÀNG</th>
                   <th style={{ minWidth: 100, borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1 py-1.5 text-center leading-tight">GHI CHÚ</th>
                   <th style={{ width: 135, borderBottom: '1px solid #94a3b8' }} className="bg-slate-50 bg-clip-padding px-1.5 py-1.5 text-center leading-tight">NGƯỜI CẬP NHẬT</th>
