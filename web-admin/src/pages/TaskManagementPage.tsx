@@ -2816,91 +2816,133 @@ const hasSyncedRef = useRef(false);
             />
           </div>
 
-          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-100">
-            <button onClick={() => { setAssigningTask(null); setAssigningUserIds([]); setAssigningFollowerIds([]); setAssignNote(''); setAssignSelectedFile(null); setAssignShowAttachMenu(false); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
-            <button 
-              onClick={async () => {
-                if (!assigningTask) return;
-                const readiness = isTaskReadyForAssignment(assigningTask, materialPlans);
-                if (!readiness.ready) {
-                  triggerToast(readiness.reason || 'Hạng mục chưa đủ điều kiện giao việc!', 'warning');
-                  return;
-                }
-                const selectedEngs = engineers.filter(e => assigningUserIds.includes(e.id));
-                const names = selectedEngs.map(e => e.name).join(', ');
-                const ids = selectedEngs.map(e => e.id).join(',');
-                const firstId = selectedEngs.length > 0 ? selectedEngs[0].id : '';
-                const assignerId = authStore.user?.id || '';
-                const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
-
-                const followerEngs = engineers.filter(e => assigningFollowerIds.includes(e.id) && !assigningUserIds.includes(e.id));
-                const followerNames = followerEngs.map(e => e.name);
-                const followerIds = followerEngs.map(e => e.id);
-
-                let updatedNotes = assigningTask.notes || '';
-                if (assignNote.trim() || assignSelectedFile) {
-                  updatedNotes = appendTaskDiscussion(updatedNotes, {
-                    senderId: assignerId,
-                    senderName: assignerName,
-                    senderRole: 'Người giao việc',
-                    type: 'note',
-                    content: assignNote.trim() || (assignSelectedFile ? `Đã đính kèm ${assignSelectedFile.type === 'image' ? 'hình ảnh' : 'tài liệu'}: ${assignSelectedFile.name}` : ''),
-                    fileUrl: assignSelectedFile?.url,
-                    fileType: assignSelectedFile?.type,
-                    fileName: assignSelectedFile?.name
+          <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-slate-100">
+            {assigningTask?.assignedEngineerId ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!assigningTask) return;
+                  const assignerId = authStore.user?.id || '';
+                  const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
+                  
+                  handleUpdateTaskSync(assigningTask.id, {
+                    assignedEngineerId: '',
+                    assignedEngineerName: '',
+                    followerIds: [],
+                    followerNames: [],
+                    status: 'Chưa làm',
+                    isDone: false,
+                    progress: 0
                   });
-                }
 
-                handleUpdateTaskSync(assigningTask.id, {
-                  assignedEngineerId: firstId,
-                  assignedEngineerName: names + (ids ? '|' + ids : ''),
-                  followerIds: followerIds.length > 0 ? followerIds : undefined,
-                  followerNames: followerNames.length > 0 ? followerNames : undefined,
-                  assignerId: assignerId,
-                  assignerName: assignerName,
-                  status: ids ? 'Chờ nhận việc' : assigningTask.status,
-                  notes: updatedNotes
-                });
+                  const store = useRealtimeStore.getState();
+                  store.logActivity(`Quản lý ${assignerName} đã HỦY PHÂN CÔNG hạng mục: "${assigningTask.name}"`, assigningTask.projectName || assigningTask.projectCode || 'Dự án');
 
-                // Gửi thông báo realtime & nhật ký hoạt động
-                const store = useRealtimeStore.getState();
-                if (ids && selectedEngs.length > 0) {
-                  store.logActivity(`Quản lý ${assignerName} đã GIAO CÔNG VIỆC: "${assigningTask.name}" cho ${names}`, assigningTask.projectName || assigningTask.projectCode || 'Dự án');
-                  if (store.addNotification) {
-                    await store.addNotification({
-                      title: `Giao việc: ${names}`,
-                      message: `${assignerName} đã giao công việc "${assigningTask.name}" thuộc dự án ${assigningTask.projectName || assigningTask.projectCode} cho ${names}.${assignSelectedFile ? ` [Có đính kèm ${assignSelectedFile.type === 'image' ? 'hình ảnh' : 'tệp'}]` : ''}`,
-                      type: `task_assigned:::${ids}:::${names}`,
-                      icon: 'assignment_ind',
+                  setAssigningTask(null);
+                  setAssigningUserIds([]);
+                  setAssigningFollowerIds([]);
+                  setAssignNote('');
+                  setAssignSelectedFile(null);
+                  setAssignShowAttachMenu(false);
+                  triggerToast('Đã hủy phân công công việc thành công!', 'info');
+                }}
+                className="px-3 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                title="Xóa thông tin phân công người nhận việc và người theo dõi"
+              >
+                <span className="material-symbols-outlined text-[15px]">person_remove</span>
+                <span>Hủy phân công / Xóa</span>
+              </button>
+            ) : <div />}
+
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setAssigningTask(null); setAssigningUserIds([]); setAssigningFollowerIds([]); setAssignNote(''); setAssignSelectedFile(null); setAssignShowAttachMenu(false); }} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer">Hủy</button>
+              <button 
+                onClick={async () => {
+                  if (!assigningTask) return;
+                  const readiness = isTaskReadyForAssignment(assigningTask, materialPlans);
+                  if (!readiness.ready) {
+                    triggerToast(readiness.reason || 'Hạng mục chưa đủ điều kiện giao việc!', 'warning');
+                    return;
+                  }
+                  const selectedEngs = engineers.filter(e => assigningUserIds.includes(e.id));
+                  const names = selectedEngs.map(e => e.name).join(', ');
+                  const ids = selectedEngs.map(e => e.id).join(',');
+                  const firstId = selectedEngs.length > 0 ? selectedEngs[0].id : '';
+                  const assignerId = authStore.user?.id || '';
+                  const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
+
+                  const followerEngs = engineers.filter(e => assigningFollowerIds.includes(e.id) && !assigningUserIds.includes(e.id));
+                  const followerNames = followerEngs.map(e => e.name);
+                  const followerIds = followerEngs.map(e => e.id);
+
+                  let updatedNotes = assigningTask.notes || '';
+                  if (assignNote.trim() || assignSelectedFile) {
+                    updatedNotes = appendTaskDiscussion(updatedNotes, {
                       senderId: assignerId,
-                      senderName: assignerName
+                      senderName: assignerName,
+                      senderRole: 'Người giao việc',
+                      type: 'note',
+                      content: assignNote.trim() || (assignSelectedFile ? `Đã đính kèm ${assignSelectedFile.type === 'image' ? 'hình ảnh' : 'tài liệu'}: ${assignSelectedFile.name}` : ''),
+                      fileUrl: assignSelectedFile?.url,
+                      fileType: assignSelectedFile?.type,
+                      fileName: assignSelectedFile?.name
                     });
+                  }
 
-                    if (followerIds.length > 0) {
+                  const isReassigning = Boolean(assigningTask.assignedEngineerId);
+                  const isClearingAssignment = !ids && isReassigning;
+
+                  handleUpdateTaskSync(assigningTask.id, {
+                    assignedEngineerId: firstId,
+                    assignedEngineerName: names + (ids ? '|' + ids : ''),
+                    followerIds: followerIds.length > 0 ? followerIds : undefined,
+                    followerNames: followerNames.length > 0 ? followerNames : undefined,
+                    assignerId: assignerId,
+                    assignerName: assignerName,
+                    status: ids ? (isReassigning ? (assigningTask.status === 'Đang làm' || assigningTask.status === 'Chờ nghiệm thu' ? assigningTask.status : 'Chờ nhận việc') : 'Chờ nhận việc') : 'Chưa làm',
+                    notes: updatedNotes
+                  });
+
+                  // Gửi thông báo realtime & nhật ký hoạt động
+                  const store = useRealtimeStore.getState();
+                  if (ids && selectedEngs.length > 0) {
+                    store.logActivity(`Quản lý ${assignerName} đã ${isReassigning ? 'ĐỔI PHÂN CÔNG' : 'GIAO CÔNG VIỆC'}: "${assigningTask.name}" cho ${names}`, assigningTask.projectName || assigningTask.projectCode || 'Dự án');
+                    if (store.addNotification) {
                       await store.addNotification({
-                        title: `Theo dõi công việc: ${assigningTask.name}`,
-                        message: `${assignerName} đã thêm bạn vào danh sách THEO DÕI công việc "${assigningTask.name}" (phụ trách: ${names}).`,
-                        type: `task_follower:::${followerIds.join(',')}:::${followerNames.join(',')}`,
-                        icon: 'visibility',
+                        title: isReassigning ? `Đổi phân công: ${names}` : `Giao việc: ${names}`,
+                        message: `${assignerName} đã ${isReassigning ? 'thay đổi phân công' : 'giao công việc'} "${assigningTask.name}" thuộc dự án ${assigningTask.projectName || assigningTask.projectCode} cho ${names}.${assignSelectedFile ? ` [Có đính kèm ${assignSelectedFile.type === 'image' ? 'hình ảnh' : 'tệp'}]` : ''}`,
+                        type: `task_assigned:::${ids}:::${names}`,
+                        icon: 'assignment_ind',
                         senderId: assignerId,
                         senderName: assignerName
                       });
+
+                      if (followerIds.length > 0) {
+                        await store.addNotification({
+                          title: `Theo dõi công việc: ${assigningTask.name}`,
+                          message: `${assignerName} đã thêm bạn vào danh sách THEO DÕI công việc "${assigningTask.name}" (phụ trách: ${names}).`,
+                          type: `task_follower:::${followerIds.join(',')}:::${followerNames.join(',')}`,
+                          icon: 'visibility',
+                          senderId: assignerId,
+                          senderName: assignerName
+                        });
+                      }
                     }
                   }
-                }
 
-                setAssigningTask(null);
-                setAssigningUserIds([]);
-                setAssigningFollowerIds([]);
-                setAssignNote('');
-                setAssignSelectedFile(null);
-                setAssignShowAttachMenu(false);
-                triggerToast('Đã giao việc thành công!', 'success');
-              }}
-              className="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg shadow-sm transition-all"
-            >
-              Lưu phân công
-            </button>
+                  setAssigningTask(null);
+                  setAssigningUserIds([]);
+                  setAssigningFollowerIds([]);
+                  setAssignNote('');
+                  setAssignSelectedFile(null);
+                  setAssignShowAttachMenu(false);
+                  triggerToast(isReassigning ? 'Đã cập nhật phân công công việc!' : 'Đã giao việc thành công!', 'success');
+                }}
+                className="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg shadow-sm transition-all cursor-pointer"
+              >
+                Lưu phân công
+              </button>
+            </div>
           </div>
         </div>
       </Modal>
