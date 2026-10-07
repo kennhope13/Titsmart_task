@@ -166,14 +166,89 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     tLow.includes('quá hạn hoàn thành');
 
   if (isTaskNotification) {
-    // 1A. Giao việc / Nghiệm thu -> Người được giao việc nhận
+    // 1A. Nhận việc / Báo cáo hoàn thành -> Người giao việc nhận
     if (
+      typeStr.startsWith('task_accepted') || 
+      typeStr.startsWith('task_completed') ||
+      tLow.includes('đã nhận việc') || 
+      tLow.includes('hoàn thành công việc') || 
+      tLow.includes('báo cáo hoàn thành') ||
+      tLow.includes('báo cáo xong')
+    ) {
+      if (isSenderById || isSenderByName || isActionAuthor) return false;
+      if (typeStr.includes(':::')) {
+        const parts = typeStr.split(':::');
+        const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        const targetNames = (parts[2] || '').split(',').map(s => s.trim()).filter(Boolean);
+
+        const isMeId = targetIds.some(tId => isMatchingId(tId));
+        const isMeName = targetNames.some(tName => isMatchingName(tName));
+
+        if (isMeId || isMeName) return true;
+        if (targetIds.includes('admin') || targetNames.some(tn => tn.toLowerCase().includes('quản lý') || tn.toLowerCase().includes('quản trị viên') || tn.toLowerCase().includes('admin'))) {
+          return isAdmin;
+        }
+        return false;
+      }
+      return isAdmin;
+    }
+
+    // 1B. Phản hồi / Trao đổi / Thắc mắc / Hướng dẫn / Nhắc hạn / Quá hạn -> Người giao việc VÀ những người được giao việc / theo dõi nhận
+    if (
+      typeStr.startsWith('task_reply') || 
+      typeStr.startsWith('task_question') || 
+      typeStr.startsWith('task_due') ||
+      tLow.includes('phản hồi') || 
+      tLow.includes('trao đổi') || 
+      tLow.includes('thắc mắc') || 
+      tLow.includes('hướng dẫn') || 
+      tLow.includes('quá hạn hoàn thành') || 
+      tLow.includes('nhắc hạn công việc')
+    ) {
+      if (isSenderById || isSenderByName || isActionAuthor) return false;
+      if (typeStr.includes(':::')) {
+        const parts = typeStr.split(':::');
+        const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        const targetNames = (parts[2] || '').split(',').map(s => s.trim()).filter(Boolean);
+
+        const isMeId = targetIds.some(tId => isMatchingId(tId));
+        const isMeName = targetNames.some(tName => isMatchingName(tName));
+
+        if (isMeId || isMeName) return true;
+        if (targetIds.includes('admin') || targetNames.some(tn => tn.toLowerCase().includes('quản lý') || tn.toLowerCase().includes('quản trị viên') || tn.toLowerCase().includes('admin'))) {
+          return isAdmin;
+        }
+        return false;
+      }
+      return true;
+    }
+
+    // 1C. Theo dõi công việc -> CHỈ những người trong danh sách người theo dõi mới nhận
+    if (
+      typeStr.startsWith('task_follower') ||
+      tLow.includes('theo dõi')
+    ) {
+      if (isSenderById || isSenderByName || isActionAuthor) return false;
+      if (typeStr.includes(':::')) {
+        const parts = typeStr.split(':::');
+        const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        const targetNames = (parts[2] || '').split(',').map(s => s.trim()).filter(Boolean);
+
+        const isMeId = targetIds.some(tId => isMatchingId(tId));
+        const isMeName = targetNames.some(tName => isMatchingName(tName));
+        return Boolean(isMeId || isMeName);
+      }
+      return false;
+    }
+
+    // 1D. Giao việc / Nghiệm thu -> Người được giao việc nhận
+    if (
+      typeStr.startsWith('task_assigned') || 
+      typeStr.startsWith('task_approved') ||
       tLow.startsWith('giao việc') || 
       tLow.includes('giao việc') ||
       tLow.includes('được giao') || 
-      tLow.includes('nghiệm thu') || 
-      typeStr.startsWith('task_assigned') || 
-      typeStr.startsWith('task_approved')
+      tLow.includes('nghiệm thu')
     ) {
       if (typeStr.includes(':::')) {
         const parts = typeStr.split(':::');
@@ -207,81 +282,6 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
         if (assignedNames.some(aName => aName.toLowerCase() === 'bạn' || isMatchingName(aName))) return true;
       }
 
-      return false;
-    }
-
-    // 1B. Nhận việc / Báo cáo hoàn thành -> Người giao việc nhận
-    if (
-      tLow.includes('đã nhận việc') || 
-      tLow.includes('hoàn thành công việc') || 
-      tLow.includes('báo cáo hoàn thành') ||
-      tLow.includes('báo cáo xong') ||
-      typeStr.startsWith('task_accepted') || 
-      typeStr.startsWith('task_completed')
-    ) {
-      if (isSenderById || isSenderByName || isActionAuthor) return false;
-      if (typeStr.includes(':::')) {
-        const parts = typeStr.split(':::');
-        const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-        const targetNames = (parts[2] || '').split(',').map(s => s.trim()).filter(Boolean);
-
-        const isMeId = targetIds.some(tId => isMatchingId(tId));
-        const isMeName = targetNames.some(tName => isMatchingName(tName));
-
-        if (isMeId || isMeName) return true;
-        if (targetIds.includes('admin') || targetNames.some(tn => tn.toLowerCase().includes('quản lý') || tn.toLowerCase().includes('quản trị viên') || tn.toLowerCase().includes('admin'))) {
-          return isAdmin;
-        }
-        return false;
-      }
-      return isAdmin;
-    }
-
-    // 1C. Phản hồi / Trao đổi / Thắc mắc / Hướng dẫn / Nhắc hạn / Quá hạn -> Người giao việc VÀ những người được giao việc nhận
-    if (
-      tLow.includes('phản hồi') || 
-      tLow.includes('trao đổi') || 
-      tLow.includes('thắc mắc') || 
-      tLow.includes('hướng dẫn') || 
-      tLow.includes('quá hạn hoàn thành') || 
-      tLow.includes('nhắc hạn công việc') || 
-      typeStr.startsWith('task_reply') || 
-      typeStr.startsWith('task_question') || 
-      typeStr.startsWith('task_due')
-    ) {
-      if (isSenderById || isSenderByName || isActionAuthor) return false;
-      if (typeStr.includes(':::')) {
-        const parts = typeStr.split(':::');
-        const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-        const targetNames = (parts[2] || '').split(',').map(s => s.trim()).filter(Boolean);
-
-        const isMeId = targetIds.some(tId => isMatchingId(tId));
-        const isMeName = targetNames.some(tName => isMatchingName(tName));
-
-        if (isMeId || isMeName) return true;
-        if (targetIds.includes('admin') || targetNames.some(tn => tn.toLowerCase().includes('quản lý') || tn.toLowerCase().includes('quản trị viên') || tn.toLowerCase().includes('admin'))) {
-          return isAdmin;
-        }
-        return false;
-      }
-      return true;
-    }
-
-    // 1D. Theo dõi công việc -> CHỈ những người trong danh sách người theo dõi mới nhận
-    if (
-      tLow.includes('theo dõi') || 
-      typeStr.startsWith('task_follower')
-    ) {
-      if (isSenderById || isSenderByName || isActionAuthor) return false;
-      if (typeStr.includes(':::')) {
-        const parts = typeStr.split(':::');
-        const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-        const targetNames = (parts[2] || '').split(',').map(s => s.trim()).filter(Boolean);
-
-        const isMeId = targetIds.some(tId => isMatchingId(tId));
-        const isMeName = targetNames.some(tName => isMatchingName(tName));
-        return Boolean(isMeId || isMeName);
-      }
       return false;
     }
 
