@@ -343,6 +343,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
   const [filterDocs, setFilterDocs] = useState('all');
   const [filterExpectedDateFrom, setFilterExpectedDateFrom] = useState('');
   const [filterExpectedDateTo, setFilterExpectedDateTo] = useState('');
+  const [filterPaymentDateFrom, setFilterPaymentDateFrom] = useState('');
+  const [filterPaymentDateTo, setFilterPaymentDateTo] = useState('');
   const [filterContractStatus, setFilterContractStatus] = useState('all');
   const [filterPaymentDate, setFilterPaymentDate] = useState('all');
   const [filterInvoiceStatus, setFilterInvoiceStatus] = useState('all');
@@ -516,11 +518,15 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
          return purch?.contractStatus === filterContractStatus;
       });
     }
-    if (filterPaymentDate && filterPaymentDate !== 'all') {
+    if (filterPaymentDateFrom || filterPaymentDateTo) {
       filtered = filtered.filter(p => {
          if (isParentRow(p)) return true;
          const purch = findPurchasingMatch(p);
-         return purch?.paymentDate === filterPaymentDate;
+         if (!purch?.paymentDate) return false;
+         
+         const fromCheck = filterPaymentDateFrom ? purch.paymentDate >= filterPaymentDateFrom : true;
+         const toCheck = filterPaymentDateTo ? purch.paymentDate <= filterPaymentDateTo : true;
+         return fromCheck && toCheck;
       });
     }
     if (filterInvoiceStatus && filterInvoiceStatus !== 'all') {
@@ -720,7 +726,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       return (a.jobContent || '').localeCompare(b.jobContent || '', 'vi', { numeric: true, sensitivity: 'base' });
     });
     return { filteredData: sortedFiltered, resolveParentId, getSectionIndexForItem };
-  }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder, filterModel, filterOrigin, filterDocs, filterExpectedDateFrom, filterExpectedDateTo, filterContractStatus, filterPaymentDate, filterInvoiceStatus, purchasingMatchMap]);
+  }, [data, searchQuery, statusFilter, filterParent, filterUnit, filterProgress, filterOrder, filterModel, filterOrigin, filterDocs, filterExpectedDateFrom, filterExpectedDateTo, filterPaymentDateFrom, filterPaymentDateTo, filterContractStatus, filterPaymentDate, filterInvoiceStatus, purchasingMatchMap]);
 
   const selectableItems = useMemo(() => filteredData.filter((p: ProjectMaterialPlan) => !isParentRow(p)), [filteredData]);
   const isAllSelected = useMemo(() => selectableItems.length > 0 && selectableItems.every(p => selectedIds.has(p.id)), [selectableItems, selectedIds]);
@@ -1290,18 +1296,14 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
             {subTab === 'FINANCE' && (
               <div className="flex items-center gap-1.5">
-                <span className="text-slate-500 font-medium whitespace-nowrap">Hạn TT:</span>
-                <CustomSelect
-                  value={filterPaymentDate}
-                  onChange={e => setFilterPaymentDate(e.target.value)}
-                  className="min-w-[70px] max-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs"
-                >
-                  {paymentDateOptions.map(opt => {
-                    let label = opt;
-                    if (label && label.length > 20) label = label.slice(0, 20) + '...';
-                    return <option key={opt} value={opt}>{opt === 'all' ? 'Tất cả' : label}</option>;
-                  })}
-                </CustomSelect>
+                <span className="text-slate-500 font-medium whitespace-nowrap">Ngày thanh toán:</span>
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded px-1 py-0.5 bg-white shadow-sm">
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px] ml-1">Từ</span>
+                  <input type="date" value={filterPaymentDateFrom} onChange={e => setFilterPaymentDateFrom(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer" />
+                  <span className="text-slate-300">|</span>
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
+                  <input type="date" value={filterPaymentDateTo} onChange={e => setFilterPaymentDateTo(e.target.value)} className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer" />
+                </div>
               </div>
             )}
 
