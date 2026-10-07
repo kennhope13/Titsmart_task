@@ -331,14 +331,25 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         <div className="flex items-center gap-1.5">
           {/* Toggle PDF Mode (Native Chrome Viewer vs Mobile Canvas View) */}
           {isPdf && (
-            <button
-              onClick={() => setUseCanvasPdf((prev) => !prev)}
-              title={useCanvasPdf ? "Chuyển sang Trình xem PDF Gốc Chrome (Có in & thanh phụ)" : "Chuyển sang Chế độ Mobile Canvas"}
-              className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 h-[26px] px-2 rounded-md text-[11px] font-bold transition-all"
-            >
-              <span className="material-symbols-outlined text-[14px]">{useCanvasPdf ? "picture_as_pdf" : "touch_app"}</span>
-              {useCanvasPdf ? "Xem PDF Gốc (PC)" : "Xem dạng Mobile"}
-            </button>
+            <>
+              <a
+                href={resolvedUrl}
+                target="_blank"
+                rel="noreferrer"
+                title="Mở tệp PDF trong Tab mới của trình duyệt (Xem PDF Gốc bằng trình duyệt di động)"
+                className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 h-[26px] px-2 rounded-md text-[11px] font-bold transition-all"
+              >
+                <span className="material-symbols-outlined text-[14px]">open_in_new</span> Tab mới (PDF Gốc)
+              </a>
+              <button
+                onClick={() => setUseCanvasPdf((prev) => !prev)}
+                title={useCanvasPdf ? "Chuyển sang Trình xem PDF Gốc Chrome (Có in & thanh phụ)" : "Chuyển sang Chế độ Mobile Canvas"}
+                className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 h-[26px] px-2 rounded-md text-[11px] font-bold transition-all"
+              >
+                <span className="material-symbols-outlined text-[14px]">{useCanvasPdf ? "picture_as_pdf" : "touch_app"}</span>
+                {useCanvasPdf ? "Xem PDF Gốc (PC)" : "Xem dạng Mobile"}
+              </button>
+            </>
           )}
 
           {/* Zoom controls for Image / Canvas PDF */}
