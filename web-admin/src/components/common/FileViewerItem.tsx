@@ -25,8 +25,8 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   );
 
-  // Default to canvas rendering on Mobile devices (prevents blank iframe), and native PDF viewer on Desktop
-  const [useCanvasPdf, setUseCanvasPdf] = useState<boolean>(isMobileDevice);
+  // Default useCanvasPdf to true so all devices (mobile & desktop) render PDF clearly without blank iframe errors
+  const [useCanvasPdf, setUseCanvasPdf] = useState<boolean>(true);
 
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [activeSheet, setActiveSheet] = useState<string>('');
@@ -333,11 +333,11 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
           {isPdf && (
             <button
               onClick={() => setUseCanvasPdf((prev) => !prev)}
-              title={useCanvasPdf ? "Chuyển sang Trình xem PDF Gốc Chrome" : "Chuyển sang Trình xem Cảm ứng Mobile"}
+              title={useCanvasPdf ? "Chuyển sang Trình xem PDF Gốc Chrome (Có in & thanh phụ)" : "Chuyển sang Chế độ Mobile Canvas"}
               className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 h-[26px] px-2 rounded-md text-[11px] font-bold transition-all"
             >
               <span className="material-symbols-outlined text-[14px]">{useCanvasPdf ? "picture_as_pdf" : "touch_app"}</span>
-              {useCanvasPdf ? "Xem PDF Gốc (Chrome)" : "Chế độ Mobile"}
+              {useCanvasPdf ? "Xem PDF Gốc (PC)" : "Xem dạng Mobile"}
             </button>
           )}
 
