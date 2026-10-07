@@ -75,6 +75,7 @@ export const parseTaskDiscussions = (notes?: string, issue?: string): TaskDiscus
     const baseNotes = (threadIdx !== -1 ? notes.slice(0, threadIdx) : notes)
       .replace(/\[THREAD:[\s\S]*$/gi, '')
       .replace(/\[FOLLOWERS:[^\]]*\]/gi, '')
+      .replace(/\[ASSIGNER:[^\]]*\]/gi, '')
       .replace(/\[order:[\d.]+\]/gi, '')
       .replace(/\[section\]/gi, '')
       .replace(/\[contractor\]/gi, '')
@@ -87,12 +88,12 @@ export const parseTaskDiscussions = (notes?: string, issue?: string): TaskDiscus
       .replace(/Đồng bộ từ phụ lục khi tạo dự án/gi, '')
       .split('|')
       .map(s => s.trim())
-      .filter(s => Boolean(s) && !s.startsWith('{') && !s.includes('"senderId"') && !s.includes('[FOLLOWERS:'))
+      .filter(s => Boolean(s) && !s.startsWith('{') && !s.includes('"senderId"') && !s.includes('[FOLLOWERS:') && !s.includes('[ASSIGNER:'))
       .join(' | ')
       .trim();
 
     // Chỉ thêm nếu có nội dung ghi chú người dùng thực sự
-    if (baseNotes && baseNotes !== ']' && !baseNotes.startsWith('[FOLLOWERS:')) {
+    if (baseNotes && baseNotes !== ']' && !baseNotes.startsWith('[FOLLOWERS:') && !baseNotes.startsWith('[ASSIGNER:')) {
       result.push({
         id: 'legacy_note',
         senderName: 'Người giao việc',
@@ -161,9 +162,9 @@ export const appendTaskDiscussion = (
  */
 export const stripDiscussionThread = (notes?: string | null): string => {
   if (!notes || typeof notes !== 'string') return '';
-  let str = notes.replace(/\[FOLLOWERS:[^\]]*\]/gi, '');
+  let str = notes.replace(/\[FOLLOWERS:[^\]]*\]/gi, '').replace(/\[ASSIGNER:[^\]]*\]/gi, '');
   const idx = str.indexOf('[THREAD:');
-  if (idx === -1) return str.replace(/\[FOLLOWERS:[^\]]*\]/gi, '').trim();
+  if (idx === -1) return str.replace(/\[FOLLOWERS:[^\]]*\]/gi, '').replace(/\[ASSIGNER:[^\]]*\]/gi, '').trim();
   
   const before = str.slice(0, idx).trim();
   const threadStr = str.slice(idx);
@@ -201,7 +202,7 @@ export const stripDiscussionThread = (notes?: string | null): string => {
   
   const after = endIdx !== -1 ? threadStr.slice(endIdx + 1).trim() : '';
   const result = [before, after].filter(Boolean).join(' ').trim();
-  return result.replace(/\[THREAD:[\s\S]*$/gi, '').replace(/\[FOLLOWERS:[^\]]*\]/gi, '').trim();
+  return result.replace(/\[THREAD:[\s\S]*$/gi, '').replace(/\[FOLLOWERS:[^\]]*\]/gi, '').replace(/\[ASSIGNER:[^\]]*\]/gi, '').trim();
 };
 
 /**
@@ -210,7 +211,7 @@ export const stripDiscussionThread = (notes?: string | null): string => {
 export const getLatestDiscussion = (notes?: string, issue?: string): TaskDiscussionItem | null => {
   const list = parseTaskDiscussions(notes, issue).filter(item => {
     if (!item.content) return false;
-    if (item.content.includes('[FOLLOWERS:')) return false;
+    if (item.content.includes('[FOLLOWERS:') || item.content.includes('[ASSIGNER:')) return false;
     return true;
   });
   return list.length > 0 ? list[list.length - 1] : null;

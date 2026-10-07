@@ -4,6 +4,7 @@ import { useRealtimeStore } from '../../services/realtimeStore';
 import { useAuthStore } from '../../services/authStore';
 import { useUIStore } from '../../services/uiStore';
 import { sendSystemNotification, requestSystemNotificationPermission } from '../../services/systemNotificationService';
+import { isUserTaskAssigner, isUserTaskAssignee, isUserTaskFollower } from '../../utils/taskPermission';
 
 interface NotificationBellProps {
   isSidebar?: boolean;
@@ -20,7 +21,7 @@ const normalizeStr = (s: any): string => {
     .replace(/\s+/g, ' ');
 };
 
-const isNotificationForUser = (notification: any, user: any, engineers: any[] = []) => {
+const isNotificationForUser = (notification: any, user: any, engineers: any[] = [], allTasks: any[] = []) => {
   if (!user) return true;
   const role = String(user.role || '').toLowerCase();
   const username = String(user.username || '').trim().toLowerCase();
@@ -110,10 +111,11 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   const title = String(notification.title || '');
   const message = String(notification.message || '');
   const typeStr = String(notification.type || '');
+  const linkStr = String(notification.link || '');
   const tLow = title.toLowerCase();
   const mLow = message.toLowerCase();
 
-  // 0. SENDER / CREATOR FILTER
+  // 0. SENDER / CREATOR FILTER (do not notify the action author themselves)
   const isSenderById = Boolean(
     (notification.senderId && isMatchingId(notification.senderId)) ||
     (notification.createdById && isMatchingId(notification.createdById))
@@ -145,7 +147,77 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     tLow.includes('quá hạn hoàn thành');
 
   if (isTaskNotification) {
-    // 1A. Nhận việc / Báo cáo hoàn thành -> Người giao việc nhận
+    if (isSenderById || isSenderByName) return false;
+
+    // Look up associated task in memory if available
+    let associatedTask: any = null;
+    if (Array.isArray(allTasks) && allTasks.length > 0) {
+      if (linkStr.includes('taskId=')) {
+        const match = linkStr.match(/taskId=([^&]+)/);
+        if (match) {
+          const tId = decodeURIComponent(match[1]);
+          associatedTask = allTasks.find(t => t.id === tId || String(t.id).toLowerCase() === tId.toLowerCase());
+        }
+      }
+      if (!associatedTask && linkStr) {
+        associatedTask = allTasks.find(t => t.id && (linkStr.includes(encodeURIComponent(t.id)) || linkStr.includes(t.id)));
+      }
+    }
+
+    if (associatedTask) {
+      const isTaskAssigner = isUserTaskAssigner(user, associatedTask, engineers);
+      const isTaskAssignee = isUserTaskAssignee(user, associatedTask, engineers);
+      const isTaskFollower = isUserTaskFollower(user, associatedTask, engineers);
+
+      // 1A. Nhận việc / Báo cáo hoàn thành -> Người giao việc VÀ người theo dõi nhận
+      if (
+        typeStr.startsWith('task_accepted') || 
+        typeStr.startsWith('task_completed') ||
+        tLow.includes('đã nhận việc') || 
+        tLow.includes('hoàn thành công việc') || 
+        tLow.includes('báo cáo hoàn thành') ||
+        tLow.includes('báo cáo xong')
+      ) {
+        if (isTaskAssigner || isTaskFollower) return true;
+      }
+
+      // 1B. Phản hồi / Trao đổi / Thắc mắc / Hướng dẫn -> Cả Assigner, Assignee, Follower đều nhận
+      if (
+        typeStr.startsWith('task_reply') || 
+        typeStr.startsWith('task_question') || 
+        typeStr.startsWith('task_due') ||
+        tLow.includes('phản hồi') || 
+        tLow.includes('trao đổi') || 
+        tLow.includes('thắc mắc') || 
+        tLow.includes('hướng dẫn') || 
+        tLow.includes('quá hạn hoàn thành') || 
+        tLow.includes('nhắc hạn công việc')
+      ) {
+        if (isTaskAssigner || isTaskAssignee || isTaskFollower) return true;
+      }
+
+      // 1C. Giao việc / Nghiệm thu -> Assignee nhận
+      if (
+        typeStr.startsWith('task_assigned') || 
+        typeStr.startsWith('task_approved') ||
+        tLow.startsWith('giao việc') || 
+        tLow.includes('giao việc') ||
+        tLow.includes('được giao') || 
+        tLow.includes('nghiệm thu')
+      ) {
+        if (isTaskAssignee) return true;
+      }
+
+      // 1D. Theo dõi công việc -> Follower nhận
+      if (
+        typeStr.startsWith('task_follower') ||
+        tLow.includes('theo dõi')
+      ) {
+        if (isTaskFollower) return true;
+      }
+    }
+
+    // Fallback based on type payload :::id1,id2:::name1,name2
     if (
       typeStr.startsWith('task_accepted') || 
       typeStr.startsWith('task_completed') ||
@@ -154,7 +226,6 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       tLow.includes('báo cáo hoàn thành') ||
       tLow.includes('báo cáo xong')
     ) {
-      if (isSenderById || isSenderByName) return false;
       if (typeStr.includes(':::')) {
         const parts = typeStr.split(':::');
         const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -164,7 +235,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
         const isMeName = targetNames.some(tName => isMatchingName(tName));
 
         if (isMeId || isMeName) return true;
-        if (targetIds.includes('admin') || targetNames.some(tn => tn.toLowerCase().includes('quản lý') || tn.toLowerCase().includes('quản trị viên') || tn.toLowerCase().includes('admin'))) {
+        if (targetIds.includes('admin') || targetIds.length === 0 || targetNames.some(tn => tn.toLowerCase().includes('quản lý') || tn.toLowerCase().includes('quản trị viên') || tn.toLowerCase().includes('admin'))) {
           return isAdmin;
         }
         return false;
@@ -172,7 +243,6 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       return isAdmin;
     }
 
-    // 1B. Phản hồi / Trao đổi / Thắc mắc / Hướng dẫn / Nhắc hạn / Quá hạn -> Người giao việc VÀ những người được giao việc / theo dõi nhận
     if (
       typeStr.startsWith('task_reply') || 
       typeStr.startsWith('task_question') || 
@@ -184,7 +254,6 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       tLow.includes('quá hạn hoàn thành') || 
       tLow.includes('nhắc hạn công việc')
     ) {
-      if (isSenderById || isSenderByName) return false;
       if (typeStr.includes(':::')) {
         const parts = typeStr.split(':::');
         const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -194,7 +263,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
         const isMeName = targetNames.some(tName => isMatchingName(tName));
 
         if (isMeId || isMeName) return true;
-        if (targetIds.includes('admin') || targetNames.some(tn => tn.toLowerCase().includes('quản lý') || tn.toLowerCase().includes('quản trị viên') || tn.toLowerCase().includes('admin'))) {
+        if (targetIds.includes('admin') || targetIds.length === 0 || targetNames.some(tn => tn.toLowerCase().includes('quản lý') || tn.toLowerCase().includes('quản trị viên') || tn.toLowerCase().includes('admin'))) {
           return isAdmin;
         }
         return false;
@@ -202,12 +271,10 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       return true;
     }
 
-    // 1C. Theo dõi công việc -> CHỈ những người trong danh sách người theo dõi mới nhận
     if (
       typeStr.startsWith('task_follower') ||
       tLow.includes('theo dõi')
     ) {
-      if (isSenderById || isSenderByName) return false;
       if (typeStr.includes(':::')) {
         const parts = typeStr.split(':::');
         const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -220,7 +287,6 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       return false;
     }
 
-    // 1D. Giao việc / Nghiệm thu -> Người được giao việc nhận
     if (
       typeStr.startsWith('task_assigned') || 
       typeStr.startsWith('task_approved') ||
@@ -229,7 +295,6 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       tLow.includes('được giao') || 
       tLow.includes('nghiệm thu')
     ) {
-      if (isSenderById || isSenderByName) return false;
       if (typeStr.includes(':::')) {
         const parts = typeStr.split(':::');
         const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -239,16 +304,14 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
         const isMeName = targetNames.some(tName => isMatchingName(tName));
 
         if (isMeId || isMeName) {
-          return true; // Chính người này là người được giao việc!
+          return true;
         }
         return false;
       }
 
-      // Explicit recipient props
       if (notification.recipientId && isMatchingId(notification.recipientId)) return true;
       if (notification.recipientName && isMatchingName(notification.recipientName)) return true;
 
-      // Fallback matching in title/message
       if (tLow.startsWith('giao việc:')) {
         const assignedNames = title.replace(/^giao việc:\s*/i, '').split(',').map(s => s.trim());
         if (assignedNames.some(aName => isMatchingName(aName))) return true;
@@ -257,15 +320,15 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       if (mLow.includes('cho bạn')) return true;
 
       const match = message.match(/cho\s+([^.]+)\.?$/i);
-      if (match) {
-        const assignedNames = match[1].split(',').map(s => s.trim());
-        if (assignedNames.some(aName => aName.toLowerCase() === 'bạn' || isMatchingName(aName))) return true;
+      if (match && match[1]) {
+        const candidateNames = match[1].split(',').map(s => s.trim());
+        if (candidateNames.some(cName => isMatchingName(cName))) return true;
       }
 
       return false;
     }
 
-    return false;
+    return true;
   }
 
   // Filter sender from seeing non-task broadcast
@@ -367,7 +430,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = false, isExpanded = false }) => {
   const navigate = useNavigate();
-  const { notifications, engineers, markNotificationRead, markAllNotificationsRead, deleteNotification, clearNotifications } = useRealtimeStore();
+  const { notifications, engineers, tasks, markNotificationRead, markAllNotificationsRead, deleteNotification, clearNotifications } = useRealtimeStore();
   const user = useAuthStore(state => state.user);
   const showNotificationBell = useUIStore(state => state.showNotificationBell);
   const autoShowNotificationPopup = useUIStore(state => state.autoShowNotificationPopup);
@@ -820,7 +883,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
     notifications.forEach(n => {
       // Filter out notifications not intended for this user
-      if (!isNotificationForUser(n, user, engineers)) return;
+      if (!isNotificationForUser(n, user, engineers, tasks)) return;
       // Filter out notifications dismissed by this specific user account
       if (dismissedNotifIds.has(n.id)) return;
 
@@ -852,7 +915,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       }
     });
     return uniqueList;
-  }, [notifications, user, engineers, dismissedNotifIds, availableUpdateVersion]);
+  }, [notifications, user, engineers, tasks, dismissedNotifIds, availableUpdateVersion]);
 
   // Priority notifications: Overdue 1-2 days or Due soon
   const centerModalNotifications = useMemo(() => {

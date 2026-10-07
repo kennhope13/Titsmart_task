@@ -164,10 +164,10 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
 
           const targetIds = isAssigner 
             ? Array.from(new Set([...engIds, ...followerIds])).filter(id => id && id !== activeUserId)
-            : Array.from(new Set([task.assignerId || 'admin', ...followerIds])).filter(id => id && id !== activeUserId);
+            : Array.from(new Set([task.assignerId || 'admin', ...engIds, ...followerIds])).filter(id => id && id !== activeUserId);
           const targetNames = isAssigner 
             ? Array.from(new Set([...engNames, ...followerNames])).filter(Boolean)
-            : Array.from(new Set([task.assignerName || 'Quản lý', ...followerNames])).filter(Boolean);
+            : Array.from(new Set([task.assignerName || 'Quản lý', ...engNames, ...followerNames])).filter(Boolean);
 
           if (targetIds.length > 0) {
             await store.addNotification({

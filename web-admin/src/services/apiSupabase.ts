@@ -349,6 +349,15 @@ export const api = {
               t.followerNames = names;
             }
           }
+
+          // Parse assigner from notes tag [ASSIGNER:id:::name]
+          const assignerMatch = t.notes.match(/\[ASSIGNER:([^\]]+)\]/i);
+          if (assignerMatch) {
+            const rawAssigner = assignerMatch[1];
+            const parts = rawAssigner.split(':::');
+            if (!t.assignerId && parts[0]) t.assignerId = parts[0];
+            if (!t.assignerName && parts[1]) t.assignerName = parts[1];
+          }
         }
         if (t.sourceRow && typeof t.sourceRow === 'object') {
           if (t.sourceRow.followerIds && (!t.followerIds || t.followerIds.length === 0)) {
@@ -356,6 +365,12 @@ export const api = {
           }
           if (t.sourceRow.followerNames && (!t.followerNames || t.followerNames.length === 0)) {
             t.followerNames = t.sourceRow.followerNames;
+          }
+          if (t.sourceRow.assignerId && !t.assignerId) {
+            t.assignerId = t.sourceRow.assignerId;
+          }
+          if (t.sourceRow.assignerName && !t.assignerName) {
+            t.assignerName = t.sourceRow.assignerName;
           }
         }
         return t;
@@ -373,6 +388,14 @@ export const api = {
         const followerTag = `[FOLLOWERS:${data.followerIds.join(',')}:::${(data.followerNames || []).join(',')}]`;
         if (!payload.notes || !payload.notes.includes('[FOLLOWERS:')) {
           payload.notes = (payload.notes ? payload.notes + '\n' : '') + followerTag;
+        }
+      }
+
+      // Encode assigner safely in notes
+      if (data.assignerId || data.assignerName) {
+        const assignerTag = `[ASSIGNER:${data.assignerId || ''}:::${data.assignerName || ''}]`;
+        if (!payload.notes || !payload.notes.includes('[ASSIGNER:')) {
+          payload.notes = (payload.notes ? payload.notes + '\n' : '') + assignerTag;
         }
       }
 
@@ -456,6 +479,12 @@ export const api = {
             payload.notes = (payload.notes ? payload.notes + '\n' : '') + followerTag;
           }
         }
+        if (data.assignerId || data.assignerName) {
+          const assignerTag = `[ASSIGNER:${data.assignerId || ''}:::${data.assignerName || ''}]`;
+          if (!payload.notes || !payload.notes.includes('[ASSIGNER:')) {
+            payload.notes = (payload.notes ? payload.notes + '\n' : '') + assignerTag;
+          }
+        }
         delete payload.source_row;
         delete payload.follower_ids;
         delete payload.follower_names;
@@ -508,6 +537,19 @@ export const api = {
         existingNotes = existingNotes.replace(/\[FOLLOWERS:[^\]]*\]/g, '').trim();
         if (data.followerIds.length > 0) {
           payload.notes = (existingNotes ? existingNotes + '\n' : '') + followerTag;
+        } else {
+          payload.notes = existingNotes;
+        }
+      }
+
+      if (data.assignerId !== undefined || data.assignerName !== undefined) {
+        const aId = data.assignerId || '';
+        const aName = data.assignerName || '';
+        let existingNotes = payload.notes || '';
+        existingNotes = existingNotes.replace(/\[ASSIGNER:[^\]]*\]/g, '').trim();
+        if (aId || aName) {
+          const assignerTag = `[ASSIGNER:${aId}:::${aName}]`;
+          payload.notes = (existingNotes ? existingNotes + '\n' : '') + assignerTag;
         } else {
           payload.notes = existingNotes;
         }

@@ -132,12 +132,12 @@ export const TaskAssignmentPage: React.FC = () => {
       const engName = user?.name || user?.username || 'Nhân sự';
       store.logActivity(`Nhân sự ${engName} đã XÁC NHẬN NHẬN VIỆC "${taskToAccept.name}"`, taskToAccept.projectCode);
 
-      if (store.addNotification && (taskToAccept.assignerId || taskToAccept.assignerName)) {
+      if (store.addNotification) {
         await store.addNotification({
           title: 'Nhân sự đã nhận việc',
           message: `${engName} đã xác nhận nhận việc "${taskToAccept.name}" [${taskToAccept.projectCode}].`,
           link: `/my-tasks?taskId=${encodeURIComponent(taskToAccept.id)}&highlight=${encodeURIComponent(taskToAccept.name || '')}`,
-          type: `task_accepted:::${taskToAccept.assignerId || ''}:::${taskToAccept.assignerName || ''}`,
+          type: `task_accepted:::${taskToAccept.assignerId || 'admin'}:::${taskToAccept.assignerName || 'Quản lý'}`,
           icon: 'task_alt',
           senderId: user?.id,
           senderName: engName
@@ -221,13 +221,13 @@ export const TaskAssignmentPage: React.FC = () => {
       const followerNames = task.followerNames || [];
 
       const allRecipientIds = Array.from(new Set([
-        task.assignerId,
+        task.assignerId || (!isAssigner ? 'admin' : ''),
         ...engIds,
         ...followerIds
       ])).filter(id => id && id !== userId);
 
       const allRecipientNames = Array.from(new Set([
-        task.assignerName,
+        task.assignerName || (!isAssigner ? 'Quản lý' : ''),
         ...engNames,
         ...followerNames
       ])).filter(Boolean);
@@ -2000,6 +2000,7 @@ export const TaskAssignmentPage: React.FC = () => {
         isAssigner={isUserTaskAssigner(user, discussionTask, engineers)}
         isAssignee={isUserTaskAssignee(user, discussionTask, engineers)}
         onSendReply={handleSendReply}
+        onSendQuestion={handleSendReply}
         onAccept={handleAcceptTask}
         onAcceptTask={handleAcceptTask}
       />

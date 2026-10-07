@@ -337,8 +337,8 @@ export const TaskManagementPage: React.FC = () => {
       const assignedIds = (parts.length > 1 ? parts[1] : (task.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
       const assignedNames = (parts[0] || (task.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
 
-      const targetIdList = Array.from(new Set([task.assignerId || 'admin', ...assignedIds])).filter(Boolean);
-      const targetNameList = Array.from(new Set([task.assignerName || 'Quản lý', ...assignedNames])).filter(Boolean);
+      const targetIdList = Array.from(new Set([task.assignerId || 'admin', ...assignedIds, ...(task.followerIds || [])])).filter(Boolean);
+      const targetNameList = Array.from(new Set([task.assignerName || 'Quản lý', ...assignedNames, ...(task.followerNames || [])])).filter(Boolean);
 
       await store.addNotification({
         title: isCurrentlyDoing ? 'Trao đổi công việc' : 'Thắc mắc công việc mới',
