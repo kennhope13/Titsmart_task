@@ -577,7 +577,7 @@ export const ChatWidget: React.FC = () => {
   if (!showChatWidget || !currentUser) return null;
 
   return (
-    <div className="fixed z-[9999] pointer-events-none" style={{ inset: 0 }}>
+    <>
       {/* ===== MOBILE: Full-screen modal ===== */}
       {isOpen && (
         <div className="sm:hidden fixed inset-0 z-[9999] flex flex-col bg-white pointer-events-auto"
@@ -1154,6 +1154,6 @@ export const ChatWidget: React.FC = () => {
           </button>
         </div>
       )}
-    </div>
+    </>
   );
 };
