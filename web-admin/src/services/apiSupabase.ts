@@ -250,13 +250,10 @@ export const api = {
         deletePromises.push(Promise.resolve(supabase.from('project_members').delete().eq('project_id', targetId)));
         deletePromises.push(Promise.resolve(supabase.from('activity_logs').delete().eq('project_id', targetId)));
       }
-      if (Array.isArray(codes) && codes.length > 0) {
-        codes.forEach((c: string) => {
-          if (c) {
-            deletePromises.push(Promise.resolve(supabase.from('inventory_transactions').delete().eq('project_code', c)));
-          }
-        });
-      }
+      const sourceOrProjects = Array.from(new Set([...codes, targetName].filter(Boolean)));
+      sourceOrProjects.forEach((sop: string) => {
+        deletePromises.push(Promise.resolve(supabase.from('inventory_transactions').delete().eq('source_or_project', sop)));
+      });
 
       await Promise.allSettled(deletePromises as any);
 
