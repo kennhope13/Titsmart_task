@@ -49,7 +49,7 @@ export const ProjectDetailPage: React.FC = () => {
       { label: 'Tiến độ Công việc', path: `/projects/${projectId}/tasks`, icon: 'fact_check' },
       { label: 'Vật tư & Chi phí', path: `/projects/${projectId}/cost-plan`, icon: 'account_balance_wallet' },
       { label: 'Hồ sơ', path: `/projects/${projectId}/documents`, icon: 'file_present', requireAdmin: true },
-      { label: 'Sơ đồ dự án', path: `/projects/${projectId}/diagram`, icon: 'account_tree', reqPerm: 'VIEW_PROJECT_DIAGRAM' },
+      { label: 'Thư viện', path: `/projects/${projectId}/diagram`, icon: 'photo_library', reqPerm: 'VIEW_PROJECT_DIAGRAM' },
       { label: 'Kho Dự án', path: `/projects/${projectId}/inventory`, icon: 'inventory_2' },
       { label: 'Hiện trường', path: `/projects/${projectId}/field-logs`, icon: 'add_a_photo' }
     ];

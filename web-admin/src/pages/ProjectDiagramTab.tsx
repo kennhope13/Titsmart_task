@@ -152,10 +152,10 @@ export const ProjectDiagramTab: React.FC = () => {
         {/* Mobile Action Bar */}
         {(hasPermission(user, 'MANAGE_PROJECT_DIAGRAM') || hasPermission(user, 'MANAGE_DOCUMENTS')) && (
           <div className="md:hidden flex items-center justify-between px-4 py-2 border-b border-slate-100 bg-white">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Danh sách sơ đồ</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Thư viện dự án</span>
             <button 
               onClick={() => { setEditingIndex(null); setDiagramName(''); setPendingUrls([]); setResetKey(Date.now()); setIsModalOpen(true); }}
-              title="Tải sơ đồ"
+              title="Tải lên Thư viện"
               className="h-8 w-8 bg-primary text-white font-bold text-xs rounded-lg hover:bg-blue-800 active:scale-95 transition-all shadow-xs flex items-center justify-center cursor-pointer shrink-0"
             >
               <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
@@ -183,7 +183,7 @@ export const ProjectDiagramTab: React.FC = () => {
                             <button onClick={(e) => { e.stopPropagation(); handleOpenEditModal(idx); }} className="text-slate-400 hover:text-primary p-1.5 rounded-lg hover:bg-slate-100 transition-colors" title="Đổi tên">
                               <span className="material-symbols-outlined text-[18px] block">edit</span>
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDelete(idx); }} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors" title="Xóa sơ đồ">
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(idx); }} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors" title="Xóa tài liệu">
                               <span className="material-symbols-outlined text-[18px] block">delete</span>
                             </button>
                           </>
@@ -194,14 +194,14 @@ export const ProjectDiagramTab: React.FC = () => {
                     {(() => {
                       const displayUrl = (url || '').replace(/http:\/\/(127\.0\.0\.1|localhost):54321/g, `http://${window.location.hostname}:54321`);
                       return (
-                        <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm cursor-pointer group-hover:bg-slate-100 transition-colors" onClick={() => setViewerItem({url: displayUrl, name})} title="Nhấn để xem sơ đồ">
+                        <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm cursor-pointer group-hover:bg-slate-100 transition-colors" onClick={() => setViewerItem({url: displayUrl, name})} title="Nhấn để xem">
                           {(!isPdf || displayUrl.startsWith('data:image/') || displayUrl.startsWith('blob:')) ? (
                             <img src={displayUrl} alt={name} className="w-full h-full object-contain rounded" />
                           ) : (
                             <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-slate-500 w-full h-full bg-slate-50/80 rounded border border-slate-200/80 hover:bg-slate-100/80 transition-colors">
                               <span className="material-symbols-outlined text-5xl text-rose-500">picture_as_pdf</span>
                               <span className="text-xs font-bold text-slate-700 max-w-[90%] truncate">{name}</span>
-                              <span className="text-[11px] text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">Nhấn để xem sơ đồ PDF</span>
+                              <span className="text-[11px] text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">Nhấn để xem PDF</span>
                             </div>
                           )}
                         </div>
@@ -213,9 +213,9 @@ export const ProjectDiagramTab: React.FC = () => {
             </div>
           ) : (
             <div className="border-2 border-dashed border-slate-200 rounded-xl p-16 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50">
-              <span className="material-symbols-outlined text-6xl mb-4 text-slate-300">account_tree</span>
-              <p className="font-medium text-slate-500 text-lg">Chưa có sơ đồ dự án nào</p>
-              <p className="text-sm text-slate-400 mt-2">Hãy bấm vào nút Tải sơ đồ để tải lên</p>
+              <span className="material-symbols-outlined text-6xl mb-4 text-slate-300">photo_library</span>
+              <p className="font-medium text-slate-500 text-lg">Chưa có tài liệu thư viện nào</p>
+              <p className="text-sm text-slate-400 mt-2">Hãy bấm vào nút Tải lên Thư viện để thêm mới</p>
             </div>
           )}
 
@@ -226,13 +226,13 @@ export const ProjectDiagramTab: React.FC = () => {
               className="hidden md:flex h-[36px] px-4 bg-primary text-white font-bold text-sm rounded-lg hover:bg-blue-800 transition-colors shadow-sm items-center gap-2 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
-              Tải sơ đồ
+              Tải lên Thư viện
             </button>,
             portalNode
           )}
 
                     {/* The Upload Modal */}
-          <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingIndex !== null ? 'Cập nhật sơ đồ' : 'Upload sơ đồ dự án'} icon="add_a_photo">
+          <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingIndex !== null ? 'Cập nhật tài liệu' : 'Upload tài liệu Thư viện'} icon="add_a_photo">
             <div className="flex flex-col gap-4 py-2">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Dự án</label>
