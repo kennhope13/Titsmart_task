@@ -821,6 +821,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
 
   const displayNotifications = useMemo(() => {
     const seen = new Set<string>();
+    const seenTaskKeys = new Set<string>();
     const uniqueList: typeof notifications = [];
 
     // Inject app update notification if available
@@ -844,6 +845,26 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       if (dismissedNotifIds.has(n.id)) return;
 
       const cleanTitle = n.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim();
+
+      // Extract task name inside quotes "..." if present (e.g. "Điện thoại IP phone...")
+      const quoteMatch = n.message?.match(/"([^"]+)"/);
+      const extractedTaskName = quoteMatch ? quoteMatch[1].trim().toLowerCase() : '';
+
+      let notifTimeKey = '';
+      try {
+        const d = new Date(n.timestamp || '');
+        if (!isNaN(d.getTime())) {
+          // Group by 2-minute bucket
+          notifTimeKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}-${Math.floor(d.getMinutes() / 2)}`;
+        }
+      } catch {}
+
+      if (extractedTaskName && (n.type?.startsWith('task_') || cleanTitle.toLowerCase().includes('giao việc') || cleanTitle.toLowerCase().includes('trao đổi'))) {
+        const taskKey = `${n.type?.split(':::')[0] || 'task'}:::${extractedTaskName}:::${notifTimeKey}`;
+        if (seenTaskKeys.has(taskKey)) return;
+        seenTaskKeys.add(taskKey);
+      }
+
       const key = `${cleanTitle}:::${n.message}`;
       if (!seen.has(key)) {
         seen.add(key);
