@@ -877,6 +877,7 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         set(state => ({
           directMessages: [...state.directMessages, newMsg]
         }));
+        broadcastRealtimeSync('direct_messages');
       } catch (e) {
         console.error('Failed to send direct message', e);
         throw e;
@@ -2809,17 +2810,19 @@ export function setupRealtimeSync() {
     console.warn('[Realtime] Could not subscribe to realtime channel', e);
   }
 
-  // Heartbeat polling 10s tự động kiểm tra bản tin mới
+  // Heartbeat polling 5s tự động kiểm tra tin nhắn & thông báo mới
   const heartbeatInterval = setInterval(() => {
     const store = useRealtimeStore.getState();
     store.fetchNotifications();
+    store.fetchDirectMessages();
     store.fetchTasks(undefined);
-  }, 10000);
+  }, 5000);
 
   // Tự động tải lại dữ liệu mới nhất khi chuyển tab / focus lại cửa sổ
   const handleFocus = () => {
     const store = useRealtimeStore.getState();
     store.fetchNotifications();
+    store.fetchDirectMessages();
     store.fetchTasks(undefined);
     store.fetchProjects();
   };
