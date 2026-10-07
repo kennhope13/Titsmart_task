@@ -7,34 +7,46 @@ interface FileViewerItemProps {
 }
 
 export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) => {
+  // Normalize localhost/127.0.0.1 Supabase URLs to current hostname for mobile/LAN access
+  const resolvedUrl = (url || '').replace(/http:\/\/(127\.0\.0\.1|localhost):54321/g, `http://${window.location.hostname}:54321`);
+
+  const isExcel = Boolean(resolvedUrl.match(/\.(xlsx|xls|csv)($|\?)/i));
+  const isPdf = Boolean(resolvedUrl.match(/\.pdf($|\?)/i) || resolvedUrl.startsWith('data:application/pdf'));
+  const isOfficeDoc = Boolean(resolvedUrl.match(/\.(doc|docx|ppt|pptx)($|\?)/i));
   const isImage = Boolean(
-    url.match(/\.(jpeg|jpg|gif|png|webp|bmp|svg)($|\?)/i) ||
-    url.startsWith('data:image/') ||
-    url.startsWith('blob:')
-  );
-  const isExcel = Boolean(url.match(/\.(xlsx|xls|csv)($|\?)/i));
-  const isPdf = Boolean(url.match(/\.pdf($|\?)/i) || url.startsWith('data:application/pdf'));
-  const isOfficeDoc = Boolean(url.match(/\.(doc|docx|ppt|pptx)($|\?)/i));
+    resolvedUrl.match(/\.(jpeg|jpg|gif|png|webp|bmp|svg)($|\?)/i) ||
+    resolvedUrl.startsWith('data:image/') ||
+    resolvedUrl.startsWith('blob:')
+  ) || (!isExcel && !isPdf && !isOfficeDoc);
 
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [activeSheet, setActiveSheet] = useState<string>('');
   const [sheetsHtmlMap, setSheetsHtmlMap] = useState<Record<string, string>>({});
   const [excelLoading, setExcelLoading] = useState<boolean>(false);
+
+  // PDF Viewer State (pdfjs-dist)
+  const [pdfLoading, setPdfLoading] = useState<boolean>(false);
+  const [pdfError, setPdfError] = useState<boolean>(false);
+  const [pdfNumPages, setPdfNumPages] = useState<number>(0);
+  const [pdfCurrentPage, setPdfCurrentPage] = useState<number>(1);
+  const [pdfPageImageUrl, setPdfPageImageUrl] = useState<string>('');
+
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragMode, setDragMode] = useState<boolean>(false);
 
+  // Parse Excel locally
   useEffect(() => {
-    if (!isExcel || !url) return;
+    if (!isExcel || !resolvedUrl) return;
     let isMounted = true;
     setExcelLoading(true);
     setSheetNames([]);
     setActiveSheet('');
     setSheetsHtmlMap({});
 
-    fetch(url)
+    fetch(resolvedUrl)
       .then((res) => res.arrayBuffer())
       .then((buffer) => {
         if (!isMounted) return;
@@ -63,7 +75,66 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     return () => {
       isMounted = false;
     };
-  }, [url, isExcel]);
+  }, [resolvedUrl, isExcel]);
+
+  // Render PDF page to Canvas image data URL for mobile-friendly view
+  useEffect(() => {
+    if (!isPdf || !resolvedUrl) return;
+    let isMounted = true;
+    setPdfLoading(true);
+    setPdfError(false);
+
+    (async () => {
+      try {
+        const pdfjs = await import('pdfjs-dist');
+        const worker = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
+        (pdfjs as any).GlobalWorkerOptions.workerSrc = worker;
+
+        let arrayBuffer: ArrayBuffer;
+        if (resolvedUrl.startsWith('data:application/pdf;base64,')) {
+          const base64Str = resolvedUrl.split(',')[1];
+          const binaryStr = atob(base64Str);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
+          }
+          arrayBuffer = bytes.buffer;
+        } else {
+          const res = await fetch(resolvedUrl);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          arrayBuffer = await res.arrayBuffer();
+        }
+
+        const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+        if (!isMounted) return;
+
+        setPdfNumPages(pdf.numPages);
+        const targetPageNum = Math.min(Math.max(pdfCurrentPage || 1, 1), pdf.numPages);
+
+        const page = await pdf.getPage(targetPageNum);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (context) {
+          canvas.width = Math.ceil(viewport.width);
+          canvas.height = Math.ceil(viewport.height);
+          await page.render({ canvasContext: context, viewport, canvas } as any).promise;
+          if (isMounted) {
+            setPdfPageImageUrl(canvas.toDataURL('image/png'));
+          }
+        }
+      } catch (err) {
+        console.warn('PDF rendering failed, falling back:', err);
+        if (isMounted) setPdfError(true);
+      } finally {
+        if (isMounted) setPdfLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [resolvedUrl, isPdf, pdfCurrentPage]);
 
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,33 +155,26 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     setPosition({ x: 0, y: 0 });
   };
 
-  const handleToggleDragMode = () => {
-    setDragMode((prev) => {
-      const next = !prev;
-      if (!next && zoom <= 1) setPosition({ x: 0, y: 0 });
-      return next;
-    });
-  };
-
   const touchStartDistRef = useRef<number | null>(null);
   const touchStartZoomRef = useRef<number>(1);
 
   // Mouse / Touch Drag & Pinch Zoom for Mobile
+  const canInteractImage = isImage || (isPdf && Boolean(pdfPageImageUrl));
+
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.button === 0 && (zoom > 1 || dragMode || isImage)) {
+    if (e.button === 0 && (zoom > 1 || dragMode || canInteractImage)) {
       setIsDragging(true);
       dragStartRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
     }
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isImage) return;
+    if (!canInteractImage) return;
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       setIsDragging(true);
       dragStartRef.current = { x: touch.clientX - position.x, y: touch.clientY - position.y };
     } else if (e.touches.length === 2) {
-      // Pinch to zoom start
       const dist = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -121,7 +185,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isImage) return;
+    if (!canInteractImage) return;
     if (e.touches.length === 1 && isDragging) {
       const touch = e.touches[0];
       setPosition({
@@ -202,13 +266,11 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     };
   }, []);
 
-  // Check if rotated 90deg or 270deg (Xoay ngang)
   const isRotated90 = Math.abs(rotation % 180) === 90;
 
   const getContentTransformStyle = (): React.CSSProperties => {
     let scaleMultiplier = 1;
     if (isRotated90 && containerSize.w > 0 && containerSize.h > 0) {
-      // Keep exact 1:1 scale ratio so rotated image doesn't shrink into empty space
       scaleMultiplier = containerSize.w / containerSize.h;
     }
 
@@ -219,7 +281,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     };
   };
 
-  const isPanActive = dragMode || zoom !== 1 || position.x !== 0 || position.y !== 0;
+  const renderActiveImageSrc = isPdf ? pdfPageImageUrl : resolvedUrl;
 
   return (
     <div className="flex flex-col border border-slate-200 rounded-lg p-0.5 sm:p-1 bg-white shadow-sm flex-1 min-h-0 h-full select-none">
@@ -229,11 +291,34 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
           <span className="text-xs font-bold text-slate-800 truncate">
             Tài liệu {index + 1}
           </span>
+          {isPdf && pdfNumPages > 1 && (
+            <div className="flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-xs">
+              <button
+                disabled={pdfCurrentPage <= 1}
+                onClick={() => setPdfCurrentPage((p) => Math.max(p - 1, 1))}
+                className="text-slate-600 disabled:opacity-30 hover:text-slate-900"
+                title="Trang trước"
+              >
+                <span className="material-symbols-outlined text-[14px] align-middle">chevron_left</span>
+              </button>
+              <span className="text-[11px] font-bold text-slate-700">
+                {pdfCurrentPage} / {pdfNumPages}
+              </span>
+              <button
+                disabled={pdfCurrentPage >= pdfNumPages}
+                onClick={() => setPdfCurrentPage((p) => Math.min(p + 1, pdfNumPages))}
+                className="text-slate-600 disabled:opacity-30 hover:text-slate-900"
+                title="Trang sau"
+              >
+                <span className="material-symbols-outlined text-[14px] align-middle">chevron_right</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5">
-          {/* Zoom controls for Image / Default */}
-          {(!isExcel && !isOfficeDoc) && (
+          {/* Zoom controls for Image / PDF */}
+          {(isImage || isPdf) && (
             <div className="flex items-center gap-0.5 bg-slate-100 px-1 py-0.5 rounded-md border border-slate-200 text-xs">
               <button
                 onClick={handleZoomOut}
@@ -262,8 +347,8 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
             </div>
           )}
 
-          {/* Rotate Button for Image / Default */}
-          {(!isExcel && !isOfficeDoc) && (
+          {/* Rotate Button */}
+          {(isImage || isPdf) && (
             <button
               onClick={handleRotate}
               title="Xoay 90 độ"
@@ -275,7 +360,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
 
           {/* Download Button */}
           <a
-            href={`${url}?download=`}
+            href={`${resolvedUrl}?download=`}
             download
             target="_blank"
             rel="noreferrer"
@@ -298,9 +383,14 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         >
 
           <div className="w-full h-full flex items-center justify-center">
-            {(!isExcel && !isOfficeDoc) ? (
+            {isPdf && pdfLoading ? (
+              <div className="flex flex-col items-center justify-center gap-2 text-slate-500 p-6">
+                <span className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs font-bold text-slate-600">Đang hiển thị PDF...</span>
+              </div>
+            ) : (isImage || (isPdf && renderActiveImageSrc && !pdfError)) ? (
               <img
-                src={url}
+                src={renderActiveImageSrc}
                 alt={`File ${index + 1}`}
                 className="max-w-full max-h-full w-auto h-auto object-contain shadow-sm rounded border border-slate-200 bg-white block shrink-0"
                 style={getContentTransformStyle()}
@@ -311,7 +401,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
                   const parent = target.parentElement;
                   if (parent) {
                     const iframe = document.createElement('iframe');
-                    iframe.src = url;
+                    iframe.src = resolvedUrl;
                     iframe.className = 'w-full h-full rounded border border-slate-200 bg-white shadow-xs';
                     parent.appendChild(iframe);
                   }
@@ -358,7 +448,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
                     <p className="text-xs text-slate-500 max-w-sm">Tệp Excel này có thể được bảo mật hoặc xem từ môi trường localhost/mạng nội bộ.</p>
                     <div className="flex gap-2 mt-2">
                       <a
-                        href={url}
+                        href={resolvedUrl}
                         download
                         target="_blank"
                         rel="noreferrer"
@@ -367,7 +457,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
                         <span className="material-symbols-outlined text-base">download</span> Tải tệp về máy
                       </a>
                       <a
-                        href={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`}
+                        href={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(resolvedUrl)}`}
                         target="_blank"
                         rel="noreferrer"
                         className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1.5 border border-slate-300"
@@ -382,9 +472,9 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
               <div className="w-full h-full relative flex flex-col items-center justify-center">
                 <iframe
                   src={
-                    /\.(doc|docx|ppt|pptx)$/i.test(url)
-                      ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
-                      : url
+                    /\.(doc|docx|ppt|pptx)$/i.test(resolvedUrl)
+                      ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(resolvedUrl)}`
+                      : resolvedUrl
                   }
                   className="w-full h-full rounded border border-slate-200 bg-white shadow-xs"
                   title={`File ${index + 1}`}

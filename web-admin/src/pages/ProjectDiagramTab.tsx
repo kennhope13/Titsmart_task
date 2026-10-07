@@ -191,16 +191,22 @@ export const ProjectDiagramTab: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm cursor-pointer group-hover:bg-slate-100 transition-colors" onClick={() => setViewerItem({url, name})} title="Nhấn để xem ảnh lớn">
-                      {(!isPdf || url.startsWith('data:image/') || url.startsWith('blob:')) ? (
-                        <img src={url} alt={name} className="w-full h-full object-contain rounded" />
-                      ) : (
-                        <div className="relative w-full h-full overflow-hidden rounded">
-                          <iframe src={`${url}#toolbar=0&navpanes=0&scrollbar=0`} className="w-[calc(100%+24px)] h-[calc(100%+24px)] -m-[12px] bg-white pointer-events-none" title={name} tabIndex={-1} />
-                          <div className="absolute inset-0 z-10 bg-transparent" />
+                    {(() => {
+                      const displayUrl = (url || '').replace(/http:\/\/(127\.0\.0\.1|localhost):54321/g, `http://${window.location.hostname}:54321`);
+                      return (
+                        <div className="h-64 flex justify-center items-center p-2 relative overflow-hidden bg-white/50 backdrop-blur-sm cursor-pointer group-hover:bg-slate-100 transition-colors" onClick={() => setViewerItem({url: displayUrl, name})} title="Nhấn để xem sơ đồ">
+                          {(!isPdf || displayUrl.startsWith('data:image/') || displayUrl.startsWith('blob:')) ? (
+                            <img src={displayUrl} alt={name} className="w-full h-full object-contain rounded" />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-slate-500 w-full h-full bg-slate-50/80 rounded border border-slate-200/80 hover:bg-slate-100/80 transition-colors">
+                              <span className="material-symbols-outlined text-5xl text-rose-500">picture_as_pdf</span>
+                              <span className="text-xs font-bold text-slate-700 max-w-[90%] truncate">{name}</span>
+                              <span className="text-[11px] text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">Nhấn để xem sơ đồ PDF</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      );
+                    })()}
                   </div>
                 );
               })}
