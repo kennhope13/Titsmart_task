@@ -87,11 +87,11 @@ export const ChatWidget: React.FC = () => {
 
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  // Position stored as offset from right & bottom (or left/top) to preserve position across resize/zoom
-  const [position, setPosition] = useState<{ right: number; bottom: number } | null>(null);
+  // Dragging functionality state & refs (transient per session, resets to default on reload)
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
 
   const isDraggingRef = useRef(false);
-  const dragStartRef = useRef<{ startX: number; startY: number; initRight: number; initBottom: number }>({ startX: 0, startY: 0, initRight: 0, initBottom: 0 });
+  const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({ startX: 0, startY: 0, initX: 0, initY: 0 });
   const hasMovedRef = useRef(false);
   const buttonRef = useRef<HTMLDivElement>(null);
 
@@ -102,16 +102,16 @@ export const ChatWidget: React.FC = () => {
     if (!btnElem) return;
 
     const rect = btnElem.getBoundingClientRect();
-    const currentRight = window.innerWidth - rect.right;
-    const currentBottom = window.innerHeight - rect.bottom;
+    const currentX = position ? position.x : rect.left;
+    const currentY = position ? position.y : rect.top;
 
     isDraggingRef.current = true;
     hasMovedRef.current = false;
     dragStartRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      initRight: position ? position.right : currentRight,
-      initBottom: position ? position.bottom : currentBottom,
+      initX: currentX,
+      initY: currentY,
     };
 
     try {
@@ -125,20 +125,34 @@ export const ChatWidget: React.FC = () => {
     const dx = e.clientX - dragStartRef.current.startX;
     const dy = e.clientY - dragStartRef.current.startY;
 
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+    if (!hasMovedRef.current && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
       hasMovedRef.current = true;
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      } catch (err) {}
     }
 
-    const newRight = Math.max(10, Math.min(window.innerWidth - 60, dragStartRef.current.initRight - dx));
-    const newBottom = Math.max(10, Math.min(window.innerHeight - 60, dragStartRef.current.initBottom - dy));
-
-    setPosition({ right: newRight, bottom: newBottom });
+    if (hasMovedRef.current) {
+      const newX = Math.max(10, Math.min(window.innerWidth - 60, dragStartRef.current.initX + dx));
+      const newY = Math.max(10, Math.min(window.innerHeight - 60, dragStartRef.current.initY + dy));
+      setPosition({ x: newX, y: newY });
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
 
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    } catch (err) {}
+    setTimeout(() => {
+      hasMovedRef.current = false;
+    }, 120);
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    isDraggingRef.current = false;
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     } catch (err) {}
@@ -159,12 +173,12 @@ export const ChatWidget: React.FC = () => {
     const clampPos = () => {
       setPosition(prev => {
         if (!prev) return null;
-        const maxRight = window.innerWidth - 60;
-        const maxBottom = window.innerHeight - 60;
-        const clampedRight = Math.max(10, Math.min(maxRight, prev.right));
-        const clampedBottom = Math.max(10, Math.min(maxBottom, prev.bottom));
-        if (clampedRight !== prev.right || clampedBottom !== prev.bottom) {
-          return { right: clampedRight, bottom: clampedBottom };
+        const maxX = window.innerWidth - 60;
+        const maxY = window.innerHeight - 60;
+        const clampedX = Math.max(10, Math.min(maxX, prev.x));
+        const clampedY = Math.max(10, Math.min(maxY, prev.y));
+        if (clampedX !== prev.x || clampedY !== prev.y) {
+          return { x: clampedX, y: clampedY };
         }
         return prev;
       });
@@ -1109,9 +1123,10 @@ export const ChatWidget: React.FC = () => {
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
           style={
             position
-              ? { position: 'fixed', right: `${position.right}px`, bottom: `${position.bottom}px`, left: 'auto', top: 'auto' }
+              ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
               : undefined
           }
           className={`fixed z-[9990] touch-none select-none pointer-events-auto ${
