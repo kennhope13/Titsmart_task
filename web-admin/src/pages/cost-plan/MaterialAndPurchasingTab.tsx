@@ -1206,6 +1206,72 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                 </CustomSelect>
               </div>
             )}
+
+            {subTab === 'TECH' && (
+              <div className="flex items-center gap-2 border-l border-slate-200 pl-2 ml-1">
+                {/* Gán nhanh Tình trạng */}
+                <div className="flex items-center gap-1">
+                  <span className="text-emerald-700 font-bold whitespace-nowrap text-[11px] flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-[14px]">done_all</span>
+                    Gán Tình trạng:
+                  </span>
+                  <CustomSelect
+                    value=""
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                      const val = e.target.value;
+                      if (!val) return;
+                      const targetVal = val === 'Chưa xác định' ? '' : val;
+                      const targetList = filteredData.filter((p: ProjectMaterialPlan) => !isParentRow(p));
+                      if (targetList.length === 0) return;
+                      targetList.forEach((plan: ProjectMaterialPlan) => {
+                        const rawNotes = String(plan.notes || '');
+                        let currentTech = getTechNote(rawNotes).replace(/\[tech-status:[^\]]+\]/gi, '').trim();
+                        if (targetVal) currentTech = `${currentTech} [tech-status:${targetVal}]`.trim();
+                        const docNote = getDocNoteFull(rawNotes);
+                        const newNotes = docNote ? `${currentTech} [DOC-NOTE]${docNote}` : currentTech;
+                        onUpdateMaterial(plan.id, { techSpecStatus: targetVal, notes: newNotes });
+                      });
+                      alert(`Đã gán Tình trạng "${val}" cho ${targetList.length} vật tư!`);
+                      e.target.value = '';
+                    }}
+                    className="h-7 min-w-[110px] max-w-[130px] border border-emerald-300 rounded px-1.5 py-0.5 bg-emerald-50 text-emerald-800 text-[11px] font-bold shadow-xs hover:bg-emerald-100 transition-colors"
+                  >
+                    <option value="">-- Chọn gán --</option>
+                    {['Đáp ứng', 'Chưa đáp ứng', 'Đang xem xét', 'Chưa xác định'].map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </CustomSelect>
+                </div>
+
+                {/* Gán nhanh TT Đặt hàng */}
+                <div className="flex items-center gap-1">
+                  <span className="text-blue-700 font-bold whitespace-nowrap text-[11px] flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-[14px]">shopping_bag</span>
+                    Gán TT Đặt hàng:
+                  </span>
+                  <CustomSelect
+                    value=""
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                      const val = e.target.value;
+                      if (!val) return;
+                      const targetList = filteredData.filter((p: ProjectMaterialPlan) => !isParentRow(p));
+                      if (targetList.length === 0) return;
+                      targetList.forEach((plan: ProjectMaterialPlan) => {
+                        onUpdateMaterial(plan.id, { orderedStatus: val });
+                      });
+                      alert(`Đã gán TT Đặt hàng "${val}" cho ${targetList.length} vật tư!`);
+                      e.target.value = '';
+                    }}
+                    className="h-7 min-w-[110px] max-w-[130px] border border-blue-300 rounded px-1.5 py-0.5 bg-blue-50 text-blue-800 text-[11px] font-bold shadow-xs hover:bg-blue-100 transition-colors"
+                  >
+                    <option value="">-- Chọn gán --</option>
+                    {['Đã có hàng', 'Chưa đặt hàng', 'Đã đặt hàng', 'Đang giao hàng'].map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </CustomSelect>
+                </div>
+              </div>
+            )}
             
             
 
