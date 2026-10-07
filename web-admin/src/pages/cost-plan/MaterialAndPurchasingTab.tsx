@@ -1508,6 +1508,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             const newNotes = docNote ? `${currentTech} [DOC-NOTE]${docNote}` : currentTech;
                             onUpdateMaterial(plan.id, { techSpecStatus: targetVal, notes: newNotes });
                           });
+                          setSelectedIds(new Set());
                           showToast(`Đã gán Tình trạng "${val}" thành công cho ${targetList.length} vật tư!`, 'success');
                           e.target.value = '';
                         }}
@@ -1536,6 +1537,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           targetList.forEach((plan: ProjectMaterialPlan) => {
                             onUpdateMaterial(plan.id, { orderedStatus: val });
                           });
+                          setSelectedIds(new Set());
                           showToast(`Đã gán TT Đặt hàng "${val}" thành công cho ${targetList.length} vật tư!`, 'success');
                           e.target.value = '';
                         }}
