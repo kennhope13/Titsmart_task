@@ -253,7 +253,7 @@ export const ProjectDiagramTab: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Sơ đồ dự án *</label>
+                <label className="block font-bold text-slate-700 mb-1">Tài liệu / Sơ đồ thư viện *</label>
                 <div className="w-full">
                   <FileUpload 
                     key={resetKey}
