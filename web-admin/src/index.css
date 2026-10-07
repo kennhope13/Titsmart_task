@@ -22,15 +22,19 @@
     pointer-events: none !important;
   }
 
-  /* Performance Optimization for Hover Effects (Compatible with low-end CPU & GPU-less devices) */
-  .transition-all {
+  /* Smooth & Natural Hover Transition Optimization */
+  .transition-all,
+  .transition-colors,
+  .transition-transform,
+  .transition-opacity {
     transition-property: color, background-color, border-color, opacity, box-shadow, transform !important;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition-duration: 220ms !important;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important; /* Mượt êm ái tự nhiên, không giật drop fps */
     -webkit-font-smoothing: antialiased;
   }
   
   @media (prefers-reduced-motion: reduce) {
-    .transition-all, button, .cursor-pointer {
+    .transition-all, .transition-colors, .transition-transform, button, .cursor-pointer {
       transition: none !important;
     }
   }
