@@ -317,12 +317,7 @@ const parseTableTasks = (lines: string[]): WebOcrTableTask[] => {
     const cleanStt = String(stt || '').trim().replace(/\.$/, '');
     const hasNoDot = !cleanStt.includes('.');
     const hasVolumeOrUnit = (volume > 0) || (cleanUnitVal !== '');
-    // Quy tắc mới: Loại bỏ việc phụ thuộc vào từ khóa (PHẦN, Bao gồm, Hạng mục...).
-    // Một dòng CHẮC CHẮN KHÔNG PHẢI Section Header nếu nó CÓ Khối lượng hoặc CÓ Đơn vị tính.
-    // Nếu KHÔNG có Khối lượng và KHÔNG có ĐVT, nó là Section Header khi:
-    // 1. STT là chữ La Mã / Chữ cái (I, II, A, B...)
-    // 2. Không có dấu chấm trong STT (số nguyên) và hoàn toàn không có khối lượng/ĐVT
-    const isSectionHeader = !hasVolumeOrUnit && (isRomanOrAlphaSection || hasNoDot);
+    const isSectionHeader = (stt === '' && !hasVolumeOrUnit) || (!hasVolumeOrUnit && (isRomanOrAlphaSection || (hasNoDot && (volume === 0 && cleanUnitVal === ''))));
     const isLevel2Item = false;
     
     const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
@@ -665,7 +660,7 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
       const cleanStt = String(stt || '').trim().replace(/\.$/, '');
       const hasNoDot = !cleanStt.includes('.');
       const hasVolumeOrUnit = (volume > 0) || (cleanUnitVal !== '');
-      const isSectionHeader = !hasVolumeOrUnit && (isRomanOrAlphaSection || hasNoDot);
+      const isSectionHeader = (stt === '' && !hasVolumeOrUnit) || (!hasVolumeOrUnit && (isRomanOrAlphaSection || (hasNoDot && (volume === 0 && cleanUnitVal === ''))));
 
       const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
       const headerSupplyScope = isSectionHeader ? detectSupplyScope(cells.join(' ')) : 'unknown';
