@@ -19,12 +19,21 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     resolvedUrl.startsWith('blob:')
   ) || (!isExcel && !isPdf && !isOfficeDoc);
 
+  // Detect mobile device to default to canvas rendering on mobile vs native Chrome viewer on desktop
+  const isMobileDevice = typeof window !== 'undefined' && (
+    window.innerWidth < 768 ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  );
+
+  // Default to canvas rendering on Mobile devices (prevents blank iframe), and native PDF viewer on Desktop
+  const [useCanvasPdf, setUseCanvasPdf] = useState<boolean>(isMobileDevice);
+
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [activeSheet, setActiveSheet] = useState<string>('');
   const [sheetsHtmlMap, setSheetsHtmlMap] = useState<Record<string, string>>({});
   const [excelLoading, setExcelLoading] = useState<boolean>(false);
 
-  // PDF Viewer State (pdfjs-dist)
+  // PDF Viewer State (pdfjs-dist for mobile canvas view)
   const [pdfLoading, setPdfLoading] = useState<boolean>(false);
   const [pdfError, setPdfError] = useState<boolean>(false);
   const [pdfNumPages, setPdfNumPages] = useState<number>(0);
@@ -77,9 +86,9 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     };
   }, [resolvedUrl, isExcel]);
 
-  // Render PDF page to Canvas image data URL for mobile-friendly view
+  // Render PDF page to Canvas image data URL when useCanvasPdf is active
   useEffect(() => {
-    if (!isPdf || !resolvedUrl) return;
+    if (!isPdf || !resolvedUrl || !useCanvasPdf) return;
     let isMounted = true;
     setPdfLoading(true);
     setPdfError(false);
@@ -124,8 +133,11 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
           }
         }
       } catch (err) {
-        console.warn('PDF rendering failed, falling back:', err);
-        if (isMounted) setPdfError(true);
+        console.warn('PDF rendering failed, falling back to native iframe:', err);
+        if (isMounted) {
+          setPdfError(true);
+          setUseCanvasPdf(false);
+        }
       } finally {
         if (isMounted) setPdfLoading(false);
       }
@@ -134,7 +146,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     return () => {
       isMounted = false;
     };
-  }, [resolvedUrl, isPdf, pdfCurrentPage]);
+  }, [resolvedUrl, isPdf, pdfCurrentPage, useCanvasPdf]);
 
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -158,8 +170,8 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
   const touchStartDistRef = useRef<number | null>(null);
   const touchStartZoomRef = useRef<number>(1);
 
-  // Mouse / Touch Drag & Pinch Zoom for Mobile
-  const canInteractImage = isImage || (isPdf && Boolean(pdfPageImageUrl));
+  // Mouse / Touch Drag & Pinch Zoom for Mobile Image / Canvas
+  const canInteractImage = isImage || (isPdf && useCanvasPdf && Boolean(pdfPageImageUrl));
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 0 && (zoom > 1 || dragMode || canInteractImage)) {
@@ -281,7 +293,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
     };
   };
 
-  const renderActiveImageSrc = isPdf ? pdfPageImageUrl : resolvedUrl;
+  const renderActiveImageSrc = (isPdf && useCanvasPdf) ? pdfPageImageUrl : resolvedUrl;
 
   return (
     <div className="flex flex-col border border-slate-200 rounded-lg p-0.5 sm:p-1 bg-white shadow-sm flex-1 min-h-0 h-full select-none">
@@ -291,7 +303,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
           <span className="text-xs font-bold text-slate-800 truncate">
             Tài liệu {index + 1}
           </span>
-          {isPdf && pdfNumPages > 1 && (
+          {isPdf && useCanvasPdf && pdfNumPages > 1 && (
             <div className="flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-xs">
               <button
                 disabled={pdfCurrentPage <= 1}
@@ -317,8 +329,20 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         </div>
 
         <div className="flex items-center gap-1.5">
-          {/* Zoom controls for Image / PDF */}
-          {(isImage || isPdf) && (
+          {/* Toggle PDF Mode (Native Chrome Viewer vs Mobile Canvas View) */}
+          {isPdf && (
+            <button
+              onClick={() => setUseCanvasPdf((prev) => !prev)}
+              title={useCanvasPdf ? "Chuyển sang Trình xem PDF Gốc Chrome" : "Chuyển sang Trình xem Cảm ứng Mobile"}
+              className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 h-[26px] px-2 rounded-md text-[11px] font-bold transition-all"
+            >
+              <span className="material-symbols-outlined text-[14px]">{useCanvasPdf ? "picture_as_pdf" : "touch_app"}</span>
+              {useCanvasPdf ? "Xem PDF Gốc (Chrome)" : "Chế độ Mobile"}
+            </button>
+          )}
+
+          {/* Zoom controls for Image / Canvas PDF */}
+          {(isImage || (isPdf && useCanvasPdf)) && (
             <div className="flex items-center gap-0.5 bg-slate-100 px-1 py-0.5 rounded-md border border-slate-200 text-xs">
               <button
                 onClick={handleZoomOut}
@@ -348,7 +372,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
           )}
 
           {/* Rotate Button */}
-          {(isImage || isPdf) && (
+          {(isImage || (isPdf && useCanvasPdf)) && (
             <button
               onClick={handleRotate}
               title="Xoay 90 độ"
@@ -371,7 +395,7 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         </div>
       </div>
 
-      {/* Main Single Crisp Document Viewport */}
+      {/* Main Document Viewport */}
       <div className="w-full flex-1 flex min-h-0 relative h-full bg-slate-900/5 rounded-md overflow-hidden border border-slate-200">
         <div
           ref={containerRef}
@@ -383,7 +407,14 @@ export const FileViewerItem: React.FC<FileViewerItemProps> = ({ url, index }) =>
         >
 
           <div className="w-full h-full flex items-center justify-center">
-            {isPdf && pdfLoading ? (
+            {isPdf && !useCanvasPdf ? (
+              /* Native Chrome PDF Viewer for Desktop (Restores sidebar thumbnails, dark toolbar, print button) */
+              <iframe
+                src={`${resolvedUrl}#toolbar=1`}
+                className="w-full h-full rounded border-0 bg-slate-800 shadow-xs"
+                title={`PDF Viewer ${index + 1}`}
+              />
+            ) : isPdf && pdfLoading ? (
               <div className="flex flex-col items-center justify-center gap-2 text-slate-500 p-6">
                 <span className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
                 <span className="text-xs font-bold text-slate-600">Đang hiển thị PDF...</span>
