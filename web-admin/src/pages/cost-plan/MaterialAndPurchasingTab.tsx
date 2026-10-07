@@ -1463,20 +1463,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           </colgroup>
           <thead className="sticky top-0 z-30 border-b border-slate-300 bg-slate-50 text-[10px] font-extrabold uppercase tracking-tight text-slate-600">
             <tr className="bg-slate-50">
-              <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="py-1.5 px-0.5 text-center font-extrabold whitespace-nowrap bg-slate-50 tracking-tighter">
-                <div className="flex items-center justify-center gap-1">
-                  {subTab === 'TECH' && (
-                    <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      onChange={toggleSelectAll}
-                      className="w-3.5 h-3.5 rounded border-slate-300 text-primary cursor-pointer"
-                      title={isAllSelected ? "Bỏ chọn tất cả" : "Chọn tất cả vật tư"}
-                    />
-                  )}
-                  <span>STT</span>
-                </div>
-              </th>
+              <th style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)", borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8' }} className="py-2 px-0 text-center font-extrabold whitespace-nowrap bg-slate-50 tracking-tighter">STT</th>
               <th style={{ borderRight: '1px solid #94a3b8', borderBottom: '1px solid #94a3b8', minWidth: 180, width: subTab === 'FINANCE' ? 240 : undefined }} className="sticky left-0 z-30 bg-slate-50 bg-clip-padding px-2 py-2 font-extrabold text-left min-w-[180px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">NỘI DUNG</th>
               {(subTab === 'TECH' || subTab === 'DOCS' || subTab === 'FINANCE') && (
                 <>
@@ -1498,9 +1485,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           const val = e.target.value;
                           if (!val) return;
                           const targetVal = val === 'Chưa xác định' ? '' : val;
-                          const targetList = selectedIds.size > 0
-                            ? selectableItems.filter((p: ProjectMaterialPlan) => selectedIds.has(p.id))
-                            : selectableItems;
+                          const targetList = selectableItems;
                           if (targetList.length === 0) return;
                           targetList.forEach((plan: ProjectMaterialPlan) => {
                             const rawNotes = String(plan.notes || '');
@@ -1510,7 +1495,6 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             const newNotes = docNote ? `${currentTech} [DOC-NOTE]${docNote}` : currentTech;
                             onUpdateMaterial(plan.id, { techSpecStatus: targetVal, notes: newNotes });
                           });
-                          setSelectedIds(new Set());
                           showToast(`Đã gán Tình trạng "${val}" thành công cho ${targetList.length} vật tư!`, 'success');
                           e.target.value = '';
                         }}
@@ -1532,14 +1516,11 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                           const val = e.target.value;
                           if (!val) return;
-                          const targetList = selectedIds.size > 0
-                            ? selectableItems.filter((p: ProjectMaterialPlan) => selectedIds.has(p.id))
-                            : selectableItems;
+                          const targetList = selectableItems;
                           if (targetList.length === 0) return;
                           targetList.forEach((plan: ProjectMaterialPlan) => {
                             onUpdateMaterial(plan.id, { orderedStatus: val });
                           });
-                          setSelectedIds(new Set());
                           showToast(`Đã gán TT Đặt hàng "${val}" thành công cho ${targetList.length} vật tư!`, 'success');
                           e.target.value = '';
                         }}
@@ -1605,33 +1586,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                     const isCollapsed = collapsedSections.has(plan._sectionKey || '');
                     return (
                       <tr key={plan.id} className="group bg-[#eff6ff] border-t-2 border-b border-blue-200 font-bold text-primary">
-                        <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="bg-[#eff6ff] border-r border-blue-200 py-1 sm:py-2 px-1 text-center font-mono font-extrabold text-[10.5px] sm:text-[11px] text-primary whitespace-nowrap tracking-tighter" title={String(plan.stt)}>
-                          <div className="flex items-center justify-center gap-1">
-                            {subTab === 'TECH' && (
-                              <input
-                                type="checkbox"
-                                checked={(() => {
-                                  const sectionChildren = selectableItems.filter((p: ProjectMaterialPlan) => p.parentId === plan.id || (p.stt && plan.stt && p.stt.startsWith(plan.stt + '.')));
-                                  return sectionChildren.length > 0 && sectionChildren.every((p: ProjectMaterialPlan) => selectedIds.has(p.id));
-                                })()}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  const sectionChildren = selectableItems.filter((p: ProjectMaterialPlan) => p.parentId === plan.id || (p.stt && plan.stt && p.stt.startsWith(plan.stt + '.')));
-                                  const allChildrenSelected = sectionChildren.length > 0 && sectionChildren.every((p: ProjectMaterialPlan) => selectedIds.has(p.id));
-                                  setSelectedIds(prev => {
-                                    const next = new Set(prev);
-                                    sectionChildren.forEach((child: ProjectMaterialPlan) => {
-                                      if (allChildrenSelected) { next.delete(child.id); } else { next.add(child.id); }
-                                    });
-                                    return next;
-                                  });
-                                }}
-                                className="w-3.5 h-3.5 rounded border-slate-300 text-primary focus:ring-0 cursor-pointer flex-shrink-0"
-                                title="Tích chọn / Bỏ chọn tất cả vật tư thuộc mục này"
-                              />
-                            )}
-                            <span>{plan.stt}</span>
-                          </div>
+                        <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="bg-[#eff6ff] border-r border-blue-200 py-1 sm:py-2 px-0 text-center font-mono font-extrabold text-[10.5px] sm:text-[11px] text-primary whitespace-nowrap tracking-tighter" title={String(plan.stt)}>
+                          {plan.stt}
                         </td>
                         <td className="sticky left-0 z-10 bg-[#eff6ff] border-r border-blue-200 py-1 sm:py-1.5 px-1.5 sm:px-2 uppercase tracking-tight font-extrabold text-[11px] sm:text-xs text-primary whitespace-normal min-w-[150px] sm:min-w-[180px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" title={plan.jobContent || plan.name || plan.content}>
                           <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden">
@@ -1697,7 +1653,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                       }
                     }} className={rowClass}>
                       {/* STT */}
-                      <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-0.5 sm:py-1 px-1 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 text-center font-mono whitespace-nowrap tracking-tighter ${sttStyle}`}>
+                      <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-0.5 sm:py-1 px-0 ${stickyBg} group-hover:bg-slate-100 border-r border-slate-200 text-center font-mono whitespace-nowrap tracking-tighter ${sttStyle}`}>
                         {editingCell?.id === plan.id && editingCell?.field === 'stt' && !editingCell.isPurchasing ? (
                           <input
                             type="text"
@@ -1709,17 +1665,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             className="w-full text-center bg-white text-slate-900 font-bold focus:outline-primary text-xs px-1 py-1 h-[26px] box-border outline-none shadow-sm border-none rounded"
                           />
                         ) : (
-                          <div className="flex items-center justify-center gap-1">
-                            {subTab === 'TECH' && (
-                              <input
-                                type="checkbox"
-                                checked={selectedIds.has(plan.id)}
-                                onChange={(e) => { e.stopPropagation(); toggleSelectRow(plan.id); }}
-                                className="w-3.5 h-3.5 rounded border-slate-300 text-primary focus:ring-0 cursor-pointer flex-shrink-0"
-                              />
-                            )}
-                            <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-0.5 py-0 rounded flex-1 whitespace-nowrap tracking-tighter text-center" title={String(depth > 0 ? plan.computedStt : plan.stt)}>{depth > 0 ? plan.computedStt : plan.stt}</span>
-                          </div>
+                          <span onClick={() => startEditing(plan.id, 'stt', plan.stt)} className="cursor-pointer hover:bg-slate-200/50 px-0.5 py-0 rounded block w-full whitespace-nowrap tracking-tighter text-center" title={String(depth > 0 ? plan.computedStt : plan.stt)}>{depth > 0 ? plan.computedStt : plan.stt}</span>
                         )}
                       </td>
                           
