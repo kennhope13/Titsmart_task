@@ -61,13 +61,19 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     ...myEngs.map(e => String(e.username || '').trim().toLowerCase())
   ].filter(Boolean)));
 
+  const userTitle = String(user.title || '').trim().toLowerCase();
   const myNames = Array.from(new Set([
     name,
     username,
     normName,
+    userTitle,
+    normalizeStr(userTitle),
+    username.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(),
     ...myEngs.map(e => String(e.name || '').trim().toLowerCase()),
     ...myEngs.map(e => normalizeStr(e.name)),
-    ...myEngs.map(e => String(e.username || '').trim().toLowerCase())
+    ...myEngs.map(e => String(e.username || '').trim().toLowerCase()),
+    ...myEngs.map(e => String(e.title || '').trim().toLowerCase()),
+    ...myEngs.map(e => normalizeStr(e.title))
   ].filter(Boolean)));
 
   const isMatchingName = (target: string) => {

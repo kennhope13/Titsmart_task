@@ -113,10 +113,6 @@ export const ChatWidget: React.FC = () => {
       initX: currentX,
       initY: currentY,
     };
-
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-    } catch (err) {}
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -146,6 +142,11 @@ export const ChatWidget: React.FC = () => {
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     } catch (err) {}
+
+    if (!hasMovedRef.current) {
+      setIsOpen(true);
+    }
+
     setTimeout(() => {
       hasMovedRef.current = false;
     }, 120);
@@ -162,8 +163,8 @@ export const ChatWidget: React.FC = () => {
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (hasMovedRef.current) {
-      e.stopPropagation();
       return;
     }
     setIsOpen(true);
@@ -781,7 +782,7 @@ export const ChatWidget: React.FC = () => {
       )}
 
       {/* ===== DESKTOP: Floating panel ===== */}
-      <div className="hidden sm:flex fixed bottom-5 right-5 z-50 flex-col items-end pointer-events-auto">
+      <div className="hidden sm:flex fixed bottom-5 right-5 z-[9999] flex-col items-end pointer-events-auto">
         {isOpen && (
           <div className="w-[660px] max-w-[calc(100vw-40px)] h-[580px] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden mb-3 animate-in fade-in slide-in-from-bottom-5 duration-200">
             {/* Header */}

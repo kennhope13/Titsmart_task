@@ -1861,20 +1861,13 @@ export const api = {
   notifications: {
     create: async (data: Omit<NotificationItem, 'id' | 'timestamp' | 'read'>) => {
       const nowIso = new Date().toISOString();
-      if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
-        return {
-          id: 'notif-' + Date.now(),
-          ...data,
-          read: false,
-          timestamp: nowIso
-        };
-      }
 
       const payload: any = {
         title: data.title,
         message: data.message,
         type: data.type,
         icon: data.icon,
+        link: (data as any).link,
         read: false,
         timestamp: nowIso
       };
