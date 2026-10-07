@@ -19,15 +19,24 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
 
   const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || role === 'quản lý' || role === 'giám sát' || username === 'admin' || user.permissions?.includes('ASSIGN_TASKS');
 
-  // Find engineer object corresponding to current user if any
-  const myEng = engineers.find(e => 
+  // Find engineer object(s) corresponding to current user if any
+  const myEngs = engineers.filter(e => 
     (e.id && String(e.id).toLowerCase() === userId) ||
-    (e.name && String(e.name).toLowerCase() === name) ||
-    (e.username && String(e.username).toLowerCase() === username) ||
-    (e.phone && user.phone && String(e.phone) === String(user.phone))
+    (e.name && String(e.name).trim().toLowerCase() === name.trim().toLowerCase()) ||
+    (e.username && String(e.username).trim().toLowerCase() === username.trim().toLowerCase()) ||
+    (e.phone && user.phone && String(e.phone).trim() === String(user.phone).trim())
   );
-  const myNames = [name, username, myEng?.name?.toLowerCase()].filter(Boolean) as string[];
-  const myIds = [userId, myEng?.id?.toLowerCase()].filter(Boolean) as string[];
+  const myEng = myEngs[0];
+  const myNames = Array.from(new Set([
+    name.trim().toLowerCase(),
+    username.trim().toLowerCase(),
+    ...myEngs.map(e => String(e.name || '').trim().toLowerCase()),
+    ...myEngs.map(e => String(e.username || '').trim().toLowerCase())
+  ].filter(Boolean)));
+  const myIds = Array.from(new Set([
+    userId,
+    ...myEngs.map(e => String(e.id || '').toLowerCase())
+  ].filter(Boolean)));
 
   // User's assigned project codes
   const userProjectCodes = new Set<string>([

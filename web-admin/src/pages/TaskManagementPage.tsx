@@ -1478,6 +1478,22 @@ const hasSyncedRef = useRef(false);
       assignedEngineerName: eng?.name || '',
     });
 
+    if (engineerId && eng) {
+      const storeState = useRealtimeStore.getState();
+      if (storeState.addNotification) {
+        const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
+        const assignerId = authStore.user?.id || '';
+        storeState.addNotification({
+          title: `Giao việc: ${eng.name}`,
+          message: `${assignerName} đã giao công việc "${name}" thuộc dự án ${proj ? proj.name : projectCode} cho ${eng.name}.`,
+          type: `task_assigned:::${engineerId}:::${eng.name}`,
+          icon: 'assignment_ind',
+          senderId: assignerId,
+          senderName: assignerName
+        });
+      }
+    }
+
     // ----------------------------------------------------------------
     // ĐỒNG BỘ SANG KẾ HOẠCH VẬT TƯ
     // ----------------------------------------------------------------
