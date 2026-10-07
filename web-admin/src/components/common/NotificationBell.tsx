@@ -181,17 +181,19 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
         if (isTaskAssigner || isTaskFollower) return true;
       }
 
-      // 1B. Phản hồi / Trao đổi / Thắc mắc / Hướng dẫn -> Cả Assigner, Assignee, Follower đều nhận
+      // 1B. Phản hồi / Trao đổi / Thắc mắc / Hướng dẫn / Xóa -> Cả Assigner, Assignee, Follower đều nhận
       if (
         typeStr.startsWith('task_reply') || 
         typeStr.startsWith('task_question') || 
         typeStr.startsWith('task_due') ||
+        typeStr.startsWith('task_deleted') ||
         tLow.includes('phản hồi') || 
         tLow.includes('trao đổi') || 
         tLow.includes('thắc mắc') || 
         tLow.includes('hướng dẫn') || 
         tLow.includes('quá hạn hoàn thành') || 
-        tLow.includes('nhắc hạn công việc')
+        tLow.includes('nhắc hạn công việc') ||
+        tLow.includes('xóa công việc')
       ) {
         if (isTaskAssigner || isTaskAssignee || isTaskFollower) return true;
       }

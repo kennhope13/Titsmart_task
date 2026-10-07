@@ -466,10 +466,39 @@ export const TaskAssignmentPage: React.FC = () => {
     setTaskToDelete({ id: taskId, name: taskName });
   };
 
-  const handleConfirmDeleteTask = () => {
+  const handleConfirmDeleteTask = async () => {
     if (!taskToDelete) return;
+    const target = tasks.find(t => t.id === taskToDelete.id);
     const store = useRealtimeStore.getState();
-    store.deleteTask(taskToDelete.id);
+    await store.deleteTask(taskToDelete.id);
+
+    if (target && store.addNotification) {
+      const assignerId = target.assignerId || 'admin';
+      const assignerName = target.assignerName || 'Quản lý';
+      const parts = String(target.assignedEngineerName || '').split('|');
+      const engIds = (parts.length > 1 ? parts[1] : (target.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
+      const engNames = (parts[0] || (target.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
+      const followerIds = target.followerIds || [];
+      const followerNames = target.followerNames || [];
+
+      const currentUserId = user?.id || '';
+      const currentUserName = user?.name || user?.username || 'Người dùng';
+
+      const targetIds = Array.from(new Set([assignerId, ...engIds, ...followerIds])).filter(id => id && id !== currentUserId);
+      const targetNames = Array.from(new Set([assignerName, ...engNames, ...followerNames])).filter(Boolean);
+
+      if (targetIds.length > 0) {
+        await store.addNotification({
+          title: `Xóa công việc: ${target.name}`,
+          message: `${currentUserName} đã XÓA công việc "${target.name}" [${target.projectName || target.projectCode || 'Dự án'}].`,
+          type: `task_deleted:::${targetIds.join(',')}:::${targetNames.join(',')}`,
+          icon: 'delete',
+          senderId: currentUserId,
+          senderName: currentUserName
+        });
+      }
+    }
+
     triggerToast(`Đã xóa công việc "${taskToDelete.name}"!`, 'success');
     setTaskToDelete(null);
   };
