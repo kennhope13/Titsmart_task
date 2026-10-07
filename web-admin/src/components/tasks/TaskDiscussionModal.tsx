@@ -159,18 +159,21 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
           const engIds = (parts.length > 1 ? parts[1] : (task.assignedEngineerId || '')).split(',').map(s => s.trim()).filter(Boolean);
           const engNames = (parts[0] || (task.assignedEngineerName || '')).split(',').map(s => s.trim()).filter(Boolean);
 
+          const followerIds = task.followerIds || [];
+          const followerNames = task.followerNames || [];
+
           const targetIds = isAssigner 
-            ? engIds 
-            : Array.from(new Set([task.assignerId || 'admin', ...(task.followerIds || [])])).filter(id => id && id !== activeUserId);
+            ? Array.from(new Set([...engIds, ...followerIds])).filter(id => id && id !== activeUserId)
+            : Array.from(new Set([task.assignerId || 'admin', ...followerIds])).filter(id => id && id !== activeUserId);
           const targetNames = isAssigner 
-            ? engNames 
-            : Array.from(new Set([task.assignerName || 'Quản lý', ...(task.followerNames || [])])).filter(Boolean);
+            ? Array.from(new Set([...engNames, ...followerNames])).filter(Boolean)
+            : Array.from(new Set([task.assignerName || 'Quản lý', ...followerNames])).filter(Boolean);
 
           if (targetIds.length > 0) {
             await store.addNotification({
-              title: isAssigner ? 'Phản hồi hướng dẫn công việc' : 'Phản hồi trao đổi công việc',
-              message: `${senderRole} ${activeUserName} đã phản hồi về công việc "${task.name}" [${task.projectCode || 'Dự án'}]: "${inputText.trim() || (selectedFile ? (selectedFile.type === 'image' ? 'Đã gửi 1 hình ảnh' : `Đã đính kèm tệp: ${selectedFile.name}`) : '')}".`,
-              link: `/projects/${encodeURIComponent(task.projectCode || '')}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
+              title: isAssigner ? `Phản hồi hướng dẫn: ${task.name}` : `Thắc mắc công việc: ${task.name}`,
+              message: `${senderRole} ${activeUserName} đã ${isAssigner ? 'phản hồi' : 'thắc mắc'} về công việc "${task.name}" [${task.projectCode || 'Dự án'}]: "${inputText.trim() || (selectedFile ? (selectedFile.type === 'image' ? 'Đã gửi 1 hình ảnh' : `Đã đính kèm tệp: ${selectedFile.name}`) : '')}".`,
+              link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
               type: `task_reply:::${targetIds.join(',')}:::${targetNames.join(',')}`,
               icon: 'forum',
               senderId: activeUserId,

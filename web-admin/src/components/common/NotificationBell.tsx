@@ -222,14 +222,14 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
       if (isSenderById || isSenderByName || isActionAuthor) return false;
       if (typeStr.includes(':::')) {
         const parts = typeStr.split(':::');
-        const targetId = (parts[1] || '').trim().toLowerCase();
-        const targetName = (parts[2] || '').trim();
+        const targetIds = (parts[1] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        const targetNames = (parts[2] || '').split(',').map(s => s.trim()).filter(Boolean);
 
-        const isMeId = targetId && isMatchingId(targetId);
-        const isMeName = targetName && isMatchingName(targetName);
+        const isMeId = targetIds.some(tId => isMatchingId(tId));
+        const isMeName = targetNames.some(tName => isMatchingName(tName));
 
         if (isMeId || isMeName) return true;
-        if (targetId === 'admin' || targetName.toLowerCase().includes('quản lý') || targetName.toLowerCase().includes('quản trị viên') || targetName.toLowerCase().includes('admin')) {
+        if (targetIds.includes('admin') || targetNames.some(tn => tn.toLowerCase().includes('quản lý') || tn.toLowerCase().includes('quản trị viên') || tn.toLowerCase().includes('admin'))) {
           return isAdmin;
         }
         return false;
