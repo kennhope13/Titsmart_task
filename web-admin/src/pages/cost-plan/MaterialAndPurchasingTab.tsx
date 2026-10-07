@@ -8,6 +8,7 @@ import { FastDocModal } from './FastDocModal';
 import { DocumentCertificateTab } from './DocumentCertificateTab';
 import { AuditInfoCell } from '../../components/common/AuditInfoCell';
 import { stripDiscussionThread } from '../../utils/taskDiscussion';
+import { Toast } from '../../components/common/Toast';
 
 interface MaterialAndPurchasingTabProps {
   activeSubTab?: 'TECH' | 'ORDER' | 'DOCS' | 'FINANCE';
@@ -452,6 +453,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
       if (next.has(sectionKey)) { next.delete(sectionKey); } else { next.add(sectionKey); }
       return next;
     });
+  };
+
+  const [toast, setToast] = useState<{ show: boolean; message: string; type?: 'success' | 'warning' | 'error' | 'info' }>({ show: false, message: '' });
+  const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3500);
   };
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -1501,7 +1508,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                             const newNotes = docNote ? `${currentTech} [DOC-NOTE]${docNote}` : currentTech;
                             onUpdateMaterial(plan.id, { techSpecStatus: targetVal, notes: newNotes });
                           });
-                          alert(`Đã gán Tình trạng "${val}" thành công cho ${targetList.length} vật tư!`);
+                          showToast(`Đã gán Tình trạng "${val}" thành công cho ${targetList.length} vật tư!`, 'success');
                           e.target.value = '';
                         }}
                         className="h-6 w-full border border-emerald-400 rounded px-1 py-0 bg-emerald-50 text-emerald-800 text-[10px] font-bold shadow-xs hover:bg-emerald-100 transition-colors normal-case cursor-pointer"
@@ -1529,7 +1536,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                           targetList.forEach((plan: ProjectMaterialPlan) => {
                             onUpdateMaterial(plan.id, { orderedStatus: val });
                           });
-                          alert(`Đã gán TT Đặt hàng "${val}" thành công cho ${targetList.length} vật tư!`);
+                          showToast(`Đã gán TT Đặt hàng "${val}" thành công cho ${targetList.length} vật tư!`, 'success');
                           e.target.value = '';
                         }}
                         className="h-6 w-full border border-blue-400 rounded px-1 py-0 bg-blue-50 text-blue-800 text-[10px] font-bold shadow-xs hover:bg-blue-100 transition-colors normal-case cursor-pointer"
@@ -2298,6 +2305,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           )}
         </table>
       </div>
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+      />
     </div>
   );
 };
