@@ -142,6 +142,12 @@ export const ChatWidget: React.FC = () => {
     }
   };
 
+  const openChatModal = () => {
+    setIsOpen(true);
+    setSelectedTarget(null);
+    setMobileView('contacts');
+  };
+
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
@@ -151,7 +157,7 @@ export const ChatWidget: React.FC = () => {
     } catch (err) {}
 
     if (!hasMovedRef.current) {
-      setIsOpen(true);
+      openChatModal();
     }
 
     setTimeout(() => {
@@ -174,7 +180,7 @@ export const ChatWidget: React.FC = () => {
     if (hasMovedRef.current) {
       return;
     }
-    setIsOpen(true);
+    openChatModal();
   };
 
   useEffect(() => {

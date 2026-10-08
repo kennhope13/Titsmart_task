@@ -874,15 +874,36 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
     },
 
     sendDirectMessage: async (msg) => {
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const tempMsg: DirectMessage = {
+        id: tempId,
+        senderId: msg.senderId,
+        senderName: msg.senderName,
+        senderAvatar: msg.senderAvatar,
+        receiverId: msg.receiverId,
+        projectCode: msg.projectCode,
+        content: msg.content,
+        fileUrl: msg.fileUrl,
+        fileType: msg.fileType,
+        fileName: msg.fileName,
+        createdAt: new Date().toISOString(),
+        readBy: [msg.senderId],
+      };
+
+      // Optimistic update: Cập nhật ngay tin nhắn lên UI tức thì (0ms delay)
+      set(state => ({
+        directMessages: [...state.directMessages, tempMsg]
+      }));
+
       try {
         const newMsg = await api.directMessages.sendMessage(msg);
         set(state => ({
-          directMessages: [...state.directMessages, newMsg]
+          directMessages: state.directMessages.map(m => m.id === tempId ? newMsg : m)
         }));
         broadcastRealtimeSync('direct_messages');
       } catch (e) {
         console.error('Failed to send direct message', e);
-        throw e;
+        // Nếu gửi thất bại, giữ lại tempMsg dưới dạng tin nhắn cục bộ
       }
     },
 
