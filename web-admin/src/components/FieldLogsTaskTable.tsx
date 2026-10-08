@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, canManageItem } from '../services/authStore';
 import { FieldLog, Task } from '../types';
@@ -117,8 +118,10 @@ interface FieldLogsTaskTableProps {
 
 export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selectedProject, searchQuery = '', logs, onAddLogClick, onEditLogClick, onDeleteLogClick }) => {
   const tasks = useRealtimeStore(s => s.tasks);
+  const [searchParams] = useSearchParams();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [isScrolledHorizontally, setIsScrolledHorizontally] = useState(false);
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null);
   
   // Lightbox state
   const [lightboxIndex, setLightboxIndex] = useState(-1);
@@ -266,6 +269,62 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
     return flattened;
   }, [displayTasks]);
 
+  const highlightParam = searchParams.get('highlight') || searchParams.get('taskName') || searchParams.get('name') || '';
+  const taskIdParam = searchParams.get('taskId') || searchParams.get('id') || '';
+
+  useEffect(() => {
+    if (!highlightParam && !taskIdParam) return;
+
+    const normalizeText = (str?: string) =>
+      String(str || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    const hLow = highlightParam.toLowerCase().trim();
+    const cleanHLow = normalizeText(highlightParam);
+
+    const target = groupedTasks.find(t => {
+      if (taskIdParam && (t.id === taskIdParam || String(t.id).toLowerCase() === taskIdParam.toLowerCase())) return true;
+      if (highlightParam) {
+        const nameLow = (t.name || '').toLowerCase();
+        const cleanName = normalizeText(t.name);
+        const sttLow = String(t.stt || '').toLowerCase();
+        if (nameLow === hLow || cleanName === cleanHLow || sttLow === hLow) return true;
+        if (cleanHLow.length >= 3 && (nameLow.includes(hLow) || cleanName.includes(cleanHLow))) return true;
+      }
+      return false;
+    });
+
+    if (target) {
+      if (target._sectionKey && collapsedSections.has(target._sectionKey)) {
+        setCollapsedSections(prev => {
+          const next = new Set(prev);
+          next.delete(target._sectionKey);
+          return next;
+        });
+      }
+      setHighlightedTaskId(target.id);
+
+      const timer = setTimeout(() => {
+        const rowEl = document.getElementById(`field-log-task-row-${target.id}`);
+        if (rowEl) {
+          rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 350);
+
+      const fadeTimer = setTimeout(() => {
+        setHighlightedTaskId(null);
+      }, 9000);
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(fadeTimer);
+      };
+    }
+  }, [highlightParam, taskIdParam, groupedTasks]);
+
   const maxSttWidth = useMemo(() => {
     let maxLen = 3; // Minimum length 3 for "STT" header
     groupedTasks.forEach(t => {
@@ -330,12 +389,14 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
               if (t.isSectionHeader) return true;
               return !collapsedSections.has(t._sectionKey || '');
             }).map((t) => {
+              const isHighlighted = t.id === highlightedTaskId;
+
               if (t.isSectionHeader) {
                 const isCollapsed = collapsedSections.has(t._sectionKey || '');
                 return (
-                  <tr key={t.id} className="group bg-[#eff6ff] border-t-2 border-b border-blue-200 font-bold text-primary">
-                    <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className="py-2 px-0 bg-[#eff6ff] border-r border-blue-200 text-center font-mono font-extrabold text-[11px] text-primary whitespace-nowrap tracking-tighter" title={String(t.computedStt || t.stt)}>{t.computedStt || t.stt}</td>
-                    <td className="sticky left-0 z-10 py-2 px-2 bg-[#eff6ff] uppercase tracking-tight font-extrabold text-xs text-primary border-r border-blue-200 min-w-[150px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                  <tr key={t.id} id={`field-log-task-row-${t.id}`} className={`group border-t-2 border-b border-blue-200 font-bold text-primary transition-all duration-500 ${isHighlighted ? 'bg-amber-100 ring-2 ring-amber-400 animate-pulse' : 'bg-[#eff6ff]'}`}>
+                    <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-2 px-0 border-r border-blue-200 text-center font-mono font-extrabold text-[11px] text-primary whitespace-nowrap tracking-tighter ${isHighlighted ? 'bg-amber-100' : 'bg-[#eff6ff]'}`} title={String(t.computedStt || t.stt)}>{t.computedStt || t.stt}</td>
+                    <td className={`sticky left-0 z-10 py-2 px-2 uppercase tracking-tight font-extrabold text-xs text-primary border-r border-blue-200 min-w-[150px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-amber-100' : 'bg-[#eff6ff]'}`}>
                       <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden">
                         <button
                           onClick={() => toggleSection(t._sectionKey || '')}
@@ -350,7 +411,7 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                         </span>
                       </div>
                     </td>
-                    <td colSpan={5} className="bg-blue-50/90 py-2 px-2 text-slate-500 truncate text-[11px]"></td>
+                    <td colSpan={5} className={`py-2 px-2 text-slate-500 truncate text-[11px] ${isHighlighted ? 'bg-amber-100' : 'bg-blue-50/90'}`}></td>
                   </tr>
                 );
               }
@@ -375,11 +436,11 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
               const dateEntries = Array.from(logsByDate.entries());
 
               return (
-                <tr key={t.id} onClick={(e) => { e.stopPropagation(); setViewAllLogsTask(t); }} className="hover:bg-blue-50/30 transition-colors group cursor-pointer border-b border-slate-100">
-                  <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-1 px-0 bg-white group-hover:bg-blue-50/40 border-r border-slate-200 text-center font-mono text-[11px] whitespace-nowrap tracking-tighter ${depth === 1 ? 'font-bold text-slate-700' : 'text-slate-500'}`}>
+                <tr key={t.id} id={`field-log-task-row-${t.id}`} onClick={(e) => { e.stopPropagation(); setViewAllLogsTask(t); }} className={`transition-all duration-500 group cursor-pointer border-b border-slate-100 ${isHighlighted ? 'bg-amber-100/90 font-bold ring-2 ring-amber-400 animate-pulse' : 'hover:bg-blue-50/30'}`}>
+                  <td style={{ width: "var(--stt-width)", minWidth: "var(--stt-width)", maxWidth: "var(--stt-width)" }} className={`py-1 px-0 border-r border-slate-200 text-center font-mono text-[11px] whitespace-nowrap tracking-tighter ${isHighlighted ? 'bg-amber-100' : 'bg-white group-hover:bg-blue-50/40'} ${depth === 1 ? 'font-bold text-slate-700' : 'text-slate-500'}`}>
                     {t.computedStt || t.stt}
                   </td>
-                  <td className={`sticky left-0 z-10 py-1 px-2 bg-white group-hover:bg-blue-50/40 border-r border-slate-200 ${fontStyle} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}>
+                  <td className={`sticky left-0 z-10 py-1 px-2 border-r border-slate-200 ${fontStyle} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-amber-100' : 'bg-white group-hover:bg-blue-50/40'}`}>
                     <div className="flex items-center gap-1 min-w-0 w-full" style={{ paddingLeft: `${Math.max(0, depth - 1) * 0.4}rem` }}>
                       {depth > 1 && <span className="material-symbols-outlined text-slate-400 text-[12px] shrink-0">subdirectory_arrow_right</span>}
                       <span className="text-slate-800 leading-snug break-words flex-1 min-w-0" title={t.name}>{t.name}</span>

@@ -801,8 +801,19 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       navigate(`/document-tracking${params.toString() ? `?${params.toString()}` : ''}`);
     } else if (titleLower.includes('nhật ký') || msgLower.includes('nhật ký') || (notification.type && notification.type.includes('field_log'))) {
       const params = new URLSearchParams();
-      if (pCode && pCode !== 'Hệ thống') params.set('project', pCode);
-      navigate(`/field-logs${params.toString() ? `?${params.toString()}` : ''}`);
+      const projectCodeTarget = finalProjectCode || (pCode && pCode !== 'Hệ thống' ? pCode : '');
+      if (projectCodeTarget) params.set('project', projectCodeTarget);
+      if (taskName || itemName || targetTask?.name) {
+        params.set('highlight', taskName || itemName || targetTask?.name || '');
+      }
+      if (targetTask?.id || notification.taskId || notification.itemId) {
+        params.set('taskId', targetTask?.id || notification.taskId || notification.itemId || '');
+      }
+      if (projectCodeTarget) {
+        navigate(`/projects/${encodeURIComponent(projectCodeTarget)}/field-logs?${params.toString()}`);
+      } else {
+        navigate(`/field-logs?${params.toString()}`);
+      }
     } else if (
       titleLower.includes('báo cáo hoàn thành') ||
       titleLower.includes('báo cáo xong') ||

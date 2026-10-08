@@ -2545,15 +2545,23 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         const currentUser = useAuthStore.getState().user;
         const currentLog = get().fieldLogs.find(l => l.id === id);
         const pCode = updated?.projectCode || (input as any)?.projectCode || currentLog?.projectCode || 'COMPANY';
+        const taskId = updated?.taskId || (input as any)?.taskId || currentLog?.taskId || '';
+        const task = taskId ? get().tasks.find(t => t.id === taskId) : undefined;
+        const taskName = task?.name || '';
         const targetScope = pCode;
         const actorName = audit.updatedBy || currentUser?.name || currentUser?.username || 'Kỹ sư';
 
+        const notifParams = new URLSearchParams();
+        notifParams.set('project', pCode);
+        if (taskId) notifParams.set('taskId', taskId);
+        if (taskName) notifParams.set('highlight', taskName);
+
         get().addNotification({
           title: `Cập nhật nhật ký hiện trường: ${pCode}`,
-          message: `[${pCode}] ${actorName} đã cập nhật nhật ký hiện trường`,
-          type: `field_log:::${targetScope}`,
+          message: `[${pCode}] ${actorName} đã cập nhật nhật ký hiện trường${taskName ? `: ${taskName}` : ''}`,
+          type: `field_log:::${targetScope}:::${taskId}:::${taskName}`,
           icon: 'history_edu',
-          link: `/field-logs?project=${encodeURIComponent(pCode)}`
+          link: `/projects/${encodeURIComponent(pCode)}/field-logs?${notifParams.toString()}`
         }).catch(() => {});
       } catch (e) {
         console.error('Failed to update field log', e);
@@ -2573,15 +2581,23 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
         const currentUser = useAuthStore.getState().user;
         const pCode = created.projectCode || input.projectCode || 'COMPANY';
+        const taskId = created.taskId || input.taskId || '';
+        const task = taskId ? get().tasks.find(t => t.id === taskId) : undefined;
+        const taskName = task?.name || '';
         const targetScope = pCode;
         const actorName = audit.updatedBy || currentUser?.name || currentUser?.username || 'Kỹ sư';
 
+        const notifParams = new URLSearchParams();
+        notifParams.set('project', pCode);
+        if (taskId) notifParams.set('taskId', taskId);
+        if (taskName) notifParams.set('highlight', taskName);
+
         get().addNotification({
           title: `Nhật ký công trình mới: ${pCode}`,
-          message: `[${pCode}] ${actorName} đã thêm nhật ký hiện trường`,
-          type: `field_log:::${targetScope}`,
+          message: `[${pCode}] ${actorName} đã thêm nhật ký hiện trường${taskName ? `: ${taskName}` : ''}`,
+          type: `field_log:::${targetScope}:::${taskId}:::${taskName}`,
           icon: 'history_edu',
-          link: `/field-logs?project=${encodeURIComponent(pCode)}`
+          link: `/projects/${encodeURIComponent(pCode)}/field-logs?${notifParams.toString()}`
         }).catch(() => {});
       } catch (e) {
         console.error('Failed to add field log', e);
