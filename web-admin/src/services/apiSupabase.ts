@@ -1015,8 +1015,7 @@ export const api = {
           const res = await supabase
             .from('activity_logs')
             .select('*')
-            .neq('icon', 'LEAVE_REQUEST')
-            .order('timestamp', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(300);
           data = res.data;
           error = res.error;
@@ -1026,9 +1025,14 @@ export const api = {
           const res = await supabase
             .from('activity_logs')
             .select('*')
-            .neq('icon', 'LEAVE_REQUEST')
             .limit(300);
           data = res.data;
+          error = res.error;
+        }
+
+        if (error) {
+          console.warn('[ActivityLogs] Could not fetch from Supabase:', error.message);
+          data = [];
         }
 
         return (data || []).map(row => {
