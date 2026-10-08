@@ -1,12 +1,12 @@
-import { app as s, BrowserWindow as c, shell as u, ipcMain as i } from "electron";
-import r from "path";
-import { fileURLToPath as m } from "url";
+import { app as s, BrowserWindow as u, shell as p, ipcMain as i } from "electron";
+import d from "path";
+import { fileURLToPath as h } from "url";
 import f from "electron-updater";
-const { autoUpdater: t } = f, w = m(import.meta.url), d = r.dirname(w);
+const { autoUpdater: t } = f, w = h(import.meta.url), r = d.dirname(w);
 let n;
 const l = process.env.VITE_DEV_SERVER_URL;
-function p() {
-  n = new c({
+function c() {
+  n = new u({
     width: 1200,
     height: 800,
     minWidth: 900,
@@ -18,11 +18,11 @@ function p() {
     //   symbolColor: '#00236f',
     // },
     webPreferences: {
-      preload: r.join(d, "preload.mjs"),
+      preload: d.join(r, "preload.mjs"),
       nodeIntegration: !1,
       contextIsolation: !0
     }
-  }), l ? (n.loadURL(l), n.webContents.openDevTools()) : n.loadFile(r.join(process.env.DIST || r.join(d, "../dist"), "index.html")), n.webContents.setWindowOpenHandler(({ url: e }) => ((e.startsWith("http://") || e.startsWith("https://")) && u.openExternal(e), { action: "deny" }));
+  }), l ? (n.loadURL(l), n.webContents.openDevTools()) : n.loadFile(d.join(process.env.DIST || d.join(r, "../dist"), "index.html")), n.webContents.setWindowOpenHandler(({ url: e }) => ((e.startsWith("http://") || e.startsWith("https://")) && p.openExternal(e), { action: "deny" }));
 }
 function o(e, a) {
   n && !n.isDestroyed() && n.webContents.send(e, a);
@@ -31,16 +31,16 @@ function g(e) {
   return Array.isArray(e) ? e.map((a) => typeof a == "string" ? a : (a == null ? void 0 : a.note) ?? "").filter(Boolean).join(`
 `) : e ?? "";
 }
-function b() {
+function v() {
   s.isPackaged && (t.autoDownload = !0, t.autoInstallOnAppQuit = !0, t.disableDifferentialDownload = !0, t.disableWebInstaller = !0, t.on("checking-for-update", () => {
     o("update:status", { status: "checking" });
   }), i.on("open-external", async (e, a) => {
     if (a && typeof a == "string")
       try {
-        await u.openExternal(a);
-      } catch (h) {
+        await p.openExternal(a);
+      } catch (m) {
         require("electron").dialog.showErrorBox("Lỗi mở ảnh", `Không thể mở đường dẫn: ${a}
-Lý do: ${h.message}`);
+Lý do: ${m.message}`);
       }
   }), t.on("update-available", (e) => {
     o("update:status", {
@@ -78,13 +78,9 @@ s.on("window-all-closed", () => {
   process.platform !== "darwin" && (s.quit(), n = null);
 });
 s.on("activate", () => {
-  c.getAllWindows().length === 0 && p();
+  u.getAllWindows().length === 0 && c();
 });
 s.commandLine.appendSwitch("disable-http2");
 s.whenReady().then(() => {
-  p(), b(), n && n.webContents.session.clearCache().then(() => {
-    console.log("[Electron] Session cache cleared successfully");
-  }).catch((e) => {
-    console.error("[Electron] Failed to clear session cache:", e);
-  });
+  c(), v();
 });
