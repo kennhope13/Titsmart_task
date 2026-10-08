@@ -234,6 +234,36 @@ export interface LeaveRequest {
   updatedAt?: string;
 }
 
+export type AttendanceAdjustmentType = 'Bù vào ca' | 'Bù ra ca' | 'Bù cả ngày';
+
+export interface AttendanceAdjustmentRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userTitle?: string;
+  projectId?: string;
+  projectName?: string;
+  adjustmentDate: string;
+  adjustmentType: AttendanceAdjustmentType;
+  checkInTime?: string;
+  checkOutTime?: string;
+  reason: string;
+  status: LeaveStatus;
+  step1ReviewerId?: string;
+  step1ReviewerName?: string;
+  step1ReviewNote?: string;
+  step1ReviewedAt?: string;
+  step2ReviewerId?: string;
+  step2ReviewerName?: string;
+  step2ReviewNote?: string;
+  step2ReviewedAt?: string;
+  followerIds?: string[];
+  followerNames?: string[];
+  createdAt: string;
+  updatedBy?: string;
+  updatedAt?: string;
+}
+
 export interface DirectMessage {
   id: string;
   senderId: string;

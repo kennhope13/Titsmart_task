@@ -335,11 +335,15 @@ export const api = {
   },
   tasks: {
     getAll: async (projectId?: string) => {
-      let query = supabase.from('tasks').select('*');
-      if (projectId) query = query.eq('project_code', projectId);
-      const { data, error } = await query;
-      if (error) throw error;
-      return mapArray(data || []).map((t: any) => {
+      try {
+        let query = supabase.from('tasks').select('*');
+        if (projectId) query = query.eq('project_code', projectId);
+        const { data, error } = await query;
+        if (error) {
+          console.warn('[Tasks] Supabase error:', error);
+          return [];
+        }
+        return mapArray(data || []).map((t: any) => {
         // Parse followers from notes tag [FOLLOWERS:id1,id2:::name1,name2] or sourceRow
         if (t.notes && typeof t.notes === 'string') {
           const match = t.notes.match(/\[FOLLOWERS:([^\]]+)\]/i);
@@ -397,7 +401,11 @@ export const api = {
         }
         return t;
       });
-    },
+    } catch (err) {
+      console.warn('[Tasks] Error fetching tasks:', err);
+      return [];
+    }
+  },
     create: async (data: any) => {
       const payload = toSnakeCase(data);
       if (payload.parent_id === '') payload.parent_id = null;
@@ -899,12 +907,20 @@ export const api = {
   },
   engineers: {
     getAll: async () => {
-      const { data, error } = await supabase.from('engineers').select('*').order('created_at', { ascending: true });
-      if (error) throw error;
-      return mapArray((data || []).map((d: any) => ({
-        ...d,
-        isLocked: d.is_locked !== undefined ? d.is_locked : (d.is_active !== undefined ? !d.is_active : false),
-      })));
+      try {
+        const { data, error } = await supabase.from('engineers').select('*').order('created_at', { ascending: true });
+        if (error) {
+          console.warn('[Engineers] Supabase error:', error);
+          return [];
+        }
+        return mapArray((data || []).map((d: any) => ({
+          ...d,
+          isLocked: d.is_locked !== undefined ? d.is_locked : (d.is_active !== undefined ? !d.is_active : false),
+        })));
+      } catch (err) {
+        console.warn('[Engineers] Error fetching engineers:', err);
+        return [];
+      }
     },
     create: async (data: any) => {
       const payload = toSnakeCase(data);

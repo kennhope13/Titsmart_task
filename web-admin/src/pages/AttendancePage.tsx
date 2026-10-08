@@ -11,7 +11,7 @@ import { Toast } from '../components/common/Toast';
 import * as XLSX from 'xlsx';
 import { exportToStyledExcel } from '../utils/excelExportUtils';
 
-import { LeaveRequest, LeaveType } from '../types';
+import { LeaveRequest, LeaveType, AttendanceAdjustmentRequest, AttendanceAdjustmentType } from '../types';
 import { PullToRefresh } from '../components/common/PullToRefresh';
 
 interface AttendanceLog {
@@ -62,6 +62,7 @@ const getDuration = (checkIn: string, checkOut?: string) => {
 // In-memory persistent cache across tab and route navigation
 let cachedLogs: AttendanceLog[] = [];
 let cachedLeaves: LeaveRequest[] = [];
+let cachedAdjustments: AttendanceAdjustmentRequest[] = [];
 let hasFetchedAttendanceData = false;
 
 export const AttendancePage: React.FC = () => {
@@ -101,7 +102,7 @@ export const AttendancePage: React.FC = () => {
     );
   }, [user, isAdmin]);
 
-  const [mainTab, setMainTab] = useState<'attendance' | 'leave'>('attendance');
+  const [mainTab, setMainTab] = useState<'attendance' | 'leave' | 'adjustment'>('attendance');
   const [highlightLeaveId, setHighlightLeaveId] = useState<string | null>(null);
   const [isHighlightActive, setIsHighlightActive] = useState<boolean>(false);
   const [logs, setLogs] = useState<AttendanceLog[]>(cachedLogs);
@@ -121,6 +122,7 @@ export const AttendancePage: React.FC = () => {
   const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showLeaveExportMenu, setShowLeaveExportMenu] = useState(false);
+  const [showAdjExportMenu, setShowAdjExportMenu] = useState(false);
 
   // State cho Xin nghỉ phép (khởi tạo từ cache)
   const [leaves, setLeaves] = useState<LeaveRequest[]>(cachedLeaves);
@@ -138,6 +140,27 @@ export const AttendancePage: React.FC = () => {
   const [followerIds, setFollowerIds] = useState<string[]>([]);
   const [modalError, setModalError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'warning' | 'info' | 'error' }>({ show: false, message: '', type: 'info' });
+
+  // State cho Chấm công bù
+  const [adjustments, setAdjustments] = useState<AttendanceAdjustmentRequest[]>(cachedAdjustments);
+  const [adjSearchQuery, setAdjSearchQuery] = useState('');
+  const [adjFilterDateFrom, setAdjFilterDateFrom] = useState('');
+  const [adjFilterDateTo, setAdjFilterDateTo] = useState('');
+  const [adjTypeFilter, setAdjTypeFilter] = useState<string>('');
+  const [showAdjModal, setShowAdjModal] = useState(false);
+  const [adjType, setAdjType] = useState<AttendanceAdjustmentType>('Bù vào ca');
+  const [adjDate, setAdjDate] = useState(new Date().toISOString().split('T')[0]);
+  const [adjInTime, setAdjInTime] = useState('08:00');
+  const [adjOutTime, setAdjOutTime] = useState('17:30');
+  const [adjProject, setAdjProject] = useState('');
+  const [adjReason, setAdjReason] = useState('');
+  const [adjStep1ReviewerId, setAdjStep1ReviewerId] = useState('');
+  const [adjStep2ReviewerId, setAdjStep2ReviewerId] = useState('');
+  const [adjFollowerIds, setAdjFollowerIds] = useState<string[]>([]);
+  const [reviewAdj, setReviewAdj] = useState<AttendanceAdjustmentRequest | null>(null);
+  const [reviewAdjStep, setReviewAdjStep] = useState<1 | 2>(1);
+  const [reviewAdjNote, setReviewAdjNote] = useState('');
+  const [deleteAdjId, setDeleteAdjId] = useState<string | null>(null);
 
   const showToast = (message: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => {
     setToast({ show: true, message, type });
@@ -192,6 +215,8 @@ export const AttendancePage: React.FC = () => {
         setHighlightLeaveId(leaveIdParam);
         setIsHighlightActive(true);
       }
+    } else if (tabParam === 'adjustment' || tabParam === 'adjustments' || tabParam === 'cham-cong-bu') {
+      setMainTab('adjustment');
     } else if (tabParam === 'attendance') {
       setMainTab('attendance');
     }
@@ -345,6 +370,49 @@ export const AttendancePage: React.FC = () => {
     return list;
   }, [leaves, tab, user, leaveSearchQuery, leaveFilterDateFrom, leaveFilterDateTo, canViewAll]);
 
+  // Lọc danh sách chấm công bù ngay trong bộ nhớ (0ms latency)
+  const displayedAdjustments = React.useMemo(() => {
+    let list = adjustments;
+    if ((!canViewAll || tab === 'my') && user) {
+      list = list.filter(a => {
+        const matchId = String(a.userId || '') === String(user.id || '');
+        const matchName = user.name && a.userName && a.userName.trim().toLowerCase() === user.name.trim().toLowerCase();
+        const matchUsername = user.username && a.userName && a.userName.trim().toLowerCase() === user.username.trim().toLowerCase();
+        const matchFollower = Array.isArray(a.followerIds) && (
+          a.followerIds.includes(user.id) ||
+          (user.name && a.followerNames?.includes(user.name)) ||
+          (user.username && a.followerNames?.includes(user.username))
+        );
+        return matchId || matchName || matchUsername || matchFollower;
+      });
+    }
+    if (adjTypeFilter) {
+      list = list.filter(a => a.adjustmentType === adjTypeFilter);
+    }
+    if (adjSearchQuery.trim()) {
+      const q = adjSearchQuery.toLowerCase().trim();
+      list = list.filter(a => {
+        const matchUser = a.userName?.toLowerCase().includes(q);
+        const matchType = a.adjustmentType?.toLowerCase().includes(q);
+        const matchReason = a.reason?.toLowerCase().includes(q);
+        const matchProject = a.projectName?.toLowerCase().includes(q);
+        const matchReviewer1 = a.step1ReviewerName?.toLowerCase().includes(q);
+        const matchReviewer2 = a.step2ReviewerName?.toLowerCase().includes(q);
+        const matchDate = formatDate(a.adjustmentDate)?.toLowerCase().includes(q);
+        return matchUser || matchType || matchReason || matchProject || matchReviewer1 || matchReviewer2 || matchDate;
+      });
+    }
+    if (adjFilterDateFrom || adjFilterDateTo) {
+      list = list.filter(a => {
+        const d = a.adjustmentDate ? String(a.adjustmentDate).split('T')[0] : '';
+        if (adjFilterDateFrom && d < adjFilterDateFrom) return false;
+        if (adjFilterDateTo && d > adjFilterDateTo) return false;
+        return true;
+      });
+    }
+    return list;
+  }, [adjustments, tab, user, adjSearchQuery, adjFilterDateFrom, adjFilterDateTo, adjTypeFilter, canViewAll]);
+
   const fetchLogs = async (forceShowSpinner = false) => {
     if (forceShowSpinner || (!hasFetchedAttendanceData && cachedLogs.length === 0)) {
       setLoading(true);
@@ -376,16 +444,37 @@ export const AttendancePage: React.FC = () => {
     }
   };
 
+  const fetchAdjustments = async () => {
+    try {
+      const raw = localStorage.getItem('titsmart_attendance_adjustments');
+      if (raw) {
+        const data: AttendanceAdjustmentRequest[] = JSON.parse(raw);
+        cachedAdjustments = data;
+        setAdjustments(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch adjustments', e);
+    }
+  };
+
+  const saveAdjustments = (data: AttendanceAdjustmentRequest[]) => {
+    cachedAdjustments = data;
+    setAdjustments(data);
+    localStorage.setItem('titsmart_attendance_adjustments', JSON.stringify(data));
+  };
+
   useEffect(() => {
     // Chỉ nạp dữ liệu một lần duy nhất khi vào trang
     fetchLogs(false);
     fetchLeaves(false);
+    fetchAdjustments();
 
     const channel = supabase.channel('attendance_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, () => {
         // Cập nhật ngầm trong nền khi database thay đổi
         fetchLogs(false);
         fetchLeaves(false);
+        fetchAdjustments();
       })
       .subscribe();
 
@@ -393,6 +482,241 @@ export const AttendancePage: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const handleCreateAdjustment = async () => {
+    if (!user || isSubmitting) return;
+
+    if (!adjReason.trim()) {
+      setModalError('Vui lòng nhập lý do giải trình chấm công bù!');
+      return;
+    }
+
+    setModalError(null);
+    setIsSubmitting(true);
+    try {
+      const step1Eng = adjStep1ReviewerId ? engineers.find(e => e.id === adjStep1ReviewerId) : undefined;
+      const step2Eng = adjStep2ReviewerId ? engineers.find(e => e.id === adjStep2ReviewerId) : undefined;
+      const followerEngs = engineers.filter(e => adjFollowerIds.includes(e.id));
+      const proj = projects.find(p => p.id === adjProject);
+
+      const newAdj: AttendanceAdjustmentRequest = {
+        id: 'adj-' + Date.now() + '-' + Math.random().toString(36).substring(7),
+        userId: user.id,
+        userName: user.name || user.username || 'Unknown',
+        userTitle: (user as any).title || user.role,
+        projectId: adjProject || undefined,
+        projectName: proj?.name,
+        adjustmentDate: adjDate,
+        adjustmentType: adjType,
+        checkInTime: adjType === 'Bù ra ca' ? undefined : `${adjDate}T${adjInTime}:00`,
+        checkOutTime: adjType === 'Bù vào ca' ? undefined : `${adjDate}T${adjOutTime}:00`,
+        reason: adjReason.trim(),
+        status: step1Eng ? 'PENDING_STEP1' : 'PENDING',
+        step1ReviewerId: step1Eng?.id,
+        step1ReviewerName: step1Eng?.name,
+        step2ReviewerId: step2Eng?.id,
+        step2ReviewerName: step2Eng?.name,
+        followerIds: adjFollowerIds.length > 0 ? adjFollowerIds : undefined,
+        followerNames: followerEngs.length > 0 ? followerEngs.map(e => e.name) : undefined,
+        createdAt: new Date().toISOString(),
+      };
+
+      const updatedList = [newAdj, ...adjustments];
+      saveAdjustments(updatedList);
+
+      setShowAdjModal(false);
+      setAdjReason('');
+      setAdjProject('');
+      setAdjStep1ReviewerId('');
+      setAdjStep2ReviewerId('');
+      setAdjFollowerIds([]);
+      showToast('Tạo yêu cầu chấm công bù thành công!', 'success');
+
+      // Gửi thông báo
+      if (step1Eng) {
+        await addNotification({
+          title: 'Yêu cầu chấm công bù mới (Chờ duyệt)',
+          message: `${user.name} vừa gửi yêu cầu ${adjType.toLowerCase()} ngày ${formatDate(adjDate)} (chờ ${step1Eng.name} duyệt bước 1)`,
+          type: `adj_pending:::${step1Eng.id}:::${step1Eng.name}`,
+          icon: 'edit_calendar',
+          link: '/attendance?tab=adjustment',
+        });
+      } else {
+        await addNotification({
+          title: 'Yêu cầu chấm công bù mới',
+          message: `${user.name} vừa gửi yêu cầu ${adjType.toLowerCase()} ngày ${formatDate(adjDate)} (chờ Ban Giám Đốc / Quản trị duyệt)`,
+          type: 'adj_pending:::admin:::Quản trị viên',
+          icon: 'edit_calendar',
+          link: '/attendance?tab=adjustment',
+        });
+      }
+    } catch (e: any) {
+      showToast('Lỗi tạo yêu cầu chấm công bù: ' + (e.message || 'Không thể gửi yêu cầu'), 'error');
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleReviewAdjustment = async (status: 'APPROVED' | 'REJECTED') => {
+    if (!reviewAdj || !user || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      let finalStatus: 'APPROVED_STEP1' | 'APPROVED' | 'REJECTED' = status;
+      if (status === 'APPROVED') {
+        if (reviewAdjStep === 1) {
+          finalStatus = 'APPROVED_STEP1';
+        } else {
+          finalStatus = 'APPROVED';
+        }
+      }
+
+      const updatedAdj: AttendanceAdjustmentRequest = {
+        ...reviewAdj,
+        status: finalStatus,
+        updatedAt: new Date().toISOString(),
+        updatedBy: user.name || user.username || 'Admin',
+      };
+
+      if (reviewAdjStep === 1) {
+        updatedAdj.step1ReviewerId = user.id;
+        updatedAdj.step1ReviewerName = user.name || user.username || 'Quản lý';
+        updatedAdj.step1ReviewNote = reviewAdjNote.trim() || undefined;
+        updatedAdj.step1ReviewedAt = new Date().toISOString();
+      } else {
+        updatedAdj.step2ReviewerId = user.id;
+        updatedAdj.step2ReviewerName = user.name || user.username || 'Ban Giám Đốc';
+        updatedAdj.step2ReviewNote = reviewAdjNote.trim() || undefined;
+        updatedAdj.step2ReviewedAt = new Date().toISOString();
+      }
+
+      // Nếu duyệt HOÀN TẤT -> Tự động đồng bộ / bổ sung 1 bản ghi Chấm công (AttendanceLog) vào danh sách logs
+      if (finalStatus === 'APPROVED') {
+        const inIso = updatedAdj.checkInTime || `${updatedAdj.adjustmentDate}T08:00:00`;
+        const outIso = updatedAdj.checkOutTime || `${updatedAdj.adjustmentDate}T17:30:00`;
+        
+        try {
+          const logObj = await api.attendance.checkIn({
+            userId: updatedAdj.userId,
+            userName: updatedAdj.userName,
+            projectId: updatedAdj.projectId,
+            projectName: updatedAdj.projectName,
+            notes: `[Chấm công bù - Đã duyệt] ${updatedAdj.adjustmentType}: ${updatedAdj.reason}`,
+          });
+          // Ghi đè thời gian chính xác
+          logObj.checkInTime = inIso;
+          if (updatedAdj.adjustmentType !== 'Bù vào ca') {
+            logObj.checkOutTime = outIso;
+          }
+          cachedLogs = [logObj, ...cachedLogs];
+          setLogs(prev => [logObj, ...prev]);
+        } catch (err) {
+          console.warn('Could not save to api.attendance, adding local log', err);
+          const localLog: AttendanceLog = {
+            id: 'log-adj-' + Date.now(),
+            userId: updatedAdj.userId,
+            userName: updatedAdj.userName,
+            projectId: updatedAdj.projectId,
+            projectName: updatedAdj.projectName,
+            checkInTime: inIso,
+            checkOutTime: updatedAdj.adjustmentType !== 'Bù vào ca' ? outIso : undefined,
+            notes: `[Chấm công bù - Đã duyệt] ${updatedAdj.adjustmentType}: ${updatedAdj.reason}`,
+          };
+          cachedLogs = [localLog, ...cachedLogs];
+          setLogs(prev => [localLog, ...prev]);
+        }
+      }
+
+      const updatedList = adjustments.map(a => a.id === reviewAdj.id ? updatedAdj : a);
+      saveAdjustments(updatedList);
+      setReviewAdj(null);
+      setReviewAdjNote('');
+      showToast(finalStatus === 'REJECTED' ? 'Đã từ chối yêu cầu chấm công bù.' : 'Đã phê duyệt yêu cầu chấm công bù!', 'success');
+
+      // Thông báo
+      let notifTitle = '';
+      let notifMsg = '';
+      let notifType = '';
+
+      if (finalStatus === 'APPROVED_STEP1') {
+        notifTitle = 'Yêu cầu chấm công bù đã được Quản lý duyệt';
+        notifMsg = `Yêu cầu của ${reviewAdj.userName} ngày ${formatDate(reviewAdj.adjustmentDate)} đã được ${user.name} duyệt → Chờ Ban Giám Đốc / Quản trị phê duyệt cuối cùng.`;
+        notifType = `adj_step1_approved:::admin,${reviewAdj.userId}:::Quản trị viên,${reviewAdj.userName}`;
+      } else if (finalStatus === 'APPROVED') {
+        notifTitle = 'Yêu cầu chấm công bù đã được PHÊ DUYỆT';
+        notifMsg = `Yêu cầu ${reviewAdj.adjustmentType.toLowerCase()} ngày ${formatDate(reviewAdj.adjustmentDate)} của bạn đã được phê duyệt thành công bởi ${user.name}. Dữ liệu chấm công đã được tự động cập nhật.`;
+        notifType = `adj_approved:::${reviewAdj.userId}:::${reviewAdj.userName}`;
+      } else {
+        notifTitle = 'Yêu cầu chấm công bù bị TỪ CHỐI';
+        notifMsg = `Yêu cầu ${reviewAdj.adjustmentType.toLowerCase()} ngày ${formatDate(reviewAdj.adjustmentDate)} của bạn đã bị từ chối bởi ${user.name}. Lý do: ${reviewAdjNote.trim() || 'Không có lý do cụ thể'}`;
+        notifType = `adj_rejected:::${reviewAdj.userId}:::${reviewAdj.userName}`;
+      }
+
+      await addNotification({
+        title: notifTitle,
+        message: notifMsg,
+        type: notifType,
+        icon: finalStatus === 'REJECTED' ? 'cancel' : 'check_circle',
+        link: '/attendance?tab=adjustment',
+      });
+    } catch (e: any) {
+      showToast('Lỗi duyệt yêu cầu: ' + (e.message || 'Không thể xử lý'), 'error');
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleConfirmDeleteAdj = () => {
+    if (!deleteAdjId) return;
+    const updated = adjustments.filter(a => a.id !== deleteAdjId);
+    saveAdjustments(updated);
+    setDeleteAdjId(null);
+    showToast('Đã xóa yêu cầu chấm công bù.', 'info');
+  };
+
+  const handleExportAdjustmentsExcel = async (format: 'xlsx' | 'csv' | 'docx' = 'xlsx') => {
+    if (!displayedAdjustments.length) return;
+    const exportData = displayedAdjustments.map((adj, index) => {
+      let statusStr = 'Chờ duyệt';
+      if (adj.status === 'PENDING_STEP1') statusStr = 'Chờ Quản lý duyệt';
+      else if (adj.status === 'APPROVED_STEP1') statusStr = 'Quản lý đã duyệt - Chờ BGD phê duyệt';
+      else if (adj.status === 'APPROVED') statusStr = 'Đã duyệt hoàn tất';
+      else if (adj.status === 'REJECTED') statusStr = 'Từ chối';
+
+      return {
+        'STT': index + 1,
+        'Nhân viên': adj.userName,
+        'Loại bù': adj.adjustmentType,
+        'Ngày cần bù': formatDate(adj.adjustmentDate),
+        'Giờ vào yêu cầu': adj.checkInTime ? formatTime(adj.checkInTime) : '—',
+        'Giờ ra yêu cầu': adj.checkOutTime ? formatTime(adj.checkOutTime) : '—',
+        'Dự án': adj.projectName || '—',
+        'Lý do giải trình': adj.reason,
+        'Trạng thái': statusStr,
+        'Quản lý duyệt': adj.step1ReviewerName ? `${adj.step1ReviewerName} (${adj.step1ReviewedAt ? 'Đã duyệt' : 'Chờ'})` : '—',
+        'Ý kiến Quản lý': adj.step1ReviewNote || '',
+        'Ban Giám Đốc duyệt': adj.step2ReviewerName || '—',
+        'Ý kiến Ban Giám Đốc': adj.step2ReviewNote || ''
+      };
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+    if (format === 'csv') {
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'ChamCongBu');
+      XLSX.writeFile(workbook, `BangChamCongBu_${today}.csv`, { bookType: 'csv' });
+    } else if (format === 'docx') {
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'ChamCongBu');
+      XLSX.writeFile(workbook, `BangChamCongBu_${today}.docx`, { bookType: 'xlsx' });
+    } else {
+      await exportToStyledExcel({
+        fileName: `BangChamCongBu_${today}.xlsx`,
+        sheetName: 'ChamCongBu',
+        title: 'DANH SÁCH YÊU CẦU CHẤM CÔNG BÙ',
+        data: exportData,
+      });
+    }
+  };
 
   const handleCreateLeave = async () => {
     if (!user || isSubmitting) return;
@@ -707,7 +1031,7 @@ export const AttendancePage: React.FC = () => {
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div className="hidden sm:flex items-center border-l-4 border-primary pl-1.5">
             <h1 className="page-title text-xs sm:text-sm md:text-base font-extrabold text-slate-900 shrink-0">
-              {mainTab === 'attendance' ? 'Chấm công' : 'Nghỉ phép'}
+              {mainTab === 'attendance' ? 'Chấm công' : mainTab === 'leave' ? 'Nghỉ phép' : 'Chấm công bù'}
             </h1>
           </div>
           <div className="inline-flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0">
@@ -729,6 +1053,19 @@ export const AttendancePage: React.FC = () => {
               {leaves.filter(l => l.status === 'PENDING').length > 0 && (
                 <span className="ml-0.5 px-1.5 py-0.2 bg-red-500 text-white rounded-full text-[10px] font-bold">
                   {leaves.filter(l => l.status === 'PENDING').length}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMainTab('adjustment')}
+              className={`px-2 py-1 sm:px-2.5 sm:py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1 cursor-pointer select-none shrink-0 ${mainTab === 'adjustment' ? 'bg-white text-slate-900 shadow-xs font-bold ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'}`}
+            >
+              <span className="material-symbols-outlined text-[15px]">edit_calendar</span>
+              <span>Chấm công bù</span>
+              {adjustments.filter(a => a.status === 'PENDING' || a.status === 'PENDING_STEP1').length > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.2 bg-amber-500 text-white rounded-full text-[10px] font-bold">
+                  {adjustments.filter(a => a.status === 'PENDING' || a.status === 'PENDING_STEP1').length}
                 </span>
               )}
             </button>
@@ -878,7 +1215,7 @@ export const AttendancePage: React.FC = () => {
                 <span className="hidden sm:inline">Chấm công</span>
               </button>
             </div>
-          ) : (
+          ) : mainTab === 'leave' ? (
             <div className="flex items-center gap-2">
               {/* Desktop Date Filter for Leave */}
               <div className="flex items-center gap-1.5 shrink-0">
@@ -989,7 +1326,7 @@ export const AttendancePage: React.FC = () => {
                 <span>Tạo đơn xin nghỉ</span>
               </button>
             </div>
-          )}
+          ) : null}
         </div>
       </header>
 
@@ -1110,7 +1447,7 @@ export const AttendancePage: React.FC = () => {
             </PullToRefresh>
           </div>
         </div>
-      ) : (
+      ) : mainTab === 'leave' ? (
         /* Tab Xin nghỉ phép */
         <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col bg-slate-50">
           {/* Mobile-only Toolbar Bar (On Desktop, controls are neatly in the top header) */}
@@ -1594,7 +1931,426 @@ export const AttendancePage: React.FC = () => {
             )}
           </PullToRefresh>
         </div>
+      ) : (
+        /* Tab Chấm công bù */
+        <div className="flex-1 w-full max-w-full overflow-hidden flex flex-col bg-slate-50">
+          {/* Mobile-only Toolbar Bar */}
+          <div className="md:hidden px-3 py-2 border-b border-slate-200 bg-white flex items-center justify-between gap-2 shrink-0 shadow-xs relative z-10">
+            {canViewAll ? (
+              <div className="inline-flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold shrink-0">
+                <button
+                  onClick={() => setTab('my')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] transition-all ${tab === 'my' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                >Của tôi</button>
+                <button
+                  onClick={() => setTab('all')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] transition-all ${tab === 'all' ? 'bg-white text-primary shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                >Tất cả</button>
+              </div>
+            ) : null}
+
+            {/* Mobile Search Bar in Adjustment Tab */}
+            <div className="flex-1 relative flex items-center min-w-0">
+              <span className="material-symbols-outlined absolute left-2.5 text-slate-400 text-sm pointer-events-none">search</span>
+              <input
+                type="text"
+                placeholder="Tìm kiếm bù công..."
+                value={adjSearchQuery}
+                onChange={e => setAdjSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-7 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none h-8 transition-colors"
+              />
+              {adjSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setAdjSearchQuery('')}
+                  className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-xs">close</span>
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowAdjModal(true)}
+              className="flex items-center justify-center gap-1 px-2.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs rounded-lg shadow-sm shrink-0 h-8 cursor-pointer active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span>Tạo bù công</span>
+            </button>
+          </div>
+
+          {/* Desktop Filter Bar for Adjustment Tab */}
+          <div className="hidden md:flex items-center justify-between gap-3 px-4 py-2 border-b border-slate-200 bg-white shrink-0">
+            <div className="flex items-center gap-2 flex-1">
+              <div className="relative flex-1 max-w-xs">
+                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm nhân viên, lý do, dự án..."
+                  value={adjSearchQuery}
+                  onChange={e => setAdjSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary outline-none"
+                />
+              </div>
+
+              <CustomSelect
+                value={adjTypeFilter}
+                onChange={e => setAdjTypeFilter(e.target.value)}
+                className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 outline-none w-36"
+              >
+                <option value="">Tất cả loại bù</option>
+                <option value="Bù vào ca">Bù vào ca</option>
+                <option value="Bù ra ca">Bù ra ca</option>
+                <option value="Bù cả ngày">Bù cả ngày</option>
+              </CustomSelect>
+
+              <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-2 py-1 bg-slate-50 text-xs">
+                <span className="text-slate-400 font-medium">Từ</span>
+                <input
+                  type="date"
+                  value={adjFilterDateFrom}
+                  onChange={e => setAdjFilterDateFrom(e.target.value)}
+                  className="bg-transparent border-none outline-none text-slate-700 cursor-pointer"
+                />
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-400 font-medium">Đến</span>
+                <input
+                  type="date"
+                  value={adjFilterDateTo}
+                  onChange={e => setAdjFilterDateTo(e.target.value)}
+                  className="bg-transparent border-none outline-none text-slate-700 cursor-pointer"
+                />
+                {(adjFilterDateFrom || adjFilterDateTo) && (
+                  <button onClick={() => { setAdjFilterDateFrom(''); setAdjFilterDateTo(''); }} className="text-slate-400 hover:text-slate-600 font-bold ml-1">✕</button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {displayedAdjustments.length > 0 && (
+                <button
+                  onClick={() => handleExportAdjustmentsExcel('xlsx')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold rounded-lg border border-emerald-200 text-xs transition-colors shadow-2xs cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">file_download</span>
+                  Xuất Excel
+                </button>
+              )}
+              <button
+                onClick={() => setShowAdjModal(true)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-blue-800 text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[16px]">add</span>
+                Tạo yêu cầu chấm công bù
+              </button>
+            </div>
+          </div>
+
+          {/* Adjustment List / Table Area */}
+          <div className="flex-1 overflow-y-auto p-2 sm:p-4">
+            {displayedAdjustments.length === 0 ? (
+              <div className="p-12 text-center bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">edit_calendar</span>
+                <p className="text-slate-500 font-medium text-sm">Chưa có yêu cầu chấm công bù nào.</p>
+                <p className="text-slate-400 text-xs mt-1">Bấm "Tạo yêu cầu chấm công bù" để gửi giải trình bổ sung giờ làm việc.</p>
+              </div>
+            ) : (
+              <>
+                {/* Mobile View Cards */}
+                <div className="md:hidden space-y-2.5">
+                  {displayedAdjustments.map(adj => {
+                    const canReview1 = (
+                      (adj.status === 'PENDING_STEP1' || (adj.status === 'PENDING' && adj.step1ReviewerId)) &&
+                      (
+                        (adj.step1ReviewerId && (user?.id === adj.step1ReviewerId || user?.name === adj.step1ReviewerName)) ||
+                        (!adj.step1ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_STEP1' as any) || isAdmin))
+                      )
+                    );
+                    const canReview2 = (
+                      (adj.status === 'APPROVED_STEP1' || (adj.status === 'PENDING' && !adj.step1ReviewerId)) &&
+                      (
+                        (adj.step2ReviewerId && (user?.id === adj.step2ReviewerId || user?.name === adj.step2ReviewerName)) ||
+                        (!adj.step2ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any) || isAdmin)) ||
+                        isAdmin
+                      )
+                    );
+
+                    return (
+                      <div key={adj.id} className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="font-bold text-slate-900 text-xs">{adj.userName}</span>
+                            <span className="ml-2 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">{adj.adjustmentType}</span>
+                          </div>
+                          {adj.status === 'PENDING_STEP1' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Chờ Quản lý</span>}
+                          {adj.status === 'PENDING' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Chờ duyệt</span>}
+                          {adj.status === 'APPROVED_STEP1' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">QL đã duyệt</span>}
+                          {adj.status === 'APPROVED' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Đã duyệt hoàn tất</span>}
+                          {adj.status === 'REJECTED' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Từ chối</span>}
+                        </div>
+
+                        <div className="text-xs text-slate-600 space-y-1 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                          <p><strong className="text-slate-700">Ngày bù:</strong> {formatDate(adj.adjustmentDate)}</p>
+                          {adj.checkInTime && <p><strong className="text-slate-700">Giờ vào:</strong> {formatTime(adj.checkInTime)}</p>}
+                          {adj.checkOutTime && <p><strong className="text-slate-700">Giờ ra:</strong> {formatTime(adj.checkOutTime)}</p>}
+                          {adj.projectName && <p><strong className="text-slate-700">Dự án:</strong> {adj.projectName}</p>}
+                          <p><strong className="text-slate-700">Lý do:</strong> {adj.reason}</p>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 text-[11px]">
+                          <span className="text-slate-400">Tạo: {formatDate(adj.createdAt)}</span>
+                          <div className="flex items-center gap-1.5">
+                            {canReview1 && (
+                              <button
+                                onClick={() => { setReviewAdj(adj); setReviewAdjStep(1); setReviewAdjNote(''); }}
+                                className="px-2.5 py-1 bg-blue-50 text-primary font-bold rounded border border-blue-200 text-xs"
+                              >
+                                QL Duyệt
+                              </button>
+                            )}
+                            {canReview2 && (
+                              <button
+                                onClick={() => { setReviewAdj(adj); setReviewAdjStep(2); setReviewAdjNote(''); }}
+                                className="px-2.5 py-1 bg-primary text-white font-bold rounded text-xs"
+                              >
+                                BGD Duyệt
+                              </button>
+                            )}
+                            {(isAdmin || adj.userId === user?.id) && (
+                              <button onClick={() => setDeleteAdjId(adj.id)} className="p-1 text-slate-400 hover:text-red-500">
+                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop View Table */}
+                <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-100/80 text-slate-600 font-bold uppercase text-[10px]">
+                        <th className="p-3">Nhân viên</th>
+                        <th className="p-3">Loại bù</th>
+                        <th className="p-3">Ngày cần bù</th>
+                        <th className="p-3">Giờ vào/ra</th>
+                        <th className="p-3">Dự án</th>
+                        <th className="p-3">Lý do giải trình</th>
+                        <th className="p-3 text-center">Trạng thái</th>
+                        <th className="p-3">Quản lý duyệt</th>
+                        <th className="p-3">Ban Giám Đốc</th>
+                        <th className="p-3 text-center w-28">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {displayedAdjustments.map(adj => {
+                        const canReview1 = (
+                          (adj.status === 'PENDING_STEP1' || (adj.status === 'PENDING' && adj.step1ReviewerId)) &&
+                          (
+                            (adj.step1ReviewerId && (user?.id === adj.step1ReviewerId || user?.name === adj.step1ReviewerName)) ||
+                            (!adj.step1ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_STEP1' as any) || isAdmin))
+                          )
+                        );
+                        const canReview2 = (
+                          (adj.status === 'APPROVED_STEP1' || (adj.status === 'PENDING' && !adj.step1ReviewerId)) &&
+                          (
+                            (adj.step2ReviewerId && (user?.id === adj.step2ReviewerId || user?.name === adj.step2ReviewerName)) ||
+                            (!adj.step2ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any) || isAdmin)) ||
+                            isAdmin
+                          )
+                        );
+
+                        return (
+                          <tr key={adj.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-3 font-bold text-slate-900">{adj.userName}</td>
+                            <td className="p-3">
+                              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                {adj.adjustmentType}
+                              </span>
+                            </td>
+                            <td className="p-3 font-medium text-slate-800 whitespace-nowrap">{formatDate(adj.adjustmentDate)}</td>
+                            <td className="p-3 font-medium text-slate-700 whitespace-nowrap">
+                              {adj.checkInTime ? formatTime(adj.checkInTime) : '—'}
+                              {' → '}
+                              {adj.checkOutTime ? formatTime(adj.checkOutTime) : '—'}
+                            </td>
+                            <td className="p-3 text-slate-600 max-w-[150px] truncate" title={adj.projectName}>{adj.projectName || '—'}</td>
+                            <td className="p-3 text-slate-600 max-w-[200px] truncate" title={adj.reason}>{adj.reason}</td>
+                            <td className="p-3 text-center whitespace-nowrap">
+                              {adj.status === 'PENDING_STEP1' && <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Chờ Quản lý duyệt</span>}
+                              {adj.status === 'PENDING' && <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Chờ duyệt</span>}
+                              {adj.status === 'APPROVED_STEP1' && <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 animate-pulse">Quản lý đã duyệt • Chờ BGD</span>}
+                              {adj.status === 'APPROVED' && <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Đã duyệt hoàn tất</span>}
+                              {adj.status === 'REJECTED' && <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Từ chối</span>}
+                            </td>
+                            <td className="p-3 text-slate-600">
+                              {adj.step1ReviewerName ? (
+                                <div>
+                                  <span className="font-bold text-slate-800">{adj.step1ReviewerName}</span>
+                                  {adj.step1ReviewedAt ? <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Đã duyệt</span> : <span className="ml-1 text-[10px] text-amber-600">(Đang chờ)</span>}
+                                  {adj.step1ReviewNote && <p className="text-[11px] text-slate-500 italic truncate max-w-[130px]">{adj.step1ReviewNote}</p>}
+                                </div>
+                              ) : <span className="text-slate-400 italic">—</span>}
+                            </td>
+                            <td className="p-3 text-slate-600">
+                              {adj.step2ReviewerName ? (
+                                <div>
+                                  <span className="font-bold text-slate-800">{adj.step2ReviewerName}</span>
+                                  {adj.status === 'APPROVED' ? <span className="ml-1 text-[10px] font-bold text-emerald-600">✓ Phê duyệt</span> : <span className="ml-1 text-[10px] text-slate-400">(Chờ)</span>}
+                                  {adj.step2ReviewNote && <p className="text-[11px] text-slate-500 italic truncate max-w-[130px]">{adj.step2ReviewNote}</p>}
+                                </div>
+                              ) : <span className="text-slate-400 italic">—</span>}
+                            </td>
+                            <td className="p-3 text-center whitespace-nowrap">
+                              <div className="flex items-center justify-center gap-1.5">
+                                {canReview1 && (
+                                  <button
+                                    onClick={() => { setReviewAdj(adj); setReviewAdjStep(1); setReviewAdjNote(''); }}
+                                    className="px-2 py-1 bg-blue-50 text-primary hover:bg-blue-100 rounded text-[11px] font-bold border border-blue-200 cursor-pointer"
+                                  >QL Duyệt</button>
+                                )}
+                                {canReview2 && (
+                                  <button
+                                    onClick={() => { setReviewAdj(adj); setReviewAdjStep(2); setReviewAdjNote(''); }}
+                                    className="px-2 py-1 bg-primary text-white hover:bg-blue-800 rounded text-[11px] font-bold cursor-pointer"
+                                  >BGD Duyệt</button>
+                                )}
+                                {(isAdmin || adj.userId === user?.id) && (
+                                  <button onClick={() => setDeleteAdjId(adj.id)} className="w-7 h-7 rounded-full inline-flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
+
+      {/* Modal Tạo yêu cầu chấm công bù */}
+      <Modal isOpen={showAdjModal} onClose={() => setShowAdjModal(false)} title="Tạo yêu cầu chấm công bù" icon="edit_calendar" size="lg">
+        <div className="space-y-4 py-2">
+          {modalError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+              <span className="material-symbols-outlined text-[18px] text-rose-600 shrink-0">error</span>
+              <span className="font-semibold">{modalError}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Loại chấm công bù</label>
+              <CustomSelect value={adjType} onChange={e => setAdjType(e.target.value as AttendanceAdjustmentType)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+                <option value="Bù vào ca">Bù vào ca (Quên check-in đầu ca)</option>
+                <option value="Bù ra ca">Bù ra ca (Quên check-out cuối ca)</option>
+                <option value="Bù cả ngày">Bù cả ngày (Cả ngày đi công tác / không check-in)</option>
+              </CustomSelect>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Ngày cần bù</label>
+              <input type="date" value={adjDate} onChange={e => setAdjDate(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+          </div>
+
+          {(adjType === 'Bù vào ca' || adjType === 'Bù cả ngày') && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Giờ vào ca (yêu cầu bổ sung)</label>
+              <input type="time" value={adjInTime} onChange={e => setAdjInTime(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+          )}
+
+          {(adjType === 'Bù ra ca' || adjType === 'Bù cả ngày') && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Giờ ra ca (yêu cầu bổ sung)</label>
+              <input type="time" value={adjOutTime} onChange={e => setAdjOutTime(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Dự án làm việc (tùy chọn)</label>
+            <CustomSelect value={adjProject} onChange={e => setAdjProject(e.target.value)} searchable={true} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+              <option value="">-- Không thuộc dự án cụ thể --</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </CustomSelect>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Lý do giải trình <span className="text-red-500">*</span></label>
+            <textarea rows={3} value={adjReason} onChange={e => setAdjReason(e.target.value)} placeholder="Nhập lý do cụ thể (vd: đi công tác công trường, điện thoại hỏng, làm việc ngoài cơ quan...)" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none resize-none" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Người duyệt Cấp 1 (Quản lý trực tiếp)</label>
+              <CustomSelect value={adjStep1ReviewerId} onChange={e => setAdjStep1ReviewerId(e.target.value)} searchable={true} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+                <option value="">-- Chọn Quản lý trực tiếp --</option>
+                {step1Reviewers.map(r => (
+                  <option key={r.id} value={r.id}>{r.name} ({r.title || r.role})</option>
+                ))}
+              </CustomSelect>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Người duyệt Cấp 2 (Ban Giám Đốc)</label>
+              <CustomSelect value={adjStep2ReviewerId} onChange={e => setAdjStep2ReviewerId(e.target.value)} searchable={true} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+                <option value="">-- Ban Giám Đốc / Admin --</option>
+                {step2Reviewers.map(r => (
+                  <option key={r.id} value={r.id}>{r.name} ({r.title || r.role})</option>
+                ))}
+              </CustomSelect>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+            <button onClick={() => setShowAdjModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 text-sm">Hủy</button>
+            <button onClick={handleCreateAdjustment} disabled={isSubmitting || !adjReason.trim()} className="px-5 py-2 bg-primary text-white font-bold rounded-lg text-sm hover:bg-blue-800 disabled:opacity-50 shadow-xs">Gửi yêu cầu bù công</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Duyệt Chấm công bù */}
+      <Modal isOpen={!!reviewAdj} onClose={() => setReviewAdj(null)} title={reviewAdjStep === 1 ? 'Xét duyệt bù công (Quản lý)' : 'Phê duyệt bù công (Ban Giám Đốc)'} icon="rate_review" size="md">
+        {reviewAdj && (
+          <div className="space-y-4 py-2">
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1.5">
+              <p><span className="font-bold text-slate-700">Nhân viên:</span> <strong className="text-slate-900">{reviewAdj.userName}</strong></p>
+              <p><span className="font-bold text-slate-700">Loại bù:</span> {reviewAdj.adjustmentType}</p>
+              <p><span className="font-bold text-slate-700">Ngày bù:</span> {formatDate(reviewAdj.adjustmentDate)}</p>
+              <p><span className="font-bold text-slate-700">Giờ vào/ra:</span> {reviewAdj.checkInTime ? formatTime(reviewAdj.checkInTime) : '—'} → {reviewAdj.checkOutTime ? formatTime(reviewAdj.checkOutTime) : '—'}</p>
+              <p><span className="font-bold text-slate-700">Lý do:</span> {reviewAdj.reason}</p>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Ý kiến / Ghi chú duyệt</label>
+              <textarea rows={2} value={reviewAdjNote} onChange={e => setReviewAdjNote(e.target.value)} placeholder="Nhập ghi chú ý kiến phê duyệt..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none resize-none" />
+            </div>
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200">
+              <button onClick={() => handleReviewAdjustment('REJECTED')} disabled={isSubmitting} className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg text-sm hover:bg-slate-200">Từ chối</button>
+              <button onClick={() => handleReviewAdjustment('APPROVED')} disabled={isSubmitting} className="px-5 py-2 bg-primary text-white font-bold rounded-lg text-sm hover:bg-blue-800 shadow-sm">Duyệt</button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <ConfirmModal
+        isOpen={deleteAdjId !== null}
+        onClose={() => setDeleteAdjId(null)}
+        onConfirm={handleConfirmDeleteAdj}
+        title="Xác nhận xóa yêu cầu"
+        message="Bạn có chắc chắn muốn xóa yêu cầu chấm công bù này?"
+        confirmText="Xóa yêu cầu"
+        icon="delete"
+      />
 
       {/* Modal tạo đơn xin nghỉ phép */}
       <Modal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} title="Tạo đơn xin nghỉ phép" icon="event_busy" size="lg">

@@ -2783,13 +2783,12 @@ export function setupRealtimeSync() {
     console.warn('[Realtime] Could not subscribe to realtime channel', e);
   }
 
-  // Heartbeat polling 5s tự động kiểm tra tin nhắn & thông báo mới
+  // Heartbeat polling 30s tự động kiểm tra tin nhắn & thông báo mới (tối ưu quota kết nối Supabase)
   const heartbeatInterval = setInterval(() => {
     const store = useRealtimeStore.getState();
     store.fetchNotifications();
     store.fetchDirectMessages();
-    store.fetchTasks(undefined);
-  }, 5000);
+  }, 30000);
 
   // Tự động tải lại dữ liệu mới nhất khi chuyển tab / focus lại cửa sổ
   const handleFocus = () => {
