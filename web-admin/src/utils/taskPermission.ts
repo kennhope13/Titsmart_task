@@ -141,9 +141,16 @@ export const isUserTaskAssigner = (
     }
   }
 
-  // User with ASSIGN_TASKS permission configured in the system
-  if (user.permissions && Array.isArray(user.permissions) && user.permissions.includes('ASSIGN_TASKS')) {
-    return true;
+  if ((task as any).createdById) {
+    const tCreatedById = normalizeText((task as any).createdById);
+    if (allMyIds.includes(tCreatedById)) return true;
+  }
+
+  if ((task as any).createdByName) {
+    const normCreatedByName = normalizeText((task as any).createdByName);
+    if (allMyNames.some(mn => normCreatedByName === mn || normCreatedByName.includes(mn) || mn.includes(normCreatedByName))) {
+      return true;
+    }
   }
 
   return false;
