@@ -38,6 +38,9 @@ export const parseAuditTime = (str?: string): number => {
 
 const getActionBadge = (action: string) => {
   const clean = action.toLowerCase();
+  if (clean.includes('checkintime') || clean.includes('chấm công') || clean.includes('điểm danh')) {
+    return { icon: 'fingerprint', color: 'text-purple-700 bg-purple-50 border-purple-200' };
+  }
   if (clean.includes('nghiệm thu') || clean.includes('hoàn thành')) {
     return { icon: 'verified', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
   }
@@ -58,6 +61,33 @@ const getActionBadge = (action: string) => {
 
 const renderActionText = (text: string) => {
   if (!text) return text;
+
+  // Handle JSON action payload (e.g. attendance records or system logs)
+  if (text.startsWith('{') && (text.includes('"userId"') || text.includes('"checkInTime"') || text.includes('"action"'))) {
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed.checkInTime || parsed.checkOutTime) {
+        const inTime = formatAuditDateTime(parsed.checkInTime);
+        const outTime = parsed.checkOutTime ? formatAuditDateTime(parsed.checkOutTime) : '';
+        return (
+          <div className="leading-snug">
+            <span className="font-semibold text-slate-800">Thực hiện chấm công / điểm danh</span>
+            <div className="text-[10.5px] text-slate-500 font-mono mt-0.5">
+              Vào ca: <strong>{inTime}</strong>{outTime ? ` • Ra ca: ${outTime}` : ''}
+            </div>
+          </div>
+        );
+      }
+      if (parsed.action) {
+        text = String(parsed.action);
+      } else if (parsed.type || parsed.note) {
+        text = `Hoạt động hệ thống: ${parsed.note || parsed.type}`;
+      }
+    } catch {
+      // Fallback to normal string processing if JSON parse fails
+    }
+  }
+
   let mainText = text;
   let detailText = '';
   const detailIndex = text.indexOf(' |Detail:');
