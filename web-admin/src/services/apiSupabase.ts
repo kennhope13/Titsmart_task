@@ -1008,8 +1008,21 @@ export const api = {
           .from('activity_logs')
           .select('*')
           .neq('icon', 'LEAVE_REQUEST')
-          .order('created_at', { ascending: false })
+          .neq('icon', 'ATTENDANCE_SESSION')
+          .order('timestamp', { ascending: false })
           .limit(300);
+
+        if (error) {
+          const res = await supabase
+            .from('activity_logs')
+            .select('*')
+            .neq('icon', 'LEAVE_REQUEST')
+            .neq('icon', 'ATTENDANCE_SESSION')
+            .order('created_at', { ascending: false })
+            .limit(300);
+          data = res.data;
+          error = res.error;
+        }
 
         if (error) {
           const res = await supabase
@@ -1032,35 +1045,37 @@ export const api = {
 
         if (error) {
           console.warn('[ActivityLogs] Could not fetch from Supabase:', error.message);
-          data = [];
+          return [];
         }
 
-        return (data || []).map(row => {
-          const act = (row.action || '').toLowerCase();
-          const icon = row.icon || (act.includes('tiến độ') ? 'trending_up' :
-            act.includes('chi') || act.includes('lương') || act.includes('hợp đồng') ? 'payments' :
-            act.includes('kho') || act.includes('vật tư') ? 'warehouse' :
-            act.includes('hồ sơ') ? 'drafts' : 'history');
-          const badgeBg = row.badge_bg || row.badgeBg || (act.includes('tiến độ') ? 'bg-blue-50' :
-            act.includes('chi') || act.includes('lương') || act.includes('hợp đồng') ? 'bg-emerald-50' :
-            act.includes('kho') || act.includes('vật tư') ? 'bg-amber-50' :
-            act.includes('hồ sơ') ? 'bg-violet-50' : 'bg-slate-50');
-          const iconColor = row.icon_color || row.iconColor || (act.includes('tiến độ') ? 'text-blue-500' :
-            act.includes('chi') || act.includes('lương') || act.includes('hợp đồng') ? 'text-emerald-500' :
-            act.includes('kho') || act.includes('vật tư') ? 'text-amber-500' :
-            act.includes('hồ sơ') ? 'text-violet-500' : 'text-slate-500');
+        return (data || [])
+          .filter((row: any) => row.icon !== 'LEAVE_REQUEST' && row.icon !== 'ATTENDANCE_SESSION')
+          .map(row => {
+            const act = (row.action || '').toLowerCase();
+            const icon = row.icon || (act.includes('tiến độ') ? 'trending_up' :
+              act.includes('chi') || act.includes('lương') || act.includes('hợp đồng') ? 'payments' :
+              act.includes('kho') || act.includes('vật tư') ? 'warehouse' :
+              act.includes('hồ sơ') ? 'drafts' : 'history');
+            const badgeBg = row.badge_bg || row.badgeBg || (act.includes('tiến độ') ? 'bg-blue-50' :
+              act.includes('chi') || act.includes('lương') || act.includes('hợp đồng') ? 'bg-emerald-50' :
+              act.includes('kho') || act.includes('vật tư') ? 'bg-amber-50' :
+              act.includes('hồ sơ') ? 'bg-violet-50' : 'bg-slate-50');
+            const iconColor = row.icon_color || row.iconColor || (act.includes('tiến độ') ? 'text-blue-500' :
+              act.includes('chi') || act.includes('lương') || act.includes('hợp đồng') ? 'text-emerald-500' :
+              act.includes('kho') || act.includes('vật tư') ? 'text-amber-500' :
+              act.includes('hồ sơ') ? 'text-violet-500' : 'text-slate-500');
 
-          return {
-            id: row.id,
-            action: row.action || '',
-            project: row.project_code || row.project || 'COMPANY',
-            user: row.user_name || row.user || row.user_id || 'Hệ thống',
-            timestamp: row.timestamp || row.created_at || new Date().toISOString(),
-            icon,
-            badgeBg,
-            iconColor,
-          };
-        });
+            return {
+              id: row.id,
+              action: row.action || '',
+              project: row.project_code || row.project || 'COMPANY',
+              user: row.user_name || row.user || row.user_id || 'Hệ thống',
+              timestamp: row.timestamp || row.created_at || new Date().toISOString(),
+              icon,
+              badgeBg,
+              iconColor,
+            };
+          });
       } catch (err) {
         console.error('[ActivityLogs] Failed to fetch:', err);
         return [];
@@ -1068,24 +1083,43 @@ export const api = {
     },
     create: async (data: any) => {
       const nowIso = new Date().toISOString();
-      if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
-        // Skip calling Supabase DB in local dev mode if local PostgreSQL activity_logs schema differs
-        return { id: `act-${Date.now()}`, ...data, timestamp: nowIso };
-      }
-
-      try {
-        const payload = {
+      const payloadVariants: any[] = [
+        {
+          action: data.action,
+          project: data.project || 'COMPANY',
+          user: data.user || 'Hệ thống',
+          icon: data.icon || 'history',
+          badge_bg: data.badgeBg || 'bg-slate-50',
+          timestamp: nowIso
+        },
+        {
           action: data.action,
           project_code: data.project || 'COMPANY',
           user_name: data.user || 'Hệ thống',
           icon: data.icon || 'history',
           badge_bg: data.badgeBg || 'bg-slate-50',
           created_at: nowIso
-        };
-        const { data: res, error } = await supabase.from('activity_logs').insert(payload).select().single();
-        if (!error && res) return { id: res.id, ...data };
-      } catch {
-        // ignore
+        },
+        {
+          action: data.action,
+          user: data.user || 'Hệ thống',
+          icon: data.icon || 'history',
+          timestamp: nowIso
+        },
+        {
+          action: data.action,
+          user: data.user || 'Hệ thống',
+          icon: data.icon || 'history'
+        }
+      ];
+
+      for (const payload of payloadVariants) {
+        try {
+          const { data: res, error } = await supabase.from('activity_logs').insert(payload).select().single();
+          if (!error && res) return { id: res.id, ...data, timestamp: nowIso };
+        } catch {
+          // try next variant
+        }
       }
       return { id: `act-${Date.now()}`, ...data, timestamp: nowIso };
     },
@@ -2304,6 +2338,8 @@ export const api = {
       return { success: true };
     }
   },
+
+
 
   directMessages: {
     getAll: async () => {
