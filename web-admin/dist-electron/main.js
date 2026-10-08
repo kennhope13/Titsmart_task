@@ -1,152 +1,108 @@
-import { app, BrowserWindow, ipcMain, shell } from "electron";
-import path from "path";
-import { fileURLToPath } from "url";
-import updatePkg from "electron-updater";
-import fs from "fs";
-const { autoUpdater } = updatePkg;
-const __filename$1 = fileURLToPath(import.meta.url);
-const __dirname$1 = path.dirname(__filename$1);
-let mainWindow;
-const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
-function createWindow() {
-  mainWindow = new BrowserWindow({
+import { app as i, BrowserWindow as f, ipcMain as s, shell as h } from "electron";
+import r from "path";
+import { fileURLToPath as w } from "url";
+import g from "electron-updater";
+import d from "fs";
+const { autoUpdater: n } = g, y = w(import.meta.url), c = r.dirname(y);
+let o;
+const p = process.env.VITE_DEV_SERVER_URL;
+function m() {
+  o = new f({
     width: 1200,
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    autoHideMenuBar: true,
+    autoHideMenuBar: !0,
     // titleBarStyle: 'hidden', // Lấy cảm hứng từ Notion (giấu thanh tiêu đề mặc định)
     // titleBarOverlay: {
     //   color: '#ffffff',
     //   symbolColor: '#00236f',
     // },
     webPreferences: {
-      preload: path.join(__dirname$1, "preload.mjs"),
-      nodeIntegration: false,
-      contextIsolation: true
+      preload: r.join(c, "preload.mjs"),
+      nodeIntegration: !1,
+      contextIsolation: !0
     }
-  });
-  if (VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile(path.join(process.env.DIST || path.join(__dirname$1, "../dist"), "index.html"));
-  }
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith("http://") || url.startsWith("https://")) {
-      shell.openExternal(url);
-    }
-    return { action: "deny" };
-  });
+  }), p ? (o.loadURL(p), o.webContents.openDevTools()) : o.loadFile(r.join(process.env.DIST || r.join(c, "../dist"), "index.html")), o.webContents.setWindowOpenHandler(({ url: e }) => ((e.startsWith("http://") || e.startsWith("https://")) && h.openExternal(e), { action: "deny" }));
 }
-function sendToRenderer(channel, data) {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send(channel, data);
-  }
+function a(e, t) {
+  o && !o.isDestroyed() && o.webContents.send(e, t);
 }
-function normalizeReleaseNotes(notes) {
-  if (Array.isArray(notes)) {
-    return notes.map((n) => typeof n === "string" ? n : (n == null ? void 0 : n.note) ?? "").filter(Boolean).join("\n");
-  }
-  return notes ?? "";
+function v(e) {
+  return Array.isArray(e) ? e.map((t) => typeof t == "string" ? t : (t == null ? void 0 : t.note) ?? "").filter(Boolean).join(`
+`) : e ?? "";
 }
-function setupAutoUpdater() {
-  if (!app.isPackaged) return;
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.disableDifferentialDownload = true;
-  autoUpdater.disableWebInstaller = true;
-  autoUpdater.on("checking-for-update", () => {
-    sendToRenderer("update:status", { status: "checking" });
-  });
-  ipcMain.on("open-external", async (event, url) => {
-    if (url && typeof url === "string") {
+function S() {
+  i.isPackaged && (n.autoDownload = !0, n.autoInstallOnAppQuit = !0, n.disableDifferentialDownload = !0, n.disableWebInstaller = !0, n.on("checking-for-update", () => {
+    a("update:status", { status: "checking" });
+  }), s.on("open-external", async (e, t) => {
+    if (t && typeof t == "string")
       try {
-        await shell.openExternal(url);
-      } catch (error) {
-        require("electron").dialog.showErrorBox("Lỗi mở ảnh", `Không thể mở đường dẫn: ${url}
-Lý do: ${error.message}`);
+        await h.openExternal(t);
+      } catch (u) {
+        require("electron").dialog.showErrorBox("Lỗi mở ảnh", `Không thể mở đường dẫn: ${t}
+Lý do: ${u.message}`);
       }
-    }
-  });
-  autoUpdater.on("update-available", (info) => {
-    sendToRenderer("update:status", {
+  }), n.on("update-available", (e) => {
+    a("update:status", {
       status: "available",
-      version: info.version,
-      releaseNotes: normalizeReleaseNotes(info.releaseNotes)
+      version: e.version,
+      releaseNotes: v(e.releaseNotes)
     });
-  });
-  autoUpdater.on("update-not-available", (info) => {
-    sendToRenderer("update:status", { status: "not-available", version: info.version });
-  });
-  autoUpdater.on("download-progress", (progress) => {
-    sendToRenderer("update:status", {
+  }), n.on("update-not-available", (e) => {
+    a("update:status", { status: "not-available", version: e.version });
+  }), n.on("download-progress", (e) => {
+    a("update:status", {
       status: "downloading",
-      percent: Math.round(progress.percent),
-      transferred: progress.transferred,
-      total: progress.total,
-      bytesPerSecond: progress.bytesPerSecond
+      percent: Math.round(e.percent),
+      transferred: e.transferred,
+      total: e.total,
+      bytesPerSecond: e.bytesPerSecond
     });
-  });
-  autoUpdater.on("update-downloaded", (info) => {
-    sendToRenderer("update:status", { status: "downloaded", version: info.version });
-  });
-  autoUpdater.on("error", (err) => {
-    sendToRenderer("update:status", { status: "error", message: (err == null ? void 0 : err.message) ?? String(err) });
-  });
-  ipcMain.on("update:check", () => {
-    autoUpdater.checkForUpdates();
-  });
-  ipcMain.on("update:download", () => {
-    autoUpdater.downloadUpdate();
-  });
-  ipcMain.on("update:install", () => {
-    autoUpdater.quitAndInstall();
-  });
-  setTimeout(() => {
-    autoUpdater.checkForUpdates().catch((err) => {
-      sendToRenderer("update:status", { status: "error", message: (err == null ? void 0 : err.message) ?? String(err) });
+  }), n.on("update-downloaded", (e) => {
+    a("update:status", { status: "downloaded", version: e.version });
+  }), n.on("error", (e) => {
+    a("update:status", { status: "error", message: (e == null ? void 0 : e.message) ?? String(e) });
+  }), s.on("update:check", () => {
+    n.checkForUpdates();
+  }), s.on("update:download", () => {
+    n.downloadUpdate();
+  }), s.on("update:install", () => {
+    n.quitAndInstall();
+  }), setTimeout(() => {
+    n.checkForUpdates().catch((e) => {
+      a("update:status", { status: "error", message: (e == null ? void 0 : e.message) ?? String(e) });
     });
-  }, 5e3);
+  }, 5e3));
 }
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-    mainWindow = null;
-  }
+i.on("window-all-closed", () => {
+  process.platform !== "darwin" && (i.quit(), o = null);
 });
-app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+i.on("activate", () => {
+  f.getAllWindows().length === 0 && m();
 });
-const sessionFilePath = path.join(app.getPath("userData"), "auth_session.json");
-ipcMain.on("session:save", (_, user) => {
+const l = r.join(i.getPath("userData"), "auth_session.json");
+s.on("session:save", (e, t) => {
   try {
-    if (user) {
-      fs.writeFileSync(sessionFilePath, JSON.stringify(user), "utf-8");
-    } else {
-      if (fs.existsSync(sessionFilePath)) fs.unlinkSync(sessionFilePath);
-    }
-  } catch (err) {
-    console.error("Failed to write auth_session.json:", err);
+    t ? d.writeFileSync(l, JSON.stringify(t), "utf-8") : d.existsSync(l) && d.unlinkSync(l);
+  } catch (u) {
+    console.error("Failed to write auth_session.json:", u);
   }
 });
-ipcMain.on("session:load", (event) => {
+s.on("session:load", (e) => {
   try {
-    if (fs.existsSync(sessionFilePath)) {
-      const raw = fs.readFileSync(sessionFilePath, "utf-8");
-      if (raw) {
-        event.returnValue = JSON.parse(raw);
+    if (d.existsSync(l)) {
+      const t = d.readFileSync(l, "utf-8");
+      if (t) {
+        e.returnValue = JSON.parse(t);
         return;
       }
     }
-  } catch (err) {
-    console.error("Failed to read auth_session.json:", err);
+  } catch (t) {
+    console.error("Failed to read auth_session.json:", t);
   }
-  event.returnValue = null;
+  e.returnValue = null;
 });
-app.whenReady().then(() => {
-  createWindow();
-  setupAutoUpdater();
+i.whenReady().then(() => {
+  m(), S();
 });
