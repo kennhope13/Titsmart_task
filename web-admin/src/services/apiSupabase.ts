@@ -1275,8 +1275,16 @@ export const api = {
     getExpenses: async () => {
       try {
         const { data, error } = await supabase.from('expenses').select('*');
-        if (error) throw error;
-        return (data || []).map(toCamelCase);
+        if (error) {
+          console.warn('[Accounting] Supabase query returned error for expenses:', error.message || error);
+          return [];
+        }
+        return (data || []).map((row: any) => {
+          const item = toCamelCase(row);
+          if (item.expenseDate && !item.date) item.date = item.expenseDate;
+          if (item.date && !item.expenseDate) item.expenseDate = item.date;
+          return item;
+        });
       } catch (err) {
         console.warn('[Accounting] Error fetching expenses:', err);
         return [];
