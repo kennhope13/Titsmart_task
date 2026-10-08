@@ -2084,10 +2084,10 @@ export const AttendancePage: React.FC = () => {
 
             <button
               onClick={() => setShowAdjModal(true)}
-              className="flex items-center justify-center gap-1 px-2.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs rounded-lg shadow-sm shrink-0 h-8 cursor-pointer active:scale-95"
+              className="w-8 h-8 flex items-center justify-center bg-primary hover:bg-blue-800 text-white font-bold rounded-lg shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer"
+              title="Tạo yêu cầu chấm công bù"
             >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              <span>Tạo bù công</span>
+              <span className="material-symbols-outlined text-[19px]">add</span>
             </button>
           </div>
 
