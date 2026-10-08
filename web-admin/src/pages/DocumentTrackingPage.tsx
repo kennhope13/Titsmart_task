@@ -257,6 +257,8 @@ export const DocumentTrackingPage: React.FC = () => {
   const [filterPaymentStatus, setFilterPaymentStatus] = useState('all');
   const [filterDocType, setFilterDocType] = useState('all');
   const [filterDueStatus, setFilterDueStatus] = useState('all'); // 'all' | 'warning' | 'overdue' | 'normal'
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Helper for due date calculation
@@ -330,6 +332,17 @@ export const DocumentTrackingPage: React.FC = () => {
         return true;
       });
     }
+    if (filterDateFrom || filterDateTo) {
+      result = result.filter(t => {
+        const dates = [t.sendDate, t.receiveDate, t.dueDate, t.updatedAt?.split('T')[0]].filter(Boolean) as string[];
+        if (dates.length === 0) return false;
+        return dates.some(d => {
+          const fromOk = filterDateFrom ? d >= filterDateFrom : true;
+          const toOk = filterDateTo ? d <= filterDateTo : true;
+          return fromOk && toOk;
+        });
+      });
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(t => 
@@ -345,7 +358,7 @@ export const DocumentTrackingPage: React.FC = () => {
       if (sttDiff !== 0) return sttDiff;
       return String(a.contractNo || '').localeCompare(String(b.contractNo || ''), 'vi');
     });
-  }, [documentTracks, filterProjectCode, filterDocStatus, filterPaymentStatus, filterDueStatus, searchQuery, projects]);
+  }, [documentTracks, filterProjectCode, filterDocStatus, filterPaymentStatus, filterDueStatus, filterDateFrom, filterDateTo, searchQuery, projects]);
 
   useEffect(() => {
     if (isHighlightActive && (highlightId || highlightKeyword)) {
@@ -873,6 +886,37 @@ export const DocumentTrackingPage: React.FC = () => {
                   <option value="overdue">⚠️ Quá hạn</option>
                   <option value="normal">✅ Trong hạn / Đã xong</option>
                 </CustomSelect>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Từ ngày:</span>
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded px-1 py-0.5 bg-white shadow-sm">
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px] ml-1">Từ</span>
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={e => setFilterDateFrom(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
+                  />
+                  <span className="text-slate-300">|</span>
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
+                  <input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={e => setFilterDateTo(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
+                  />
+                  {(filterDateFrom || filterDateTo) && (
+                    <button
+                      type="button"
+                      onClick={() => { setFilterDateFrom(''); setFilterDateTo(''); }}
+                      className="text-slate-400 hover:text-slate-600 px-0.5 text-xs font-bold"
+                      title="Xóa lọc ngày"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 

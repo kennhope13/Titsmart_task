@@ -352,6 +352,8 @@ export const MaterialTrackingPage: React.FC = () => {
 
   // Filter state
   const [filterDate, setFilterDate] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
   const [filterProject, setFilterProject] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterName, setFilterName] = useState('');
@@ -737,6 +739,13 @@ export const MaterialTrackingPage: React.FC = () => {
         const d = (m.updatedAt || (m as any).createdAt || (m as any).date || '').substring(0, 10);
         if (d !== filterDate) return false;
       }
+      if (filterDateFrom || filterDateTo) {
+        const d = (m.updatedAt || (m as any).createdAt || (m as any).date || '').substring(0, 10);
+        if (d) {
+          if (filterDateFrom && d < filterDateFrom) return false;
+          if (filterDateTo && d > filterDateTo) return false;
+        }
+      }
 
       if (searchQuery.trim()) {
         const rawQ = searchQuery.toLowerCase().trim();
@@ -771,7 +780,7 @@ export const MaterialTrackingPage: React.FC = () => {
     });
 
     return result;
-  }, [materials, activeTab, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, filterDate, searchQuery]);
+  }, [materials, activeTab, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, filterDate, filterDateFrom, filterDateTo, searchQuery]);
 
   const imports = useMemo(() => {
     return inventoryTransactions
@@ -789,6 +798,13 @@ export const MaterialTrackingPage: React.FC = () => {
         if (filterDate) {
           const d = (tx.date || tx.createdAt || '').substring(0, 10);
           if (d !== filterDate) return false;
+        }
+        if (filterDateFrom || filterDateTo) {
+          const d = (tx.date || tx.createdAt || '').substring(0, 10);
+          if (d) {
+            if (filterDateFrom && d < filterDateFrom) return false;
+            if (filterDateTo && d > filterDateTo) return false;
+          }
         }
 
         if (searchQuery.trim()) {
@@ -813,7 +829,7 @@ export const MaterialTrackingPage: React.FC = () => {
         return true;
       })
       .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
-  }, [inventoryTransactions, materials, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, filterDate, searchQuery]);
+  }, [inventoryTransactions, materials, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, filterDate, filterDateFrom, filterDateTo, searchQuery]);
 
   const exports = useMemo(() => {
     return inventoryTransactions
@@ -831,6 +847,13 @@ export const MaterialTrackingPage: React.FC = () => {
         if (filterDate) {
           const d = (tx.date || tx.createdAt || '').substring(0, 10);
           if (d !== filterDate) return false;
+        }
+        if (filterDateFrom || filterDateTo) {
+          const d = (tx.date || tx.createdAt || '').substring(0, 10);
+          if (d) {
+            if (filterDateFrom && d < filterDateFrom) return false;
+            if (filterDateTo && d > filterDateTo) return false;
+          }
         }
 
         if (searchQuery.trim()) {
@@ -856,7 +879,7 @@ export const MaterialTrackingPage: React.FC = () => {
         return true;
       })
       .sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
-  }, [inventoryTransactions, materials, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, filterDate, searchQuery]);
+  }, [inventoryTransactions, materials, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, filterDate, filterDateFrom, filterDateTo, searchQuery]);
 
   const summaryCards = [
     { label: 'Tổng vật tư', value: filteredMaterials.length, icon: 'inventory_2', tone: 'text-slate-700 bg-slate-100' },
@@ -1597,27 +1620,34 @@ export const MaterialTrackingPage: React.FC = () => {
               </CustomSelect>
 
               {/* Lọc theo ngày */}
-              <div className="flex items-center gap-1">
-                <div className="relative flex items-center">
-                  <span className="material-symbols-outlined absolute left-1.5 text-slate-400 text-[14px] pointer-events-none">calendar_month</span>
-                  <input 
-                    type="date" 
-                    value={filterDate} 
-                    onChange={e => setFilterDate(e.target.value)}
-                    className="pl-5 pr-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer hover:bg-slate-50 transition-colors h-[26px]" 
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded px-1 py-0.5 bg-white shadow-sm">
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px] ml-1">Từ</span>
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={e => setFilterDateFrom(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
                   />
+                  <span className="text-slate-300">|</span>
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
+                  <input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={e => setFilterDateTo(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
+                  />
+                  {(filterDateFrom || filterDateTo) && (
+                    <button
+                      type="button"
+                      onClick={() => { setFilterDateFrom(''); setFilterDateTo(''); }}
+                      className="text-slate-400 hover:text-slate-600 px-0.5 text-xs font-bold"
+                      title="Xóa lọc ngày"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
-                {filterDate && (
-                  <button 
-                    type="button"
-                    onClick={() => setFilterDate('')}
-                    className="px-1.5 py-0.5 text-[10px] font-bold text-slate-600 bg-white hover:bg-slate-100 rounded flex items-center gap-0.5 transition-colors border border-slate-200 cursor-pointer h-[26px] shrink-0"
-                    title="Hiển thị tất cả các ngày"
-                  >
-                    <span className="material-symbols-outlined text-[12px]">close</span>
-                    <span>Tất cả ngày</span>
-                  </button>
-                )}
               </div>
             </div>
           </div>
