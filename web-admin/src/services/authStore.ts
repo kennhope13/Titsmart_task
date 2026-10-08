@@ -362,8 +362,9 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       console.warn('Supabase auth request failed, attempting demo account check', err);
     }
 
-    // If Supabase auth failed but user matched a demo account (e.g. admin/admin123)
-    if ((error || !data?.user) && demoAccount) {
+    // Allow demo account fallback ONLY in local DEV mode (not in Production)
+    const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    if ((error || !data?.user) && demoAccount && (import.meta.env.DEV || isLocalHost)) {
       const user: AuthUser = {
         id: 'user-' + demoAccount.username,
         username: demoAccount.username,
