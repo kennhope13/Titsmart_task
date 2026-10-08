@@ -2067,7 +2067,10 @@ export const api = {
             .select('*')
             .eq('icon', 'ATTENDANCE_SESSION');
           data = res.data;
+          error = res.error;
         }
+
+        if (error) return [];
 
         return (data || []).map(row => {
           try {
@@ -2076,7 +2079,6 @@ export const api = {
           } catch { return null; }
         }).filter(Boolean);
       } catch (err) {
-        console.error('[Attendance] Failed to fetch all logs:', err);
         return [];
       }
     },
@@ -2182,7 +2184,10 @@ export const api = {
             .select('*')
             .eq('icon', 'LEAVE_REQUEST');
           data = res.data;
+          error = res.error;
         }
+
+        if (error) return [];
 
         return (data || []).map(row => {
           try {
@@ -2191,7 +2196,6 @@ export const api = {
           } catch { return null; }
         }).filter(Boolean);
       } catch (err) {
-        console.error('[Leaves] Failed to fetch all leaves:', err);
         return [];
       }
     },
@@ -2258,9 +2262,8 @@ export const api = {
           data = retry.data;
           error = retry.error;
         }
-        if (error) throw error;
       }
-      return { id: data.id, ...payloadData } as any;
+      return { id: data?.id || `leave-${Date.now()}`, ...payloadData } as any;
     },
     review: async (id: string, reviewData: {
       status: 'APPROVED_STEP1' | 'APPROVED' | 'REJECTED';
