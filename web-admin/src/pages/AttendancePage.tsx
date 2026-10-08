@@ -1028,7 +1028,7 @@ export const AttendancePage: React.FC = () => {
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-slate-100 overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white px-2 py-1.5 md:py-0 md:h-12 flex items-center justify-between gap-1.5 shrink-0 pr-16 md:pr-20">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white px-2 py-1.5 md:py-0 md:h-12 flex items-center justify-between gap-1.5 shrink-0 pr-20 md:pr-24 lg:pr-28">
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div className="hidden sm:flex items-center border-l-4 border-primary pl-1.5">
             <h1 className="page-title text-xs sm:text-sm md:text-base font-extrabold text-slate-900 shrink-0">
