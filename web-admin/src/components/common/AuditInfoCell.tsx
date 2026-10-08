@@ -36,6 +36,26 @@ export const parseAuditTime = (str?: string): number => {
   return isNaN(isoMs) ? 0 : isoMs;
 };
 
+const getActionBadge = (action: string) => {
+  const clean = action.toLowerCase();
+  if (clean.includes('nghiệm thu') || clean.includes('hoàn thành')) {
+    return { icon: 'verified', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
+  }
+  if (clean.includes('giao công việc') || clean.includes('giao việc') || clean.includes('phân công')) {
+    return { icon: 'assignment_ind', color: 'text-blue-700 bg-blue-50 border-blue-200' };
+  }
+  if (clean.includes('nhận việc') || clean.includes('xác nhận')) {
+    return { icon: 'task_alt', color: 'text-teal-700 bg-teal-50 border-teal-200' };
+  }
+  if (clean.includes('thắc mắc') || clean.includes('trao đổi')) {
+    return { icon: 'help_center', color: 'text-amber-700 bg-amber-50 border-amber-200' };
+  }
+  if (clean.includes('xóa') || clean.includes('hủy')) {
+    return { icon: 'cancel', color: 'text-rose-700 bg-rose-50 border-rose-200' };
+  }
+  return { icon: 'edit_note', color: 'text-slate-600 bg-slate-100 border-slate-200' };
+};
+
 const renderActionText = (text: string) => {
   if (!text) return text;
   let mainText = text;
@@ -53,7 +73,7 @@ const renderActionText = (text: string) => {
     const variablePart = mainText.substring(splitIndex + 2);
     renderedMain = (
       <>
-        {actionPart} <strong className="font-semibold text-slate-900">{variablePart}</strong>
+        <span>{actionPart}</span> <strong className="font-bold text-slate-900">{variablePart}</strong>
       </>
     );
   } else {
@@ -61,10 +81,10 @@ const renderActionText = (text: string) => {
   }
 
   return (
-    <span>
-      {renderedMain}
-      {detailText && <span className="block text-[10px] text-slate-500 italic mt-0.5">{detailText}</span>}
-    </span>
+    <div className="leading-snug">
+      <div>{renderedMain}</div>
+      {detailText && <div className="text-[10.5px] text-slate-500 italic mt-0.5">{detailText}</div>}
+    </div>
   );
 };
 
@@ -210,7 +230,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
           e.stopPropagation();
           setShowModal(true);
         }}
-        title={`Click để xem danh sách người cập nhật và nhật ký chi tiết`}
+        title={`Click để xem danh sách người cập nhật và lịch sử chi tiết`}
         className={`flex flex-col items-center justify-center text-center text-[10px] leading-tight w-full cursor-pointer hover:bg-slate-100/80 p-1 rounded transition-colors group/audit ${className}`}
       >
         <span className="font-bold text-slate-700 truncate w-full group-hover/audit:text-primary underline decoration-dotted decoration-slate-300 underline-offset-2">
@@ -226,36 +246,37 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title="Danh sách người cập nhật & Nhật ký chi tiết"
+        title="Danh sách người cập nhật & Lịch sử thao tác"
         icon="history"
         size="lg"
       >
-        <div className="p-3 space-y-3 max-h-[75vh] overflow-y-auto">
+        <div className="p-3 space-y-4 max-h-[75vh] overflow-y-auto">
           <p className="text-xs text-slate-500 font-medium">
-            Chi tiết nhật ký công việc và nội dung cập nhật của từng nhân sự trên hệ thống:
+            Chi tiết nhân sự và nhật ký các nội dung cập nhật trên hệ thống:
           </p>
 
           {userList.length === 0 ? (
-            <div className="text-center py-6 text-slate-400 text-xs italic">
+            <div className="text-center py-8 text-slate-400 text-xs italic">
               Chưa có lịch sử cập nhật.
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {userList.map((user, index) => {
                 const isLatest = index === 0;
                 const isExpanded = Boolean(expandedUser[user.name]);
-                const displayedLogs = isExpanded ? user.logs : user.logs.slice(0, 3);
-                const hasMore = user.logs.length > 3;
+                const displayedLogs = isExpanded ? user.logs : user.logs.slice(0, 4);
+                const hasMore = user.logs.length > 4;
 
                 return (
                   <div 
                     key={user.name} 
                     className={`border rounded-xl overflow-hidden bg-white shadow-xs transition-all ${
-                      isLatest ? 'border-blue-200 bg-blue-50/30' : 'border-slate-200'
+                      isLatest ? 'border-blue-300 ring-1 ring-blue-100' : 'border-slate-200'
                     }`}
                   >
-                    <div className="flex items-center justify-between p-3 border-b border-slate-100 bg-slate-50/60">
-                      <div className="flex items-center gap-2.5 min-w-0">
+                    {/* User Header */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/80">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                           isLatest ? 'bg-primary text-white shadow-xs' : 'bg-slate-200 text-slate-700'
                         }`}>
@@ -265,12 +286,12 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-xs text-slate-900 truncate">{user.name}</span>
                             {isLatest && (
-                              <span className="px-2 py-0.5 text-[9px] font-bold bg-primary/10 text-primary rounded-full border border-primary/20 shrink-0">
+                              <span className="px-2 py-0.5 text-[9px] font-bold bg-blue-100 text-blue-700 rounded-full border border-blue-200 shrink-0">
                                 Vừa cập nhật
                               </span>
                             )}
                           </div>
-                          {user.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{user.title}</p>}
+                          {user.title && <p className="text-[10.5px] text-slate-400 truncate mt-0.5">{user.title}</p>}
                         </div>
                       </div>
                       <div className="text-right shrink-0 flex flex-col items-end gap-0.5">
@@ -279,43 +300,53 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
                             {user.lastTime}
                           </span>
                         )}
-                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                          {user.logs.length} nội dung cập nhật
+                        <span className="text-[10px] font-medium text-slate-400">
+                          Tổng cộng {user.logs.length} nhật ký
                         </span>
                       </div>
                     </div>
 
-                    {/* Detailed Activity Logs List */}
+                    {/* Table-based Log List to Prevent ANY Text Overlap */}
                     <div className="p-3 bg-white">
-                      <div className="text-[11px] font-bold text-slate-500 mb-2 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[13px] text-slate-400">history_edu</span>
-                        <span>Nội dung cập nhật chi tiết:</span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {displayedLogs.map((log, lIdx) => (
-                          <div 
-                            key={lIdx} 
-                            className="flex items-start justify-between text-xs p-2 rounded-lg bg-slate-50 border border-slate-100 gap-3"
-                          >
-                            <div className="flex items-start gap-1.5 min-w-0 flex-1">
-                              <span className="material-symbols-outlined text-[14px] text-blue-600 shrink-0 mt-0.5">edit_note</span>
-                              <div className="text-slate-800 leading-snug font-normal break-words text-[11px]">
-                                {renderActionText(log.action)}
-                              </div>
-                            </div>
-                            <span className="text-[10px] text-slate-400 font-mono shrink-0 pt-0.5 whitespace-nowrap">
-                              {formatAuditDateTime(log.timestamp)}
-                            </span>
-                          </div>
-                        ))}
+                      <div className="overflow-x-auto border border-slate-100 rounded-lg">
+                        <table className="w-full text-xs text-left border-collapse">
+                          <thead>
+                            <tr className="text-[10px] uppercase font-bold text-slate-400 bg-slate-50/70 border-b border-slate-100">
+                              <th className="py-2 px-3 font-semibold">Nội dung cập nhật</th>
+                              <th className="py-2 px-3 font-semibold text-right w-36 whitespace-nowrap">Thời gian</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {displayedLogs.map((log, lIdx) => {
+                              const badge = getActionBadge(log.action);
+                              return (
+                                <tr key={lIdx} className="hover:bg-slate-50/80 transition-colors">
+                                  <td className="py-2.5 px-3 text-slate-800 text-[11px] align-top">
+                                    <div className="flex items-start gap-2">
+                                      <span className={`material-symbols-outlined text-[15px] shrink-0 mt-0.5 p-0.5 rounded border ${badge.color}`}>
+                                        {badge.icon}
+                                      </span>
+                                      <div className="min-w-0 flex-1 break-words">
+                                        {renderActionText(log.action)}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right font-mono text-[10.5px] text-slate-500 whitespace-nowrap align-top font-medium">
+                                    {formatAuditDateTime(log.timestamp)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
 
                       {hasMore && (
                         <button
                           onClick={() => toggleExpand(user.name)}
-                          className="mt-2.5 text-[11px] font-bold text-primary hover:text-blue-700 flex items-center gap-1 cursor-pointer transition-colors"
+                          className="mt-2.5 text-[11px] font-bold text-primary hover:text-blue-700 flex items-center gap-1 cursor-pointer transition-colors px-1"
                         >
-                          <span>{isExpanded ? 'Thu gọn' : `Xem thêm ${user.logs.length - 3} nội dung cập nhật khác...`}</span>
+                          <span>{isExpanded ? 'Thu gọn nhật ký' : `Xem thêm ${user.logs.length - 4} nội dung cập nhật khác...`}</span>
                           <span className="material-symbols-outlined text-[14px]">
                             {isExpanded ? 'expand_less' : 'expand_more'}
                           </span>
