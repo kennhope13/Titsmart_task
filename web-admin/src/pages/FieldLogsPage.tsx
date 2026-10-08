@@ -158,7 +158,7 @@ const UploadModal: React.FC<{
       for (const file of files) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = `cccd/${fileName}`;
+        const filePath = `field_logs/${fileName}`;
         const { error: uploadError } = await supabase.storage.from('titsmart-images').upload(filePath, file);
         if (uploadError) throw uploadError;
         const { data: { publicUrl } } = supabase.storage.from('titsmart-images').getPublicUrl(filePath);
@@ -717,7 +717,14 @@ export const FieldLogsPage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         {previewImages.map((img, i) => (
                           <div key={i} className="h-10 w-10 rounded bg-slate-100 overflow-hidden border border-slate-200">
-                            <img src={img} className="h-full w-full object-cover" />
+                            <img 
+                              src={img} 
+                              className="h-full w-full object-cover" 
+                              alt="ảnh"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
                           </div>
                         ))}
                         {logs.flatMap(l => l.images).length > 4 && (

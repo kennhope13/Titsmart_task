@@ -80,7 +80,21 @@ const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => voi
                     <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 border-t border-slate-100 bg-slate-50/50">
                       {log.images.map((url, i) => (
                         <div key={i} onClick={() => setLightboxImg(url)} className="h-28 bg-slate-100 relative group rounded-lg overflow-hidden border border-slate-200 cursor-pointer shadow-2xs">
-                          <img src={url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="ảnh nhật ký" />
+                          <img 
+                            src={url} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                            alt="ảnh nhật ký" 
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                              const parent = (e.target as HTMLElement).parentElement;
+                              if (parent && !parent.querySelector('.img-missing')) {
+                                const placeholder = document.createElement('div');
+                                placeholder.className = 'img-missing w-full h-full flex flex-col items-center justify-center text-slate-400 text-[10px] text-center p-1 bg-slate-100';
+                                placeholder.innerHTML = '<span class="material-symbols-outlined text-lg mb-0.5">broken_image</span><span>Ảnh bị lỗi</span>';
+                                parent.appendChild(placeholder);
+                              }
+                            }}
+                          />
                           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <span className="material-symbols-outlined text-white text-lg">visibility</span>
                           </div>
@@ -485,7 +499,14 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
                         <>
                           {allImagesForTask.slice(0, 2).map((img, i) => (
                             <div key={i} onClick={(e) => { e.stopPropagation(); openLightbox(allImagesForTask, i); }} className="w-6 h-6 rounded overflow-hidden border border-slate-200 shadow-2xs hover:scale-105 transition-transform cursor-pointer relative group/img bg-slate-100 shrink-0">
-                              <img src={img} className="w-full h-full object-cover" alt="ảnh" />
+                              <img 
+                                src={img} 
+                                className="w-full h-full object-cover" 
+                                alt="ảnh" 
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = 'none';
+                                }}
+                              />
                             </div>
                           ))}
                           {allImagesForTask.length > 2 && (
