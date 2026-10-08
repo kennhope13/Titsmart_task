@@ -98,7 +98,8 @@ export const AttendancePage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tab, setTab] = useState<'my' | 'all'>('my');
-  const [filterDate, setFilterDate] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
   const [filterUser, setFilterUser] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [checkInImage, setCheckInImage] = useState<string | null>(null);
@@ -112,7 +113,8 @@ export const AttendancePage: React.FC = () => {
   // State cho Xin nghỉ phép (khởi tạo từ cache)
   const [leaves, setLeaves] = useState<LeaveRequest[]>(cachedLeaves);
   const [leaveSearchQuery, setLeaveSearchQuery] = useState('');
-  const [leaveFilterDate, setLeaveFilterDate] = useState('');
+  const [leaveFilterDateFrom, setLeaveFilterDateFrom] = useState('');
+  const [leaveFilterDateTo, setLeaveFilterDateTo] = useState('');
   const [leavesLoading, setLeavesLoading] = useState(!hasFetchedAttendanceData && cachedLeaves.length === 0);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaveType, setLeaveType] = useState<LeaveType>('Nghỉ phép năm');
@@ -319,19 +321,17 @@ export const AttendancePage: React.FC = () => {
         return matchUser || matchType || matchReason || matchReviewer1 || matchReviewer2 || matchStartDate || matchEndDate;
       });
     }
-    if (leaveFilterDate) {
+    if (leaveFilterDateFrom || leaveFilterDateTo) {
       list = list.filter(l => {
         const start = l.startDate ? String(l.startDate).split('T')[0] : '';
         const end = l.endDate ? String(l.endDate).split('T')[0] : start;
-        const target = leaveFilterDate.split('T')[0];
-        if (start && end) {
-          return target >= start && target <= end;
-        }
-        return start === target || end === target;
+        if (leaveFilterDateFrom && end < leaveFilterDateFrom) return false;
+        if (leaveFilterDateTo && start > leaveFilterDateTo) return false;
+        return true;
       });
     }
     return list;
-  }, [leaves, tab, user, leaveSearchQuery, leaveFilterDate, canViewAll]);
+  }, [leaves, tab, user, leaveSearchQuery, leaveFilterDateFrom, leaveFilterDateTo, canViewAll]);
 
   const fetchLogs = async (forceShowSpinner = false) => {
     if (forceShowSpinner || (!hasFetchedAttendanceData && cachedLogs.length === 0)) {
@@ -642,9 +642,10 @@ export const AttendancePage: React.FC = () => {
       });
     }
     return list.filter(l => {
-      if (filterDate) {
+      if (filterDateFrom || filterDateTo) {
         const logDate = new Date(l.checkInTime).toISOString().split('T')[0];
-        if (logDate !== filterDate && l.checkOutTime) return false;
+        if (filterDateFrom && logDate < filterDateFrom) return false;
+        if (filterDateTo && logDate > filterDateTo) return false;
       }
       if (filterUser && l.userId !== filterUser) return false;
       if (searchQuery.trim()) {
@@ -657,7 +658,7 @@ export const AttendancePage: React.FC = () => {
       }
       return true;
     });
-  }, [logs, tab, user, filterDate, filterUser, searchQuery, canViewAll]);
+  }, [logs, tab, user, filterDateFrom, filterDateTo, filterUser, searchQuery, canViewAll]);
 
   const todayStr = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -714,27 +715,34 @@ export const AttendancePage: React.FC = () => {
           {mainTab === 'attendance' ? (
             <div className="flex items-center gap-2">
               {/* Desktop Date Filter for Attendance */}
-              <div className="flex items-center gap-1.5">
-                <div className="relative flex items-center">
-                  <span className="material-symbols-outlined absolute left-2 text-slate-500 text-[18px] pointer-events-none">calendar_month</span>
-                  <input 
-                    type="date" 
-                    value={filterDate} 
-                    onChange={e => setFilterDate(e.target.value)}
-                    className="pl-7 pr-2 py-1 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer h-8" 
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-1.5 py-0.5 bg-slate-50 shadow-xs h-8">
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px] ml-0.5">Từ</span>
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={e => setFilterDateFrom(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
                   />
+                  <span className="text-slate-300">|</span>
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
+                  <input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={e => setFilterDateTo(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
+                  />
+                  {(filterDateFrom || filterDateTo) && (
+                    <button
+                      type="button"
+                      onClick={() => { setFilterDateFrom(''); setFilterDateTo(''); }}
+                      className="text-slate-400 hover:text-slate-600 px-0.5 text-xs font-bold"
+                      title="Xóa lọc ngày"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
-                {filterDate && (
-                  <button 
-                    type="button"
-                    onClick={() => setFilterDate('')}
-                    className="px-2 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 transition-colors border border-slate-200 cursor-pointer h-8 shrink-0"
-                    title="Hiển thị tất cả các ngày"
-                  >
-                    <span className="material-symbols-outlined text-xs">close</span>
-                    <span>Tất cả ngày</span>
-                  </button>
-                )}
               </div>
 
               {/* User filter if viewing all */}
@@ -835,27 +843,34 @@ export const AttendancePage: React.FC = () => {
           ) : (
             <div className="flex items-center gap-2">
               {/* Desktop Date Filter for Leave */}
-              <div className="flex items-center gap-1.5">
-                <div className="relative flex items-center">
-                  <span className="material-symbols-outlined absolute left-2 text-slate-500 text-[18px] pointer-events-none">calendar_month</span>
-                  <input 
-                    type="date" 
-                    value={leaveFilterDate} 
-                    onChange={e => setLeaveFilterDate(e.target.value)}
-                    className="pl-7 pr-2 py-1 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none bg-slate-50 cursor-pointer h-8" 
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-1.5 py-0.5 bg-slate-50 shadow-xs h-8">
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px] ml-0.5">Từ</span>
+                  <input
+                    type="date"
+                    value={leaveFilterDateFrom}
+                    onChange={e => setLeaveFilterDateFrom(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
                   />
+                  <span className="text-slate-300">|</span>
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
+                  <input
+                    type="date"
+                    value={leaveFilterDateTo}
+                    onChange={e => setLeaveFilterDateTo(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
+                  />
+                  {(leaveFilterDateFrom || leaveFilterDateTo) && (
+                    <button
+                      type="button"
+                      onClick={() => { setLeaveFilterDateFrom(''); setLeaveFilterDateTo(''); }}
+                      className="text-slate-400 hover:text-slate-600 px-0.5 text-xs font-bold"
+                      title="Xóa lọc ngày"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
-                {leaveFilterDate && (
-                  <button 
-                    type="button"
-                    onClick={() => setLeaveFilterDate('')}
-                    className="px-2 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 transition-colors border border-slate-200 cursor-pointer h-8 shrink-0"
-                    title="Hiển thị tất cả các ngày"
-                  >
-                    <span className="material-symbols-outlined text-xs">close</span>
-                    <span>Tất cả ngày</span>
-                  </button>
-                )}
               </div>
 
               {/* Desktop Search for Leave */}
