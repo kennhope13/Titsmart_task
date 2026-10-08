@@ -16,7 +16,14 @@ import { AuditInfoCell } from '../components/common/AuditInfoCell';
 import { PullToRefresh } from '../components/common/PullToRefresh';
 
 export const DocumentTrackingPage: React.FC = () => {
-  const { documentTracks, projects, updateProject, addDocumentTrack, updateDocumentTrack, deleteDocumentTrack, fetchAccounting, logActivity } = useRealtimeStore();
+  const documentTracks = useRealtimeStore(s => s.documentTracks);
+  const projects = useRealtimeStore(s => s.projects);
+  const updateProject = useRealtimeStore(s => s.updateProject);
+  const addDocumentTrack = useRealtimeStore(s => s.addDocumentTrack);
+  const updateDocumentTrack = useRealtimeStore(s => s.updateDocumentTrack);
+  const deleteDocumentTrack = useRealtimeStore(s => s.deleteDocumentTrack);
+  const fetchAccounting = useRealtimeStore(s => s.fetchAccounting);
+  const logActivity = useRealtimeStore(s => s.logActivity);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 

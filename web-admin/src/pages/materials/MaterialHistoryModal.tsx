@@ -17,7 +17,8 @@ export const MaterialHistoryModal: React.FC<MaterialHistoryModalProps> = ({
   transactions,
   onClose,
 }) => {
-  const { updateInventoryTransaction, deleteInventoryTransaction } = useRealtimeStore();
+  const updateInventoryTransaction = useRealtimeStore(s => s.updateInventoryTransaction);
+  const deleteInventoryTransaction = useRealtimeStore(s => s.deleteInventoryTransaction);
   const [editingTx, setEditingTx] = useState<InventoryTransaction | null>(null);
   const [deletingTx, setDeletingTx] = useState<InventoryTransaction | null>(null);
   const [loading, setLoading] = useState(false);

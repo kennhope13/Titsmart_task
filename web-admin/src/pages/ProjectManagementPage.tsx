@@ -104,29 +104,27 @@ const deriveProjectsFromTasks = (tasks: Task[]): Project[] => {
 export const ProjectManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const {
-    projects,
-    tasks,
-    engineers,
-    addProject,
-    addNotification,
-    addTasksBatch,
-    addMaterialPlan,
-    addPurchasingPlan,
-    addMaterialPlansBatch,
-    addPurchasingsBatch,
-    deleteProject,
-    addEngineer,
-    updateEngineer,
-    logActivity,
-    materialPlans,
-    purchasingPlans,
-    expenses,
-    laborPayrolls,
-    updateProject,
-    fetchProjects,
-    isFetchingProjects
-  } = useRealtimeStore();
+  const projects = useRealtimeStore((state) => state.projects);
+  const tasks = useRealtimeStore((state) => state.tasks);
+  const engineers = useRealtimeStore((state) => state.engineers);
+  const addProject = useRealtimeStore((state) => state.addProject);
+  const addNotification = useRealtimeStore((state) => state.addNotification);
+  const addTasksBatch = useRealtimeStore((state) => state.addTasksBatch);
+  const addMaterialPlan = useRealtimeStore((state) => state.addMaterialPlan);
+  const addPurchasingPlan = useRealtimeStore((state) => state.addPurchasingPlan);
+  const addMaterialPlansBatch = useRealtimeStore((state) => state.addMaterialPlansBatch);
+  const addPurchasingsBatch = useRealtimeStore((state) => state.addPurchasingsBatch);
+  const deleteProject = useRealtimeStore((state) => state.deleteProject);
+  const addEngineer = useRealtimeStore((state) => state.addEngineer);
+  const updateEngineer = useRealtimeStore((state) => state.updateEngineer);
+  const logActivity = useRealtimeStore((state) => state.logActivity);
+  const materialPlans = useRealtimeStore((state) => state.materialPlans);
+  const purchasingPlans = useRealtimeStore((state) => state.purchasingPlans);
+  const expenses = useRealtimeStore((state) => state.expenses);
+  const laborPayrolls = useRealtimeStore((state) => state.laborPayrolls);
+  const updateProject = useRealtimeStore((state) => state.updateProject);
+  const fetchProjects = useRealtimeStore((state) => state.fetchProjects);
+  const isFetchingProjects = useRealtimeStore((state) => state.isFetchingProjects);
 
   const currentUser = useAuthStore(state => state.user);
 

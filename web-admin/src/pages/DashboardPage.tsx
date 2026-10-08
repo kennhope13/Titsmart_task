@@ -38,18 +38,16 @@ const ChartBox: React.FC<ChartBoxProps> = React.memo(({ title, children }) => (
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { 
-    projects, 
-    engineers, 
-    tasks, 
-    materialPlans, 
-    purchasingPlans, 
-    expenses, 
-    laborPayrolls,
-    issues,
-    documentTracks,
-    fieldLogs
-  } = useRealtimeStore();
+  const projects = useRealtimeStore(s => s.projects);
+  const engineers = useRealtimeStore(s => s.engineers);
+  const tasks = useRealtimeStore(s => s.tasks);
+  const materialPlans = useRealtimeStore(s => s.materialPlans);
+  const purchasingPlans = useRealtimeStore(s => s.purchasingPlans);
+  const expenses = useRealtimeStore(s => s.expenses);
+  const laborPayrolls = useRealtimeStore(s => s.laborPayrolls);
+  const issues = useRealtimeStore(s => s.issues);
+  const documentTracks = useRealtimeStore(s => s.documentTracks);
+  const fieldLogs = useRealtimeStore(s => s.fieldLogs);
 
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);

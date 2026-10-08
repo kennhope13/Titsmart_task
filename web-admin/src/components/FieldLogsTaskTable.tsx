@@ -116,7 +116,7 @@ interface FieldLogsTaskTableProps {
 }
 
 export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selectedProject, searchQuery = '', logs, onAddLogClick, onEditLogClick, onDeleteLogClick }) => {
-  const { tasks } = useRealtimeStore();
+  const tasks = useRealtimeStore(s => s.tasks);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [isScrolledHorizontally, setIsScrolledHorizontally] = useState(false);
   

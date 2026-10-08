@@ -17,7 +17,11 @@ import { isUserTaskAssignee, isUserTaskAssigner, isUserTaskFollower, getTaskFoll
 
 export const TaskAssignmentPage: React.FC = () => {
   const navigate = useNavigate();
-  const { tasks, projects, engineers, updateTask, materialPlans } = useRealtimeStore();
+  const tasks = useRealtimeStore(state => state.tasks);
+  const projects = useRealtimeStore(state => state.projects);
+  const engineers = useRealtimeStore(state => state.engineers);
+  const updateTask = useRealtimeStore(state => state.updateTask);
+  const materialPlans = useRealtimeStore(state => state.materialPlans);
   const user = useAuthStore(state => state.user);
   const location = useLocation();
   const [searchParams] = useSearchParams();

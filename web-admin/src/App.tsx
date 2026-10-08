@@ -48,7 +48,14 @@ export const App: React.FC = () => {
   const location = useLocation();
   const { user, refreshUser } = useAuthStore();
   const [loginStyle, setLoginStyle] = useState<'default' | 'variant'>(() => (localStorage.getItem('titsmart_login_style') as 'default' | 'variant') || 'default');
-  const { fetchProjects, fetchTasks, fetchMaterials, fetchIssues, fetchEngineers, fetchActivityLogs, fetchAccounting, fetchFieldLogs } = useRealtimeStore();
+  const fetchProjects = useRealtimeStore(s => s.fetchProjects);
+  const fetchTasks = useRealtimeStore(s => s.fetchTasks);
+  const fetchMaterials = useRealtimeStore(s => s.fetchMaterials);
+  const fetchIssues = useRealtimeStore(s => s.fetchIssues);
+  const fetchEngineers = useRealtimeStore(s => s.fetchEngineers);
+  const fetchActivityLogs = useRealtimeStore(s => s.fetchActivityLogs);
+  const fetchAccounting = useRealtimeStore(s => s.fetchAccounting);
+  const fetchFieldLogs = useRealtimeStore(s => s.fetchFieldLogs);
 
   const switchLoginStyle = (style: 'default' | 'variant') => {
     localStorage.setItem('titsmart_login_style', style);

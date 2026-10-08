@@ -108,7 +108,7 @@ const UploadModal: React.FC<{
   const todayStr = new Date().toISOString().split('T')[0];
   const initialDate = editLog?.timestamp ? new Date(editLog.timestamp).toISOString().split('T')[0] : todayStr;
   const [logDate, setLogDate] = useState(initialDate);
-  const { tasks } = useRealtimeStore();
+  const tasks = useRealtimeStore(s => s.tasks);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>(editLog?.images || []);
   const [existingImages, setExistingImages] = useState<string[]>(editLog?.images || []);
@@ -335,7 +335,13 @@ export const FieldLogsPage: React.FC = () => {
   const { user } = useAuthStore();
   const { projectId } = useParams();
   const [searchParams] = useSearchParams();
-  const { fieldLogs, projects, tasks, addFieldLog, deleteFieldLog, updateFieldLog, fetchFieldLogs } = useRealtimeStore();
+  const fieldLogs = useRealtimeStore(s => s.fieldLogs);
+  const projects = useRealtimeStore(s => s.projects);
+  const tasks = useRealtimeStore(s => s.tasks);
+  const addFieldLog = useRealtimeStore(s => s.addFieldLog);
+  const deleteFieldLog = useRealtimeStore(s => s.deleteFieldLog);
+  const updateFieldLog = useRealtimeStore(s => s.updateFieldLog);
+  const fetchFieldLogs = useRealtimeStore(s => s.fetchFieldLogs);
 
   const resolvedProjectCode = useMemo(() => {
     if (!projectId) return '';

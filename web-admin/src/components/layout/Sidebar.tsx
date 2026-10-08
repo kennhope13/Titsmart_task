@@ -13,7 +13,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, toggleSidebar: toggleSidebarProp }) => {
-  const { notifications, markNotificationRead, clearNotifications, projects } = useRealtimeStore();
+  const projects = useRealtimeStore((state) => state.projects);
+  const notifications = useRealtimeStore((state) => state.notifications);
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const { 
@@ -35,10 +36,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
   
   const isExpanded = isExpandedProp !== undefined 
     ? isExpandedProp 
-    : (isSidebarExpanded || (sidebarHoverToExpand && isSidebarHovered));
+    : (isSidebarExpanded || isSidebarHovered);
   const toggleSidebar = toggleSidebarProp || toggleSidebarExpanded;
   const navigate = useNavigate();
-  const unreadCount = notifications.filter((item) => !item.read).length;
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
   const defaultTaskPath = isAdmin ? '/task-assignment?tab=unassigned' : '/my-tasks';
   const sidebarRef = useRef<HTMLElement>(null);
@@ -60,12 +60,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
     }));
   };
 
-  
-  const getNavGroups = () => {
+  const navGroups = React.useMemo(() => {
     if (currentProject) {
       const baseProjectItems = [
           { label: 'Tổng quan', path: `/projects/${currentProject.id}/overview`, icon: 'dashboard', req: 'VIEW_PROJECTS' },
-          { label: 'Tiến độ Công việc', path: `/projects/${currentProject.id}/tasks`, icon: 'fact_check', req: 'VIEW_TASKS' },
+          { label: 'Tiến độ', path: `/projects/${currentProject.id}/tasks`, icon: 'fact_check', req: 'VIEW_TASKS' },
           { label: 'Vật tư & Chi phí', path: `/projects/${currentProject.id}/cost-plan`, icon: 'account_balance_wallet', req: 'VIEW_FINANCE' },
           { label: 'Hồ sơ', path: `/projects/${currentProject.id}/documents`, icon: 'file_present', req: 'VIEW_DOCUMENTS' },
           { label: 'Thư viện', path: `/projects/${currentProject.id}/diagram`, icon: 'photo_library', req: 'VIEW_PROJECT_DIAGRAM' },
@@ -101,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
       { label: 'Tổng kho', path: '/materials', icon: 'warehouse', req: 'VIEW_MATERIALS' },
       { label: 'Công và nghỉ', path: '/attendance', icon: 'schedule', req: 'VIEW_TASKS' },
       { label: 'Nhân sự', path: '/personnel', icon: 'groups', req: 'VIEW_USERS' },
-      ...(isAdminAccount ? [{ label: 'Nhật ký Hoạt động', path: '/activity-log', icon: 'history', req: 'VIEW_ACTIVITY_LOG' }] : [])
+      ...(isAdminAccount ? [{ label: 'Nhật ký', path: '/activity-log', icon: 'history', req: 'VIEW_ACTIVITY_LOG' }] : [])
     ];
 
     return [{
@@ -109,27 +108,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
       collapsible: false,
       items: mainItems.filter(item => hasPermission(user, item.req as any))
     }].filter(group => group.items.length > 0);
-  };
-
-  const navGroups = getNavGroups();
+  }, [currentProject?.id, currentProject?.name, user, defaultTaskPath]);
 
   return (
     <>
       <aside 
         ref={sidebarRef} 
         onMouseEnter={() => {
-          if (sidebarHoverToExpand) {
-            setIsSidebarHovered(true);
-          }
+          setIsSidebarHovered(true);
         }}
         onMouseLeave={() => {
-          if (sidebarHoverToExpand) {
-            setIsSidebarHovered(false);
-          }
+          setIsSidebarHovered(false);
         }}
-        className={`hidden md:flex fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out flex-col border-r border-slate-200 bg-white z-40 shadow-[0_0_15px_rgba(0,0,0,0.05)] overflow-x-hidden ${isExpanded ? 'w-[170px]' : 'w-[56px]'}`}
+        className={`hidden md:flex fixed left-0 top-0 h-screen transition-[width,box-shadow] duration-200 ease-out will-change-[width] flex-col border-r border-slate-200 bg-white z-[100] ${
+          !isSidebarExpanded && isSidebarHovered ? 'shadow-[4px_0_24px_rgba(0,0,0,0.18)]' : 'shadow-[0_0_15px_rgba(0,0,0,0.05)]'
+        } overflow-x-hidden ${isExpanded ? 'w-[170px]' : 'w-[56px]'}`}
       >
-        <div className="relative h-12 px-2 flex items-center gap-2 border-b border-slate-100 min-w-0">
+        <div className="relative h-12 px-2 flex items-center gap-2 border-b border-slate-100 min-w-0 flex-shrink-0">
           <div className="flex-1 flex items-center gap-2.5 min-w-0">
             <div 
               className={`relative w-10 h-10 flex items-center justify-center flex-shrink-0 ${sidebarShowToggleButton ? 'cursor-pointer group/logo' : ''}`}
@@ -148,21 +143,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
               )}
             </div>
             
-            {isExpanded && (
-              <div className="min-w-0 flex-1 flex flex-col justify-center animate-in fade-in duration-200">
-                <h1 className="font-extrabold text-[15px] text-blue-900 leading-none tracking-tight truncate">TITSMART</h1>
-                <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1 truncate">Project Manager</p>
-              </div>
-            )}
+            <div className={`min-w-0 flex-1 flex flex-col justify-center transition-opacity duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+              <h1 className="font-extrabold text-[15px] text-blue-900 leading-none tracking-tight truncate">TITSMART</h1>
+              <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1 truncate">Project Manager</p>
+            </div>
           </div>
         </div>
 
         <nav className="flex-1 w-full px-2 mt-3 pb-4 space-y-3 overflow-y-auto overflow-x-hidden scrollbar-hide">
           {navGroups.map((group, index) => (
             <div key={group.title || index} className="space-y-1">
-              {group.title && isExpanded && (
+              {group.title && (
                 <div
-                  className={`flex items-center justify-between mb-2 select-none px-1 ${group.collapsible !== false ? 'cursor-pointer hover:text-primary' : ''}`}
+                  className={`flex items-center justify-between mb-2 select-none px-1 transition-opacity duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'} ${group.collapsible !== false ? 'cursor-pointer hover:text-primary' : ''}`}
                   onClick={() => group.collapsible !== false && toggleGroup(group.title)}
                 >
                   <h3 className={`text-[11px] font-black uppercase tracking-wider truncate ${group.collapsible !== false ? 'text-slate-500 hover:text-primary' : 'text-slate-700'}`}>{group.title}</h3>
@@ -185,19 +178,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
                       end={item.path === '/'}
                       title={!isExpanded ? item.label : undefined}
                       className={({ isActive }) =>
-                        `flex items-center rounded-lg text-xs transition-colors overflow-hidden whitespace-nowrap h-10 ${
-                          isExpanded ? 'w-full px-3 gap-3' : 'w-10 h-10 mx-auto justify-center'
-                        } ${
+                        `flex items-center rounded-lg text-xs transition-colors overflow-hidden whitespace-nowrap h-10 w-full px-3 gap-3 ${
                           isActive || isTask
                             ? 'text-primary bg-blue-100 font-bold shadow-xs'
                             : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
                         }`
                       }
                     >
-                      <span className="material-symbols-outlined text-lg flex-shrink-0 flex items-center justify-center">{item.icon}</span>
-                      {isExpanded && (
-                        <span className="truncate flex-1 font-semibold text-xs animate-in fade-in duration-150">{item.label}</span>
-                      )}
+                      <span className="material-symbols-outlined text-lg flex-shrink-0 w-5 h-5 flex items-center justify-center">{item.icon}</span>
+                      <span className={`truncate flex-1 font-semibold text-xs transition-opacity duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>{item.label}</span>
                     </NavLink>
                   );
                 })}
@@ -206,27 +195,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
           ))}
 
           </nav>
-        <div className="pt-3 pb-3 px-2 border-t border-slate-100 relative flex flex-col gap-1.5">
+        <div className="pt-3 pb-3 px-2 border-t border-slate-100 relative flex flex-col gap-1.5 flex-shrink-0">
             {/* User Profile */}
             <button
               type="button"
               onClick={() => setShowSettingsModal(true)}
               title={!isExpanded ? "Cài đặt & Tài khoản" : undefined}
-              className={`flex items-center rounded-xl transition-all overflow-hidden h-10 hover:bg-slate-100 ${
-                isExpanded ? 'w-full px-2.5 py-2 gap-2.5 h-auto' : 'w-10 h-10 mx-auto justify-center'
-              }`}
+              className="flex items-center rounded-xl transition-all overflow-hidden h-10 w-full px-2.5 py-2 gap-2.5 hover:bg-slate-100"
             >
               <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-slate-400 bg-slate-100 uppercase shadow-xs border border-slate-200">
                 <span className="material-symbols-outlined text-[20px]">person</span>
               </div>
-              {isExpanded && (
-                <div className="text-left leading-tight flex-1 min-w-0 animate-in fade-in duration-150">
-                  <span className="block font-bold text-xs text-slate-800 truncate" title={user?.name}>
-                    {user?.name ? user.name.trim().split(' ').pop() : 'Admin'}
-                  </span>
-                  <span className="block text-[10px] text-slate-500 truncate" title={user?.title}>{user?.title || 'Quản trị viên'}</span>
-                </div>
-              )}
+              <div className={`text-left leading-tight flex-1 min-w-0 transition-opacity duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <span className="block font-bold text-xs text-slate-800 truncate" title={user?.name}>
+                  {user?.name ? user.name.trim().split(' ').pop() : 'Admin'}
+                </span>
+                <span className="block text-[10px] text-slate-500 truncate" title={user?.title}>{user?.title || 'Quản trị viên'}</span>
+              </div>
               {isExpanded && (
                 <span className="material-symbols-outlined text-base text-slate-400 hover:text-primary shrink-0">
                   settings

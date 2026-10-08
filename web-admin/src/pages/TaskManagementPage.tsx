@@ -143,7 +143,28 @@ export const TaskManagementPage: React.FC = () => {
   const authStore = useAuthStore();
   const { projectId } = useParams();
   const [searchParams] = useSearchParams();
-  const { tasks, projects, engineers, addTask, addTasksBatch, updateTask, addProject, addNotification, addEngineer, assignEngineer, deleteTask, addMaterialPlan, addMaterialPlansBatch, addPurchasingPlan, addPurchasingsBatch, materialPlans, purchasingPlans, deleteMaterialPlan, deletePurchasingPlan, updateMaterialPlan, updatePurchasingPlan, fetchTasks } = useRealtimeStore();
+  const tasks = useRealtimeStore(s => s.tasks);
+  const projects = useRealtimeStore(s => s.projects);
+  const engineers = useRealtimeStore(s => s.engineers);
+  const addTask = useRealtimeStore(s => s.addTask);
+  const addTasksBatch = useRealtimeStore(s => s.addTasksBatch);
+  const updateTask = useRealtimeStore(s => s.updateTask);
+  const addProject = useRealtimeStore(s => s.addProject);
+  const addNotification = useRealtimeStore(s => s.addNotification);
+  const addEngineer = useRealtimeStore(s => s.addEngineer);
+  const assignEngineer = useRealtimeStore(s => s.assignEngineer);
+  const deleteTask = useRealtimeStore(s => s.deleteTask);
+  const addMaterialPlan = useRealtimeStore(s => s.addMaterialPlan);
+  const addMaterialPlansBatch = useRealtimeStore(s => s.addMaterialPlansBatch);
+  const addPurchasingPlan = useRealtimeStore(s => s.addPurchasingPlan);
+  const addPurchasingsBatch = useRealtimeStore(s => s.addPurchasingsBatch);
+  const materialPlans = useRealtimeStore(s => s.materialPlans);
+  const purchasingPlans = useRealtimeStore(s => s.purchasingPlans);
+  const deleteMaterialPlan = useRealtimeStore(s => s.deleteMaterialPlan);
+  const deletePurchasingPlan = useRealtimeStore(s => s.deletePurchasingPlan);
+  const updateMaterialPlan = useRealtimeStore(s => s.updateMaterialPlan);
+  const updatePurchasingPlan = useRealtimeStore(s => s.updatePurchasingPlan);
+  const fetchTasks = useRealtimeStore(s => s.fetchTasks);
 
   const resolvedProjectCode = React.useMemo(() => {
     if (!projectId) return '';
@@ -2031,7 +2052,9 @@ const hasSyncedRef = useRef(false);
   const completedPureItems = groupedTasks.filter((t) => !t.isSectionHeader && (t.isDone || t.progress >= 1)).length;
 
   const NotificationButton: React.FC = () => {
-    const { notifications, markNotificationRead, clearNotifications } = useRealtimeStore();
+    const notifications = useRealtimeStore(s => s.notifications);
+    const markNotificationRead = useRealtimeStore(s => s.markNotificationRead);
+    const clearNotifications = useRealtimeStore(s => s.clearNotifications);
     const [showNotifPopover, setShowNotifPopover] = React.useState(false);
     const unreadCount = notifications.filter((item) => !item.read).length;
     return (

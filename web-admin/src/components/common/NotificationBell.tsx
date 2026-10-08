@@ -432,7 +432,13 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = false, isExpanded = false }) => {
   const navigate = useNavigate();
-  const { notifications, engineers, tasks, markNotificationRead, markAllNotificationsRead, deleteNotification, clearNotifications } = useRealtimeStore();
+  const notifications = useRealtimeStore(s => s.notifications);
+  const engineers = useRealtimeStore(s => s.engineers);
+  const tasks = useRealtimeStore(s => s.tasks);
+  const markNotificationRead = useRealtimeStore(s => s.markNotificationRead);
+  const markAllNotificationsRead = useRealtimeStore(s => s.markAllNotificationsRead);
+  const deleteNotification = useRealtimeStore(s => s.deleteNotification);
+  const clearNotifications = useRealtimeStore(s => s.clearNotifications);
   const user = useAuthStore(state => state.user);
   const showNotificationBell = useUIStore(state => state.showNotificationBell);
   const autoShowNotificationPopup = useUIStore(state => state.autoShowNotificationPopup);

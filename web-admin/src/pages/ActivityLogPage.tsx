@@ -105,7 +105,9 @@ const renderActionText = (text: string, fullDetail: boolean = false) => {
   };
 
 export const ActivityLogPage: React.FC = () => {
-  const { activityLogs, projects, fetchActivityLogs } = useRealtimeStore();
+  const activityLogs = useRealtimeStore(state => state.activityLogs);
+  const projects = useRealtimeStore(state => state.projects);
+  const fetchActivityLogs = useRealtimeStore(state => state.fetchActivityLogs);
   const user = useAuthStore(state => state.user);
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.username === 'admin';
 

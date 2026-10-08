@@ -86,7 +86,17 @@ export const MaterialTrackingPage: React.FC = () => {
   useEffect(() => { setPortalNode(document.getElementById('project-header-actions')); }, []);
   const [showMobileExportMenu, setShowMobileExportMenu] = useState(false);
   const [showDesktopExportMenu, setShowDesktopExportMenu] = useState(false);
-  const { materials, projects, inventoryTransactions, addMaterial, addMaterialsBatch, updateMaterial, deleteMaterial, addInventoryTransaction, addInventoryTransactionsBatch, logActivity, fetchMaterials } = useRealtimeStore();
+  const materials = useRealtimeStore(s => s.materials);
+  const projects = useRealtimeStore(s => s.projects);
+  const inventoryTransactions = useRealtimeStore(s => s.inventoryTransactions);
+  const addMaterial = useRealtimeStore(s => s.addMaterial);
+  const addMaterialsBatch = useRealtimeStore(s => s.addMaterialsBatch);
+  const updateMaterial = useRealtimeStore(s => s.updateMaterial);
+  const deleteMaterial = useRealtimeStore(s => s.deleteMaterial);
+  const addInventoryTransaction = useRealtimeStore(s => s.addInventoryTransaction);
+  const addInventoryTransactionsBatch = useRealtimeStore(s => s.addInventoryTransactionsBatch);
+  const logActivity = useRealtimeStore(s => s.logActivity);
+  const fetchMaterials = useRealtimeStore(s => s.fetchMaterials);
 
   const currentProject = projects.find(p => p.id === projectId || p.code === projectId);
   const projectCodeFilter = currentProject ? currentProject.code : (projectId || null);

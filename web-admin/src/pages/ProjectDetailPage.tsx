@@ -7,12 +7,38 @@ import { ProjectCostPlanPage } from './ProjectCostPlanPage';
 
 export const ProjectDetailPage: React.FC = () => {
   const { projectId } = useParams();
-  const { projects } = useRealtimeStore();
+  const projects = useRealtimeStore(state => state.projects);
   const location = useLocation();
   const user = useAuthStore(state => state.user);
   const role = user?.role;
   const [subTitle, setSubTitle] = useState('');
   const navigate = useNavigate();
+
+  // Lazy keep-alive: Only mount heavy tab components after the user visits them for the first time in this project
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    if (location.pathname.includes('/tasks')) initial.add('tasks');
+    if (location.pathname.includes('/cost-plan')) initial.add('cost-plan');
+    return initial;
+  });
+
+  // Reset visited tabs when switching to a different project
+  useEffect(() => {
+    const initial = new Set<string>();
+    if (location.pathname.includes('/tasks')) initial.add('tasks');
+    if (location.pathname.includes('/cost-plan')) initial.add('cost-plan');
+    setVisitedTabs(initial);
+  }, [projectId]);
+
+  // Track tab visits
+  useEffect(() => {
+    if (location.pathname.includes('/tasks') && !visitedTabs.has('tasks')) {
+      setVisitedTabs(prev => new Set(prev).add('tasks'));
+    }
+    if (location.pathname.includes('/cost-plan') && !visitedTabs.has('cost-plan')) {
+      setVisitedTabs(prev => new Set(prev).add('cost-plan'));
+    }
+  }, [location.pathname, visitedTabs]);
 
   const handleTabClick = (e: React.MouseEvent, path: string) => {
     e.preventDefault();
@@ -30,6 +56,33 @@ export const ProjectDetailPage: React.FC = () => {
     );
   }, [projects, projectId]);
 
+  // Tabs for the project detail view
+  const baseTabs = useMemo(() => [
+    { label: 'Tổng quan', path: `/projects/${projectId}/overview`, icon: 'dashboard' },
+    { label: 'Tiến độ', path: `/projects/${projectId}/tasks`, icon: 'fact_check' },
+    { label: 'Vật tư & Chi phí', path: `/projects/${projectId}/cost-plan`, icon: 'account_balance_wallet' },
+    { label: 'Hồ sơ', path: `/projects/${projectId}/documents`, icon: 'file_present', requireAdmin: true },
+    { label: 'Thư viện', path: `/projects/${projectId}/diagram`, icon: 'photo_library', reqPerm: 'VIEW_PROJECT_DIAGRAM' },
+    { label: 'Kho Dự án', path: `/projects/${projectId}/inventory`, icon: 'inventory_2' },
+    { label: 'Hiện trường', path: `/projects/${projectId}/field-logs`, icon: 'add_a_photo' }
+  ], [projectId]);
+
+  const tabs = useMemo(() => {
+    return baseTabs.filter(tab => {
+      if (tab.requireAdmin && !hasPermission(user, 'VIEW_DOCUMENTS')) return false;
+      if (tab.reqPerm && !hasPermission(user, tab.reqPerm as any)) return false;
+      return true;
+    });
+  }, [baseTabs, user]);
+
+  const activeTab = useMemo(() => {
+    if (!project) return undefined;
+    return tabs.find(t => 
+      location.pathname.includes(t.path) || 
+      (project.code && location.pathname.includes(`/projects/${project.code}/${t.path.split('/').pop()}`))
+    );
+  }, [tabs, location.pathname, project]);
+
   if (!project) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 bg-slate-50">
@@ -43,23 +96,6 @@ export const ProjectDetailPage: React.FC = () => {
     );
   }
 
-  // Tabs for the project detail view
-  const baseTabs = [
-      { label: 'Tổng quan', path: `/projects/${projectId}/overview`, icon: 'dashboard' },
-      { label: 'Tiến độ Công việc', path: `/projects/${projectId}/tasks`, icon: 'fact_check' },
-      { label: 'Vật tư & Chi phí', path: `/projects/${projectId}/cost-plan`, icon: 'account_balance_wallet' },
-      { label: 'Hồ sơ', path: `/projects/${projectId}/documents`, icon: 'file_present', requireAdmin: true },
-      { label: 'Thư viện', path: `/projects/${projectId}/diagram`, icon: 'photo_library', reqPerm: 'VIEW_PROJECT_DIAGRAM' },
-      { label: 'Kho Dự án', path: `/projects/${projectId}/inventory`, icon: 'inventory_2' },
-      { label: 'Hiện trường', path: `/projects/${projectId}/field-logs`, icon: 'add_a_photo' }
-    ];
-
-    const tabs = baseTabs.filter(tab => {
-      if (tab.requireAdmin && !hasPermission(user, 'VIEW_DOCUMENTS')) return false;
-      if (tab.reqPerm && !hasPermission(user, tab.reqPerm as any)) return false;
-      return true;
-    });
-
   // Redirect to first tab if we are exactly on /projects/:projectId
   const isExactBaseRoute = location.pathname.replace(/\/$/, '') === `/projects/${projectId}` ||
     location.pathname.replace(/\/$/, '') === `/projects/${project.id}` ||
@@ -68,11 +104,6 @@ export const ProjectDetailPage: React.FC = () => {
   if (isExactBaseRoute) {
     return <Navigate to={`/projects/${project.code || project.id}/overview`} replace />;
   }
-
-  const activeTab = tabs.find(t => 
-    location.pathname.includes(t.path) || 
-    (project.code && location.pathname.includes(`/projects/${project.code}/${t.path.split('/').pop()}`))
-  );
 
   return (
     <div className="flex-col h-full bg-slate-50 flex overflow-hidden">
@@ -132,24 +163,26 @@ export const ProjectDetailPage: React.FC = () => {
         <div id="project-header-actions" className="flex items-center gap-2 shrink-0 justify-end"></div>
       </div>
 
-
-
-      {/* Content wrapper with Keep-Alive DOM caching for instant 0ms tab switching */}
+      {/* Content wrapper with Lazy Keep-Alive DOM caching */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">
         {/* If standard sub-tab (Overview, Field logs, Diagram, Documents, Inventory), render via Outlet */}
         {(!location.pathname.includes('/tasks') && !location.pathname.includes('/cost-plan')) && (
           <Outlet context={{ setSubTitle }} key={location.state?.reset || location.pathname} />
         )}
 
-        {/* Keep-Alive TaskManagementPage */}
-        <div className={location.pathname.includes('/tasks') ? 'flex-1 flex flex-col h-full overflow-hidden' : 'hidden'}>
-          <TaskManagementPage />
-        </div>
+        {/* Lazy Keep-Alive TaskManagementPage */}
+        {visitedTabs.has('tasks') && (
+          <div className={location.pathname.includes('/tasks') ? 'flex-1 flex flex-col h-full overflow-hidden' : 'hidden'}>
+            <TaskManagementPage />
+          </div>
+        )}
 
-        {/* Keep-Alive ProjectCostPlanPage */}
-        <div className={location.pathname.includes('/cost-plan') ? 'flex-1 flex flex-col h-full overflow-hidden' : 'hidden'}>
-          <ProjectCostPlanPage />
-        </div>
+        {/* Lazy Keep-Alive ProjectCostPlanPage */}
+        {visitedTabs.has('cost-plan') && (
+          <div className={location.pathname.includes('/cost-plan') ? 'flex-1 flex flex-col h-full overflow-hidden' : 'hidden'}>
+            <ProjectCostPlanPage />
+          </div>
+        )}
       </div>
     </div>
   );

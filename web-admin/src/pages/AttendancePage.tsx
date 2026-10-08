@@ -57,7 +57,9 @@ let hasFetchedAttendanceData = false;
 export const AttendancePage: React.FC = () => {
   const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
-  const { projects, engineers, addNotification } = useRealtimeStore();
+  const projects = useRealtimeStore(state => state.projects);
+  const engineers = useRealtimeStore(state => state.engineers);
+  const addNotification = useRealtimeStore(state => state.addNotification);
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
 
   // Cho phép Quản lý (Cấp 2), Người duyệt (APPROVE_LEAVE_STEP1/FINAL) và Admin xem 'Tất cả' để duyệt

@@ -46,7 +46,8 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
   className = '',
 }) => {
   const [showModal, setShowModal] = useState(false);
-  const { activityLogs = [], engineers = [] } = useRealtimeStore();
+  const activityLogs = useRealtimeStore(s => s.activityLogs);
+  const engineers = useRealtimeStore(s => s.engineers);
 
   const formattedTime = formatAuditDateTime(updatedAt);
   const isSystemOrEmpty = !updatedBy || updatedBy.trim() === '';

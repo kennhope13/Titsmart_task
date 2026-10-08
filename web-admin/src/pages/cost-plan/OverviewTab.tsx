@@ -7,7 +7,10 @@ interface OverviewTabProps {
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({ selectedProject }) => {
-  const { materialPlans, purchasingPlans, expenses, laborPayrolls } = useRealtimeStore();
+  const materialPlans = useRealtimeStore(s => s.materialPlans);
+  const purchasingPlans = useRealtimeStore(s => s.purchasingPlans);
+  const expenses = useRealtimeStore(s => s.expenses);
+  const laborPayrolls = useRealtimeStore(s => s.laborPayrolls);
 
   const metrics = useMemo(() => {
     // 1. Kế hoạch vật tư

@@ -45,7 +45,13 @@ const normalizeImportText = (value: any) => String(value || '')
 
 export const OfficeCostsPage: React.FC = () => {
   const { user } = useAuthStore();
-  const { expenses, projects, engineers, addExpense, addExpensesBatch, updateExpense, deleteExpense } = useRealtimeStore();
+  const expenses = useRealtimeStore(state => state.expenses);
+  const projects = useRealtimeStore(state => state.projects);
+  const engineers = useRealtimeStore(state => state.engineers);
+  const addExpense = useRealtimeStore(state => state.addExpense);
+  const addExpensesBatch = useRealtimeStore(state => state.addExpensesBatch);
+  const updateExpense = useRealtimeStore(state => state.updateExpense);
+  const deleteExpense = useRealtimeStore(state => state.deleteExpense);
 
   const currentProjExpenses = useMemo(() => expenses.filter(e => e.projectCode === 'OFFICE' || e.projectCode === 'VAN_PHONG' || e.projectCode === 'CHI_PHI_VAN_PHONG' || e.projectCode === 'COMPANY').sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()), [expenses]);
 

@@ -164,38 +164,35 @@ const isEffectiveContractorPlan = (plan: ProjectMaterialPlan, allPlans: ProjectM
 };
 
 export const ProjectCostPlanPage: React.FC = () => {
-// Cleaned debug log
-  const {
-    projects,
-    materialPlans,
-    purchasingPlans,
-    expenses,
-    laborPayrolls,
-    tasks,
-    engineers,
-    addTask,
-    addTasksBatch,
-    addMaterialPlan,
-    addMaterialPlansBatch,
-    updateMaterialPlan,
-    deleteMaterialPlan,
-    addPurchasingPlan,
-    addPurchasingsBatch,
-    updatePurchasingPlan,
-    deletePurchasingPlan,
-    addExpense,
-    addExpensesBatch,
-    updateExpense,
-    deleteExpense,
-    addLaborPayroll,
-    updateLaborPayroll,
-    deleteLaborPayroll,
-    activityLogs,
-    deleteTask,
-    updateTask,
-    fetchAccounting,
-    logActivity,
-  } = useRealtimeStore();
+  const projects = useRealtimeStore(s => s.projects);
+  const materialPlans = useRealtimeStore(s => s.materialPlans);
+  const purchasingPlans = useRealtimeStore(s => s.purchasingPlans);
+  const expenses = useRealtimeStore(s => s.expenses);
+  const laborPayrolls = useRealtimeStore(s => s.laborPayrolls);
+  const tasks = useRealtimeStore(s => s.tasks);
+  const engineers = useRealtimeStore(s => s.engineers);
+  const addTask = useRealtimeStore(s => s.addTask);
+  const addTasksBatch = useRealtimeStore(s => s.addTasksBatch);
+  const addMaterialPlan = useRealtimeStore(s => s.addMaterialPlan);
+  const addMaterialPlansBatch = useRealtimeStore(s => s.addMaterialPlansBatch);
+  const updateMaterialPlan = useRealtimeStore(s => s.updateMaterialPlan);
+  const deleteMaterialPlan = useRealtimeStore(s => s.deleteMaterialPlan);
+  const addPurchasingPlan = useRealtimeStore(s => s.addPurchasingPlan);
+  const addPurchasingsBatch = useRealtimeStore(s => s.addPurchasingsBatch);
+  const updatePurchasingPlan = useRealtimeStore(s => s.updatePurchasingPlan);
+  const deletePurchasingPlan = useRealtimeStore(s => s.deletePurchasingPlan);
+  const addExpense = useRealtimeStore(s => s.addExpense);
+  const addExpensesBatch = useRealtimeStore(s => s.addExpensesBatch);
+  const updateExpense = useRealtimeStore(s => s.updateExpense);
+  const deleteExpense = useRealtimeStore(s => s.deleteExpense);
+  const addLaborPayroll = useRealtimeStore(s => s.addLaborPayroll);
+  const updateLaborPayroll = useRealtimeStore(s => s.updateLaborPayroll);
+  const deleteLaborPayroll = useRealtimeStore(s => s.deleteLaborPayroll);
+  const activityLogs = useRealtimeStore(s => s.activityLogs);
+  const deleteTask = useRealtimeStore(s => s.deleteTask);
+  const updateTask = useRealtimeStore(s => s.updateTask);
+  const fetchAccounting = useRealtimeStore(s => s.fetchAccounting);
+  const logActivity = useRealtimeStore(s => s.logActivity);
 
   useEffect(() => {
     // Chỉ tải từ DB nếu store chưa có dữ liệu (lần đầu vào app)
@@ -1774,8 +1771,6 @@ export const ProjectCostPlanPage: React.FC = () => {
   const projectMetrics = useMemo(() => {
     const materialRows = currentProjMaterialPlans.filter((p) => !isSectionMarker(p.stt, p.notes));
     const purchasingRows = currentProjPurchasing.filter((p) => !isSectionMarker(p.stt, p.notes));
-  console.log("ALL PURCHASING ITEMS:", currentProjPurchasing.length);
-  console.log("CONTRACTOR PURCHASING ITEMS:", currentProjPurchasing.filter(p => !isSectionMarker(p.stt, p.notes)).length);
     const normalizeStatusText = (value?: string) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/\u0111/g, 'd').replace(/đ/g, 'd');
     const calcPurchasingTotal = (p: ProjectPurchasing) => {
       const vatAmount = Number(p.vatAmount || 0) || (Number(p.volumeOrder || 0) * Number(p.unitPrice || 0) * Number(p.vatRate || 0)) / 100;

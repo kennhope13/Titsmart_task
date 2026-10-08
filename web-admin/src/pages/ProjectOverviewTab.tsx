@@ -7,7 +7,16 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Ba
 export const ProjectOverviewTab: React.FC = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { projects, tasks, expenses, engineers, materialPlans, materials, fetchMaterials, documentTracks, fieldLogs } = useRealtimeStore();
+  const projects = useRealtimeStore(s => s.projects);
+  const tasks = useRealtimeStore(s => s.tasks);
+  const expenses = useRealtimeStore(s => s.expenses);
+  const engineers = useRealtimeStore(s => s.engineers);
+  const materialPlans = useRealtimeStore(s => s.materialPlans);
+  const materials = useRealtimeStore(s => s.materials);
+  const fetchMaterials = useRealtimeStore(s => s.fetchMaterials);
+  const documentTracks = useRealtimeStore(s => s.documentTracks);
+  const fieldLogs = useRealtimeStore(s => s.fieldLogs);
+
   const user = useAuthStore(s => s.user);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm' || user?.username === 'admin';
@@ -29,25 +38,24 @@ export const ProjectOverviewTab: React.FC = () => {
     if (project) {
       fetchMaterials(project.code || project.id);
     }
-  }, [project?.id, project?.code]);
+  }, [project?.id, project?.code, fetchMaterials]);
 
-  if (!project) {
-    return <div className="p-6 text-center text-slate-500">Không tìm thấy thông tin dự án.</div>;
-  }
+  const pCodeUpper = useMemo(() => String(project?.code || '').trim().toUpperCase(), [project?.code]);
+  const pIdUpper = useMemo(() => String(project?.id || '').trim().toUpperCase(), [project?.id]);
+  const pNameUpper = useMemo(() => String(project?.name || '').trim().toUpperCase(), [project?.name]);
 
-  const pCodeUpper = String(project.code || '').trim().toUpperCase();
-  const pIdUpper = String(project.id || '').trim().toUpperCase();
-  const pNameUpper = String(project.name || '').trim().toUpperCase();
-
-  const isProjectMatch = (codeOrId?: string) => {
+  const isProjectMatch = React.useCallback((codeOrId?: string) => {
+    if (!project) return false;
     const u = String(codeOrId || '').trim().toUpperCase();
-    return u && (u === pCodeUpper || u === pIdUpper || u === pNameUpper);
-  };
+    return Boolean(u && (u === pCodeUpper || u === pIdUpper || u === pNameUpper));
+  }, [project, pCodeUpper, pIdUpper, pNameUpper]);
 
   // --- 1. TIẾN ĐỘ ---
-  const projTasks = tasks.filter(t => isProjectMatch(t.projectCode) && !t.isSectionHeader);
+  const projTasks = useMemo(() => {
+    return tasks.filter(t => isProjectMatch(t.projectCode) && !t.isSectionHeader);
+  }, [tasks, isProjectMatch]);
   
-  const isTaskCompleted = (t: typeof tasks[number]) => {
+  const isTaskCompleted = React.useCallback((t: typeof tasks[number]) => {
     if (t.isDone) return true;
     const st = String(t.status || '').trim().toLowerCase();
     if (st === 'hoàn thành' || st === 'đã hoàn thành' || st === 'done' || st === 'completed') return true;
@@ -55,15 +63,15 @@ export const ProjectOverviewTab: React.FC = () => {
     const volDone = (t as any).volumeDone;
     if (t.volume && volDone && Number(volDone) >= Number(t.volume) && Number(t.volume) > 0) return true;
     return false;
-  };
+  }, []);
 
-  const actualTotalTasks = projTasks.length > 0 ? projTasks.length : (project.totalTasks || 0);
+  const actualTotalTasks = projTasks.length > 0 ? projTasks.length : (project?.totalTasks || 0);
   const actualCompletedTasks = projTasks.length > 0 
     ? projTasks.filter(isTaskCompleted).length 
-    : (project.completedTasks || 0);
+    : (project?.completedTasks || 0);
 
-  let calculatedPercent = 0;
-  if (projTasks.length > 0) {
+  const calculatedPercent = useMemo(() => {
+    if (projTasks.length === 0) return project?.progressPercent || 0;
     const totalProgressSum = projTasks.reduce((sum, t) => {
       if (isTaskCompleted(t)) return sum + 100;
       const prog = t.progress !== undefined ? (t.progress <= 1 ? t.progress * 100 : t.progress) : 0;
@@ -71,28 +79,28 @@ export const ProjectOverviewTab: React.FC = () => {
       const volProg = (t.volume && volDone && Number(t.volume) > 0) ? Math.min(100, (Number(volDone) / Number(t.volume)) * 100) : 0;
       return sum + Math.max(prog, volProg);
     }, 0);
-    calculatedPercent = Math.round(totalProgressSum / projTasks.length);
-  } else {
-    calculatedPercent = project.progressPercent || 0;
-  }
+    return Math.round(totalProgressSum / projTasks.length);
+  }, [projTasks, isTaskCompleted, project?.progressPercent]);
 
   const totalTasks = actualTotalTasks;
   const completedTasks = actualCompletedTasks;
   const progressPercent = Math.min(100, Math.max(0, calculatedPercent));
 
   // --- 2. VẬT TƯ & CHI PHÍ ---
-  const projExpenses = expenses.filter(e => isProjectMatch(e.projectCode));
-  const totalExpense = projExpenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
-  const contractValue = project.contractValue || 0;
+  const projExpenses = useMemo(() => expenses.filter(e => isProjectMatch(e.projectCode)), [expenses, isProjectMatch]);
+  const totalExpense = useMemo(() => projExpenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0), [projExpenses]);
+  const contractValue = project?.contractValue || 0;
   const budgetPercent = contractValue > 0 ? Math.min(Math.round((totalExpense / contractValue) * 100), 100) : 0;
 
   // --- 3. HỒ SƠ ---
-  const projDocs = documentTracks 
-    ? documentTracks.filter(d => isProjectMatch(d.projectCode) || isProjectMatch(d.projectId)) 
-    : [];
+  const projDocs = useMemo(() => {
+    return documentTracks 
+      ? documentTracks.filter(d => isProjectMatch(d.projectCode) || isProjectMatch(d.projectId)) 
+      : [];
+  }, [documentTracks, isProjectMatch]);
   const totalDocs = projDocs.length;
 
-  const isDocCompleted = (d: typeof documentTracks[number]) => {
+  const isDocCompleted = React.useCallback((d: typeof documentTracks[number]) => {
     if (d.isCompleted) return true;
     const st = String(d.docStatus || '').toLowerCase();
     return st.includes('ký') || 
@@ -102,19 +110,19 @@ export const ProjectOverviewTab: React.FC = () => {
            st.includes('đã nhận') ||
            st === 'done' || 
            st === 'approved';
-  };
+  }, []);
 
-  const completedDocs = projDocs.filter(isDocCompleted).length;
+  const completedDocs = useMemo(() => projDocs.filter(isDocCompleted).length, [projDocs, isDocCompleted]);
   const docPercent = totalDocs > 0 ? Math.round((completedDocs / totalDocs) * 100) : 0;
 
   // --- 4. KHO DỰ ÁN ---
-  const projMaterialPlans = materialPlans ? materialPlans.filter(m => isProjectMatch(m.projectCode)) : [];
-  const projWarehouseMaterials = materials ? materials.filter(m => isProjectMatch(m.projectCode)) : [];
+  const projMaterialPlans = useMemo(() => materialPlans ? materialPlans.filter(m => isProjectMatch(m.projectCode)) : [], [materialPlans, isProjectMatch]);
+  const projWarehouseMaterials = useMemo(() => materials ? materials.filter(m => isProjectMatch(m.projectCode)) : [], [materials, isProjectMatch]);
 
-  const totalMatEstimate = projMaterialPlans.reduce((sum, m) => sum + (m.contractVolume || 0), 0);
+  const totalMatEstimate = useMemo(() => projMaterialPlans.reduce((sum, m) => sum + (m.contractVolume || 0), 0), [projMaterialPlans]);
   
   // Tính tổng số lượng vật tư đang có trong Kho thực tế (materials)
-  const totalWarehouseStock = projWarehouseMaterials.reduce((sum, m) => sum + (m.currentStock ?? m.volume ?? 0), 0);
+  const totalWarehouseStock = useMemo(() => projWarehouseMaterials.reduce((sum, m) => sum + (m.currentStock ?? m.volume ?? 0), 0), [projWarehouseMaterials]);
 
   // Hiển thị chính xác tổng tồn kho thực tế của Kho dự án (nếu Kho rỗng thì hiển thị 0)
   const totalMatActual = totalWarehouseStock;
@@ -124,11 +132,12 @@ export const ProjectOverviewTab: React.FC = () => {
     : (totalMatActual > 0 ? 100 : 0);
 
   // --- 5. NHẬT KÝ HIỆN TRƯỜNG ---
-  const projLogs = fieldLogs ? fieldLogs.filter(l => isProjectMatch(l.projectCode)) : [];
+  const projLogs = useMemo(() => fieldLogs ? fieldLogs.filter(l => isProjectMatch(l.projectCode)) : [], [fieldLogs, isProjectMatch]);
   const totalLogs = projLogs.length;
 
   // --- 6. NHÂN SỰ ---
   const assignedEngineers = useMemo(() => {
+    if (!project) return [];
     const isAdminAccount = (eng: any) => {
       const roleLower = String(eng.role || '').trim().toLowerCase();
       const usernameLower = String(eng.username || eng.email || '').trim().toLowerCase();
@@ -139,8 +148,8 @@ export const ProjectOverviewTab: React.FC = () => {
     const memberNamesFromEngineers = engineers
       .filter((eng) => {
         if (isAdminAccount(eng)) return false;
-        const isMember = (Array.isArray(project.members) && project.members.includes(eng.id)) ||
-                         (Array.isArray(project.memberIds) && project.memberIds.includes(eng.id));
+        const isMember = (Array.isArray(project?.members) && project.members.includes(eng.id)) ||
+                         (Array.isArray(project?.memberIds) && project.memberIds.includes(eng.id));
         const hasCode = Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => isProjectMatch(c));
         const hasManaged = eng.managedProjects?.some(p => isProjectMatch(p.code || p.name));
         const hasMemberProj = eng.memberProjects?.some(p => isProjectMatch(p.code || p.name));
@@ -170,7 +179,7 @@ export const ProjectOverviewTab: React.FC = () => {
     });
 
     let managerNames: string[] = [];
-    if (project.managerName && project.managerName !== 'Chưa phân công') {
+    if (project?.managerName && project.managerName !== 'Chưa phân công') {
       managerNames = project.managerName
         .split(',')
         .map(s => s.trim())
@@ -178,31 +187,31 @@ export const ProjectOverviewTab: React.FC = () => {
     }
 
     return Array.from(new Set([...memberNamesFromEngineers, ...memberNamesFromTasks, ...managerNames]));
-  }, [engineers, project, projTasks]);
+  }, [engineers, project, projTasks, isProjectMatch]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
   };
 
   // --- CHART DATA ---
-  const taskStatusData = [
+  const taskStatusData = useMemo(() => [
     { name: 'Chưa làm', value: projTasks.filter(t => t.status === 'Chưa làm').length, color: '#94a3b8' },
     { name: 'Đang làm', value: projTasks.filter(t => t.status === 'Đang làm').length, color: '#3b82f6' },
     { name: 'Chờ nghiệm thu', value: projTasks.filter(t => t.status === 'Chờ nghiệm thu').length, color: '#f59e0b' },
     { name: 'Hoàn thành', value: completedTasks, color: '#10b981' },
-  ].filter(d => d.value > 0);
+  ].filter(d => d.value > 0), [projTasks, completedTasks]);
 
-  const costChartData = [
+  const costChartData = useMemo(() => [
     { name: 'Ngân sách', value: contractValue, color: '#94a3b8' },
     { name: 'Đã chi', value: totalExpense, color: '#10b981' }
-  ];
+  ], [contractValue, totalExpense]);
 
-  const recentLogs = [...projLogs].sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()).slice(0, 4);
+  const recentLogs = useMemo(() => [...projLogs].sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()).slice(0, 4), [projLogs]);
 
   // --- 7. CÔNG VIỆC NHÂN VIÊN ---
-  const assignedTasks = projTasks.filter(t => t.assignedEngineerId || t.assignedEngineerName || (t.followerIds && t.followerIds.length > 0));
+  const assignedTasks = useMemo(() => projTasks.filter(t => t.assignedEngineerId || t.assignedEngineerName || (t.followerIds && t.followerIds.length > 0)), [projTasks]);
   const totalAssignedTasks = assignedTasks.length;
-  const completedAssignedTasks = assignedTasks.filter(isTaskCompleted).length;
+  const completedAssignedTasks = useMemo(() => assignedTasks.filter(isTaskCompleted).length, [assignedTasks, isTaskCompleted]);
   const assignedTaskPercent = totalAssignedTasks > 0 ? Math.round((completedAssignedTasks / totalAssignedTasks) * 100) : 0;
 
   // --- 8. THỐNG KÊ CÔNG VIỆC THEO TỪNG NHÂN VIÊN ---
@@ -227,8 +236,8 @@ export const ProjectOverviewTab: React.FC = () => {
 
     // 1. Thêm các nhân sự thuộc dự án
     engineers.forEach(eng => {
-      const isMember = (Array.isArray(project.members) && project.members.includes(eng.id)) ||
-                       (Array.isArray(project.memberIds) && project.memberIds.includes(eng.id)) ||
+      const isMember = (Array.isArray(project?.members) && project.members.includes(eng.id)) ||
+                       (Array.isArray(project?.memberIds) && project.memberIds.includes(eng.id)) ||
                        (Array.isArray(eng.projectCodes) && eng.projectCodes.some(c => isProjectMatch(c))) ||
                        assignedEngineers.some(ae => cleanStaffName(ae).toLowerCase() === cleanStaffName(eng.name).toLowerCase());
       
@@ -338,6 +347,10 @@ export const ProjectOverviewTab: React.FC = () => {
       completionRate: item.totalTasks > 0 ? Math.round((item.completedTasks / item.totalTasks) * 100) : 0,
     })).sort((a, b) => b.totalTasks - a.totalTasks || b.completedTasks - a.completedTasks);
   }, [engineers, projTasks, project, assignedEngineers]);
+
+  if (!project) {
+    return <div className="p-6 text-center text-slate-500">Không tìm thấy thông tin dự án.</div>;
+  }
 
   return (
     <div className="p-6 space-y-6 overflow-y-auto bg-slate-50 flex-1">

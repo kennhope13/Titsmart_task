@@ -65,7 +65,14 @@ const getMessageDateLabel = (dateStr?: string) => {
 export const ChatWidget: React.FC = () => {
   const currentUser = useAuthStore(state => state.user);
   const showChatWidget = useUIStore(state => state.showChatWidget);
-  const { engineers, projects, directMessages, fetchDirectMessages, sendDirectMessage, markDirectMessageRead, fetchEngineers, fetchProjects } = useRealtimeStore();
+  const engineers = useRealtimeStore(s => s.engineers);
+  const projects = useRealtimeStore(s => s.projects);
+  const directMessages = useRealtimeStore(s => s.directMessages);
+  const fetchDirectMessages = useRealtimeStore(s => s.fetchDirectMessages);
+  const sendDirectMessage = useRealtimeStore(s => s.sendDirectMessage);
+  const markDirectMessageRead = useRealtimeStore(s => s.markDirectMessageRead);
+  const fetchEngineers = useRealtimeStore(s => s.fetchEngineers);
+  const fetchProjects = useRealtimeStore(s => s.fetchProjects);
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<{ type: 'user' | 'project'; id: string; name: string; avatar?: string } | null>(null);

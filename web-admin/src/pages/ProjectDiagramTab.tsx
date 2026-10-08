@@ -12,7 +12,8 @@ import { ConfirmModal } from '../components/common/ConfirmModal';
 export const ProjectDiagramTab: React.FC = () => {
   const { projectId } = useParams();
   const { user } = useAuthStore();
-  const { projects, updateProject } = useRealtimeStore();
+  const projects = useRealtimeStore(state => state.projects);
+  const updateProject = useRealtimeStore(state => state.updateProject);
 
   const project = projects.find(p => {
     if (!projectId) return false;

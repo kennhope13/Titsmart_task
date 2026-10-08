@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sidebar } from './Sidebar';
+import React from 'react';
+import { SidebarContainer } from './SidebarContainer';
 import { useUIStore } from '../../services/uiStore';
 import { BackToTop } from '../common/BackToTop';
 import { RealtimeClock } from '../common/RealtimeClock';
@@ -9,14 +9,10 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { 
-    isSidebarExpanded, 
-    isSidebarHovered, 
-    sidebarHoverToExpand, 
-    sidebarShowToggleButton, 
-    setIsSidebarExpanded,
-    toggleSidebarExpanded 
-  } = useUIStore();
+  const isSidebarExpanded = useUIStore(state => state.isSidebarExpanded);
+  const sidebarShowToggleButton = useUIStore(state => state.sidebarShowToggleButton);
+  const setIsSidebarExpanded = useUIStore(state => state.setIsSidebarExpanded);
+  const toggleSidebarExpanded = useUIStore(state => state.toggleSidebarExpanded);
 
   React.useEffect(() => {
     if (!sidebarShowToggleButton) {
@@ -24,13 +20,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }, [sidebarShowToggleButton, setIsSidebarExpanded]);
 
-  const isExpanded = isSidebarExpanded || (sidebarHoverToExpand && isSidebarHovered);
+  const isExpanded = isSidebarExpanded;
 
   return (
     <div className="h-[100dvh] w-full bg-slate-50 text-slate-800 flex flex-col font-sans overflow-hidden relative">
-      <Sidebar isExpanded={isExpanded} toggleSidebar={toggleSidebarExpanded} />
+      <SidebarContainer />
       
-      <div className={`layout-content-wrapper ml-0 ${isExpanded ? 'md:ml-[170px]' : 'md:ml-[56px]'} flex flex-col h-full flex-1 min-h-0 overflow-hidden transition-all duration-300 ease-in-out relative pt-[env(safe-area-inset-top,0px)] pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0`}>
+      <div className={`layout-content-wrapper ml-0 ${isSidebarExpanded ? 'md:ml-[170px]' : 'md:ml-[56px]'} flex flex-col h-full flex-1 min-h-0 overflow-hidden transition-all duration-300 ease-in-out relative pt-[env(safe-area-inset-top,0px)] pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0`}>
         <RealtimeClock />
         <main className="flex-1 bg-slate-50 flex flex-col w-full max-w-full overflow-hidden min-h-0">{children}</main>
       </div>

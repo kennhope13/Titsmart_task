@@ -101,7 +101,16 @@ const computePersonKpi = (person: any, allTasks: any[]) => {
 };
 
 export const PersonnelPage: React.FC = () => {
-  const { engineers, projects, tasks, createEngineer, updateEngineer, deleteEngineer, fetchProjects, fetchEngineers, fetchTasks, addTask } = useRealtimeStore();
+  const engineers = useRealtimeStore(state => state.engineers);
+  const projects = useRealtimeStore(state => state.projects);
+  const tasks = useRealtimeStore(state => state.tasks);
+  const createEngineer = useRealtimeStore(state => state.createEngineer);
+  const updateEngineer = useRealtimeStore(state => state.updateEngineer);
+  const deleteEngineer = useRealtimeStore(state => state.deleteEngineer);
+  const fetchProjects = useRealtimeStore(state => state.fetchProjects);
+  const fetchEngineers = useRealtimeStore(state => state.fetchEngineers);
+  const fetchTasks = useRealtimeStore(state => state.fetchTasks);
+  const addTask = useRealtimeStore(state => state.addTask);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(false);
   const isSubmittingRef = useRef(false);

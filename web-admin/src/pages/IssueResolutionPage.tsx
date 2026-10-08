@@ -42,7 +42,9 @@ const IssuePhoto: React.FC<{ src: string; title: string; className: string; icon
 };
 
 export const IssueResolutionPage: React.FC = () => {
-  const { issues, addDirective, updateIssueStatus } = useRealtimeStore();
+  const issues = useRealtimeStore(state => state.issues);
+  const addDirective = useRealtimeStore(state => state.addDirective);
+  const updateIssueStatus = useRealtimeStore(state => state.updateIssueStatus);
 
   const [selectedIssueId, setSelectedIssueId] = useState<string>(issues[0]?.id || '');
   const [directiveText, setDirectiveText] = useState('');
