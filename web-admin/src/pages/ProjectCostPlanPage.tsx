@@ -2542,6 +2542,20 @@ export const ProjectCostPlanPage: React.FC = () => {
                   })()}
                   alt="Chứng từ / CCCD / Hóa đơn"
                   className="max-h-[65vh] w-auto object-contain shadow-md rounded-md bg-white border border-slate-200"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                    const parent = (e.target as HTMLElement).parentElement;
+                    if (parent && !parent.querySelector('.img-error-fallback')) {
+                      const fallback = document.createElement('div');
+                      fallback.className = 'img-error-fallback flex flex-col items-center justify-center p-8 text-slate-500 bg-slate-100 rounded-lg border border-slate-200 my-4 text-center max-w-sm';
+                      fallback.innerHTML = `
+                        <span class="material-symbols-outlined text-4xl text-slate-400 mb-2">image_not_supported</span>
+                        <p class="font-bold text-xs text-slate-700">Hình ảnh không tồn tại hoặc đã bị xóa</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Tệp tin hình ảnh trên server không khả dụng hoặc đường dẫn đã hết hạn.</p>
+                      `;
+                      parent.appendChild(fallback);
+                    }
+                  }}
                 />
               )}
 
