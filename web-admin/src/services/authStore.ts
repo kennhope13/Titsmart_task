@@ -129,8 +129,6 @@ export interface DemoAccount {
   phone: string;
 }
 
-const SESSION_KEY = 'titsmart_auth_session';
-
 export const DEMO_ACCOUNTS: DemoAccount[] = [
   {
     username: 'admin',
@@ -163,13 +161,46 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
 
 import { supabase } from '../lib/supabase';
 
-const loadSession = (): AuthUser | null => {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as AuthUser) : null;
-  } catch {
-    return null;
+const SESSION_KEY = 'titsmart_auth_session';
+const AUTH_KEYS = ['titsmart_auth_session', 'auth_user', 'buildcore_auth_user', 'titsmart_user'];
+
+export const saveSession = (user: AuthUser | null) => {
+  if (!user) {
+    AUTH_KEYS.forEach(k => {
+      try { localStorage.removeItem(k); } catch (_) {}
+      try { sessionStorage.removeItem(k); } catch (_) {}
+    });
+    return;
   }
+  const json = JSON.stringify(user);
+  AUTH_KEYS.forEach(k => {
+    try { localStorage.setItem(k, json); } catch (_) {}
+    try { sessionStorage.setItem(k, json); } catch (_) {}
+  });
+};
+
+const loadSession = (): AuthUser | null => {
+  for (const k of AUTH_KEYS) {
+    try {
+      const rawLocal = localStorage.getItem(k);
+      if (rawLocal) {
+        const parsed = JSON.parse(rawLocal) as AuthUser;
+        if (parsed && (parsed.id || parsed.username || parsed.email)) {
+          return parsed;
+        }
+      }
+    } catch (_) {}
+    try {
+      const rawSession = sessionStorage.getItem(k);
+      if (rawSession) {
+        const parsed = JSON.parse(rawSession) as AuthUser;
+        if (parsed && (parsed.id || parsed.username || parsed.email)) {
+          return parsed;
+        }
+      }
+    } catch (_) {}
+  }
+  return null;
 };
 
 interface AuthStoreState {
@@ -188,7 +219,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
   isLoggingOut: false,
   setIsLoggingOut: (val) => set({ isLoggingOut: val }),
   updateUser: (user) => {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    saveSession(user);
     set({ user });
   },
   refreshUser: async () => {
@@ -220,7 +251,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
                 engineerData.role === 'Quản lý dự án' ? 'pm' :
                 engineerData.role === 'Kỹ sư hiện trường' ? 'engineer' : current.role,
         };
-        localStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser));
+        saveSession(updatedUser);
         set({ user: updatedUser });
       }
     } catch (e) {
@@ -289,7 +320,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
         phone: demoAccount.phone,
         permissions: getDefaultPermissions(demoAccount.role),
       };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      saveSession(user);
       set({ user });
       return { ok: true };
     }
@@ -338,7 +369,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
         projectCodes: engineerData?.project_codes || [],
         permissions: engineerData?.permissions || getDefaultPermissions(englishRole),
       };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      saveSession(user);
       set({ user });
       return { ok: true };
     }
@@ -351,7 +382,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     } catch (err) {
       console.warn('Logout signOut warning:', err);
     } finally {
-      localStorage.removeItem(SESSION_KEY);
+      saveSession(null);
       set({ user: null });
     }
   },
