@@ -27,4 +27,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   downloadUpdate: () => ipcRenderer.send('update:download'),
   installUpdate: () => ipcRenderer.send('update:install'),
   openExternal: (url: string) => ipcRenderer.send('open-external', url),
+  saveSession: (user: any) => ipcRenderer.send('session:save', user),
+  loadSessionSync: () => ipcRenderer.sendSync('session:load'),
 });

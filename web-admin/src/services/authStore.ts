@@ -165,6 +165,26 @@ const SESSION_KEY = 'titsmart_auth_session';
 const AUTH_KEYS = ['titsmart_auth_session', 'auth_user', 'buildcore_auth_user', 'titsmart_user'];
 
 export const saveSession = (user: AuthUser | null) => {
+  // 1. Electron IPC Disk File persistence
+  try {
+    if (typeof window !== 'undefined' && window.electronAPI?.saveSession) {
+      window.electronAPI.saveSession(user);
+    }
+  } catch (_) {}
+
+  // 2. Cookie backup persistence
+  try {
+    if (typeof document !== 'undefined') {
+      if (!user) {
+        document.cookie = 'titsmart_auth_user=; path=/; max-age=0; SameSite=Lax';
+      } else {
+        const encoded = encodeURIComponent(JSON.stringify(user));
+        document.cookie = `titsmart_auth_user=${encoded}; path=/; max-age=31536000; SameSite=Lax`;
+      }
+    }
+  } catch (_) {}
+
+  // 3. LocalStorage & SessionStorage multi-key persistence
   if (!user) {
     AUTH_KEYS.forEach(k => {
       try { localStorage.removeItem(k); } catch (_) {}
@@ -180,12 +200,42 @@ export const saveSession = (user: AuthUser | null) => {
 };
 
 const loadSession = (): AuthUser | null => {
+  // 1. Check Electron IPC Disk File persistence first
+  try {
+    if (typeof window !== 'undefined' && window.electronAPI?.loadSessionSync) {
+      const electronUser = window.electronAPI.loadSessionSync();
+      if (electronUser && (electronUser.id || electronUser.username || electronUser.email)) {
+        saveSession(electronUser);
+        return electronUser;
+      }
+    }
+  } catch (_) {}
+
+  // 2. Check Cookie persistence
+  try {
+    if (typeof document !== 'undefined' && document.cookie) {
+      const match = document.cookie.split('; ').find(row => row.startsWith('titsmart_auth_user='));
+      if (match) {
+        const val = match.split('=')[1];
+        if (val) {
+          const parsed = JSON.parse(decodeURIComponent(val)) as AuthUser;
+          if (parsed && (parsed.id || parsed.username || parsed.email)) {
+            saveSession(parsed);
+            return parsed;
+          }
+        }
+      }
+    }
+  } catch (_) {}
+
+  // 3. Check LocalStorage & SessionStorage candidate keys
   for (const k of AUTH_KEYS) {
     try {
       const rawLocal = localStorage.getItem(k);
       if (rawLocal) {
         const parsed = JSON.parse(rawLocal) as AuthUser;
         if (parsed && (parsed.id || parsed.username || parsed.email)) {
+          saveSession(parsed);
           return parsed;
         }
       }
@@ -195,6 +245,7 @@ const loadSession = (): AuthUser | null => {
       if (rawSession) {
         const parsed = JSON.parse(rawSession) as AuthUser;
         if (parsed && (parsed.id || parsed.username || parsed.email)) {
+          saveSession(parsed);
           return parsed;
         }
       }

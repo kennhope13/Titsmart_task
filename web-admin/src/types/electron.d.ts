@@ -17,6 +17,8 @@ export interface ElectronAPI {
   downloadUpdate: () => void;
   installUpdate: () => void;
   openExternal: (url: string) => void;
+  saveSession?: (user: any) => void;
+  loadSessionSync?: () => any;
 }
 
 declare global {

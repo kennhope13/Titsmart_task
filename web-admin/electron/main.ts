@@ -147,7 +147,37 @@ app.on('activate', () => {
 });
 
 // Fix for ERR_HTTP2_PROTOCOL_ERROR when auto-updating from GitHub Releases
-app.commandLine.appendSwitch('disable-http2');
+import fs from 'fs';
+
+// Permanent Session File persistence in App UserData directory
+const sessionFilePath = path.join(app.getPath('userData'), 'auth_session.json');
+
+ipcMain.on('session:save', (_, user) => {
+  try {
+    if (user) {
+      fs.writeFileSync(sessionFilePath, JSON.stringify(user), 'utf-8');
+    } else {
+      if (fs.existsSync(sessionFilePath)) fs.unlinkSync(sessionFilePath);
+    }
+  } catch (err) {
+    console.error('Failed to write auth_session.json:', err);
+  }
+});
+
+ipcMain.on('session:load', (event) => {
+  try {
+    if (fs.existsSync(sessionFilePath)) {
+      const raw = fs.readFileSync(sessionFilePath, 'utf-8');
+      if (raw) {
+        event.returnValue = JSON.parse(raw);
+        return;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to read auth_session.json:', err);
+  }
+  event.returnValue = null;
+});
 
 app.whenReady().then(() => {
   createWindow();

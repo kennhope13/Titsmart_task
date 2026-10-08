@@ -1,12 +1,13 @@
-import { app as s, BrowserWindow as u, shell as p, ipcMain as i } from "electron";
-import d from "path";
-import { fileURLToPath as h } from "url";
-import f from "electron-updater";
-const { autoUpdater: t } = f, w = h(import.meta.url), r = d.dirname(w);
-let n;
-const l = process.env.VITE_DEV_SERVER_URL;
-function c() {
-  n = new u({
+import { app as i, BrowserWindow as f, ipcMain as s, shell as h } from "electron";
+import r from "path";
+import { fileURLToPath as w } from "url";
+import g from "electron-updater";
+import d from "fs";
+const { autoUpdater: n } = g, y = w(import.meta.url), c = r.dirname(y);
+let o;
+const p = process.env.VITE_DEV_SERVER_URL;
+function m() {
+  o = new f({
     width: 1200,
     height: 800,
     minWidth: 900,
@@ -18,69 +19,90 @@ function c() {
     //   symbolColor: '#00236f',
     // },
     webPreferences: {
-      preload: d.join(r, "preload.mjs"),
+      preload: r.join(c, "preload.mjs"),
       nodeIntegration: !1,
       contextIsolation: !0
     }
-  }), l ? (n.loadURL(l), n.webContents.openDevTools()) : n.loadFile(d.join(process.env.DIST || d.join(r, "../dist"), "index.html")), n.webContents.setWindowOpenHandler(({ url: e }) => ((e.startsWith("http://") || e.startsWith("https://")) && p.openExternal(e), { action: "deny" }));
+  }), p ? (o.loadURL(p), o.webContents.openDevTools()) : o.loadFile(r.join(process.env.DIST || r.join(c, "../dist"), "index.html")), o.webContents.setWindowOpenHandler(({ url: e }) => ((e.startsWith("http://") || e.startsWith("https://")) && h.openExternal(e), { action: "deny" }));
 }
-function o(e, a) {
-  n && !n.isDestroyed() && n.webContents.send(e, a);
+function a(e, t) {
+  o && !o.isDestroyed() && o.webContents.send(e, t);
 }
-function g(e) {
-  return Array.isArray(e) ? e.map((a) => typeof a == "string" ? a : (a == null ? void 0 : a.note) ?? "").filter(Boolean).join(`
+function v(e) {
+  return Array.isArray(e) ? e.map((t) => typeof t == "string" ? t : (t == null ? void 0 : t.note) ?? "").filter(Boolean).join(`
 `) : e ?? "";
 }
-function v() {
-  s.isPackaged && (t.autoDownload = !0, t.autoInstallOnAppQuit = !0, t.disableDifferentialDownload = !0, t.disableWebInstaller = !0, t.on("checking-for-update", () => {
-    o("update:status", { status: "checking" });
-  }), i.on("open-external", async (e, a) => {
-    if (a && typeof a == "string")
+function S() {
+  i.isPackaged && (n.autoDownload = !0, n.autoInstallOnAppQuit = !0, n.disableDifferentialDownload = !0, n.disableWebInstaller = !0, n.on("checking-for-update", () => {
+    a("update:status", { status: "checking" });
+  }), s.on("open-external", async (e, t) => {
+    if (t && typeof t == "string")
       try {
-        await p.openExternal(a);
-      } catch (m) {
-        require("electron").dialog.showErrorBox("Lỗi mở ảnh", `Không thể mở đường dẫn: ${a}
-Lý do: ${m.message}`);
+        await h.openExternal(t);
+      } catch (u) {
+        require("electron").dialog.showErrorBox("Lỗi mở ảnh", `Không thể mở đường dẫn: ${t}
+Lý do: ${u.message}`);
       }
-  }), t.on("update-available", (e) => {
-    o("update:status", {
+  }), n.on("update-available", (e) => {
+    a("update:status", {
       status: "available",
       version: e.version,
-      releaseNotes: g(e.releaseNotes)
+      releaseNotes: v(e.releaseNotes)
     });
-  }), t.on("update-not-available", (e) => {
-    o("update:status", { status: "not-available", version: e.version });
-  }), t.on("download-progress", (e) => {
-    o("update:status", {
+  }), n.on("update-not-available", (e) => {
+    a("update:status", { status: "not-available", version: e.version });
+  }), n.on("download-progress", (e) => {
+    a("update:status", {
       status: "downloading",
       percent: Math.round(e.percent),
       transferred: e.transferred,
       total: e.total,
       bytesPerSecond: e.bytesPerSecond
     });
-  }), t.on("update-downloaded", (e) => {
-    o("update:status", { status: "downloaded", version: e.version });
-  }), t.on("error", (e) => {
-    o("update:status", { status: "error", message: (e == null ? void 0 : e.message) ?? String(e) });
-  }), i.on("update:check", () => {
-    t.checkForUpdates();
-  }), i.on("update:download", () => {
-    t.downloadUpdate();
-  }), i.on("update:install", () => {
-    t.quitAndInstall();
+  }), n.on("update-downloaded", (e) => {
+    a("update:status", { status: "downloaded", version: e.version });
+  }), n.on("error", (e) => {
+    a("update:status", { status: "error", message: (e == null ? void 0 : e.message) ?? String(e) });
+  }), s.on("update:check", () => {
+    n.checkForUpdates();
+  }), s.on("update:download", () => {
+    n.downloadUpdate();
+  }), s.on("update:install", () => {
+    n.quitAndInstall();
   }), setTimeout(() => {
-    t.checkForUpdates().catch((e) => {
-      o("update:status", { status: "error", message: (e == null ? void 0 : e.message) ?? String(e) });
+    n.checkForUpdates().catch((e) => {
+      a("update:status", { status: "error", message: (e == null ? void 0 : e.message) ?? String(e) });
     });
   }, 5e3));
 }
-s.on("window-all-closed", () => {
-  process.platform !== "darwin" && (s.quit(), n = null);
+i.on("window-all-closed", () => {
+  process.platform !== "darwin" && (i.quit(), o = null);
 });
-s.on("activate", () => {
-  u.getAllWindows().length === 0 && c();
+i.on("activate", () => {
+  f.getAllWindows().length === 0 && m();
 });
-s.commandLine.appendSwitch("disable-http2");
-s.whenReady().then(() => {
-  c(), v();
+const l = r.join(i.getPath("userData"), "auth_session.json");
+s.on("session:save", (e, t) => {
+  try {
+    t ? d.writeFileSync(l, JSON.stringify(t), "utf-8") : d.existsSync(l) && d.unlinkSync(l);
+  } catch (u) {
+    console.error("Failed to write auth_session.json:", u);
+  }
+});
+s.on("session:load", (e) => {
+  try {
+    if (d.existsSync(l)) {
+      const t = d.readFileSync(l, "utf-8");
+      if (t) {
+        e.returnValue = JSON.parse(t);
+        return;
+      }
+    }
+  } catch (t) {
+    console.error("Failed to read auth_session.json:", t);
+  }
+  e.returnValue = null;
+});
+i.whenReady().then(() => {
+  m(), S();
 });
