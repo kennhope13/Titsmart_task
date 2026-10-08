@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { exportToStyledExcel } from '../utils/excelExportUtils';
 import jsPDF from 'jspdf';
-import { useRealtimeStore } from '../services/realtimeStore';
+import { useRealtimeStore, calculateTaskProgressFromStatuses } from '../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../services/authStore';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
@@ -204,7 +204,8 @@ export const TaskManagementPage: React.FC = () => {
   useEffect(() => {
     if (highlightTaskId && openedHighlightTaskRef.current !== highlightTaskId) {
       const found = tasks.find(t => t.id === highlightTaskId);
-      const shouldOpenDiscussion = searchParams.get('discuss') === 'true' || found?.status === 'Có thắc mắc';
+      const latestDisc = found ? getLatestDiscussion(found.notes, found.issue) : null;
+      const shouldOpenDiscussion = searchParams.get('discuss') === 'true' || found?.status === 'Có thắc mắc' || Boolean(latestDisc);
       if (found && shouldOpenDiscussion) {
         openedHighlightTaskRef.current = highlightTaskId;
         setDiscussionTask(found);
@@ -243,7 +244,13 @@ export const TaskManagementPage: React.FC = () => {
   }, [isHighlightActive, tasks]);
 
   const handleAcceptTask = async (task: Task) => {
-    handleUpdateTaskSync(task.id, { status: 'Đang làm', progress: 0.05, constrStatus: 'Đang thi công' });
+    const constrStatus = task.constrStatus && task.constrStatus !== 'Chưa thi công' ? task.constrStatus : 'Đang thi công';
+    const nextProgress = calculateTaskProgressFromStatuses(task.purchaseStatus, constrStatus);
+    handleUpdateTaskSync(task.id, { 
+      status: 'Đang làm', 
+      progress: nextProgress, 
+      constrStatus: constrStatus 
+    });
     triggerToast('Đã xác nhận nhận việc!', 'success');
     
     // Log activity to inform Admin
@@ -267,10 +274,12 @@ export const TaskManagementPage: React.FC = () => {
   };
 
   const handleReportDone = async (task: Task) => {
+    const constrStatus = 'Chờ nghiệm thu';
+    const nextProgress = calculateTaskProgressFromStatuses(task.purchaseStatus, constrStatus);
     handleUpdateTaskSync(task.id, { 
       status: 'Chờ nghiệm thu', 
-      progress: 0.95, 
-      constrStatus: 'Chờ nghiệm thu',
+      progress: nextProgress, 
+      constrStatus: constrStatus,
       isDone: false
     });
     triggerToast('Đã báo cáo hoàn thành! Đang chờ người giao việc nghiệm thu.', 'success');
@@ -331,7 +340,7 @@ export const TaskManagementPage: React.FC = () => {
     const userName = authStore.user?.name || authStore.user?.username || 'Nhân sự';
     const userId = authStore.user?.id || '';
     const isCurrentlyDoing = task.status === 'Đang làm';
-    const nextStatus = isCurrentlyDoing ? 'Đang làm' : 'Có thắc mắc';
+    const nextStatus = 'Có thắc mắc';
 
     const updatedNotes = appendTaskDiscussion(task.notes || '', {
       senderId: userId,
@@ -349,9 +358,9 @@ export const TaskManagementPage: React.FC = () => {
       notes: updatedNotes
     });
 
-    triggerToast(isCurrentlyDoing ? 'Đã gửi tin nhắn trao đổi!' : 'Đã gửi thắc mắc đến người giao việc và các nhân sự đảm nhiệm!', 'success');
+    triggerToast('Đã gửi thắc mắc đến người giao việc và các nhân sự đảm nhiệm!', 'success');
     const store = useRealtimeStore.getState();
-    store.logActivity(`Nhân sự ${userName} đã ${isCurrentlyDoing ? 'GỬI TRAO ĐỔI' : 'GỬI THẮC MẮC'} về hạng mục: "${task.name}"`, task.projectName || task.projectCode);
+    store.logActivity(`Nhân sự ${userName} đã GỬI THẮC MẮC về hạng mục: "${task.name}"`, task.projectName || task.projectCode);
 
     if (store.addNotification) {
       const parts = String(task.assignedEngineerName || '').split('|');
@@ -362,11 +371,11 @@ export const TaskManagementPage: React.FC = () => {
       const targetNameList = Array.from(new Set([task.assignerName || 'Quản lý', ...assignedNames, ...(task.followerNames || [])])).filter(Boolean);
 
       await store.addNotification({
-        title: isCurrentlyDoing ? 'Trao đổi công việc' : 'Thắc mắc công việc mới',
-        message: `${userName} có ${isCurrentlyDoing ? 'trao đổi' : 'thắc mắc'} về công việc "${task.name}" [${task.projectCode}]: "${questionText || (fileAttachment ? (fileAttachment.type === 'image' ? 'Đã gửi 1 hình ảnh' : `Đã đính kèm tệp: ${fileAttachment.name}`) : '')}".`,
-        link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
+        title: 'Thắc mắc công việc mới',
+        message: `${userName} có thắc mắc về công việc "${task.name}" [${task.projectCode}]: "${questionText || (fileAttachment ? (fileAttachment.type === 'image' ? 'Đã gửi 1 hình ảnh' : `Đã đính kèm tệp: ${fileAttachment.name}`) : '')}".`,
+        link: `/projects/${encodeURIComponent(task.projectCode)}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}&discuss=true`,
         type: `task_question:::${targetIdList.join(',')}:::${targetNameList.join(',')}`,
-        icon: isCurrentlyDoing ? 'chat' : 'help_center',
+        icon: 'help_center',
         senderId: userId,
         senderName: userName
       });
@@ -2510,8 +2519,11 @@ const hasSyncedRef = useRef(false);
                                 <button onClick={(e) => { e.stopPropagation(); confirmDeleteTask(t); }} className="p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-100 transition-all inline-flex items-center" title="Xoá"><span className="material-symbols-outlined text-[13px]">delete</span></button>
                               </div>
                             </div>
-                            {t.status === 'Có thắc mắc' && (() => {
+                            {(() => {
                               const latestDisc = getLatestDiscussion(t.notes, t.issue);
+                              if (t.status !== 'Có thắc mắc' && !latestDisc && !t.issue) return null;
+                              const isQuestion = t.status === 'Có thắc mắc' || (latestDisc && (latestDisc.type === 'question' || latestDisc.senderRole === 'Người nhận việc')) || Boolean(t.issue);
+                              const displayContent = latestDisc?.content || t.issue || 'Cần làm rõ yêu cầu công việc';
                               return (
                                 <div 
                                   onClick={(e) => {
@@ -2519,11 +2531,11 @@ const hasSyncedRef = useRef(false);
                                     setDiscussionTask(t);
                                   }}
                                   className="mt-0.5 p-1 bg-amber-50 hover:bg-amber-100/80 border border-amber-300 rounded text-[11px] text-amber-950 font-normal flex items-center gap-1 cursor-pointer shadow-2xs transition-colors"
-                                  title="Nhấn để xem chi tiết thắc mắc và phản hồi"
+                                  title="Nhấn để xem chi tiết thắc mắc / trao đổi và phản hồi"
                                 >
-                                  <span className="material-symbols-outlined text-[13px] text-amber-600 shrink-0">help_center</span>
+                                  <span className="material-symbols-outlined text-[13px] text-amber-600 shrink-0">{isQuestion ? 'help_center' : 'forum'}</span>
                                   <span className="truncate">
-                                    <strong className="text-amber-800">Thắc mắc:</strong> {latestDisc?.content || t.issue || 'Cần làm rõ yêu cầu công việc'}
+                                    <strong className="text-amber-800">{isQuestion ? 'Thắc mắc:' : 'Trao đổi:'}</strong> {displayContent}
                                   </span>
                                 </div>
                               );
@@ -2848,14 +2860,17 @@ const hasSyncedRef = useRef(false);
                   const assignerId = authStore.user?.id || '';
                   const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
                   
+                  const constrStatus = 'Chưa thi công';
+                  const nextProgress = calculateTaskProgressFromStatuses(assigningTask.purchaseStatus, constrStatus);
                   handleUpdateTaskSync(assigningTask.id, {
                     assignedEngineerId: '',
                     assignedEngineerName: '',
                     followerIds: [],
                     followerNames: [],
                     status: 'Chưa làm',
+                    constrStatus: constrStatus,
                     isDone: false,
-                    progress: 0
+                    progress: nextProgress
                   });
 
                   const store = useRealtimeStore.getState();

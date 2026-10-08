@@ -64,9 +64,9 @@ export const canManageItem = (user: AuthUser | null | undefined, item: any, requ
   const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || username === 'admin';
   if (isAdmin) return true;
 
-  // Nếu người dùng được Admin tích chọn quyền chi tiết tương ứng (VD: Quản lý hồ sơ 'MANAGE_DOCUMENTS')
-  if (user.permissions && Array.isArray(user.permissions)) {
-    if (user.permissions.includes(requiredPerm) || user.permissions.includes('MANAGE_DOCUMENTS')) {
+  // Nếu người dùng được Admin tích chọn quyền chi tiết tương ứng (VD: 'EDIT_PROJECTS', 'DELETE_PROJECTS', 'MANAGE_DOCUMENTS')
+  if (requiredPerm && user.permissions && Array.isArray(user.permissions)) {
+    if (user.permissions.includes(requiredPerm)) {
       return true;
     }
   }
@@ -77,30 +77,33 @@ export const canManageItem = (user: AuthUser | null | undefined, item: any, requ
   const currentUserName = String(user.name || '').trim().toLowerCase();
   const currentUsername = String(user.username || '').trim().toLowerCase();
 
+  // Đối với dự án (Project), chỉ cho phép sửa/xóa nếu có quyền chi tiết hoặc là người tạo dự án chính thức (createdById)
+  if (requiredPerm === 'EDIT_PROJECTS' || requiredPerm === 'DELETE_PROJECTS') {
+    const projCreatorId = String(item.createdById || item.created_by_id || item.authorId || item.author_id || '').trim().toLowerCase();
+    if (currentUserId && projCreatorId && (currentUserId === projCreatorId || currentUserId.includes(projCreatorId))) {
+      return true;
+    }
+    return false;
+  }
+
   const itemCreatorId = String(
     item.createdById || item.created_by_id || item.uploaderId || item.uploader_id || 
-    item.userId || item.user_id || item.authorId || item.author_id || item.assignerId || item.assigner_id || ''
+    item.userId || item.user_id || item.authorId || item.author_id || ''
   ).trim().toLowerCase();
 
   const itemCreatorName = String(
     item.createdByName || item.created_by_name || item.createdBy || item.created_by || 
-    item.uploaderName || item.uploader_name || item.user || item.userName || item.user_name ||
-    item.author || item.authorName || item.spenderName || item.assignerName || ''
+    item.uploaderName || item.uploader_name || item.author || item.authorName || ''
   ).trim().toLowerCase();
-
-  const itemUpdatedBy = String(item.updatedBy || item.updated_by || '').trim().toLowerCase();
 
   // 1. Khớp ID người tạo
   if (currentUserId && itemCreatorId && (currentUserId === itemCreatorId || currentUserId.includes(itemCreatorId) || itemCreatorId.includes(currentUserId))) return true;
 
   // 2. Khớp Tên người tạo
-  if (currentUserName && itemCreatorName && (itemCreatorName.includes(currentUserName) || currentUserName.includes(itemCreatorName))) return true;
+  if (currentUserName && itemCreatorName && (itemCreatorName === currentUserName || itemCreatorName.includes(currentUserName))) return true;
 
   // 3. Khớp Username người tạo
   if (currentUsername && itemCreatorName && itemCreatorName === currentUsername) return true;
-
-  // 4. Fallback: Nếu không có creator field nhưng updatedBy khớp chính chủ
-  if (itemUpdatedBy && (itemUpdatedBy === currentUserName || itemUpdatedBy === currentUsername || (currentUserName && itemUpdatedBy.includes(currentUserName)))) return true;
 
   return false;
 };

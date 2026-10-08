@@ -171,30 +171,32 @@ const normalizeStatusText = (value?: string) => (value || '')
   .replace(/[\u0300-\u036f]/g, '')
   .replace(/\u0111/g, 'd');
 
-const purchaseProgressScore = (status?: string) => {
+export const purchaseProgressScore = (status?: string): number => {
   const clean = normalizeStatusText(status);
   if (!clean || clean === 'khong co hang' || clean === 'chua dat hang') return 0;
   if (clean === 'dang dat hang') return 0.3;
   if (clean === 'da dat hang') return 0.6;
-  if (clean === 'dang giao') return 0.85;
-  if (clean === 'da co hang' || clean === 'hang gia cong') return 1;
+  if (clean === 'dang giao' || clean === 'dang giao hang') return 0.85;
+  if (clean === 'da co hang' || clean === 'da nhan du' || clean === 'hang gia cong') return 1.0;
   return 0;
 };
 
-const constructionProgressScore = (status?: string) => {
+export const constructionProgressScore = (status?: string): number => {
   const clean = normalizeStatusText(status);
   if (!clean || clean === 'chua thi cong' || clean === 'dang vuong mac') return 0;
-  if (clean === 'vuong mac') return 0.2;
-  if (clean === 'da keo day' || clean === 'da lap thiet bi vao tu') return 0.4;
+  if (clean === 'vuong mac' || clean === 'da keo day' || clean === 'da lap thiet bi vao tu') return 0.2;
+  if (clean === 'da lap tb + keo day') return 0.3;
+  if (clean.includes('ete') || clean.includes('thu nghiem')) return 0.4;
   if (clean === 'dang thi cong') return 0.5;
-  if (clean === 'da lap tb + keo day') return 0.6;
-  if (clean === 'dang ete') return 0.8;
-  if (clean === 'da thi cong') return 1;
+  if (clean === 'cho nghiem thu') return 0.95;
+  if (clean === 'da thi cong' || clean === 'da hoan thanh' || clean === 'hoan thanh') return 1.0;
   return 0;
 };
 
-const calculateTaskProgressFromStatuses = (purchaseStatus?: string, constrStatus?: string) => {
-  const progress = purchaseProgressScore(purchaseStatus) * 0.5 + constructionProgressScore(constrStatus) * 0.5;
+export const calculateTaskProgressFromStatuses = (purchaseStatus?: string, constrStatus?: string): number => {
+  const pScore = purchaseProgressScore(purchaseStatus);
+  const cScore = constructionProgressScore(constrStatus);
+  const progress = pScore * 0.5 + cScore * 0.5;
   return Math.max(0, Math.min(1, Number(progress.toFixed(4))));
 };
 

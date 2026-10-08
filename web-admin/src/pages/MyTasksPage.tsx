@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
 import { CustomSelect } from '../components/common/CustomSelect';
-import { useRealtimeStore } from '../services/realtimeStore';
+import { useRealtimeStore, calculateTaskProgressFromStatuses } from '../services/realtimeStore';
 import { useAuthStore } from '../services/authStore';
 import { Task } from '../types';
 import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
@@ -268,7 +268,13 @@ export const MyTasksPage: React.FC = () => {
   }, [myCategoryTasks, projects]);
 
   const handleAcceptTask = async (task: any) => {
-    updateTask(task.id, { status: 'Đang làm', progress: 0.05, constrStatus: 'Đang thi công' });
+    const constrStatus = task.constrStatus && task.constrStatus !== 'Chưa thi công' ? task.constrStatus : 'Đang thi công';
+    const nextProgress = calculateTaskProgressFromStatuses(task.purchaseStatus, constrStatus);
+    updateTask(task.id, { 
+      status: 'Đang làm', 
+      progress: nextProgress, 
+      constrStatus: constrStatus 
+    });
     triggerToast('Đã xác nhận nhận việc!', 'success');
     
     const store = useRealtimeStore.getState();

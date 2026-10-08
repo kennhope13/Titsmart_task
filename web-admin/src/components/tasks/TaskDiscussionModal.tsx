@@ -151,7 +151,11 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
           fileType: selectedFile?.type,
           fileName: selectedFile?.name
         });
-        await store.updateTask(task.id, { notes: updatedNotes });
+        const isQuestionAction = !isFollower && !isAssigner;
+        await store.updateTask(task.id, { 
+          notes: updatedNotes,
+          ...(isQuestionAction ? { status: 'Có thắc mắc' } : {})
+        });
 
         // Tự động phát thông báo tới người liên quan
         if (store.addNotification) {
@@ -173,7 +177,7 @@ export const TaskDiscussionModal: React.FC<TaskDiscussionModalProps> = ({
             await store.addNotification({
               title: isAssigner ? `Phản hồi hướng dẫn: ${task.name}` : `Thắc mắc công việc: ${task.name}`,
               message: `${senderRole} ${activeUserName} đã ${isAssigner ? 'phản hồi' : 'thắc mắc'} về công việc "${task.name}" [${task.projectCode || 'Dự án'}]: "${inputText.trim() || (selectedFile ? (selectedFile.type === 'image' ? 'Đã gửi 1 hình ảnh' : `Đã đính kèm tệp: ${selectedFile.name}`) : '')}".`,
-              link: `/my-tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}`,
+              link: `/projects/${encodeURIComponent(task.projectCode || 'COMPANY')}/tasks?taskId=${encodeURIComponent(task.id)}&highlight=${encodeURIComponent(task.name || '')}&discuss=true`,
               type: `task_reply:::${targetIds.join(',')}:::${targetNames.join(',')}`,
               icon: 'forum',
               senderId: activeUserId,

@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useLocation, useSearchParams, useNavigate, Navigate } from 'react-router-dom';
 import { SharedTaskTabs } from '../components/common/SharedTaskTabs';
 import { CustomSelect } from '../components/common/CustomSelect';
-import { useRealtimeStore } from '../services/realtimeStore';
+import { useRealtimeStore, calculateTaskProgressFromStatuses } from '../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../services/authStore';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
 import { ConfirmModal } from '../components/common/ConfirmModal';
@@ -124,10 +124,13 @@ export const TaskAssignmentPage: React.FC = () => {
   const handleAcceptTask = async (taskToAccept: Task) => {
     try {
       const isDirect = taskToAccept.sectionName === 'Giao việc trực tiếp' || taskToAccept.projectCode === 'COMPANY' || taskToAccept.code?.startsWith('TASK-DIRECT');
-      const nextStatus = isDirect ? 'Đang làm' : 'Đang làm';
+      const nextStatus = 'Đang làm';
+      const constrStatus = taskToAccept.constrStatus && taskToAccept.constrStatus !== 'Chưa thi công' ? taskToAccept.constrStatus : 'Đang thi công';
+      const nextProgress = calculateTaskProgressFromStatuses(taskToAccept.purchaseStatus, constrStatus);
       await updateTask(taskToAccept.id, {
         status: nextStatus,
-        progress: taskToAccept.progress > 0 ? taskToAccept.progress : 0.05
+        constrStatus: constrStatus,
+        progress: nextProgress
       });
 
       triggerToast(`Đã nhận việc thành công: "${taskToAccept.name}"!`, 'success');

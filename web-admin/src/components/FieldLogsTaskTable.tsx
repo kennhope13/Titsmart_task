@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeStore } from '../services/realtimeStore';
 import { useAuthStore, canManageItem } from '../services/authStore';
@@ -8,14 +9,15 @@ import { AuditInfoCell, parseAuditTime } from './common/AuditInfoCell';
 
 const CustomLightbox: React.FC<{ images: string[]; index: number; onClose: () => void; onPrev: () => void; onNext: () => void }> = ({
   images, index, onClose, onPrev, onNext,
-}) => (
-  <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center" onClick={onClose}>
+}) => createPortal(
+  <div className="fixed inset-0 z-[100000] bg-black/90 flex items-center justify-center" onClick={onClose}>
     <button onClick={onClose} className="absolute top-4 right-4 text-white hover:text-red-400"><span className="material-symbols-outlined text-4xl">close</span></button>
     <button onClick={(e) => { e.stopPropagation(); onPrev(); }} disabled={index === 0} className="absolute left-4 text-white hover:text-primary disabled:opacity-50"><span className="material-symbols-outlined text-5xl">chevron_left</span></button>
     <img src={images[index]} className="max-w-full max-h-[90vh] object-contain" onClick={e => e.stopPropagation()} />
     <button onClick={(e) => { e.stopPropagation(); onNext(); }} disabled={index === images.length - 1} className="absolute right-4 text-white hover:text-primary disabled:opacity-50"><span className="material-symbols-outlined text-5xl">chevron_right</span></button>
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-mono">{index + 1} / {images.length}</div>
-  </div>
+  </div>,
+  document.body
 );
 
 const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => void; onEditLogClick: (log: FieldLog) => void; onDeleteLogClick?: (log: FieldLog) => void }> = ({
@@ -24,10 +26,10 @@ const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => voi
   const { user } = useAuthStore();
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/40 backdrop-blur-xs animate-fadeIn" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-2xl w-[96vw] max-w-[96vw] h-[94vh] flex flex-col overflow-hidden border border-slate-200" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-[#F0F5FF]">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-black/40 backdrop-blur-xs animate-fadeIn" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-[92vw] max-w-4xl h-[88vh] flex flex-col overflow-hidden border border-slate-200" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-[#F0F5FF]">
           <div>
             <h3 className="font-bold text-xs sm:text-sm text-[#0F294A] flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[17px] text-[#0F294A]">edit_note</span>
@@ -35,7 +37,7 @@ const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => voi
             </h3>
             <p className="text-[11px] text-slate-500 font-medium">{task.name}</p>
           </div>
-          <button onClick={onClose} className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-colors">
+          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-colors">
             <span className="material-symbols-outlined text-lg">close</span>
           </button>
         </div>
@@ -94,15 +96,17 @@ const TaskLogsModal: React.FC<{ task: Task; logs: FieldLog[]; onClose: () => voi
         </div>
       </div>
 
-      {lightboxImg && (
-        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightboxImg(null)}>
+      {lightboxImg && createPortal(
+        <div className="fixed inset-0 z-[100000] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightboxImg(null)}>
           <button onClick={() => setLightboxImg(null)} className="absolute top-4 right-4 text-white hover:text-red-400">
             <span className="material-symbols-outlined text-4xl">close</span>
           </button>
           <img src={lightboxImg} className="max-w-full max-h-[90vh] object-contain rounded-lg" onClick={e => e.stopPropagation()} />
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
 

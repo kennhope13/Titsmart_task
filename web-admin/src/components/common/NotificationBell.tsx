@@ -849,10 +849,11 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     ) {
       if (finalProjectCode) {
         const taskIdParam = targetTask?.id ? `taskId=${encodeURIComponent(targetTask.id)}&` : '';
-        navigate(`/projects/${encodeURIComponent(finalProjectCode)}/tasks?${taskIdParam}highlight=${encodeURIComponent(taskName || '')}`);
+        navigate(`/projects/${encodeURIComponent(finalProjectCode)}/tasks?${taskIdParam}highlight=${encodeURIComponent(taskName || '')}&discuss=true`);
       } else {
         const params = new URLSearchParams();
         params.set('tab', 'assigned');
+        params.set('discuss', 'true');
         if (taskName) params.set('highlight', taskName);
         navigate(`/task-assignment?${params.toString()}`, { state: { tab: 'assigned' } });
       }
@@ -863,6 +864,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       const params = new URLSearchParams();
       if (targetTask?.id) params.set('taskId', targetTask.id);
       if (taskName) params.set('highlight', taskName);
+      params.set('discuss', 'true');
       navigate(`/my-tasks?${params.toString()}`);
     } else if (
       titleLower.includes('đã nhận việc') || 
