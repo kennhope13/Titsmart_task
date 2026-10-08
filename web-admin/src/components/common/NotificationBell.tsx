@@ -31,7 +31,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   const userEmail = String(user.email || '').trim().toLowerCase();
   const userPhone = String(user.phone || '').trim();
 
-  const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || role === 'quản lý' || role === 'giám sát' || username === 'admin' || user.permissions?.includes('ASSIGN_TASKS');
+  const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || role === 'quản lý' || role === 'giám sát' || username === 'admin';
 
   // Find engineer object(s) corresponding to current user
   const myEngs = (engineers || []).filter(e => {
@@ -338,7 +338,7 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     return false;
   }
 
-  // 2. Attendance notifications (e.g. 'Chấm công vào ca', 'Chấm công ra ca'): ONLY for Admin/Managers
+  // 2. Attendance notifications (e.g. 'Chấm công vào ca', 'Chấm công ra ca'): ONLY for Admin/Managers & Authorized Personnel
   if (
     tLow.includes('chấm công') || 
     tLow.includes('vào ca') || 
@@ -348,7 +348,25 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     mLow.includes('check-out') || 
     typeStr.startsWith('attendance')
   ) {
-    return isAdmin;
+    const userTitleNorm = normalizeStr(user.title || '');
+    const isAttendanceManager = Boolean(
+      isAdmin ||
+      role.includes('quản lý') ||
+      role.includes('giám sát') ||
+      role.includes('chỉ huy') ||
+      role.includes('manager') ||
+      role.includes('pm') ||
+      userTitleNorm.includes('quan ly') ||
+      userTitleNorm.includes('truong') ||
+      userTitleNorm.includes('chi huy') ||
+      userTitleNorm.includes('giam doc') ||
+      user.permissions?.includes('VIEW_ALL_ATTENDANCE') ||
+      user.permissions?.includes('MANAGE_ATTENDANCE') ||
+      user.permissions?.includes('MANAGE_PAYROLL') ||
+      user.permissions?.includes('APPROVE_LEAVE_STEP1') ||
+      user.permissions?.includes('APPROVE_LEAVE_FINAL')
+    );
+    return isAttendanceManager;
   }
 
   // 3. Leave requests: Targeted notifications based on metadata type (`leave_pending:::targetId:::targetName`)
@@ -673,7 +691,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
     }
 
     const role = String(user?.role || '').toLowerCase();
-    const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || role === 'quản lý' || role === 'giám sát' || user?.username === 'admin' || user?.permissions?.includes('ASSIGN_TASKS');
+    const isAdmin = role === 'admin' || role === 'quản trị viên' || role === 'pm' || role === 'quản lý dự án' || role === 'manager' || role === 'quản lý' || role === 'giám sát' || user?.username === 'admin';
 
     const title = (notification.title || '');
     const message = (notification.message || '');
