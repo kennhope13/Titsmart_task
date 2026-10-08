@@ -979,7 +979,8 @@ export const AttendancePage: React.FC = () => {
     }
     return list.filter(l => {
       if (filterDateFrom || filterDateTo) {
-        const logDate = new Date(l.checkInTime).toISOString().split('T')[0];
+        const dObj = new Date(l.checkInTime);
+        const logDate = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
         if (filterDateFrom && logDate < filterDateFrom) return false;
         if (filterDateTo && logDate > filterDateTo) return false;
       }
@@ -1326,7 +1327,118 @@ export const AttendancePage: React.FC = () => {
                 <span>Tạo đơn xin nghỉ</span>
               </button>
             </div>
-          ) : null}
+          ) : (
+            <div className="flex items-center gap-2">
+              {/* Desktop Filter Bar for Adjustment Tab */}
+              <div className="flex items-center gap-2 flex-1">
+                <CustomSelect
+                  value={adjTypeFilter}
+                  onChange={e => setAdjTypeFilter(e.target.value)}
+                  className="px-2 py-1 border border-slate-200 rounded-lg text-xs bg-slate-50 outline-none w-32 h-8"
+                >
+                  <option value="">Tất cả loại bù</option>
+                  <option value="Bù vào ca">Bù vào ca</option>
+                  <option value="Bù ra ca">Bù ra ca</option>
+                  <option value="Bù cả ngày">Bù cả ngày</option>
+                </CustomSelect>
+
+                <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-1.5 py-0.5 bg-slate-50 shadow-xs h-8">
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px] ml-0.5">Từ</span>
+                  <input
+                    type="date"
+                    value={adjFilterDateFrom}
+                    onChange={e => setAdjFilterDateFrom(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
+                  />
+                  <span className="text-slate-300">|</span>
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
+                  <input
+                    type="date"
+                    value={adjFilterDateTo}
+                    onChange={e => setAdjFilterDateTo(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
+                  />
+                  {(adjFilterDateFrom || adjFilterDateTo) && (
+                    <button type="button" onClick={() => { setAdjFilterDateFrom(''); setAdjFilterDateTo(''); }} className="text-slate-400 hover:text-slate-600 px-0.5 text-xs font-bold" title="Xóa lọc ngày">✕</button>
+                  )}
+                </div>
+
+                <div className="relative flex items-center">
+                  <span className="material-symbols-outlined absolute left-2 text-slate-400 text-sm pointer-events-none">search</span>
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm bù công..."
+                    value={adjSearchQuery}
+                    onChange={e => setAdjSearchQuery(e.target.value)}
+                    className="pl-7 pr-6 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary focus:outline-none h-8 w-36 lg:w-44 transition-colors"
+                  />
+                  {adjSearchQuery && (
+                    <button type="button" onClick={() => setAdjSearchQuery('')} className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer">
+                      <span className="material-symbols-outlined text-xs">close</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {displayedAdjustments.length > 0 && (
+                <div className="relative shrink-0">
+                  <button
+                    onClick={() => setShowAdjExportMenu(!showAdjExportMenu)}
+                    className="flex items-center justify-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg border border-emerald-200 transition-colors shadow-xs cursor-pointer h-8"
+                    title="Xuất file"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">file_download</span>
+                    <span>Xuất file</span>
+                    <span className="material-symbols-outlined text-xs">expand_more</span>
+                  </button>
+                  {showAdjExportMenu && (
+                    <div className="fixed inset-0 z-40" onClick={() => setShowAdjExportMenu(false)} />
+                  )}
+                  {showAdjExportMenu && (
+                    <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in duration-100">
+                      <button
+                        onClick={() => { setShowAdjExportMenu(false); handleExportAdjustmentsExcel('xlsx'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-green-600">grid_on</span>
+                        Excel (.xlsx)
+                      </button>
+                      <button
+                        onClick={() => { setShowAdjExportMenu(false); handleExportAdjustmentsExcel('csv'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-teal-600">csv</span>
+                        CSV (.csv)
+                      </button>
+                      <button
+                        onClick={() => { setShowAdjExportMenu(false); window.print(); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-red-600">picture_as_pdf</span>
+                        PDF (.pdf)
+                      </button>
+                      <button
+                        onClick={() => { setShowAdjExportMenu(false); handleExportAdjustmentsExcel('docx'); }}
+                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-base text-blue-600">description</span>
+                        Word (.docx)
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowAdjModal(true)}
+                className="flex items-center justify-center gap-1.5 px-3.5 py-1 bg-primary hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-lg shadow-sm transition-colors shrink-0 cursor-pointer active:scale-95 h-8"
+                title="Tạo yêu cầu chấm công bù"
+              >
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                <span>Tạo bù công</span>
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -1979,72 +2091,7 @@ export const AttendancePage: React.FC = () => {
             </button>
           </div>
 
-          {/* Desktop Filter Bar for Adjustment Tab */}
-          <div className="hidden md:flex items-center justify-between gap-3 px-4 py-2 border-b border-slate-200 bg-white shrink-0">
-            <div className="flex items-center gap-2 flex-1">
-              <div className="relative flex-1 max-w-xs">
-                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm nhân viên, lý do, dự án..."
-                  value={adjSearchQuery}
-                  onChange={e => setAdjSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-primary outline-none"
-                />
-              </div>
 
-              <CustomSelect
-                value={adjTypeFilter}
-                onChange={e => setAdjTypeFilter(e.target.value)}
-                className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 outline-none w-36"
-              >
-                <option value="">Tất cả loại bù</option>
-                <option value="Bù vào ca">Bù vào ca</option>
-                <option value="Bù ra ca">Bù ra ca</option>
-                <option value="Bù cả ngày">Bù cả ngày</option>
-              </CustomSelect>
-
-              <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-2 py-1 bg-slate-50 text-xs">
-                <span className="text-slate-400 font-medium">Từ</span>
-                <input
-                  type="date"
-                  value={adjFilterDateFrom}
-                  onChange={e => setAdjFilterDateFrom(e.target.value)}
-                  className="bg-transparent border-none outline-none text-slate-700 cursor-pointer"
-                />
-                <span className="text-slate-300">|</span>
-                <span className="text-slate-400 font-medium">Đến</span>
-                <input
-                  type="date"
-                  value={adjFilterDateTo}
-                  onChange={e => setAdjFilterDateTo(e.target.value)}
-                  className="bg-transparent border-none outline-none text-slate-700 cursor-pointer"
-                />
-                {(adjFilterDateFrom || adjFilterDateTo) && (
-                  <button onClick={() => { setAdjFilterDateFrom(''); setAdjFilterDateTo(''); }} className="text-slate-400 hover:text-slate-600 font-bold ml-1">✕</button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {displayedAdjustments.length > 0 && (
-                <button
-                  onClick={() => handleExportAdjustmentsExcel('xlsx')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold rounded-lg border border-emerald-200 text-xs transition-colors shadow-2xs cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[16px]">file_download</span>
-                  Xuất Excel
-                </button>
-              )}
-              <button
-                onClick={() => setShowAdjModal(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-blue-800 text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[16px]">add</span>
-                Tạo yêu cầu chấm công bù
-              </button>
-            </div>
-          </div>
 
           {/* Adjustment List / Table Area */}
           <div className="flex-1 overflow-y-auto p-2 sm:p-4">
