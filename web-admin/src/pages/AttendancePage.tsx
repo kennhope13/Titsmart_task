@@ -41,6 +41,16 @@ const formatDate = (iso: string) => {
   try { return new Date(iso).toLocaleDateString('vi-VN'); } catch { return iso; }
 };
 
+const normalizeStr = (s: any): string => {
+  return String(s || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/\s+/g, ' ');
+};
+
 const getDuration = (checkIn: string, checkOut?: string) => {
   if (!checkOut) return '—';
   const ms = new Date(checkOut).getTime() - new Date(checkIn).getTime();
@@ -649,7 +659,33 @@ export const AttendancePage: React.FC = () => {
         if (filterDateFrom && logDate < filterDateFrom) return false;
         if (filterDateTo && logDate > filterDateTo) return false;
       }
-      if (filterUser && l.userId !== filterUser) return false;
+      if (filterUser) {
+        const selectedEng = engineers.find(e => String(e.id) === String(filterUser) || String((e as any).username) === String(filterUser));
+        const targetIds = new Set([
+          String(filterUser).toLowerCase(),
+          String(filterUser).replace(/^user-/, '').replace(/^eng-/, '').toLowerCase(),
+          selectedEng?.id ? String(selectedEng.id).toLowerCase() : '',
+          selectedEng?.id ? String(selectedEng.id).replace(/^user-/, '').replace(/^eng-/, '').toLowerCase() : '',
+          (selectedEng as any)?.userId ? String((selectedEng as any).userId).toLowerCase() : '',
+          selectedEng?.username ? String(selectedEng.username).toLowerCase() : ''
+        ].filter(Boolean));
+
+        const targetNames = new Set([
+          selectedEng?.name ? String(selectedEng.name).trim().toLowerCase() : '',
+          selectedEng?.username ? String(selectedEng.username).trim().toLowerCase() : '',
+          selectedEng?.name ? normalizeStr(selectedEng.name) : ''
+        ].filter(Boolean));
+
+        const logUserId = String(l.userId || '').trim().toLowerCase();
+        const logUserIdClean = logUserId.replace(/^user-/, '').replace(/^eng-/, '');
+        const logUserName = String(l.userName || '').trim().toLowerCase();
+        const logUserNorm = normalizeStr(l.userName);
+
+        const matchId = targetIds.has(logUserId) || targetIds.has(logUserIdClean);
+        const matchName = targetNames.has(logUserName) || targetNames.has(logUserNorm) || (selectedEng?.name && logUserName.includes(selectedEng.name.toLowerCase()));
+
+        if (!matchId && !matchName) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchUser = l.userName?.toLowerCase().includes(q);
@@ -660,7 +696,7 @@ export const AttendancePage: React.FC = () => {
       }
       return true;
     });
-  }, [logs, tab, user, filterDateFrom, filterDateTo, filterUser, searchQuery, canViewAll]);
+  }, [logs, tab, user, filterDateFrom, filterDateTo, filterUser, searchQuery, canViewAll, engineers]);
 
   const todayStr = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
 
