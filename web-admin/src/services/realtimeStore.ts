@@ -1046,10 +1046,6 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
                 currentUser.role !== updatedUser.role) {
               authStore.updateUser(updatedUser);
             }
-          } else if (currentUser.username !== 'admin' && currentUser.email !== 'admin@titsmart.vn') {
-            // User was deleted from the database!
-            authStore.logout();
-            window.location.href = '/login';
           }
         }
       } catch (e) {
