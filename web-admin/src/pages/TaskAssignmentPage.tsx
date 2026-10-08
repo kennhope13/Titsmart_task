@@ -567,7 +567,7 @@ export const TaskAssignmentPage: React.FC = () => {
       list = list.filter(t => t.projectCode === filterProjectCode);
     }
     const total = list.length;
-    const unassigned = list.filter(t => !t.assignedEngineerId || t.status === 'Chưa làm').length;
+    const unassigned = list.filter(t => (!t.assignedEngineerId && !t.assignedEngineerName) || (t.status === 'Chưa làm' && !t.assignedEngineerId)).length;
     const pending = list.filter(t => t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc').length;
     const inProgress = list.filter(t => t.status === 'Đang làm').length;
     const review = list.filter(t => t.status === 'Chờ nghiệm thu').length;
@@ -590,7 +590,7 @@ export const TaskAssignmentPage: React.FC = () => {
     }
 
     if (projectFilterStatus === 'unassigned') {
-      list = list.filter(t => !t.assignedEngineerId || t.status === 'Chưa làm');
+      list = list.filter(t => (!t.assignedEngineerId && !t.assignedEngineerName) || (t.status === 'Chưa làm' && !t.assignedEngineerId));
     } else if (projectFilterStatus === 'pending') {
       list = list.filter(t => t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc');
     } else if (projectFilterStatus === 'in_progress') {
