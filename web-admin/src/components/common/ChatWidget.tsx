@@ -101,6 +101,7 @@ export const ChatWidget: React.FC = () => {
   const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({ startX: 0, startY: 0, initX: 0, initY: 0 });
   const hasMovedRef = useRef(false);
   const buttonRef = useRef<HTMLDivElement>(null);
+  const modalOpenedAtRef = useRef<number>(0);
 
   const openChatModal = (e?: React.SyntheticEvent) => {
     if (e) {
@@ -109,6 +110,7 @@ export const ChatWidget: React.FC = () => {
         e.stopPropagation();
       } catch (_) {}
     }
+    modalOpenedAtRef.current = Date.now();
     setIsOpen(true);
     setSelectedTarget(null);
     setMobileView('contacts');
@@ -465,14 +467,30 @@ export const ChatWidget: React.FC = () => {
     }
   };
 
-  const handleSelectTarget = (target: { type: 'user' | 'project'; id: string; username?: string; name: string; avatar?: string }) => {
+  const handleSelectTarget = (target: { type: 'user' | 'project'; id: string; username?: string; name: string; avatar?: string }, e?: React.SyntheticEvent) => {
+    if (e) {
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch (_) {}
+    }
+    // Ngăn chặn hiện tượng ghost click / chạm xuyên nút trên màn hình cảm ứng điện thoại
+    if (Date.now() - modalOpenedAtRef.current < 450) {
+      return;
+    }
     setSelectedTarget(target);
     setMobileView('messages');
     isNearBottomRef.current = true;
     setTimeout(() => scrollToBottom(true, 'auto'), 80);
   };
 
-  const handleClose = () => {
+  const handleClose = (e?: React.SyntheticEvent) => {
+    if (e) {
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch (_) {}
+    }
     setIsOpen(false);
     setSelectedTarget(null);
     setMobileView('contacts');
@@ -508,7 +526,7 @@ export const ChatWidget: React.FC = () => {
         return (
           <button
             key={p.id}
-            onClick={() => handleSelectTarget({ type: 'project', id: p.code, name: p.name })}
+            onClick={(e) => handleSelectTarget({ type: 'project', id: p.code, name: p.name }, e)}
             className={`w-full text-left px-4 py-3 text-[13px] flex items-center gap-3 border-b border-slate-50 transition-colors ${isSelected ? 'bg-blue-50 text-blue-900 font-bold' : 'text-slate-700 hover:bg-slate-50 active:bg-slate-100'}`}
           >
             <span className="text-base shrink-0">🏢</span>
@@ -561,7 +579,7 @@ export const ChatWidget: React.FC = () => {
             return (
               <button
                 key={u.id}
-                onClick={() => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar })}
+                onClick={(e) => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar }, e)}
                 className={`w-full text-left px-4 py-3 text-[13px] flex items-center gap-3 border-b border-slate-50 transition-colors ${isSelected ? 'bg-blue-50 text-blue-900 font-bold' : 'text-slate-700 hover:bg-slate-50 active:bg-slate-100'}`}
               >
                 <div className="relative shrink-0">
@@ -855,7 +873,7 @@ export const ChatWidget: React.FC = () => {
                   return (
                     <button
                       key={p.id}
-                      onClick={() => handleSelectTarget({ type: 'project', id: p.code, name: p.name })}
+                      onClick={(e) => handleSelectTarget({ type: 'project', id: p.code, name: p.name }, e)}
                       className={`w-full text-left px-2.5 py-2 text-[12px] font-medium transition-colors flex items-start gap-1.5 ${isSelected ? 'bg-blue-100 text-blue-900 font-bold border-r-2 border-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}
                       title={displayName}
                     >
@@ -906,7 +924,7 @@ export const ChatWidget: React.FC = () => {
                       return (
                         <button
                           key={u.id}
-                          onClick={() => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar })}
+                          onClick={(e) => handleSelectTarget({ type: 'user', id: u.id, username: u.username, name: u.name, avatar: u.avatar }, e)}
                           className={`w-full text-left px-3 py-2.5 text-[13px] truncate font-medium flex items-center gap-2 transition-colors ${isSelected ? 'bg-blue-100 text-blue-900 font-bold border-r-2 border-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}
                         >
                           <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
