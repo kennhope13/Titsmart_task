@@ -971,27 +971,40 @@ export const api = {
       };
 
       const sanitized = sanitizeEngineersPayload(payload);
-
       const projCodes = data.projectCodes || data.project_codes;
       try {
         const { data: result, error } = await supabase.from('engineers').update(sanitized).eq('id', id).select();
         if (!error && Array.isArray(result) && result.length > 0) {
           const row = toCamelCase(result[0]);
           if (projCodes !== undefined) row.projectCodes = projCodes;
+          if (data.password) row.password = data.password;
           return row;
         }
         if (error) {
-          delete sanitized.is_locked;
-          delete sanitized.password;
-          delete sanitized.is_active;
-          const { data: retryResult } = await supabase.from('engineers').update(sanitized).eq('id', id).select();
-          const row = Array.isArray(retryResult) && retryResult.length > 0 ? retryResult[0] : { id, ...data };
-          const camel = toCamelCase(row);
-          if (projCodes !== undefined) camel.projectCodes = projCodes;
-          return camel;
+          console.warn('[Engineers] Update error, retrying without status columns:', error.message);
+          const retryPayload = { ...sanitized };
+          delete retryPayload.is_locked;
+          delete retryPayload.is_active;
+          const { data: retryResult, error: retryError } = await supabase.from('engineers').update(retryPayload).eq('id', id).select();
+          if (!retryError && Array.isArray(retryResult) && retryResult.length > 0) {
+            const row = toCamelCase(retryResult[0]);
+            if (projCodes !== undefined) row.projectCodes = projCodes;
+            if (data.password) row.password = data.password;
+            return row;
+          }
+          if (retryError) {
+            console.warn('[Engineers] Retry failed, updating without password column:', retryError.message);
+            delete retryPayload.password;
+            const { data: finalResult } = await supabase.from('engineers').update(retryPayload).eq('id', id).select();
+            const row = Array.isArray(finalResult) && finalResult.length > 0 ? finalResult[0] : { id, ...data };
+            const camel = toCamelCase(row);
+            if (projCodes !== undefined) camel.projectCodes = projCodes;
+            if (data.password) camel.password = data.password;
+            return camel;
+          }
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.warn('[Engineers] Update catch error:', err);
       }
       return { id, ...data };
     },

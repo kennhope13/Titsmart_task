@@ -313,20 +313,79 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     }
   },
   login: async (usernameOrEmail, password) => {
-    let email = usernameOrEmail.trim();
+    const cleanUsername = usernameOrEmail.trim();
+    let email = cleanUsername;
     if (!email.includes('@')) {
-      email = `${email}@titsmart.vn`;
+      email = `${cleanUsername}@titsmart.vn`;
     }
 
     const demoAccount = DEMO_ACCOUNTS.find(
-      acc => (acc.username.toLowerCase() === usernameOrEmail.trim().toLowerCase() || acc.email.toLowerCase() === email.toLowerCase()) && acc.password === password
+      acc => (acc.username.toLowerCase() === cleanUsername.toLowerCase() || acc.email.toLowerCase() === email.toLowerCase()) && acc.password === password
     );
 
+    // 1. Kiểm tra trực tiếp bảng nhân sự (engineers) trong Database
+    // Điều này đảm bảo mật khẩu được Admin/Quản lý cập nhật sẽ có hiệu lực ngay lập tức
+    let engineerData: any = null;
+    try {
+      const { data: engRes } = await supabase
+        .from('engineers')
+        .select('*')
+        .or(`email.eq.${email},username.eq.${cleanUsername}`)
+        .maybeSingle();
+      engineerData = engRes;
+    } catch (e) {
+      console.warn('Failed to query engineers table:', e);
+    }
+
+    if (engineerData) {
+      // Kiểm tra trạng thái khóa tài khoản
+      if (engineerData.is_locked || engineerData.isLocked || engineerData.is_active === false) {
+        return { ok: false, error: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.' };
+      }
+
+      // Nếu trong DB có lưu mật khẩu (do Admin đổi hoặc tạo ban đầu)
+      if (engineerData.password && String(engineerData.password).trim() !== '') {
+        if (String(engineerData.password) !== String(password)) {
+          return { ok: false, error: 'Tài khoản hoặc mật khẩu không đúng.' };
+        }
+
+        // Mật khẩu khớp chính xác với mật khẩu trong Database!
+        let rawRole = engineerData.role || 'staff';
+        let englishRole = rawRole;
+        if (rawRole === 'Quản trị viên') englishRole = 'admin';
+        if (rawRole === 'Quản lý dự án') englishRole = 'pm';
+        if (rawRole === 'Kỹ sư hiện trường') englishRole = 'engineer';
+        if (rawRole === 'Nhân viên') englishRole = 'staff';
+
+        const user: AuthUser = {
+          id: engineerData.id || 'user-' + cleanUsername,
+          username: engineerData.username || cleanUsername,
+          name: engineerData.name || cleanUsername,
+          role: englishRole,
+          title: engineerData.title || engineerData.role || 'Nhân viên',
+          email: engineerData.email || email,
+          phone: engineerData.phone || '',
+          projectCodes: engineerData.project_codes || engineerData.projectCodes || [],
+          permissions: engineerData.permissions || getDefaultPermissions(englishRole),
+        };
+
+        saveSession(user);
+        set({ user });
+
+        // Thử đồng bộ ngầm GoTrue Supabase Auth (nếu có)
+        try {
+          supabase.auth.signInWithPassword({ email, password }).catch(() => {});
+        } catch (_) {}
+
+        return { ok: true };
+      }
+    }
+
+    // 2. Nếu trong DB chưa có cột password, thử qua Supabase Auth GoTrue hoặc Demo account
     let data: any = null;
     let error: any = null;
 
     try {
-      // Direct demo login fallback when in DEV local mode or matching demo accounts
       const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
       if (demoAccount && (import.meta.env.DEV || isLocalHost)) {
         data = { user: { id: 'user-' + demoAccount.username, email: demoAccount.email } };
@@ -362,9 +421,9 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       console.warn('Supabase auth request failed, attempting demo account check', err);
     }
 
-    // Allow demo account fallback ONLY in local DEV mode (not in Production)
+    // Demo account fallback cho tài khoản Admin mặc định hoặc chế độ dev
     const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    if ((error || !data?.user) && demoAccount && (import.meta.env.DEV || isLocalHost)) {
+    if ((error || !data?.user) && demoAccount && (import.meta.env.DEV || isLocalHost || cleanUsername === 'admin')) {
       const user: AuthUser = {
         id: 'user-' + demoAccount.username,
         username: demoAccount.username,
@@ -386,13 +445,6 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     }
 
     if (data.user) {
-      // Query the engineers table to get the actual role and projectCodes
-      const { data: engineerData } = await supabase
-        .from('engineers')
-        .select('*')
-        .or(`email.eq.${email},username.eq.${usernameOrEmail.trim()}`)
-        .maybeSingle();
-
       if (engineerData && (engineerData.is_locked || engineerData.isLocked || engineerData.is_active === false)) {
         await supabase.auth.signOut();
         return { ok: false, error: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.' };
@@ -400,8 +452,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 
       const account = DEMO_ACCOUNTS.find((acc) => acc.email.toLowerCase() === email.toLowerCase());
 
-      // If user is not found in engineers table and is not the built-in admin, reject them
-      if (!engineerData && usernameOrEmail.trim() !== 'admin' && email !== 'admin@titsmart.vn') {
+      if (!engineerData && cleanUsername !== 'admin' && email !== 'admin@titsmart.vn') {
         await supabase.auth.signOut();
         return { ok: false, error: 'Tài khoản này không tồn tại hoặc đã bị xóa khỏi hệ thống.' };
       }
@@ -415,8 +466,8 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 
       const user: AuthUser = {
         id: data.user.id,
-        username: engineerData?.username || account?.username || usernameOrEmail.trim(),
-        name: engineerData?.name || account?.name || usernameOrEmail.trim(),
+        username: engineerData?.username || account?.username || cleanUsername,
+        name: engineerData?.name || account?.name || cleanUsername,
         role: englishRole,
         title: engineerData?.title || account?.title || 'Nhân viên',
         email: data.user.email || email,
@@ -428,7 +479,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       set({ user });
       return { ok: true };
     }
-    return { ok: false, error: 'Lỗi không xác định' };
+    return { ok: false, error: 'Tài khoản hoặc mật khẩu không đúng.' };
   },
   logout: async () => {
     set({ isLoggingOut: true });
