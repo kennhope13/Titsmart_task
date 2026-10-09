@@ -928,9 +928,18 @@ export const api = {
         payload.is_active = !payload.is_locked;
         delete payload.is_locked;
       }
+      if (data.projectCodes !== undefined || data.project_codes !== undefined) {
+        payload.project_codes = Array.isArray(data.projectCodes) ? data.projectCodes : (Array.isArray(data.project_codes) ? data.project_codes : []);
+      }
+      delete payload.managed_projects;
+      delete payload.member_projects;
+      delete payload.managedProjects;
+      delete payload.memberProjects;
+      delete payload.projectCodes;
+
       const { data: result, error } = await supabase.from('engineers').insert(payload).select().single();
       if (error) {
-        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('password') || String(error.message).includes('is_locked') || String(error.message).includes('is_active')) {
+        if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column') || String(error.message).includes('password') || String(error.message).includes('is_locked') || String(error.message).includes('is_active') || String(error.message).includes('project_codes')) {
           delete payload.updated_by;
           delete payload.updated_at;
           delete payload.is_locked;
@@ -938,6 +947,7 @@ export const api = {
           if (retryError) {
             delete payload.password;
             delete payload.is_active;
+            delete payload.project_codes;
             const { data: finalResult, error: finalError } = await supabase.from('engineers').insert(payload).select().single();
             if (finalError) throw finalError;
             return toCamelCase(finalResult);
@@ -955,11 +965,12 @@ export const api = {
         delete payload.is_locked;
       }
       
+      const projCodes = Array.isArray(data.projectCodes) ? data.projectCodes : (Array.isArray(data.project_codes) ? data.project_codes : undefined);
+
       const sanitizeEngineersPayload = (p: any) => {
         const clean = { ...p };
         delete clean.managed_projects;
         delete clean.member_projects;
-        delete clean.project_codes;
         delete clean.managedProjects;
         delete clean.memberProjects;
         delete clean.projectCodes;
@@ -967,11 +978,13 @@ export const api = {
         delete clean.updated_at;
         delete clean.updatedBy;
         delete clean.updatedAt;
+        if (projCodes !== undefined) {
+          clean.project_codes = projCodes;
+        }
         return clean;
       };
 
       const sanitized = sanitizeEngineersPayload(payload);
-      const projCodes = data.projectCodes || data.project_codes;
       try {
         const { data: result, error } = await supabase.from('engineers').update(sanitized).eq('id', id).select();
         if (!error && Array.isArray(result) && result.length > 0) {
