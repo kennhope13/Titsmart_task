@@ -597,14 +597,15 @@ export const ProjectManagementPage: React.FC = () => {
 
     logActivity(`Tạo dự án mới: ${newProject.name}`, newProject.name);
     
-    // Bắn thông báo đến tất cả người dùng trong hệ thống (ngoại trừ người tạo)
+    // Bắn thông báo đến nhân sự được gán vào dự án và Quản trị viên
     if (addNotification) {
       const creatorName = currentUser?.name || currentUser?.username || 'Quản lý';
       const creatorId = currentUser?.id || '';
+      const targetEngineerIds = (selectedEngineerIds || []).map(id => String(id).trim()).filter(Boolean);
       await addNotification({
         title: `Dự án mới: [${newProject.code}] ${newProject.name}`,
         message: `${creatorName} vừa tạo dự án mới: "${newProject.name}" (${newProject.code}).`,
-        type: `project_created:::ALL:::${encodeURIComponent(newProject.code)}`,
+        type: `project_created:::${encodeURIComponent(newProject.code)}:::${targetEngineerIds.join(',')}`,
         link: `/projects/${encodeURIComponent(newProject.code)}`,
         senderId: creatorId,
         senderName: creatorName,

@@ -417,21 +417,24 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
     }
   }
 
-  // 7. Check metadata in type (e.g. 'document_update:::PJ_CODE', 'field_log:::PJ_CODE')
+  // 7. Check metadata in type (e.g. 'project_created:::PJ_CODE:::ID1,ID2', 'document_update:::PJ_CODE')
   if (typeStr.includes(':::')) {
     const parts = typeStr.split(':::');
     const prefix = parts[0];
     const targetProject = parts[1]?.toUpperCase();
+    const decodedTargetProj = decodeURIComponent(parts[1] || '').toUpperCase();
+    const targetIds = (parts[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
     if (['project', 'project_created', 'project_new', 'document_update', 'field_log', 'material_update', 'issue_alert', 'document_due'].includes(prefix)) {
-      if (!targetProject || targetProject === 'COMPANY' || targetProject === 'ALL' || targetProject === 'ALL_PROJECTS') return true;
-      if (userProjectCodes.has(targetProject)) return true;
+      if (targetIds.some(tId => isMatchingId(tId))) return true;
+      if (decodedTargetProj && (userProjectCodes.has(decodedTargetProj) || userProjectCodes.has(targetProject))) return true;
+      if (targetProject === 'COMPANY') return true;
       return false;
     }
 
     const targetId = parts[1]?.toLowerCase();
     const targetName = parts[2]?.toLowerCase();
-    if (targetId && (targetId === userId || (myEng && targetId === String(myEng.id).toLowerCase()))) return true;
+    if (targetId && (isMatchingId(targetId) || (myEng && targetId === String(myEng.id).toLowerCase()))) return true;
     if (targetName && myNames.some(n => targetName.includes(n) || n.includes(targetName))) return true;
     return false;
   }
@@ -440,12 +443,17 @@ const isNotificationForUser = (notification: any, user: any, engineers: any[] = 
   const pMatch = message.match(/\[([A-Za-z0-9_-]+)\]/);
   if (pMatch) {
     const code = pMatch[1].toUpperCase();
-    if (code === 'COMPANY' || code === 'ALL') return true;
+    if (code === 'COMPANY') return true;
     if (userProjectCodes.has(code)) return true;
     return false;
   }
 
-  return true;
+  // Không spam thông báo dự án cho nhân sự không liên quan
+  if (tLow.includes('dự án mới') || tLow.includes('tạo dự án') || typeStr.startsWith('project')) {
+    return false;
+  }
+
+  return false;
 };
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = false, isExpanded = false }) => {

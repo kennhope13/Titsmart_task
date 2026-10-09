@@ -1764,10 +1764,11 @@ const hasSyncedRef = useRef(false);
       const creator = authStore?.user;
       const creatorName = creator?.name || creator?.username || 'Quản lý';
       const creatorId = creator?.id || '';
+      const managerTargetId = createdManager?.id || newProjManagerId || '';
       addNotification({
         title: `Dự án mới: [${code}] ${newProjName}`,
         message: `${creatorName} vừa tạo dự án mới: "${newProjName}" (${code}).`,
-        type: `project_created:::ALL:::${encodeURIComponent(code)}`,
+        type: `project_created:::${encodeURIComponent(code)}:::${managerTargetId}`,
         link: `/projects/${encodeURIComponent(code)}`,
         senderId: creatorId,
         senderName: creatorName,
