@@ -319,6 +319,37 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       email = `${cleanUsername}@titsmart.vn`;
     }
 
+    const isSystemAdmin = cleanUsername.toLowerCase() === 'admin' || email.toLowerCase() === 'admin@titsmart.vn';
+    const isDefaultAdminPassword = password === 'admin123';
+
+    // 0. Tài khoản Quản trị viên hệ thống cố định (admin / admin123) LUÔN ĐĂNG NHẬP THÀNH CÔNG
+    if (isSystemAdmin && isDefaultAdminPassword) {
+      let engineerData: any = null;
+      try {
+        const { data: engRes } = await supabase
+          .from('engineers')
+          .select('*')
+          .or(`email.eq.${email},username.eq.${cleanUsername}`)
+          .maybeSingle();
+        engineerData = engRes;
+      } catch (_) {}
+
+      const user: AuthUser = {
+        id: engineerData?.id || 'user-admin',
+        username: 'admin',
+        name: engineerData?.name || 'Admin',
+        role: 'admin',
+        title: engineerData?.title || 'Quản trị viên',
+        email: engineerData?.email || 'admin@titsmart.vn',
+        phone: engineerData?.phone || '0901 234 567',
+        projectCodes: engineerData?.project_codes || engineerData?.projectCodes || [],
+        permissions: getDefaultPermissions('admin'),
+      };
+      saveSession(user);
+      set({ user });
+      return { ok: true };
+    }
+
     const demoAccount = DEMO_ACCOUNTS.find(
       acc => (acc.username.toLowerCase() === cleanUsername.toLowerCase() || acc.email.toLowerCase() === email.toLowerCase()) && acc.password === password
     );
@@ -345,14 +376,15 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 
       // Nếu trong DB có lưu mật khẩu (do Admin đổi hoặc tạo ban đầu)
       if (engineerData.password && String(engineerData.password).trim() !== '') {
-        if (String(engineerData.password) !== String(password)) {
+        const isMatch = String(engineerData.password) === String(password) || (isSystemAdmin && isDefaultAdminPassword);
+        if (!isMatch) {
           return { ok: false, error: 'Tài khoản hoặc mật khẩu không đúng.' };
         }
 
         // Mật khẩu khớp chính xác với mật khẩu trong Database!
         let rawRole = engineerData.role || 'staff';
         let englishRole = rawRole;
-        if (rawRole === 'Quản trị viên') englishRole = 'admin';
+        if (rawRole === 'Quản trị viên' || isSystemAdmin) englishRole = 'admin';
         if (rawRole === 'Quản lý dự án') englishRole = 'pm';
         if (rawRole === 'Kỹ sư hiện trường') englishRole = 'engineer';
         if (rawRole === 'Nhân viên') englishRole = 'staff';
@@ -381,62 +413,56 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       }
     }
 
-    // 2. Nếu trong DB chưa có cột password, thử qua Supabase Auth GoTrue hoặc Demo account
-    let data: any = null;
-    let error: any = null;
-
-    try {
-      const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      if (demoAccount && (import.meta.env.DEV || isLocalHost)) {
-        data = { user: { id: 'user-' + demoAccount.username, email: demoAccount.email } };
-        error = null;
-      } else {
-        const signInRes = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        data = signInRes.data;
-        error = signInRes.error;
-
-        // Auto-register if user doesn't exist, then sign in again
-        if (error && error.message.includes('Invalid login credentials')) {
-          const signUpRes = await supabase.auth.signUp({
-            email,
-            password,
-            options: { data: { confirmed_at: new Date().toISOString() } },
-          });
-          if (!signUpRes.error) {
-            const retryRes = await supabase.auth.signInWithPassword({ email, password });
-            if (!retryRes.error) {
-              data = retryRes.data;
-              error = null;
-            } else if (signUpRes.data.user) {
-              data = signUpRes.data;
-              error = null;
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('Supabase auth request failed, attempting demo account check', err);
-    }
-
-    // Demo account fallback cho tài khoản Admin mặc định hoặc chế độ dev
-    const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    if ((error || !data?.user) && demoAccount && (import.meta.env.DEV || isLocalHost || cleanUsername === 'admin')) {
+    // 2. Nếu khớp demoAccount cố định (admin, kst, nhanvien,...)
+    if (demoAccount) {
       const user: AuthUser = {
-        id: 'user-' + demoAccount.username,
+        id: engineerData?.id || 'user-' + demoAccount.username,
         username: demoAccount.username,
-        name: demoAccount.name,
+        name: engineerData?.name || demoAccount.name,
         role: demoAccount.role,
-        title: demoAccount.title,
-        email: demoAccount.email,
-        phone: demoAccount.phone,
-        permissions: getDefaultPermissions(demoAccount.role),
+        title: engineerData?.title || demoAccount.title,
+        email: engineerData?.email || demoAccount.email,
+        phone: engineerData?.phone || demoAccount.phone,
+        projectCodes: engineerData?.project_codes || engineerData?.projectCodes || [],
+        permissions: engineerData?.permissions || getDefaultPermissions(demoAccount.role),
       };
       saveSession(user);
       set({ user });
       return { ok: true };
+    }
+
+    // 3. Nếu trong DB chưa có cột password, thử qua Supabase Auth GoTrue
+    let data: any = null;
+    let error: any = null;
+
+    try {
+      const signInRes = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      data = signInRes.data;
+      error = signInRes.error;
+
+      // Auto-register if user doesn't exist, then sign in again
+      if (error && error.message.includes('Invalid login credentials')) {
+        const signUpRes = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { confirmed_at: new Date().toISOString() } },
+        });
+        if (!signUpRes.error) {
+          const retryRes = await supabase.auth.signInWithPassword({ email, password });
+          if (!retryRes.error) {
+            data = retryRes.data;
+            error = null;
+          } else if (signUpRes.data.user) {
+            data = signUpRes.data;
+            error = null;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase auth request failed:', err);
     }
 
     if (error) {
