@@ -2783,22 +2783,22 @@ export function setupRealtimeSync() {
     }, 4000);
   };
 
-  // Tạo 1 Channel tổng duy nhất lắng nghe tất cả các bảng
-  const channel = supabase.channel('realtime-global-sync');
-
-  REALTIME_TABLES.forEach((tableName) => {
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: tableName }, debouncedRefresh);
+  // Tạo 1 Channel tổng duy nhất lắng nghe broadcast thời gian thực (không tải Postgres Connection Pool)
+  const channel = supabase.channel('realtime-global-sync', {
+    config: {
+      broadcast: { self: false },
+    }
   });
 
-  // Lắng nghe sự kiện Broadcast thời gian thực giữa tất cả các thiết bị/trình duyệt
+  // Lắng nghe sự kiện Broadcast thời gian thực giữa tất cả các thiết bị/trình duyệt (0% tải DB)
   channel.on('broadcast', { event: 'REALTIME_SYNC' }, (eventData: any) => {
     debouncedRefresh(eventData?.payload);
   });
 
   try {
     channel.subscribe((status: string, err?: any) => {
-      console.log('[Realtime] Trạng thái kết nối (Single Channel):', status);
-      if (err) console.warn('[Realtime] Realtime subscription error ignored:', err);
+      console.log('[Realtime] Trạng thái kết nối:', status);
+      if (err) console.warn('[Realtime] Subscription error ignored:', err);
     });
   } catch (e) {
     console.warn('[Realtime] Could not subscribe to realtime channel', e);

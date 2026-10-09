@@ -464,23 +464,10 @@ export const AttendancePage: React.FC = () => {
   };
 
   useEffect(() => {
-    // Chỉ nạp dữ liệu một lần duy nhất khi vào trang
+    // Nạp dữ liệu khi vào trang
     fetchLogs(false);
     fetchLeaves(false);
     fetchAdjustments();
-
-    const channel = supabase.channel('attendance_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, () => {
-        // Cập nhật ngầm trong nền khi database thay đổi
-        fetchLogs(false);
-        fetchLeaves(false);
-        fetchAdjustments();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const handleCreateAdjustment = async () => {
