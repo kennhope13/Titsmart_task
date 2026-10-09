@@ -102,7 +102,20 @@ export const ChatWidget: React.FC = () => {
   const hasMovedRef = useRef(false);
   const buttonRef = useRef<HTMLDivElement>(null);
 
+  const openChatModal = (e?: React.SyntheticEvent) => {
+    if (e) {
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch (_) {}
+    }
+    setIsOpen(true);
+    setSelectedTarget(null);
+    setMobileView('contacts');
+  };
+
   const handlePointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
     if (e.button !== 0 && e.pointerType === 'mouse') return;
 
     const btnElem = buttonRef.current;
@@ -142,13 +155,8 @@ export const ChatWidget: React.FC = () => {
     }
   };
 
-  const openChatModal = () => {
-    setIsOpen(true);
-    setSelectedTarget(null);
-    setMobileView('contacts');
-  };
-
   const handlePointerUp = (e: React.PointerEvent) => {
+    e.stopPropagation();
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
 
@@ -157,7 +165,8 @@ export const ChatWidget: React.FC = () => {
     } catch (err) {}
 
     if (!hasMovedRef.current) {
-      openChatModal();
+      e.preventDefault();
+      openChatModal(e);
     }
 
     setTimeout(() => {
@@ -166,6 +175,7 @@ export const ChatWidget: React.FC = () => {
   };
 
   const handlePointerCancel = (e: React.PointerEvent) => {
+    e.stopPropagation();
     isDraggingRef.current = false;
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
@@ -176,11 +186,12 @@ export const ChatWidget: React.FC = () => {
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     if (hasMovedRef.current) {
       return;
     }
-    openChatModal();
+    openChatModal(e);
   };
 
   useEffect(() => {
@@ -1128,6 +1139,12 @@ export const ChatWidget: React.FC = () => {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           style={
             position
               ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto' }
@@ -1143,6 +1160,7 @@ export const ChatWidget: React.FC = () => {
             type="button"
             onClick={handleButtonClick}
             onDoubleClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               setPosition(null);
             }}
