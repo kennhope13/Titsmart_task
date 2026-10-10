@@ -412,7 +412,7 @@ export const api = {
     },
 
     getExpenses: async (projectCode?: string) => {
-      const queryCols = 'id,date,content,amount,category,payment_method,requester,status,notes,project_code,created_at,stt,description,unit,quantity,unit_price,tax_amount,total_amount,income_amount,balance_fund,spender_name,updated_by,updated_at';
+      const queryCols = 'id,date,content,amount,category,payment_method,requester,status,notes,project_code,created_at,stt,description,unit,quantity,unit_price,tax_amount,total_amount,income_amount,balance_fund,invoice_url,spender_name,updated_by,updated_at';
       let query = supabase.from('expenses').select(queryCols);
       if (projectCode) {
         query = query.eq('project_code', projectCode);
