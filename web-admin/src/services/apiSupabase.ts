@@ -1044,17 +1044,6 @@ export const api = {
             .select('*')
             .neq('icon', 'LEAVE_REQUEST')
             .neq('icon', 'ATTENDANCE_SESSION')
-            .order('created_at', { ascending: false })
-            .limit(300);
-          data = res.data;
-          error = res.error;
-        }
-
-        if (error) {
-          const res = await supabase
-            .from('activity_logs')
-            .select('*')
-            .order('created_at', { ascending: false })
             .limit(300);
           data = res.data;
           error = res.error;
@@ -2136,23 +2125,15 @@ export const api = {
           .from('activity_logs')
           .select('*')
           .eq('icon', 'ATTENDANCE_SESSION')
-          .order('timestamp', { ascending: false });
+          .order('timestamp', { ascending: false })
+          .limit(300);
 
         if (error) {
           const res = await supabase
             .from('activity_logs')
             .select('*')
             .eq('icon', 'ATTENDANCE_SESSION')
-            .order('created_at', { ascending: false });
-          data = res.data;
-          error = res.error;
-        }
-
-        if (error) {
-          const res = await supabase
-            .from('activity_logs')
-            .select('*')
-            .eq('icon', 'ATTENDANCE_SESSION');
+            .limit(300);
           data = res.data;
           error = res.error;
         }
@@ -2253,23 +2234,15 @@ export const api = {
           .from('activity_logs')
           .select('*')
           .eq('icon', 'LEAVE_REQUEST')
-          .order('timestamp', { ascending: false });
+          .order('timestamp', { ascending: false })
+          .limit(300);
 
         if (error) {
           const res = await supabase
             .from('activity_logs')
             .select('*')
             .eq('icon', 'LEAVE_REQUEST')
-            .order('created_at', { ascending: false });
-          data = res.data;
-          error = res.error;
-        }
-
-        if (error) {
-          const res = await supabase
-            .from('activity_logs')
-            .select('*')
-            .eq('icon', 'LEAVE_REQUEST');
+            .limit(300);
           data = res.data;
           error = res.error;
         }
