@@ -2804,27 +2804,31 @@ export function setupRealtimeSync() {
     console.warn('[Realtime] Could not subscribe to realtime channel', e);
   }
 
-  // Heartbeat polling 30s tự động kiểm tra tin nhắn & thông báo mới (tối ưu quota kết nối Supabase)
+  // Heartbeat polling 60s tự động kiểm tra tin nhắn & thông báo mới (chỉ chạy khi tab đang mở)
   const heartbeatInterval = setInterval(() => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
     const store = useRealtimeStore.getState();
     store.fetchNotifications();
     store.fetchDirectMessages();
-  }, 30000);
+  }, 60000);
 
-  // Tự động tải lại dữ liệu mới nhất khi chuyển tab / focus lại cửa sổ
+  // Tự động tải lại dữ liệu khi quay lại tab (có giới hạn giãn cách tối thiểu 60s để tránh spam request)
+  let lastFocusFetch = Date.now();
   const handleFocus = () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+    const now = Date.now();
+    if (now - lastFocusFetch < 60000) return; // Bỏ qua nếu vừa focus trong vòng 60 giây
+    lastFocusFetch = now;
     const store = useRealtimeStore.getState();
     store.fetchNotifications();
     store.fetchDirectMessages();
-    store.fetchTasks(undefined);
-    store.fetchProjects();
   };
   if (typeof window !== 'undefined') {
     window.addEventListener('focus', handleFocus);
   }
 
   realtimeChannel = channel;
-  console.log('[Realtime] Đã kích hoạt 1 kênh đồng bộ thời gian thực tối ưu duy nhất cho 14 bảng.');
+  console.log('[Realtime] Đã kích hoạt 1 kênh đồng bộ thời gian thực tối ưu duy nhất.');
 
   return () => {
     clearInterval(heartbeatInterval);

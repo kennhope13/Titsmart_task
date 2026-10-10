@@ -210,8 +210,6 @@ export const ChatWidget: React.FC = () => {
 
   useEffect(() => {
     fetchDirectMessages();
-    fetchEngineers();
-    fetchProjects();
   }, []);
 
   // Supabase Presence tracking for real-time online status
@@ -236,9 +234,6 @@ export const ChatWidget: React.FC = () => {
           }
         });
         setOnlineUserIds(Array.from(new Set(activeIds)));
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, () => {
-        fetchDirectMessages();
       })
       .on('broadcast', { event: 'REALTIME_SYNC' }, (payload: any) => {
         if (!payload?.payload?.table || payload.payload.table === 'direct_messages') {
