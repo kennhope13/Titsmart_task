@@ -3673,9 +3673,21 @@ export const ProjectCostPlanPage: React.FC = () => {
               <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary font-bold rounded-lg border border-primary/30 hover:bg-primary/20 transition-colors">
                 <span className="material-symbols-outlined text-sm">upload_file</span>
                 Chọn ảnh
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    try {
+                      const ext = file.name.split('.').pop() || 'jpg';
+                      const filePath = `invoices/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+                      const { error: uploadError } = await supabase.storage.from('titsmart-images').upload(filePath, file, { cacheControl: '3600', upsert: true });
+                      if (!uploadError) {
+                        const { data } = supabase.storage.from('titsmart-images').getPublicUrl(filePath);
+                        setNewExpenseData({...newExpenseData, invoiceUrl: data.publicUrl});
+                        return;
+                      }
+                    } catch (err) {
+                      console.warn('Storage upload failed:', err);
+                    }
                     const reader = new FileReader();
                     reader.onloadend = () => setNewExpenseData({...newExpenseData, invoiceUrl: reader.result as string});
                     reader.readAsDataURL(file);
@@ -3818,9 +3830,21 @@ export const ProjectCostPlanPage: React.FC = () => {
                 <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary font-bold rounded-lg border border-primary/30 hover:bg-primary/20 transition-colors">
                   <span className="material-symbols-outlined text-sm">upload_file</span>
                   Chọn ảnh
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      try {
+                        const ext = file.name.split('.').pop() || 'jpg';
+                        const filePath = `invoices/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+                        const { error: uploadError } = await supabase.storage.from('titsmart-images').upload(filePath, file, { cacheControl: '3600', upsert: true });
+                        if (!uploadError) {
+                          const { data } = supabase.storage.from('titsmart-images').getPublicUrl(filePath);
+                          setEditingExpense({...editingExpense, invoiceUrl: data.publicUrl});
+                          return;
+                        }
+                      } catch (err) {
+                        console.warn('Storage upload failed:', err);
+                      }
                       const reader = new FileReader();
                       reader.onloadend = () => setEditingExpense({...editingExpense, invoiceUrl: reader.result as string});
                       reader.readAsDataURL(file);
