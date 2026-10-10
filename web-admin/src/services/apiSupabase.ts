@@ -1463,7 +1463,7 @@ export const api = {
     getDocumentTracks: async () => {
       // In local mode, fallback to empty array so local storage takes precedence
       try {
-        const { data, error } = await supabase.from('document_tracks').select('*');
+        const { data, error } = await supabase.from('document_tracks').select('*').order('created_at', { ascending: false });
         if (error) return [];
         
         if (data && data.length > 0) {

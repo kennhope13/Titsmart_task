@@ -471,7 +471,7 @@ export const api = {
     },
 
     getDocumentTracks: async () => {
-      const { data, error } = await supabase.from('document_tracks').select('*');
+      const { data, error } = await supabase.from('document_tracks').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return data.map(toCamelCase);
     },

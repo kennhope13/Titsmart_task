@@ -360,10 +360,39 @@ export const DocumentTrackingPage: React.FC = () => {
       );
     }
 
+    const getTrackTimestamp = (t: DocumentTrack): number => {
+      if (t.updatedAt) {
+        const ms = new Date(t.updatedAt).getTime();
+        if (!isNaN(ms) && ms > 0) return ms;
+      }
+      if ((t as any).createdAt || (t as any).created_at) {
+        const ms = new Date((t as any).createdAt || (t as any).created_at).getTime();
+        if (!isNaN(ms) && ms > 0) return ms;
+      }
+      if (t.id && String(t.id).startsWith('doc-')) {
+        const num = Number(String(t.id).replace('doc-', ''));
+        if (!isNaN(num) && num > 1000000) return num;
+      }
+      if (t.sendDate) {
+        const ms = new Date(t.sendDate).getTime();
+        if (!isNaN(ms) && ms > 0) return ms;
+      }
+      if (t.receiveDate) {
+        const ms = new Date(t.receiveDate).getTime();
+        if (!isNaN(ms) && ms > 0) return ms;
+      }
+      return 0;
+    };
+
     return result.sort((a, b) => {
-      const sttDiff = getSttNumber(a.stt) - getSttNumber(b.stt);
-      if (sttDiff !== 0) return sttDiff;
-      return String(a.contractNo || '').localeCompare(String(b.contractNo || ''), 'vi');
+      const timeA = getTrackTimestamp(a);
+      const timeB = getTrackTimestamp(b);
+      if (timeB !== timeA) return timeB - timeA;
+      
+      const sttA = getSttNumber(a.stt);
+      const sttB = getSttNumber(b.stt);
+      if (sttB !== sttA) return sttB - sttA;
+      return String(b.contractNo || '').localeCompare(String(a.contractNo || ''), 'vi');
     });
   }, [documentTracks, filterProjectCode, filterDocStatus, filterPaymentStatus, filterDueStatus, filterDateFrom, filterDateTo, searchQuery, projects]);
 
