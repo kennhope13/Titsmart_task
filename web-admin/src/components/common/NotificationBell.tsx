@@ -1024,6 +1024,42 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
   const unreadCount = unreadNotifications.length;
   const activeNotifications = activeTab === 'unread' ? unreadNotifications : displayNotifications;
 
+  const floatingPopoverStyle = useMemo<React.CSSProperties>(() => {
+    if (!position) {
+      return {
+        position: 'fixed',
+        top: 'calc(env(safe-area-inset-top, 0px) + 48px)',
+        right: '12px',
+        zIndex: 9995,
+      };
+    }
+    const isRight = typeof window !== 'undefined' ? position.x > window.innerWidth / 2 : true;
+    const isBottom = typeof window !== 'undefined' ? position.y > window.innerHeight / 2 : false;
+
+    const style: React.CSSProperties = {
+      position: 'fixed',
+      zIndex: 9995,
+    };
+
+    if (isBottom) {
+      style.bottom = `${Math.max(10, (typeof window !== 'undefined' ? window.innerHeight : 800) - position.y + 8)}px`;
+      style.top = 'auto';
+    } else {
+      style.top = `${Math.max(10, position.y + 42)}px`;
+      style.bottom = 'auto';
+    }
+
+    if (isRight) {
+      style.right = `${Math.max(10, (typeof window !== 'undefined' ? window.innerWidth : 400) - position.x - 36)}px`;
+      style.left = 'auto';
+    } else {
+      style.left = `${Math.max(10, position.x)}px`;
+      style.right = 'auto';
+    }
+
+    return style;
+  }, [position]);
+
   // ─── TỰ ĐỘNG BẮN THÔNG BÁO RA HỆ ĐIỀU HÀNH (DESKTOP BANNER + MOBILE LOCKSCREEN) ───
   const isInitialNotifLoadRef = useRef(true);
   const knownNotificationIdsRef = useRef<Set<string>>(new Set());
@@ -1159,7 +1195,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
   };
 
   if (!showNotificationBell) {
-    return null;
+    return renderCenterModal();
   }
 
   if (isSidebar) {
@@ -1346,42 +1382,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isSidebar = 
       </>
     );
   }
-
-  const floatingPopoverStyle = useMemo<React.CSSProperties>(() => {
-    if (!position) {
-      return {
-        position: 'fixed',
-        top: 'calc(env(safe-area-inset-top, 0px) + 48px)',
-        right: '12px',
-        zIndex: 9995,
-      };
-    }
-    const isRight = typeof window !== 'undefined' ? position.x > window.innerWidth / 2 : true;
-    const isBottom = typeof window !== 'undefined' ? position.y > window.innerHeight / 2 : false;
-
-    const style: React.CSSProperties = {
-      position: 'fixed',
-      zIndex: 9995,
-    };
-
-    if (isBottom) {
-      style.bottom = `${Math.max(10, (typeof window !== 'undefined' ? window.innerHeight : 800) - position.y + 8)}px`;
-      style.top = 'auto';
-    } else {
-      style.top = `${Math.max(10, position.y + 42)}px`;
-      style.bottom = 'auto';
-    }
-
-    if (isRight) {
-      style.right = `${Math.max(10, (typeof window !== 'undefined' ? window.innerWidth : 400) - position.x - 36)}px`;
-      style.left = 'auto';
-    } else {
-      style.left = `${Math.max(10, position.x)}px`;
-      style.right = 'auto';
-    }
-
-    return style;
-  }, [position]);
 
   return (
     <>

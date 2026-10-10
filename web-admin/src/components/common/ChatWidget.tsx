@@ -392,11 +392,9 @@ export const ChatWidget: React.FC = () => {
     }
   }, [currentMessages.length, isOpen, selectedTarget]);
 
-  if (!currentUser) return null;
-
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if ((!inputText.trim() && !selectedFile) || !selectedTarget) return;
+    if (!currentUser || (!inputText.trim() && !selectedFile) || !selectedTarget) return;
 
     const content = inputText.trim() || (selectedFile?.type === 'file' ? `Đã gửi tệp: ${selectedFile?.name || 'đính kèm'}` : '');
     const msgData = {
