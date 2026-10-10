@@ -1574,145 +1574,63 @@ export const api = {
         await ensureCompanyProject(data.projectCode);
       }
 
-      const tryInsert = async (payload: any) => {
-        const { data: res, error } = await supabase.from('document_tracks').insert(payload).select().single();
+      const tryInsert = async (initialPayload: any) => {
+        let currentPayload = { ...initialPayload };
+        for (let attempt = 0; attempt < 12; attempt++) {
+          const { data: res, error } = await supabase.from('document_tracks').insert(currentPayload).select().single();
+          if (!error) return { data: res, error: null };
+          
+          const missingMatch = (error.message || '').match(/Could not find the '([^']+)' column/i);
+          if (missingMatch && missingMatch[1] && currentPayload[missingMatch[1]] !== undefined) {
+            delete currentPayload[missingMatch[1]];
+            continue;
+          }
+          if (error.code === '23503' || String(error.message).includes('foreign key constraint')) {
+            if (currentPayload.project_id !== undefined) delete currentPayload.project_id;
+            else if (currentPayload.project_code !== undefined) delete currentPayload.project_code;
+            continue;
+          }
+          return { data: res, error };
+        }
+        const { data: res, error } = await supabase.from('document_tracks').insert(currentPayload).select().single();
         return { data: res, error };
       };
 
-      let result: any = { data: null, error: null };
+      const payload: any = {
+        contract_no: contractNoVal,
+        contract_name: contractNameVal,
+        company: data.company || '',
+        receiver_name: data.receiverName || '',
+        phone: data.phone || '',
+        address: data.address || '',
+        send_date: sendDateVal,
+        receive_date: cleanDate(data.receiveDate),
+        doc_status: data.docStatus || 'Chưa ký',
+        doc_type: data.docType || 'Giao',
+        side: data.side || 'Bên trả',
+        contract_value: Number(data.contractValue) || 0,
+        prepay_percent: Number(data.prepayPercent) || 0,
+        prepay_amount: Number(data.prepayAmount) || 0,
+        payment_status: data.paymentStatus || 'Chưa thanh toán',
+        is_completed: !!data.isCompleted,
+        notes: combinedNotes,
+        due_date: cleanDate(data.dueDate),
+        remind_days: data.remindDays || 3,
+        file_urls: Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []),
+        updated_by: data.updatedBy || data.createdByName || ''
+      };
 
-      // Fast-path: If we already detected legacy schema, insert legacy payload directly
-      if (cachedDocTracksSchemaType === 'legacy') {
-        const legacyPayload: any = {
-          document_type: data.docType || 'Giao',
-          submission_date: sendDateVal,
-          recipient: data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || ''),
-          status: data.docStatus || 'Chưa ký',
-          notes: combinedNotes,
-          soft_copy_link: (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '')
-        };
-        if (cleanDate(data.dueDate)) legacyPayload.expected_approval_date = cleanDate(data.dueDate);
-        if (data.projectCode && data.projectCode !== 'COMPANY') legacyPayload.project_code = data.projectCode;
-
-        result = await tryInsert(legacyPayload);
-        if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
-          delete legacyPayload.project_code;
-          result = await tryInsert(legacyPayload);
-        }
-      } else {
-        // Attempt 1: Full modern payload
-        const fullPayload: any = {
-          contract_no: contractNoVal,
-          contract_name: contractNameVal,
-          company: data.company || '',
-          receiver_name: data.receiverName || '',
-          phone: data.phone || '',
-          address: data.address || '',
-          send_date: sendDateVal,
-          receive_date: cleanDate(data.receiveDate),
-          doc_status: data.docStatus || 'Chưa ký',
-          doc_type: data.docType || 'Giao',
-          side: data.side || 'Bên trả',
-          contract_value: Number(data.contractValue) || 0,
-          prepay_percent: Number(data.prepayPercent) || 0,
-          prepay_amount: Number(data.prepayAmount) || 0,
-          payment_status: data.paymentStatus || 'Chưa thanh toán',
-          is_completed: !!data.isCompleted,
-          notes: baseNotes,
-          due_date: cleanDate(data.dueDate),
-          remind_days: data.remindDays || 3,
-          file_urls: Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []),
-          created_by_id: data.createdById || '',
-          created_by_name: data.createdByName || '',
-          updated_by: data.updatedBy || data.createdByName || '',
-          updated_at: data.updatedAt || new Date().toISOString()
-        };
-
-        if (data.projectCode && data.projectCode.trim()) {
-          fullPayload.project_code = data.projectCode.trim();
-        }
-        if (data.projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.projectId)) {
-          fullPayload.project_id = data.projectId;
-        }
-
-        result = await tryInsert(fullPayload);
-
-        // Handle Foreign Key Error 23503
-        if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
-          if (fullPayload.project_code) {
-            await ensureCompanyProject(fullPayload.project_code);
-            result = await tryInsert(fullPayload);
-          }
-          if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
-            delete fullPayload.project_code;
-            delete fullPayload.project_id;
-            result = await tryInsert(fullPayload);
-          }
-        }
-
-        // Attempt 2: If column missing (PGRST204 or column error) -> Prisma standard columns
-        if (result.error && (result.error.code === 'PGRST204' || String(result.error.message).includes('column') || String(result.error.message).includes('schema cache'))) {
-          const prismaPayload: any = {
-            contract_no: contractNoVal,
-            contract_name: contractNameVal,
-            company: data.company || '',
-            receiver_name: data.receiverName || '',
-            phone: data.phone || '',
-            address: data.address || '',
-            send_date: sendDateVal,
-            receive_date: cleanDate(data.receiveDate),
-            doc_status: data.docStatus || 'Chưa ký',
-            side: data.side || 'Bên trả',
-            contract_value: Number(data.contractValue) || 0,
-            prepay_percent: Number(data.prepayPercent) || 0,
-            prepay_amount: Number(data.prepayAmount) || 0,
-            payment_status: data.paymentStatus || 'Chưa thanh toán',
-            is_completed: !!data.isCompleted,
-            file_urls: Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []),
-            soft_copy_link: (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : ''),
-            notes: combinedNotes
-          };
-          if (data.projectCode && data.projectCode !== 'COMPANY') {
-            prismaPayload.project_code = data.projectCode;
-          }
-          if (data.projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.projectId)) {
-            prismaPayload.project_id = data.projectId;
-          }
-
-          result = await tryInsert(prismaPayload);
-
-          if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
-            delete prismaPayload.project_code;
-            delete prismaPayload.project_id;
-            result = await tryInsert(prismaPayload);
-          }
-        }
-
-        // Attempt 3: If still error -> Legacy Schema
-        if (result.error) {
-          cachedDocTracksSchemaType = 'legacy';
-          const legacyPayload: any = {
-            document_type: data.docType || 'Giao',
-            submission_date: sendDateVal,
-            recipient: data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || ''),
-            status: data.docStatus || 'Chưa ký',
-            notes: combinedNotes,
-            soft_copy_link: (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '')
-          };
-          if (cleanDate(data.dueDate)) legacyPayload.expected_approval_date = cleanDate(data.dueDate);
-          if (data.projectCode && data.projectCode !== 'COMPANY') legacyPayload.project_code = data.projectCode;
-
-          result = await tryInsert(legacyPayload);
-
-          if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
-            delete legacyPayload.project_code;
-            result = await tryInsert(legacyPayload);
-          }
-        }
+      if (data.projectCode && data.projectCode.trim() && data.projectCode !== 'COMPANY') {
+        payload.project_code = data.projectCode.trim();
+      }
+      if (data.projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.projectId)) {
+        payload.project_id = data.projectId;
       }
 
+      const result = await tryInsert(payload);
+
       if (result.error) {
-        console.error('[DocumentTrack] All insert attempts failed in Supabase:', result.error);
+        console.error('[DocumentTrack] Insert failed in Supabase:', result.error);
         throw new Error(result.error.message || 'Không thể lưu hồ sơ vào cơ sở dữ liệu');
       }
 
@@ -1756,49 +1674,31 @@ export const api = {
         fullPayload.project_code = data.projectCode === 'COMPANY' || !data.projectCode ? null : data.projectCode;
       }
       if (data.company !== undefined) fullPayload.company = data.company;
-      if (data.receiverName !== undefined) {
-        fullPayload.receiver_name = data.receiverName;
-        fullPayload.recipient = data.receiverName;
-      }
+      if (data.receiverName !== undefined) fullPayload.receiver_name = data.receiverName;
       if (data.phone !== undefined) fullPayload.phone = data.phone;
       if (data.address !== undefined) fullPayload.address = data.address;
-      if (data.sendDate !== undefined) {
-        fullPayload.send_date = cleanDate(data.sendDate);
-        fullPayload.submission_date = cleanDate(data.sendDate);
-      }
+      if (data.sendDate !== undefined) fullPayload.send_date = cleanDate(data.sendDate);
       if (data.receiveDate !== undefined) fullPayload.receive_date = cleanDate(data.receiveDate);
-      if (data.docStatus !== undefined) {
-        fullPayload.doc_status = data.docStatus;
-        fullPayload.status = data.docStatus;
-      }
-      if (data.docType !== undefined) {
-        fullPayload.doc_type = data.docType;
-        fullPayload.document_type = data.docType;
-      }
+      if (data.docStatus !== undefined) fullPayload.doc_status = data.docStatus;
+      if (data.docType !== undefined) fullPayload.doc_type = data.docType;
       if (data.side !== undefined) fullPayload.side = data.side;
       if (data.contractValue !== undefined) fullPayload.contract_value = Number(data.contractValue) || 0;
       if (data.prepayPercent !== undefined) fullPayload.prepay_percent = Number(data.prepayPercent) || 0;
       if (data.prepayAmount !== undefined) fullPayload.prepay_amount = Number(data.prepayAmount) || 0;
       if (data.paymentStatus !== undefined) fullPayload.payment_status = data.paymentStatus;
       if (data.isCompleted !== undefined) fullPayload.is_completed = !!data.isCompleted;
-      if (data.notes !== undefined) fullPayload.notes = baseNotes;
-      if (data.dueDate !== undefined) {
-        fullPayload.due_date = cleanDate(data.dueDate);
-        fullPayload.expected_approval_date = cleanDate(data.dueDate);
-      }
+      if (data.notes !== undefined) fullPayload.notes = combinedNotes;
+      if (data.dueDate !== undefined) fullPayload.due_date = cleanDate(data.dueDate);
       if (data.remindDays !== undefined) fullPayload.remind_days = data.remindDays;
       if (data.fileUrls !== undefined) {
         fullPayload.file_urls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []);
-        fullPayload.soft_copy_link = (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '');
       }
-      if (data.createdById !== undefined) fullPayload.created_by_id = data.createdById;
-      if (data.createdByName !== undefined) fullPayload.created_by_name = data.createdByName;
       if (data.updatedBy !== undefined) fullPayload.updated_by = data.updatedBy;
       fullPayload.updated_at = new Date().toISOString();
 
       const tryUpdate = async (initialPayload: any) => {
         let currentPayload = { ...initialPayload };
-        for (let attempt = 0; attempt < 10; attempt++) {
+        for (let attempt = 0; attempt < 12; attempt++) {
           const { data: res, error } = await supabase.from('document_tracks').update(currentPayload).eq('id', id).select().single();
           if (!error) return { data: res, error: null };
           
@@ -1807,64 +1707,18 @@ export const api = {
             delete currentPayload[missingMatch[1]];
             continue;
           }
+          if (error.code === '23503' || String(error.message).includes('foreign key constraint')) {
+            if (currentPayload.project_id !== undefined) delete currentPayload.project_id;
+            else if (currentPayload.project_code !== undefined) delete currentPayload.project_code;
+            continue;
+          }
           return { data: res, error };
         }
         const { data: res, error } = await supabase.from('document_tracks').update(currentPayload).eq('id', id).select().single();
         return { data: res, error };
       };
 
-      // Attempt 1: Full payload
-      let result = await tryUpdate(fullPayload);
-
-      // Foreign Key Handling
-      if (result.error && (result.error.code === '23503' || String(result.error.message).includes('foreign key constraint'))) {
-        delete fullPayload.project_code;
-        delete fullPayload.project_id;
-        result = await tryUpdate(fullPayload);
-      }
-
-      // Attempt 2: Column missing -> Standard core columns
-      if (result.error && (result.error.code === 'PGRST204' || String(result.error.message).includes('column') || String(result.error.message).includes('schema cache'))) {
-        const corePayload: any = {};
-        if (data.contractNo !== undefined) corePayload.contract_no = data.contractNo;
-        if (data.contractName !== undefined) corePayload.contract_name = data.contractName;
-        if (data.company !== undefined) corePayload.company = data.company;
-        if (data.receiverName !== undefined) corePayload.receiver_name = data.receiverName;
-        if (data.phone !== undefined) corePayload.phone = data.phone;
-        if (data.address !== undefined) corePayload.address = data.address;
-        if (data.sendDate !== undefined) corePayload.send_date = cleanDate(data.sendDate);
-        if (data.receiveDate !== undefined) corePayload.receive_date = cleanDate(data.receiveDate);
-        if (data.docStatus !== undefined) corePayload.doc_status = data.docStatus;
-        if (data.side !== undefined) corePayload.side = data.side;
-        if (data.contractValue !== undefined) corePayload.contract_value = Number(data.contractValue) || 0;
-        if (data.prepayPercent !== undefined) corePayload.prepay_percent = Number(data.prepayPercent) || 0;
-        if (data.prepayAmount !== undefined) corePayload.prepay_amount = Number(data.prepayAmount) || 0;
-        if (data.paymentStatus !== undefined) corePayload.payment_status = data.paymentStatus;
-        if (data.fileUrls !== undefined) {
-          corePayload.file_urls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrls ? [data.fileUrls] : []);
-          corePayload.soft_copy_link = (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '');
-        }
-        corePayload.notes = combinedNotes;
-
-        result = await tryUpdate(corePayload);
-      }
-
-      // Attempt 3: Legacy Schema columns
-      if (result.error) {
-        const legacyPayload: any = {
-          notes: combinedNotes
-        };
-        if (data.docStatus !== undefined) legacyPayload.status = data.docStatus;
-        if (data.docType !== undefined) legacyPayload.document_type = data.docType;
-        if (data.sendDate !== undefined && cleanDate(data.sendDate)) legacyPayload.submission_date = cleanDate(data.sendDate);
-        if (data.receiverName || data.company) legacyPayload.recipient = data.company ? (data.receiverName ? `${data.company} - ${data.receiverName}` : data.company) : (data.receiverName || '');
-        if (data.dueDate !== undefined && cleanDate(data.dueDate)) legacyPayload.expected_approval_date = cleanDate(data.dueDate);
-        if (data.fileUrls !== undefined) {
-          legacyPayload.soft_copy_link = (Array.isArray(data.fileUrls) && data.fileUrls.length > 0) ? data.fileUrls[0] : (typeof data.fileUrls === 'string' ? data.fileUrls : '');
-        }
-
-        result = await tryUpdate(legacyPayload);
-      }
+      const result = await tryUpdate(fullPayload);
 
       if (result.error) {
         console.error('[DocumentTrack] update failed in Supabase:', result.error);

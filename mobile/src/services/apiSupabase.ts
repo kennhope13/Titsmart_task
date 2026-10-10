@@ -478,26 +478,51 @@ export const api = {
     createDocumentTrack: async (data: any) => {
       const payload = toSnakeCase(data);
       if (!payload.receive_date) payload.receive_date = null;
-      if (payload.project_code) {
-        const { data: proj } = await supabase.from('projects').select('id').eq('code', payload.project_code).single();
-        if (proj) payload.project_id = proj.id;
-        delete payload.project_code;
+      if (!payload.send_date) payload.send_date = new Date().toISOString().split('T')[0];
+      
+      let currentPayload = { ...payload };
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const { data: result, error } = await supabase.from('document_tracks').insert(currentPayload).select().single();
+        if (!error) return toCamelCase(result);
+        
+        const missingMatch = (error.message || '').match(/Could not find the '([^']+)' column/i);
+        if (missingMatch && missingMatch[1] && currentPayload[missingMatch[1]] !== undefined) {
+          delete currentPayload[missingMatch[1]];
+          continue;
+        }
+        if (error.code === '23503' || String(error.message).includes('foreign key constraint')) {
+          if (currentPayload.project_id !== undefined) delete currentPayload.project_id;
+          else if (currentPayload.project_code !== undefined) delete currentPayload.project_code;
+          continue;
+        }
+        throw error;
       }
-      const { data: result, error } = await supabase.from('document_tracks').insert(payload).select().single();
+      const { data: result, error } = await supabase.from('document_tracks').insert(currentPayload).select().single();
       if (error) throw error;
       return toCamelCase(result);
     },
     updateDocumentTrack: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
       if (payload.receive_date === '') payload.receive_date = null;
-      if (payload.project_code !== undefined) {
-        if (payload.project_code) {
-          const { data: proj } = await supabase.from('projects').select('id').eq('code', payload.project_code).single();
-          if (proj) payload.project_id = proj.id;
+      
+      let currentPayload = { ...payload };
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const { data: result, error } = await supabase.from('document_tracks').update(currentPayload).eq('id', id).select().single();
+        if (!error) return toCamelCase(result);
+        
+        const missingMatch = (error.message || '').match(/Could not find the '([^']+)' column/i);
+        if (missingMatch && missingMatch[1] && currentPayload[missingMatch[1]] !== undefined) {
+          delete currentPayload[missingMatch[1]];
+          continue;
         }
-        delete payload.project_code;
+        if (error.code === '23503' || String(error.message).includes('foreign key constraint')) {
+          if (currentPayload.project_id !== undefined) delete currentPayload.project_id;
+          else if (currentPayload.project_code !== undefined) delete currentPayload.project_code;
+          continue;
+        }
+        throw error;
       }
-      const { data: result, error } = await supabase.from('document_tracks').update(payload).eq('id', id).select().single();
+      const { data: result, error } = await supabase.from('document_tracks').update(currentPayload).eq('id', id).select().single();
       if (error) throw error;
       return toCamelCase(result);
     },
