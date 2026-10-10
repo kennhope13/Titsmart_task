@@ -2082,7 +2082,7 @@ export const api = {
         const { data, error } = await supabase.from('notifications').select('*').order('timestamp', { ascending: false }).limit(50);
         if (!error && data) return mapArray(data).map(parseNotificationMeta);
         if (error) {
-          const { data: fbData, error: fbError } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(50);
+          const { data: fbData, error: fbError } = await supabase.from('notifications').select('*').limit(50);
           if (!fbError && fbData) return mapArray(fbData).map(parseNotificationMeta);
         }
       } catch (err) {
