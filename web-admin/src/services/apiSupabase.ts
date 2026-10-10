@@ -1903,9 +1903,9 @@ export const api = {
   },
   fieldLogs: {
     getAll: async () => {
-      const { data, error } = await supabase.from('field_logs').select('*');
+      const { data, error } = await supabase.from('field_logs').select('*').order('created_at', { ascending: false }).limit(500);
       if (error) throw error;
-      return data.map((d: any) => ({
+      return (data || []).map((d: any) => ({
         id: d.id,
         projectCode: d.project_code,
         note: d.notes,

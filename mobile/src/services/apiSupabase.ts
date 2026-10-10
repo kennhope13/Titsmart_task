@@ -411,10 +411,25 @@ export const api = {
       return { success: true };
     },
 
-    getExpenses: async () => {
-      const { data, error } = await supabase.from('expenses').select('*');
-      if (error) throw error;
-      return data.map(toCamelCase);
+    getExpenses: async (projectCode?: string) => {
+      const queryCols = 'id,date,content,amount,category,payment_method,requester,status,notes,project_code,created_at,stt,description,unit,quantity,unit_price,tax_amount,total_amount,income_amount,balance_fund,spender_name,updated_by,updated_at';
+      let query = supabase.from('expenses').select(queryCols);
+      if (projectCode) {
+        query = query.eq('project_code', projectCode);
+      } else {
+        query = query.order('created_at', { ascending: false }).limit(2000);
+      }
+      const { data, error } = await query;
+      if (error) {
+        console.warn('[Accounting] Primary query for expenses failed, trying fallback:', error.message || error);
+        const fbCols = 'id,date,content,amount,category,payment_method,requester,status,notes,project_code,created_at,stt,description,unit,quantity,unit_price,tax_amount,total_amount,income_amount,balance_fund';
+        let fbQuery = supabase.from('expenses').select(fbCols);
+        if (projectCode) fbQuery = fbQuery.eq('project_code', projectCode);
+        const { data: fbData, error: fbErr } = await fbQuery.limit(2000);
+        if (!fbErr && Array.isArray(fbData)) return fbData.map(toCamelCase);
+        return [];
+      }
+      return (data || []).map(toCamelCase);
     },
     createExpense: async (data: any) => {
       const payload = toSnakeCase(data);
