@@ -52,6 +52,7 @@ export const App: React.FC = () => {
   const { user, refreshUser } = useAuthStore();
   const companyName = useUIStore((s) => s.companyName) || 'TITSMART';
   const companySlogan = useUIStore((s) => s.companySlogan) || 'Project Manager';
+  const fetchBrandingFromCloud = useUIStore((s) => s.fetchBrandingFromCloud);
   const [loginStyle, setLoginStyle] = useState<'default' | 'variant'>(() => (localStorage.getItem('titsmart_login_style') as 'default' | 'variant') || 'default');
   const fetchProjects = useRealtimeStore(s => s.fetchProjects);
   const fetchTasks = useRealtimeStore(s => s.fetchTasks);
@@ -61,6 +62,10 @@ export const App: React.FC = () => {
   const fetchActivityLogs = useRealtimeStore(s => s.fetchActivityLogs);
   const fetchAccounting = useRealtimeStore(s => s.fetchAccounting);
   const fetchFieldLogs = useRealtimeStore(s => s.fetchFieldLogs);
+
+  useEffect(() => {
+    fetchBrandingFromCloud();
+  }, [fetchBrandingFromCloud]);
 
   useEffect(() => {
     document.title = `${companyName} - ${companySlogan}`;

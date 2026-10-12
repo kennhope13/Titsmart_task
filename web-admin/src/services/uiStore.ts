@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { api } from './apiSupabase';
 
 interface UIStoreState {
   sidebarHoverToExpand: boolean;
@@ -29,11 +30,13 @@ interface UIStoreState {
   setCompanySlogan: (val: string) => void;
   setCompanyLogo: (val: string | null) => void;
   setIsApplyingBranding: (val: boolean) => void;
+  fetchBrandingFromCloud: () => Promise<void>;
+  saveBrandingToCloud: (branding: { companyName: string; companySlogan: string; companyLogo: string | null; updatedBy?: string }) => Promise<void>;
 }
 
 export const useUIStore = create<UIStoreState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       sidebarHoverToExpand: false,
       sidebarShowToggleButton: true,
       isSidebarExpanded: false,
@@ -63,6 +66,53 @@ export const useUIStore = create<UIStoreState>()(
       setCompanySlogan: (val) => set({ companySlogan: val }),
       setCompanyLogo: (val) => set({ companyLogo: val }),
       setIsApplyingBranding: (val) => set({ isApplyingBranding: val }),
+
+      fetchBrandingFromCloud: async () => {
+        try {
+          const config = await api.branding.get();
+          if (config && (config.companyName || config.companySlogan || config.companyLogo !== undefined)) {
+            const current = get();
+            const nextName = config.companyName?.trim() || 'TITSMART';
+            const nextSlogan = config.companySlogan?.trim() || 'Project Manager';
+            const nextLogo = config.companyLogo || null;
+
+            if (
+              current.companyName !== nextName ||
+              current.companySlogan !== nextSlogan ||
+              current.companyLogo !== nextLogo
+            ) {
+              set({
+                companyName: nextName,
+                companySlogan: nextSlogan,
+                companyLogo: nextLogo,
+              });
+            }
+          }
+        } catch (err) {
+          console.warn('[Branding] fetchBrandingFromCloud error:', err);
+        }
+      },
+
+      saveBrandingToCloud: async (branding) => {
+        const nextName = branding.companyName.trim() || 'TITSMART';
+        const nextSlogan = branding.companySlogan.trim() || 'Project Manager';
+        const nextLogo = branding.companyLogo || null;
+
+        // Lưu trước vào store cục bộ
+        set({
+          companyName: nextName,
+          companySlogan: nextSlogan,
+          companyLogo: nextLogo,
+        });
+
+        // Đẩy lên Supabase Cloud
+        await api.branding.save({
+          companyName: nextName,
+          companySlogan: nextSlogan,
+          companyLogo: nextLogo,
+          updatedBy: branding.updatedBy,
+        });
+      },
     }),
     {
       name: 'titsmart-ui-settings',

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../../services/uiStore';
 import { useAuthStore } from '../../services/authStore';
+import { broadcastRealtimeSync } from '../../services/realtimeStore';
+import { uploadAttachment } from '../../utils/fileUploadHelper';
 import { Modal } from './Modal';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { Toast } from './Toast';
@@ -41,6 +43,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     setCompanySlogan,
     setCompanyLogo,
     setIsApplyingBranding,
+    saveBrandingToCloud,
   } = useUIStore();
 
   const [inputCompanyName, setInputCompanyName] = useState(companyName || 'TITSMART');
@@ -59,23 +62,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   }, [isOpen, companyName, companySlogan, companyLogo]);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      triggerToast('Ảnh logo không được vượt quá 2MB!', 'warning');
+    if (file.size > 5 * 1024 * 1024) {
+      triggerToast('Ảnh logo không được vượt quá 5MB!', 'warning');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      if (base64) {
-        setInputCompanyLogo(base64);
+    try {
+      // Tải logo lên Supabase Storage bucket 'titsmart-images' để tạo public URL dùng cho toàn bộ người dùng
+      const uploadRes = await uploadAttachment(file, 'company_branding');
+      if (uploadRes && uploadRes.url) {
+        setInputCompanyLogo(uploadRes.url);
+        triggerToast('Tải ảnh logo lên đám mây thành công!', 'info');
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.warn('Lỗi tải logo lên storage, dùng fallback local:', err);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          setInputCompanyLogo(base64);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSaveBranding = async () => {
@@ -85,21 +98,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
     const finalName = inputCompanyName.trim() || 'TITSMART';
     const finalSlogan = inputCompanySlogan.trim() || 'Project Manager';
+    const finalLogo = inputCompanyLogo;
 
     // Đóng Modal ngay lập tức để toàn bộ ứng dụng hiển thị loading blocking
     onClose();
 
-    // Hiệu ứng blocking toàn bộ ứng dụng
-    await new Promise((res) => setTimeout(res, 800));
+    try {
+      // 1. Lưu đồng bộ lên Supabase Cloud
+      await saveBrandingToCloud({
+        companyName: finalName,
+        companySlogan: finalSlogan,
+        companyLogo: finalLogo,
+        updatedBy: user?.name || user?.username || 'Admin',
+      });
 
-    setCompanyName(finalName);
-    setCompanySlogan(finalSlogan);
-    setCompanyLogo(inputCompanyLogo);
-    setIsSaving(false);
-    setIsApplyingBranding(false);
+      // 2. Phát tín hiệu realtime broadcast để tất cả người dùng khác đang mở app tự động cập nhật ngay lập tức
+      broadcastRealtimeSync('branding');
 
-    // Hiển thị toast thông báo thành công
-    triggerToast('Đã cập nhật tên công ty, slogan và logo thành công!', 'success');
+      // Giữ loading blocking 0.5s cho trải nghiệm mượt mà
+      await new Promise((res) => setTimeout(res, 500));
+
+      triggerToast('Đã lưu và đồng bộ thương hiệu cho toàn bộ người dùng!', 'success');
+    } catch (err: any) {
+      console.error('Lỗi lưu branding lên cloud:', err);
+      // Fallback lưu local store
+      setCompanyName(finalName);
+      setCompanySlogan(finalSlogan);
+      setCompanyLogo(finalLogo);
+      triggerToast('Đã lưu thương hiệu vào thiết bị!', 'info');
+    } finally {
+      setIsSaving(false);
+      setIsApplyingBranding(false);
+    }
   };
 
   const handleResetBranding = async () => {
@@ -108,18 +138,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     setIsApplyingBranding(true);
 
     onClose();
-    await new Promise((res) => setTimeout(res, 600));
 
-    setInputCompanyName('TITSMART');
-    setInputCompanySlogan('Project Manager');
-    setInputCompanyLogo(null);
-    setCompanyName('TITSMART');
-    setCompanySlogan('Project Manager');
-    setCompanyLogo(null);
-    setIsSaving(false);
-    setIsApplyingBranding(false);
+    try {
+      await saveBrandingToCloud({
+        companyName: 'TITSMART',
+        companySlogan: 'Project Manager',
+        companyLogo: null,
+        updatedBy: user?.name || user?.username || 'Admin',
+      });
 
-    triggerToast('Đã khôi phục thương hiệu và logo mặc định!', 'info');
+      broadcastRealtimeSync('branding');
+      await new Promise((res) => setTimeout(res, 500));
+
+      setInputCompanyName('TITSMART');
+      setInputCompanySlogan('Project Manager');
+      setInputCompanyLogo(null);
+
+      triggerToast('Đã khôi phục thương hiệu mặc định TITSMART cho tất cả mọi người!', 'info');
+    } catch (err) {
+      console.error('Lỗi reset branding:', err);
+      setInputCompanyName('TITSMART');
+      setInputCompanySlogan('Project Manager');
+      setInputCompanyLogo(null);
+      setCompanyName('TITSMART');
+      setCompanySlogan('Project Manager');
+      setCompanyLogo(null);
+    } finally {
+      setIsSaving(false);
+      setIsApplyingBranding(false);
+    }
   };
 
   const handleLogout = async () => {

@@ -2696,7 +2696,7 @@ const REALTIME_TABLES = [
   'notifications', 'inventory_transactions',
   'material_plans', 'purchasing_plans', 'expenses',
   'labor_payrolls', 'document_tracks', 'field_logs', 'direct_messages',
-  'activity_logs'
+  'activity_logs', 'branding'
 ];
 
 let realtimeChannel: any = null;
@@ -2727,7 +2727,7 @@ export function setupRealtimeSync() {
       changedTables.add(payload.table);
     }
 
-    // Đối với tin nhắn chat real-time, thông báo mới, nhận việc/giao việc (tasks), hồ sơ (document_tracks), nhật ký (field_logs), phân quyền nhân sự/dự án -> fetch tức thì
+    // Đối với tin nhắn chat real-time, thông báo mới, nhận việc/giao việc (tasks), hồ sơ (document_tracks), nhật ký (field_logs), phân quyền nhân sự/dự án, nhận diện thương hiệu -> fetch tức thì
     if (payload && (
       payload.table === 'direct_messages' ||
       payload.table === 'notifications' ||
@@ -2738,9 +2738,15 @@ export function setupRealtimeSync() {
       payload.table === 'issues' ||
       payload.table === 'engineers' ||
       payload.table === 'projects' ||
-      payload.table === 'activity_logs'
+      payload.table === 'activity_logs' ||
+      payload.table === 'branding'
     )) {
       const store = useRealtimeStore.getState();
+      if (payload.table === 'branding') {
+        import('./uiStore').then(({ useUIStore }) => {
+          useUIStore.getState().fetchBrandingFromCloud();
+        });
+      }
       if (payload.table === 'direct_messages') store.fetchDirectMessages();
       if (payload.table === 'notifications') store.fetchNotifications();
       if (payload.table === 'tasks') store.fetchTasks(undefined);

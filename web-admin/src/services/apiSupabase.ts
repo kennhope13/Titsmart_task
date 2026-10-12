@@ -1035,6 +1035,8 @@ export const api = {
           .select('*')
           .neq('icon', 'LEAVE_REQUEST')
           .neq('icon', 'ATTENDANCE_SESSION')
+          .neq('icon', 'ADJUSTMENT_REQUEST')
+          .neq('icon', 'BRANDING_CONFIG')
           .order('timestamp', { ascending: false })
           .limit(300);
 
@@ -1044,6 +1046,8 @@ export const api = {
             .select('*')
             .neq('icon', 'LEAVE_REQUEST')
             .neq('icon', 'ATTENDANCE_SESSION')
+            .neq('icon', 'ADJUSTMENT_REQUEST')
+            .neq('icon', 'BRANDING_CONFIG')
             .limit(300);
           data = res.data;
           error = res.error;
@@ -1064,7 +1068,12 @@ export const api = {
         }
 
         return (data || [])
-          .filter((row: any) => row.icon !== 'LEAVE_REQUEST' && row.icon !== 'ATTENDANCE_SESSION')
+          .filter((row: any) => 
+            row.icon !== 'LEAVE_REQUEST' && 
+            row.icon !== 'ATTENDANCE_SESSION' && 
+            row.icon !== 'ADJUSTMENT_REQUEST' &&
+            row.icon !== 'BRANDING_CONFIG'
+          )
           .map(row => {
             const act = (row.action || '').toLowerCase();
             const icon = row.icon || (act.includes('tiến độ') ? 'trending_up' :
@@ -2467,6 +2476,67 @@ export const api = {
         }
       } catch (e) {
         // Silent fail if table not present
+      }
+    }
+  },
+
+  branding: {
+    get: async (): Promise<{ companyName?: string; companySlogan?: string; companyLogo?: string | null; updatedAt?: string } | null> => {
+      try {
+        const { data, error } = await supabase
+          .from('activity_logs')
+          .select('id, action, timestamp')
+          .eq('icon', 'BRANDING_CONFIG')
+          .order('timestamp', { ascending: false })
+          .limit(1);
+
+        if (error || !data || data.length === 0) return null;
+        const row = data[0];
+        const payload = typeof row.action === 'string' ? JSON.parse(row.action) : row.action;
+        return {
+          companyName: payload?.companyName,
+          companySlogan: payload?.companySlogan,
+          companyLogo: payload?.companyLogo,
+          updatedAt: payload?.updatedAt || row.timestamp
+        };
+      } catch (err) {
+        console.warn('[Branding] Could not fetch branding config:', err);
+        return null;
+      }
+    },
+
+    save: async (input: { companyName: string; companySlogan: string; companyLogo: string | null; updatedBy?: string }) => {
+      try {
+        const payloadData = {
+          companyName: input.companyName,
+          companySlogan: input.companySlogan,
+          companyLogo: input.companyLogo,
+          updatedBy: input.updatedBy || 'Admin',
+          updatedAt: new Date().toISOString()
+        };
+
+        const payload: any = {
+          user: input.updatedBy || 'Admin',
+          project: 'SYSTEM_SETTINGS',
+          icon: 'BRANDING_CONFIG',
+          action: JSON.stringify(payloadData),
+          timestamp: payloadData.updatedAt
+        };
+
+        let { error } = await supabase.from('activity_logs').insert(payload);
+        if (error) {
+          if (error.code === 'PGRST204' || String(error.message).includes('created_at') || String(error.message).includes('timestamp')) {
+            delete payload.timestamp;
+            payload.created_at = payloadData.updatedAt;
+            await supabase.from('activity_logs').insert(payload);
+          } else {
+            throw error;
+          }
+        }
+        return payloadData;
+      } catch (err) {
+        console.error('[Branding] Failed to save branding config to cloud:', err);
+        throw err;
       }
     }
   }
