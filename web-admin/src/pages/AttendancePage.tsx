@@ -204,6 +204,135 @@ export const AttendancePage: React.FC = () => {
     });
   }, [engineers]);
 
+  // Kiểm tra quyền duyệt Đơn nghỉ phép đảm bảo bảo mật và phân quyền chính xác
+  const checkCanReviewLeave = (l: LeaveRequest) => {
+    if (!user) return { canReviewStep1: false, canReviewStep2: false };
+
+    // 1. Không bao giờ cho phép tự duyệt đơn của chính mình
+    const isApplicant = user.id === l.userId || user.name === l.userName || (user.username && user.username === l.userName);
+    if (isApplicant) return { canReviewStep1: false, canReviewStep2: false };
+
+    // 2. Kiểm tra nếu là Người theo dõi (Follower) -> Chỉ theo dõi, không có quyền duyệt
+    // trừ khi chính người đó được chỉ định đích danh là step1Reviewer hoặc step2Reviewer
+    const isFollower = (
+      (Array.isArray(l.followerIds) && l.followerIds.includes(user.id)) ||
+      (Array.isArray(l.followerNames) && (
+        l.followerNames.includes(user.name) || 
+        l.followerNames.some((f: string) => f.toLowerCase() === (user.name || '').toLowerCase() || f.toLowerCase() === (user.username || '').toLowerCase())
+      ))
+    );
+
+    const isDesignatedStep1 = Boolean(l.step1ReviewerId && (user.id === l.step1ReviewerId || user.name === l.step1ReviewerName));
+    const isDesignatedStep2 = Boolean(l.step2ReviewerId && (user.id === l.step2ReviewerId || user.name === l.step2ReviewerName));
+
+    const roleStr = String(user.role || '').toLowerCase();
+    const titleStr = String((user as any).title || '').toLowerCase();
+    const usernameStr = String(user.username || '').toLowerCase();
+    const isDirectorOrAdmin = (
+      isAdmin ||
+      usernameStr === 'admin' ||
+      roleStr === 'admin' ||
+      roleStr.includes('giám đốc') ||
+      roleStr.includes('quản trị') ||
+      roleStr.includes('lãnh đạo') ||
+      titleStr.includes('giám đốc')
+    );
+
+    // Quyền Quản lý duyệt (Step 1)
+    let canReviewStep1 = false;
+    if (l.status === 'PENDING_STEP1' || (l.status === 'PENDING' && l.step1ReviewerId)) {
+      if (isDesignatedStep1) {
+        canReviewStep1 = true;
+      } else if (!l.step1ReviewerId) {
+        if (isDirectorOrAdmin) {
+          canReviewStep1 = true;
+        } else if (!isFollower && user.permissions?.includes('APPROVE_LEAVE_STEP1' as any)) {
+          // Chỉ cấp quản lý thực sự mới được duyệt tự do step 1 (loại bỏ nhân viên thuần túy)
+          const isManagerRole = roleStr.includes('quản lý') || roleStr.includes('trưởng') || roleStr.includes('chỉ huy') || roleStr.includes('pm') || titleStr.includes('quản lý') || titleStr.includes('trưởng');
+          if (isManagerRole) {
+            canReviewStep1 = true;
+          }
+        }
+      }
+    }
+
+    // Quyền Quản trị duyệt (Step 2)
+    let canReviewStep2 = false;
+    if (l.status === 'APPROVED_STEP1' || (l.status === 'PENDING' && !l.step1ReviewerId)) {
+      if (isDesignatedStep2) {
+        canReviewStep2 = true;
+      } else if (isDirectorOrAdmin) {
+        canReviewStep2 = true;
+      } else if (!isFollower && !l.step2ReviewerId && user.permissions?.includes('APPROVE_LEAVE_FINAL' as any)) {
+        // APPROVE_LEAVE_FINAL chỉ áp dụng cho người không phải là nhân viên thông thường
+        const isOrdinaryStaff = roleStr === 'nhân viên' || roleStr.includes('kỹ sư hiện trường') || roleStr.includes('công nhân');
+        if (!isOrdinaryStaff) {
+          canReviewStep2 = true;
+        }
+      }
+    }
+
+    return { canReviewStep1, canReviewStep2 };
+  };
+
+  // Kiểm tra quyền duyệt Chấm công bù
+  const checkCanReviewAdj = (adj: AttendanceAdjustmentRequest) => {
+    if (!user) return { canReview1: false, canReview2: false };
+
+    // Không tự duyệt đơn chấm công bù của mình
+    if (user.id === adj.userId || user.name === adj.userName) {
+      return { canReview1: false, canReview2: false };
+    }
+
+    const isDesignated1 = Boolean(adj.step1ReviewerId && (user.id === adj.step1ReviewerId || user.name === adj.step1ReviewerName));
+    const isDesignated2 = Boolean(adj.step2ReviewerId && (user.id === adj.step2ReviewerId || user.name === adj.step2ReviewerName));
+
+    const roleStr = String(user.role || '').toLowerCase();
+    const titleStr = String((user as any).title || '').toLowerCase();
+    const usernameStr = String(user.username || '').toLowerCase();
+    const isDirectorOrAdmin = (
+      isAdmin ||
+      usernameStr === 'admin' ||
+      roleStr === 'admin' ||
+      roleStr.includes('giám đốc') ||
+      roleStr.includes('quản trị') ||
+      roleStr.includes('lãnh đạo') ||
+      titleStr.includes('giám đốc')
+    );
+
+    let canReview1 = false;
+    if (adj.status === 'PENDING_STEP1' || (adj.status === 'PENDING' && adj.step1ReviewerId)) {
+      if (isDesignated1) {
+        canReview1 = true;
+      } else if (!adj.step1ReviewerId) {
+        if (isDirectorOrAdmin) {
+          canReview1 = true;
+        } else if (user.permissions?.includes('APPROVE_LEAVE_STEP1' as any)) {
+          const isManagerRole = roleStr.includes('quản lý') || roleStr.includes('trưởng') || roleStr.includes('chỉ huy') || roleStr.includes('pm') || titleStr.includes('quản lý') || titleStr.includes('trưởng');
+          if (isManagerRole) {
+            canReview1 = true;
+          }
+        }
+      }
+    }
+
+    let canReview2 = false;
+    if (adj.status === 'APPROVED_STEP1' || (adj.status === 'PENDING' && !adj.step1ReviewerId)) {
+      if (isDesignated2) {
+        canReview2 = true;
+      } else if (isDirectorOrAdmin) {
+        canReview2 = true;
+      } else if (!adj.step2ReviewerId && user.permissions?.includes('APPROVE_LEAVE_FINAL' as any)) {
+        const isOrdinaryStaff = roleStr === 'nhân viên' || roleStr.includes('kỹ sư hiện trường') || roleStr.includes('công nhân');
+        if (!isOrdinaryStaff) {
+          canReview2 = true;
+        }
+      }
+    }
+
+    return { canReview1, canReview2 };
+  };
+
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     const viewParam = searchParams.get('view') || searchParams.get('type') || searchParams.get('scope');
@@ -1668,24 +1797,7 @@ export const AttendancePage: React.FC = () => {
                 <div className="block md:hidden p-3 space-y-2.5">
                   {displayedLeaves.map((l, idx) => {
                     const isMatch = Boolean(highlightLeaveId && l.id === highlightLeaveId);
-                    const canReviewStep1 = (
-                      (l.status === 'PENDING_STEP1' || (l.status === 'PENDING' && l.step1ReviewerId)) &&
-                      (
-                        (l.step1ReviewerId && (user?.id === l.step1ReviewerId || user?.name === l.step1ReviewerName)) ||
-                        (!l.step1ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_STEP1' as any) || isAdmin))
-                      )
-                    );
-                    const canReviewStep2 = (
-                      (
-                        (l.status === 'APPROVED_STEP1') || 
-                        (l.status === 'PENDING' && !l.step1ReviewerId)
-                      ) &&
-                      (
-                        (l.step2ReviewerId && (user?.id === l.step2ReviewerId || user?.name === l.step2ReviewerName)) ||
-                        (!l.step2ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any) || isAdmin)) ||
-                        isAdmin
-                      )
-                    );
+                    const { canReviewStep1, canReviewStep2 } = checkCanReviewLeave(l);
 
                     return (
                       <div
@@ -1856,28 +1968,7 @@ export const AttendancePage: React.FC = () => {
                     <tbody className="divide-y divide-slate-100">
                       {displayedLeaves.map((l) => {
                         const isMatch = Boolean(highlightLeaveId && l.id === highlightLeaveId);
-                        
-                        // Quyền duyệt Quản lý (Trưởng nhóm / Quản lý duyệt bước đầu)
-                        const canReviewStep1 = (
-                          (l.status === 'PENDING_STEP1' || (l.status === 'PENDING' && l.step1ReviewerId)) &&
-                          (
-                            (l.step1ReviewerId && (user?.id === l.step1ReviewerId || user?.name === l.step1ReviewerName)) ||
-                            (!l.step1ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_STEP1' as any) || isAdmin))
-                          )
-                        );
-
-                        // Quyền duyệt Quản trị (Admin duyệt quyết định cuối)
-                        const canReviewStep2 = (
-                          (
-                            (l.status === 'APPROVED_STEP1') || 
-                            (l.status === 'PENDING' && !l.step1ReviewerId)
-                          ) &&
-                          (
-                            (l.step2ReviewerId && (user?.id === l.step2ReviewerId || user?.name === l.step2ReviewerName)) ||
-                            (!l.step2ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any) || isAdmin)) ||
-                            isAdmin
-                          )
-                        );
+                        const { canReviewStep1, canReviewStep2 } = checkCanReviewLeave(l);
 
                         return (
                         <tr 
@@ -2093,21 +2184,7 @@ export const AttendancePage: React.FC = () => {
                 {/* Mobile View Cards */}
                 <div className="md:hidden space-y-2.5">
                   {displayedAdjustments.map(adj => {
-                    const canReview1 = (
-                      (adj.status === 'PENDING_STEP1' || (adj.status === 'PENDING' && adj.step1ReviewerId)) &&
-                      (
-                        (adj.step1ReviewerId && (user?.id === adj.step1ReviewerId || user?.name === adj.step1ReviewerName)) ||
-                        (!adj.step1ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_STEP1' as any) || isAdmin))
-                      )
-                    );
-                    const canReview2 = (
-                      (adj.status === 'APPROVED_STEP1' || (adj.status === 'PENDING' && !adj.step1ReviewerId)) &&
-                      (
-                        (adj.step2ReviewerId && (user?.id === adj.step2ReviewerId || user?.name === adj.step2ReviewerName)) ||
-                        (!adj.step2ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any) || isAdmin)) ||
-                        isAdmin
-                      )
-                    );
+                    const { canReview1, canReview2 } = checkCanReviewAdj(adj);
 
                     return (
                       <div key={adj.id} className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
@@ -2181,21 +2258,7 @@ export const AttendancePage: React.FC = () => {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {displayedAdjustments.map(adj => {
-                        const canReview1 = (
-                          (adj.status === 'PENDING_STEP1' || (adj.status === 'PENDING' && adj.step1ReviewerId)) &&
-                          (
-                            (adj.step1ReviewerId && (user?.id === adj.step1ReviewerId || user?.name === adj.step1ReviewerName)) ||
-                            (!adj.step1ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_STEP1' as any) || isAdmin))
-                          )
-                        );
-                        const canReview2 = (
-                          (adj.status === 'APPROVED_STEP1' || (adj.status === 'PENDING' && !adj.step1ReviewerId)) &&
-                          (
-                            (adj.step2ReviewerId && (user?.id === adj.step2ReviewerId || user?.name === adj.step2ReviewerName)) ||
-                            (!adj.step2ReviewerId && (user?.permissions?.includes('APPROVE_LEAVE_FINAL' as any) || isAdmin)) ||
-                            isAdmin
-                          )
-                        );
+                        const { canReview1, canReview2 } = checkCanReviewAdj(adj);
 
                         return (
                           <tr key={adj.id} className="hover:bg-slate-50 transition-colors">
