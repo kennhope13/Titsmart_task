@@ -29,12 +29,98 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     showNotificationBell,
     autoShowNotificationPopup,
     showChatWidget,
+    companyName,
+    companySlogan,
+    companyLogo,
     setSidebarHoverToExpand,
     setSidebarShowToggleButton,
     setShowNotificationBell,
     setAutoShowNotificationPopup,
     setShowChatWidget,
+    setCompanyName,
+    setCompanySlogan,
+    setCompanyLogo,
+    setIsApplyingBranding,
   } = useUIStore();
+
+  const [inputCompanyName, setInputCompanyName] = useState(companyName || 'TITSMART');
+  const [inputCompanySlogan, setInputCompanySlogan] = useState(companySlogan || 'Project Manager');
+  const [inputCompanyLogo, setInputCompanyLogo] = useState<string | null>(companyLogo || null);
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  // Sync state when modal opens or store changes
+  React.useEffect(() => {
+    if (isOpen) {
+      setInputCompanyName(companyName || 'TITSMART');
+      setInputCompanySlogan(companySlogan || 'Project Manager');
+      setInputCompanyLogo(companyLogo || null);
+      setIsSaving(false);
+    }
+  }, [isOpen, companyName, companySlogan, companyLogo]);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      triggerToast('Ảnh logo không được vượt quá 2MB!', 'warning');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        setInputCompanyLogo(base64);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveBranding = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setIsApplyingBranding(true);
+
+    const finalName = inputCompanyName.trim() || 'TITSMART';
+    const finalSlogan = inputCompanySlogan.trim() || 'Project Manager';
+
+    // Đóng Modal ngay lập tức để toàn bộ ứng dụng hiển thị loading blocking
+    onClose();
+
+    // Hiệu ứng blocking toàn bộ ứng dụng
+    await new Promise((res) => setTimeout(res, 800));
+
+    setCompanyName(finalName);
+    setCompanySlogan(finalSlogan);
+    setCompanyLogo(inputCompanyLogo);
+    setIsSaving(false);
+    setIsApplyingBranding(false);
+
+    // Hiển thị toast thông báo thành công
+    triggerToast('Đã cập nhật tên công ty, slogan và logo thành công!', 'success');
+  };
+
+  const handleResetBranding = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setIsApplyingBranding(true);
+
+    onClose();
+    await new Promise((res) => setTimeout(res, 600));
+
+    setInputCompanyName('TITSMART');
+    setInputCompanySlogan('Project Manager');
+    setInputCompanyLogo(null);
+    setCompanyName('TITSMART');
+    setCompanySlogan('Project Manager');
+    setCompanyLogo(null);
+    setIsSaving(false);
+    setIsApplyingBranding(false);
+
+    triggerToast('Đã khôi phục thương hiệu và logo mặc định!', 'info');
+  };
 
   const handleLogout = async () => {
     onClose();
@@ -46,13 +132,172 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     <>
       <Modal
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={() => {
+          if (!isSaving) onClose();
+        }}
         title="Cài đặt hệ thống"
         icon="settings"
         size="md"
         requireConfirmOnClose={false}
       >
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-3 relative">
+          {/* Blocking Overlay khi đang lưu cài đặt */}
+          {isSaving && (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-xs rounded-2xl z-50 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-200 select-none">
+              <div className="w-10 h-10 border-3 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+              <div className="text-center">
+                <p className="text-xs font-extrabold text-slate-800">Đang lưu cài đặt...</p>
+                <p className="text-[11px] text-slate-500 font-medium">Vui lòng chờ trong giây lát</p>
+              </div>
+            </div>
+          )}
+
+          {/* Section: Nhận diện thương hiệu (Tên công ty & Slogan) */}
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-lg text-primary">branding_watermark</span>
+                <span className="text-xs font-bold text-slate-800">Thương hiệu & Tên công ty</span>
+              </div>
+              {(inputCompanyName !== 'TITSMART' || inputCompanySlogan !== 'Project Manager') && (
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={handleResetBranding}
+                  className="text-[11px] font-semibold text-slate-500 hover:text-red-600 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Khôi phục mặc định TITSMART"
+                >
+                  Mặc định
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Tên công ty / Ứng dụng
+                </label>
+                <input
+                  type="text"
+                  disabled={isSaving}
+                  value={inputCompanyName}
+                  onChange={(e) => setInputCompanyName(e.target.value)}
+                  placeholder="Ví dụ: TITSMART..."
+                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Logo công ty
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="relative w-11 h-11 rounded-xl bg-white border border-slate-200/90 flex items-center justify-center p-1.5 shadow-2xs shrink-0 overflow-hidden">
+                    <img
+                      src={inputCompanyLogo || './logo.png'}
+                      alt="Logo Preview"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      disabled={isSaving}
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-sm text-primary">upload</span>
+                      <span>{inputCompanyLogo ? 'Thay đổi logo' : 'Tải lên logo'}</span>
+                    </button>
+                    {inputCompanyLogo && (
+                      <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() => setInputCompanyLogo(null)}
+                        className="px-2 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="Dùng lại logo mặc định"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                        <span>Xóa logo</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Slogan / Dòng phụ đề
+                </label>
+                <input
+                  type="text"
+                  disabled={isSaving}
+                  value={inputCompanySlogan}
+                  onChange={(e) => setInputCompanySlogan(e.target.value)}
+                  placeholder="Ví dụ: Project Manager..."
+                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                {/* Live Preview nhỏ */}
+                <div className="flex items-center gap-2 px-2.5 py-1.5 bg-white rounded-lg border border-slate-200/80 min-w-0 max-w-[210px] overflow-hidden shadow-2xs">
+                  <img src={inputCompanyLogo || './logo.png'} alt="Logo" className="w-5 h-5 object-contain shrink-0 rounded" />
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <span 
+                      className={`font-extrabold text-blue-900 block leading-tight truncate ${
+                        inputCompanyName.length > 20
+                          ? 'text-[9.5px]'
+                          : inputCompanyName.length > 14
+                          ? 'text-[10.5px]'
+                          : inputCompanyName.length > 8
+                          ? 'text-[11.5px]'
+                          : 'text-[12.5px]'
+                      }`}
+                    >
+                      {inputCompanyName.trim() || 'TITSMART'}
+                    </span>
+                    <span 
+                      className={`text-slate-500 font-bold uppercase block truncate leading-tight mt-0.5 ${
+                        inputCompanySlogan.length > 24
+                          ? 'text-[6px] tracking-[0.02em]'
+                          : inputCompanySlogan.length > 16
+                          ? 'text-[6.5px] tracking-[0.05em]'
+                          : 'text-[7.5px] tracking-[0.08em]'
+                      }`}
+                    >
+                      {inputCompanySlogan.trim() || 'Project Manager'}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={handleSaveBranding}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer bg-primary text-white hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? (
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  ) : (
+                    <span className="material-symbols-outlined text-sm">save</span>
+                  )}
+                  <span>{isSaving ? 'Đang lưu...' : 'Áp dụng'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="h-px bg-slate-100 my-1"></div>
+
           {/* Row 1: Sidebar Mode (Desktop Only) */}
           <div className="hidden sm:flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
             <div className="flex items-center gap-2.5">

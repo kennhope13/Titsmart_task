@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import LoadingSpinner from '../LoadingSpinner';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useRealtimeStore } from '../../services/realtimeStore';
 import { useAuthStore, hasPermission } from '../../services/authStore';
@@ -22,6 +21,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
     sidebarShowToggleButton, 
     isSidebarExpanded, 
     isSidebarHovered, 
+    companyName,
+    companySlogan,
+    companyLogo,
     setIsSidebarHovered, 
     toggleSidebarExpanded 
   } = useUIStore();
@@ -42,6 +44,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
   const isAdmin = user?.role === 'admin' || user?.role === 'Quản trị viên' || user?.role === 'pm';
   const defaultTaskPath = isAdmin ? '/task-assignment?tab=unassigned' : '/my-tasks';
   const sidebarRef = useRef<HTMLElement>(null);
+
+  const activeCompanyName = companyName?.trim() || 'TITSMART';
+  const activeCompanySlogan = companySlogan?.trim() || 'Project Manager';
+  const activeCompanyLogo = companyLogo || './logo.png';
+
+  // Tự động co giãn cỡ chữ theo độ dài để hiển thị trọn vẹn không bị cắt ba chấm
+  const nameLength = activeCompanyName.length;
+  const sloganLength = activeCompanySlogan.length;
+
+  const nameFontSizeClass =
+    nameLength > 24
+      ? 'text-[10px]'
+      : nameLength > 18
+      ? 'text-[11px]'
+      : nameLength > 12
+      ? 'text-[12px]'
+      : nameLength > 8
+      ? 'text-[13px]'
+      : 'text-[15px]';
+
+  const sloganFontSizeClass =
+    sloganLength > 26
+      ? 'text-[6px] tracking-[0.03em]'
+      : sloganLength > 18
+      ? 'text-[7px] tracking-[0.06em]'
+      : sloganLength > 13
+      ? 'text-[7.5px] tracking-[0.08em]'
+      : 'text-[8px] tracking-[0.15em]';
 
   const handleLogout = async () => {
     try {
@@ -124,28 +154,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
           !isSidebarExpanded && isSidebarHovered ? 'shadow-[4px_0_24px_rgba(0,0,0,0.18)]' : 'shadow-[0_0_15px_rgba(0,0,0,0.05)]'
         } overflow-x-hidden ${isExpanded ? 'w-[170px]' : 'w-[56px]'}`}
       >
-        <div className="relative h-12 px-2 flex items-center gap-2 border-b border-slate-100 min-w-0 flex-shrink-0">
-          <div className="flex-1 flex items-center gap-2.5 min-w-0">
+        <div className="relative h-12 px-2 flex items-center gap-1.5 border-b border-slate-100 min-w-0 flex-shrink-0">
+          <div className="flex-1 flex items-center gap-2 min-w-0">
             <div 
-              className={`relative w-10 h-10 flex items-center justify-center flex-shrink-0 ${sidebarShowToggleButton ? 'cursor-pointer group/logo' : ''}`}
+              className={`relative w-8 h-8 flex items-center justify-center flex-shrink-0 ${sidebarShowToggleButton ? 'cursor-pointer group/logo' : ''}`}
               onClick={() => sidebarShowToggleButton && toggleSidebar && toggleSidebar()}
               title={sidebarShowToggleButton ? "Ghim / Bỏ ghim thanh menu" : ""}
             >
               <img 
-                src="./logo.png" 
-                alt="TITSMART" 
-                className={`w-5 h-5 object-contain transition-opacity duration-200 ${sidebarShowToggleButton ? 'group-hover/logo:opacity-0' : ''}`} 
+                src={activeCompanyLogo} 
+                alt={activeCompanyName} 
+                className={`w-6 h-6 object-contain rounded-md transition-opacity duration-200 ${sidebarShowToggleButton ? 'group-hover/logo:opacity-0' : ''}`} 
               />
               {sidebarShowToggleButton && (
                 <div className="absolute inset-0 bg-slate-100 rounded-lg flex items-center justify-center opacity-0 group-hover/logo:opacity-100 transition-all text-slate-500 hover:text-primary hover:bg-slate-200">
-                  <span className="material-symbols-outlined text-[20px] transform -scale-x-100">view_sidebar</span>
+                  <span className="material-symbols-outlined text-[18px] transform -scale-x-100">view_sidebar</span>
                 </div>
               )}
             </div>
             
-            <div className={`min-w-0 flex-1 flex flex-col justify-center transition-opacity duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              <h1 className="font-extrabold text-[15px] text-blue-900 leading-none tracking-tight truncate">TITSMART</h1>
-              <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1 truncate">Project Manager</p>
+            <div className={`min-w-0 flex-1 flex flex-col justify-center transition-opacity duration-200 overflow-hidden ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+              <h1 className={`font-extrabold ${nameFontSizeClass} text-blue-900 leading-tight tracking-tight`} title={activeCompanyName}>
+                {activeCompanyName}
+              </h1>
+              <p className={`${sloganFontSizeClass} text-slate-500 font-bold uppercase mt-0.5 leading-none`} title={activeCompanySlogan}>
+                {activeCompanySlogan}
+              </p>
             </div>
           </div>
         </div>

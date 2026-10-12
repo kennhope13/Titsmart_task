@@ -11,6 +11,10 @@ interface UIStoreState {
   showChatWidget: boolean;
   availableUpdateVersion: string | null;
   isUpdatingApp: boolean;
+  companyName: string;
+  companySlogan: string;
+  companyLogo: string | null;
+  isApplyingBranding: boolean;
   setSidebarHoverToExpand: (val: boolean) => void;
   setSidebarShowToggleButton: (val: boolean) => void;
   setIsSidebarExpanded: (val: boolean | ((prev: boolean) => boolean)) => void;
@@ -21,6 +25,10 @@ interface UIStoreState {
   setShowChatWidget: (val: boolean) => void;
   setAvailableUpdateVersion: (val: string | null) => void;
   setIsUpdatingApp: (val: boolean) => void;
+  setCompanyName: (val: string) => void;
+  setCompanySlogan: (val: string) => void;
+  setCompanyLogo: (val: string | null) => void;
+  setIsApplyingBranding: (val: boolean) => void;
 }
 
 export const useUIStore = create<UIStoreState>()(
@@ -35,6 +43,10 @@ export const useUIStore = create<UIStoreState>()(
       showChatWidget: true,
       availableUpdateVersion: null,
       isUpdatingApp: false,
+      companyName: 'TITSMART',
+      companySlogan: 'Project Manager',
+      companyLogo: null,
+      isApplyingBranding: false,
       setSidebarHoverToExpand: (val) => set({ sidebarHoverToExpand: val }),
       setSidebarShowToggleButton: (val) => set({ sidebarShowToggleButton: val }),
       setIsSidebarExpanded: (val) => set((state) => ({ 
@@ -47,6 +59,10 @@ export const useUIStore = create<UIStoreState>()(
       setShowChatWidget: (val) => set({ showChatWidget: val }),
       setAvailableUpdateVersion: (val) => set({ availableUpdateVersion: val }),
       setIsUpdatingApp: (val) => set({ isUpdatingApp: val }),
+      setCompanyName: (val) => set({ companyName: val }),
+      setCompanySlogan: (val) => set({ companySlogan: val }),
+      setCompanyLogo: (val) => set({ companyLogo: val }),
+      setIsApplyingBranding: (val) => set({ isApplyingBranding: val }),
     }),
     {
       name: 'titsmart-ui-settings',
@@ -57,6 +73,9 @@ export const useUIStore = create<UIStoreState>()(
         showNotificationBell: state.showNotificationBell,
         autoShowNotificationPopup: state.autoShowNotificationPopup,
         showChatWidget: state.showChatWidget,
+        companyName: state.companyName,
+        companySlogan: state.companySlogan,
+        companyLogo: state.companyLogo,
       }),
     }
   )

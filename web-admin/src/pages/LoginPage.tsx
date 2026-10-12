@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../services/authStore';
 import { useRealtimeStore } from '../services/realtimeStore';
+import { useUIStore } from '../services/uiStore';
 import { User, Key, Eye, EyeOff, Lock, ArrowRight, Shield, Zap, Boxes, BarChart3 } from 'lucide-react';
 
 export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchStyle }) => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const companyName = useUIStore((state) => state.companyName) || 'TITSMART';
+  const companySlogan = useUIStore((state) => state.companySlogan) || 'Project Manager';
+  const companyLogo = useUIStore((state) => state.companyLogo) || './logo.png';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -61,11 +65,11 @@ export const LoginPage: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchSt
                   <div>
                     {/* Centered Logo & Header */}
                     <div className="flex flex-col items-start mb-6">
-                      <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-sm overflow-hidden mb-4">
-                        <img src="./logo.png" alt="TITSMART" className="w-8 h-8 object-contain" />
+                      <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-sm overflow-hidden mb-4 p-2">
+                        <img src={companyLogo} alt={companyName} className="w-full h-full object-contain" />
                       </div>
-                      <h1 className="text-3xl font-extrabold text-primary tracking-tight mb-1">TITSMART</h1>
-                      <p className="text-slate-400 font-bold text-[10px] tracking-[0.2em] uppercase">Project Manager</p>
+                      <h1 className="text-3xl font-extrabold text-primary tracking-tight mb-1">{companyName}</h1>
+                      <p className="text-slate-400 font-bold text-[10px] tracking-[0.2em] uppercase">{companySlogan}</p>
                     </div>
                     
                     <h2 className="text-lg font-extrabold text-slate-900 mb-2">Đăng nhập hệ thống</h2>

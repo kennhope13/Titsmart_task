@@ -30,6 +30,7 @@ import { GlobalNotificationToast } from './components/common/GlobalNotificationT
 import { NotificationBell } from './components/common/NotificationBell';
 import { ChatWidget } from './components/common/ChatWidget';
 import { LogoutBlockingModal } from './components/common/LogoutBlockingModal';
+import { BrandingBlockingModal } from './components/common/BrandingBlockingModal';
 import { requestSystemNotificationPermission } from './services/systemNotificationService';
 
 
@@ -43,10 +44,14 @@ const ProtectedLayout: React.FC = () => {
   );
 };
 
+import { useUIStore } from './services/uiStore';
+
 export const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, refreshUser } = useAuthStore();
+  const companyName = useUIStore((s) => s.companyName) || 'TITSMART';
+  const companySlogan = useUIStore((s) => s.companySlogan) || 'Project Manager';
   const [loginStyle, setLoginStyle] = useState<'default' | 'variant'>(() => (localStorage.getItem('titsmart_login_style') as 'default' | 'variant') || 'default');
   const fetchProjects = useRealtimeStore(s => s.fetchProjects);
   const fetchTasks = useRealtimeStore(s => s.fetchTasks);
@@ -56,6 +61,10 @@ export const App: React.FC = () => {
   const fetchActivityLogs = useRealtimeStore(s => s.fetchActivityLogs);
   const fetchAccounting = useRealtimeStore(s => s.fetchAccounting);
   const fetchFieldLogs = useRealtimeStore(s => s.fetchFieldLogs);
+
+  useEffect(() => {
+    document.title = `${companyName} - ${companySlogan}`;
+  }, [companyName, companySlogan]);
 
   const switchLoginStyle = (style: 'default' | 'variant') => {
     localStorage.setItem('titsmart_login_style', style);
@@ -205,6 +214,7 @@ export const App: React.FC = () => {
       <UpdateNotifier />
       <GlobalNotificationToast />
       <LogoutBlockingModal />
+      <BrandingBlockingModal />
       {/* Floating widgets rendered at root level to avoid z-index stacking context and overflow issues from Layout */}
       {user && <NotificationBell />}
       <ChatWidget />

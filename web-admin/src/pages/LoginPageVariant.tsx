@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../services/authStore';
+import { useUIStore } from '../services/uiStore';
 
 export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onSwitchStyle }) => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const companyName = useUIStore((state) => state.companyName) || 'TITSMART';
+  const companySlogan = useUIStore((state) => state.companySlogan) || 'HỆ THỐNG QUẢN LÝ CÔNG VIỆC & DỰ ÁN';
+  const companyLogo = useUIStore((state) => state.companyLogo) || './logo.png';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
@@ -45,11 +49,11 @@ export const LoginPageVariant: React.FC<{ onSwitchStyle?: () => void }> = ({ onS
       <div className="relative w-full max-w-[420px] px-6 py-8 overflow-y-auto max-h-full">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-[0_8px_30px_rgba(15,23,42,0.08)] overflow-hidden">
           <div className="px-8 pt-8 pb-6 text-center border-b border-slate-100 bg-gradient-to-b from-blue-50/70 to-white">
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
-              <img src="./logo.png" alt="TITSMART" className="w-full h-full object-contain p-1" />
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden p-2">
+              <img src={companyLogo} alt={companyName} className="w-full h-full object-contain" />
             </div>
-            <h1 className="mt-3 text-lg font-extrabold text-primary leading-tight">TITSMART</h1>
-            <p className="text-[11px] text-slate-500 font-medium mt-0.5">HỆ THỐNG QUẢN LÝ CÔNG VIỆC & DỰ ÁN</p>
+            <h1 className="mt-3 text-lg font-extrabold text-primary leading-tight">{companyName}</h1>
+            <p className="text-[11px] text-slate-500 font-medium mt-0.5">{companySlogan}</p>
           </div>
 
           <div className="px-8 py-7">
