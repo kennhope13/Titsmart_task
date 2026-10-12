@@ -575,11 +575,44 @@ export const AttendancePage: React.FC = () => {
 
   const fetchAdjustments = async () => {
     try {
+      // 1. Lấy cache tạm thời để UI phản hồi tức thì
       const raw = localStorage.getItem('titsmart_attendance_adjustments');
+      let localList: AttendanceAdjustmentRequest[] = [];
       if (raw) {
-        const data: AttendanceAdjustmentRequest[] = JSON.parse(raw);
-        cachedAdjustments = data;
-        setAdjustments(data);
+        try {
+          localList = JSON.parse(raw);
+          if (localList.length > 0 && adjustments.length === 0) {
+            setAdjustments(localList);
+            cachedAdjustments = localList;
+          }
+        } catch { /* ignore */ }
+      }
+
+      // 2. Fetch từ Supabase (Cloud) để đồng bộ trên mọi thiết bị (Desktop + Mobile)
+      const remote = await api.adjustments.getAll();
+      if (remote && remote.length > 0) {
+        cachedAdjustments = remote;
+        setAdjustments(remote);
+        localStorage.setItem('titsmart_attendance_adjustments', JSON.stringify(remote));
+      } else if (localList.length > 0) {
+        // Migration: Nếu Supabase chưa có nhưng máy Desktop có sẵn dữ liệu cũ, đồng bộ lên Supabase
+        for (const item of localList) {
+          try {
+            await api.adjustments.create(item);
+          } catch (mErr) {
+            console.warn('[Adjustments] Migration failed for item:', item, mErr);
+          }
+        }
+        const synced = await api.adjustments.getAll();
+        if (synced && synced.length > 0) {
+          cachedAdjustments = synced;
+          setAdjustments(synced);
+          localStorage.setItem('titsmart_attendance_adjustments', JSON.stringify(synced));
+        }
+      } else {
+        cachedAdjustments = [];
+        setAdjustments([]);
+        localStorage.setItem('titsmart_attendance_adjustments', JSON.stringify([]));
       }
     } catch (e) {
       console.error('Failed to fetch adjustments', e);
@@ -615,8 +648,7 @@ export const AttendancePage: React.FC = () => {
       const followerEngs = engineers.filter(e => adjFollowerIds.includes(e.id));
       const proj = projects.find(p => p.id === adjProject);
 
-      const newAdj: AttendanceAdjustmentRequest = {
-        id: 'adj-' + Date.now() + '-' + Math.random().toString(36).substring(7),
+      const adjPayload: any = {
         userId: user.id,
         userName: user.name || user.username || 'Unknown',
         userTitle: (user as any).title || user.role,
@@ -637,7 +669,14 @@ export const AttendancePage: React.FC = () => {
         createdAt: new Date().toISOString(),
       };
 
-      const updatedList = [newAdj, ...adjustments];
+      // Đồng bộ trực tiếp lên Supabase
+      const createdItem = await api.adjustments.create(adjPayload);
+      const newAdj: AttendanceAdjustmentRequest = createdItem || {
+        ...adjPayload,
+        id: 'adj-' + Date.now(),
+      };
+
+      const updatedList = [newAdj, ...adjustments.filter(a => a.id !== newAdj.id)];
       saveAdjustments(updatedList);
 
       setShowAdjModal(false);
@@ -741,6 +780,19 @@ export const AttendancePage: React.FC = () => {
         }
       }
 
+      // Cập nhật trạng thái lên Supabase
+      try {
+        await api.adjustments.review(reviewAdj.id, {
+          status: finalStatus,
+          reviewerId: user.id,
+          reviewerName: user.name || user.username || 'Reviewer',
+          reviewNote: reviewAdjNote.trim() || undefined,
+          step: reviewAdjStep,
+        });
+      } catch (cloudErr) {
+        console.warn('[Adjustments] Failed to review on Supabase:', cloudErr);
+      }
+
       const updatedList = adjustments.map(a => a.id === reviewAdj.id ? updatedAdj : a);
       saveAdjustments(updatedList);
       setReviewAdj(null);
@@ -779,8 +831,13 @@ export const AttendancePage: React.FC = () => {
     setIsSubmitting(false);
   };
 
-  const handleConfirmDeleteAdj = () => {
+  const handleConfirmDeleteAdj = async () => {
     if (!deleteAdjId) return;
+    try {
+      await api.adjustments.delete(deleteAdjId);
+    } catch (dErr) {
+      console.warn('[Adjustments] Failed to delete from Supabase:', dErr);
+    }
     const updated = adjustments.filter(a => a.id !== deleteAdjId);
     saveAdjustments(updated);
     setDeleteAdjId(null);
@@ -2172,17 +2229,16 @@ export const AttendancePage: React.FC = () => {
 
 
           {/* Adjustment List / Table Area */}
-          <div className="flex-1 overflow-y-auto p-2 sm:p-4">
+          <div className="flex-1 overflow-y-auto bg-slate-50 md:bg-white">
             {displayedAdjustments.length === 0 ? (
-              <div className="p-12 text-center bg-white rounded-xl border border-slate-200 shadow-2xs">
-                <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">edit_calendar</span>
-                <p className="text-slate-500 font-medium text-sm">Chưa có yêu cầu chấm công bù nào.</p>
-                <p className="text-slate-400 text-xs mt-1">Bấm "Tạo yêu cầu chấm công bù" để gửi giải trình bổ sung giờ làm việc.</p>
+              <div className="p-12 text-center text-slate-400 text-xs sm:text-sm flex flex-col items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-4xl text-slate-300">edit_calendar</span>
+                <span>Chưa có yêu cầu chấm công bù nào.</span>
               </div>
             ) : (
               <>
                 {/* Mobile View Cards */}
-                <div className="md:hidden space-y-2.5">
+                <div className="block md:hidden p-3 space-y-2.5">
                   {displayedAdjustments.map(adj => {
                     const { canReview1, canReview2 } = checkCanReviewAdj(adj);
 
@@ -2239,24 +2295,23 @@ export const AttendancePage: React.FC = () => {
                   })}
                 </div>
 
-                {/* Desktop View Table */}
-                <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-xs min-w-[900px]">
-                      <thead>
-                        <tr className="border-b border-slate-200 bg-slate-100/80 text-slate-600 font-bold uppercase text-[10px]">
-                          <th className="p-3 w-40 whitespace-nowrap">Nhân viên</th>
-                          <th className="p-3 w-28 whitespace-nowrap">Loại bù</th>
-                          <th className="p-3 w-28 whitespace-nowrap">Ngày cần bù</th>
-                          <th className="p-3 w-32 whitespace-nowrap">Giờ vào/ra</th>
-                          <th className="p-3 w-36 whitespace-nowrap">Dự án</th>
-                          <th className="p-3 min-w-[160px]">Lý do giải trình</th>
-                          <th className="p-3 text-center w-36 whitespace-nowrap">Trạng thái</th>
-                          <th className="p-3 w-36 whitespace-nowrap">Quản lý duyệt</th>
-                          <th className="p-3 w-36 whitespace-nowrap">Ban Giám Đốc</th>
-                          <th className="p-3 text-center w-28 whitespace-nowrap">Thao tác</th>
-                        </tr>
-                      </thead>
+                {/* Desktop View Table: Full Width tràn viền giống Nghỉ phép */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs min-w-[900px]">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-bold uppercase sticky top-0 z-10 text-[10px]">
+                        <th className="p-3 w-40 whitespace-nowrap">Nhân viên</th>
+                        <th className="p-3 w-28 whitespace-nowrap">Loại bù</th>
+                        <th className="p-3 w-28 whitespace-nowrap">Ngày cần bù</th>
+                        <th className="p-3 w-32 whitespace-nowrap">Giờ vào/ra</th>
+                        <th className="p-3 w-36 whitespace-nowrap">Dự án</th>
+                        <th className="p-3 min-w-[160px]">Lý do giải trình</th>
+                        <th className="p-3 text-center w-36 whitespace-nowrap">Trạng thái</th>
+                        <th className="p-3 w-36 whitespace-nowrap">Quản lý duyệt</th>
+                        <th className="p-3 w-36 whitespace-nowrap">Ban Giám Đốc</th>
+                        <th className="p-3 text-center w-28 whitespace-nowrap">Thao tác</th>
+                      </tr>
+                    </thead>
                     <tbody className="divide-y divide-slate-100">
                       {displayedAdjustments.map(adj => {
                         const { canReview1, canReview2 } = checkCanReviewAdj(adj);
@@ -2328,7 +2383,6 @@ export const AttendancePage: React.FC = () => {
                       })}
                     </tbody>
                   </table>
-                  </div>
                 </div>
               </>
             )}
@@ -2390,24 +2444,96 @@ export const AttendancePage: React.FC = () => {
             <textarea rows={3} value={adjReason} onChange={e => setAdjReason(e.target.value)} placeholder="Nhập lý do cụ thể (vd: đi công tác công trường, điện thoại hỏng, làm việc ngoài cơ quan...)" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none resize-none" />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Người duyệt Cấp 1 (Quản lý trực tiếp)</label>
-              <CustomSelect value={adjStep1ReviewerId} onChange={e => setAdjStep1ReviewerId(e.target.value)} searchable={true} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
-                <option value="">-- Chọn Quản lý trực tiếp --</option>
-                {step1Reviewers.map(r => (
-                  <option key={r.id} value={r.id}>{r.name} ({r.title || r.role})</option>
-                ))}
-              </CustomSelect>
+          {/* Gom Quản lý trực tiếp duyệt & Người theo dõi lên cùng 1 hàng giống đơn xin nghỉ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 border-t border-slate-100">
+            {/* Ô Quản lý trực tiếp duyệt (Bước 1 - Tùy chọn) */}
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2 flex flex-col justify-between">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-slate-800">
+                    <span className="material-symbols-outlined text-[16px] text-primary">person_check</span>
+                    <span>Quản lý trực tiếp duyệt</span>
+                  </span>
+                  <span className="text-[10px] font-normal text-slate-400">(Tùy chọn)</span>
+                </label>
+                <CustomSelect
+                  value={adjStep1ReviewerId}
+                  onChange={e => {
+                    setAdjStep1ReviewerId(e.target.value);
+                    if (modalError) setModalError(null);
+                  }}
+                  searchable={true}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
+                >
+                  <option value="">-- Không qua quản lý (Admin duyệt) --</option>
+                  {step1Reviewers.map(r => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </CustomSelect>
+              </div>
+              <p className="text-[10px] text-slate-400 italic mt-1">* Ban Giám Đốc / Admin mặc định duyệt cuối</p>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Người duyệt Cấp 2 (Ban Giám Đốc)</label>
-              <CustomSelect value={adjStep2ReviewerId} onChange={e => setAdjStep2ReviewerId(e.target.value)} searchable={true} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
-                <option value="">-- Ban Giám Đốc / Admin --</option>
-                {step2Reviewers.map(r => (
-                  <option key={r.id} value={r.id}>{r.name} ({r.title || r.role})</option>
-                ))}
-              </CustomSelect>
+
+            {/* Ô Người theo dõi (Follow / CC) */}
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2">
+              <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-slate-800">
+                  <span className="material-symbols-outlined text-[16px] text-primary">visibility</span>
+                  <span>Người theo dõi (Follow / CC)</span>
+                </span>
+                <span className="text-[10px] font-normal text-slate-400">(Tùy chọn)</span>
+              </label>
+
+              <div className="space-y-2">
+                <CustomSelect
+                  value=""
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val && !adjFollowerIds.includes(val)) {
+                      setAdjFollowerIds(prev => [...prev, val]);
+                    }
+                  }}
+                  searchable={true}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white font-medium"
+                >
+                  <option value="">+ Chọn người theo dõi / thông báo...</option>
+                  {engineers
+                    .filter(eng => eng.id !== user?.id && !adjFollowerIds.includes(eng.id))
+                    .map(eng => (
+                      <option key={eng.id} value={eng.id}>
+                        {eng.name} ({eng.role || eng.title || 'Nhân viên'})
+                      </option>
+                    ))}
+                </CustomSelect>
+
+                {/* Danh sách người theo dõi đã chọn dạng chip */}
+                {adjFollowerIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {adjFollowerIds.map(fid => {
+                      const eng = engineers.find(e => e.id === fid);
+                      return (
+                        <span
+                          key={fid}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50/90 text-primary border border-blue-200/80 rounded-lg text-xs font-semibold animate-in fade-in"
+                        >
+                          <span className="material-symbols-outlined text-[13px]">person</span>
+                          <span>{eng?.name || fid}</span>
+                          <button
+                            type="button"
+                            onClick={() => setAdjFollowerIds(prev => prev.filter(id => id !== fid))}
+                            className="w-3.5 h-3.5 rounded-full bg-blue-200/70 hover:bg-red-100 hover:text-red-600 inline-flex items-center justify-center transition-colors text-slate-600 cursor-pointer"
+                            title="Bỏ chọn"
+                          >
+                            <span className="material-symbols-outlined text-[10px]">close</span>
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

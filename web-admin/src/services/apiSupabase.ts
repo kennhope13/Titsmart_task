@@ -2219,6 +2219,150 @@ export const api = {
     }
   },
 
+  adjustments: {
+    getAll: async () => {
+      try {
+        let { data, error } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .eq('icon', 'ADJUSTMENT_REQUEST')
+          .order('timestamp', { ascending: false })
+          .limit(300);
+
+        if (error) {
+          const res = await supabase
+            .from('activity_logs')
+            .select('*')
+            .eq('icon', 'ADJUSTMENT_REQUEST')
+            .limit(300);
+          data = res.data;
+          error = res.error;
+        }
+
+        if (error) return [];
+
+        return (data || []).map(row => {
+          try {
+            const payload = typeof row.action === 'string' ? JSON.parse(row.action) : row.action;
+            return { id: row.id, ...payload };
+          } catch { return null; }
+        }).filter(Boolean);
+      } catch (err) {
+        return [];
+      }
+    },
+    getByUser: async (userId: string, userName?: string) => {
+      try {
+        const all = await api.adjustments.getAll();
+        return all.filter((a: any) => {
+          if (!a) return false;
+          const matchId = String(a.userId || '') === String(userId || '');
+          const matchName = userName && a.userName && a.userName.trim().toLowerCase() === userName.trim().toLowerCase();
+          const matchFollower = Array.isArray(a.followerIds) && (a.followerIds.includes(userId) || (userName && a.followerNames?.includes(userName)));
+          return matchId || matchName || matchFollower;
+        });
+      } catch (err) {
+        console.error('[Adjustments] Failed to fetch user adjustments:', err);
+        return [];
+      }
+    },
+    create: async (input: {
+      userId: string;
+      userName: string;
+      userTitle?: string;
+      projectId?: string;
+      projectName?: string;
+      adjustmentDate: string;
+      adjustmentType: string;
+      checkInTime?: string;
+      checkOutTime?: string;
+      reason: string;
+      status?: string;
+      step1ReviewerId?: string;
+      step1ReviewerName?: string;
+      step2ReviewerId?: string;
+      step2ReviewerName?: string;
+      followerIds?: string[];
+      followerNames?: string[];
+      createdAt?: string;
+    }) => {
+      const payloadData: any = {
+        userId: input.userId,
+        userName: input.userName,
+        userTitle: input.userTitle || null,
+        projectId: input.projectId || null,
+        projectName: input.projectName || null,
+        adjustmentDate: input.adjustmentDate,
+        adjustmentType: input.adjustmentType,
+        checkInTime: input.checkInTime || null,
+        checkOutTime: input.checkOutTime || null,
+        reason: input.reason,
+        status: input.status || (input.step1ReviewerId ? 'PENDING_STEP1' : 'PENDING'),
+        step1ReviewerId: input.step1ReviewerId || null,
+        step1ReviewerName: input.step1ReviewerName || null,
+        step2ReviewerId: input.step2ReviewerId || null,
+        step2ReviewerName: input.step2ReviewerName || null,
+        followerIds: input.followerIds || [],
+        followerNames: input.followerNames || [],
+        createdAt: input.createdAt || new Date().toISOString(),
+      };
+      const payload: any = {
+        user: input.userName,
+        project: input.projectName || 'Chấm công bù',
+        icon: 'ADJUSTMENT_REQUEST',
+        action: JSON.stringify(payloadData),
+        timestamp: payloadData.createdAt,
+      };
+      let { data, error } = await supabase.from('activity_logs').insert(payload).select().single();
+      if (error) {
+        if (error.code === 'PGRST204' || String(error.message).includes('created_at') || String(error.message).includes('timestamp')) {
+          delete payload.timestamp;
+          payload.created_at = payloadData.createdAt;
+          const retry = await supabase.from('activity_logs').insert(payload).select().single();
+          data = retry.data;
+          error = retry.error;
+        }
+      }
+      return { id: data?.id || `adj-${Date.now()}`, ...payloadData } as any;
+    },
+    review: async (id: string, reviewData: {
+      status: 'APPROVED_STEP1' | 'APPROVED' | 'REJECTED';
+      reviewerId: string;
+      reviewerName: string;
+      reviewNote?: string;
+      step?: 1 | 2;
+    }) => {
+      const { data: row, error: fetchErr } = await supabase.from('activity_logs').select('action').eq('id', id).single();
+      if (fetchErr) throw fetchErr;
+      const payloadData = typeof row.action === 'string' ? JSON.parse(row.action) : row.action;
+      payloadData.status = reviewData.status;
+
+      if (reviewData.step === 1) {
+        payloadData.step1ReviewerId = reviewData.reviewerId;
+        payloadData.step1ReviewerName = reviewData.reviewerName;
+        payloadData.step1ReviewNote = reviewData.reviewNote || '';
+        payloadData.step1ReviewedAt = new Date().toISOString();
+      } else {
+        payloadData.step2ReviewerId = reviewData.reviewerId;
+        payloadData.step2ReviewerName = reviewData.reviewerName;
+        payloadData.step2ReviewNote = reviewData.reviewNote || '';
+        payloadData.step2ReviewedAt = new Date().toISOString();
+      }
+
+      payloadData.updatedAt = new Date().toISOString();
+      payloadData.updatedBy = reviewData.reviewerName;
+
+      const { data, error } = await supabase.from('activity_logs').update({ action: JSON.stringify(payloadData) }).eq('id', id).select().single();
+      if (error) throw error;
+      return { id: data.id, ...payloadData } as any;
+    },
+    delete: async (id: string) => {
+      const { error } = await supabase.from('activity_logs').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    }
+  },
+
 
 
   directMessages: {
