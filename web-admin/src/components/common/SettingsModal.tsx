@@ -17,6 +17,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const navigate = useNavigate();
   const logout = useAuthStore(state => state.logout);
   const user = useAuthStore(state => state.user);
+  const isAdmin = user?.username === 'admin' || user?.role === 'admin' || user?.role === 'Quản trị viên';
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' | 'error' });
 
@@ -63,6 +64,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   }, [isOpen, companyName, companySlogan, companyLogo]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isAdmin) {
+      triggerToast('Chỉ Quản trị viên (Admin) mới có quyền thay đổi logo công ty!', 'warning');
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -92,6 +97,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   };
 
   const handleSaveBranding = async () => {
+    if (!isAdmin) {
+      triggerToast('Chỉ Quản trị viên (Admin) mới có quyền thay đổi thông tin thương hiệu!', 'warning');
+      return;
+    }
     if (isSaving) return;
     setIsSaving(true);
     setIsApplyingBranding(true);
@@ -205,8 +214,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-lg text-primary">branding_watermark</span>
                 <span className="text-xs font-bold text-slate-800">Thương hiệu & Tên công ty</span>
+                {!isAdmin && (
+                  <span className="text-[10px] font-semibold text-slate-400 bg-slate-200/60 px-1.5 py-0.5 rounded">
+                    Chỉ xem (Admin)
+                  </span>
+                )}
               </div>
-              {(inputCompanyName !== 'TITSMART' || inputCompanySlogan !== 'Project Manager') && (
+              {isAdmin && (inputCompanyName !== 'TITSMART' || inputCompanySlogan !== 'Project Manager') && (
                 <button
                   type="button"
                   disabled={isSaving}
@@ -226,11 +240,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </label>
                 <input
                   type="text"
-                  disabled={isSaving}
+                  disabled={isSaving || !isAdmin}
                   value={inputCompanyName}
                   onChange={(e) => setInputCompanyName(e.target.value)}
                   placeholder="Ví dụ: TITSMART..."
-                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  title={!isAdmin ? 'Chỉ Quản trị viên (Admin) mới có quyền chỉnh sửa' : ''}
+                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -246,37 +261,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       className="w-full h-full object-contain"
                     />
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      disabled={isSaving}
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      disabled={isSaving}
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                    >
-                      <span className="material-symbols-outlined text-sm text-primary">upload</span>
-                      <span>{inputCompanyLogo ? 'Thay đổi logo' : 'Tải lên logo'}</span>
-                    </button>
-                    {inputCompanyLogo && (
+                  {isAdmin ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        disabled={isSaving}
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
                       <button
                         type="button"
                         disabled={isSaving}
-                        onClick={() => setInputCompanyLogo(null)}
-                        className="px-2 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                        title="Dùng lại logo mặc định"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
-                        <span className="material-symbols-outlined text-sm">delete</span>
-                        <span>Xóa logo</span>
+                        <span className="material-symbols-outlined text-sm text-primary">upload</span>
+                        <span>{inputCompanyLogo ? 'Thay đổi logo' : 'Tải lên logo'}</span>
                       </button>
-                    )}
-                  </div>
+                      {inputCompanyLogo && (
+                        <button
+                          type="button"
+                          disabled={isSaving}
+                          onClick={() => setInputCompanyLogo(null)}
+                          className="px-2 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                          title="Dùng lại logo mặc định"
+                        >
+                          <span className="material-symbols-outlined text-sm">delete</span>
+                          <span>Xóa logo</span>
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 italic">
+                      Chỉ Admin mới có quyền đổi logo
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -286,11 +307,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </label>
                 <input
                   type="text"
-                  disabled={isSaving}
+                  disabled={isSaving || !isAdmin}
                   value={inputCompanySlogan}
                   onChange={(e) => setInputCompanySlogan(e.target.value)}
                   placeholder="Ví dụ: Project Manager..."
-                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  title={!isAdmin ? 'Chỉ Quản trị viên (Admin) mới có quyền chỉnh sửa' : ''}
+                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -326,19 +348,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  disabled={isSaving}
-                  onClick={handleSaveBranding}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer bg-primary text-white hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? (
-                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  ) : (
-                    <span className="material-symbols-outlined text-sm">save</span>
-                  )}
-                  <span>{isSaving ? 'Đang lưu...' : 'Áp dụng'}</span>
-                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    onClick={handleSaveBranding}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer bg-primary text-white hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSaving ? (
+                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    ) : (
+                      <span className="material-symbols-outlined text-sm">save</span>
+                    )}
+                    <span>{isSaving ? 'Đang lưu...' : 'Áp dụng'}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
