@@ -2241,21 +2241,22 @@ export const AttendancePage: React.FC = () => {
 
                 {/* Desktop View Table */}
                 <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-200 bg-slate-100/80 text-slate-600 font-bold uppercase text-[10px]">
-                        <th className="p-3">Nhân viên</th>
-                        <th className="p-3">Loại bù</th>
-                        <th className="p-3">Ngày cần bù</th>
-                        <th className="p-3">Giờ vào/ra</th>
-                        <th className="p-3">Dự án</th>
-                        <th className="p-3">Lý do giải trình</th>
-                        <th className="p-3 text-center">Trạng thái</th>
-                        <th className="p-3">Quản lý duyệt</th>
-                        <th className="p-3">Ban Giám Đốc</th>
-                        <th className="p-3 text-center w-28">Thao tác</th>
-                      </tr>
-                    </thead>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs min-w-[900px]">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-100/80 text-slate-600 font-bold uppercase text-[10px]">
+                          <th className="p-3 w-40 whitespace-nowrap">Nhân viên</th>
+                          <th className="p-3 w-28 whitespace-nowrap">Loại bù</th>
+                          <th className="p-3 w-28 whitespace-nowrap">Ngày cần bù</th>
+                          <th className="p-3 w-32 whitespace-nowrap">Giờ vào/ra</th>
+                          <th className="p-3 w-36 whitespace-nowrap">Dự án</th>
+                          <th className="p-3 min-w-[160px]">Lý do giải trình</th>
+                          <th className="p-3 text-center w-36 whitespace-nowrap">Trạng thái</th>
+                          <th className="p-3 w-36 whitespace-nowrap">Quản lý duyệt</th>
+                          <th className="p-3 w-36 whitespace-nowrap">Ban Giám Đốc</th>
+                          <th className="p-3 text-center w-28 whitespace-nowrap">Thao tác</th>
+                        </tr>
+                      </thead>
                     <tbody className="divide-y divide-slate-100">
                       {displayedAdjustments.map(adj => {
                         const { canReview1, canReview2 } = checkCanReviewAdj(adj);
@@ -2327,6 +2328,7 @@ export const AttendancePage: React.FC = () => {
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </>
             )}
