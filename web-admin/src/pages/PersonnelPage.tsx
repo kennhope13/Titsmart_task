@@ -468,6 +468,8 @@ export const PersonnelPage: React.FC = () => {
           await Promise.all(projectSyncPromises).catch(err => console.warn('Project member sync failed:', err));
         }
 
+        await Promise.all([fetchProjects(), fetchEngineers()]).catch(() => {});
+
         triggerToast(`Đã cập nhật nhân sự "${name.trim()}" thành công!`, 'success');
       } else {
         // KIỂM TRA TRÙNG LẶP TRƯỚC KHI TẠO MỚI
@@ -530,6 +532,8 @@ export const PersonnelPage: React.FC = () => {
             await Promise.all(projectSyncPromises).catch(err => console.warn('Project member sync failed on create:', err));
           }
         }
+
+        await Promise.all([fetchProjects(), fetchEngineers()]).catch(() => {});
 
         triggerToast(`Đã thêm nhân sự "${name.trim()}" và gán ${selectedProjectCodes.length} dự án!`, 'success');
       }

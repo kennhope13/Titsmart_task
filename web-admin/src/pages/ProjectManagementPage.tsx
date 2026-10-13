@@ -124,6 +124,7 @@ export const ProjectManagementPage: React.FC = () => {
   const laborPayrolls = useRealtimeStore((state) => state.laborPayrolls);
   const updateProject = useRealtimeStore((state) => state.updateProject);
   const fetchProjects = useRealtimeStore((state) => state.fetchProjects);
+  const fetchEngineers = useRealtimeStore((state) => state.fetchEngineers);
   const isFetchingProjects = useRealtimeStore((state) => state.isFetchingProjects);
 
   const currentUser = useAuthStore(state => state.user);
@@ -615,6 +616,7 @@ export const ProjectManagementPage: React.FC = () => {
     }
 
     triggerToast(`${TEXT.created} ${newProject.name}${pendingProjectTasks.length ? ' và import đầu mục' : ''}`, 'success');
+    await Promise.all([fetchProjects(), fetchEngineers()]).catch(() => {});
     setIsNewProjectModalOpen(false);
     setNewProjName('');
     setNewProjCode('');
@@ -730,6 +732,8 @@ export const ProjectManagementPage: React.FC = () => {
       if (engUpdates.length > 0) {
         await Promise.all(engUpdates);
       }
+
+      await Promise.all([fetchProjects(), fetchEngineers()]).catch(() => {});
 
       logActivity(`Cập nhật thông tin dự án: ${editProjName.trim()}`, editProjName.trim());
       triggerToast(`Đã cập nhật dự án \"${projectToEdit.name}\" thành công!`, 'success');
