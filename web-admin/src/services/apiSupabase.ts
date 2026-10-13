@@ -125,6 +125,27 @@ const toCamelCase = (obj: any) => {
 
 const mapArray = (arr: any[]) => arr.map(toCamelCase);
 
+// Supabase REST API mặc định giới hạn tối đa 1000 bản ghi mỗi request.
+// Hàm fetchAllRows dùng range pagination để tải đầy đủ tất cả các bản ghi khi dữ liệu vượt quá 1000.
+const fetchAllRows = async (table: string, selectCols: string = '*', filter?: { column: string; value: any }): Promise<any[]> => {
+  let allRows: any[] = [];
+  let from = 0;
+  const pageSize = 1000;
+  while (true) {
+    let query = supabase.from(table).select(selectCols).range(from, from + pageSize - 1);
+    if (filter) {
+      query = query.eq(filter.column, filter.value);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    allRows = allRows.concat(data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return allRows;
+};
+
 // Index of the notifications insert shape that last worked (0 = all columns, 1 = meta in message, 2 = base)
 let notifInsertStartIdx = 0;
 
@@ -336,13 +357,7 @@ export const api = {
   tasks: {
     getAll: async (projectId?: string) => {
       try {
-        let query = supabase.from('tasks').select('*');
-        if (projectId) query = query.eq('project_code', projectId);
-        const { data, error } = await query;
-        if (error) {
-          console.warn('[Tasks] Supabase error:', error);
-          return [];
-        }
+        const data = await fetchAllRows('tasks', '*', projectId ? { column: 'project_code', value: projectId } : undefined);
         return mapArray(data || []).map((t: any) => {
         // Parse followers from notes tag [FOLLOWERS:id1,id2:::name1,name2] or sourceRow
         if (t.notes && typeof t.notes === 'string') {
@@ -1153,8 +1168,7 @@ export const api = {
 
   accounting: {
     getMaterialPlans: async () => {
-      const { data, error } = await supabase.from('material_plans').select('*');
-      if (error) throw error;
+      const data = await fetchAllRows('material_plans');
       return data.map(toCamelCase);
     },
     createMaterialPlan: async (data: any) => {
@@ -1226,8 +1240,7 @@ export const api = {
     },
 
     getPurchasings: async () => {
-      const { data, error } = await supabase.from('purchasing_plans').select('*');
-      if (error) throw error;
+      const data = await fetchAllRows('purchasing_plans');
       return data.map(toCamelCase);
     },
     createPurchasing: async (data: any) => {
@@ -1429,8 +1442,7 @@ export const api = {
     },
 
     getLaborPayrolls: async () => {
-      const { data, error } = await supabase.from('labor_payrolls').select('*');
-      if (error) throw error;
+      const data = await fetchAllRows('labor_payrolls');
       return data.map(toCamelCase);
     },
     createLaborPayroll: async (data: any) => {
