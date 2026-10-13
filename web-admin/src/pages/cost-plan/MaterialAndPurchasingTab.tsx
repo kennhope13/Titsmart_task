@@ -965,7 +965,8 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
     // Resolve parent globally
     const resolveParentIdGlobal = (item: any) => {
-      if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) return item.parentId;
+      // Prioritize hierarchical STT matching if available (e.g., 35.1.1 -> 35.1, 35.1 -> 35)
+      // to avoid corrupt/stale parentId pointing across unrelated top-level sections
       if (item.stt && String(item.stt).includes('.')) {
         const parts = String(item.stt).split('.');
         parts.pop();
@@ -973,6 +974,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         const parentItem = sttToItemMap.get(`${item.projectCode || ''}:::${parentStt}`);
         if (parentItem && parentItem.id !== item.id && map.has(parentItem.id)) return parentItem.id;
       }
+      if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) return item.parentId;
       if (!isParentRow(item) && item.sectionName && String(item.sectionName).trim().length > 0) {
         const secHeader = fullTasks.find(x => 
           (x.projectCode || '') === (item.projectCode || '') &&

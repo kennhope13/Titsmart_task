@@ -2000,12 +2000,7 @@ const hasSyncedRef = useRef(false);
 
     // Resolve parent globally for all tasks (strictly within same project)
     const resolveParentId = (item: any) => {
-      // 1. Explicit parent task
-      if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) {
-        return item.parentId;
-      }
-
-      // 2. Dotted STT hierarchy
+      // 1. Dotted STT hierarchy (e.g. 35.1 must belong to 35, never accidentally attached to 34 via bad parentId)
       if (item.stt && String(item.stt).includes('.')) {
         const parts = String(item.stt).split('.');
         parts.pop();
@@ -2020,6 +2015,11 @@ const hasSyncedRef = useRef(false);
 
         const anyParent = sttToItemMap.get(`${item.projectCode || ''}:::${parentStt}`);
         if (anyParent && anyParent.id !== item.id && map.has(anyParent.id)) return anyParent.id;
+      }
+
+      // 2. Explicit parent task
+      if (item.parentId && item.parentId !== item.id && map.has(item.parentId)) {
+        return item.parentId;
       }
 
       // 3. If item is NOT a section header, attach it to its section header in the same project
