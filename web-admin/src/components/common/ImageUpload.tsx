@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { parseInvoiceUrls } from '../../utils/fileUploadHelper';
 
 interface ImageUploadProps {
   label: string;
@@ -64,8 +65,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
   // Normalize initialValue to array for internal state
   const getInitialArray = () => {
     if (!initialValue) return [];
-    if (Array.isArray(initialValue)) return initialValue;
-    return [initialValue];
+    if (Array.isArray(initialValue)) return initialValue.map(String).filter(Boolean);
+    return parseInvoiceUrls(String(initialValue));
   };
   
   const [localValues, setLocalValues] = useState<string[]>(getInitialArray());
@@ -78,6 +79,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
     try {
       if (!event.target.files || event.target.files.length === 0) return;
       setIsUploading(true);
+      setError('');
       if (onUploadStateChange) onUploadStateChange(true);
       
       const newUrls: string[] = [];
@@ -115,7 +117,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
         if (multiple) {
           onChange(updatedValues);
         } else {
-          onChange(newUrls[0]);
+          onChange(updatedValues[0] || '');
         }
       }
     } catch (error) {
@@ -124,6 +126,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
     } finally {
       setIsUploading(false);
       if (onUploadStateChange) onUploadStateChange(false);
+      // Reset input value to allow re-uploading same file if needed
+      event.target.value = '';
     }
   };
 
@@ -141,21 +145,34 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, name, value: in
       {name && <input type="hidden" name={name} value={multiple ? localValues.join(',') : localValues[0] || ''} />}
       
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3">
-          <input 
-            type="file" 
-            accept="*/*"
-            multiple={multiple}
-            onChange={handleUpload}
-            disabled={isUploading}
-            className="block w-full text-sm text-slate-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-lg file:border-0
-              file:text-sm file:font-semibold
-              file:bg-primary/10 file:text-primary
-              hover:file:bg-primary/20
-              disabled:opacity-50 cursor-pointer"
-          />
+        <div className="flex items-center flex-wrap gap-2.5">
+          <label className={`cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary font-bold text-xs rounded-lg border border-primary/30 hover:bg-primary/20 transition-colors shadow-xs ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+            <span className="material-symbols-outlined text-[16px]">
+              {localValues.length > 0 && multiple ? 'add_photo_alternate' : 'upload_file'}
+            </span>
+            <span>{localValues.length > 0 && multiple ? 'Chọn thêm tệp' : (multiple ? 'Chọn tệp (Ảnh / PDF / Hóa đơn)' : 'Chọn tệp')}</span>
+            <input 
+              type="file" 
+              accept="*/*"
+              multiple={multiple}
+              onChange={handleUpload}
+              disabled={isUploading}
+              className="hidden"
+            />
+          </label>
+          
+          {multiple && localValues.length > 0 && (
+            <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+              Đã chọn {localValues.length} tệp
+            </span>
+          )}
+          
+          {isUploading && (
+            <div className="flex items-center gap-1.5 text-xs text-blue-600 font-bold">
+              <span className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <span>Đang tải tệp lên...</span>
+            </div>
+          )}
         </div>
         
         {localValues.length > 0 && (

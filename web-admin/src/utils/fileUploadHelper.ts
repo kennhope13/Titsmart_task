@@ -172,3 +172,44 @@ function blobToBase64(blob: Blob): Promise<string> {
     reader.readAsDataURL(blob);
   });
 }
+
+/**
+ * Phân tích chuỗi invoiceUrl (có thể là URL đơn, mảng JSON stringified, hoặc phân cách bằng dấu phẩy)
+ * thành mảng danh sách URL chuẩn.
+ */
+export function parseInvoiceUrls(val?: string | null): string[] {
+  if (!val) return [];
+  const trimmed = String(val).trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((item: any) => (item ? String(item).trim() : ''))
+          .filter(Boolean);
+      }
+    } catch {
+      // Fallback nếu chuỗi JSON không hợp lệ
+    }
+  }
+  if (trimmed.includes('\n')) {
+    return trimmed.split('\n').map((s) => s.trim()).filter(Boolean);
+  }
+  if (trimmed.includes(',')) {
+    return trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return [trimmed];
+}
+
+/**
+ * Tuần tự hóa mảng URLs thành chuỗi lưu trữ vào Database (tương thích 100% với định dạng cũ)
+ */
+export function serializeInvoiceUrls(urls: (string | null | undefined)[]): string {
+  const cleanUrls = (urls || [])
+    .map((u) => (u ? String(u).trim() : ''))
+    .filter(Boolean);
+  if (cleanUrls.length === 0) return '';
+  if (cleanUrls.length === 1) return cleanUrls[0];
+  return JSON.stringify(cleanUrls);
+}

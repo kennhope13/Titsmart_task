@@ -11,6 +11,7 @@ import { CustomSelect } from '../components/common/CustomSelect';
 import { ImageUpload } from '../components/common/ImageUpload';
 import { CostPlanSummaryTable } from './cost-plan/CostPlanSummaryTable';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
+import { parseInvoiceUrls, serializeInvoiceUrls } from '../utils/fileUploadHelper';
 
 const formatDateForInput = (d?: string) => {
   if (!d) return '';
@@ -65,6 +66,18 @@ export const OfficeCostsPage: React.FC = () => {
   const [editingExpense, setEditingExpense] = useState<any | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string; title: string } | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewFiles, setPreviewFiles] = useState<string[]>([]);
+  const [previewFileIndex, setPreviewFileIndex] = useState<number>(0);
+
+  const openPreview = (fileOrFiles: string | string[] | null | undefined, initialIdx = 0) => {
+    if (!fileOrFiles) return;
+    const list = Array.isArray(fileOrFiles) ? fileOrFiles : parseInvoiceUrls(fileOrFiles);
+    if (list.length === 0) return;
+    setPreviewFiles(list);
+    const validIdx = Math.max(0, Math.min(initialIdx, list.length - 1));
+    setPreviewFileIndex(validIdx);
+    setPreviewImage(list[validIdx] || null);
+  };
   const [loading, setLoading] = useState(false);
 
   const [searchParams] = useSearchParams();
@@ -680,9 +693,34 @@ export const OfficeCostsPage: React.FC = () => {
                       <td className="px-2 py-1.5 text-right font-bold text-rose-600 whitespace-nowrap">{exp.totalAmount ? exp.totalAmount.toLocaleString('vi-VN') : '-'}</td>
                       <td className="px-2 py-1.5 text-right font-bold text-emerald-600 whitespace-nowrap">{exp.incomeAmount ? exp.incomeAmount.toLocaleString('vi-VN') : '-'}</td>
                       <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
-                        {exp.invoiceUrl ? (
-                          <button onClick={() => setPreviewImage(exp.invoiceUrl!)} className="text-[10px] text-primary hover:underline font-bold whitespace-nowrap">Xem</button>
-                        ) : <span className="text-slate-300">-</span>}
+                        {(() => {
+                          const urls = parseInvoiceUrls(exp.invoiceUrl);
+                          if (urls.length === 0) return <span className="text-slate-300">-</span>;
+                          if (urls.length === 1) {
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => openPreview(urls, 0)}
+                                className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline font-bold whitespace-nowrap"
+                                title="Xem hóa đơn / chứng từ"
+                              >
+                                <span className="material-symbols-outlined text-[13px]">attachment</span>
+                                <span>Xem</span>
+                              </button>
+                            );
+                          }
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => openPreview(urls, 0)}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-[10px] font-bold whitespace-nowrap transition-colors"
+                              title={`Xem ${urls.length} hóa đơn / chứng từ đính kèm`}
+                            >
+                              <span className="material-symbols-outlined text-[12px]">attachment</span>
+                              <span>Xem ({urls.length})</span>
+                            </button>
+                          );
+                        })()}
                       </td>
                       <td className="px-2 py-1.5 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
                       <td className="px-2 py-1.5">
@@ -899,9 +937,13 @@ export const OfficeCostsPage: React.FC = () => {
           <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={newExpenseData.notes} onChange={(e) => setNewExpenseData({...newExpenseData, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
           <div>
             <ImageUpload
-              label="Hóa đơn / Chứng từ chi (Hình ảnh hoặc PDF)"
+              label="Hóa đơn / Chứng từ chi (Hình ảnh hoặc PDF - Cho phép chọn nhiều tệp)"
+              multiple={true}
               value={newExpenseData.invoiceUrl}
-              onChange={(url) => setNewExpenseData({...newExpenseData, invoiceUrl: Array.isArray(url) ? url[0] || '' : url})}
+              onChange={(urls) => {
+                const arr = Array.isArray(urls) ? urls : parseInvoiceUrls(urls);
+                setNewExpenseData({ ...newExpenseData, invoiceUrl: serializeInvoiceUrls(arr) });
+              }}
             />
           </div>
           <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setIsNewExpenseOpen(false); setAdditionalItems([]); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading} className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">Lưu phiếu chi</button></div>
@@ -1008,9 +1050,13 @@ export const OfficeCostsPage: React.FC = () => {
             <div><label className="block font-bold mb-1">Ghi chú</label><input type="text" value={editingExpense.notes} onChange={(e) => setEditingExpense({...editingExpense, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
             <div>
               <ImageUpload
-                label="Hóa đơn / Chứng từ chi (Hình ảnh hoặc PDF)"
+                label="Hóa đơn / Chứng từ chi (Hình ảnh hoặc PDF - Cho phép chọn nhiều tệp)"
+                multiple={true}
                 value={editingExpense.invoiceUrl}
-                onChange={(url) => setEditingExpense({...editingExpense, invoiceUrl: Array.isArray(url) ? url[0] || '' : url})}
+                onChange={(urls) => {
+                  const arr = Array.isArray(urls) ? urls : parseInvoiceUrls(urls);
+                  setEditingExpense({ ...editingExpense, invoiceUrl: serializeInvoiceUrls(arr) });
+                }}
               />
             </div>
             <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => { setEditingExpense(null); setAdditionalItems([]); }} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading} className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">Lưu thay đổi</button></div>
@@ -1018,18 +1064,99 @@ export const OfficeCostsPage: React.FC = () => {
         )}
       </Modal>
 
-      {/* Preview Image Modal */}
-      {previewImage && (
+      {/* Preview Image / Documents Modal */}
+      {(!!previewImage || previewFiles.length > 0) && (
         <Modal
           isOpen={true}
-          onClose={() => setPreviewImage(null)}
+          onClose={() => {
+            setPreviewImage(null);
+            setPreviewFiles([]);
+            setPreviewFileIndex(0);
+          }}
           title="Hóa Đơn / Chứng từ"
           size="full"
           defaultMaximized={true}
           icon="receipt_long"
         >
-          <div className="flex flex-col flex-1 h-full min-h-0">
-            <FileViewerItem url={previewImage} index={0} />
+          <div className="flex flex-col flex-1 h-full min-h-0 bg-slate-50 p-2 sm:p-3 rounded-lg border border-slate-200 gap-2">
+            {(() => {
+              const activeUrl = previewFiles.length > 0 ? previewFiles[previewFileIndex] : previewImage;
+              if (!activeUrl) return null;
+
+              return (
+                <>
+                  {previewFiles.length > 1 && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 bg-white rounded-lg border border-slate-200 shadow-2xs shrink-0 select-none">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-700">
+                          Danh sách tệp ({previewFiles.length}):
+                        </span>
+                        <div className="flex items-center gap-1 overflow-x-auto max-w-[50vw]">
+                          {previewFiles.map((fUrl, fIdx) => (
+                            <button
+                              key={fIdx}
+                              type="button"
+                              onClick={() => {
+                                setPreviewFileIndex(fIdx);
+                                setPreviewImage(fUrl);
+                              }}
+                              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1 shrink-0 ${
+                                previewFileIndex === fIdx
+                                  ? 'bg-primary text-white shadow-xs'
+                                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[13px]">
+                                {fUrl.toLowerCase().endsWith('.pdf') ? 'picture_as_pdf' : 'description'}
+                              </span>
+                              <span>Tệp {fIdx + 1}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <button
+                          type="button"
+                          disabled={previewFileIndex <= 0}
+                          onClick={() => {
+                            const nextIdx = Math.max(0, previewFileIndex - 1);
+                            setPreviewFileIndex(nextIdx);
+                            setPreviewImage(previewFiles[nextIdx]);
+                          }}
+                          className="px-2 py-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:pointer-events-none rounded-md text-xs font-bold text-slate-700 flex items-center gap-1 transition-colors"
+                          title="Tệp trước"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">arrow_back</span>
+                          <span>Trước</span>
+                        </button>
+                        <span className="text-xs font-bold text-slate-600 px-1">
+                          {previewFileIndex + 1} / {previewFiles.length}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={previewFileIndex >= previewFiles.length - 1}
+                          onClick={() => {
+                            const nextIdx = Math.min(previewFiles.length - 1, previewFileIndex + 1);
+                            setPreviewFileIndex(nextIdx);
+                            setPreviewImage(previewFiles[nextIdx]);
+                          }}
+                          className="px-2 py-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:pointer-events-none rounded-md text-xs font-bold text-slate-700 flex items-center gap-1 transition-colors"
+                          title="Tệp kế tiếp"
+                        >
+                          <span>Sau</span>
+                          <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex-1 flex flex-col min-h-0 h-full w-full">
+                    <FileViewerItem url={activeUrl} index={previewFileIndex} />
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </Modal>
       )}
