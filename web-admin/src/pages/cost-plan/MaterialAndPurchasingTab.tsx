@@ -920,16 +920,18 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         if (parentStt && !sttSet.has(parentKey)) {
           sttSet.add(parentKey);
           let synthName = '';
-          const parentItem: any = filteredData.find((d: any) => d.projectCode === t.projectCode && String(d.stt || '').trim() === parentStt);
-          const siblingWithSection: any = filteredData.find((d: any) => d.projectCode === t.projectCode && (String(d.stt || '').startsWith(parentStt + '.') || String(d.stt || '').trim() === parentStt) && (d.sectionName || d.content || d.jobContent || d.name));
+          const parentItem: any = data.find((d: any) => d.projectCode === t.projectCode && String(d.stt || '').trim() === parentStt);
           if (parentItem && (parentItem.content || parentItem.jobContent || parentItem.name)) {
             synthName = parentItem.content || parentItem.jobContent || parentItem.name || '';
           } else if ((t as any).sectionName && (t as any).sectionName.trim()) {
             synthName = (t as any).sectionName;
-          } else if (siblingWithSection && siblingWithSection.sectionName && siblingWithSection.sectionName.trim()) {
-            synthName = siblingWithSection.sectionName;
           } else {
-            synthName = `HẠNG MỤC ${parentStt}`;
+            const siblingWithSection: any = data.find((d: any) => d.projectCode === t.projectCode && (String(d.stt || '').startsWith(parentStt + '.') || String(d.stt || '').trim() === parentStt) && (d.sectionName || d.content || d.jobContent || d.name));
+            if (siblingWithSection && siblingWithSection.sectionName && siblingWithSection.sectionName.trim()) {
+              synthName = siblingWithSection.sectionName;
+            } else {
+              synthName = `HẠNG MỤC ${parentStt}`;
+            }
           }
 
           missingParents.push({

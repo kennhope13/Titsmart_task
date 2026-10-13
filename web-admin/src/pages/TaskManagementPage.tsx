@@ -633,7 +633,18 @@ const hasSyncedRef = useRef(false);
     }
     const nextProgress = field === 'progress' ? finalValue : task.progress;
     
-    handleUpdateTaskSync(id, { 
+    let targetId = id;
+    if (id.startsWith('synth_')) {
+      const realTask = tasks.find(t => 
+        t.projectCode === task.projectCode && 
+        String(t.stt || '').trim() === String(task.stt || '').trim()
+      );
+      if (realTask) {
+        targetId = realTask.id;
+      }
+    }
+
+    handleUpdateTaskSync(targetId, { 
       [field]: finalValue,
       ...(field === 'progress' ? {
         isDone: nextProgress >= 1,
@@ -810,7 +821,42 @@ const hasSyncedRef = useRef(false);
     const eng = engineers.find((e) => e.id === editEngineerId);
     const nextProgress = editingTask.isSectionHeader ? editingTask.progress : calculateAutoProgressRatio(editPurchaseStatus, editConstrStatus);
 
-    handleUpdateTaskSync(editingTask.id, {
+    // Nếu editingTask là tổng hợp giả lập (synth_sec_...), tìm task thật có cùng STT hoặc tạo mới
+    let targetTaskId = editingTask.id;
+    if (editingTask.id.startsWith('synth_')) {
+      const realTask = tasks.find(t => 
+        t.projectCode === editingTask.projectCode && 
+        String(t.stt || '').trim() === String(editingTask.stt || '').trim()
+      );
+      if (realTask) {
+        targetTaskId = realTask.id;
+      } else {
+        // Chưa có task thật trong DB -> Tạo mới task header thật
+        addTask({
+          projectCode: editingTask.projectCode,
+          projectName: editingTask.projectName,
+          code: '',
+          stt: editStt,
+          name: editName,
+          isSectionHeader: true,
+          sectionName: finalSection || editName,
+          volume: 0,
+          unit: '',
+          progress: 0,
+          status: 'Chưa làm',
+          purchaseStatus: '',
+          constrStatus: '',
+          isDone: false,
+          notes: '[section]',
+        });
+        triggerToast(`Đã lưu "${editName}" thành công!`, 'success');
+        setIsEditTaskModalOpen(false);
+        setEditingTask(null);
+        return;
+      }
+    }
+
+    handleUpdateTaskSync(targetTaskId, {
       stt: editStt,
       name: editName,
       sectionName: finalSection,
@@ -1872,15 +1918,17 @@ const hasSyncedRef = useRef(false);
           sttSet.add(parentKey);
           let synthName = '';
           const parentItem = tasks.find(d => d.projectCode === t.projectCode && String(d.stt || '').trim() === parentStt);
-          const siblingWithSection = tasks.find(d => d.projectCode === t.projectCode && (String(d.stt || '').startsWith(parentStt + '.') || String(d.stt || '').trim() === parentStt) && (d.sectionName || d.name));
           if (parentItem && (parentItem.name || parentItem.sectionName)) {
             synthName = parentItem.name || parentItem.sectionName || '';
-          } else if (siblingWithSection && (siblingWithSection.sectionName || siblingWithSection.name)) {
-            synthName = siblingWithSection.sectionName || siblingWithSection.name || '';
           } else if (t.sectionName && t.sectionName.trim()) {
             synthName = t.sectionName;
           } else {
-            synthName = parentStt;
+            const siblingWithSection = tasks.find(d => d.projectCode === t.projectCode && (String(d.stt || '').startsWith(parentStt + '.') || String(d.stt || '').trim() === parentStt) && d.sectionName && d.sectionName.trim());
+            if (siblingWithSection && siblingWithSection.sectionName && siblingWithSection.sectionName.trim()) {
+              synthName = siblingWithSection.sectionName;
+            } else {
+              synthName = `HẠNG MỤC ${parentStt}`;
+            }
           }
 
           missingParents.push({
