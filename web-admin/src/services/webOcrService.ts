@@ -198,8 +198,23 @@ const isTotalOrNoiseRow = (name: string) => {
                         lookup.includes('dot 04') ||
                         lookup.includes('dot 4');
 
-  return lookup.includes('tong cong') || 
-         lookup === 'cong' || 
+  // "Tổng công ty" / "Tổng công trình" is NOT a total row (e.g. "Kho tổng Công ty Điện lực Miền Nam")
+  const isCompanyReference = lookup.includes('tong cong ty') || lookup.includes('tong cong trinh') || lookup.includes('kho tong cong ty');
+
+  const isTotalSummary = !isCompanyReference && (
+    lookup === 'tong cong' ||
+    lookup.startsWith('tong cong ') ||
+    lookup.endsWith(' tong cong') ||
+    lookup.includes('tong cong tien') ||
+    lookup.includes('tong cong truoc thue') ||
+    lookup.includes('tong cong sau thue') ||
+    lookup.includes('tong gia tri') ||
+    lookup.includes('tong tien') ||
+    lookup.includes('cong tien') ||
+    lookup === 'cong'
+  );
+
+  return isTotalSummary || 
          lookup.includes('bang chi tiet') || 
          lookup.includes('gia tri hop dong') || 
          /\bthue\b/.test(lookup) || 
@@ -211,6 +226,8 @@ const isTotalOrNoiseRow = (name: string) => {
 
 const isNoiseStt = (sttStr: string) => {
   const lookup = normalizeLookupText(sttStr).trim();
+  const isCompanyReference = lookup.includes('tong cong ty') || lookup.includes('tong cong trinh') || lookup.includes('kho tong cong ty');
+  if (isCompanyReference) return false;
   return lookup.includes('tong cong') || lookup === 'cong' || /\bthue\b/.test(lookup) || lookup.includes('chiet khau');
 };
 

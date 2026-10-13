@@ -924,12 +924,12 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
           const siblingWithSection: any = filteredData.find((d: any) => d.projectCode === t.projectCode && (String(d.stt || '').startsWith(parentStt + '.') || String(d.stt || '').trim() === parentStt) && (d.sectionName || d.content || d.jobContent || d.name));
           if (parentItem && (parentItem.content || parentItem.jobContent || parentItem.name)) {
             synthName = parentItem.content || parentItem.jobContent || parentItem.name || '';
-          } else if (siblingWithSection && (siblingWithSection.sectionName || siblingWithSection.content || siblingWithSection.jobContent || siblingWithSection.name)) {
-            synthName = siblingWithSection.sectionName || siblingWithSection.content || siblingWithSection.jobContent || siblingWithSection.name || '';
           } else if ((t as any).sectionName && (t as any).sectionName.trim()) {
             synthName = (t as any).sectionName;
+          } else if (siblingWithSection && siblingWithSection.sectionName && siblingWithSection.sectionName.trim()) {
+            synthName = siblingWithSection.sectionName;
           } else {
-            synthName = parentStt;
+            synthName = `HẠNG MỤC ${parentStt}`;
           }
 
           missingParents.push({

@@ -758,7 +758,19 @@ export const ProjectCostPlanPage: React.FC = () => {
               const vatAmount = numVal(row[vatAmountCol]) || (totalBeforeVat * (vatRate / 100));
               const totalAmount = numVal(row[totalCol]) || (totalBeforeVat + vatAmount);
               const normalizedContent = normalizeImportText(content);
-              const isSummaryRow = normalizedContent.includes('tong cong') || (!stt && normalizedContent === 'cong');
+              const isCompanyReference = normalizedContent.includes('tong cong ty') || normalizedContent.includes('tong cong trinh') || normalizedContent.includes('kho tong cong ty');
+              const isSummaryRow = !isCompanyReference && (
+                normalizedContent === 'tong cong' ||
+                normalizedContent.startsWith('tong cong ') ||
+                normalizedContent.endsWith(' tong cong') ||
+                normalizedContent.includes('tong cong tien') ||
+                normalizedContent.includes('tong cong truoc thue') ||
+                normalizedContent.includes('tong cong sau thue') ||
+                normalizedContent.includes('tong gia tri') ||
+                normalizedContent.includes('tong tien') ||
+                normalizedContent.includes('cong tien') ||
+                (!stt && normalizedContent === 'cong')
+              );
               if (isSummaryRow) return;
 
               const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX|MUC\s+[A-Z0-9]+)$/i;
