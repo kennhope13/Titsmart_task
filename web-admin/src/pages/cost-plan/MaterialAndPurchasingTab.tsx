@@ -334,6 +334,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 }) => {
   const subTab = activeSubTab || 'TECH';
   const materials = useRealtimeStore(state => state.materials);
+  const tasks = useRealtimeStore(state => state.tasks);
   const [filterParent, setFilterParent] = useState('all');
   const [filterUnit, setFilterUnit] = useState('all');
   const [filterProgress, setFilterProgress] = useState('all');
@@ -920,13 +921,15 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
         if (parentStt && !sttSet.has(parentKey)) {
           sttSet.add(parentKey);
           let synthName = '';
-          const parentItem: any = data.find((d: any) => d.projectCode === t.projectCode && String(d.stt || '').trim() === parentStt);
+          const parentItem: any = data.find((d: any) => d.projectCode === t.projectCode && String(d.stt || '').trim() === parentStt) ||
+            tasks.find((d: any) => d.projectCode === t.projectCode && String(d.stt || '').trim() === parentStt);
           if (parentItem && (parentItem.content || parentItem.jobContent || parentItem.name)) {
             synthName = parentItem.content || parentItem.jobContent || parentItem.name || '';
           } else if ((t as any).sectionName && (t as any).sectionName.trim()) {
             synthName = (t as any).sectionName;
           } else {
-            const siblingWithSection: any = data.find((d: any) => d.projectCode === t.projectCode && (String(d.stt || '').startsWith(parentStt + '.') || String(d.stt || '').trim() === parentStt) && (d.sectionName || d.content || d.jobContent || d.name));
+            const siblingWithSection: any = data.find((d: any) => d.projectCode === t.projectCode && (String(d.stt || '').startsWith(parentStt + '.') || String(d.stt || '').trim() === parentStt) && (d.sectionName || d.content || d.jobContent || d.name)) ||
+              tasks.find((d: any) => d.projectCode === t.projectCode && (String(d.stt || '').startsWith(parentStt + '.') || String(d.stt || '').trim() === parentStt) && (d.sectionName || (d as any).content || (d as any).jobContent || d.name));
             if (siblingWithSection && siblingWithSection.sectionName && siblingWithSection.sectionName.trim()) {
               synthName = siblingWithSection.sectionName;
             } else {

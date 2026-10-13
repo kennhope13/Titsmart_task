@@ -1412,7 +1412,8 @@ export const ProjectCostPlanPage: React.FC = () => {
 
     const dbPlans = materialPlans.filter((plan) => validCodes.has(plan.projectCode) && plan.jobContent?.trim());
     if (dbPlans.length > 0) {
-      return dbPlans.map(plan => {
+      const planSttSet = new Set(dbPlans.map(p => String(p.stt || '').trim()));
+      const mappedPlans: ProjectMaterialPlan[] = dbPlans.map(plan => {
         const matchingTask = taskMap.get(plan.id) || taskSttNameMap.get(`${plan.stt?.trim()}|${plan.jobContent?.trim().toLowerCase()}`);
         return {
           ...plan,
@@ -1422,6 +1423,45 @@ export const ProjectCostPlanPage: React.FC = () => {
           totalAmount: (plan as any).totalAmount || (matchingTask as any)?.totalAmount || 0,
         };
       });
+
+      // Include any section headers from tasks that are missing from material_plans
+      let orderCounter = mappedPlans.length;
+      projTasks.forEach(task => {
+        const tStt = String(task.stt || '').trim();
+        if (tStt && !planSttSet.has(tStt)) {
+          planSttSet.add(tStt);
+          mappedPlans.push({
+            id: task.id,
+            parentId: task.parentId,
+            projectCode: task.projectCode,
+            stt: task.stt || '',
+            jobContent: task.name,
+            unit: task.unit || '',
+            contractVolume: task.volume || 0,
+            unitPrice: (task as any).unitPrice || 0,
+            vatRate: (task as any).vatRate !== undefined ? (task as any).vatRate : 10,
+            vatAmount: (task as any).vatAmount || 0,
+            totalAmount: (task as any).totalAmount || 0,
+            techSpecModel: (task as any).techSpecModel || '',
+            techSpecOrigin: (task as any).techSpecOrigin || '',
+            progressStatus: task.constrStatus || '',
+            orderedVolume: 0,
+            orderedStatus: task.purchaseStatus || '',
+            expectedDate: '',
+            issueContent: task.issue || '',
+            issueStatus: task.issueStatus || '',
+            docCo: false,
+            docCq: false,
+            docFireInspection: false,
+            supplyScope: 'contractor',
+            notes: `[order:${String(++orderCounter).padStart(5, '0')}] | ${task.isSectionHeader ? '[section]' : ''} | ${task.notes || ''}`.trim(),
+            updatedBy: task.updatedBy,
+            updatedAt: task.updatedAt,
+          } as ProjectMaterialPlan);
+        }
+      });
+
+      return mappedPlans;
     }
 
     let orderCounter = 0;
@@ -1470,7 +1510,8 @@ export const ProjectCostPlanPage: React.FC = () => {
 
     const dbPurchasing = purchasingPlans.filter((plan) => validCodes.has(plan.projectCode) && plan.content?.trim());
     if (dbPurchasing.length > 0) {
-      return dbPurchasing.map(plan => {
+      const purSttSet = new Set(dbPurchasing.map(p => String(p.stt || '').trim()));
+      const mappedPurchasing = dbPurchasing.map(plan => {
         const matchingTask = taskMap.get(plan.id) || taskSttNameMap.get(`${plan.stt?.trim()}|${plan.content?.trim().toLowerCase()}`);
         const price = plan.unitPrice || (matchingTask as any)?.unitPrice || 0;
         const vatR = plan.vatRate !== undefined && plan.vatRate > 0 ? plan.vatRate : ((matchingTask as any)?.vatRate !== undefined ? (matchingTask as any).vatRate : 10);
@@ -1486,6 +1527,38 @@ export const ProjectCostPlanPage: React.FC = () => {
           remainingAmount: plan.remainingAmount || (tot - (plan.prepayAmount || 0)),
         };
       });
+
+      // Include any section headers from tasks that are missing from purchasing_plans
+      let orderCounter = mappedPurchasing.length;
+      projTasks.forEach(task => {
+        const tStt = String(task.stt || '').trim();
+        if (tStt && !purSttSet.has(tStt)) {
+          purSttSet.add(tStt);
+          mappedPurchasing.push({
+            id: task.id,
+            parentId: task.parentId,
+            projectCode: task.projectCode,
+            stt: task.stt || '',
+            content: task.name,
+            unit: task.unit || '',
+            volumeContract: task.volume || 0,
+            volumeOrder: task.volume || 0,
+            unitPrice: (task as any).unitPrice || 0,
+            vatRate: (task as any).vatRate !== undefined ? (task as any).vatRate : 10,
+            vatAmount: (task as any).vatAmount || 0,
+            totalAmount: (task as any).totalAmount || 0,
+            prepayPercent: 0,
+            prepayAmount: 0,
+            remainingAmount: (task as any).totalAmount || 0,
+            orderStatus: task.purchaseStatus || '',
+            contractStatus: '',
+            invoiceStatus: '',
+            notes: `[order:${String(++orderCounter).padStart(5, '0')}] | ${task.isSectionHeader ? '[section]' : ''} | ${task.notes || ''}`.trim(),
+          } as ProjectPurchasing);
+        }
+      });
+
+      return mappedPurchasing;
     }
 
     let orderCounter = 0;
