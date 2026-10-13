@@ -581,11 +581,24 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
   const XLSX = await import('xlsx');
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: 'array' });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+  // Select sheet: preferentially find sheet with table header, otherwise default to SheetNames[0]
+  let sheet = workbook.Sheets[workbook.SheetNames[0]];
+  let rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+  let headerIndex = rows.findIndex((row, idx) => idx < 30 && isLikelyTableHeader(row.map(c => String(c || '').trim())));
 
-  // 1. Find header row
-  const headerIndex = rows.findIndex((row, idx) => idx < 20 && isLikelyTableHeader(row.map(c => String(c || '').trim())));
+  if (headerIndex < 0 && workbook.SheetNames.length > 1) {
+    for (let sIdx = 1; sIdx < workbook.SheetNames.length; sIdx++) {
+      const candidateSheet = workbook.Sheets[workbook.SheetNames[sIdx]];
+      const candidateRows = XLSX.utils.sheet_to_json(candidateSheet, { header: 1 }) as any[][];
+      const candidateHeaderIndex = candidateRows.findIndex((row, idx) => idx < 30 && isLikelyTableHeader(row.map(c => String(c || '').trim())));
+      if (candidateHeaderIndex >= 0) {
+        sheet = candidateSheet;
+        rows = candidateRows;
+        headerIndex = candidateHeaderIndex;
+        break;
+      }
+    }
+  }
   
   let projectName = '';
   let projectItem = '';

@@ -429,9 +429,44 @@ export const TaskManagementPage: React.FC = () => {
     }
   };
 
-  // Cập nhật trạng thái công việc (độc lập audit theo từng tab)
+  // Cập nhật trạng thái công việc và đồng bộ tên, STT sang Vật tư & Mua hàng
   const handleUpdateTaskSync = (id: string, updates: Partial<Task>) => {
     updateTask(id, updates);
+
+    // Đồng bộ nếu có thay đổi STT hoặc Tên công việc/đầu mục
+    if (updates.name !== undefined || updates.stt !== undefined) {
+      const existingTask = tasks.find(t => t.id === id);
+      if (existingTask) {
+        const norm = (s?: string) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        const matchingMat = materialPlans.find(m =>
+          m.id === id || (
+            m.projectCode === existingTask.projectCode &&
+            norm(m.stt) === norm(existingTask.stt) &&
+            norm(m.jobContent) === norm(existingTask.name)
+          )
+        );
+        if (matchingMat) {
+          updateMaterialPlan(matchingMat.id, {
+            ...(updates.name !== undefined ? { jobContent: updates.name } : {}),
+            ...(updates.stt !== undefined ? { stt: updates.stt } : {}),
+          });
+        }
+
+        const matchingPur = purchasingPlans.find(p =>
+          p.id === id || (
+            p.projectCode === existingTask.projectCode &&
+            norm(p.stt) === norm(existingTask.stt) &&
+            norm(p.content) === norm(existingTask.name)
+          )
+        );
+        if (matchingPur) {
+          updatePurchasingPlan(matchingPur.id, {
+            ...(updates.name !== undefined ? { content: updates.name } : {}),
+            ...(updates.stt !== undefined ? { stt: updates.stt } : {}),
+          });
+        }
+      }
+    }
   };
 
 const hasSyncedRef = useRef(false);

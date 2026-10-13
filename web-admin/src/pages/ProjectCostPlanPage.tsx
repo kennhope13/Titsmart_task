@@ -1417,6 +1417,8 @@ export const ProjectCostPlanPage: React.FC = () => {
         const matchingTask = taskMap.get(plan.id) || taskSttNameMap.get(`${plan.stt?.trim()}|${plan.jobContent?.trim().toLowerCase()}`);
         return {
           ...plan,
+          stt: matchingTask?.stt || plan.stt,
+          jobContent: matchingTask?.name || plan.jobContent,
           unitPrice: (plan as any).unitPrice || (matchingTask as any)?.unitPrice || 0,
           vatRate: (plan as any).vatRate !== undefined ? (plan as any).vatRate : ((matchingTask as any)?.vatRate !== undefined ? (matchingTask as any).vatRate : 10),
           vatAmount: (plan as any).vatAmount || (matchingTask as any)?.vatAmount || 0,
@@ -1520,6 +1522,8 @@ export const ProjectCostPlanPage: React.FC = () => {
 
         return {
           ...plan,
+          stt: matchingTask?.stt || plan.stt,
+          content: matchingTask?.name || plan.content,
           unitPrice: price,
           vatRate: vatR,
           vatAmount: vatA,
