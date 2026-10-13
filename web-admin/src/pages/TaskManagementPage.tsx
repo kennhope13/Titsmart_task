@@ -2421,7 +2421,7 @@ const hasSyncedRef = useRef(false);
                               <span className={`material-symbols-outlined text-[15px] text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                             </button>
                             <span className="material-symbols-outlined text-[15px] flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                            <span onClick={() => handleOpenEditModal(t)} className="cursor-pointer hover:underline flex-1 min-w-0 truncate whitespace-nowrap overflow-hidden leading-tight" title={t.name}>
+                            <span onClick={() => handleOpenEditModal(t)} className="cursor-pointer hover:underline flex-1 min-w-0 truncate md:whitespace-normal md:overflow-visible break-words leading-tight" title={t.name}>
                               {t.stt ? `${t.stt} - ` : ''}{t.name}
                             </span>
                             <div className="hidden group-hover:flex items-center gap-1 flex-shrink-0">

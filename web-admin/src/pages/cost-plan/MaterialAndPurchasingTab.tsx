@@ -1599,7 +1599,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               <span className={`material-symbols-outlined text-[13px] sm:text-[15px] text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                             </button>
                             <span className="material-symbols-outlined text-[13px] sm:text-[15px] flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                            <span className="flex-1 min-w-0 cursor-pointer hover:underline truncate whitespace-nowrap overflow-hidden leading-tight text-[11px] sm:text-xs" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }} title={plan.jobContent || plan.name || plan.content}>
+                            <span className="flex-1 min-w-0 cursor-pointer hover:underline truncate md:whitespace-normal md:overflow-visible break-words leading-tight text-[11px] sm:text-xs" onClick={(e) => { e.stopPropagation(); onEditMaterial?.(plan); }} title={plan.jobContent || plan.name || plan.content}>
                               {plan.stt ? `${plan.stt} - ` : ''}{plan.jobContent || plan.name || plan.content}
                             </span>
                             <div className="hidden group-hover:flex items-center gap-0.5">

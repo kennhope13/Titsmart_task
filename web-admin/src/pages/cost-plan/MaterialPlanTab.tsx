@@ -613,7 +613,7 @@ export const MaterialPlanTab: React.FC<MaterialPlanTabProps> = ({
                               <span className={`material-symbols-outlined text-[13px] sm:text-base text-primary transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>expand_more</span>
                             </button>
                             <span className="material-symbols-outlined text-[13px] sm:text-base flex-shrink-0">{isCollapsed ? 'folder' : 'folder_open'}</span>
-                            <span className="flex-1 cursor-pointer hover:underline break-words leading-tight text-[11px] sm:text-xs" onClick={(e) => { e.stopPropagation(); onEdit?.(plan); }}>
+                            <span className="flex-1 cursor-pointer hover:underline truncate md:whitespace-normal md:overflow-visible break-words leading-tight text-[11px] sm:text-xs" onClick={(e) => { e.stopPropagation(); onEdit?.(plan); }}>
                               {plan.jobContent}
                             </span>
                             {onAddSubtask && (
