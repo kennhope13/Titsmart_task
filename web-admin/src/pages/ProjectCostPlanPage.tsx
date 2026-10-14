@@ -2465,8 +2465,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                     <th className="px-2 py-1.5 text-right min-w-[85px]">Tồn quỹ</th>
                     <th className="px-2 py-1.5 min-w-[110px]">TK & Người nhận</th>
                     <th className="px-2 py-1.5 w-[70px]">Tình trạng</th>
-                    <th className="px-2 py-1.5 text-center w-[50px]">H.Đơn</th>
-                    <th className="px-2 py-1.5 text-center w-[50px]">CCCD</th>
+                    <th className="px-2 py-1.5 text-center min-w-[70px] whitespace-nowrap">H.Đơn / CCCD</th>
                     <th className="px-2 py-1.5 min-w-[80px]">Ghi chú</th>
                     <th className="px-2 py-1.5 text-center w-[40px]"></th>
                   </tr>
@@ -2523,7 +2522,6 @@ export const ProjectCostPlanPage: React.FC = () => {
                                 );
                               })()}
                             </td>
-                            <td className="px-2 py-1.5 text-slate-400 text-center">-</td>
                             <td className="px-2 py-1.5 text-[10px] max-w-[100px] truncate" title={exp.notes}>{exp.notes || '-'}</td>
                             <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center justify-center gap-1">
@@ -2578,7 +2576,6 @@ export const ProjectCostPlanPage: React.FC = () => {
                                 {lab.paymentStatus === 'Đã thanh toán' ? 'Đã T.Toán' : 'Chưa T.Toán'}
                               </span>
                             </td>
-                            <td className="px-2 py-1.5 text-slate-400 text-center">-</td>
                             <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
                               <div className="flex flex-col gap-0.5">
                                 {lab.idCardFrontUrl ? (
@@ -2616,7 +2613,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                       }
                     })}
                     {combinedCashFlow.length === 0 && (
-                      <tr><td colSpan={17} className="p-8 text-center text-slate-400">Chưa có giao dịch phiếu chi nào.</td></tr>
+                      <tr><td colSpan={16} className="p-8 text-center text-slate-400">Chưa có giao dịch phiếu chi nào.</td></tr>
                     )}
                   </tbody>
             </table>
