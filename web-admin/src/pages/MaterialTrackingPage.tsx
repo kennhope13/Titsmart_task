@@ -589,9 +589,14 @@ export const MaterialTrackingPage: React.FC = () => {
       sourceOrProject: `Chuyển đến ${targetProjectName}`,
       receiverName: '',
       notes: 'Chuyển kho',
-      specs: transferMaterial.englishName || transferMaterial.specs
+      specs: transferMaterial.englishName || transferMaterial.specs,
+      projectCode: transferMaterial.projectCode || 'COMPANY',
+      projectName: transferMaterial.projectName || 'Kho Tổng (Kho Công Ty)',
+      category: transferMaterial.category || 'Vật tư chung',
+      unitPrice: transferMaterial.unitPrice || 0,
+      initialStock: transferMaterial.initialStock || 0,
     };
-    await addInventoryTransaction(exportTx);
+    await addInventoryTransaction(exportTx as any);
 
     // 2. Find or create material in target project
     let targetMaterial = materials.find(m => m.code === transferMaterial.code && m.projectCode === targetCode);
@@ -640,9 +645,14 @@ export const MaterialTrackingPage: React.FC = () => {
       sourceOrProject: `Chuyển từ ${transferMaterial.projectName || 'Kho tổng'}`,
       receiverName: '',
       notes: 'Nhận từ chuyển kho',
-      specs: transferMaterial.englishName || transferMaterial.specs
+      specs: transferMaterial.englishName || transferMaterial.specs,
+      projectCode: targetCode,
+      projectName: targetProjectName,
+      category: transferMaterial.category || 'Vật tư chung',
+      unitPrice: transferMaterial.unitPrice || 0,
+      initialStock: targetMaterial?.initialStock || 0,
     };
-    await addInventoryTransaction(importTx);
+    await addInventoryTransaction(importTx as any);
     logActivity('Chuyển kho', targetProjectName);
     triggerToast(`Đã chuyển \"${transferMaterial.name}\" thành công!`, 'success');
     setIsTransferModalOpen(false);

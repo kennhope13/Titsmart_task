@@ -734,8 +734,14 @@ export const api = {
           matQuery = matQuery.eq('id', matIdOrCode);
         } else if (matIdOrCode) {
           matQuery = matQuery.eq('code', String(matIdOrCode));
+          if (data.projectCode) {
+            matQuery = matQuery.eq('project_code', String(data.projectCode));
+          }
         } else {
           matQuery = matQuery.eq('name', String(data.materialName));
+          if (data.projectCode) {
+            matQuery = matQuery.eq('project_code', String(data.projectCode));
+          }
         }
         const { data: currentMatList } = await matQuery;
         const currentMat = currentMatList?.[0];
