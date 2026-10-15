@@ -103,6 +103,10 @@ export const MaterialTrackingPage: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    fetchMaterials(projectId);
+  }, [projectId, fetchMaterials]);
+
   const [toastState, setToastState] = useState({ show: false, message: '', type: 'success' as 'success' | 'info' | 'warning' });
   const [loading, setLoading] = useState(false);
   const isSubmittingRef = useRef(false);
@@ -1078,19 +1082,25 @@ export const MaterialTrackingPage: React.FC = () => {
     try {
       const created = await addMaterial(newMat);
       if (created && volume > 0) {
-      await addInventoryTransaction({
-        materialId: created.id as string,
-        materialCode: created.code,
-        materialName: created.name,
-        type: 'IMPORT' as const,
-        quantity: volume,
-        unit: created.unit,
-        date: new Date().toISOString().split('T')[0],
-        sourceOrProject: 'Nhà cung cấp / Mua mới',
-        receiverName: '',
-        notes: 'Nhập kho lần đầu',
-        specs: created.englishName || created.specs
-      });
+        await addInventoryTransaction({
+          materialId: created.id as string,
+          materialCode: created.code,
+          materialName: created.name,
+          type: 'IMPORT' as const,
+          quantity: volume,
+          unit: created.unit,
+          date: new Date().toISOString().split('T')[0],
+          sourceOrProject: 'Nhà cung cấp / Mua mới',
+          receiverName: '',
+          notes: 'Nhập kho lần đầu',
+          specs: created.englishName || created.specs,
+          projectCode: created.projectCode || 'COMPANY',
+          projectName: created.projectName || 'Kho Tổng (Kho Công Ty)',
+          category: created.category || 'Vật tư chung',
+          unitPrice: created.unitPrice || 0,
+          supplier: created.supplier || 'Nhà cung cấp / Mua mới',
+          volume: created.volume || volume,
+        } as any);
     }
 
     setIsPlaceOrderModalOpen(false);
@@ -1141,34 +1151,42 @@ export const MaterialTrackingPage: React.FC = () => {
       setLoadingMessage('Đang xử lý...');
       try {
         await addInventoryTransaction({
-        type: transactionType,
-        date: txDate,
-        materialId: material.id,
-        materialCode: material.code,
-        materialName: material.name,
-        specs: material.specs || material.englishName || '',
-        unit: material.unit,
-        quantity: txQuantity,
-        sourceOrProject: txSourceOrProject,
-        receiverName: txReceiverName,
-        notes: txNotes,
-        // Truyền thêm để backend dùng khi vật tư chưa tồn tại trong DB
-        initialStock: material.initialStock || 0,
-        category: material.category || '',
-        volume: material.volume || 0,
-        unitPrice: material.unitPrice || 0,
-        supplier: material.supplier || '',
+          type: transactionType,
+          date: txDate,
+          materialId: material.id,
+          materialCode: material.code,
+          materialName: material.name,
+          specs: material.specs || material.englishName || '',
+          unit: material.unit,
+          quantity: txQuantity,
+          sourceOrProject: txSourceOrProject,
+          receiverName: txReceiverName,
+          notes: txNotes,
+          // Truyền thêm để backend dùng khi vật tư chưa tồn tại trong DB
+          projectCode: material.projectCode || 'COMPANY',
+          projectName: material.projectName || 'Kho Tổng (Kho Công Ty)',
+          initialStock: material.initialStock || 0,
+          category: material.category || '',
+          volume: material.volume || 0,
+          unitPrice: material.unitPrice || 0,
+          supplier: material.supplier || '',
         } as any);
         setIsTransactionModalOpen(false);
+        // Reset filters để đảm bảo vật tư và giao dịch hiển thị ngay lập tức
+        setFilterCategory('');
+        setFilterName('');
+        setFilterUnit('');
+        setSearchQuery('');
+        if (!projectId) setFilterProject('');
         triggerToast(`Thêm nhật ký ${transactionType === 'IMPORT' ? 'Nhập' : 'Xuất'} cho \"${material.name}\" thành công!`, 'success');
       } catch (error: any) {
         triggerToast(error.message || 'Lỗi khi thêm nhật ký!', 'warning');
       } finally {
         setLoading(false);
         setLoadingMessage('');
-      isSubmittingRef.current = false;
-    }
-  };
+        isSubmittingRef.current = false;
+      }
+    };
 
     if (transactionType === 'EXPORT') {
       const current = material.currentStock !== undefined ? material.currentStock : (material.initialStock || 0);

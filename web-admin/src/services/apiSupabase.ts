@@ -4,6 +4,24 @@ import { NotificationItem } from '../types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const cleanCodeString = (str: string) => {
+  if (!str) return '';
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+};
+
+const generateMaterialCode = (name: string, suffix?: string) => {
+  const normalized = cleanCodeString(name);
+  return `TSM-${normalized}${suffix ? `-${suffix}` : ''}`.substring(0, 100);
+};
+
 const cleanUuid = (value: unknown) => (typeof value === 'string' && UUID_RE.test(value) ? value : null);
 
 const getCurrentAuditPayload = () => {
@@ -707,34 +725,90 @@ export const api = {
       const { data: result, error } = await supabase.from('inventory_transactions').insert(sanitizedPayload).select().single();
       if (error) throw error;
       
-      // Update material stock by ID or Code
+      // Update material stock by ID or Code, or create material if not exists
       const matIdOrCode = data.materialId || data.materialCode;
-      if (matIdOrCode) {
-        let matQuery = supabase.from('materials').select('id, initial_stock, total_import, total_export');
-        if (UUID_RE.test(String(matIdOrCode))) {
+      let returnedMaterial: any = null;
+      if (matIdOrCode || data.materialName) {
+        let matQuery = supabase.from('materials').select('*');
+        if (matIdOrCode && UUID_RE.test(String(matIdOrCode))) {
           matQuery = matQuery.eq('id', matIdOrCode);
-        } else {
+        } else if (matIdOrCode) {
           matQuery = matQuery.eq('code', String(matIdOrCode));
+        } else {
+          matQuery = matQuery.eq('name', String(data.materialName));
         }
         const { data: currentMatList } = await matQuery;
         const currentMat = currentMatList?.[0];
+        const isImport = data.type === 'IMPORT';
+        const qty = Number(data.quantity) || 0;
+
         if (currentMat) {
-          const isImport = data.type === 'IMPORT';
-          const qty = Number(data.quantity) || 0;
           const initialStock = Number(currentMat.initial_stock) || 0;
           const newImport = (Number(currentMat.total_import) || 0) + (isImport ? qty : 0);
           const newExport = (Number(currentMat.total_export) || 0) + (!isImport ? qty : 0);
           const currentStock = initialStock + newImport - newExport;
           
-          await supabase.from('materials').update({
+          const { data: updatedMat } = await supabase.from('materials').update({
             total_import: newImport,
             total_export: newExport,
             current_stock: currentStock
-          }).eq('id', currentMat.id);
+          }).eq('id', currentMat.id).select().maybeSingle();
+
+          returnedMaterial = toCamelCase(updatedMat || {
+            ...currentMat,
+            total_import: newImport,
+            total_export: newExport,
+            current_stock: currentStock
+          });
+        } else {
+          // Vật tư chưa có trong DB -> Tự động tạo mới vật tư trong DB để hiển thị ở Tồn Kho Tổng Hợp
+          const initStock = Number(data.initialStock) || 0;
+          const totalImport = isImport ? qty : 0;
+          const totalExport = !isImport ? qty : 0;
+          const currentStock = initStock + totalImport - totalExport;
+          const projCode = data.projectCode || (data.sourceOrProject?.toLowerCase().includes('dự án') ? undefined : 'COMPANY') || 'COMPANY';
+          const projName = data.projectName || (projCode === 'COMPANY' ? 'Kho Tổng (Kho Công Ty)' : projCode);
+
+          try {
+            const newMatPayload: any = {
+              code: data.materialCode || generateMaterialCode(data.materialName || 'MAT'),
+              name: data.materialName || 'Vật tư mới',
+              specs: data.specs || '',
+              category: data.category || 'Vật tư chung',
+              unit: data.unit || 'cái',
+              unit_price: Number(data.unitPrice) || 0,
+              supplier: data.supplier || data.sourceOrProject || '',
+              project_code: projCode,
+              project_name: projName,
+              volume: Number(data.volume) || qty,
+              initial_stock: initStock,
+              total_import: totalImport,
+              total_export: totalExport,
+              current_stock: currentStock,
+              status: 'Đã có hàng',
+              constr_status: 'Chưa thi công'
+            };
+
+            const createdMat = await api.materials.create(newMatPayload);
+            if (createdMat) {
+              returnedMaterial = createdMat;
+              // Cập nhật lại material_id của transaction vừa tạo nếu trước đó chưa có UUID
+              if (createdMat.id && UUID_RE.test(String(createdMat.id)) && (!sanitizedPayload.material_id || !UUID_RE.test(String(sanitizedPayload.material_id)))) {
+                await supabase.from('inventory_transactions').update({ material_id: createdMat.id }).eq('id', sanitizedPayload.id);
+                result.material_id = createdMat.id;
+              }
+            }
+          } catch (createMatErr) {
+            console.warn('[Inventory] Auto-create material in DB warning:', createMatErr);
+          }
         }
       }
       
-      return toCamelCase(result);
+      const resCamel = toCamelCase(result);
+      return {
+        ...resCamel,
+        material: returnedMaterial || undefined
+      };
     },
     updateTransaction: async (id: string, data: any) => {
       const payload = toSnakeCase(data);

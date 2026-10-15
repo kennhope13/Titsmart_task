@@ -595,6 +595,33 @@ const mergeInventoryTransactionIntoState = (
       totalExport,
       currentStock,
     } : m);
+  } else {
+    // Fallback: Nếu không tìm thấy vật tư và backend chưa trả về persisted.material, tự tạo mới vật tư trong local state
+    const isImport = txData.type === 'IMPORT';
+    const initStock = (txData as any).initialStock || 0;
+    const totalImport = isImport ? txData.quantity : 0;
+    const totalExport = !isImport ? txData.quantity : 0;
+    const fallbackMat: Material = {
+      id: txData.materialId && !isTempMaterialRef(txData.materialId) ? txData.materialId : ('mat-' + Date.now()),
+      code: txData.materialCode || ('MAT-' + Date.now().toString().slice(-4)),
+      name: txData.materialName || 'Vật tư mới',
+      specs: txData.specs || '',
+      category: (txData as any).category || 'Vật tư chung',
+      unit: txData.unit || 'cái',
+      projectCode: (txData as any).projectCode || 'COMPANY',
+      projectName: (txData as any).projectName || 'Kho Tổng (Kho Công Ty)',
+      volume: (txData as any).volume || txData.quantity,
+      initialStock: initStock,
+      totalImport,
+      totalExport,
+      currentStock: initStock + totalImport - totalExport,
+      status: 'Đã có hàng',
+      constrStatus: 'Chưa thi công',
+      unitPrice: (txData as any).unitPrice || 0,
+      supplier: (txData as any).supplier || txData.sourceOrProject || ''
+    };
+    nextMats = [fallbackMat, ...nextMats];
+    materialIndex = 0;
   }
 
   const txMaterial = persisted?.material || nextMats[materialIndex];
