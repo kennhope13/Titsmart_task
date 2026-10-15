@@ -215,9 +215,23 @@ export const FieldLogsTaskTable: React.FC<FieldLogsTaskTableProps> = ({ selected
 
     const isTaskSectionHeader = (node: any) => {
       if (node?.isSectionHeader) return true;
+      if (String(node?.notes || '').toLowerCase().includes('[section]')) return true;
       const vol = Number(node?.volume || 0);
       const unitVal = String(node?.unit || '').trim();
-      return vol === 0 && unitVal === '';
+      const name = String(node?.name || '').trim();
+      const stt = String(node?.stt || '').trim();
+      const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i;
+
+      if (romanRegex.test(stt) || /^[A-Z]{1,2}$/i.test(stt)) return true;
+      if (name.endsWith(':') && (vol === 0 || !vol) && (unitVal === '' || unitVal === '-')) return true;
+
+      const hasNoVolumeAndUnit = (vol === 0 || !vol) && (unitVal === '' || unitVal === '-');
+      if (hasNoVolumeAndUnit) {
+        if (!stt.includes('.')) return true;
+        if (/^\d+\.\d+$/.test(stt)) return true;
+        if (name === name.toUpperCase() && /[A-ZÀ-Ỹ]/.test(name)) return true;
+      }
+      return false;
     };
 
     const resolveParentId = (item: any) => {

@@ -112,9 +112,23 @@ const formatDateForInput = (d?: string) => {
 const normalizePlanKey = (stt?: string, content?: string, _parentId?: string) =>
   `${String(stt || '').trim()}|${String(content || '').trim().toLowerCase()}`;
 
-const isSectionMarker = (stt?: string, notes?: string) => {
+const isSectionMarker = (stt?: string, notes?: string, text?: string, vol?: number, unit?: string) => {
   const cleanStt = String(stt || '').trim().toUpperCase();
-  return String(notes || '').toLowerCase().includes('[section]') || romanToNumber(stt) !== null || /^[A-Z]{1,2}$/.test(cleanStt);
+  const cleanNotes = String(notes || '').toLowerCase();
+  if (cleanNotes.includes('[section]')) return true;
+  if (romanToNumber(stt) !== null || /^[A-Z]{1,2}$/.test(cleanStt)) return true;
+  
+  const content = String(text || '').trim();
+  const volume = Number(vol ?? 0);
+  const cleanUnit = String(unit || '').trim();
+  if (content.endsWith(':') && volume === 0 && (cleanUnit === '' || cleanUnit === '-')) return true;
+
+  if (volume === 0 && (cleanUnit === '' || cleanUnit === '-')) {
+    if (!cleanStt.includes('.') && /^\d+$/.test(cleanStt)) return true;
+    if (/^\d+\.\d+$/.test(cleanStt)) return true;
+    if (content && content === content.toUpperCase() && /[A-ZÀ-Ỹ]/.test(content)) return true;
+  }
+  return false;
 };
 
 const isAutoSyncedMaterialPlan = (plan?: ProjectMaterialPlan) => {

@@ -49,17 +49,29 @@ const isParentRow = (plan: any) => {
   const stt = String(plan?.stt || '').trim();
   if (/^[A-Z]{1,2}$/i.test(stt)) return true;
   if (/^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt)) return true;
-  // If STT does not have dot and has no volume/unit, it's a main section header (e.g., 33, 34, 35)
-  if (!stt.includes('.')) {
-    const vol = Number(plan?.contractVolume ?? plan?.volume ?? 0);
-    const unitVal = String(plan?.unit || '').trim();
-    if (vol === 0 && unitVal === '') return true;
+
+  const vol = Number(plan?.contractVolume ?? plan?.volume ?? 0);
+  const unitVal = String(plan?.unit || '').trim();
+  const text = String(plan?.jobContent || plan?.content || plan?.name || '').trim();
+
+  // If ends with colon (e.g. "TỦ BAO GỒM:") and has no volume/unit, it's definitely a section/group header
+  if (text.endsWith(':') && (vol === 0 || !vol) && (unitVal === '' || unitVal === '-')) return true;
+
+  // If has no volume and no unit
+  if ((vol === 0 || !vol) && (unitVal === '' || unitVal === '-')) {
+    // Top-level without dot (e.g. 33, 34)
+    if (!stt.includes('.')) return true;
+    // Sub-level with single dot (e.g. 33.1, 1.1)
+    if (/^\d+\.\d+$/.test(stt)) return true;
+    // Uppercase text header
+    if (text === text.toUpperCase() && /[A-ZÀ-Ỹ]/.test(text)) return true;
   }
   return false;
 };
 
 const isRootSectionRow = (plan: ProjectMaterialPlan) => {
   const stt = String(plan.stt || '').trim().toUpperCase();
+  if (stt.includes('.')) return false;
   return /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (isParentRow(plan) && !plan.parentId);
 };
 
@@ -577,6 +589,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
 
     const isRootSectionRow = (plan: ProjectMaterialPlan) => {
       const stt = String(plan.stt || '').trim().toUpperCase();
+      if (stt.includes('.')) return false;
       // Root sections are letters (A, B) or Roman (I, II) or explicitly marked sections without parentId
       return /^[A-Z]{1,2}$/.test(stt) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt) || (isParentRow(plan) && !plan.parentId);
     };

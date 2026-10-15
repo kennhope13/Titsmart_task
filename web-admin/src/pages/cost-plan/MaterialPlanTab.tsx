@@ -30,11 +30,28 @@ const TEXT = {
 };
 
 const isParentRow = (plan: any) => {
-  if (plan?.isSec) return true;
+  if (plan?.isSec || plan?.isSectionHeader) return true;
   if (String(plan?.notes || '').toLowerCase().includes('[section]')) return true;
   const stt = String(plan?.stt || '').trim();
   if (/^[A-Z]{1,2}$/i.test(stt)) return true;
   if (/^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i.test(stt)) return true;
+
+  const vol = Number(plan?.contractVolume ?? plan?.volume ?? 0);
+  const unitVal = String(plan?.unit || '').trim();
+  const text = String(plan?.jobContent || plan?.content || plan?.name || '').trim();
+
+  // If ends with colon (e.g. "TỦ BAO GỒM:") and has no volume/unit, it's definitely a section/group header
+  if (text.endsWith(':') && (vol === 0 || !vol) && (unitVal === '' || unitVal === '-')) return true;
+
+  // If has no volume and no unit
+  if ((vol === 0 || !vol) && (unitVal === '' || unitVal === '-')) {
+    // Top-level without dot (e.g. 33, 34)
+    if (!stt.includes('.')) return true;
+    // Sub-level with single dot (e.g. 33.1, 1.1)
+    if (/^\d+\.\d+$/.test(stt)) return true;
+    // Uppercase text header
+    if (text === text.toUpperCase() && /[A-ZÀ-Ỹ]/.test(text)) return true;
+  }
   return false;
 };
 

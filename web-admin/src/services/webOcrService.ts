@@ -690,7 +690,10 @@ const parseSpreadsheetDirectly = async (file: File): Promise<WebOcrExtractedData
       const cleanStt = String(stt || '').trim().replace(/\.$/, '');
       const hasNoDot = !cleanStt.includes('.');
       const hasVolumeOrUnit = (volume > 0) || (cleanUnitVal !== '');
-      const isSectionHeader = (stt === '' && !hasVolumeOrUnit) || (!hasVolumeOrUnit && (isRomanOrAlphaSection || (hasNoDot && (volume === 0 && cleanUnitVal === ''))));
+      const endsWithColon = name.trim().endsWith(':');
+      const isSubSectionStt = /^\d+\.\d+$/.test(cleanStt);
+      const isSectionHeader = (stt === '' && !hasVolumeOrUnit) || 
+        (!hasVolumeOrUnit && (isRomanOrAlphaSection || endsWithColon || hasNoDot || isSubSectionStt || (name === name.toUpperCase() && /[A-ZÀ-Ỹ]/.test(name))));
 
       const explicitSupplyScope = supplyCol >= 0 ? detectSupplyScope(cells[supplyCol]) : 'unknown';
       const headerSupplyScope = isSectionHeader ? detectSupplyScope(cells.join(' ')) : 'unknown';

@@ -456,8 +456,21 @@ export const ProjectManagementPage: React.FC = () => {
             currentSubSectionId = undefined; // Reset sub section khi gặp Main Section mới (VD: B, II, III)
             parentId = undefined; // Main Section (A, B, I, II, III) nằm ở cấp Root cao nhất
           } else {
+            // Check if this sub-section has a dot parent (VD: 33.1 -> 33)
+            let foundDottedParent = false;
+            if (sttVal.includes('.')) {
+              const parts = sttVal.split('.');
+              parts.pop();
+              const parentStt = parts.join('.');
+              if (sttIdMap.has(parentStt)) {
+                parentId = sttIdMap.get(parentStt);
+                foundDottedParent = true;
+              }
+            }
+            if (!foundDottedParent) {
+              parentId = currentMainSectionId;
+            }
             currentSubSectionId = item.id;
-            parentId = currentMainSectionId; // Nhóm số (33, 34, 35 thuộc A; 36, 37 thuộc B)
           }
         } else {
           // Tìm parent theo dấu chấm gần nhất (VD: 33.1.1 -> 33.1)

@@ -1228,11 +1228,13 @@ const hasSyncedRef = useRef(false);
             const isRoman = romanRegex.test(cleanStt);
             const actualName = r[nameCol] ? String(r[nameCol]) : String(itemName);
             const startsWithPhan = actualName.trim().toUpperCase().startsWith('PHẦN ');
+            const endsWithColon = actualName.trim().endsWith(':');
             const hasNoVolumeAndUnit = (volVal === 0 || !volVal) && (!cleanUnitVal || cleanUnitVal === '' || cleanUnitVal === '-' || cleanUnitVal === '–' || cleanUnitVal === '—');
-            const isSection = (startsWithPhan || isMainSectionName(actualName) || hasNoDot) && hasNoVolumeAndUnit && hasNoDot;
+            const isSubSectionStt = /^\d+\.\d+$/.test(cleanStt);
+            const isSection = (isRoman || startsWithPhan || isMainSectionName(actualName) || endsWithColon || (hasNoVolumeAndUnit && (hasNoDot || isSubSectionStt))) && (hasNoVolumeAndUnit || isRoman || startsWithPhan);
 
             const isLetterHeader = /^[A-Z]{1,2}$/i.test(cleanStt);
-            const isMainLevelSection = isSection && (isLetterHeader || isRoman || startsWithPhan || !cleanStt);
+            const isMainLevelSection = isSection && (isLetterHeader || isRoman || startsWithPhan || (hasNoDot && !cleanStt.includes('.')));
 
             if (isSection) {
               currentSection = `${sttVal ? sttVal + '. ' : ''}${actualName}`;
@@ -1933,9 +1935,23 @@ const hasSyncedRef = useRef(false);
 
     const isTaskSectionHeader = (node: any) => {
       if (node?.isSectionHeader) return true;
+      if (String(node?.notes || '').toLowerCase().includes('[section]')) return true;
       const vol = Number(node?.volume || 0);
       const unitVal = String(node?.unit || '').trim();
-      return vol === 0 && unitVal === '';
+      const name = String(node?.name || '').trim();
+      const stt = String(node?.stt || '').trim();
+      const romanRegex = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$/i;
+
+      if (romanRegex.test(stt) || /^[A-Z]{1,2}$/i.test(stt)) return true;
+      if (name.endsWith(':') && (vol === 0 || !vol) && (unitVal === '' || unitVal === '-')) return true;
+
+      const hasNoVolumeAndUnit = (vol === 0 || !vol) && (unitVal === '' || unitVal === '-');
+      if (hasNoVolumeAndUnit) {
+        if (!stt.includes('.')) return true;
+        if (/^\d+\.\d+$/.test(stt)) return true;
+        if (name === name.toUpperCase() && /[A-ZÀ-Ỹ]/.test(name)) return true;
+      }
+      return false;
     };
 
     // Synthesize missing parent section headers if any child items exist (max 30 items)
