@@ -796,15 +796,41 @@ export const MaterialTrackingPage: React.FC = () => {
       return true;
     });
 
-    // Sắp xếp theo STT (từ nhỏ đến lớn)
-    result.sort((a, b) => {
+    // Gắn ngày giao dịch gần nhất (hoặc ngày tạo/cập nhật) và sắp xếp MỚI NHẤT LÊN ĐẦU
+    const withDates = result.map(m => {
+      // Tìm giao dịch gần nhất của vật tư này trong inventoryTransactions
+      const mTxList = inventoryTransactions.filter(tx => 
+        (tx.materialId && tx.materialId === m.id) ||
+        (tx.materialCode && m.code && tx.materialCode.toLowerCase() === m.code.toLowerCase())
+      );
+      let latestTxDate = '';
+      if (mTxList.length > 0) {
+        const sortedTx = [...mTxList].sort((a, b) => 
+          new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime()
+        );
+        latestTxDate = sortedTx[0].date || sortedTx[0].createdAt || '';
+      }
+
+      const effectiveDate = latestTxDate || m.updatedAt || m.createdAt || (m as any).date || '';
+      return {
+        ...m,
+        lastTransactionDate: latestTxDate || m.updatedAt || m.createdAt || '',
+        _sortTime: effectiveDate ? new Date(effectiveDate).getTime() : 0
+      };
+    });
+
+    // Sắp xếp vật tư MỚI NHẤT LÊN ĐẦU (Newest first)
+    withDates.sort((a, b) => {
+      if (b._sortTime !== a._sortTime) {
+        return b._sortTime - a._sortTime;
+      }
       const sttA = a.stt ?? Number.MAX_SAFE_INTEGER;
       const sttB = b.stt ?? Number.MAX_SAFE_INTEGER;
       return sttA - sttB;
     });
 
-    return result;
-  }, [materials, activeTab, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, filterDate, filterDateFrom, filterDateTo, searchQuery]);
+    return withDates;
+  }, [materials, inventoryTransactions, activeTab, projectCodeFilter, filterProject, filterCategory, filterName, filterUnit, filterDate, filterDateFrom, filterDateTo, searchQuery]);
 
   const imports = useMemo(() => {
     return inventoryTransactions
@@ -1723,7 +1749,9 @@ export const MaterialTrackingPage: React.FC = () => {
                         {!projectId && <td className="p-2 md:p-3.5"><span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-600 inline-block" title={material.projectName || 'Kho Tổng'}>{material.projectName || 'Kho Tổng'}</span></td>}
                         <td className="p-2 md:p-3.5 text-slate-600 text-xs">{material.category || 'Vật tư chung'}</td>
                         <td className="p-2 md:p-3.5 text-center text-slate-600 text-xs font-medium whitespace-nowrap">
-                          {material.updatedAt ? new Date(material.updatedAt).toLocaleDateString('vi-VN') : '-'}
+                          {material.lastTransactionDate || material.updatedAt || material.createdAt 
+                            ? new Date(material.lastTransactionDate || material.updatedAt || material.createdAt || '').toLocaleDateString('vi-VN') 
+                            : '-'}
                         </td>
                         <td className="p-2 md:p-3.5">
                           <div className="font-bold text-slate-900 leading-snug">{material.name}</div>

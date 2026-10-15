@@ -113,8 +113,10 @@ export interface Material {
   specs?: string;
   notes?: string;
   systemGroup?: string;
+  createdAt?: string;
   updatedBy?: string;
   updatedAt?: string;
+  lastTransactionDate?: string;
 }
 
 export interface InventoryTransaction {
