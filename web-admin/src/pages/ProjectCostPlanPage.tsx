@@ -1303,11 +1303,14 @@ export const ProjectCostPlanPage: React.FC = () => {
 
   // Active Project Code
   const projectOptions = useMemo(() => {
-    // Collect all project codes from projects list
-    const codes = new Set(projects.map(p => p.code));
+    // Collect all project codes from projects list (bỏ qua mã hệ thống COMPANY)
+    const codes = new Set(projects.filter(p => p.code !== 'COMPANY').map(p => p.code));
     // Also add codes from materialPlans and expenses if not present
-    materialPlans.forEach(p => p.projectCode && codes.add(p.projectCode));
-    expenses.forEach(p => (p.projectCode || (p as any).project_code) && codes.add(p.projectCode || (p as any).project_code));
+    materialPlans.forEach(p => p.projectCode && p.projectCode !== 'COMPANY' && codes.add(p.projectCode));
+    expenses.forEach(p => {
+      const c = p.projectCode || (p as any).project_code;
+      if (c && c !== 'COMPANY') codes.add(c);
+    });
     return Array.from(codes);
   }, [projects, materialPlans, expenses]);
 

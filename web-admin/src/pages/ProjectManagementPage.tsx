@@ -222,7 +222,9 @@ export const ProjectManagementPage: React.FC = () => {
       merged.push(proj);
     });
 
-    const finalMerged = merged.filter((proj) => isUserMemberOfProject(currentUser, proj, engineers));
+    const finalMerged = merged
+      .filter((proj) => norm(proj.code) !== 'COMPANY')
+      .filter((proj) => isUserMemberOfProject(currentUser, proj, engineers));
     
     return finalMerged.map((project) => {
       const pCodeUpper = (project.code || '').trim().toUpperCase();
