@@ -862,6 +862,11 @@ export const api = {
         }
       }
 
+      // Postgres materials table has NOT NULL constraint on `unit`
+      if (!sanitizedPayload.unit || String(sanitizedPayload.unit).trim() === '') {
+        sanitizedPayload.unit = 'cái';
+      }
+
       const { data: result, error } = await supabase.from('materials').insert(sanitizedPayload).select().single();
       if (error) {
         console.error('Supabase error inserting material:', error, sanitizedPayload);
@@ -907,6 +912,9 @@ export const api = {
           if (allowedKeys.includes(key)) {
             sanitized[key] = payload[key];
           }
+        }
+        if (!sanitized.unit || String(sanitized.unit).trim() === '') {
+          sanitized.unit = 'cái';
         }
         return sanitized;
       });
