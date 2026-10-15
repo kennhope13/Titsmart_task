@@ -95,6 +95,7 @@ export const MaterialTrackingPage: React.FC = () => {
   const deleteMaterial = useRealtimeStore(s => s.deleteMaterial);
   const addInventoryTransaction = useRealtimeStore(s => s.addInventoryTransaction);
   const addInventoryTransactionsBatch = useRealtimeStore(s => s.addInventoryTransactionsBatch);
+  const updateInventoryTransaction = useRealtimeStore(s => s.updateInventoryTransaction);
   const logActivity = useRealtimeStore(s => s.logActivity);
   const fetchMaterials = useRealtimeStore(s => s.fetchMaterials);
 
@@ -363,6 +364,11 @@ export const MaterialTrackingPage: React.FC = () => {
   const [transferMaterial, setTransferMaterial] = useState<any>(null);
   const [transferTargetProject, setTransferTargetProject] = useState('');
   const [transferQuantity, setTransferQuantity] = useState(0);
+
+  // Merge Duplicate Material state
+  const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
+  const [mergeSourceMaterial, setMergeSourceMaterial] = useState<Material | null>(null);
+  const [mergeTargetMaterialId, setMergeTargetMaterialId] = useState('');
 
   // Filter state
   const [filterDate, setFilterDate] = useState('');
@@ -665,7 +671,62 @@ export const MaterialTrackingPage: React.FC = () => {
     }
   };
 
-  
+  // Gộp vật tư trùng lặp (chuyển toàn bộ giao dịch từ vật tư thừa sang vật tư chính, sau đó xóa vật tư thừa)
+  const handleMergeMaterials = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!mergeSourceMaterial || !mergeTargetMaterialId) {
+      triggerToast('Vui lòng chọn vật tư chính để gộp vào!', 'warning');
+      return;
+    }
+    const targetMat = materials.find(m => m.id === mergeTargetMaterialId);
+    if (!targetMat) {
+      triggerToast('Không tìm thấy vật tư đích!', 'warning');
+      return;
+    }
+
+    if (loading || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setLoading(true);
+    setLoadingMessage('Đang gộp dữ liệu vật tư...');
+
+    try {
+      // 1. Chuyển tất cả giao dịch kho của mergeSourceMaterial sang mergeTargetMaterialId
+      const relatedTxs = inventoryTransactions.filter(tx => tx.materialId === mergeSourceMaterial.id);
+      for (const tx of relatedTxs) {
+        await updateInventoryTransaction(tx.id, {
+          materialId: targetMat.id,
+          materialCode: targetMat.code,
+          materialName: targetMat.name,
+          specs: targetMat.specs || targetMat.englishName || tx.specs,
+          unit: targetMat.unit || tx.unit,
+        });
+      }
+
+      // 2. Chuyển initialStock nếu có
+      if (mergeSourceMaterial.initialStock && mergeSourceMaterial.initialStock > 0) {
+        const newInit = (targetMat.initialStock || 0) + (mergeSourceMaterial.initialStock || 0);
+        await updateMaterial(targetMat.id, { initialStock: newInit });
+      }
+
+      // 3. Xóa vật tư thừa (mergeSourceMaterial)
+      await deleteMaterial(mergeSourceMaterial.id);
+
+      // 4. Cập nhật lại dữ liệu
+      await fetchMaterials(projectId);
+
+      triggerToast(`Đã gộp thành công vào "${targetMat.name}" (${targetMat.code})!`, 'success');
+      setIsMergeModalOpen(false);
+      setMergeSourceMaterial(null);
+      setMergeTargetMaterialId('');
+    } catch (err: any) {
+      console.error(err);
+      triggerToast(err.message || 'Lỗi khi gộp vật tư!', 'warning');
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+      isSubmittingRef.current = false;
+    }
+  };
 
   // New Material form state
   const [newMatCode, setNewMatCode] = useState('');
@@ -678,6 +739,34 @@ export const MaterialTrackingPage: React.FC = () => {
   const [supplier, setSupplier] = useState('');
   const [purchaseStatus, setPurchaseStatus] = useState('Chưa đặt hàng');
   const [constrStatus, setConstrStatus] = useState('Chưa thi công');
+
+  // Phát hiện vật tư trùng khi người dùng đang nhập form "Thêm Vật Tư Mới"
+  const duplicateMaterialMatches = useMemo(() => {
+    const cleanInputName = matName.trim().toLowerCase();
+    if (!cleanInputName || cleanInputName.length < 2) return [];
+
+    const cleanInputSpecs = description.trim().toLowerCase();
+    const cleanGeneratedCode = generateMaterialCode(description ? `${matName}-${description}` : matName).toLowerCase();
+    const cleanUserCode = newMatCode.trim().toLowerCase();
+
+    return materials.filter(m => {
+      const mName = (m.name || '').trim().toLowerCase();
+      const mSpecs = (m.specs || m.englishName || '').trim().toLowerCase();
+      const mCode = (m.code || '').trim().toLowerCase();
+
+      // Trùng mã trực tiếp
+      if (cleanUserCode && mCode === cleanUserCode) return true;
+      // Trùng mã tự sinh (chưa có hậu tố số)
+      if (cleanGeneratedCode && (mCode === cleanGeneratedCode || mCode.startsWith(`${cleanGeneratedCode}-`))) return true;
+
+      // Trùng cả Tên và Quy cách
+      if (mName === cleanInputName) {
+        if (!cleanInputSpecs || !mSpecs) return true;
+        if (mSpecs.includes(cleanInputSpecs) || cleanInputSpecs.includes(mSpecs)) return true;
+      }
+      return false;
+    });
+  }, [matName, description, newMatCode, materials]);
 
   // Edit Material form state
   const [editName, setEditName] = useState('');
@@ -1774,6 +1863,18 @@ export const MaterialTrackingPage: React.FC = () => {
                             <button type="button" onClick={() => openEditMaterial(material)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors" title="Chỉnh sửa">
                               <span className="material-symbols-outlined text-[15px]">edit</span>
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMergeSourceMaterial(material);
+                                setMergeTargetMaterialId('');
+                                setIsMergeModalOpen(true);
+                              }}
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+                              title="Gộp vật tư này vào vật tư khác (xóa trùng lặp)"
+                            >
+                              <span className="material-symbols-outlined text-[15px]">call_merge</span>
+                            </button>
                             <button type="button" onClick={() => {
                               setConfirmConfig({
                                 isOpen: true,
@@ -1938,6 +2039,52 @@ export const MaterialTrackingPage: React.FC = () => {
               </CustomSelect>
             </div>
           )}
+          {/* CẢNH BÁO VẬT TƯ ĐÃ TỒN TẠI TRONG KHO */}
+          {duplicateMaterialMatches.length > 0 && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+              <div className="flex items-start gap-2">
+                <span className="material-symbols-outlined text-amber-600 text-lg flex-shrink-0 mt-0.5">warning</span>
+                <div className="flex-1">
+                  <h4 className="font-bold text-amber-900 text-xs">Phát hiện vật tư đã có trong kho!</h4>
+                  <p className="text-[11px] text-amber-700 mt-0.5">
+                    Hệ thống tìm thấy vật tư tương tự đang có sẵn. Bạn có muốn chọn để <strong>Nhập thêm số lượng</strong> thay vì tạo thêm mã mới?
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-1.5 pl-6">
+                {duplicateMaterialMatches.slice(0, 3).map(dup => {
+                  const currentStock = (dup.initialStock || 0) + (dup.totalImport || 0) - (dup.totalExport || 0);
+                  const isCompany = dup.projectCode === 'COMPANY' || !dup.projectCode || dup.projectCode === 'all';
+                  const loc = isCompany ? 'Kho Tổng' : (dup.projectName || dup.projectCode);
+                  return (
+                    <div key={dup.id} className="flex items-center justify-between p-2 bg-white border border-amber-200 rounded-lg text-[11px]">
+                      <div className="min-w-0 pr-2">
+                        <div className="font-bold text-slate-800 truncate">[{dup.code}] {dup.name}</div>
+                        <div className="text-slate-500 text-[10px] truncate">{dup.specs || 'Không có mô tả'} • <span className="font-semibold text-primary">{loc}</span> • Tồn kho: <strong className="text-emerald-700">{currentStock.toLocaleString('vi-VN')} {dup.unit}</strong></div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPlaceOrderModalOpen(false);
+                          setTransactionType('IMPORT');
+                          setTxFilterProject(isCompany ? 'COMPANY' : (dup.projectCode || 'all'));
+                          setTxMaterialId(dup.id);
+                          setTxQuantity(volume > 0 ? volume : 1);
+                          setIsTransactionModalOpen(true);
+                          triggerToast(`Đã chọn vật tư có sẵn: ${dup.name}`, 'info');
+                        }}
+                        className="flex-shrink-0 px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-md shadow-xs text-[10px] flex items-center gap-1 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">input</span>
+                        Nhập kho vật tư này
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div><label className="block font-bold text-slate-700 mb-1">Mã vật tư (Tùy chọn)</label><input type="text" placeholder="Bỏ trống để tự động tạo (VD: MAT-186)" value={newMatCode} onChange={(event) => setNewMatCode(event.target.value)} onBlur={() => setNewMatCode(cleanCodeString(newMatCode))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block font-bold text-slate-700 mb-1">Tên vật tư / thiết bị *</label><input type="text" required placeholder="VD: Cáp Cu/XLPE/PVC 2x2.5mm2" value={matName} onChange={(event) => setMatName(event.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-bold" /></div>
@@ -2092,6 +2239,54 @@ export const MaterialTrackingPage: React.FC = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* MODAL GỘP VẬT TƯ TRÙNG LẶP */}
+      <Modal isOpen={isMergeModalOpen} onClose={() => setIsMergeModalOpen(false)} title="Gộp Vật Tư Trùng Lặp">
+        {mergeSourceMaterial && (
+          <form onSubmit={handleMergeMaterials} className="space-y-4 text-xs">
+            <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Vật tư cần gộp (sẽ được chuyển và xóa):</span>
+              <div className="font-bold text-slate-900 text-sm">[{mergeSourceMaterial.code}] {mergeSourceMaterial.name}</div>
+              <div className="text-slate-600 text-[11px]">{mergeSourceMaterial.specs || 'Không có mô tả'} • {mergeSourceMaterial.projectName || 'Kho Tổng'}</div>
+              <div className="text-indigo-800 font-semibold text-[11px]">
+                Tồn hiện tại: {(((mergeSourceMaterial.initialStock || 0) + (mergeSourceMaterial.totalImport || 0) - (mergeSourceMaterial.totalExport || 0))).toLocaleString('vi-VN')} {mergeSourceMaterial.unit}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Chọn vật tư chính để gộp vào *</label>
+              <p className="text-[11px] text-slate-500 mb-2">Toàn bộ lịch sử nhập/xuất và số lượng tồn của vật tư trên sẽ được gộp sang vật tư chính bên dưới.</p>
+              <CustomSelect
+                required
+                searchable
+                value={mergeTargetMaterialId}
+                onChange={(e) => setMergeTargetMaterialId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-medium"
+              >
+                <option value="">-- Chọn vật tư chính giữ lại --</option>
+                {materials
+                  .filter(m => m.id !== mergeSourceMaterial.id)
+                  .map(m => {
+                    const stock = (m.initialStock || 0) + (m.totalImport || 0) - (m.totalExport || 0);
+                    return (
+                      <option key={m.id} value={m.id}>
+                        [{m.code}] {m.name} {m.specs ? `- ${m.specs}` : ''} ({m.projectName || 'Kho Tổng'}) - Tồn: {stock.toLocaleString('vi-VN')} {m.unit}
+                      </option>
+                    );
+                  })}
+              </CustomSelect>
+            </div>
+
+            <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
+              <button type="button" onClick={() => setIsMergeModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button>
+              <button type="submit" disabled={loading || !mergeTargetMaterialId} className="px-5 py-1.5 bg-indigo-600 disabled:opacity-50 text-white rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-1 shadow-xs">
+                <span className="material-symbols-outlined text-[16px]">call_merge</span>
+                Xác nhận gộp vật tư
+              </button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       <Toast show={toastState.show} message={toastState.message} type={toastState.type} />
