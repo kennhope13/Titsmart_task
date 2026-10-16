@@ -9,6 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let mainWindow: BrowserWindow | null;
+let isForceQuitting = false;
 
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 
@@ -43,6 +44,14 @@ function createWindow() {
       shell.openExternal(url);
     }
     return { action: 'deny' };
+  });
+
+  // Intercept window close to allow frontend confirmation modal
+  mainWindow.on('close', (e) => {
+    if (!isForceQuitting && mainWindow && !mainWindow.isDestroyed()) {
+      e.preventDefault();
+      mainWindow.webContents.send('app:request-close');
+    }
   });
 }
 
@@ -132,6 +141,19 @@ function setupAutoUpdater() {
     });
   }, 5000);
 }
+
+app.on('before-quit', () => {
+  isForceQuitting = true;
+});
+
+// Renderer xác nhận muốn thoát app
+ipcMain.on('app:confirm-quit', () => {
+  isForceQuitting = true;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.destroy();
+  }
+  app.quit();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

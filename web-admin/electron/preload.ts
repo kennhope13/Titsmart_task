@@ -29,4 +29,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: (url: string) => ipcRenderer.send('open-external', url),
   saveSession: (user: any) => ipcRenderer.send('session:save', user),
   loadSessionSync: () => ipcRenderer.sendSync('session:load'),
+  onRequestClose: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('app:request-close', handler);
+    return () => ipcRenderer.removeListener('app:request-close', handler);
+  },
+  confirmQuit: () => ipcRenderer.send('app:confirm-quit'),
 });

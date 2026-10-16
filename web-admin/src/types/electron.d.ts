@@ -19,6 +19,8 @@ export interface ElectronAPI {
   openExternal: (url: string) => void;
   saveSession?: (user: any) => void;
   loadSessionSync?: () => any;
+  onRequestClose?: (callback: () => void) => () => void;
+  confirmQuit?: () => void;
 }
 
 declare global {

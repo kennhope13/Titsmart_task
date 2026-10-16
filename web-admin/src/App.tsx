@@ -31,6 +31,7 @@ import { NotificationBell } from './components/common/NotificationBell';
 import { ChatWidget } from './components/common/ChatWidget';
 import { LogoutBlockingModal } from './components/common/LogoutBlockingModal';
 import { BrandingBlockingModal } from './components/common/BrandingBlockingModal';
+import { AppExitConfirmModal } from './components/common/AppExitConfirmModal';
 import { requestSystemNotificationPermission } from './services/systemNotificationService';
 
 
@@ -83,12 +84,25 @@ export const App: React.FC = () => {
       <LoginPage onSwitchStyle={() => switchLoginStyle('variant')} />
     );
 
-  const [exitToast, setExitToast] = useState(false);
+  const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
   const lastBackTimeRef = useRef<number>(0);
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
   const locationRef = useRef(location);
   locationRef.current = location;
+
+  const handleConfirmExit = () => {
+    setIsExitConfirmOpen(false);
+    if (window.electronAPI?.confirmQuit) {
+      window.electronAPI.confirmQuit();
+    } else {
+      try {
+        CapApp.exitApp();
+      } catch (_) {
+        window.close();
+      }
+    }
+  };
 
   const handleGlobalBack = (): boolean => {
     // 1. Ưu tiên đóng Modal/Dialog/Popup đang mở nếu có
@@ -136,19 +150,9 @@ export const App: React.FC = () => {
       return true; // đã xử lý quay lại
     }
 
-    // 3. Đang ở màn hình chính (Root) → Yêu cầu nhấn 2 lần trong 2 giây mới thoát ứng dụng
-    const now = Date.now();
-    if (now - lastBackTimeRef.current < 2000) {
-      try {
-        CapApp.exitApp();
-      } catch (_) {}
-      return false; // cho phép thoát
-    } else {
-      lastBackTimeRef.current = now;
-      setExitToast(true);
-      setTimeout(() => setExitToast(false), 2000);
-      return true; // chặn thoát ở lần nhấn đầu tiên
-    }
+    // 3. Đang ở màn hình chính (Root) → Mở modal xác nhận thoát ứng dụng
+    setIsExitConfirmOpen(true);
+    return true; // đã xử lý chặn thoát để hiển thị modal xác nhận
   };
 
   useEffect(() => {
@@ -186,10 +190,21 @@ export const App: React.FC = () => {
       console.warn('CapApp not available:', e);
     }
 
+    // Bắt sự kiện người dùng bấm nút tắt app (dấu X) trên Electron Desktop
+    let unsubscribeClose: (() => void) | undefined = undefined;
+    if (window.electronAPI?.onRequestClose) {
+      unsubscribeClose = window.electronAPI.onRequestClose(() => {
+        setIsExitConfirmOpen(true);
+      });
+    }
+
     return () => {
       window.removeEventListener('popstate', onPopState);
       if (capListener && typeof capListener.remove === 'function') {
         capListener.remove();
+      }
+      if (unsubscribeClose) {
+        unsubscribeClose();
       }
     };
   }, [refreshUser]);
@@ -220,15 +235,14 @@ export const App: React.FC = () => {
       <GlobalNotificationToast />
       <LogoutBlockingModal />
       <BrandingBlockingModal />
+      <AppExitConfirmModal
+        isOpen={isExitConfirmOpen}
+        onClose={() => setIsExitConfirmOpen(false)}
+        onConfirm={handleConfirmExit}
+      />
       {/* Floating widgets rendered at root level to avoid z-index stacking context and overflow issues from Layout */}
       {user && <NotificationBell />}
       <ChatWidget />
-
-      {exitToast && (
-        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-[9999] bg-slate-900/90 text-white px-4 py-2 rounded-full text-xs font-medium shadow-lg animate-fadeIn pointer-events-none select-none">
-          Nhấn lần nữa để thoát ứng dụng
-        </div>
-      )}
 
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : renderLogin()} />
