@@ -10,6 +10,13 @@ export type Permission = 'VIEW_PROJECT_DIAGRAM' | 'MANAGE_PROJECT_DIAGRAM'
 export type TaskStatus = 'Chưa làm' | 'Đang làm' | 'Chờ vật tư' | 'Chờ khách hàng' | 'Chờ nghiệm thu' | 'Hoàn thành' | 'Tạm dừng' | 'Chờ nhận việc' | 'Có thắc mắc';
 export type TaskPriority = 'Low' | 'Medium' | 'High';
 
+export const TECH_SPEC_STATUS_OPTIONS = [
+  'Chưa xác định',
+  'Đáp ứng',
+  'Chưa đáp ứng',
+  'Đang xem xét',
+];
+
 export const PURCHASE_STATUS_OPTIONS = [
   'Không có hàng',
   'Chưa đặt hàng',

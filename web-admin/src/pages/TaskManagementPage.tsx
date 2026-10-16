@@ -9,7 +9,7 @@ import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { OcrUploadPanel } from '../components/common/OcrUploadPanel';
 import { WebOcrExtractedData } from '../services/webOcrService';
-import { Task, getStatusColorStyle , calculateAutoProgressRatio, calculateAutoProgressPercent, normalizeStatusText, purchaseProgressScore, constructionProgressScore, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS, ISSUE_STATUS_OPTIONS, getIssueStatusColorStyle } from '../types';
+import { Task, getStatusColorStyle , calculateAutoProgressRatio, calculateAutoProgressPercent, normalizeStatusText, purchaseProgressScore, constructionProgressScore, TECH_SPEC_STATUS_OPTIONS, PURCHASE_STATUS_OPTIONS, CONSTRUCTION_STATUS_OPTIONS, ISSUE_STATUS_OPTIONS, getIssueStatusColorStyle } from '../types';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { compareTaskStt } from '../utils/taskTreeUtils';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
@@ -712,6 +712,7 @@ const hasSyncedRef = useRef(false);
   const [customSectionInput, setCustomSectionInput] = useState('');
   const [volume, setVolume] = useState<number>(1);
   const [unit, setUnit] = useState('');
+  const [techSpecStatus, setTechSpecStatus] = useState('Chưa xác định');
   const [purchaseStatus, setPurchaseStatus] = useState('Chưa đặt hàng');
   const [constrStatus, setConstrStatus] = useState('Chưa thi công');
   const [engineerId, setEngineerId] = useState('');
@@ -815,6 +816,10 @@ const hasSyncedRef = useRef(false);
       }
     }
     setStt(nextStt);
+    setTechSpecStatus('Chưa xác định');
+    setPurchaseStatus('Chưa đặt hàng');
+    setConstrStatus('Chưa thi công');
+    setEngineerId('');
     
     setOcrIssueDraft('');
     setIsNewTaskModalOpen(true);
@@ -892,6 +897,13 @@ const hasSyncedRef = useRef(false);
     }
 
     const isNewlyAssigned = editEngineerId && editEngineerId !== (editingTask.assignedEngineerId || '');
+    if (!editingTask.isSectionHeader && editEngineerId) {
+      const readiness = isTaskReadyForAssignment(editingTask, materialPlans);
+      if (!readiness.ready) {
+        triggerToast(readiness.reason || 'Hạng mục chưa đủ điều kiện giao việc (cần "Đáp ứng" và "Đã có hàng")!', 'warning');
+        return;
+      }
+    }
     let updatedStatus = taskStatusFromProgress(!editingTask.isSectionHeader ? nextProgress : 0, editingTask.status);
     if (!editingTask.isSectionHeader && isNewlyAssigned && nextProgress === 0) {
       updatedStatus = 'Chờ nhận việc';
@@ -1011,6 +1023,10 @@ const hasSyncedRef = useRef(false);
       }
     }
     setStt(nextStt);
+    setTechSpecStatus('Chưa xác định');
+    setPurchaseStatus('Chưa đặt hàng');
+    setConstrStatus('Chưa thi công');
+    setEngineerId('');
     
     setOcrIssueDraft('');
     setParentIdSelect('default');
@@ -1583,7 +1599,19 @@ const hasSyncedRef = useRef(false);
 
     const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
     const assignerId = authStore.user?.id || '';
-    const initialStatus = (!isSectionHeader && engineerId) 
+
+    // Điều kiện giao việc: Tình trạng phải là "Đáp ứng" và TT Đặt hàng phải là "Đã có hàng" / "Có hàng"
+    const isTechOk = (techSpecStatus?.trim().toLowerCase() === 'đáp ứng' || techSpecStatus?.trim().toLowerCase() === 'dap ung');
+    const isPurchaseOk = (purchaseStatus === 'Đã có hàng' || purchaseStatus === 'Có hàng');
+    const isReadyToAssign = isTechOk && isPurchaseOk;
+
+    if (!isSectionHeader && engineerId && !isReadyToAssign) {
+      triggerToast('Chưa đủ điều kiện giao việc: Tình trạng cần là "Đáp ứng" và TT Đặt hàng cần là "Đã có hàng"!', 'warning');
+      return;
+    }
+
+    const assignedEngId = (!isSectionHeader && isReadyToAssign) ? engineerId : '';
+    const initialStatus = (!isSectionHeader && assignedEngId) 
       ? 'Chờ nhận việc' 
       : taskStatusFromProgress(isSectionHeader ? 0 : nextProgress, 'Chưa làm');
 
@@ -1597,16 +1625,17 @@ const hasSyncedRef = useRef(false);
       unit: isSectionHeader ? '' : unit,
       progress: nextProgress,
       status: initialStatus,
+      techSpecStatus: isSectionHeader ? '' : (techSpecStatus === 'Chưa xác định' ? '' : techSpecStatus),
       purchaseStatus: isSectionHeader ? '' : purchaseStatus,
       constrStatus: isSectionHeader ? '' : constrStatus,
       isDone: !isSectionHeader && nextProgress >= 1,
       isSectionHeader,
       sectionName: finalSectionName,
       parentId: validatedParentId,
-      assignedEngineerId: engineerId,
-      assignedEngineerName: eng?.name || '',
-      assignerId: (!isSectionHeader && engineerId) ? assignerId : undefined,
-      assignerName: (!isSectionHeader && engineerId) ? assignerName : undefined,
+      assignedEngineerId: assignedEngId,
+      assignedEngineerName: assignedEngId ? (eng?.name || '') : '',
+      assignerId: (!isSectionHeader && assignedEngId) ? assignerId : undefined,
+      assignerName: (!isSectionHeader && assignedEngId) ? assignerName : undefined,
     });
 
     if (engineerId && eng) {
@@ -1724,6 +1753,12 @@ const hasSyncedRef = useRef(false);
         const itemNotes = sectionIsContractor ? '[contractor]' : '';
         const itemSupplyScope: 'contractor' | 'unknown' = sectionIsContractor ? 'contractor' : 'unknown';
 
+        let finalItemNotes = itemNotes;
+        const validTechSpec = techSpecStatus && techSpecStatus !== 'Chưa xác định' ? techSpecStatus : '';
+        if (validTechSpec) {
+          finalItemNotes = finalItemNotes ? `${finalItemNotes} [tech-status:${validTechSpec}]` : `[tech-status:${validTechSpec}]`;
+        }
+
         // Tạo item trong MaterialPlan, gắn parentId vào item cha (nếu có) thay vì section header
         await addMaterialPlan({
           projectCode,
@@ -1733,9 +1768,10 @@ const hasSyncedRef = useRef(false);
           contractVolume: volume,
           progressStatus: 'Chưa thi công',
           orderedVolume: 0,
-          orderedStatus: 'Chưa đặt hàng',
+          orderedStatus: purchaseStatus,
+          techSpecStatus: validTechSpec,
           supplyScope: itemSupplyScope,
-          notes: itemNotes,
+          notes: finalItemNotes,
           parentId: parentMaterialPlan?.id || sectionMaterialId,
         }, true); // skipLog = true
 
@@ -1753,10 +1789,10 @@ const hasSyncedRef = useRef(false);
             prepayPercent: 0,
             prepayAmount: 0,
             remainingAmount: 0,
-            orderStatus: 'Chưa đặt hàng',
+            orderStatus: purchaseStatus,
             contractStatus: 'Chưa ký',
             invoiceStatus: 'Chưa xuất',
-            notes: itemNotes,
+            notes: finalItemNotes,
             parentId: parentPurchasingPlan?.id || sectionInPurchasing?.id,
           }, true);
       }
@@ -3368,7 +3404,45 @@ const hasSyncedRef = useRef(false);
           {editingTask && !editingTask.isSectionHeader && (<>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Khối lượng</label><input type="number" step="any" value={editVolume} onChange={(e) => setEditVolume(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div><div><label className="block font-bold text-slate-700 mb-1">Đơn vị tính (ĐVT)</label><input type="text" value={editUnit} onChange={(e) => setEditUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-mono" /></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">TT Đặt hàng</label><CustomSelect disabled title="Được đồng bộ tự động từ tab Vật tư" value={editPurchaseStatus} onChange={(e) => setEditPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-slate-50 opacity-80">{PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div><div><label className="block font-bold text-slate-700 mb-1">Tình trạng thi công</label><CustomSelect disabled title="Được cập nhật tự động theo tiến độ báo cáo và nghiệm thu công việc" value={editConstrStatus} onChange={(e) => setEditConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-slate-50 opacity-80">{CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}</CustomSelect></div></div>
-            <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Ghi chú thêm cho dòng công việc" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div><div><label className="block font-bold text-slate-700 mb-1">Kỹ sư phụ trách</label><CustomSelect value={editEngineerId} onChange={(e) => setEditEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white"><option value="">-- Chưa giao --</option>{editingTaskEngineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}</CustomSelect></div></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block font-bold text-slate-700 mb-1">Ghi chú</label><input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Ghi chú thêm cho dòng công việc" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white" /></div>
+              <div>
+                {(() => {
+                  const readiness = isTaskReadyForAssignment(editingTask, materialPlans);
+                  return (
+                    <>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block font-bold text-slate-700">Kỹ sư phụ trách</label>
+                        {!readiness.ready && (
+                          <span className="text-[10px] text-amber-600 font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                            Chưa đủ ĐK giao việc
+                          </span>
+                        )}
+                      </div>
+                      <CustomSelect 
+                        value={editEngineerId} 
+                        onChange={(e) => {
+                          if (e.target.value && !readiness.ready) {
+                            triggerToast(readiness.reason || 'Hạng mục chưa đủ điều kiện giao việc (cần "Đáp ứng" và "Đã có hàng")!', 'warning');
+                            return;
+                          }
+                          setEditEngineerId(e.target.value);
+                        }} 
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none ${!readiness.ready ? 'bg-slate-50' : 'bg-white'}`}
+                      >
+                        <option value="">-- Chưa giao --</option>
+                        {editingTaskEngineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}
+                      </CustomSelect>
+                      {!readiness.ready && (
+                        <p className="text-[11px] text-amber-600 mt-1">
+                          * Cần <b>Đáp ứng</b> và <b>Đã có hàng</b> để giao việc.
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3"><div><label className="block font-bold text-slate-700 mb-1">Tiến độ tự tính (%)</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">{calculateAutoProgressPercent(editPurchaseStatus, editConstrStatus)}%</div></div><div><label className="block font-bold text-slate-700 mb-1">Hoàn thành</label><div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-bold text-slate-800">{calculateAutoProgressRatio(editPurchaseStatus, editConstrStatus) >= 1 ? 'Đã hoàn thành' : 'Chưa hoàn thành'}</div></div></div>
           </>)}
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100"><button type="button" onClick={() => setIsEditTaskModalOpen(false)} className="px-4 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-600 hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold hover:opacity-90 disabled:opacity-50">Lưu Thay Đổi</button></div>
@@ -3491,36 +3565,93 @@ const hasSyncedRef = useRef(false);
                 </div>
               </div>
 
+              {/* Tình trạng & TT Đặt hàng */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">{'T\u00ecnh tr\u1ea1ng mua h\u00e0ng'}</label>
-                  <CustomSelect value={purchaseStatus} onChange={(e) => setPurchaseStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
-                    {PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
+                  <label className="block font-bold text-slate-700 mb-1">Tình trạng</label>
+                  <CustomSelect 
+                    value={techSpecStatus} 
+                    onChange={(e) => {
+                      const nextTech = e.target.value;
+                      setTechSpecStatus(nextTech);
+                      const isTechOk = (nextTech?.trim().toLowerCase() === 'đáp ứng' || nextTech?.trim().toLowerCase() === 'dap ung');
+                      const isPurchaseOk = (purchaseStatus === 'Đã có hàng' || purchaseStatus === 'Có hàng');
+                      if (!(isTechOk && isPurchaseOk)) {
+                        setEngineerId('');
+                      }
+                    }} 
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-medium"
+                  >
+                    {TECH_SPEC_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
                   </CustomSelect>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">{'T\u00ecnh tr\u1ea1ng thi c\u00f4ng'}</label>
-                  <CustomSelect value={constrStatus} onChange={(e) => setConstrStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
-                    {CONSTRUCTION_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
+                  <label className="block font-bold text-slate-700 mb-1">TT Đặt hàng</label>
+                  <CustomSelect 
+                    value={purchaseStatus} 
+                    onChange={(e) => {
+                      const nextPurch = e.target.value;
+                      setPurchaseStatus(nextPurch);
+                      const isTechOk = (techSpecStatus?.trim().toLowerCase() === 'đáp ứng' || techSpecStatus?.trim().toLowerCase() === 'dap ung');
+                      const isPurchaseOk = (nextPurch === 'Đã có hàng' || nextPurch === 'Có hàng');
+                      if (!(isTechOk && isPurchaseOk)) {
+                        setEngineerId('');
+                      }
+                    }} 
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white font-medium"
+                  >
+                    {PURCHASE_STATUS_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
                   </CustomSelect>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">{'K\u1ef9 s\u01b0 Ph\u1ee5 tr\u00e1ch'}</label>
-                  <CustomSelect value={engineerId} onChange={(e) => setEngineerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none bg-white">
-                    <option value="">-- Chưa giao --</option>
-                    {projectEngineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}
-                  </CustomSelect>
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">{'Ti\u1ebfn \u0111\u1ed9 t\u1ef1 t\u00ednh (%)'}</label>
-                  <div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">
-                    {calculateAutoProgressPercent(purchaseStatus, constrStatus)}%
+              {/* Kỹ sư phụ trách & Tiến độ */}
+              {(() => {
+                const isTechOk = (techSpecStatus?.trim().toLowerCase() === 'đáp ứng' || techSpecStatus?.trim().toLowerCase() === 'dap ung');
+                const isPurchaseOk = (purchaseStatus === 'Đã có hàng' || purchaseStatus === 'Có hàng');
+                const isReadyToAssign = isTechOk && isPurchaseOk;
+
+                return (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block font-bold text-slate-700">Kỹ sư Phụ trách</label>
+                        {!isReadyToAssign && (
+                          <span className="text-[10px] text-amber-600 font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                            Cần "Đáp ứng" & "Đã có hàng"
+                          </span>
+                        )}
+                      </div>
+                      <CustomSelect 
+                        value={engineerId} 
+                        disabled={!isReadyToAssign}
+                        onChange={(e) => {
+                          if (!isReadyToAssign && e.target.value) {
+                            triggerToast('Chỉ được giao việc khi Tình trạng là "Đáp ứng" và TT Đặt hàng là "Đã có hàng"!', 'warning');
+                            return;
+                          }
+                          setEngineerId(e.target.value);
+                        }} 
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none ${!isReadyToAssign ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200' : 'bg-white border-slate-200 font-medium'}`}
+                      >
+                        <option value="">-- Chưa giao --</option>
+                        {projectEngineers.map((eng) => (<option key={eng.id} value={eng.id}>{eng.name} ({eng.title})</option>))}
+                      </CustomSelect>
+                      {!isReadyToAssign && (
+                        <p className="text-[11px] text-amber-600 mt-1">
+                          * Hạng mục chỉ được giao việc khi đạt <b>Đáp ứng</b> và <b>Đã có hàng</b>.
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Tiến độ tự tính (%)</label>
+                      <div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono font-bold text-slate-800">
+                        {calculateAutoProgressPercent(purchaseStatus, constrStatus)}%
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
             </>
           )}
 
