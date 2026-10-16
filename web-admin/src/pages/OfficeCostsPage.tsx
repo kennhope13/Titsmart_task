@@ -681,7 +681,9 @@ export const OfficeCostsPage: React.FC = () => {
                       }}
                     >
                       <td className="px-2 py-1.5 font-semibold text-slate-900 whitespace-nowrap">{exp.date ? exp.date.substring(2) : '-'}</td>
-                      <td className="px-2 py-1.5 font-semibold line-clamp-2" title={exp.spenderName}>{exp.spenderName || '-'}</td>
+                      <td className="px-2 py-1.5 font-semibold text-slate-800" title={exp.spenderName}>
+                        <div className="line-clamp-2">{exp.spenderName || '-'}</div>
+                      </td>
                       <td className="px-2 py-1.5">
                         <div className="font-bold text-slate-900 line-clamp-1" title={exp.content}>{exp.content}</div>
                         <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-1" title={exp.description}>{exp.description}</div>

@@ -2423,6 +2423,11 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
         });
       } catch (e) {
         console.error('Failed to update payroll', e);
+        set((state) => {
+          const nextPayrolls = state.laborPayrolls.map((l) => (l.id === id ? { ...l, ...fields } : l));
+          persistAndNotify({ laborPayrolls: nextPayrolls });
+          return { laborPayrolls: nextPayrolls };
+        });
       }
     },
 

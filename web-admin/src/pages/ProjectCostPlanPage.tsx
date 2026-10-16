@@ -2495,7 +2495,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                           <tr key={'exp_'+exp.id} className="hover:bg-slate-50/50 transition-colors align-middle cursor-pointer" onClick={() => setEditingExpense(exp)}>
 
                             <td className="px-2 py-1.5 font-semibold text-slate-900 whitespace-nowrap">{exp.date ? exp.date.substring(2) : '-'}</td>
-                            <td className="px-2 py-1.5 font-semibold line-clamp-2" title={exp.spenderName}>{exp.spenderName || '-'}</td>
+                            <td className="px-2 py-1.5 font-semibold text-slate-800" title={exp.spenderName}>
+                              <div className="line-clamp-2">{exp.spenderName || '-'}</div>
+                            </td>
                             <td className="px-2 py-1.5">
                               <div className="font-bold text-slate-900 line-clamp-1" title={exp.content}>{exp.content}</div>
                               <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-1" title={exp.description}>{exp.description}</div>
@@ -2568,7 +2570,9 @@ export const ProjectCostPlanPage: React.FC = () => {
                           <tr key={'lab_'+lab.id} className="hover:bg-blue-50/50 bg-blue-50/20 transition-colors align-middle cursor-pointer" onClick={() => setEditingLabor({...lab, date: lab.date || new Date().toISOString().split('T')[0]})}>
 
                             <td className="px-2 py-1.5 font-semibold text-blue-900 whitespace-nowrap">{lab.date ? lab.date.substring(2) : '-'}</td>
-                            <td className="px-2 py-1.5 font-bold text-blue-800 line-clamp-2" title={lab.workerName}>{lab.workerName || '-'}</td>
+                            <td className="px-2 py-1.5 font-bold text-blue-800" title={lab.workerName}>
+                              <div className="line-clamp-2">{lab.workerName || '-'}</div>
+                            </td>
                             <td className="px-2 py-1.5">
                               <div className="font-bold text-blue-900 line-clamp-1" title={lab.content}>{lab.content}</div>
                               <div className="text-[10px] text-blue-600 mt-0.5 line-clamp-1" title={lab.description}>{lab.description}</div>
@@ -2604,7 +2608,7 @@ export const ProjectCostPlanPage: React.FC = () => {
                                 {!lab.idCardFrontUrl && !lab.idCardBackUrl && <span className="text-slate-300">-</span>}
                               </div>
                             </td>
-                            <td className="px-2 py-1.5 text-slate-400">-</td>
+                            <td className="px-2 py-1.5 text-[10px] max-w-[100px] truncate" title={lab.notes}>{lab.notes || '-'}</td>
                             <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center justify-center gap-1">
                                 <button
@@ -3088,55 +3092,59 @@ export const ProjectCostPlanPage: React.FC = () => {
         return (
           <Modal isOpen={!!editingPlan} onClose={() => { setEditingPlan(null); setIsCreatingSectionHeader(false); }} title={isParent ? "Chỉnh sửa Đầu mục cha" : "Cập nhật Kế hoạch Vật tư"}>
             {editingPlan && (
-          <form onSubmit={(e) => {
+          <form onSubmit={async (e) => {
             e.preventDefault();
-            updateMaterialPlan(editingPlan.id, editingPlan);
-            const isContractor = isEffectiveContractorPlan(editingPlan, currentProjMaterialPlans);
-            const key = normalizePlanKey(editingPlan.stt, editingPlan.jobContent, editingPlan.parentId);
-            const matchingPurchasing = purchasingPlans.find(p =>
-              p.projectCode === editingPlan.projectCode &&
-              (p.materialPlanId === editingPlan.id || normalizePlanKey(p.stt, p.content, p.parentId) === key)
-            );
+            try {
+              await updateMaterialPlan(editingPlan.id, editingPlan);
+              const isContractor = isEffectiveContractorPlan(editingPlan, currentProjMaterialPlans);
+              const key = normalizePlanKey(editingPlan.stt, editingPlan.jobContent, editingPlan.parentId);
+              const matchingPurchasing = purchasingPlans.find(p =>
+                p.projectCode === editingPlan.projectCode &&
+                (p.materialPlanId === editingPlan.id || normalizePlanKey(p.stt, p.content, p.parentId) === key)
+              );
 
-            if (isContractor) {
-              if (matchingPurchasing) {
-                updatePurchasingPlan(matchingPurchasing.id, {
-                  stt: editingPlan.stt,
-                  content: editingPlan.jobContent,
-                  unit: editingPlan.unit,
-                  volumeContract: editingPlan.contractVolume || matchingPurchasing.volumeContract,
-                  materialPlanId: editingPlan.id,
-                });
+              if (isContractor) {
+                if (matchingPurchasing) {
+                  await updatePurchasingPlan(matchingPurchasing.id, {
+                    stt: editingPlan.stt,
+                    content: editingPlan.jobContent,
+                    unit: editingPlan.unit,
+                    volumeContract: editingPlan.contractVolume || matchingPurchasing.volumeContract,
+                    materialPlanId: editingPlan.id,
+                  });
+                } else {
+                  await addPurchasingPlan({
+                    projectCode: editingPlan.projectCode,
+                    materialPlanId: editingPlan.id,
+                    stt: editingPlan.stt,
+                    content: editingPlan.jobContent,
+                    unit: editingPlan.unit || '',
+                    volumeContract: editingPlan.contractVolume || 1,
+                    volumeOrder: 0,
+                    unitPrice: 0,
+                    vatRate: 0,
+                    vatAmount: 0,
+                    totalAmount: 0,
+                    prepayPercent: 0,
+                    prepayAmount: 0,
+                    remainingAmount: 0,
+                    orderStatus: 'Chưa đặt hàng',
+                    contractStatus: 'Đã có phụ lục',
+                    invoiceStatus: 'Chưa xuất',
+                    notes: editingPlan.notes || '',
+                    parentId: editingPlan.parentId || undefined
+                  });
+                }
               } else {
-                addPurchasingPlan({
-                  projectCode: editingPlan.projectCode,
-                  materialPlanId: editingPlan.id,
-                  stt: editingPlan.stt,
-                  content: editingPlan.jobContent,
-                  unit: editingPlan.unit || '',
-                  volumeContract: editingPlan.contractVolume || 1,
-                  volumeOrder: 0,
-                  unitPrice: 0,
-                  vatRate: 0,
-                  vatAmount: 0,
-                  totalAmount: 0,
-                  prepayPercent: 0,
-                  prepayAmount: 0,
-                  remainingAmount: 0,
-                  orderStatus: 'Chưa đặt hàng',
-                  contractStatus: 'Đã có phụ lục',
-                  invoiceStatus: 'Chưa xuất',
-                  notes: editingPlan.notes || '',
-                  parentId: editingPlan.parentId || undefined
-                });
+                if (matchingPurchasing) {
+                  await deletePurchasingPlan(matchingPurchasing.id);
+                }
               }
-            } else {
-              if (matchingPurchasing) {
-                deletePurchasingPlan(matchingPurchasing.id);
-              }
+              setEditingPlan(null);
+              triggerToast('Đã cập nhật Kế hoạch Vật tư thành công!', 'success');
+            } catch (err: any) {
+              triggerToast(err.message || 'Lỗi khi cập nhật kế hoạch vật tư!', 'warning');
             }
-            setEditingPlan(null);
-            triggerToast('Đã cập nhật Kế hoạch Vật tư thành công!', 'success');
           }} className="space-y-3 text-xs">
             {isParent ? (
               <>
@@ -3570,28 +3578,32 @@ export const ProjectCostPlanPage: React.FC = () => {
       {/* Edit Purchasing Modal */}
       <Modal isOpen={!!editingPurchasing} onClose={() => setEditingPurchasing(null)} title="Cập nhật Hợp đồng Mua sắm">
         {editingPurchasing && (
-          <form onSubmit={(e) => {
+          <form onSubmit={async (e) => {
             e.preventDefault();
-            const contractVol = Number(editingPurchasing.volumeContract || 1);
-            const unitPrice = Number(editingPurchasing.unitPrice || 0);
-            const vat = Number(editingPurchasing.vatRate || 10);
-            const prepayPct = Number(editingPurchasing.prepayPercent || 0);
+            try {
+              const contractVol = Number(editingPurchasing.volumeContract || 1);
+              const unitPrice = Number(editingPurchasing.unitPrice || 0);
+              const vat = Number(editingPurchasing.vatRate || 10);
+              const prepayPct = Number(editingPurchasing.prepayPercent || 0);
 
-            const rawTotal = contractVol * unitPrice;
-            const taxAmt = rawTotal * (vat / 100);
-            const totalAmt = rawTotal + taxAmt;
-            const prepayAmt = totalAmt * prepayPct;
-            const remainingAmt = totalAmt - prepayAmt;
+              const rawTotal = contractVol * unitPrice;
+              const taxAmt = rawTotal * (vat / 100);
+              const totalAmt = rawTotal + taxAmt;
+              const prepayAmt = totalAmt * prepayPct;
+              const remainingAmt = totalAmt - prepayAmt;
 
-            handleUpdatePurchasingPlanSync(editingPurchasing.id, {
-              ...editingPurchasing,
-              vatAmount: taxAmt,
-              totalAmount: totalAmt,
-              prepayAmount: prepayAmt,
-              remainingAmount: remainingAmt
-            });
-            setEditingPurchasing(null);
-            triggerToast('Đã cập nhật Mua sắm thành công!', 'success');
+              await handleUpdatePurchasingPlanSync(editingPurchasing.id, {
+                ...editingPurchasing,
+                vatAmount: taxAmt,
+                totalAmount: totalAmt,
+                prepayAmount: prepayAmt,
+                remainingAmount: remainingAmt
+              });
+              setEditingPurchasing(null);
+              triggerToast('Đã cập nhật Mua sắm thành công!', 'success');
+            } catch (err: any) {
+              triggerToast(err.message || 'Lỗi khi cập nhật mua sắm!', 'warning');
+            }
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block font-bold mb-1">STT</label><input type="text" value={editingPurchasing.stt} onChange={(e) => setEditingPurchasing({...editingPurchasing, stt: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -3838,50 +3850,57 @@ export const ProjectCostPlanPage: React.FC = () => {
       {/* Edit Expense Modal */}
       <Modal isOpen={!!editingExpense} onClose={() => setEditingExpense(null)} title="Cập nhật Phiếu Chi Công trình">
         {editingExpense && (
-          <form onSubmit={async (e) => { e.preventDefault(); const qty = Number(editingExpense.quantity || 1);
-            const price = Number(editingExpense.unitPrice || 0);
-            const vat = Number(editingExpense.taxAmount || 0);
-            const rawTotal = qty * price;
-            const vatAmt = vat > 0 ? (vat <= 100 ? (rawTotal * vat / 100) : vat) : 0;
-            const total = Math.round(rawTotal + vatAmt);
+          <form onSubmit={async (e) => { 
+            e.preventDefault(); 
+            try {
+              const qty = Number(editingExpense.quantity || 1);
+              const price = Number(editingExpense.unitPrice || 0);
+              const vat = Number(editingExpense.taxAmount || 0);
+              const rawTotal = qty * price;
+              const vatAmt = vat > 0 ? (vat <= 100 ? (rawTotal * vat / 100) : vat) : 0;
+              const total = Math.round(rawTotal + vatAmt);
 
-            const cleanDate = formatDateForInput(editingExpense.date) || new Date().toISOString().split('T')[0];
-            await updateExpense(editingExpense.id, {
-              ...editingExpense,
-              date: cleanDate,
-              totalAmount: total
-            });
+              const cleanDate = formatDateForInput(editingExpense.date) || new Date().toISOString().split('T')[0];
+              await updateExpense(editingExpense.id, {
+                ...editingExpense,
+                date: cleanDate,
+                totalAmount: total,
+                spenderName: editingExpense.spenderName || ''
+              });
 
-            if (additionalItems.length > 0) {
-              await Promise.all(additionalItems.map((item, idx) => {
-                const itemQty = Number(item.quantity || 1);
-                const itemPrice = Number(item.unitPrice || 0);
-                const itemVat = Number(item.taxAmount || 0);
-                const itemRaw = itemQty * itemPrice;
-                const itemVatAmt = itemVat > 0 ? (itemVat <= 100 ? (itemRaw * itemVat / 100) : itemVat) : 0;
-                return addExpense({
-                  projectCode: selectedProject,
-                  stt: String(currentProjExpenses.length + 1 + idx),
-                  date: cleanDate,
-                  content: editingExpense.content || 'Vật tư/ thiết bị',
-                  description: item.description || '',
-                  spenderName: editingExpense.spenderName || '',
-                  unit: item.unit || '',
-                  quantity: itemQty,
-                  unitPrice: itemPrice,
-                  taxAmount: itemVat,
-                  totalAmount: Math.round(itemRaw + itemVatAmt),
-                  incomeAmount: Number(item.incomeAmount || 0),
-                  balanceFund: 0,
-                  notes: editingExpense.notes || '',
-                  invoiceUrl: editingExpense.invoiceUrl || ''
-                });
-              }));
+              if (additionalItems.length > 0) {
+                await Promise.all(additionalItems.map((item, idx) => {
+                  const itemQty = Number(item.quantity || 1);
+                  const itemPrice = Number(item.unitPrice || 0);
+                  const itemVat = Number(item.taxAmount || 0);
+                  const itemRaw = itemQty * itemPrice;
+                  const itemVatAmt = itemVat > 0 ? (itemVat <= 100 ? (itemRaw * itemVat / 100) : itemVat) : 0;
+                  return addExpense({
+                    projectCode: selectedProject,
+                    stt: String(currentProjExpenses.length + 1 + idx),
+                    date: cleanDate,
+                    content: editingExpense.content || 'Vật tư/ thiết bị',
+                    description: item.description || '',
+                    spenderName: editingExpense.spenderName || '',
+                    unit: item.unit || '',
+                    quantity: itemQty,
+                    unitPrice: itemPrice,
+                    taxAmount: itemVat,
+                    totalAmount: Math.round(itemRaw + itemVatAmt),
+                    incomeAmount: Number(item.incomeAmount || 0),
+                    balanceFund: 0,
+                    notes: editingExpense.notes || '',
+                    invoiceUrl: editingExpense.invoiceUrl || ''
+                  });
+                }));
+              }
+
+              setEditingExpense(null);
+              setAdditionalItems([]);
+              triggerToast('Đã cập nhật Chi phí thành công!', 'success');
+            } catch (err: any) {
+              triggerToast(err.message || 'Lỗi khi cập nhật chi phí!', 'warning');
             }
-
-            setEditingExpense(null);
-            setAdditionalItems([]);
-            triggerToast('Đã cập nhật Chi phí thành công!', 'success');
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block font-bold mb-1">Ngày chi *</label><input type="date" required value={formatDateForInput(editingExpense.date)} onChange={(e) => setEditingExpense({...editingExpense, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -3969,33 +3988,38 @@ export const ProjectCostPlanPage: React.FC = () => {
 
       {/* 4. Modal Lương Công Nhật */}
       <Modal isOpen={isNewLaborOpen} onClose={() => setIsNewLaborOpen(false)} title="Thêm Phiếu thanh toán Lương Công nhật mới">
-        <form onSubmit={(e) => {
+        <form onSubmit={async (e) => {
           e.preventDefault();
-          const qty = Number(newLaborData.quantity || 1);
-          const price = Number(newLaborData.unitPrice || 0);
-          const total = qty * price;
+          try {
+            const qty = Number(newLaborData.quantity || 1);
+            const price = Number(newLaborData.unitPrice || 0);
+            const total = qty * price;
+            const cleanDate = formatDateForInput(newLaborData.date) || new Date().toISOString().split('T')[0];
 
-          addLaborPayroll({
-            projectCode: selectedProject,
-            stt: newLaborData.stt || String(currentProjLabor.length + 1),
-            date: newLaborData.date || new Date().toISOString().split('T')[0],
-            content: newLaborData.content || 'TT tiền công',
-            description: newLaborData.description || 'Lương thợ điện',
-            unit: newLaborData.unit || 'Công',
-            quantity: qty,
-            unitPrice: price,
-            totalAmount: total,
-            workerName: (newLaborData as any).workerName || '',
-            bankAccount: newLaborData.bankAccount || '',
-            bankInfo: newLaborData.bankInfo || '',
-            idCardFrontUrl: newLaborData.idCardFrontUrl || '',
-            idCardBackUrl: newLaborData.idCardBackUrl || '',
-            paymentStatus: newLaborData.paymentStatus || 'Chưa thanh toán',
-            notes: newLaborData.notes || ''
-          });
-          setIsNewLaborOpen(false);
-          setNewLaborData({stt: '', date: new Date().toISOString().split('T')[0], content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''});
-          triggerToast('Đã thêm Lương công nhật thành công!', 'success');
+            await addLaborPayroll({
+              projectCode: selectedProject,
+              stt: newLaborData.stt || String(currentProjLabor.length + 1),
+              date: cleanDate,
+              content: newLaborData.content || 'TT tiền công',
+              description: newLaborData.description || 'Lương thợ điện',
+              unit: newLaborData.unit || 'Công',
+              quantity: qty,
+              unitPrice: price,
+              totalAmount: total,
+              workerName: (newLaborData as any).workerName || '',
+              bankAccount: newLaborData.bankAccount || '',
+              bankInfo: newLaborData.bankInfo || '',
+              idCardFrontUrl: newLaborData.idCardFrontUrl || '',
+              idCardBackUrl: newLaborData.idCardBackUrl || '',
+              paymentStatus: newLaborData.paymentStatus || 'Chưa thanh toán',
+              notes: newLaborData.notes || ''
+            });
+            setIsNewLaborOpen(false);
+            setNewLaborData({stt: '', date: new Date().toISOString().split('T')[0], content: 'TT tiền công', description: 'Lương thợ điện', unit: 'Công', quantity: 1, unitPrice: 500000, bankAccount: '', bankInfo: '', idCardFrontUrl: '', idCardBackUrl: '', paymentStatus: 'Chưa thanh toán', notes: ''});
+            triggerToast('Đã thêm Lương công nhật thành công!', 'success');
+          } catch (err: any) {
+            triggerToast(err.message || 'Lỗi khi thêm lương công nhật!', 'warning');
+          }
         }} className="space-y-3 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block font-bold mb-1">Ngày chấm công *</label><input type="date" required value={newLaborData.date || new Date().toISOString().split('T')[0]} onChange={(e) => setNewLaborData({...newLaborData, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
@@ -4047,20 +4071,29 @@ export const ProjectCostPlanPage: React.FC = () => {
       {/* Edit Labor Modal */}
       <Modal isOpen={!!editingLabor} onClose={() => setEditingLabor(null)} title="Cập nhật Thông tin Lương Công nhật">
         {editingLabor && (
-          <form onSubmit={(e) => {
+          <form onSubmit={async (e) => {
             e.preventDefault();
-            const qty = Number(editingLabor.quantity || 1);
-            const price = Number(editingLabor.unitPrice || 0);
-            const total = qty * price;
+            try {
+              const qty = Number(editingLabor.quantity || 1);
+              const price = Number(editingLabor.unitPrice || 0);
+              const total = qty * price;
+              const cleanDate = formatDateForInput(editingLabor.date) || new Date().toISOString().split('T')[0];
 
-            updateLaborPayroll(editingLabor.id, {
-              ...editingLabor,
-              totalAmount: total
-            });
-            setEditingLabor(null);
+              await updateLaborPayroll(editingLabor.id, {
+                ...editingLabor,
+                date: cleanDate,
+                workerName: editingLabor.workerName || '',
+                totalAmount: total,
+                notes: editingLabor.notes || ''
+              });
+              setEditingLabor(null);
+              triggerToast('Đã cập nhật Lương công nhật thành công!', 'success');
+            } catch (err: any) {
+              triggerToast(err.message || 'Lỗi khi cập nhật lương công nhật!', 'warning');
+            }
           }} className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-bold mb-1">Ngày làm *</label><input type="date" required value={String(editingLabor.date || '').split('T')[0] || new Date().toISOString().split('T')[0]} onChange={(e) => setEditingLabor({...editingLabor, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
+              <div><label className="block font-bold mb-1">Ngày làm *</label><input type="date" required value={formatDateForInput(editingLabor.date) || new Date().toISOString().split('T')[0]} onChange={(e) => setEditingLabor({...editingLabor, date: e.target.value})} className="w-full border rounded-lg p-2 bg-white" /></div>
               <div><label className="block font-bold mb-1">Loại thanh toán</label><CustomSelect value={editingLabor.content} onChange={(e) => setEditingLabor({...editingLabor, content: e.target.value})} searchable={true} allowCustomInput={true} placeholder="" className="w-full border rounded-lg p-2 bg-white text-xs">
     {laborContents.map((opt, i) => (<option key={i} value={opt}>{opt}</option>))}
   </CustomSelect></div>
@@ -4093,12 +4126,18 @@ export const ProjectCostPlanPage: React.FC = () => {
                 />
               </div>
             </div>
-            <div>
-              <label className="block font-bold mb-1">Tình trạng thanh toán</label>
-              <CustomSelect value={editingLabor.paymentStatus} onChange={(e) => setEditingLabor({...editingLabor, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
-                <option value="Chưa thanh toán">Chưa thanh toán</option>
-                <option value="Đã thanh toán">Đã thanh toán</option>
-              </CustomSelect>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold mb-1">Tình trạng thanh toán</label>
+                <CustomSelect value={editingLabor.paymentStatus} onChange={(e) => setEditingLabor({...editingLabor, paymentStatus: e.target.value})} className="w-full border rounded-lg p-2 bg-white">
+                  <option value="Chưa thanh toán">Chưa thanh toán</option>
+                  <option value="Đã thanh toán">Đã thanh toán</option>
+                </CustomSelect>
+              </div>
+              <div>
+                <label className="block font-bold mb-1">Ghi chú</label>
+                <input type="text" value={editingLabor.notes || ''} onChange={(e) => setEditingLabor({...editingLabor, notes: e.target.value})} className="w-full border rounded-lg p-2 bg-white" placeholder="Ghi chú thêm..." />
+              </div>
             </div>
             <div className="pt-3 border-t flex justify-end gap-2"><button type="button" onClick={() => setEditingLabor(null)} className="px-4 py-1.5 border rounded-lg font-semibold hover:bg-slate-100">Hủy</button><button type="submit" disabled={loading}  className="px-5 py-1.5 bg-primary text-white rounded-lg font-bold disabled:opacity-50">Lưu cập nhật</button></div>
           </form>
