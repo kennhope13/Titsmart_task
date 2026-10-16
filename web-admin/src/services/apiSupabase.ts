@@ -1802,7 +1802,26 @@ export const api = {
         return /^\d{4}-\d{2}-\d{2}/.test(trimmed) ? trimmed.split('T')[0] : null;
       };
 
-      const statusTag = `[STATUS:${data.docStatus || 'Chưa ký'}|PAY:${data.paymentStatus || 'Chưa thanh toán'}|COMP:${data.isCompleted ? '1' : '0'}|CREATOR:${data.createdByName || ''}|CID:${data.createdById || ''}|UPD:${data.updatedBy || ''}]`;
+      // Đảm bảo không bao giờ làm mất người tạo gốc (createdByName, createdById)
+      let originalCreatorName = data.createdByName;
+      let originalCreatorId = data.createdById;
+
+      if (!originalCreatorName || !originalCreatorId) {
+        try {
+          const { data: existingRow } = await supabase.from('document_tracks').select('notes').eq('id', id).maybeSingle();
+          if (existingRow?.notes) {
+            const m = existingRow.notes.match(/\|CREATOR:([^|]*)\|CID:([^|]*)/);
+            if (m) {
+              if (!originalCreatorName && m[1]) originalCreatorName = m[1];
+              if (!originalCreatorId && m[2]) originalCreatorId = m[2];
+            }
+          }
+        } catch {
+          // Ignore
+        }
+      }
+
+      const statusTag = `[STATUS:${data.docStatus || 'Chưa ký'}|PAY:${data.paymentStatus || 'Chưa thanh toán'}|COMP:${data.isCompleted ? '1' : '0'}|CREATOR:${originalCreatorName || ''}|CID:${originalCreatorId || ''}|UPD:${data.updatedBy || ''}]`;
       const baseNotes = (data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim();
       const combinedNotes = `${statusTag} ${baseNotes}`.trim();
 
@@ -1869,6 +1888,8 @@ export const api = {
         ...data,
         ...(res ? toCamelCase(res) : {}),
         id,
+        createdById: originalCreatorId || data.createdById || '',
+        createdByName: originalCreatorName || data.createdByName || '',
         notes: (res?.notes || data.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim(),
         updatedBy: data.updatedBy || '',
         updatedAt: res?.updated_at || new Date().toISOString()

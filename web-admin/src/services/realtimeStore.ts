@@ -2526,26 +2526,48 @@ export const useRealtimeStore = create<RealtimeStoreState>((set, get) => {
 
     updateDocumentTrack: async (id, fields) => {
       const audit = getAuditFields();
+      const existingDoc = get().documentTracks.find(d => d.id === id);
+      const originalCreatorId = fields.createdById || existingDoc?.createdById || '';
+      const originalCreatorName = fields.createdByName || existingDoc?.createdByName || '';
+
       set((state) => {
-        const nextTracks = state.documentTracks.map((d) => (d.id === id ? {
-          ...d,
-          ...fields,
-          ...audit,
-          notes: (fields.notes !== undefined ? fields.notes : d.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()
-        } : d));
+        const nextTracks = state.documentTracks.map((d) => {
+          if (d.id !== id) return d;
+          const merged = {
+            ...d,
+            ...fields,
+            ...audit,
+            notes: (fields.notes !== undefined ? fields.notes : d.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()
+          };
+          merged.createdById = originalCreatorId || d.createdById || '';
+          merged.createdByName = originalCreatorName || d.createdByName || '';
+          return merged;
+        });
         const freshNotifs = generateDocumentDueNotifications(nextTracks, state.notifications);
         const nextNotifs = freshNotifs.length > 0 ? [...freshNotifs, ...state.notifications] : state.notifications;
         persistAndNotify({ documentTracks: nextTracks, notifications: nextNotifs });
         return { documentTracks: nextTracks, notifications: nextNotifs };
       });
       try {
-        const updated = await api.accounting.updateDocumentTrack(id, { ...fields, ...audit });
+        const payload: any = {
+          ...fields,
+          ...audit,
+          createdById: originalCreatorId,
+          createdByName: originalCreatorName
+        };
+        const updated = await api.accounting.updateDocumentTrack(id, payload);
         set((state) => {
-          const nextTracks = state.documentTracks.map((d) => (d.id === id ? {
-            ...d,
-            ...(updated || {}),
-            notes: ((updated && updated.notes) || fields.notes || d.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()
-          } : d));
+          const nextTracks = state.documentTracks.map((d) => {
+            if (d.id !== id) return d;
+            const merged = {
+              ...d,
+              ...(updated || {}),
+              notes: ((updated && updated.notes) || fields.notes || d.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim()
+            };
+            merged.createdById = originalCreatorId || updated?.createdById || d.createdById || '';
+            merged.createdByName = originalCreatorName || updated?.createdByName || d.createdByName || '';
+            return merged;
+          });
           persistAndNotify({ documentTracks: nextTracks });
           return { documentTracks: nextTracks };
         });

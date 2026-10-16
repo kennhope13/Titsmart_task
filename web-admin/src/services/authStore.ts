@@ -73,9 +73,23 @@ export const canManageItem = (user: AuthUser | null | undefined, item: any, requ
 
   if (!item) return false;
 
+  const normalizeStr = (str: string) => {
+    return String(str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/[^a-z0-9]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   const currentUserId = String(user.id || '').trim().toLowerCase();
   const currentUserName = String(user.name || '').trim().toLowerCase();
   const currentUsername = String(user.username || '').trim().toLowerCase();
+
+  const normCurrentUserName = normalizeStr(user.name);
+  const normCurrentUsername = normalizeStr(user.username);
 
   // Đối với dự án (Project), chỉ cho phép sửa/xóa nếu có quyền chi tiết hoặc là người tạo dự án chính thức (createdById)
   if (requiredPerm === 'EDIT_PROJECTS' || requiredPerm === 'DELETE_PROJECTS') {
@@ -96,14 +110,26 @@ export const canManageItem = (user: AuthUser | null | undefined, item: any, requ
     item.uploaderName || item.uploader_name || item.author || item.authorName || ''
   ).trim().toLowerCase();
 
+  const normItemCreatorName = normalizeStr(itemCreatorName);
+
   // 1. Khớp ID người tạo
   if (currentUserId && itemCreatorId && (currentUserId === itemCreatorId || currentUserId.includes(itemCreatorId) || itemCreatorId.includes(currentUserId))) return true;
 
-  // 2. Khớp Tên người tạo
-  if (currentUserName && itemCreatorName && (itemCreatorName === currentUserName || itemCreatorName.includes(currentUserName))) return true;
+  // 2. Khớp Tên người tạo (chính xác hoặc chứa nhau, hỗ trợ cả có dấu và không dấu)
+  if (currentUserName && itemCreatorName) {
+    if (itemCreatorName === currentUserName || itemCreatorName.includes(currentUserName) || currentUserName.includes(itemCreatorName)) return true;
+  }
+  if (normCurrentUserName && normItemCreatorName) {
+    if (normItemCreatorName === normCurrentUserName || normItemCreatorName.includes(normCurrentUserName) || normCurrentUserName.includes(normItemCreatorName)) return true;
+  }
 
   // 3. Khớp Username người tạo
-  if (currentUsername && itemCreatorName && itemCreatorName === currentUsername) return true;
+  if (currentUsername && itemCreatorName) {
+    if (itemCreatorName === currentUsername || itemCreatorName.includes(currentUsername)) return true;
+  }
+  if (normCurrentUsername && normItemCreatorName) {
+    if (normItemCreatorName === normCurrentUsername || normItemCreatorName.includes(normCurrentUsername)) return true;
+  }
 
   return false;
 };
