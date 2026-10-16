@@ -156,7 +156,12 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                   )}
                  </td>
                  <td className="px-1.5 py-1.5">
-                   <AuditInfoCell updatedBy={exp.updatedBy} updatedAt={exp.updatedAt} />
+                   <AuditInfoCell 
+                     updatedBy={exp.updatedBy} 
+                     updatedAt={exp.updatedAt} 
+                     projectCode={exp.projectCode}
+                     itemTitle={exp.content}
+                   />
                  </td>
                  <td className="sticky right-0 z-10 bg-white group-hover:bg-blue-50/30 border-l border-slate-100 p-3 text-center">
                    <div className="flex items-center justify-center gap-2 transition-opacity">

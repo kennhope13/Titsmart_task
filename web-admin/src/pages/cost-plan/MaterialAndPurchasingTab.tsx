@@ -2232,6 +2232,7 @@ export const MaterialAndPurchasingTab: React.FC<MaterialAndPurchasingTabProps> =
                               updatedBy={subTab === 'FINANCE' ? (pRecord?.updatedBy || plan.updatedBy) : (plan.updatedBy || pRecord?.updatedBy)} 
                               updatedAt={subTab === 'FINANCE' ? (pRecord?.updatedAt || plan.updatedAt) : (plan.updatedAt || pRecord?.updatedAt)} 
                               projectCode={plan.projectCode}
+                              itemTitle={plan.jobContent || (pRecord as any)?.content}
                             />
                           </td>
                       </tr>

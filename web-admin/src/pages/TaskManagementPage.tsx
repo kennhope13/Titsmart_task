@@ -14,7 +14,7 @@ import { CustomSelect } from '@/components/common/CustomSelect';
 import { compareTaskStt } from '../utils/taskTreeUtils';
 import { AuditInfoCell } from '../components/common/AuditInfoCell';
 import { TaskDiscussionModal } from '../components/tasks/TaskDiscussionModal';
-import { appendTaskDiscussion, getLatestDiscussion, stripDiscussionThread } from '../utils/taskDiscussion';
+import { appendTaskDiscussion, getLatestDiscussion, stripDiscussionThread, parseTaskDiscussions } from '../utils/taskDiscussion';
 import { getEngineersForProject } from '../utils/projectMemberUtils';
 import { uploadAttachment } from '../utils/fileUploadHelper';
 import { PullToRefresh } from '../components/common/PullToRefresh';
@@ -2792,7 +2792,13 @@ const hasSyncedRef = useRef(false);
                         </td>
                       )}
                       <td className="py-1.5 px-1 text-left border-r border-slate-200 whitespace-nowrap">
-                        <AuditInfoCell updatedBy={t.updatedBy} updatedAt={t.updatedAt} />
+                        <AuditInfoCell 
+                          updatedBy={t.updatedBy} 
+                          updatedAt={t.updatedAt} 
+                          projectCode={t.projectCode}
+                          itemTitle={t.name}
+                          taskDiscussions={parseTaskDiscussions(t.notes, t.issue)}
+                        />
                       </td>
                       <td className="py-1.5 px-1 group-hover:bg-slate-100 border-l border-slate-200 text-slate-500 whitespace-normal break-words leading-tight" title={cleanNotes(t.notes)}>
                         {editingCell?.id === t.id && editingCell?.field === 'notes' ? (

@@ -133,10 +133,19 @@ interface AuditUserInfo {
   logs: AuditUserLogItem[];
 }
 
-export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; projectCode?: string; className?: string }> = ({
+export const AuditInfoCell: React.FC<{ 
+  updatedBy?: string; 
+  updatedAt?: string; 
+  projectCode?: string; 
+  itemTitle?: string;
+  taskDiscussions?: Array<{ senderName: string; senderRole?: string; type: string; content: string; createdAt: string }>;
+  className?: string;
+}> = ({
   updatedBy,
   updatedAt,
   projectCode,
+  itemTitle,
+  taskDiscussions,
   className = '',
 }) => {
   const [showModal, setShowModal] = useState(false);
@@ -164,14 +173,75 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
       return trimmed;
     };
 
+    const cleanItemTitle = (itemTitle || '').trim().toLowerCase();
+
+    // 1. Tích hợp dòng thảo luận / thắc mắc / giao việc từ taskDiscussions (nếu có)
+    if (taskDiscussions && taskDiscussions.length > 0) {
+      taskDiscussions.forEach(disc => {
+        const u = normalizeUser(disc.senderName || 'Người tham gia');
+        const logTimeMs = parseAuditTime(disc.createdAt);
+        const displayTime = formatAuditDateTime(disc.createdAt);
+        let actionLabel = 'Trao đổi / Thảo luận công việc';
+        if (disc.type === 'question') actionLabel = `Thắc mắc: "${disc.content}"`;
+        else if (disc.type === 'reply') actionLabel = `Phản hồi hướng dẫn: "${disc.content}"`;
+        else if (disc.type === 'assign_note') actionLabel = `Ghi chú giao việc: "${disc.content}"`;
+        else actionLabel = `Ghi chú: "${disc.content}"`;
+
+        if (!map.has(u)) {
+          const eng = (engineers || []).find(e => e?.name?.toLowerCase() === u.toLowerCase());
+          const title = u === 'Quản trị hệ thống' ? 'Chủ tịch / Admin' : (disc.senderRole || eng?.title);
+          map.set(u, {
+            name: u,
+            count: 1,
+            lastTime: displayTime,
+            rawTimeMs: logTimeMs,
+            title,
+            logs: [{ action: actionLabel, timestamp: disc.createdAt, rawTimeMs: logTimeMs }]
+          });
+        } else {
+          const existing = map.get(u)!;
+          existing.count += 1;
+          if (logTimeMs > existing.rawTimeMs) {
+            existing.rawTimeMs = logTimeMs;
+            existing.lastTime = displayTime;
+          }
+          if (!existing.logs.some(l => l.action === actionLabel && l.timestamp === disc.createdAt)) {
+            existing.logs.push({ action: actionLabel, timestamp: disc.createdAt, rawTimeMs: logTimeMs });
+          }
+        }
+      });
+    }
+
+    // 2. Lọc activityLogs theo dự án và tên hạng mục (nếu có)
     const filteredLogs = (activityLogs || []).filter(log => {
       if (!log) return false;
+      const logAction = String(log.action || '').toLowerCase();
+
+      // Nếu có tên công việc / hạng mục cụ thể (itemTitle), ưu tiên khớp đúng công việc này
+      if (cleanItemTitle && cleanItemTitle.length >= 3) {
+        if (logAction.includes(cleanItemTitle)) {
+          return true;
+        }
+      }
+
+      // Khớp theo mã dự án
       if (projectCode) {
         const logProj = String(log.project || '').trim().toLowerCase();
         const pCode = String(projectCode).trim().toLowerCase();
-        return logProj === pCode;
+        if (logProj !== pCode) return false;
+
+        // Nếu có itemTitle mà log không chứa itemTitle và là loại log cụ thể khác, bỏ qua để tránh nhiễm log vật tư / công việc khác
+        if (cleanItemTitle && cleanItemTitle.length >= 3) {
+          // Bỏ qua các log chứa tên công việc khác
+          if (logAction.includes('kế hoạch vật tư') || logAction.includes('mua sắm') || logAction.includes('vật tư:')) {
+            return false;
+          }
+        }
+        return true;
       }
-      return true;
+
+      // Nếu không có cả projectCode lẫn itemTitle khớp thì chỉ lấy log chung
+      return !projectCode && !cleanItemTitle;
     });
 
     filteredLogs.forEach(log => {
@@ -206,7 +276,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
       }
     });
 
-    // Handle row's updatedBy if not present or has empty logs
+    // 3. Đảm bảo người cập nhật gần nhất của dòng (updatedBy) luôn có mặt
     const currentMs = parseAuditTime(updatedAt);
     if (updatedBy && updatedBy !== 'Excel Sync' && !updatedBy.toLowerCase().includes('excel')) {
       const u = normalizeUser(updatedBy);
@@ -219,7 +289,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
           lastTime: formattedTime,
           rawTimeMs: currentMs,
           title,
-          logs: [{ action: 'Cập nhật thông tin công việc', timestamp: updatedAt || '', rawTimeMs: currentMs }]
+          logs: [{ action: itemTitle ? `Cập nhật thông tin công việc: "${itemTitle}"` : 'Cập nhật thông tin trên hệ thống', timestamp: updatedAt || '', rawTimeMs: currentMs }]
         });
       } else {
         const existing = map.get(u)!;
@@ -228,7 +298,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
           existing.lastTime = formattedTime;
         }
         if (existing.logs.length === 0) {
-          existing.logs.push({ action: 'Cập nhật thông tin công việc', timestamp: updatedAt || '', rawTimeMs: currentMs });
+          existing.logs.push({ action: itemTitle ? `Cập nhật thông tin công việc: "${itemTitle}"` : 'Cập nhật thông tin trên hệ thống', timestamp: updatedAt || '', rawTimeMs: currentMs });
         }
       }
     }
@@ -243,7 +313,7 @@ export const AuditInfoCell: React.FC<{ updatedBy?: string; updatedAt?: string; p
       if (currentNorm && b.name.toLowerCase() === currentNorm.toLowerCase()) return 1;
       return b.rawTimeMs - a.rawTimeMs;
     });
-  }, [showModal, activityLogs, engineers, updatedBy, updatedAt, formattedTime, projectCode]);
+  }, [showModal, activityLogs, engineers, updatedBy, updatedAt, formattedTime, projectCode, itemTitle, taskDiscussions]);
 
   if (isSystemOrEmpty && !formattedTime) {
     return <div className="text-center w-full"><span className="text-slate-300 italic text-[10px]">-</span></div>;

@@ -1525,7 +1525,13 @@ export const TaskAssignmentPage: React.FC = () => {
                                 </span>
                               </td>
                               <td className="py-2.5 px-4 border-r border-slate-200 text-center">
-                                <AuditInfoCell updatedBy={t.updatedBy} updatedAt={t.updatedAt} />
+                                <AuditInfoCell 
+                                  updatedBy={t.updatedBy} 
+                                  updatedAt={t.updatedAt} 
+                                  projectCode={t.projectCode}
+                                  itemTitle={t.name}
+                                  taskDiscussions={parseTaskDiscussions(t.notes, t.issue)}
+                                />
                               </td>
                               <td className="py-2.5 px-3 text-center" onClick={e => e.stopPropagation()}>
                                 <div className="flex items-center justify-center gap-1">

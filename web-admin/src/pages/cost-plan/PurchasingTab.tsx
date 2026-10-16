@@ -914,7 +914,12 @@ export const PurchasingTab: React.FC<PurchasingTabProps> = ({
 
                   {/* NGƯỜI CẬP NHẬT / THỜI GIAN */}
                   <td className={`sticky right-0 z-20 ${stickyBg} group-hover:bg-slate-100 px-1.5 py-1 text-center font-semibold text-slate-700`}>
-                    <AuditInfoCell updatedBy={pur.updatedBy} updatedAt={pur.updatedAt} />
+                    <AuditInfoCell 
+                      updatedBy={pur.updatedBy} 
+                      updatedAt={pur.updatedAt} 
+                      projectCode={pur.projectCode}
+                      itemTitle={pur.content}
+                    />
                   </td>
                 </tr>
               );
