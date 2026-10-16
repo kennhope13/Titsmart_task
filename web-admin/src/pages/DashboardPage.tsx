@@ -77,7 +77,9 @@ export const DashboardPage: React.FC = () => {
 
   // 1. DỮ LIỆU DỰ ÁN
   const enhancedProjects = useMemo(() => {
-    const visibleProjects = projects.filter(p => isUserMemberOfProject(currentUser, p, engineers));
+    const visibleProjects = projects
+      .filter(p => (p.code || '').trim().toUpperCase() !== 'COMPANY')
+      .filter(p => isUserMemberOfProject(currentUser, p, engineers));
     return visibleProjects.map((project) => {
       const projectTasks = tasks.filter((task) => task.projectCode === project.code && !task.isSectionHeader);
       
