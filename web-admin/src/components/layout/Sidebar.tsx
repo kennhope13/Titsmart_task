@@ -128,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isExpanded: isExpandedProp, to
       { label: 'Công việc', path: defaultTaskPath, icon: 'checklist', req: 'VIEW_TASKS' },
       { label: 'Quản lý hồ sơ', path: '/document-tracking', icon: 'folder_managed', req: 'VIEW_DOCUMENTS' },
       { label: 'Tổng kho', path: '/materials', icon: 'warehouse', req: 'VIEW_MATERIALS' },
-      { label: 'Công và nghỉ', path: '/attendance', icon: 'schedule', req: 'VIEW_TASKS' },
+      { label: 'Chấm công', path: '/attendance', icon: 'schedule', req: 'VIEW_TASKS' },
       { label: 'Nhân sự', path: '/personnel', icon: 'groups', req: 'VIEW_USERS' },
       ...(isAdminAccount ? [{ label: 'Nhật ký', path: '/activity-log', icon: 'history', req: 'VIEW_ACTIVITY_LOG' }] : [])
     ];
