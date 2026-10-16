@@ -92,6 +92,29 @@ const toSnakeCase = (obj: any) => {
               val = `${y}-${m}-${d}`;
             }
           }
+        } else if (
+          snakeKey === 'quantity' ||
+          snakeKey === 'unit_price' ||
+          snakeKey === 'tax_amount' ||
+          snakeKey === 'total_amount' ||
+          snakeKey === 'income_amount' ||
+          snakeKey === 'balance_fund' ||
+          snakeKey === 'amount' ||
+          snakeKey === 'volume' ||
+          snakeKey === 'volume_contract' ||
+          snakeKey === 'volume_order' ||
+          snakeKey === 'vat_rate' ||
+          snakeKey === 'vat_amount' ||
+          snakeKey === 'prepay_percent' ||
+          snakeKey === 'prepay_amount' ||
+          snakeKey === 'remaining_amount'
+        ) {
+          if (trimmed === '') {
+            val = 0;
+          } else {
+            const num = Number(trimmed);
+            val = isNaN(num) ? 0 : num;
+          }
         }
       }
 
@@ -1510,12 +1533,12 @@ export const api = {
       const { data: result, error } = await supabase.from('expenses').update(payload).eq('id', id).select().single();
       if (error) {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
-          delete payload.updated_at;
-          delete payload.updated_by;
-          delete payload.auto_balance;
-          delete payload.auto_balance_fund;
-          delete payload.autobalance;
-          const { data: retryResult, error: retryError } = await supabase.from('expenses').update(payload).eq('id', id).select().single();
+          const allowedKeys = ['project_code', 'stt', 'date', 'content', 'description', 'spender_name', 'unit', 'quantity', 'unit_price', 'tax_amount', 'total_amount', 'income_amount', 'balance_fund', 'notes', 'invoice_url', 'updated_by', 'updated_at'];
+          const cleanPayload: any = {};
+          for (const key of Object.keys(payload)) {
+            if (allowedKeys.includes(key)) cleanPayload[key] = payload[key];
+          }
+          const { data: retryResult, error: retryError } = await supabase.from('expenses').update(cleanPayload).eq('id', id).select().single();
           if (retryError) throw retryError;
           return toCamelCase(retryResult);
         }
@@ -1550,12 +1573,19 @@ export const api = {
     },
     updateLaborPayroll: async (id: string, data: any) => {
       const payload = toSnakeCase(data);
+      delete payload.id;
+      delete payload.auto_balance;
+      delete payload.auto_balance_fund;
+      delete payload.autobalance;
       const { data: result, error } = await supabase.from('labor_payrolls').update(payload).eq('id', id).select().single();
       if (error) {
         if (error.code === 'PGRST204' || String(error.code).includes('400') || String(error.message).includes('column')) {
-          delete payload.updated_at;
-          delete payload.updated_by;
-          const { data: retryResult, error: retryError } = await supabase.from('labor_payrolls').update(payload).eq('id', id).select().single();
+          const allowedKeys = ['project_code', 'stt', 'date', 'content', 'description', 'worker_name', 'unit', 'quantity', 'unit_price', 'total_amount', 'bank_account', 'bank_info', 'id_card_front_url', 'id_card_back_url', 'payment_status', 'notes', 'updated_by', 'updated_at'];
+          const cleanPayload: any = {};
+          for (const key of Object.keys(payload)) {
+            if (allowedKeys.includes(key)) cleanPayload[key] = payload[key];
+          }
+          const { data: retryResult, error: retryError } = await supabase.from('labor_payrolls').update(cleanPayload).eq('id', id).select().single();
           if (retryError) throw retryError;
           return toCamelCase(retryResult);
         }

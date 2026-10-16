@@ -966,7 +966,24 @@ export const OfficeCostsPage: React.FC = () => {
               const vatAmt = vat > 0 ? (vat <= 100 ? (rawTotal * vat / 100) : vat) : 0;
               const total = Math.round(rawTotal + vatAmt);
               const cleanDate = formatDateForInput(editingExpense.date) || new Date().toISOString().split('T')[0];
-              await updateExpense(editingExpense.id, { ...editingExpense, date: cleanDate, totalAmount: total });
+              await updateExpense(editingExpense.id, {
+                id: editingExpense.id,
+                projectCode: 'OFFICE',
+                stt: String(editingExpense.stt || ''),
+                date: cleanDate,
+                content: editingExpense.content || '',
+                description: editingExpense.description || '',
+                spenderName: editingExpense.spenderName || user?.name || 'CÔNG TY',
+                unit: editingExpense.unit || '',
+                quantity: qty,
+                unitPrice: price,
+                taxAmount: vat,
+                totalAmount: total,
+                incomeAmount: Number(editingExpense.incomeAmount || 0),
+                balanceFund: Number(editingExpense.balanceFund || 0),
+                notes: editingExpense.notes || '',
+                invoiceUrl: editingExpense.invoiceUrl || ''
+              });
 
               if (additionalItems.length > 0) {
                 await Promise.all(additionalItems.map((item, idx) => {

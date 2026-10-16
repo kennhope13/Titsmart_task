@@ -3862,10 +3862,22 @@ export const ProjectCostPlanPage: React.FC = () => {
 
               const cleanDate = formatDateForInput(editingExpense.date) || new Date().toISOString().split('T')[0];
               await updateExpense(editingExpense.id, {
-                ...editingExpense,
+                id: editingExpense.id,
+                projectCode: editingExpense.projectCode || selectedProject,
+                stt: String(editingExpense.stt || ''),
                 date: cleanDate,
+                content: editingExpense.content || '',
+                description: editingExpense.description || '',
+                spenderName: editingExpense.spenderName || '',
+                unit: editingExpense.unit || '',
+                quantity: qty,
+                unitPrice: price,
+                taxAmount: vat,
                 totalAmount: total,
-                spenderName: editingExpense.spenderName || ''
+                incomeAmount: Number(editingExpense.incomeAmount || 0),
+                balanceFund: Number(editingExpense.balanceFund || 0),
+                notes: editingExpense.notes || '',
+                invoiceUrl: editingExpense.invoiceUrl || ''
               });
 
               if (additionalItems.length > 0) {
