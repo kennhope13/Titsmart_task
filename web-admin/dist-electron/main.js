@@ -75,7 +75,10 @@ Lý do: ${u.message}`);
     o.checkForUpdates().catch((e) => {
       s("update:status", { status: "error", message: (e == null ? void 0 : e.message) ?? String(e) });
     });
-  }, 5e3));
+  }, 3e3), setInterval(() => {
+    o.checkForUpdates().catch(() => {
+    });
+  }, 6e4));
 }
 a.on("before-quit", () => {
   c = !0;

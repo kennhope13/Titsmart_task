@@ -134,12 +134,17 @@ function setupAutoUpdater() {
     autoUpdater.quitAndInstall();
   });
 
-  // Tự kiểm tra update khi app khởi động (trì hoãn một chút cho app chạy ổn định)
+  // Tự kiểm tra update khi app khởi động (trì hoãn 3s cho app load xong)
   setTimeout(() => {
     autoUpdater.checkForUpdates().catch((err) => {
       sendToRenderer('update:status', { status: 'error', message: err?.message ?? String(err) });
     });
-  }, 5000);
+  }, 3000);
+
+  // Định kỳ tự kiểm tra bản cập nhật mới mỗi 60 giây
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 60000);
 }
 
 app.on('before-quit', () => {

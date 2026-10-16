@@ -113,7 +113,19 @@ export const UpdateNotifier: React.FC = () => {
   }, [notifyNewVersion]);
 
   useEffect(() => {
-    if (window.electronAPI) return;
+    if (window.electronAPI) {
+      // Khi tab / cửa sổ active lại, gọi kiểm tra update
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible') {
+          window.electronAPI?.checkForUpdates();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibility);
+      };
+    }
+
     checkWebVersion();
     const interval = setInterval(checkWebVersion, POLL_INTERVAL);
     const handleVisibility = () => {
