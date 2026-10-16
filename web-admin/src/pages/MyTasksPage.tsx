@@ -141,7 +141,8 @@ export const MyTasksPage: React.FC = () => {
 
     const now = new Date();
     myCategoryTasks.forEach(t => {
-      if (t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc') {
+      const isPending = t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc' || t.status === 'Chưa làm';
+      if (isPending) {
         pending++;
       } else if (t.status === 'Chờ nghiệm thu') {
         review++;
@@ -186,9 +187,9 @@ export const MyTasksPage: React.FC = () => {
     // Status filter
     const now = new Date();
     if (statusFilter === 'pending') {
-      list = list.filter(t => t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc');
+      list = list.filter(t => t.status === 'Chờ nhận việc' || t.status === 'Có thắc mắc' || t.status === 'Chưa làm');
     } else if (statusFilter === 'in_progress') {
-      list = list.filter(t => t.status !== 'Hoàn thành' && t.status !== 'Chờ nhận việc' && t.status !== 'Có thắc mắc' && t.status !== 'Chờ nghiệm thu');
+      list = list.filter(t => t.status !== 'Hoàn thành' && t.status !== 'Chờ nhận việc' && t.status !== 'Có thắc mắc' && t.status !== 'Chưa làm' && t.status !== 'Chờ nghiệm thu');
     } else if (statusFilter === 'review') {
       list = list.filter(t => t.status === 'Chờ nghiệm thu');
     } else if (statusFilter === 'completed') {
@@ -203,9 +204,9 @@ export const MyTasksPage: React.FC = () => {
       if (highlightTaskId && b.id === highlightTaskId) return 1;
       const rank = (status: string) => {
         if (status === 'Có thắc mắc') return 0;
-        if (status === 'Chờ nhận việc') return 1;
+        if (status === 'Chờ nhận việc' || status === 'Chưa làm') return 1;
         if (status === 'Chờ nghiệm thu') return 2;
-        if (status === 'Đang làm' || status === 'Chưa làm') return 3;
+        if (status === 'Đang làm') return 3;
         if (status === 'Hoàn thành') return 5;
         return 4;
       };
@@ -708,9 +709,9 @@ export const MyTasksPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5 w-full">
                       {group.tasks.map((t) => {
                 const p = projects.find(proj => proj.code === t.projectCode);
-                const isWaiting = t.status === 'Chờ nhận việc';
+                const isWaiting = t.status === 'Chờ nhận việc' || t.status === 'Chưa làm';
                 const hasQuestion = t.status === 'Có thắc mắc';
-                const isDoing = t.status === 'Đang làm' || t.status === 'Chưa làm';
+                const isDoing = t.status === 'Đang làm';
                 const isWaitingApproval = t.status === 'Chờ nghiệm thu';
                 const isCompleted = t.status === 'Hoàn thành';
                 const isOverdue = t.status !== 'Hoàn thành' && t.dueDate && new Date(t.dueDate) < new Date();
@@ -766,7 +767,7 @@ export const MyTasksPage: React.FC = () => {
                           </span>
                         )}
                         <span className="px-2.5 py-0.5 rounded-md font-semibold text-[11px] bg-slate-100 text-slate-700 border border-slate-200">
-                          {isOverdue && !isCompleted ? 'Trễ hạn' : (t.status || 'Chưa làm')}
+                          {isOverdue && !isCompleted ? 'Trễ hạn' : (t.status === 'Chưa làm' ? 'Chờ nhận việc' : (t.status || 'Chờ nhận việc'))}
                         </span>
                       </div>
                     </div>

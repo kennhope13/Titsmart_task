@@ -891,6 +891,12 @@ const hasSyncedRef = useRef(false);
       }
     }
 
+    const isNewlyAssigned = editEngineerId && editEngineerId !== (editingTask.assignedEngineerId || '');
+    let updatedStatus = taskStatusFromProgress(!editingTask.isSectionHeader ? nextProgress : 0, editingTask.status);
+    if (!editingTask.isSectionHeader && isNewlyAssigned && nextProgress === 0) {
+      updatedStatus = 'Chờ nhận việc';
+    }
+
     handleUpdateTaskSync(targetTaskId, {
       stt: editStt,
       name: editName,
@@ -901,16 +907,16 @@ const hasSyncedRef = useRef(false);
       constrStatus: editConstrStatus,
       progress: nextProgress,
       isDone: !editingTask.isSectionHeader && nextProgress >= 1,
-      status: taskStatusFromProgress(!editingTask.isSectionHeader ? nextProgress : 0, editingTask.status),
+      status: updatedStatus,
       issue: editIssue,
       issueStatus: editIssueStatus,
       notes: editNotes,
       assignedEngineerId: editEngineerId,
       assignedEngineerName: editEngineerId ? (eng?.name || '') : '',
-      assignerId: (editEngineerId && editEngineerId !== (editingTask.assignedEngineerId || '')) 
+      assignerId: isNewlyAssigned
         ? (authStore.user?.id || editingTask.assignerId) 
         : editingTask.assignerId,
-      assignerName: (editEngineerId && editEngineerId !== (editingTask.assignedEngineerId || '')) 
+      assignerName: isNewlyAssigned
         ? (authStore.user?.name || authStore.user?.username || editingTask.assignerName) 
         : editingTask.assignerName,
       parentId: editParentId || undefined,
@@ -1575,6 +1581,12 @@ const hasSyncedRef = useRef(false);
     // Validate rằng parentId thực sự tồn tại trong tasks array (tránh FK error)
     const validatedParentId = taskParentId && tasks.find(t => t.id === taskParentId) ? taskParentId : undefined;
 
+    const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
+    const assignerId = authStore.user?.id || '';
+    const initialStatus = (!isSectionHeader && engineerId) 
+      ? 'Chờ nhận việc' 
+      : taskStatusFromProgress(isSectionHeader ? 0 : nextProgress, 'Chưa làm');
+
     const newTaskId = await addTask({
       stt: taskStt,
       code: `TSK-${Date.now()}`,
@@ -1584,7 +1596,7 @@ const hasSyncedRef = useRef(false);
       volume: isSectionHeader ? 0 : volume,
       unit: isSectionHeader ? '' : unit,
       progress: nextProgress,
-      status: taskStatusFromProgress(isSectionHeader ? 0 : nextProgress, 'Chưa làm'),
+      status: initialStatus,
       purchaseStatus: isSectionHeader ? '' : purchaseStatus,
       constrStatus: isSectionHeader ? '' : constrStatus,
       isDone: !isSectionHeader && nextProgress >= 1,
@@ -1593,13 +1605,13 @@ const hasSyncedRef = useRef(false);
       parentId: validatedParentId,
       assignedEngineerId: engineerId,
       assignedEngineerName: eng?.name || '',
+      assignerId: (!isSectionHeader && engineerId) ? assignerId : undefined,
+      assignerName: (!isSectionHeader && engineerId) ? assignerName : undefined,
     });
 
     if (engineerId && eng) {
       const storeState = useRealtimeStore.getState();
       if (storeState.addNotification) {
-        const assignerName = authStore.user?.name || authStore.user?.username || 'Quản lý';
-        const assignerId = authStore.user?.id || '';
         storeState.addNotification({
           title: `Giao việc: ${eng.name}`,
           message: `${assignerName} đã giao công việc "${name}" thuộc dự án ${proj ? proj.name : projectCode} cho ${eng.name}.`,
