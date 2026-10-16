@@ -475,7 +475,7 @@ export const DocumentTrackingPage: React.FC = () => {
       
       {/* HEADER SECTION */}
             {!projectId && (
-        <section className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-20 md:pr-24 lg:pr-28 py-1 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center relative z-50">
+        <section className="border-b border-slate-200 bg-white shadow-sm px-3 md:px-6 pr-3 md:pr-24 lg:pr-28 py-1 md:py-0 md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center relative z-50">
           <div className="flex items-center justify-between w-full md:w-auto h-8 md:h-auto mb-1 md:mb-0">
             <h1 className="page-header-title text-base md:text-lg text-slate-900 border-l-4 border-primary pl-2 uppercase font-extrabold truncate">QUẢN LÝ HỒ SƠ</h1>
           </div>
@@ -858,21 +858,21 @@ export const DocumentTrackingPage: React.FC = () => {
             </div>
           )}
 
-          {/* FILTER & SEARCH BAR - cho desktop */}
-          <div className="hidden md:flex border-b border-slate-200 bg-white px-3 md:px-4 py-2 gap-2 md:gap-3 sticky top-0 z-20 flex-col md:flex-row md:items-center justify-between text-xs text-slate-600">
-            <div className="flex items-center gap-2 md:gap-3 overflow-x-auto no-scrollbar py-0.5">
-              <div className="flex items-center gap-1.5 font-bold text-slate-500 whitespace-nowrap shrink-0">
-                <span className="material-symbols-outlined text-[16px]">filter_list</span>
+          {/* FILTER BAR - hỗ trợ cả desktop & mobile */}
+          <div className="flex border-b border-slate-200 bg-white px-2.5 md:px-4 py-1.5 md:py-2 gap-2 md:gap-3 sticky top-0 z-20 flex-row items-center justify-between text-xs text-slate-600">
+            <div className="flex items-center gap-1.5 md:gap-3 overflow-x-auto custom-scrollbar py-0.5 flex-1 min-w-0">
+              <div className="flex items-center gap-1 font-bold text-slate-500 whitespace-nowrap shrink-0">
+                <span className="material-symbols-outlined text-[15px]">filter_list</span>
                 <span className="text-[11px] md:hidden">Lọc:</span>
               </div>
               
               {!projectId && (
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Dự án:</span>
                   <CustomSelect
                     value={filterProjectCode}
                     onChange={e => setFilterProjectCode(e.target.value)}
-                    className="min-w-[90px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
+                    className="min-w-[85px] max-w-[130px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
                   >
                     <option value="all">Tất cả</option>
                     {docProjectOptions.map(opt => (
@@ -882,12 +882,12 @@ export const DocumentTrackingPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1 shrink-0">
                 <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Trạng thái:</span>
                 <CustomSelect
                   value={filterDocStatus}
                   onChange={e => setFilterDocStatus(e.target.value)}
-                  className="min-w-[90px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
+                  className="min-w-[80px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
                 >
                   <option value="all">Tất cả</option>
                   {docStatusOptions.map(opt => (
@@ -896,12 +896,12 @@ export const DocumentTrackingPage: React.FC = () => {
                 </CustomSelect>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1 shrink-0">
                 <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Thanh toán:</span>
                 <CustomSelect
                   value={filterPaymentStatus}
                   onChange={e => setFilterPaymentStatus(e.target.value)}
-                  className="min-w-[90px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
+                  className="min-w-[85px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate"
                 >
                   <option value="all">Tất cả</option>
                   {paymentStatusOptions.map(opt => (
@@ -910,12 +910,12 @@ export const DocumentTrackingPage: React.FC = () => {
                 </CustomSelect>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1 shrink-0">
                 <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Hạn nộp:</span>
                 <CustomSelect
                   value={filterDueStatus}
                   onChange={e => setFilterDueStatus(e.target.value)}
-                  className="min-w-[100px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate font-semibold"
+                  className="min-w-[95px] border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs truncate font-semibold"
                 >
                   <option value="all">Tất cả</option>
                   <option value="warning">🔔 Sắp đến hạn</option>
@@ -924,29 +924,28 @@ export const DocumentTrackingPage: React.FC = () => {
                 </CustomSelect>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Từ ngày:</span>
-                <div className="flex items-center gap-1.5 border border-slate-200 rounded px-1 py-0.5 bg-white shadow-sm">
-                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px] ml-1">Từ</span>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-slate-500 font-medium whitespace-nowrap text-[11px]">Từ:</span>
+                <div className="flex items-center gap-1 border border-slate-200 rounded px-1 py-0.5 bg-white shadow-xs">
                   <input
                     type="date"
                     value={filterDateFrom}
                     onChange={e => setFilterDateFrom(e.target.value)}
-                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
+                    className="bg-transparent border-none outline-none text-xs w-[85px] text-slate-700 cursor-pointer"
                   />
                   <span className="text-slate-300">|</span>
-                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến</span>
+                  <span className="text-slate-400 font-medium whitespace-nowrap text-[11px]">Đến:</span>
                   <input
                     type="date"
                     value={filterDateTo}
                     onChange={e => setFilterDateTo(e.target.value)}
-                    className="bg-transparent border-none outline-none text-xs w-[95px] text-slate-700 cursor-pointer"
+                    className="bg-transparent border-none outline-none text-xs w-[85px] text-slate-700 cursor-pointer"
                   />
                   {(filterDateFrom || filterDateTo) && (
                     <button
                       type="button"
                       onClick={() => { setFilterDateFrom(''); setFilterDateTo(''); }}
-                      className="text-slate-400 hover:text-slate-600 px-0.5 text-xs font-bold"
+                      className="text-slate-400 hover:text-slate-600 px-0.5 text-xs font-bold cursor-pointer"
                       title="Xóa lọc ngày"
                     >
                       ✕
@@ -957,7 +956,7 @@ export const DocumentTrackingPage: React.FC = () => {
             </div>
 
             {/* Desktop Search Bar */}
-            <div className="hidden md:flex items-center">
+            <div className="hidden md:flex items-center shrink-0">
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
                 <input
@@ -965,7 +964,7 @@ export const DocumentTrackingPage: React.FC = () => {
                   placeholder="Tìm số HĐ, công ty..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-7 pr-2 py-1 border border-slate-200 rounded-md text-xs w-[200px] focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="pl-7 pr-2 py-1 border border-slate-200 rounded-md text-xs w-[180px] lg:w-[220px] focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
             </div>
@@ -975,27 +974,27 @@ export const DocumentTrackingPage: React.FC = () => {
           onRefresh={async () => {
             await fetchAccounting();
           }}
-          className="custom-scrollbar flex-1"
+          className="custom-scrollbar flex-1 w-full overflow-x-auto min-w-0"
         >
-          <table className="doc-fit-table w-full text-left border-collapse">
-               <thead className="bg-slate-50/90 border-b border-slate-200 text-[9.5px] sm:text-[10.5px] font-extrabold text-slate-500 uppercase tracking-tight sticky top-0 z-10 leading-tight">
+          <table className="w-full text-left border-collapse table-auto min-w-[1360px]">
+               <thead className="bg-slate-50/90 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase tracking-tight sticky top-0 z-10 leading-tight">
                  <tr>
-                   <th className="px-1.5 py-1.5 text-center min-w-[48px] leading-tight break-words">Bên</th>
-                   {!projectId && <th className="px-1.5 py-1.5 min-w-[70px] leading-tight break-words">Dự án</th>}
-                   <th className="px-1.5 py-1.5 min-w-[65px] leading-tight break-words">Số HĐ</th>
-                   <th className="px-1.5 py-1.5 min-w-[110px] leading-tight break-words">Tên hợp đồng</th>
-                   <th className="px-1.5 py-1.5 min-w-[95px] leading-tight break-words">Công ty / Đối tác</th>
-                   <th className="px-1.5 py-1.5 min-w-[70px] leading-tight break-words">Người nhận</th>
-                   <th className="px-1.5 py-1.5 text-center min-w-[60px] leading-tight break-words">Ngày gửi</th>
-                   <th className="px-1.5 py-1.5 text-center min-w-[60px] leading-tight break-words">Ngày nhận</th>
-                   <th className="px-1.5 py-1.5 text-center min-w-[75px] leading-tight break-words">Hạn nộp / Nhắc</th>
-                   <th className="px-1.5 py-1.5 text-right min-w-[75px] leading-tight break-words">Giá trị HĐ (đ)</th>
-                   <th className="px-1.5 py-1.5 text-center min-w-[55px] leading-tight break-words">Tạm ứng</th>
-                   <th className="px-1.5 py-1.5 text-center min-w-[65px] leading-tight break-words">Thanh toán</th>
-                   <th className="px-1 py-1.5 text-center w-8 leading-tight">File</th>
-                   <th className="px-1.5 py-1.5 text-center min-w-[55px] leading-tight break-words">Hồ sơ</th>
-                   <th className="px-1.5 py-1.5 min-w-[90px] text-center leading-tight break-words">NGƯỜI CẬP NHẬT</th>
-                   <th className="px-1 py-1.5 text-center w-8 leading-tight">TT</th>
+                   <th className="px-2.5 py-2.5 text-center whitespace-nowrap leading-tight">Bên</th>
+                   {!projectId && <th className="px-3 py-2.5 whitespace-nowrap leading-tight">Dự án</th>}
+                   <th className="px-3 py-2.5 whitespace-nowrap leading-tight">Số HĐ</th>
+                   <th className="px-3 py-2.5 whitespace-nowrap leading-tight min-w-[160px]">Tên hợp đồng</th>
+                   <th className="px-3 py-2.5 whitespace-nowrap leading-tight min-w-[140px]">Công ty / Đối tác</th>
+                   <th className="px-3 py-2.5 whitespace-nowrap leading-tight min-w-[100px]">Người nhận</th>
+                   <th className="px-2.5 py-2.5 text-center whitespace-nowrap leading-tight min-w-[85px]">Ngày gửi</th>
+                   <th className="px-2.5 py-2.5 text-center whitespace-nowrap leading-tight min-w-[85px]">Ngày nhận</th>
+                   <th className="px-2.5 py-2.5 text-center whitespace-nowrap leading-tight min-w-[105px]">Hạn nộp / Nhắc</th>
+                   <th className="px-3 py-2.5 text-right whitespace-nowrap leading-tight min-w-[100px]">Giá trị HĐ (đ)</th>
+                   <th className="px-2.5 py-2.5 text-center whitespace-nowrap leading-tight min-w-[80px]">Tạm ứng</th>
+                   <th className="px-2.5 py-2.5 text-center whitespace-nowrap leading-tight min-w-[95px]">Thanh toán</th>
+                   <th className="px-2 py-2.5 text-center whitespace-nowrap leading-tight min-w-[45px]">File</th>
+                   <th className="px-2.5 py-2.5 text-center whitespace-nowrap leading-tight min-w-[75px]">Hồ sơ</th>
+                   <th className="px-3 py-2.5 text-center whitespace-nowrap leading-tight min-w-[130px]">Người cập nhật</th>
+                   <th className="px-2 py-2.5 text-center whitespace-nowrap leading-tight min-w-[45px]">TT</th>
                  </tr>
                </thead>
                 <tbody className="divide-y divide-slate-100 text-[11px] text-slate-700 leading-tight">
@@ -1011,7 +1010,7 @@ export const DocumentTrackingPage: React.FC = () => {
                   return (
                   <tr 
                     key={track.id} 
-                    className={`transition-all align-top cursor-pointer ${
+                    className={`transition-all align-middle cursor-pointer ${
                       isMatch
                         ? 'highlighted-doc-row bg-amber-100/60 hover:bg-amber-100/80 border-l-4 border-l-amber-500 border-y border-amber-300/70 ring-1 ring-inset ring-amber-300/50 font-medium'
                         : 'hover:bg-blue-50/20'
@@ -1021,7 +1020,7 @@ export const DocumentTrackingPage: React.FC = () => {
                       setEditingDoc({ ...track, notes: (track.notes || '').replace(/\[STATUS:[^\]]+\]/g, '').trim() });
                     }}
                   >
-                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                    <td className="px-2.5 py-2 text-center whitespace-nowrap">
                       <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap shrink-0 ${
                         track.side === 'Bên nhận' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60' :
                         track.side === 'Bên gửi' ? 'bg-indigo-50 text-indigo-600 border border-indigo-200/60' :
@@ -1031,40 +1030,40 @@ export const DocumentTrackingPage: React.FC = () => {
                       </span>
                     </td>
                     {!projectId && (
-                      <td className="px-1.5 py-1.5 text-[11px] font-bold text-slate-700 max-w-[120px] leading-tight">
-                        <div className="line-clamp-2" title={projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode}>
+                      <td className="px-3 py-2 text-[11px] font-bold text-slate-700 leading-tight whitespace-nowrap">
+                        <div title={projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode}>
                           {projects.find(p => p.id === (track as any).projectId || p.code === track.projectCode)?.name || track.projectCode || '-'}
                         </div>
                       </td>
                     )}
-                    <td className="px-1.5 py-1.5 font-mono text-[11px] text-slate-800 break-words break-all max-w-[95px] leading-tight" title={track.contractNo}>
+                    <td className="px-3 py-2 font-mono text-[11px] text-slate-800 leading-tight whitespace-nowrap" title={track.contractNo}>
                       {track.contractNo || '-'}
                     </td>
-                    <td className="px-1.5 py-1.5">
-                      <div className="font-bold text-slate-900 leading-tight max-w-[160px] whitespace-normal line-clamp-2" title={track.contractName}>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="font-bold text-slate-900 leading-tight" title={track.contractName}>
                         {track.contractName}
                       </div>
                     </td>
-                    <td className="px-1.5 py-1.5">
-                      <div className="font-medium text-slate-800 max-w-[130px] whitespace-normal leading-tight line-clamp-2" title={track.company}>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="font-medium text-slate-800 leading-tight" title={track.company}>
                         {track.company || '-'}
                       </div>
                     </td>
-                    <td className="px-1.5 py-1.5">
+                    <td className="px-3 py-2 whitespace-nowrap">
                       <div className="font-medium text-slate-700 leading-tight">{track.receiverName || '-'}</div>
                       {track.phone && <div className="text-[10px] text-slate-400 font-mono mt-0.5">{track.phone}</div>}
                     </td>
-                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                    <td className="px-2.5 py-2 text-center whitespace-nowrap">
                       <span className={`px-1.5 py-0.5 rounded text-[10.5px] font-mono ${track.sendDate ? 'bg-slate-100 text-slate-700' : 'text-slate-300'}`}>
                         {track.sendDate ? new Date(track.sendDate).toLocaleDateString('vi-VN') : '-'}
                       </span>
                     </td>
-                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                    <td className="px-2.5 py-2 text-center whitespace-nowrap">
                       <span className={`px-1.5 py-0.5 rounded text-[10.5px] font-mono ${track.receiveDate ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-300'}`}>
                         {track.receiveDate ? new Date(track.receiveDate).toLocaleDateString('vi-VN') : '-'}
                       </span>
                     </td>
-                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                    <td className="px-2.5 py-2 text-center whitespace-nowrap">
                       {(() => {
                         const info = getDueInfo(track);
                         const effDate = track.dueDate || track.receiveDate || track.sendDate;
@@ -1108,19 +1107,19 @@ export const DocumentTrackingPage: React.FC = () => {
                         );
                       })()}
                     </td>
-                    <td className="px-1.5 py-1.5 text-right font-bold text-slate-900 text-[11px] whitespace-nowrap">
+                    <td className="px-3 py-2 text-right font-bold text-slate-900 text-[11px] whitespace-nowrap">
                       {(track.contractValue || 0).toLocaleString('vi-VN')}
                     </td>
-                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                    <td className="px-2.5 py-2 text-center whitespace-nowrap">
                       <div className="font-bold text-blue-700 text-[11px]">{(track.prepayPercent ? (track.prepayPercent * 100).toFixed(1) : '0')}%</div>
                       <div className="text-[9.5px] text-slate-500 font-mono mt-0.5">{(track.prepayAmount || 0).toLocaleString('vi-VN')}đ</div>
                     </td>
-                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                    <td className="px-2.5 py-2 text-center whitespace-nowrap">
                       <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${track.paymentStatus?.includes('Đã') ? 'text-emerald-700 bg-emerald-50' : 'text-rose-700 bg-rose-50'}`}>
                         {track.paymentStatus || 'Chưa thanh toán'}
                       </span>
                     </td>
-                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-2 py-2 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       {track.fileUrls && track.fileUrls.length > 0 ? (
                         <button type="button" onClick={(e) => { e.stopPropagation(); setFileViewerUrls(track.fileUrls || []); }} title="Xem file đính kèm" className="relative inline-flex items-center justify-center w-7 h-7 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
                           <span className="material-symbols-outlined text-[16px]">description</span>
@@ -1130,7 +1129,7 @@ export const DocumentTrackingPage: React.FC = () => {
                         <span className="text-slate-300">-</span>
                       )}
                     </td>
-                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap">
+                    <td className="px-2.5 py-2 text-center whitespace-nowrap">
                       <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         track.docStatus === 'Đã ký' || track.docStatus === 'Đã nhận đủ' 
                           ? 'text-emerald-700 bg-emerald-50' 
@@ -1141,11 +1140,11 @@ export const DocumentTrackingPage: React.FC = () => {
                         {track.docStatus || 'Chưa ký'}
                       </span>
                     </td>
-                    <td className="px-1.5 py-1.5 whitespace-nowrap">
+                    <td className="px-3 py-2 whitespace-nowrap">
                       <AuditInfoCell updatedBy={track.updatedBy || track.createdByName} updatedAt={track.updatedAt} />
                     </td>
                     
-                    <td className="px-1.5 py-1.5 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-2 py-2 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1">
                         {canManageItem(user, track, 'DELETE_DOCUMENTS') ? (
                           <button onClick={() => {
