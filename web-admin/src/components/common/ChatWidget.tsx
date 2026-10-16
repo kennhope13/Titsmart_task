@@ -5,6 +5,7 @@ import { useUIStore } from '../../services/uiStore';
 import { DirectMessage, Engineer, Project } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { uploadAttachment } from '../../utils/fileUploadHelper';
+import { isUserMemberOfProject } from '../../utils/projectMemberUtils';
 
 const isSameDay = (d1?: string, d2?: string) => {
   if (!d1 || !d2) return false;
@@ -344,11 +345,17 @@ export const ChatWidget: React.FC = () => {
     }).length;
   }, [directMessages, currentUser]);
 
-  // Section unread counts
+  // Chỉ hiển thị các dự án mà người dùng được phân quyền tham gia
+  const assignedProjects = React.useMemo(() => {
+    if (!currentUser) return [];
+    return projects.filter(p => isUserMemberOfProject(currentUser, p, engineers));
+  }, [projects, currentUser, engineers]);
+
+  // Section unread counts (chỉ tính cho các dự án được phép xem)
   const projectsUnreadCount = React.useMemo(() => {
     if (!currentUser) return 0;
-    return projects.reduce((sum, p) => sum + getUnreadForTarget('project', p.code), 0);
-  }, [projects, getUnreadForTarget, currentUser]);
+    return assignedProjects.reduce((sum, p) => sum + getUnreadForTarget('project', p.code), 0);
+  }, [assignedProjects, getUnreadForTarget, currentUser]);
 
   const colleaguesUnreadCount = React.useMemo(() => {
     if (!currentUser) return 0;
@@ -499,7 +506,7 @@ export const ChatWidget: React.FC = () => {
       >
         <span className="flex items-center gap-1.5">
           <span>Nhóm Dự Án</span>
-          <span className="text-[10px] text-slate-500 font-normal">({projects.length})</span>
+          <span className="text-[10px] text-slate-500 font-normal">({assignedProjects.length})</span>
         </span>
         <div className="flex items-center gap-1.5">
           {isProjectsCollapsed && projectsUnreadCount > 0 && (
@@ -513,7 +520,7 @@ export const ChatWidget: React.FC = () => {
         </div>
       </button>
 
-      {!isProjectsCollapsed && projects.map(p => {
+      {!isProjectsCollapsed && assignedProjects.map(p => {
         const isSelected = selectedTarget?.type === 'project' && selectedTarget.id === p.code;
         const unread = getUnreadForTarget('project', p.code);
         return (
@@ -845,7 +852,7 @@ export const ChatWidget: React.FC = () => {
                 >
                   <span className="flex items-center gap-1">
                     <span>Nhóm Dự Án</span>
-                    <span className="text-[9px] text-slate-500 font-normal">({projects.length})</span>
+                    <span className="text-[9px] text-slate-500 font-normal">({assignedProjects.length})</span>
                   </span>
                   <div className="flex items-center gap-1">
                     {isProjectsCollapsed && projectsUnreadCount > 0 && (
@@ -859,7 +866,7 @@ export const ChatWidget: React.FC = () => {
                   </div>
                 </button>
 
-                {!isProjectsCollapsed && projects.map(p => {
+                {!isProjectsCollapsed && assignedProjects.map(p => {
                   const isSelected = selectedTarget?.type === 'project' && selectedTarget.id === p.code;
                   const unread = getUnreadForTarget('project', p.code);
                   const displayName = p.name || p.code;
